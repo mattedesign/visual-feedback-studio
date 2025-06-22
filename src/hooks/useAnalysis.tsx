@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Annotation } from '@/types/analysis';
 import { toast } from 'sonner';
@@ -16,6 +15,7 @@ import {
   getAnnotationsForAnalysis, 
   deleteAnnotation 
 } from '@/services/annotationsService';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useAnalysis = () => {
   const [currentAnalysis, setCurrentAnalysis] = useState<AnalysisWithFiles | null>(null);
@@ -138,62 +138,51 @@ export const useAnalysis = () => {
       // Update analysis context with basic info
       await updateAnalysisContext(currentAnalysis.id, {
         analysis_prompt: 'AI-powered design analysis focusing on UX, accessibility, and conversion optimization',
-        ai_model_used: 'gpt-4o-mini'
+        ai_model_used: 'claude-3-5-sonnet-20241022'
       });
+
+      console.log('Starting AI analysis for image:', imageUrl);
       
-      // Simulate AI analysis (replace with real AI call later)
-      setTimeout(async () => {
-        const sampleAnnotations: Omit<Annotation, 'id'>[] = [
-          {
-            x: 25,
-            y: 30,
-            category: 'ux',
-            severity: 'critical',
-            feedback: 'The call-to-action button is too small and lacks sufficient contrast. Consider increasing size by 50% and using a more prominent color.',
-            implementationEffort: 'low',
-            businessImpact: 'high'
-          },
-          {
-            x: 70,
-            y: 45,
-            category: 'accessibility',
-            severity: 'suggested',
-            feedback: 'Text hierarchy could be improved. The heading appears to lack proper semantic structure for screen readers.',
-            implementationEffort: 'medium',
-            businessImpact: 'medium'
-          },
-          {
-            x: 50,
-            y: 70,
-            category: 'visual',
-            severity: 'enhancement',
-            feedback: 'The spacing between elements feels cramped. Consider adding more whitespace to improve visual breathing room.',
-            implementationEffort: 'low',
-            businessImpact: 'medium'
-          }
-        ];
-
-        // Save all annotations to database
-        const savedAnnotations: Annotation[] = [];
-        for (const annotationData of sampleAnnotations) {
-          const saved = await saveAnnotation(annotationData, currentAnalysis.id);
-          if (saved) {
-            savedAnnotations.push(saved);
-          }
+      // Call the AI analysis edge function
+      const { data, error } = await supabase.functions.invoke('analyze-design', {
+        body: {
+          imageUrl,
+          analysisId: currentAnalysis.id,
+          analysisPrompt: 'Analyze this design for UX, accessibility, and conversion optimization opportunities. Focus on critical issues that impact user experience and business goals.',
+          designType: currentAnalysis.design_type || 'web'
         }
+      });
 
-        setAnnotations(prev => [...prev, ...savedAnnotations]);
+      if (error) {
+        console.error('AI analysis error:', error);
+        throw new Error(error.message || 'AI analysis failed');
+      }
+
+      console.log('AI analysis completed:', data);
+
+      if (data.success && data.annotations) {
+        // Load the fresh annotations from the database
+        const freshAnnotations = await getAnnotationsForAnalysis(currentAnalysis.id);
+        setAnnotations(freshAnnotations);
         
-        // Update analysis status to completed
-        await updateAnalysisStatus(currentAnalysis.id, 'completed', new Date().toISOString());
-        
-        setIsAnalyzing(false);
-        toast.success('Analysis complete!');
-      }, 3000);
+        toast.success(`AI analysis complete! Found ${data.totalAnnotations} insights.`, {
+          duration: 4000,
+        });
+      } else {
+        throw new Error('Invalid response from AI analysis');
+      }
+      
     } catch (error) {
       console.error('Error during analysis:', error);
+      
+      // Update analysis status to failed
+      await updateAnalysisStatus(currentAnalysis.id, 'failed');
+      
+      toast.error(`Analysis failed: ${error.message}`, {
+        duration: 5000,
+      });
+    } finally {
       setIsAnalyzing(false);
-      toast.error('Analysis failed');
     }
   };
 
