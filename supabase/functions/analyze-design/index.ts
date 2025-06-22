@@ -53,8 +53,10 @@ serve(async (req) => {
     const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)))
     const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
 
-    // Create analysis prompt based on design type and context
+    // Create analysis prompt
     const systemPrompt = `You are an expert UX/UI designer and conversion optimization specialist. Analyze the provided design image and identify specific areas for improvement.
+
+${analysisPrompt || 'Analyze this design for UX, accessibility, and conversion optimization opportunities.'}
 
 For each issue you identify, provide:
 1. Exact coordinates (x, y as percentages from 0-100) where the issue is located
@@ -63,13 +65,6 @@ For each issue you identify, provide:
 4. Detailed feedback explaining the issue and recommended solution
 5. Implementation effort: low, medium, or high
 6. Business impact: low, medium, or high
-
-Focus on:
-- User experience and usability issues
-- Visual design and hierarchy problems
-- Accessibility concerns
-- Conversion optimization opportunities
-- Brand consistency issues
 
 Respond with a JSON array of annotations in this exact format:
 [
@@ -85,8 +80,6 @@ Respond with a JSON array of annotations in this exact format:
 ]
 
 Provide 3-7 annotations focusing on the most impactful improvements.`
-
-    const userPrompt = analysisPrompt || `Analyze this ${designType || 'web'} design for UX, accessibility, and conversion optimization opportunities.`
 
     // Call Claude API
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -105,7 +98,7 @@ Provide 3-7 annotations focusing on the most impactful improvements.`
             content: [
               {
                 type: 'text',
-                text: `${systemPrompt}\n\n${userPrompt}`
+                text: systemPrompt
               },
               {
                 type: 'image',
@@ -128,7 +121,7 @@ Provide 3-7 annotations focusing on the most impactful improvements.`
     }
 
     const aiResponse = await response.json()
-    console.log('AI response received:', aiResponse)
+    console.log('AI response received')
 
     let annotations: AnnotationData[] = []
     try {
@@ -142,73 +135,36 @@ Provide 3-7 annotations focusing on the most impactful improvements.`
       }
     } catch (parseError) {
       console.error('Error parsing AI response:', parseError)
-      // Fallback to sample annotations if parsing fails
+      // Return a sample annotation if parsing fails
       annotations = [
         {
           x: 50,
           y: 30,
           category: 'ux',
           severity: 'suggested',
-          feedback: 'AI analysis completed, but response formatting needs adjustment. This is a placeholder annotation.',
+          feedback: 'AI analysis completed, but response formatting needs adjustment. Please try again.',
           implementationEffort: 'medium',
           businessImpact: 'medium'
         }
       ]
     }
 
-    console.log('Parsed annotations:', annotations)
-
-    // Save annotations to database
-    const savedAnnotations = []
-    for (const annotation of annotations) {
-      const { data, error } = await supabase
-        .from('annotations')
-        .insert({
-          analysis_id: analysisId,
-          x: annotation.x,
-          y: annotation.y,
-          category: annotation.category,
-          severity: annotation.severity,
-          feedback: annotation.feedback,
-          implementation_effort: annotation.implementationEffort,
-          business_impact: annotation.businessImpact
-        })
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error saving annotation:', error)
-        continue
-      }
-
-      savedAnnotations.push({
-        id: data.id,
-        x: data.x,
-        y: data.y,
-        category: data.category,
-        severity: data.severity,
-        feedback: data.feedback,
-        implementationEffort: data.implementation_effort,
-        businessImpact: data.business_impact
-      })
-    }
-
-    // Update analysis status
-    await supabase
-      .from('analyses')
-      .update({
-        status: 'completed',
-        analysis_completed_at: new Date().toISOString()
-      })
-      .eq('id', analysisId)
-
-    console.log('Analysis completed successfully:', savedAnnotations.length, 'annotations saved')
+    console.log('Analysis completed successfully with', annotations.length, 'annotations')
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        annotations: savedAnnotations,
-        totalAnnotations: savedAnnotations.length
+        annotations: annotations.map((ann, index) => ({
+          id: `ai-${Date.now()}-${index}`,
+          x: ann.x,
+          y: ann.y,
+          category: ann.category,
+          severity: ann.severity,
+          feedback: ann.feedback,
+          implementationEffort: ann.implementationEffort,
+          businessImpact: ann.businessImpact
+        })),
+        totalAnnotations: annotations.length
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
