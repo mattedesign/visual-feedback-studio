@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Annotation } from '@/types/analysis';
 import { toast } from 'sonner';
@@ -25,8 +24,9 @@ export const useAnalysis = () => {
   const [activeAnnotation, setActiveAnnotation] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isLoadingAnalyses, setIsLoadingAnalyses] = useState(true);
+  const [isUploadInProgress, setIsUploadInProgress] = useState(false);
 
-  // Load user analyses on mount
+  // Load user analyses on mount, but don't auto-load analysis if upload is in progress
   useEffect(() => {
     const loadAnalyses = async () => {
       setIsLoadingAnalyses(true);
@@ -34,62 +34,75 @@ export const useAnalysis = () => {
         const userAnalyses = await getUserAnalyses();
         setAnalyses(userAnalyses);
         
-        // Auto-load most recent analysis if available
-        const recentAnalysis = userAnalyses.length > 0 ? userAnalyses[0] : null;
-        if (recentAnalysis && recentAnalysis.files.length > 0) {
-          await loadAnalysis(recentAnalysis.id);
+        // Only auto-load if there's no upload in progress and no current analysis
+        if (!isUploadInProgress && !currentAnalysis && userAnalyses.length > 0) {
+          const recentAnalysis = userAnalyses[0];
+          if (recentAnalysis && recentAnalysis.files.length > 0) {
+            await loadAnalysis(recentAnalysis.id);
+          }
         }
       } catch (error) {
         console.error('Error loading analyses:', error);
+        toast.error('Failed to load previous analyses');
       } finally {
         setIsLoadingAnalyses(false);
       }
     };
 
     loadAnalyses();
-  }, []);
+  }, [isUploadInProgress, currentAnalysis]);
 
   const loadAnalysis = async (analysisId: string) => {
     try {
       console.log('Loading analysis:', analysisId);
       const analysis = await getAnalysisById(analysisId);
-      if (analysis && analysis.files.length > 0) {
-        setCurrentAnalysis(analysis);
-        
-        // Get the first file URL
-        const firstFile = analysis.files[0];
-        const fileUrl = getFileUrl(firstFile);
-        
-        console.log('File URL for analysis:', fileUrl);
-        
-        if (fileUrl) {
-          // Verify the URL is accessible before setting it
-          try {
-            const response = await fetch(fileUrl, { method: 'HEAD' });
-            if (response.ok) {
-              setImageUrl(fileUrl);
-              
-              // Load existing annotations for this analysis
-              const existingAnnotations = await getAnnotationsForAnalysis(analysisId);
-              setAnnotations(existingAnnotations);
-              
-              console.log('Analysis loaded successfully with', existingAnnotations.length, 'annotations');
-              toast.success(`Loaded analysis: ${analysis.title}`);
-            } else {
-              throw new Error(`File not accessible: ${response.status}`);
-            }
-          } catch (urlError) {
-            console.error('Error verifying file URL:', urlError);
-            toast.error('File is not accessible. Please try uploading again.');
-            setImageUrl(null);
-          }
+      
+      if (!analysis) {
+        console.error('Analysis not found');
+        toast.error('Analysis not found');
+        return;
+      }
+
+      if (analysis.files.length === 0) {
+        console.error('Analysis has no files');
+        toast.error('Analysis has no files');
+        return;
+      }
+
+      setCurrentAnalysis(analysis);
+      
+      // Get the first file URL
+      const firstFile = analysis.files[0];
+      const fileUrl = getFileUrl(firstFile);
+      
+      console.log('File URL for analysis:', fileUrl);
+      
+      if (!fileUrl) {
+        console.error('No valid file URL found for analysis');
+        toast.error('No valid file URL found for this analysis');
+        setImageUrl(null);
+        return;
+      }
+
+      // Verify the URL is accessible before setting it
+      try {
+        const response = await fetch(fileUrl, { method: 'HEAD' });
+        if (response.ok) {
+          setImageUrl(fileUrl);
+          
+          // Load existing annotations for this analysis
+          const existingAnnotations = await getAnnotationsForAnalysis(analysisId);
+          setAnnotations(existingAnnotations);
+          
+          console.log('Analysis loaded successfully with', existingAnnotations.length, 'annotations');
+          toast.success(`Loaded analysis: ${analysis.title}`);
         } else {
-          console.error('No valid file URL found for analysis');
-          toast.error('No valid file URL found for this analysis');
+          throw new Error(`File not accessible: ${response.status} ${response.statusText}`);
         }
-      } else {
-        console.error('Analysis not found or has no files');
-        toast.error('Analysis not found or has no files');
+      } catch (urlError) {
+        console.error('Error verifying file URL:', urlError);
+        toast.error('File is not accessible. Please try uploading again.');
+        setImageUrl(null);
       }
     } catch (error) {
       console.error('Error loading analysis:', error);
@@ -100,22 +113,19 @@ export const useAnalysis = () => {
   const handleImageUpload = async (uploadedImageUrl: string) => {
     console.log('Handling image upload with URL:', uploadedImageUrl);
     
-    // Verify the uploaded URL is accessible
+    // Set upload in progress to prevent auto-loading
+    setIsUploadInProgress(true);
+    
     try {
+      // Verify the uploaded URL is accessible
       const response = await fetch(uploadedImageUrl, { method: 'HEAD' });
       if (!response.ok) {
-        throw new Error(`Uploaded file not accessible: ${response.status}`);
+        throw new Error(`Uploaded file not accessible: ${response.status} ${response.statusText}`);
       }
-    } catch (error) {
-      console.error('Error verifying uploaded image:', error);
-      toast.error('Uploaded file is not accessible');
-      return;
-    }
-    
-    setImageUrl(uploadedImageUrl);
-    
-    // Refresh analyses list to include the new upload
-    try {
+      
+      setImageUrl(uploadedImageUrl);
+      
+      // Refresh analyses list to include the new upload
       const userAnalyses = await getUserAnalyses();
       setAnalyses(userAnalyses);
       
@@ -133,8 +143,11 @@ export const useAnalysis = () => {
       
       toast.success('Design uploaded successfully!');
     } catch (error) {
-      console.error('Error refreshing analyses after upload:', error);
-      // Don't fail the upload if we can't refresh the list
+      console.error('Error handling image upload:', error);
+      toast.error(`Upload verification failed: ${error.message}`);
+      setImageUrl(null);
+    } finally {
+      setIsUploadInProgress(false);
     }
   };
 
@@ -230,6 +243,7 @@ export const useAnalysis = () => {
     setAnnotations([]);
     setActiveAnnotation(null);
     setCurrentAnalysis(null);
+    setIsUploadInProgress(false);
   };
 
   const handleDeleteAnnotation = async (annotationId: string) => {
@@ -251,6 +265,7 @@ export const useAnalysis = () => {
     activeAnnotation,
     isAnalyzing,
     isLoadingAnalyses,
+    isUploadInProgress,
     handleImageUpload,
     handleAreaClick,
     handleAnalyze,

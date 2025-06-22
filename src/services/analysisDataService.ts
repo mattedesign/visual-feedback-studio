@@ -26,89 +26,98 @@ export interface AnalysisWithFiles {
 }
 
 export const getUserAnalyses = async (): Promise<AnalysisWithFiles[]> => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
 
-  const { data: analyses, error } = await supabase
-    .from('analyses')
-    .select(`
-      id,
-      title,
-      status,
-      created_at,
-      design_type,
-      business_goals,
-      target_audience,
-      analysis_prompt,
-      ai_model_used,
-      analysis_completed_at,
-      uploaded_files (
+    const { data: analyses, error } = await supabase
+      .from('analyses')
+      .select(`
         id,
-        file_name,
-        file_type,
-        upload_type,
-        public_url,
-        figma_url,
-        website_url,
-        original_url
-      )
-    `)
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
+        title,
+        status,
+        created_at,
+        design_type,
+        business_goals,
+        target_audience,
+        analysis_prompt,
+        ai_model_used,
+        analysis_completed_at,
+        uploaded_files (
+          id,
+          file_name,
+          file_type,
+          upload_type,
+          public_url,
+          figma_url,
+          website_url,
+          original_url
+        )
+      `)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Error fetching analyses:', error);
-    toast.error('Failed to load previous analyses');
+    if (error) {
+      console.error('Error fetching analyses:', error);
+      return [];
+    }
+
+    return analyses.map(analysis => ({
+      ...analysis,
+      files: analysis.uploaded_files || []
+    }));
+  } catch (error) {
+    console.error('Unexpected error fetching analyses:', error);
     return [];
   }
-
-  return analyses.map(analysis => ({
-    ...analysis,
-    files: analysis.uploaded_files || []
-  }));
 };
 
 export const getAnalysisById = async (analysisId: string): Promise<AnalysisWithFiles | null> => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
 
-  const { data: analysis, error } = await supabase
-    .from('analyses')
-    .select(`
-      id,
-      title,
-      status,
-      created_at,
-      design_type,
-      business_goals,
-      target_audience,
-      analysis_prompt,
-      ai_model_used,
-      analysis_completed_at,
-      uploaded_files (
+    const { data: analysis, error } = await supabase
+      .from('analyses')
+      .select(`
         id,
-        file_name,
-        file_type,
-        upload_type,
-        public_url,
-        figma_url,
-        website_url,
-        original_url
-      )
-    `)
-    .eq('id', analysisId)
-    .eq('user_id', user.id)
-    .single();
+        title,
+        status,
+        created_at,
+        design_type,
+        business_goals,
+        target_audience,
+        analysis_prompt,
+        ai_model_used,
+        analysis_completed_at,
+        uploaded_files (
+          id,
+          file_name,
+          file_type,
+          upload_type,
+          public_url,
+          figma_url,
+          website_url,
+          original_url
+        )
+      `)
+      .eq('id', analysisId)
+      .eq('user_id', user.id)
+      .single();
 
-  if (error) {
-    console.error('Error fetching analysis:', error);
+    if (error) {
+      console.error('Error fetching analysis:', error);
+      return null;
+    }
+
+    return {
+      ...analysis,
+      files: analysis.uploaded_files || []
+    };
+  } catch (error) {
+    console.error('Unexpected error fetching analysis:', error);
     return null;
   }
-
-  return {
-    ...analysis,
-    files: analysis.uploaded_files || []
-  };
 };
 
 export const updateAnalysisStatus = async (analysisId: string, status: string, completedAt?: string) => {
@@ -159,6 +168,8 @@ export const getMostRecentAnalysis = async (): Promise<AnalysisWithFiles | null>
 };
 
 export const getFileUrl = (file: AnalysisWithFiles['files'][0]): string | null => {
+  if (!file) return null;
+  
   // Prioritize URLs based on upload type
   switch (file.upload_type) {
     case 'file':

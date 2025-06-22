@@ -19,6 +19,7 @@ const Analysis = () => {
     activeAnnotation,
     isAnalyzing,
     isLoadingAnalyses,
+    isUploadInProgress,
     handleImageUpload,
     handleAreaClick,
     handleAnalyze,
@@ -39,7 +40,7 @@ const Analysis = () => {
       toast.error('Please sign in to upload files');
       return;
     }
-    handleImageUpload(uploadedImageUrl);
+    await handleImageUpload(uploadedImageUrl);
   };
 
   if (loading) {
@@ -50,12 +51,15 @@ const Analysis = () => {
     return <AuthGuard />;
   }
 
+  // Show welcome section if no image is loaded or upload is in progress
+  const showWelcome = !imageUrl || isUploadInProgress;
+
   return (
     <div className="min-h-screen bg-slate-900 text-white">
       <Header user={user} onSignOut={handleSignOut} />
       
       <main className="container mx-auto px-4 py-8">
-        {!imageUrl ? (
+        {showWelcome ? (
           <WelcomeSection 
             onImageUpload={handleImageUploadWithAuth}
             analyses={analyses}
