@@ -51,22 +51,28 @@ export const UploadSection = ({ onImageUpload }: UploadSectionProps) => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${user.id}/${analysisId}/${Date.now()}.${fileExt}`;
 
-    const { error: uploadError } = await supabase.storage
+    console.log('Uploading file to path:', fileName);
+
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from('analysis-files')
       .upload(fileName, file);
 
     if (uploadError) {
       console.error('Error uploading file:', uploadError);
-      toast.error('Failed to upload file');
+      toast.error(`Failed to upload file: ${uploadError.message}`);
       return null;
     }
 
+    console.log('File uploaded successfully:', uploadData);
+
     // Get the public URL
-    const { data } = supabase.storage
+    const { data: urlData } = supabase.storage
       .from('analysis-files')
       .getPublicUrl(fileName);
 
-    // Save file metadata
+    console.log('Public URL generated:', urlData.publicUrl);
+
+    // Save file metadata to database
     const { error: dbError } = await supabase
       .from('uploaded_files')
       .insert({
@@ -77,7 +83,7 @@ export const UploadSection = ({ onImageUpload }: UploadSectionProps) => {
         file_size: file.size,
         storage_path: fileName,
         upload_type: 'file',
-        public_url: data.publicUrl
+        public_url: urlData.publicUrl
       });
 
     if (dbError) {
@@ -86,7 +92,7 @@ export const UploadSection = ({ onImageUpload }: UploadSectionProps) => {
       return null;
     }
 
-    return data.publicUrl;
+    return urlData.publicUrl;
   };
 
   const saveUrlUpload = async (url: string, type: 'url' | 'figma' | 'website', analysisId: string) => {
@@ -129,6 +135,8 @@ export const UploadSection = ({ onImageUpload }: UploadSectionProps) => {
       setIsProcessing(true);
       
       try {
+        console.log('Starting file upload process for:', file.name);
+        
         // Create analysis first
         const analysisId = await createAnalysis();
         if (!analysisId) {
@@ -136,12 +144,16 @@ export const UploadSection = ({ onImageUpload }: UploadSectionProps) => {
           return;
         }
 
+        console.log('Created analysis with ID:', analysisId);
+
         // Upload file to storage
         const publicUrl = await uploadFileToStorage(file, analysisId);
         if (!publicUrl) {
           setIsProcessing(false);
           return;
         }
+
+        console.log('File upload completed, public URL:', publicUrl);
 
         // Use the actual uploaded file URL
         onImageUpload(publicUrl);
@@ -173,6 +185,8 @@ export const UploadSection = ({ onImageUpload }: UploadSectionProps) => {
     setIsProcessing(true);
     
     try {
+      console.log('Processing website URL:', url);
+      
       // Create analysis first
       const analysisId = await createAnalysis();
       if (!analysisId) {
@@ -187,7 +201,7 @@ export const UploadSection = ({ onImageUpload }: UploadSectionProps) => {
         return;
       }
 
-      // For demo purposes, we'll still use a placeholder image
+      // For demo purposes, we'll use a placeholder image
       // In a real implementation, you'd capture a screenshot of the website
       onImageUpload('https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=800&h=600&fit=crop');
       toast.success('Website URL saved successfully!');
@@ -214,6 +228,8 @@ export const UploadSection = ({ onImageUpload }: UploadSectionProps) => {
     setIsProcessing(true);
     
     try {
+      console.log('Processing Figma URL:', figmaUrl);
+      
       // Create analysis first
       const analysisId = await createAnalysis();
       if (!analysisId) {
@@ -228,7 +244,7 @@ export const UploadSection = ({ onImageUpload }: UploadSectionProps) => {
         return;
       }
 
-      // For demo purposes, we'll still use a placeholder image
+      // For demo purposes, we'll use a placeholder image
       // In a real implementation, you'd use Figma's API to get the design
       onImageUpload('https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=800&h=600&fit=crop');
       toast.success('Figma URL saved successfully!');
@@ -245,6 +261,8 @@ export const UploadSection = ({ onImageUpload }: UploadSectionProps) => {
     setIsProcessing(true);
     
     try {
+      console.log('Loading demo design');
+      
       // Create analysis for demo
       const analysisId = await createAnalysis();
       if (!analysisId) {
