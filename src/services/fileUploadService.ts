@@ -17,25 +17,7 @@ export const uploadFileToStorage = async (file: File, analysisId: string) => {
 
     console.log('Uploading file to path:', fileName);
 
-    // First, check if the bucket exists and create it if it doesn't
-    const { data: buckets } = await supabase.storage.listBuckets();
-    const bucketExists = buckets?.some(bucket => bucket.id === 'analysis-files');
-    
-    if (!bucketExists) {
-      console.log('Creating analysis-files bucket...');
-      const { error: bucketError } = await supabase.storage.createBucket('analysis-files', {
-        public: true,
-        allowedMimeTypes: ['image/*'],
-        fileSizeLimit: 50 * 1024 * 1024 // 50MB
-      });
-      
-      if (bucketError) {
-        console.error('Error creating bucket:', bucketError);
-        toast.error('Failed to create storage bucket');
-        return null;
-      }
-    }
-
+    // Upload file directly to the analysis-files bucket
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('analysis-files')
       .upload(fileName, file, {
@@ -60,7 +42,7 @@ export const uploadFileToStorage = async (file: File, analysisId: string) => {
 
     // Verify the file was uploaded by trying to access it
     try {
-      const response = await fetch(urlData.publicUrl);
+      const response = await fetch(urlData.publicUrl, { method: 'HEAD' });
       if (!response.ok) {
         throw new Error(`File not accessible: ${response.status}`);
       }
