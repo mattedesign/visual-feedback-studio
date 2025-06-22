@@ -13,6 +13,7 @@ interface UseUploadConfirmationActionsProps {
   setActiveAnnotation: (id: string | null) => void;
   setShowUploadConfirmation: (show: boolean) => void;
   setUploadedAnalysis: (analysis: AnalysisWithFiles | null) => void;
+  setHasPendingConfirmation: (pending: boolean) => void;
 }
 
 export const useUploadConfirmationActions = ({
@@ -23,6 +24,7 @@ export const useUploadConfirmationActions = ({
   setActiveAnnotation,
   setShowUploadConfirmation,
   setUploadedAnalysis,
+  setHasPendingConfirmation,
 }: UseUploadConfirmationActionsProps) => {
   const handleViewLatestAnalysis = useCallback(async () => {
     if (!uploadedAnalysis) return;
@@ -52,27 +54,30 @@ export const useUploadConfirmationActions = ({
       setAnnotations(existingAnnotations);
       setActiveAnnotation(null);
       
-      // Hide confirmation dialog
+      // Clear confirmation dialog and pending state
       setShowUploadConfirmation(false);
       setUploadedAnalysis(null);
+      setHasPendingConfirmation(false);
       
       toast.success(`Loaded analysis: ${uploadedAnalysis.title}`);
     } catch (error) {
       console.error('Error loading uploaded analysis:', error);
       toast.error('Failed to load the uploaded analysis');
     }
-  }, [uploadedAnalysis, setCurrentAnalysis, setImageUrl, setAnnotations, setActiveAnnotation, setShowUploadConfirmation, setUploadedAnalysis]);
+  }, [uploadedAnalysis, setCurrentAnalysis, setImageUrl, setAnnotations, setActiveAnnotation, setShowUploadConfirmation, setUploadedAnalysis, setHasPendingConfirmation]);
 
   const handleUploadAnother = useCallback(() => {
     setShowUploadConfirmation(false);
     setUploadedAnalysis(null);
+    setHasPendingConfirmation(false); // Clear pending confirmation state
     toast.success('Ready for another upload!');
-  }, [setShowUploadConfirmation, setUploadedAnalysis]);
+  }, [setShowUploadConfirmation, setUploadedAnalysis, setHasPendingConfirmation]);
 
   const handleDismissConfirmation = useCallback(() => {
     setShowUploadConfirmation(false);
     setUploadedAnalysis(null);
-  }, [setShowUploadConfirmation, setUploadedAnalysis]);
+    setHasPendingConfirmation(false); // Clear pending confirmation state
+  }, [setShowUploadConfirmation, setUploadedAnalysis, setHasPendingConfirmation]);
 
   return {
     handleViewLatestAnalysis,

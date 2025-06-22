@@ -12,6 +12,7 @@ interface UseAnalysisLoaderProps {
   setAnalyses: (analyses: AnalysisWithFiles[]) => void;
   setIsLoadingAnalyses: (loading: boolean) => void;
   isUploadInProgress: boolean;
+  hasPendingConfirmation: boolean;
   currentAnalysis: AnalysisWithFiles | null;
 }
 
@@ -22,19 +23,20 @@ export const useAnalysisLoader = ({
   setAnalyses,
   setIsLoadingAnalyses,
   isUploadInProgress,
+  hasPendingConfirmation,
   currentAnalysis,
 }: UseAnalysisLoaderProps) => {
   const loadAnalyses = useCallback(async () => {
-    console.log('loadAnalyses called, isUploadInProgress:', isUploadInProgress);
+    console.log('loadAnalyses called, isUploadInProgress:', isUploadInProgress, 'hasPendingConfirmation:', hasPendingConfirmation);
     
     try {
       setIsLoadingAnalyses(true);
       const userAnalyses = await getUserAnalyses();
       setAnalyses(userAnalyses);
       
-      // CRITICAL: Do not auto-load any analysis if upload is in progress
-      if (isUploadInProgress) {
-        console.log('Upload in progress, skipping auto-load of recent analysis');
+      // CRITICAL: Do not auto-load any analysis if upload is in progress OR has pending confirmation
+      if (isUploadInProgress || hasPendingConfirmation) {
+        console.log('Upload in progress or pending confirmation, skipping auto-load of recent analysis');
         return;
       }
 
@@ -50,7 +52,7 @@ export const useAnalysisLoader = ({
     } finally {
       setIsLoadingAnalyses(false);
     }
-  }, [setAnalyses, setIsLoadingAnalyses, isUploadInProgress, currentAnalysis]);
+  }, [setAnalyses, setIsLoadingAnalyses, isUploadInProgress, hasPendingConfirmation, currentAnalysis]);
 
   const loadAnalysis = useCallback(async (analysisId: string) => {
     console.log('Loading analysis:', analysisId);

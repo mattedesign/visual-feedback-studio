@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useAnalysisState } from './analysis/useAnalysisState';
 import { useAnalysisLoader } from './analysis/useAnalysisLoader';
 import { useImageUploadHandler } from './analysis/useImageUploadHandler';
@@ -22,6 +22,7 @@ export const useAnalysis = () => {
     isUploadInProgress,
     uploadedAnalysis,
     showUploadConfirmation,
+    hasPendingConfirmation,
     setCurrentAnalysis,
     setAnalyses,
     setImageUrl,
@@ -32,6 +33,7 @@ export const useAnalysis = () => {
     setIsUploadInProgress,
     setUploadedAnalysis,
     setShowUploadConfirmation,
+    setHasPendingConfirmation,
   } = state;
 
   const { loadAnalyses, loadAnalysis } = useAnalysisLoader({
@@ -41,6 +43,7 @@ export const useAnalysis = () => {
     setAnalyses,
     setIsLoadingAnalyses,
     isUploadInProgress,
+    hasPendingConfirmation,
     currentAnalysis,
   });
 
@@ -52,6 +55,7 @@ export const useAnalysis = () => {
     setAnnotations,
     setUploadedAnalysis,
     setShowUploadConfirmation,
+    setHasPendingConfirmation,
   });
 
   const { handleAreaClick, handleDeleteAnnotation } = useAnnotationHandlers({
@@ -88,13 +92,19 @@ export const useAnalysis = () => {
     setActiveAnnotation,
     setShowUploadConfirmation,
     setUploadedAnalysis,
+    setHasPendingConfirmation,
   });
 
-  // Load user analyses on mount - the loader will handle not auto-loading during uploads
-  useEffect(() => {
-    console.log('useAnalysis effect triggered, isUploadInProgress:', isUploadInProgress);
+  // Memoize the loadAnalyses function to prevent unnecessary re-renders
+  const memoizedLoadAnalyses = useCallback(() => {
+    console.log('useAnalysis effect triggered, isUploadInProgress:', isUploadInProgress, 'hasPendingConfirmation:', hasPendingConfirmation);
     loadAnalyses();
   }, [loadAnalyses]);
+
+  // Load user analyses on mount - only run once and when upload state changes
+  useEffect(() => {
+    memoizedLoadAnalyses();
+  }, [memoizedLoadAnalyses]);
 
   return {
     currentAnalysis,
@@ -107,6 +117,7 @@ export const useAnalysis = () => {
     isUploadInProgress,
     uploadedAnalysis,
     showUploadConfirmation,
+    hasPendingConfirmation,
     handleImageUpload,
     handleAreaClick,
     handleAnalyze,

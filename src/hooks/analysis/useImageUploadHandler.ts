@@ -12,6 +12,7 @@ interface UseImageUploadHandlerProps {
   setAnnotations: (annotations: Annotation[]) => void;
   setUploadedAnalysis: (analysis: AnalysisWithFiles | null) => void;
   setShowUploadConfirmation: (show: boolean) => void;
+  setHasPendingConfirmation: (pending: boolean) => void;
 }
 
 export const useImageUploadHandler = ({
@@ -22,6 +23,7 @@ export const useImageUploadHandler = ({
   setAnnotations,
   setUploadedAnalysis,
   setShowUploadConfirmation,
+  setHasPendingConfirmation,
 }: UseImageUploadHandlerProps) => {
   const handleImageUpload = useCallback(async (uploadedImageUrl: string) => {
     console.log('Handling image upload with URL:', uploadedImageUrl);
@@ -45,6 +47,7 @@ export const useImageUploadHandler = ({
         const latestAnalysis = userAnalyses[0];
         setUploadedAnalysis(latestAnalysis);
         setShowUploadConfirmation(true);
+        setHasPendingConfirmation(true); // Set pending confirmation state
         
         console.log('Upload completed, analysis ready for confirmation:', latestAnalysis.id);
       }
@@ -56,7 +59,7 @@ export const useImageUploadHandler = ({
     } finally {
       setIsUploadInProgress(false);
     }
-  }, [setIsUploadInProgress, setAnalyses, setUploadedAnalysis, setShowUploadConfirmation]);
+  }, [setIsUploadInProgress, setAnalyses, setUploadedAnalysis, setShowUploadConfirmation, setHasPendingConfirmation]);
 
   return {
     handleImageUpload,
