@@ -43,38 +43,47 @@ export type Database = {
         Row: {
           analysis_id: string
           created_at: string
+          figma_url: string | null
           file_name: string
           file_size: number
           file_type: string
           id: string
           original_url: string | null
+          public_url: string | null
           storage_path: string
           upload_type: string
           user_id: string
+          website_url: string | null
         }
         Insert: {
           analysis_id: string
           created_at?: string
+          figma_url?: string | null
           file_name: string
           file_size: number
           file_type: string
           id?: string
           original_url?: string | null
+          public_url?: string | null
           storage_path: string
           upload_type?: string
           user_id: string
+          website_url?: string | null
         }
         Update: {
           analysis_id?: string
           created_at?: string
+          figma_url?: string | null
           file_name?: string
           file_size?: number
           file_type?: string
           id?: string
           original_url?: string | null
+          public_url?: string | null
           storage_path?: string
           upload_type?: string
           user_id?: string
+          website_url?: string | null
         }
         Relationships: [
           {

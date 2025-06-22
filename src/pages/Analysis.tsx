@@ -38,84 +38,14 @@ const Analysis = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const createAnalysis = async () => {
-    if (!user) return null;
-
-    const { data, error } = await supabase
-      .from('analyses')
-      .insert({
-        user_id: user.id,
-        title: 'New Design Analysis',
-        status: 'pending'
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error creating analysis:', error);
-      toast.error('Failed to create analysis');
-      return null;
-    }
-
-    return data.id;
-  };
-
-  const uploadFileToStorage = async (file: File, analysisId: string) => {
-    if (!user) return null;
-
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${user.id}/${analysisId}/${Date.now()}.${fileExt}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('analysis-files')
-      .upload(fileName, file);
-
-    if (uploadError) {
-      console.error('Error uploading file:', uploadError);
-      toast.error('Failed to upload file');
-      return null;
-    }
-
-    // Save file metadata
-    const { error: dbError } = await supabase
-      .from('uploaded_files')
-      .insert({
-        analysis_id: analysisId,
-        user_id: user.id,
-        file_name: file.name,
-        file_type: file.type,
-        file_size: file.size,
-        storage_path: fileName,
-        upload_type: 'file'
-      });
-
-    if (dbError) {
-      console.error('Error saving file metadata:', dbError);
-      toast.error('Failed to save file information');
-      return null;
-    }
-
-    const { data } = supabase.storage
-      .from('analysis-files')
-      .getPublicUrl(fileName);
-
-    return data.publicUrl;
-  };
-
   const handleImageUpload = async (uploadedImageUrl: string) => {
     if (!user) {
       toast.error('Please sign in to upload files');
       return;
     }
 
-    // Create analysis first
-    const analysisId = await createAnalysis();
-    if (!analysisId) return;
-
-    setCurrentAnalysis(analysisId);
-
-    // For demo purposes, we'll use the provided URL directly
-    // In production, you'd want to handle actual file uploads
+    // The UploadSection component now handles creating the analysis
+    // and uploading the file, so we just need to set the image URL
     setImageUrl(uploadedImageUrl);
     toast.success('Design uploaded successfully!');
   };
