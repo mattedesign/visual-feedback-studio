@@ -90,8 +90,9 @@ export const useAnalysis = () => {
     setUploadedAnalysis,
   });
 
-  // Load user analyses on mount, but don't auto-load analysis if upload is in progress
+  // Load user analyses on mount - the loader will handle not auto-loading during uploads
   useEffect(() => {
+    console.log('useAnalysis effect triggered, isUploadInProgress:', isUploadInProgress);
     loadAnalyses();
   }, [loadAnalyses]);
 
