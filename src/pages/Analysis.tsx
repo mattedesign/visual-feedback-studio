@@ -12,14 +12,18 @@ import { toast } from 'sonner';
 const Analysis = () => {
   const { user, loading, signOut } = useAuth();
   const {
+    currentAnalysis,
+    analyses,
     imageUrl,
     annotations,
     activeAnnotation,
     isAnalyzing,
+    isLoadingAnalyses,
     handleImageUpload,
     handleAreaClick,
     handleAnalyze,
     handleNewAnalysis,
+    loadAnalysis,
     setActiveAnnotation,
   } = useAnalysis();
   const navigate = useNavigate();
@@ -51,7 +55,12 @@ const Analysis = () => {
       
       <main className="container mx-auto px-4 py-8">
         {!imageUrl ? (
-          <WelcomeSection onImageUpload={handleImageUploadWithAuth} />
+          <WelcomeSection 
+            onImageUpload={handleImageUploadWithAuth}
+            analyses={analyses}
+            onLoadAnalysis={loadAnalysis}
+            isLoadingAnalyses={isLoadingAnalyses}
+          />
         ) : (
           <AnalysisLayout
             imageUrl={imageUrl}

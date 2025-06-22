@@ -1,17 +1,78 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Annotation } from '@/types/analysis';
 import { toast } from 'sonner';
+import { getUserAnalyses, getMostRecentAnalysis, getAnalysisById, getFileUrl, AnalysisWithFiles } from '@/services/analysisDataService';
 
 export const useAnalysis = () => {
-  const [currentAnalysis, setCurrentAnalysis] = useState<string | null>(null);
+  const [currentAnalysis, setCurrentAnalysis] = useState<AnalysisWithFiles | null>(null);
+  const [analyses, setAnalyses] = useState<AnalysisWithFiles[]>([]);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [activeAnnotation, setActiveAnnotation] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isLoadingAnalyses, setIsLoadingAnalyses] = useState(true);
+
+  // Load user analyses on mount
+  useEffect(() => {
+    const loadAnalyses = async () => {
+      setIsLoadingAnalyses(true);
+      try {
+        const userAnalyses = await getUserAnalyses();
+        setAnalyses(userAnalyses);
+        
+        // Auto-load most recent analysis if available
+        const recentAnalysis = userAnalyses.length > 0 ? userAnalyses[0] : null;
+        if (recentAnalysis && recentAnalysis.files.length > 0) {
+          await loadAnalysis(recentAnalysis.id);
+        }
+      } catch (error) {
+        console.error('Error loading analyses:', error);
+      } finally {
+        setIsLoadingAnalyses(false);
+      }
+    };
+
+    loadAnalyses();
+  }, []);
+
+  const loadAnalysis = async (analysisId: string) => {
+    try {
+      const analysis = await getAnalysisById(analysisId);
+      if (analysis && analysis.files.length > 0) {
+        setCurrentAnalysis(analysis);
+        
+        // Get the first file URL
+        const firstFile = analysis.files[0];
+        const fileUrl = getFileUrl(firstFile);
+        
+        if (fileUrl) {
+          setImageUrl(fileUrl);
+          toast.success(`Loaded analysis: ${analysis.title}`);
+        } else {
+          toast.error('No valid file URL found for this analysis');
+        }
+      } else {
+        toast.error('Analysis not found or has no files');
+      }
+    } catch (error) {
+      console.error('Error loading analysis:', error);
+      toast.error('Failed to load analysis');
+    }
+  };
 
   const handleImageUpload = async (uploadedImageUrl: string) => {
     setImageUrl(uploadedImageUrl);
+    
+    // Refresh analyses list to include the new upload
+    const userAnalyses = await getUserAnalyses();
+    setAnalyses(userAnalyses);
+    
+    // Set the most recent analysis as current
+    if (userAnalyses.length > 0) {
+      setCurrentAnalysis(userAnalyses[0]);
+    }
+    
     toast.success('Design uploaded successfully!');
   };
 
@@ -86,14 +147,17 @@ export const useAnalysis = () => {
 
   return {
     currentAnalysis,
+    analyses,
     imageUrl,
     annotations,
     activeAnnotation,
     isAnalyzing,
+    isLoadingAnalyses,
     handleImageUpload,
     handleAreaClick,
     handleAnalyze,
     handleNewAnalysis,
+    loadAnalysis,
     setActiveAnnotation,
   };
 };
