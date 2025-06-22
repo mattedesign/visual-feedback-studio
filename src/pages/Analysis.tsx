@@ -129,8 +129,8 @@ const Analysis = () => {
       category: 'ux',
       severity: 'suggested',
       feedback: `Clicked area at ${coordinates.x.toFixed(1)}%, ${coordinates.y.toFixed(1)}%. Consider improving the user experience in this section.`,
-      implementationEffort: 'Medium',
-      businessImpact: 'High'
+      implementationEffort: 'medium',
+      businessImpact: 'high'
     };
 
     setAnnotations(prev => [...prev, newAnnotation]);
@@ -152,8 +152,8 @@ const Analysis = () => {
           category: 'ux',
           severity: 'critical',
           feedback: 'The call-to-action button is too small and lacks sufficient contrast. Consider increasing size by 50% and using a more prominent color.',
-          implementationEffort: 'Low',
-          businessImpact: 'High'
+          implementationEffort: 'low',
+          businessImpact: 'high'
         },
         {
           id: '2',
@@ -162,8 +162,8 @@ const Analysis = () => {
           category: 'accessibility',
           severity: 'suggested',
           feedback: 'Text hierarchy could be improved. The heading appears to lack proper semantic structure for screen readers.',
-          implementationEffort: 'Medium',
-          businessImpact: 'Medium'
+          implementationEffort: 'medium',
+          businessImpact: 'medium'
         },
         {
           id: '3',
@@ -172,8 +172,8 @@ const Analysis = () => {
           category: 'visual',
           severity: 'enhancement',
           feedback: 'The spacing between elements feels cramped. Consider adding more whitespace to improve visual breathing room.',
-          implementationEffort: 'Low',
-          businessImpact: 'Medium'
+          implementationEffort: 'low',
+          businessImpact: 'medium'
         }
       ];
 
@@ -245,7 +245,7 @@ const Analysis = () => {
               <FeedbackPanel
                 annotations={annotations}
                 activeAnnotation={activeAnnotation}
-                onAnnotationClick={setActiveAnnotation}
+                onAnnotationSelect={setActiveAnnotation}
                 onNewAnalysis={() => {
                   setImageUrl(null);
                   setAnnotations([]);
