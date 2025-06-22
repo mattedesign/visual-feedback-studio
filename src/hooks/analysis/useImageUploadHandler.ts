@@ -2,7 +2,6 @@
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { getUserAnalyses, AnalysisWithFiles } from '@/services/analysisDataService';
-import { getAnnotationsForAnalysis } from '@/services/annotationsService';
 import { Annotation } from '@/types/analysis';
 
 interface UseImageUploadHandlerProps {
@@ -11,6 +10,8 @@ interface UseImageUploadHandlerProps {
   setAnalyses: (analyses: AnalysisWithFiles[]) => void;
   setCurrentAnalysis: (analysis: AnalysisWithFiles | null) => void;
   setAnnotations: (annotations: Annotation[]) => void;
+  setUploadedAnalysis: (analysis: AnalysisWithFiles | null) => void;
+  setShowUploadConfirmation: (show: boolean) => void;
 }
 
 export const useImageUploadHandler = ({
@@ -19,6 +20,8 @@ export const useImageUploadHandler = ({
   setAnalyses,
   setCurrentAnalysis,
   setAnnotations,
+  setUploadedAnalysis,
+  setShowUploadConfirmation,
 }: UseImageUploadHandlerProps) => {
   const handleImageUpload = useCallback(async (uploadedImageUrl: string) => {
     console.log('Handling image upload with URL:', uploadedImageUrl);
@@ -33,33 +36,27 @@ export const useImageUploadHandler = ({
         throw new Error(`Uploaded file not accessible: ${response.status} ${response.statusText}`);
       }
       
-      setImageUrl(uploadedImageUrl);
-      
       // Refresh analyses list to include the new upload
       const userAnalyses = await getUserAnalyses();
       setAnalyses(userAnalyses);
       
-      // Set the most recent analysis as current and clear previous annotations
+      // Store the uploaded analysis for confirmation but don't auto-load it
       if (userAnalyses.length > 0) {
         const latestAnalysis = userAnalyses[0];
-        setCurrentAnalysis(latestAnalysis);
+        setUploadedAnalysis(latestAnalysis);
+        setShowUploadConfirmation(true);
         
-        // Load annotations for the new analysis
-        const existingAnnotations = await getAnnotationsForAnalysis(latestAnalysis.id);
-        setAnnotations(existingAnnotations);
-        
-        console.log('Current analysis set to:', latestAnalysis.id);
+        console.log('Upload completed, analysis ready for confirmation:', latestAnalysis.id);
       }
       
-      toast.success('Design uploaded successfully!');
+      toast.success('Design uploaded successfully! Choose an action below.');
     } catch (error) {
       console.error('Error handling image upload:', error);
       toast.error(`Upload verification failed: ${error.message}`);
-      setImageUrl(null);
     } finally {
       setIsUploadInProgress(false);
     }
-  }, [setIsUploadInProgress, setImageUrl, setAnalyses, setCurrentAnalysis, setAnnotations]);
+  }, [setIsUploadInProgress, setAnalyses, setUploadedAnalysis, setShowUploadConfirmation]);
 
   return {
     handleImageUpload,

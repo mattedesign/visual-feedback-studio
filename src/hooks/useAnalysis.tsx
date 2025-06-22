@@ -6,6 +6,7 @@ import { useImageUploadHandler } from './analysis/useImageUploadHandler';
 import { useAnnotationHandlers } from './analysis/useAnnotationHandlers';
 import { useAIAnalysis } from './analysis/useAIAnalysis';
 import { useAnalysisActions } from './analysis/useAnalysisActions';
+import { useUploadConfirmationActions } from './analysis/useUploadConfirmationActions';
 
 export const useAnalysis = () => {
   const state = useAnalysisState();
@@ -19,6 +20,8 @@ export const useAnalysis = () => {
     isAnalyzing,
     isLoadingAnalyses,
     isUploadInProgress,
+    uploadedAnalysis,
+    showUploadConfirmation,
     setCurrentAnalysis,
     setAnalyses,
     setImageUrl,
@@ -27,6 +30,8 @@ export const useAnalysis = () => {
     setIsAnalyzing,
     setIsLoadingAnalyses,
     setIsUploadInProgress,
+    setUploadedAnalysis,
+    setShowUploadConfirmation,
   } = state;
 
   const { loadAnalyses, loadAnalysis } = useAnalysisLoader({
@@ -45,6 +50,8 @@ export const useAnalysis = () => {
     setAnalyses,
     setCurrentAnalysis,
     setAnnotations,
+    setUploadedAnalysis,
+    setShowUploadConfirmation,
   });
 
   const { handleAreaClick, handleDeleteAnnotation } = useAnnotationHandlers({
@@ -69,6 +76,20 @@ export const useAnalysis = () => {
     setIsUploadInProgress,
   });
 
+  const {
+    handleViewLatestAnalysis,
+    handleUploadAnother,
+    handleDismissConfirmation,
+  } = useUploadConfirmationActions({
+    uploadedAnalysis,
+    setCurrentAnalysis,
+    setImageUrl,
+    setAnnotations,
+    setActiveAnnotation,
+    setShowUploadConfirmation,
+    setUploadedAnalysis,
+  });
+
   // Load user analyses on mount, but don't auto-load analysis if upload is in progress
   useEffect(() => {
     loadAnalyses();
@@ -83,6 +104,8 @@ export const useAnalysis = () => {
     isAnalyzing,
     isLoadingAnalyses,
     isUploadInProgress,
+    uploadedAnalysis,
+    showUploadConfirmation,
     handleImageUpload,
     handleAreaClick,
     handleAnalyze,
@@ -90,5 +113,8 @@ export const useAnalysis = () => {
     loadAnalysis,
     setActiveAnnotation,
     handleDeleteAnnotation,
+    handleViewLatestAnalysis,
+    handleUploadAnother,
+    handleDismissConfirmation,
   };
 };

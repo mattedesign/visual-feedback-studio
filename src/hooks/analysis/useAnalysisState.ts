@@ -12,6 +12,8 @@ export const useAnalysisState = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isLoadingAnalyses, setIsLoadingAnalyses] = useState(true);
   const [isUploadInProgress, setIsUploadInProgress] = useState(false);
+  const [uploadedAnalysis, setUploadedAnalysis] = useState<AnalysisWithFiles | null>(null);
+  const [showUploadConfirmation, setShowUploadConfirmation] = useState(false);
 
   return {
     currentAnalysis,
@@ -30,5 +32,9 @@ export const useAnalysisState = () => {
     setIsLoadingAnalyses,
     isUploadInProgress,
     setIsUploadInProgress,
+    uploadedAnalysis,
+    setUploadedAnalysis,
+    showUploadConfirmation,
+    setShowUploadConfirmation,
   };
 };

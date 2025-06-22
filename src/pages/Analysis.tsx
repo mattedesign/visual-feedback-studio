@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { WelcomeSection } from '@/components/analysis/WelcomeSection';
 import { AnalysisLayout } from '@/components/analysis/AnalysisLayout';
+import { UploadConfirmationDialog } from '@/components/upload/UploadConfirmationDialog';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,6 +21,8 @@ const Analysis = () => {
     isAnalyzing,
     isLoadingAnalyses,
     isUploadInProgress,
+    uploadedAnalysis,
+    showUploadConfirmation,
     handleImageUpload,
     handleAreaClick,
     handleAnalyze,
@@ -27,6 +30,9 @@ const Analysis = () => {
     loadAnalysis,
     setActiveAnnotation,
     handleDeleteAnnotation,
+    handleViewLatestAnalysis,
+    handleUploadAnother,
+    handleDismissConfirmation,
   } = useAnalysis();
   const navigate = useNavigate();
 
@@ -51,8 +57,8 @@ const Analysis = () => {
     return <AuthGuard />;
   }
 
-  // Show welcome section if no image is loaded or upload is in progress
-  const showWelcome = !imageUrl || isUploadInProgress;
+  // Show welcome section if no image is loaded or upload is in progress (but not showing confirmation)
+  const showWelcome = (!imageUrl || isUploadInProgress) && !showUploadConfirmation;
 
   return (
     <div className="min-h-screen bg-slate-900 text-white">
@@ -80,6 +86,14 @@ const Analysis = () => {
           />
         )}
       </main>
+
+      <UploadConfirmationDialog
+        open={showUploadConfirmation}
+        uploadedAnalysis={uploadedAnalysis}
+        onViewAnalysis={handleViewLatestAnalysis}
+        onUploadAnother={handleUploadAnother}
+        onDismiss={handleDismissConfirmation}
+      />
     </div>
   );
 };
