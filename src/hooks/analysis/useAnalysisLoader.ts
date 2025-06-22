@@ -52,7 +52,7 @@ export const useAnalysisLoader = ({
     } finally {
       setIsLoadingAnalyses(false);
     }
-  }, [setAnalyses, setIsLoadingAnalyses, isUploadInProgress, hasPendingConfirmation, currentAnalysis]);
+  }, [setAnalyses, setIsLoadingAnalyses, isUploadInProgress, hasPendingConfirmation, currentAnalysis, setCurrentAnalysis, setImageUrl, setAnnotations]);
 
   const loadAnalysis = useCallback(async (analysisId: string) => {
     console.log('Loading analysis:', analysisId);

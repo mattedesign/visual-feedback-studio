@@ -95,16 +95,11 @@ export const useAnalysis = () => {
     setHasPendingConfirmation,
   });
 
-  // Memoize the loadAnalyses function to prevent unnecessary re-renders
-  const memoizedLoadAnalyses = useCallback(() => {
-    console.log('useAnalysis effect triggered, isUploadInProgress:', isUploadInProgress, 'hasPendingConfirmation:', hasPendingConfirmation);
-    loadAnalyses();
-  }, [loadAnalyses]);
-
-  // Load user analyses on mount - only run once and when upload state changes
+  // Load user analyses on mount - run only once
   useEffect(() => {
-    memoizedLoadAnalyses();
-  }, [memoizedLoadAnalyses]);
+    console.log('Initial load effect running');
+    loadAnalyses();
+  }, []); // Empty dependency array - only run once on mount
 
   return {
     currentAnalysis,
