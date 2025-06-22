@@ -25,6 +25,7 @@ const Analysis = () => {
     handleNewAnalysis,
     loadAnalysis,
     setActiveAnnotation,
+    handleDeleteAnnotation,
   } = useAnalysis();
   const navigate = useNavigate();
 
@@ -71,6 +72,7 @@ const Analysis = () => {
             activeAnnotation={activeAnnotation}
             onAnnotationClick={setActiveAnnotation}
             onNewAnalysis={handleNewAnalysis}
+            onDeleteAnnotation={handleDeleteAnnotation}
           />
         )}
       </main>

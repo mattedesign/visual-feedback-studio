@@ -1,12 +1,18 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getAnnotationsForAnalysis } from './annotationsService';
 
 export interface AnalysisWithFiles {
   id: string;
   title: string;
   status: string;
   created_at: string;
+  design_type?: string;
+  business_goals?: string[];
+  target_audience?: string;
+  analysis_prompt?: string;
+  ai_model_used?: string;
+  analysis_completed_at?: string;
   files: {
     id: string;
     file_name: string;
@@ -30,6 +36,12 @@ export const getUserAnalyses = async (): Promise<AnalysisWithFiles[]> => {
       title,
       status,
       created_at,
+      design_type,
+      business_goals,
+      target_audience,
+      analysis_prompt,
+      ai_model_used,
+      analysis_completed_at,
       uploaded_files (
         id,
         file_name,
@@ -67,6 +79,12 @@ export const getAnalysisById = async (analysisId: string): Promise<AnalysisWithF
       title,
       status,
       created_at,
+      design_type,
+      business_goals,
+      target_audience,
+      analysis_prompt,
+      ai_model_used,
+      analysis_completed_at,
       uploaded_files (
         id,
         file_name,
@@ -91,6 +109,48 @@ export const getAnalysisById = async (analysisId: string): Promise<AnalysisWithF
     ...analysis,
     files: analysis.uploaded_files || []
   };
+};
+
+export const updateAnalysisStatus = async (analysisId: string, status: string, completedAt?: string) => {
+  const updateData: any = { status };
+  if (completedAt) {
+    updateData.analysis_completed_at = completedAt;
+  }
+
+  const { error } = await supabase
+    .from('analyses')
+    .update(updateData)
+    .eq('id', analysisId);
+
+  if (error) {
+    console.error('Error updating analysis status:', error);
+    return false;
+  }
+
+  return true;
+};
+
+export const updateAnalysisContext = async (
+  analysisId: string, 
+  context: {
+    design_type?: string;
+    business_goals?: string[];
+    target_audience?: string;
+    analysis_prompt?: string;
+    ai_model_used?: string;
+  }
+) => {
+  const { error } = await supabase
+    .from('analyses')
+    .update(context)
+    .eq('id', analysisId);
+
+  if (error) {
+    console.error('Error updating analysis context:', error);
+    return false;
+  }
+
+  return true;
 };
 
 export const getMostRecentAnalysis = async (): Promise<AnalysisWithFiles | null> => {

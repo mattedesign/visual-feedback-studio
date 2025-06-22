@@ -2,7 +2,20 @@
 import { useState, useEffect } from 'react';
 import { Annotation } from '@/types/analysis';
 import { toast } from 'sonner';
-import { getUserAnalyses, getMostRecentAnalysis, getAnalysisById, getFileUrl, AnalysisWithFiles } from '@/services/analysisDataService';
+import { 
+  getUserAnalyses, 
+  getMostRecentAnalysis, 
+  getAnalysisById, 
+  getFileUrl, 
+  AnalysisWithFiles,
+  updateAnalysisStatus,
+  updateAnalysisContext
+} from '@/services/analysisDataService';
+import { 
+  saveAnnotation, 
+  getAnnotationsForAnalysis, 
+  deleteAnnotation 
+} from '@/services/annotationsService';
 
 export const useAnalysis = () => {
   const [currentAnalysis, setCurrentAnalysis] = useState<AnalysisWithFiles | null>(null);
@@ -48,6 +61,11 @@ export const useAnalysis = () => {
         
         if (fileUrl) {
           setImageUrl(fileUrl);
+          
+          // Load existing annotations for this analysis
+          const existingAnnotations = await getAnnotationsForAnalysis(analysisId);
+          setAnnotations(existingAnnotations);
+          
           toast.success(`Loaded analysis: ${analysis.title}`);
         } else {
           toast.error('No valid file URL found for this analysis');
@@ -68,17 +86,26 @@ export const useAnalysis = () => {
     const userAnalyses = await getUserAnalyses();
     setAnalyses(userAnalyses);
     
-    // Set the most recent analysis as current
+    // Set the most recent analysis as current and clear previous annotations
     if (userAnalyses.length > 0) {
-      setCurrentAnalysis(userAnalyses[0]);
+      const latestAnalysis = userAnalyses[0];
+      setCurrentAnalysis(latestAnalysis);
+      
+      // Load annotations for the new analysis
+      const existingAnnotations = await getAnnotationsForAnalysis(latestAnalysis.id);
+      setAnnotations(existingAnnotations);
     }
     
     toast.success('Design uploaded successfully!');
   };
 
-  const handleAreaClick = (coordinates: { x: number; y: number }) => {
-    const newAnnotation: Annotation = {
-      id: Date.now().toString(),
+  const handleAreaClick = async (coordinates: { x: number; y: number }) => {
+    if (!currentAnalysis) {
+      toast.error('No analysis selected');
+      return;
+    }
+
+    const newAnnotationData: Omit<Annotation, 'id'> = {
       x: coordinates.x,
       y: coordinates.y,
       category: 'ux',
@@ -88,54 +115,86 @@ export const useAnalysis = () => {
       businessImpact: 'high'
     };
 
-    setAnnotations(prev => [...prev, newAnnotation]);
-    setActiveAnnotation(newAnnotation.id);
+    const savedAnnotation = await saveAnnotation(newAnnotationData, currentAnalysis.id);
+    if (savedAnnotation) {
+      setAnnotations(prev => [...prev, savedAnnotation]);
+      setActiveAnnotation(savedAnnotation.id);
+      toast.success('Annotation added');
+    }
   };
 
   const handleAnalyze = async () => {
-    if (!imageUrl) return;
+    if (!imageUrl || !currentAnalysis) {
+      toast.error('No design or analysis selected');
+      return;
+    }
 
     setIsAnalyzing(true);
     
-    // Simulate AI analysis
-    setTimeout(() => {
-      const sampleAnnotations: Annotation[] = [
-        {
-          id: '1',
-          x: 25,
-          y: 30,
-          category: 'ux',
-          severity: 'critical',
-          feedback: 'The call-to-action button is too small and lacks sufficient contrast. Consider increasing size by 50% and using a more prominent color.',
-          implementationEffort: 'low',
-          businessImpact: 'high'
-        },
-        {
-          id: '2',
-          x: 70,
-          y: 45,
-          category: 'accessibility',
-          severity: 'suggested',
-          feedback: 'Text hierarchy could be improved. The heading appears to lack proper semantic structure for screen readers.',
-          implementationEffort: 'medium',
-          businessImpact: 'medium'
-        },
-        {
-          id: '3',
-          x: 50,
-          y: 70,
-          category: 'visual',
-          severity: 'enhancement',
-          feedback: 'The spacing between elements feels cramped. Consider adding more whitespace to improve visual breathing room.',
-          implementationEffort: 'low',
-          businessImpact: 'medium'
-        }
-      ];
+    try {
+      // Update analysis status to indicate it's being processed
+      await updateAnalysisStatus(currentAnalysis.id, 'analyzing');
+      
+      // Update analysis context with basic info
+      await updateAnalysisContext(currentAnalysis.id, {
+        analysis_prompt: 'AI-powered design analysis focusing on UX, accessibility, and conversion optimization',
+        ai_model_used: 'gpt-4o-mini'
+      });
+      
+      // Simulate AI analysis (replace with real AI call later)
+      setTimeout(async () => {
+        const sampleAnnotations: Omit<Annotation, 'id'>[] = [
+          {
+            x: 25,
+            y: 30,
+            category: 'ux',
+            severity: 'critical',
+            feedback: 'The call-to-action button is too small and lacks sufficient contrast. Consider increasing size by 50% and using a more prominent color.',
+            implementationEffort: 'low',
+            businessImpact: 'high'
+          },
+          {
+            x: 70,
+            y: 45,
+            category: 'accessibility',
+            severity: 'suggested',
+            feedback: 'Text hierarchy could be improved. The heading appears to lack proper semantic structure for screen readers.',
+            implementationEffort: 'medium',
+            businessImpact: 'medium'
+          },
+          {
+            x: 50,
+            y: 70,
+            category: 'visual',
+            severity: 'enhancement',
+            feedback: 'The spacing between elements feels cramped. Consider adding more whitespace to improve visual breathing room.',
+            implementationEffort: 'low',
+            businessImpact: 'medium'
+          }
+        ];
 
-      setAnnotations(sampleAnnotations);
+        // Save all annotations to database
+        const savedAnnotations: Annotation[] = [];
+        for (const annotationData of sampleAnnotations) {
+          const saved = await saveAnnotation(annotationData, currentAnalysis.id);
+          if (saved) {
+            savedAnnotations.push(saved);
+          }
+        }
+
+        setAnnotations(prev => [...prev, ...savedAnnotations]);
+        
+        // Update analysis status to completed
+        await updateAnalysisStatus(currentAnalysis.id, 'completed', new Date().toISOString());
+        
+        setIsAnalyzing(false);
+        toast.success('Analysis complete!');
+      }, 3000);
+    } catch (error) {
+      console.error('Error during analysis:', error);
       setIsAnalyzing(false);
-      toast.success('Analysis complete!');
-    }, 3000);
+      toast.error('Analysis failed');
+    }
   };
 
   const handleNewAnalysis = () => {
@@ -143,6 +202,17 @@ export const useAnalysis = () => {
     setAnnotations([]);
     setActiveAnnotation(null);
     setCurrentAnalysis(null);
+  };
+
+  const handleDeleteAnnotation = async (annotationId: string) => {
+    const success = await deleteAnnotation(annotationId);
+    if (success) {
+      setAnnotations(prev => prev.filter(ann => ann.id !== annotationId));
+      if (activeAnnotation === annotationId) {
+        setActiveAnnotation(null);
+      }
+      toast.success('Annotation deleted');
+    }
   };
 
   return {
@@ -159,5 +229,6 @@ export const useAnalysis = () => {
     handleNewAnalysis,
     loadAnalysis,
     setActiveAnnotation,
+    handleDeleteAnnotation,
   };
 };

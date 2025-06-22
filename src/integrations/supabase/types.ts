@@ -11,33 +11,101 @@ export type Database = {
     Tables: {
       analyses: {
         Row: {
+          ai_model_used: string | null
+          analysis_completed_at: string | null
+          analysis_prompt: string | null
+          business_goals: string[] | null
           created_at: string
           description: string | null
+          design_type: string | null
           id: string
           status: string
+          target_audience: string | null
           title: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          ai_model_used?: string | null
+          analysis_completed_at?: string | null
+          analysis_prompt?: string | null
+          business_goals?: string[] | null
           created_at?: string
           description?: string | null
+          design_type?: string | null
           id?: string
           status?: string
+          target_audience?: string | null
           title?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          ai_model_used?: string | null
+          analysis_completed_at?: string | null
+          analysis_prompt?: string | null
+          business_goals?: string[] | null
           created_at?: string
           description?: string | null
+          design_type?: string | null
           id?: string
           status?: string
+          target_audience?: string | null
           title?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: []
+      }
+      annotations: {
+        Row: {
+          analysis_id: string
+          business_impact: string
+          category: string
+          created_at: string
+          feedback: string
+          id: string
+          implementation_effort: string
+          severity: string
+          updated_at: string
+          x: number
+          y: number
+        }
+        Insert: {
+          analysis_id: string
+          business_impact: string
+          category: string
+          created_at?: string
+          feedback: string
+          id?: string
+          implementation_effort: string
+          severity: string
+          updated_at?: string
+          x: number
+          y: number
+        }
+        Update: {
+          analysis_id?: string
+          business_impact?: string
+          category?: string
+          created_at?: string
+          feedback?: string
+          id?: string
+          implementation_effort?: string
+          severity?: string
+          updated_at?: string
+          x?: number
+          y?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "annotations_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analyses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       uploaded_files: {
         Row: {
