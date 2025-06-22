@@ -1,190 +1,68 @@
 
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
-import { UploadSection } from '@/components/upload/UploadSection';
-import { DesignViewer } from '@/components/viewer/DesignViewer';
-import { FeedbackPanel } from '@/components/feedback/FeedbackPanel';
 import { Header } from '@/components/layout/Header';
-import { Annotation } from '@/types/analysis';
+import { WelcomeSection } from '@/components/analysis/WelcomeSection';
+import { AnalysisLayout } from '@/components/analysis/AnalysisLayout';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { AuthGuard } from '@/components/auth/AuthGuard';
+import { useAuth } from '@/hooks/useAuth';
+import { useAnalysis } from '@/hooks/useAnalysis';
 import { toast } from 'sonner';
 
 const Analysis = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [currentAnalysis, setCurrentAnalysis] = useState<string | null>(null);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [annotations, setAnnotations] = useState<Annotation[]>([]);
-  const [activeAnnotation, setActiveAnnotation] = useState<string | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const { user, loading, signOut } = useAuth();
+  const {
+    imageUrl,
+    annotations,
+    activeAnnotation,
+    isAnalyzing,
+    handleImageUpload,
+    handleAreaClick,
+    handleAnalyze,
+    handleNewAnalysis,
+    setActiveAnnotation,
+  } = useAnalysis();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    );
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const handleImageUpload = async (uploadedImageUrl: string) => {
+  const handleImageUploadWithAuth = async (uploadedImageUrl: string) => {
     if (!user) {
       toast.error('Please sign in to upload files');
       return;
     }
-
-    // The UploadSection component now handles creating the analysis
-    // and uploading the file, so we just need to set the image URL
-    setImageUrl(uploadedImageUrl);
-    toast.success('Design uploaded successfully!');
-  };
-
-  const handleAreaClick = (coordinates: { x: number; y: number }) => {
-    // Generate a sample annotation for the clicked area
-    const newAnnotation: Annotation = {
-      id: Date.now().toString(),
-      x: coordinates.x,
-      y: coordinates.y,
-      category: 'ux',
-      severity: 'suggested',
-      feedback: `Clicked area at ${coordinates.x.toFixed(1)}%, ${coordinates.y.toFixed(1)}%. Consider improving the user experience in this section.`,
-      implementationEffort: 'medium',
-      businessImpact: 'high'
-    };
-
-    setAnnotations(prev => [...prev, newAnnotation]);
-    setActiveAnnotation(newAnnotation.id);
-  };
-
-  const handleAnalyze = async () => {
-    if (!imageUrl) return;
-
-    setIsAnalyzing(true);
-    
-    // Simulate AI analysis
-    setTimeout(() => {
-      const sampleAnnotations: Annotation[] = [
-        {
-          id: '1',
-          x: 25,
-          y: 30,
-          category: 'ux',
-          severity: 'critical',
-          feedback: 'The call-to-action button is too small and lacks sufficient contrast. Consider increasing size by 50% and using a more prominent color.',
-          implementationEffort: 'low',
-          businessImpact: 'high'
-        },
-        {
-          id: '2',
-          x: 70,
-          y: 45,
-          category: 'accessibility',
-          severity: 'suggested',
-          feedback: 'Text hierarchy could be improved. The heading appears to lack proper semantic structure for screen readers.',
-          implementationEffort: 'medium',
-          businessImpact: 'medium'
-        },
-        {
-          id: '3',
-          x: 50,
-          y: 70,
-          category: 'visual',
-          severity: 'enhancement',
-          feedback: 'The spacing between elements feels cramped. Consider adding more whitespace to improve visual breathing room.',
-          implementationEffort: 'low',
-          businessImpact: 'medium'
-        }
-      ];
-
-      setAnnotations(sampleAnnotations);
-      setIsAnalyzing(false);
-      toast.success('Analysis complete!');
-    }, 3000);
-  };
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    navigate('/auth');
+    handleImageUpload(uploadedImageUrl);
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-white border-t-transparent rounded-full"></div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   if (!user) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">Please Sign In</h1>
-          <p className="text-slate-400 mb-6">You need to be signed in to use the design analysis tool.</p>
-          <button
-            onClick={() => navigate('/auth')}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
-          >
-            Go to Sign In
-          </button>
-        </div>
-      </div>
-    );
+    return <AuthGuard />;
   }
 
   return (
     <div className="min-h-screen bg-slate-900 text-white">
-      <Header user={user} onSignOut={signOut} />
+      <Header user={user} onSignOut={handleSignOut} />
       
       <main className="container mx-auto px-4 py-8">
         {!imageUrl ? (
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-              Design Analysis Tool
-            </h1>
-            <p className="text-xl text-slate-300 mb-8">
-              Upload your design and get AI-powered feedback on UX, accessibility, and conversion optimization
-            </p>
-            <UploadSection onImageUpload={handleImageUpload} />
-          </div>
+          <WelcomeSection onImageUpload={handleImageUploadWithAuth} />
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
-            <div className="lg:col-span-2">
-              <DesignViewer
-                imageUrl={imageUrl}
-                annotations={annotations}
-                onAreaClick={handleAreaClick}
-                onAnalyzeClick={handleAnalyze}
-                isAnalyzing={isAnalyzing}
-                activeAnnotation={activeAnnotation}
-                onAnnotationClick={setActiveAnnotation}
-              />
-            </div>
-            <div className="lg:col-span-1">
-              <FeedbackPanel
-                annotations={annotations}
-                activeAnnotation={activeAnnotation}
-                onAnnotationSelect={setActiveAnnotation}
-                onNewAnalysis={() => {
-                  setImageUrl(null);
-                  setAnnotations([]);
-                  setActiveAnnotation(null);
-                  setCurrentAnalysis(null);
-                }}
-              />
-            </div>
-          </div>
+          <AnalysisLayout
+            imageUrl={imageUrl}
+            annotations={annotations}
+            onAreaClick={handleAreaClick}
+            onAnalyzeClick={handleAnalyze}
+            isAnalyzing={isAnalyzing}
+            activeAnnotation={activeAnnotation}
+            onAnnotationClick={setActiveAnnotation}
+            onNewAnalysis={handleNewAnalysis}
+          />
         )}
       </main>
     </div>
