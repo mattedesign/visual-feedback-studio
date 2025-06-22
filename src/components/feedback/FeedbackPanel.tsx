@@ -1,6 +1,5 @@
-
 import { useState } from 'react';
-import { Filter, Download, Share2, RefreshCw, ArrowLeft } from 'lucide-react';
+import { Filter, Download, Share2, RefreshCw, ArrowLeft, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +11,7 @@ interface FeedbackPanelProps {
   activeAnnotation: string | null;
   onAnnotationSelect: (id: string) => void;
   onNewAnalysis: () => void;
+  onDeleteAnnotation?: (id: string) => void;
 }
 
 export const FeedbackPanel = ({
@@ -19,6 +19,7 @@ export const FeedbackPanel = ({
   activeAnnotation,
   onAnnotationSelect,
   onNewAnalysis,
+  onDeleteAnnotation,
 }: FeedbackPanelProps) => {
   const [filter, setFilter] = useState<string>('all');
 
@@ -49,6 +50,13 @@ export const FeedbackPanel = ({
   const criticalCount = annotations.filter(a => a.severity === 'critical').length;
   const suggestedCount = annotations.filter(a => a.severity === 'suggested').length;
   const enhancementCount = annotations.filter(a => a.severity === 'enhancement').length;
+
+  const handleDeleteAnnotation = (annotationId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (onDeleteAnnotation) {
+      onDeleteAnnotation(annotationId);
+    }
+  };
 
   return (
     <div className="h-full flex flex-col">
@@ -129,18 +137,29 @@ export const FeedbackPanel = ({
             filteredAnnotations.map((annotation) => (
               <div
                 key={annotation.id}
-                className={`border rounded-lg p-3 cursor-pointer transition-all duration-200 ${
+                className={`border rounded-lg p-3 cursor-pointer transition-all duration-200 relative ${
                   activeAnnotation === annotation.id
                     ? 'border-blue-500 bg-blue-500/10'
                     : 'border-slate-600 hover:border-slate-500 bg-slate-800/30'
                 }`}
                 onClick={() => onAnnotationSelect(annotation.id)}
               >
+                {onDeleteAnnotation && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute top-2 right-2 h-6 w-6 p-0 text-slate-400 hover:text-red-400"
+                    onClick={(e) => handleDeleteAnnotation(annotation.id, e)}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                )}
+                
                 <div className="flex items-start gap-3 mb-2">
                   <span className="text-lg flex-shrink-0">
                     {getCategoryIcon(annotation.category)}
                   </span>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 pr-8">
                     <div className="flex items-center gap-2 mb-1">
                       <Badge className={`text-xs ${getSeverityColor(annotation.severity)}`}>
                         {annotation.severity}
