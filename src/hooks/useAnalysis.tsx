@@ -1,9 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { Annotation } from '@/types/analysis';
 import { toast } from 'sonner';
 import { 
   getUserAnalyses, 
-  getMostRecentAnalysis, 
   getAnalysisById, 
   getFileUrl, 
   AnalysisWithFiles,
@@ -51,6 +51,7 @@ export const useAnalysis = () => {
 
   const loadAnalysis = async (analysisId: string) => {
     try {
+      console.log('Loading analysis:', analysisId);
       const analysis = await getAnalysisById(analysisId);
       if (analysis && analysis.files.length > 0) {
         setCurrentAnalysis(analysis);
@@ -59,18 +60,35 @@ export const useAnalysis = () => {
         const firstFile = analysis.files[0];
         const fileUrl = getFileUrl(firstFile);
         
+        console.log('File URL for analysis:', fileUrl);
+        
         if (fileUrl) {
-          setImageUrl(fileUrl);
-          
-          // Load existing annotations for this analysis
-          const existingAnnotations = await getAnnotationsForAnalysis(analysisId);
-          setAnnotations(existingAnnotations);
-          
-          toast.success(`Loaded analysis: ${analysis.title}`);
+          // Verify the URL is accessible before setting it
+          try {
+            const response = await fetch(fileUrl, { method: 'HEAD' });
+            if (response.ok) {
+              setImageUrl(fileUrl);
+              
+              // Load existing annotations for this analysis
+              const existingAnnotations = await getAnnotationsForAnalysis(analysisId);
+              setAnnotations(existingAnnotations);
+              
+              console.log('Analysis loaded successfully with', existingAnnotations.length, 'annotations');
+              toast.success(`Loaded analysis: ${analysis.title}`);
+            } else {
+              throw new Error(`File not accessible: ${response.status}`);
+            }
+          } catch (urlError) {
+            console.error('Error verifying file URL:', urlError);
+            toast.error('File is not accessible. Please try uploading again.');
+            setImageUrl(null);
+          }
         } else {
+          console.error('No valid file URL found for analysis');
           toast.error('No valid file URL found for this analysis');
         }
       } else {
+        console.error('Analysis not found or has no files');
         toast.error('Analysis not found or has no files');
       }
     } catch (error) {
@@ -80,23 +98,44 @@ export const useAnalysis = () => {
   };
 
   const handleImageUpload = async (uploadedImageUrl: string) => {
+    console.log('Handling image upload with URL:', uploadedImageUrl);
+    
+    // Verify the uploaded URL is accessible
+    try {
+      const response = await fetch(uploadedImageUrl, { method: 'HEAD' });
+      if (!response.ok) {
+        throw new Error(`Uploaded file not accessible: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error verifying uploaded image:', error);
+      toast.error('Uploaded file is not accessible');
+      return;
+    }
+    
     setImageUrl(uploadedImageUrl);
     
     // Refresh analyses list to include the new upload
-    const userAnalyses = await getUserAnalyses();
-    setAnalyses(userAnalyses);
-    
-    // Set the most recent analysis as current and clear previous annotations
-    if (userAnalyses.length > 0) {
-      const latestAnalysis = userAnalyses[0];
-      setCurrentAnalysis(latestAnalysis);
+    try {
+      const userAnalyses = await getUserAnalyses();
+      setAnalyses(userAnalyses);
       
-      // Load annotations for the new analysis
-      const existingAnnotations = await getAnnotationsForAnalysis(latestAnalysis.id);
-      setAnnotations(existingAnnotations);
+      // Set the most recent analysis as current and clear previous annotations
+      if (userAnalyses.length > 0) {
+        const latestAnalysis = userAnalyses[0];
+        setCurrentAnalysis(latestAnalysis);
+        
+        // Load annotations for the new analysis
+        const existingAnnotations = await getAnnotationsForAnalysis(latestAnalysis.id);
+        setAnnotations(existingAnnotations);
+        
+        console.log('Current analysis set to:', latestAnalysis.id);
+      }
+      
+      toast.success('Design uploaded successfully!');
+    } catch (error) {
+      console.error('Error refreshing analyses after upload:', error);
+      // Don't fail the upload if we can't refresh the list
     }
-    
-    toast.success('Design uploaded successfully!');
   };
 
   const handleAreaClick = async (coordinates: { x: number; y: number }) => {
@@ -132,6 +171,8 @@ export const useAnalysis = () => {
     setIsAnalyzing(true);
     
     try {
+      console.log('Starting AI analysis for:', { imageUrl, analysisId: currentAnalysis.id });
+      
       // Update analysis status to indicate it's being processed
       await updateAnalysisStatus(currentAnalysis.id, 'analyzing');
       
@@ -141,8 +182,6 @@ export const useAnalysis = () => {
         ai_model_used: 'claude-3-5-sonnet-20241022'
       });
 
-      console.log('Starting AI analysis for image:', imageUrl);
-      
       // Call the AI analysis edge function
       const { data, error } = await supabase.functions.invoke('analyze-design', {
         body: {
