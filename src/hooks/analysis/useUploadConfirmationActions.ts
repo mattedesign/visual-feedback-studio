@@ -30,6 +30,11 @@ export const useUploadConfirmationActions = ({
     if (!uploadedAnalysis) return;
 
     try {
+      // Clear confirmation dialog and pending state FIRST
+      setHasPendingConfirmation(false);
+      setShowUploadConfirmation(false);
+      setUploadedAnalysis(null);
+
       // Get the first file URL from the uploaded analysis
       const firstFile = uploadedAnalysis.files[0];
       const fileUrl = getFileUrl(firstFile);
@@ -54,11 +59,6 @@ export const useUploadConfirmationActions = ({
       setAnnotations(existingAnnotations);
       setActiveAnnotation(null);
       
-      // Clear confirmation dialog and pending state
-      setShowUploadConfirmation(false);
-      setUploadedAnalysis(null);
-      setHasPendingConfirmation(false);
-      
       toast.success(`Loaded analysis: ${uploadedAnalysis.title}`);
     } catch (error) {
       console.error('Error loading uploaded analysis:', error);
@@ -67,16 +67,18 @@ export const useUploadConfirmationActions = ({
   }, [uploadedAnalysis, setCurrentAnalysis, setImageUrl, setAnnotations, setActiveAnnotation, setShowUploadConfirmation, setUploadedAnalysis, setHasPendingConfirmation]);
 
   const handleUploadAnother = useCallback(() => {
+    // Clear all confirmation-related state
+    setHasPendingConfirmation(false);
     setShowUploadConfirmation(false);
     setUploadedAnalysis(null);
-    setHasPendingConfirmation(false); // Clear pending confirmation state
     toast.success('Ready for another upload!');
   }, [setShowUploadConfirmation, setUploadedAnalysis, setHasPendingConfirmation]);
 
   const handleDismissConfirmation = useCallback(() => {
+    // Clear all confirmation-related state
+    setHasPendingConfirmation(false);
     setShowUploadConfirmation(false);
     setUploadedAnalysis(null);
-    setHasPendingConfirmation(false); // Clear pending confirmation state
   }, [setShowUploadConfirmation, setUploadedAnalysis, setHasPendingConfirmation]);
 
   return {

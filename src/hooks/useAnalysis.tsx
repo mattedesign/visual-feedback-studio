@@ -95,7 +95,7 @@ export const useAnalysis = () => {
     setHasPendingConfirmation,
   });
 
-  // Load user analyses on mount - run only once
+  // Load user analyses on mount - run only once initially
   useEffect(() => {
     console.log('Initial load effect running');
     loadAnalyses();

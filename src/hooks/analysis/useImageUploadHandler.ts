@@ -42,12 +42,12 @@ export const useImageUploadHandler = ({
       const userAnalyses = await getUserAnalyses();
       setAnalyses(userAnalyses);
       
-      // Store the uploaded analysis for confirmation but don't auto-load it
+      // Store the uploaded analysis for confirmation and set pending confirmation state FIRST
       if (userAnalyses.length > 0) {
         const latestAnalysis = userAnalyses[0];
+        setHasPendingConfirmation(true); // Set this FIRST to prevent auto-loading
         setUploadedAnalysis(latestAnalysis);
         setShowUploadConfirmation(true);
-        setHasPendingConfirmation(true); // Set pending confirmation state
         
         console.log('Upload completed, analysis ready for confirmation:', latestAnalysis.id);
       }
