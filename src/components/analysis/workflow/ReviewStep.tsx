@@ -26,8 +26,11 @@ export const ReviewStep = ({ workflow }: ReviewStepProps) => {
   const handleProceedToAnnotate = () => {
     if (tempSelectedImages.length === 0) return;
     
+    console.log('Proceeding to annotate with images:', tempSelectedImages.length);
+    console.log('Current analysis:', workflow.currentAnalysis?.id);
+    
     workflow.selectImages(tempSelectedImages);
-    workflow.goToStep('annotate');
+    workflow.proceedFromReview();
   };
 
   const handleBack = () => {
@@ -42,6 +45,13 @@ export const ReviewStep = ({ workflow }: ReviewStepProps) => {
           <p className="text-slate-400 text-center">
             Choose one or more images to analyze. For comparative analysis, select multiple images.
           </p>
+          {workflow.currentAnalysis && (
+            <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3 mt-4">
+              <p className="text-blue-300 text-sm text-center">
+                Analysis Session: {workflow.currentAnalysis.id}
+              </p>
+            </div>
+          )}
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -108,7 +118,7 @@ export const ReviewStep = ({ workflow }: ReviewStepProps) => {
             </Button>
             <Button
               onClick={handleProceedToAnnotate}
-              disabled={tempSelectedImages.length === 0}
+              disabled={tempSelectedImages.length === 0 || !workflow.currentAnalysis}
               className="bg-blue-500 hover:bg-blue-600"
             >
               Continue to Annotate ({tempSelectedImages.length} selected)

@@ -5,6 +5,7 @@ import { Upload } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { useSimpleFileUpload } from '@/hooks/analysis/useSimpleFileUpload';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
+import { getUserAnalyses } from '@/services/analysisDataService';
 
 interface UploadStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -14,10 +15,30 @@ export const UploadStep = ({ workflow }: UploadStepProps) => {
   const { uploadFile, isUploading } = useSimpleFileUpload();
 
   const onDrop = async (acceptedFiles: File[]) => {
+    console.log('Files dropped:', acceptedFiles.length);
+    
     for (const file of acceptedFiles) {
       const url = await uploadFile(file);
       if (url) {
+        console.log('File uploaded, adding to workflow:', url);
         workflow.addUploadedFile(url);
+      }
+    }
+
+    // After all files are uploaded, refresh analyses and set current analysis
+    if (acceptedFiles.length > 0) {
+      try {
+        console.log('Refreshing analyses after upload...');
+        const userAnalyses = await getUserAnalyses();
+        console.log('Fetched analyses:', userAnalyses.length);
+        
+        if (userAnalyses.length > 0) {
+          const latestAnalysis = userAnalyses[0];
+          console.log('Setting current analysis:', latestAnalysis.id);
+          workflow.setCurrentAnalysis(latestAnalysis);
+        }
+      } catch (error) {
+        console.error('Error refreshing analyses:', error);
       }
     }
   };
@@ -36,13 +57,11 @@ export const UploadStep = ({ workflow }: UploadStepProps) => {
       return;
     }
     
-    // If only one file, auto-select it, otherwise go to review
-    if (workflow.uploadedFiles.length === 1) {
-      workflow.selectImage(workflow.uploadedFiles[0]);
-      workflow.goToStep('annotate');
-    } else {
-      workflow.goToStep('review');
-    }
+    console.log('Continuing with uploaded files:', workflow.uploadedFiles.length);
+    console.log('Current analysis:', workflow.currentAnalysis?.id);
+    
+    // Use the smart workflow progression
+    workflow.proceedFromUpload(workflow.uploadedFiles);
   };
 
   return (
@@ -90,6 +109,14 @@ export const UploadStep = ({ workflow }: UploadStepProps) => {
                   </div>
                 ))}
               </div>
+              
+              {workflow.currentAnalysis && (
+                <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-3">
+                  <p className="text-green-300 text-sm">
+                    ✓ Analysis session created: {workflow.currentAnalysis.id}
+                  </p>
+                </div>
+              )}
             </div>
           )}
 

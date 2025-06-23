@@ -30,14 +30,17 @@ export const useAnalysisWorkflow = () => {
   const userAnnotations = imageAnnotations.length > 0 ? imageAnnotations[0]?.annotations || [] : [];
 
   const goToStep = (step: WorkflowStep) => {
+    console.log('Workflow step change:', currentStep, '->', step);
     setCurrentStep(step);
   };
 
   const addUploadedFile = (url: string) => {
+    console.log('Adding uploaded file to workflow:', url);
     setUploadedFiles(prev => [...prev, url]);
   };
 
   const selectImage = (url: string) => {
+    console.log('Selecting single image:', url);
     setSelectedImages([url]);
     if (!imageAnnotations.find(ia => ia.imageUrl === url)) {
       setImageAnnotations([{ imageUrl: url, annotations: [] }]);
@@ -45,6 +48,7 @@ export const useAnalysisWorkflow = () => {
   };
 
   const selectImages = (urls: string[]) => {
+    console.log('Selecting multiple images:', urls.length);
     setSelectedImages(urls);
     const newImageAnnotations = urls.map(url => {
       const existing = imageAnnotations.find(ia => ia.imageUrl === url);
@@ -59,6 +63,8 @@ export const useAnalysisWorkflow = () => {
       id: `user-${Date.now()}-${Math.random()}`
     };
     
+    console.log('Adding user annotation to image:', imageUrl, newAnnotation);
+    
     setImageAnnotations(prev => 
       prev.map(ia => 
         ia.imageUrl === imageUrl 
@@ -69,6 +75,7 @@ export const useAnalysisWorkflow = () => {
   };
 
   const removeUserAnnotation = (imageUrl: string, id: string) => {
+    console.log('Removing user annotation:', imageUrl, id);
     setImageAnnotations(prev =>
       prev.map(ia =>
         ia.imageUrl === imageUrl
@@ -79,6 +86,7 @@ export const useAnalysisWorkflow = () => {
   };
 
   const updateUserAnnotation = (imageUrl: string, id: string, comment: string) => {
+    console.log('Updating user annotation:', imageUrl, id, comment);
     setImageAnnotations(prev =>
       prev.map(ia =>
         ia.imageUrl === imageUrl
@@ -98,6 +106,7 @@ export const useAnalysisWorkflow = () => {
   };
 
   const resetWorkflow = () => {
+    console.log('Resetting workflow state');
     setCurrentStep('upload');
     setUploadedFiles([]);
     setSelectedImages([]);
@@ -110,6 +119,9 @@ export const useAnalysisWorkflow = () => {
 
   // Smart workflow progression based on number of images
   const proceedFromUpload = (imageUrls: string[]) => {
+    console.log('Proceeding from upload with images:', imageUrls.length);
+    console.log('Current analysis exists:', !!currentAnalysis);
+    
     if (imageUrls.length === 1) {
       // Single image: Upload → Annotate (skip review)
       selectImage(imageUrls[0]);
@@ -122,6 +134,7 @@ export const useAnalysisWorkflow = () => {
   };
 
   const proceedFromReview = () => {
+    console.log('Proceeding from review to annotate');
     // Always go to annotate step from review
     // The AnalysisWorkflow component will determine which annotate component to use
     goToStep('annotate');

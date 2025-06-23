@@ -11,7 +11,7 @@ export const useSimpleFileUpload = () => {
     setIsUploading(true);
     
     try {
-      console.log('Starting simple file upload for:', file.name);
+      console.log('Starting file upload process for:', file.name, 'Size:', file.size, 'Type:', file.type);
       
       // Validate file
       if (!file.type.startsWith('image/')) {
@@ -24,7 +24,7 @@ export const useSimpleFileUpload = () => {
         return null;
       }
       
-      // Create analysis record
+      // Create analysis first
       const analysisId = await createAnalysis();
       if (!analysisId) {
         toast.error('Failed to create analysis record');
@@ -40,13 +40,13 @@ export const useSimpleFileUpload = () => {
         return null;
       }
 
-      console.log('File uploaded successfully:', publicUrl);
+      console.log('File upload completed successfully, URL:', publicUrl);
       toast.success('File uploaded successfully!');
       
       return publicUrl;
       
     } catch (error) {
-      console.error('Error during file upload:', error);
+      console.error('Error during file upload process:', error);
       toast.error('Failed to upload file');
       return null;
     } finally {

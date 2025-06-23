@@ -25,6 +25,13 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
 
   useEffect(() => {
     const performAnalysis = async () => {
+      console.log('=== Starting Analysis Validation ===');
+      console.log('Selected images:', workflow.selectedImages.length);
+      console.log('Current analysis:', workflow.currentAnalysis?.id);
+      console.log('User annotations:', workflow.getTotalAnnotationsCount());
+      console.log('Analysis context:', workflow.analysisContext || 'None provided');
+
+      // Validation checks
       if (workflow.selectedImages.length === 0) {
         console.error('No images selected for analysis');
         toast.error('No images selected for analysis');
@@ -32,17 +39,13 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       }
 
       if (!workflow.currentAnalysis) {
-        console.error('No current analysis found');
-        toast.error('Analysis session not found');
+        console.error('No current analysis found - this is the main issue');
+        toast.error('Analysis session not found. Please go back and upload your images again.');
         return;
       }
 
       console.log('=== Starting Analysis Process ===');
-      console.log('Selected images:', workflow.selectedImages.length);
-      console.log('Current analysis ID:', workflow.currentAnalysis?.id);
       console.log('Is comparative:', workflow.selectedImages.length > 1);
-      console.log('User annotations:', workflow.getTotalAnnotationsCount());
-      console.log('Analysis context:', workflow.analysisContext || 'None provided');
 
       try {
         setCurrentStep('Preparing images...');
@@ -144,6 +147,14 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
                 </p>
               )}
             </div>
+
+            {workflow.currentAnalysis && (
+              <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
+                <p className="text-blue-300 text-sm">
+                  Analysis ID: {workflow.currentAnalysis.id}
+                </p>
+              </div>
+            )}
 
             <div className="bg-slate-700 rounded-lg p-4">
               <h4 className="font-medium mb-2">Analysis Focus:</h4>
