@@ -25,19 +25,6 @@ serve(async (req) => {
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     console.log('Environment check - OPENAI_API_KEY exists:', !!openaiApiKey);
     
-    if (openaiApiKey) {
-      const cleanKey = openaiApiKey.trim();
-      console.log('Environment check:', {
-        apiKeyType: typeof openaiApiKey,
-        originalLength: openaiApiKey.length,
-        cleanedLength: cleanKey.length,
-        firstChars: cleanKey.substring(0, 15),
-        lastChars: cleanKey.substring(cleanKey.length - 10),
-        startsCorrectly: cleanKey.startsWith('sk-'),
-        hasWhitespace: openaiApiKey !== cleanKey
-      });
-    }
-    
     if (!openaiApiKey) {
       console.error('OPENAI_API_KEY environment variable is not set');
       throw new Error('OPENAI_API_KEY is not configured in Supabase secrets');

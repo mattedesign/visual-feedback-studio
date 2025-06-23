@@ -29,21 +29,10 @@ export async function analyzeWithOpenAI(
     throw new Error('OpenAI API key appears to be too short');
   }
 
-  // Test API key with a simple request first
-  console.log('Testing OpenAI API key...');
-  try {
-    await testOpenAIApiKey(cleanApiKey);
-    console.log('OpenAI API key test successful');
-  } catch (error) {
-    console.error('OpenAI API key test failed:', error.message);
-    throw new Error(`OpenAI API key authentication failed: ${error.message}`);
-  }
-
-  // Use reliable OpenAI models
+  // Use the most capable OpenAI model first
   const models = [
-    'gpt-4o-mini',     // Most cost-effective vision model
-    'gpt-4o',          // More powerful but expensive
-    'gpt-4-turbo'      // Fallback option
+    'gpt-4o',          // Most capable vision model
+    'gpt-4o-mini'      // Fallback cost-effective option
   ];
 
   let lastError;
@@ -72,56 +61,6 @@ export async function analyzeWithOpenAI(
   
   // If all models failed, throw the last error
   throw lastError || new Error('All OpenAI models failed');
-}
-
-async function testOpenAIApiKey(apiKey: string): Promise<void> {
-  const testPayload = {
-    model: 'gpt-4o-mini',
-    messages: [
-      {
-        role: 'user',
-        content: 'Hello'
-      }
-    ],
-    max_tokens: 10
-  };
-
-  console.log('Making OpenAI API test request...');
-  
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: JSON.stringify(testPayload)
-  });
-
-  console.log(`OpenAI API test response: ${response.status} ${response.statusText}`);
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('OpenAI API test error response:', errorText);
-    
-    let errorDetails;
-    try {
-      errorDetails = JSON.parse(errorText);
-    } catch {
-      errorDetails = { message: errorText };
-    }
-    
-    if (response.status === 401) {
-      throw new Error(`Authentication failed: ${errorDetails.error?.message || 'Invalid API key'}`);
-    }
-    
-    if (response.status === 403) {
-      throw new Error(`Access forbidden: ${errorDetails.error?.message || 'API key lacks permissions'}`);
-    }
-    
-    throw new Error(`API test failed (${response.status}): ${errorDetails.error?.message || errorText}`);
-  }
-
-  console.log('OpenAI API key test completed successfully');
 }
 
 async function callOpenAIWithModel(
