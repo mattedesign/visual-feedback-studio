@@ -19,10 +19,10 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
 
   const getSeverityColor = (severity: string) =>  {
     switch (severity) {
-      case 'critical': return 'bg-red-500 text-white';
-      case 'suggested': return 'bg-yellow-500 text-black';
-      case 'enhancement': return 'bg-blue-500 text-white';
-      default: return 'bg-purple-500 text-white';
+      case 'critical': return 'bg-red-600 text-white border-red-500';
+      case 'suggested': return 'bg-yellow-600 text-white border-yellow-500';
+      case 'enhancement': return 'bg-blue-600 text-white border-blue-500';
+      default: return 'bg-purple-600 text-white border-purple-500';
     }
   };
 
@@ -63,19 +63,19 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <Card className="bg-slate-800/50 border-slate-700">
-        <CardHeader>
-          <CardTitle className="text-2xl text-center">
+      <Card className="bg-white border-gray-300 shadow-lg">
+        <CardHeader className="pb-6">
+          <CardTitle className="text-3xl text-center font-bold text-gray-900">
             {isMultiImage ? 'Comparative Analysis Results' : 'Analysis Results'}
           </CardTitle>
-          <p className="text-slate-400 text-center">
+          <p className="text-gray-700 text-center text-lg leading-relaxed">
             {isMultiImage 
               ? `Analysis completed across ${workflow.selectedImages.length} images. Click annotations for detailed feedback.`
               : 'Click on any annotation to see detailed feedback'
             }
           </p>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-8">
           {/* Comparative Analysis Summary */}
           {isMultiImage && (
             <ComparativeAnalysisSummary 
@@ -84,19 +84,19 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
             />
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Image viewer */}
             <div className="lg:col-span-2">
               {isMultiImage ? (
                 <Tabs value={activeImageUrl} onValueChange={setActiveImageUrl}>
-                  <TabsList className="grid w-full mb-4" style={{ gridTemplateColumns: `repeat(${workflow.selectedImages.length}, 1fr)` }}>
+                  <TabsList className="grid w-full mb-6 h-12" style={{ gridTemplateColumns: `repeat(${workflow.selectedImages.length}, 1fr)` }}>
                     {workflow.selectedImages.map((imageUrl, index) => {
                       const imageAnnotations = getAnnotationsForImage(index);
                       return (
-                        <TabsTrigger key={imageUrl} value={imageUrl} className="relative">
+                        <TabsTrigger key={imageUrl} value={imageUrl} className="relative text-base font-semibold py-3">
                           Image {index + 1}
                           {imageAnnotations.length > 0 && (
-                            <Badge className="ml-2 h-5 w-5 p-0 text-xs rounded-full bg-blue-500">
+                            <Badge className="ml-3 h-6 w-6 p-0 text-sm rounded-full bg-blue-600 text-white">
                               {imageAnnotations.length}
                             </Badge>
                           )}
@@ -107,7 +107,7 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
 
                   {workflow.selectedImages.map((imageUrl, imageIndex) => (
                     <TabsContent key={imageUrl} value={imageUrl}>
-                      <div className="relative bg-white rounded-lg p-4">
+                      <div className="relative bg-white rounded-lg p-6 border-2 border-gray-300">
                         <img
                           src={imageUrl}
                           alt={`Analyzed design ${imageIndex + 1}`}
@@ -124,8 +124,8 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
                               top: `${annotation.y}%`,
                             }}
                           >
-                            <div className="w-6 h-6 bg-blue-500 border-2 border-white rounded-full flex items-center justify-center shadow-lg">
-                              <span className="text-xs text-white font-bold">U</span>
+                            <div className="w-10 h-10 bg-blue-600 border-4 border-white rounded-full flex items-center justify-center shadow-xl">
+                              <span className="text-sm text-white font-bold">U</span>
                             </div>
                           </div>
                         ))}
@@ -143,13 +143,13 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
                             }}
                             onClick={() => setActiveAnnotation(annotation.id)}
                           >
-                            <div className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-white font-bold text-sm shadow-lg ${
-                              annotation.severity === 'critical' ? 'bg-red-500' :
-                              annotation.severity === 'suggested' ? 'bg-yellow-500' :
-                              annotation.severity === 'enhancement' ? 'bg-blue-500' :
-                              'bg-purple-500'
-                            } ${activeAnnotation === annotation.id ? 'ring-4 ring-white/30' : ''}`}>
-                              <span className="text-xs">{getCategoryIcon(annotation.category)}</span>
+                            <div className={`w-12 h-12 rounded-full border-4 border-white flex items-center justify-center text-white font-bold text-lg shadow-xl ${
+                              annotation.severity === 'critical' ? 'bg-red-600' :
+                              annotation.severity === 'suggested' ? 'bg-yellow-600' :
+                              annotation.severity === 'enhancement' ? 'bg-blue-600' :
+                              'bg-purple-600'
+                            } ${activeAnnotation === annotation.id ? 'ring-4 ring-gray-400' : ''}`}>
+                              <span className="text-base">{getCategoryIcon(annotation.category)}</span>
                             </div>
                           </div>
                         ))}
@@ -158,7 +158,7 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
                   ))}
                 </Tabs>
               ) : (
-                <div className="relative bg-white rounded-lg p-4">
+                <div className="relative bg-white rounded-lg p-6 border-2 border-gray-300">
                   {/* Image with annotations */}
                   <img
                     src={workflow.selectedImages[0]}
@@ -176,8 +176,8 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
                         top: `${annotation.y}%`,
                       }}
                     >
-                      <div className="w-6 h-6 bg-blue-500 border-2 border-white rounded-full flex items-center justify-center shadow-lg">
-                        <span className="text-xs text-white font-bold">U</span>
+                      <div className="w-10 h-10 bg-blue-600 border-4 border-white rounded-full flex items-center justify-center shadow-xl">
+                        <span className="text-sm text-white font-bold">U</span>
                       </div>
                     </div>
                   ))}
@@ -195,13 +195,13 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
                       }}
                       onClick={() => setActiveAnnotation(annotation.id)}
                     >
-                      <div className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-white font-bold text-sm shadow-lg ${
-                        annotation.severity === 'critical' ? 'bg-red-500' :
-                        annotation.severity === 'suggested' ? 'bg-yellow-500' :
-                        annotation.severity === 'enhancement' ? 'bg-blue-500' :
-                        'bg-purple-500'
-                      } ${activeAnnotation === annotation.id ? 'ring-4 ring-white/30' : ''}`}>
-                        <span className="text-xs">{getCategoryIcon(annotation.category)}</span>
+                      <div className={`w-12 h-12 rounded-full border-4 border-white flex items-center justify-center text-white font-bold text-lg shadow-xl ${
+                        annotation.severity === 'critical' ? 'bg-red-600' :
+                        annotation.severity === 'suggested' ? 'bg-yellow-600' :
+                        annotation.severity === 'enhancement' ? 'bg-blue-600' :
+                        'bg-purple-600'
+                      } ${activeAnnotation === annotation.id ? 'ring-4 ring-gray-400' : ''}`}>
+                        <span className="text-base">{getCategoryIcon(annotation.category)}</span>
                       </div>
                     </div>
                   ))}
@@ -210,48 +210,48 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
             </div>
 
             {/* Feedback panel */}
-            <div className="space-y-4">
+            <div className="space-y-6">
               {isMultiImage && (
-                <div className="bg-slate-700/50 rounded-lg p-3 mb-4">
-                  <h4 className="font-medium mb-2">Current Image Summary</h4>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>AI Insights: <span className="font-semibold text-purple-400">{currentImageAIAnnotations.length}</span></div>
-                    <div>Your Comments: <span className="font-semibold text-green-400">{currentImageUserAnnotations.length}</span></div>
+                <div className="bg-gray-100 border-2 border-gray-300 rounded-lg p-4 mb-6">
+                  <h4 className="font-bold text-lg mb-3 text-gray-900">Current Image Summary</h4>
+                  <div className="grid grid-cols-1 gap-3 text-base">
+                    <div className="text-gray-800">AI Insights: <span className="font-bold text-purple-700 text-lg">{currentImageAIAnnotations.length}</span></div>
+                    <div className="text-gray-800">Your Comments: <span className="font-bold text-green-700 text-lg">{currentImageUserAnnotations.length}</span></div>
                   </div>
                 </div>
               )}
 
               <div>
-                <h3 className="text-lg font-medium mb-3">
+                <h3 className="text-xl font-bold mb-4 text-gray-900">
                   AI Insights for Image {activeImageIndex + 1} ({currentImageAIAnnotations.length})
                 </h3>
                 
-                <div className="space-y-2 max-h-96 overflow-y-auto">
+                <div className="space-y-4 max-h-96 overflow-y-auto">
                   {currentImageAIAnnotations.map((annotation) => (
                     <div
                       key={annotation.id}
-                      className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                      className={`border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 ${
                         activeAnnotation === annotation.id
-                          ? 'bg-slate-600 border border-blue-500'
-                          : 'bg-slate-700 hover:bg-slate-600'
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-300 hover:border-gray-400 bg-white'
                       }`}
                       onClick={() => setActiveAnnotation(annotation.id)}
                     >
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge className={getSeverityColor(annotation.severity)}>
-                          {annotation.severity}
+                      <div className="flex items-center gap-3 mb-3">
+                        <Badge className={`text-sm font-semibold px-3 py-1 ${getSeverityColor(annotation.severity)}`}>
+                          {annotation.severity.toUpperCase()}
                         </Badge>
-                        <span className="text-sm capitalize">{annotation.category}</span>
+                        <span className="text-base font-semibold capitalize text-gray-700">{annotation.category}</span>
                         {isMultiImage && (
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-sm font-semibold border-gray-400 text-gray-700">
                             Image {(annotation.imageIndex ?? 0) + 1}
                           </Badge>
                         )}
                       </div>
-                      <p className="text-sm text-slate-300 line-clamp-3">
+                      <p className="text-base text-gray-800 leading-relaxed line-clamp-3 font-medium">
                         {annotation.feedback}
                       </p>
-                      <div className="flex gap-2 mt-2 text-xs text-slate-400">
+                      <div className="flex gap-4 mt-3 text-sm text-gray-600 font-semibold">
                         <span>Effort: {annotation.implementationEffort}</span>
                         <span>Impact: {annotation.businessImpact}</span>
                       </div>
@@ -259,33 +259,33 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
                   ))}
                   
                   {currentImageAIAnnotations.length === 0 && (
-                    <div className="text-center py-8 text-slate-400">
-                      <p>No AI insights for this image</p>
+                    <div className="text-center py-12 text-gray-600">
+                      <p className="text-lg">No AI insights for this image</p>
                     </div>
                   )}
                 </div>
               </div>
 
               {activeAnnotation && (
-                <div className="bg-slate-700 p-4 rounded-lg">
-                  <h4 className="font-medium mb-2">Detailed Feedback</h4>
+                <div className="bg-gray-100 border-2 border-gray-300 p-5 rounded-lg">
+                  <h4 className="font-bold text-lg mb-3 text-gray-900">Detailed Feedback</h4>
                   {(() => {
                     const annotation = workflow.aiAnnotations.find(a => a.id === activeAnnotation);
                     return annotation ? (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Badge className={getSeverityColor(annotation.severity)}>
-                            {annotation.severity}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <Badge className={`text-sm font-semibold px-3 py-1 ${getSeverityColor(annotation.severity)}`}>
+                            {annotation.severity.toUpperCase()}
                           </Badge>
-                          <span className="text-sm capitalize">{annotation.category}</span>
+                          <span className="text-base font-semibold capitalize text-gray-700">{annotation.category}</span>
                           {isMultiImage && (
-                            <Badge variant="outline" className="text-xs">
+                            <Badge variant="outline" className="text-sm font-semibold border-gray-400 text-gray-700">
                               Image {(annotation.imageIndex ?? 0) + 1}
                             </Badge>
                           )}
                         </div>
-                        <p className="text-sm text-slate-300">{annotation.feedback}</p>
-                        <div className="flex gap-4 text-xs text-slate-400">
+                        <p className="text-base text-gray-800 leading-relaxed font-medium">{annotation.feedback}</p>
+                        <div className="flex gap-6 text-sm text-gray-600 font-semibold">
                           <span>Implementation: {annotation.implementationEffort}</span>
                           <span>Business Impact: {annotation.businessImpact}</span>
                         </div>
@@ -297,29 +297,29 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
             </div>
           </div>
 
-          <div className="flex justify-between">
+          <div className="flex justify-between pt-6">
             <Button
               onClick={handleStartNew}
               variant="outline"
-              className="border-slate-600 hover:bg-slate-700"
+              className="border-2 border-gray-400 hover:bg-gray-100 text-base font-semibold px-6 py-3"
             >
-              <RotateCcw className="w-4 h-4 mr-2" />
+              <RotateCcw className="w-5 h-5 mr-2" />
               Start New Analysis
             </Button>
             
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <Button
                 variant="outline"
-                className="border-slate-600 hover:bg-slate-700"
+                className="border-2 border-gray-400 hover:bg-gray-100 text-base font-semibold px-6 py-3"
               >
-                <Download className="w-4 h-4 mr-2" />
+                <Download className="w-5 h-5 mr-2" />
                 Export Results
               </Button>
               <Button
                 variant="outline"
-                className="border-slate-600 hover:bg-slate-700"
+                className="border-2 border-gray-400 hover:bg-gray-100 text-base font-semibold px-6 py-3"
               >
-                <Share className="w-4 h-4 mr-2" />
+                <Share className="w-5 h-5 mr-2" />
                 Share
               </Button>
             </div>
