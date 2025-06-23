@@ -18,8 +18,18 @@ serve(async (req) => {
 
   try {
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
+    console.log('Environment check - ANTHROPIC_API_KEY exists:', !!anthropicApiKey);
+    
     if (!anthropicApiKey) {
-      throw new Error('ANTHROPIC_API_KEY is not set');
+      console.error('ANTHROPIC_API_KEY environment variable is not set');
+      throw new Error('ANTHROPIC_API_KEY is not configured in Supabase secrets');
+    }
+
+    // Validate API key format (should start with sk-)
+    const trimmedKey = anthropicApiKey.trim();
+    if (!trimmedKey.startsWith('sk-')) {
+      console.error('ANTHROPIC_API_KEY does not have expected format (should start with sk-)');
+      throw new Error('ANTHROPIC_API_KEY appears to be invalid - should start with sk-');
     }
 
     const { imageUrl, analysisId, analysisPrompt, designType }: AnalysisRequest = await req.json();
@@ -33,7 +43,7 @@ serve(async (req) => {
     const systemPrompt = createAnalysisPrompt(analysisPrompt);
 
     // Analyze with Claude
-    const annotations = await analyzeWithClaude(base64Image, mimeType, systemPrompt, anthropicApiKey);
+    const annotations = await analyzeWithClaude(base64Image, mimeType, systemPrompt, trimmedKey);
 
     console.log('Analysis completed successfully with', annotations.length, 'annotations');
 

@@ -13,11 +13,17 @@ export async function analyzeWithClaude(
     throw new Error('ANTHROPIC_API_KEY is not configured');
   }
 
+  // Trim any whitespace from the API key
+  const cleanApiKey = anthropicApiKey.trim();
+  
+  console.log('Using Claude model: claude-3-5-sonnet-20241022');
+  console.log('API key length:', cleanApiKey.length);
+
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${anthropicApiKey}`,
+      'Authorization': `Bearer ${cleanApiKey}`,
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
@@ -45,15 +51,26 @@ export async function analyzeWithClaude(
     })
   });
 
+  console.log('API response status:', response.status);
+  console.log('API response headers:', Object.fromEntries(response.headers.entries()));
+
   if (!response.ok) {
     const errorText = await response.text();
     console.error('Anthropic API error response:', errorText);
     
     if (response.status === 401) {
-      throw new Error('Invalid Anthropic API key. Please check your ANTHROPIC_API_KEY configuration.');
+      throw new Error('Invalid Anthropic API key. Please verify your ANTHROPIC_API_KEY is correct and has no extra spaces.');
     }
     
-    throw new Error(`Anthropic API error: ${response.status} ${errorText}`);
+    if (response.status === 400) {
+      throw new Error(`Bad request to Anthropic API: ${errorText}`);
+    }
+    
+    if (response.status === 429) {
+      throw new Error('Rate limit exceeded. Please try again later.');
+    }
+    
+    throw new Error(`Anthropic API error (${response.status}): ${errorText}`);
   }
 
   const aiResponse = await response.json();
