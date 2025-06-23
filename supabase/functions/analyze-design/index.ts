@@ -87,13 +87,25 @@ serve(async (req) => {
       throw new Error('analysisId is required');
     }
 
-    // Enhanced image processing with detailed logging
+    // Enhanced image processing with detailed logging and timeout protection
     console.log('=== Image Processing Phase ===');
-    const imagePromises = imagesToProcess.map(async (url, index) => {
+    
+    // Process images with individual error handling and timeout
+    const processedImages = [];
+    for (let index = 0; index < imagesToProcess.length; index++) {
+      const url = imagesToProcess[index];
       console.log(`Processing image ${index + 1}/${imagesToProcess.length}: ${url.substring(0, 50)}...`);
       
       try {
-        const { base64Image, mimeType } = await fetchImageAsBase64(url);
+        // Add timeout protection for individual image processing
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Image processing timeout (30s)')), 30000);
+        });
+        
+        const processPromise = fetchImageAsBase64(url);
+        const result = await Promise.race([processPromise, timeoutPromise]);
+        
+        const { base64Image, mimeType } = result as { base64Image: string, mimeType: string };
         
         console.log(`Image ${index + 1} processed successfully:`, {
           mimeType,
@@ -101,14 +113,13 @@ serve(async (req) => {
           isValidBase64: /^[A-Za-z0-9+/]*={0,2}$/.test(base64Image.substring(0, 100))
         });
         
-        return { base64Image, mimeType, index, url };
+        processedImages.push({ base64Image, mimeType, index, url });
       } catch (imageError) {
         console.error(`Image ${index + 1} processing failed:`, imageError);
         throw new Error(`Failed to process image ${index + 1}: ${imageError.message}`);
       }
-    });
+    }
 
-    const processedImages = await Promise.all(imagePromises);
     console.log('All images processed successfully');
 
     // Enhanced prompt creation
@@ -146,16 +157,22 @@ serve(async (req) => {
       isComparativeAnalysis: isComparative || isMultiImage
     });
 
-    // Call OpenAI with enhanced error handling
+    // Call OpenAI with enhanced error handling and timeout
     console.log('=== OpenAI Analysis Phase ===');
     let annotations;
     try {
-      annotations = await analyzeWithOpenAI(
+      const openaiTimeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('OpenAI request timeout (120s)')), 120000);
+      });
+      
+      const openaiPromise = analyzeWithOpenAI(
         primaryImage.base64Image, 
         primaryImage.mimeType, 
         enhancedPrompt, 
         trimmedKey
       );
+      
+      annotations = await Promise.race([openaiPromise, openaiTimeoutPromise]);
       
       console.log('OpenAI analysis completed:', {
         annotationCount: annotations.length,
@@ -213,7 +230,7 @@ serve(async (req) => {
     } else if (error.message.includes('Rate limit')) {
       errorCategory = 'rate_limit';
       errorSeverity = 'medium';
-    } else if (error.message.includes('base64') || error.message.includes('Image')) {
+    } else if (error.message.includes('base64') || error.message.includes('Image') || error.message.includes('timeout')) {
       errorCategory = 'image_processing_error';
       errorSeverity = 'medium';
     } else if (error.message.includes('JSON') || error.message.includes('parse')) {
