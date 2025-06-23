@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Upload, Globe, Figma, Image } from 'lucide-react';
+import { Upload, Globe, Image } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDropzone } from 'react-dropzone';
 import { useSimpleFileUpload } from '@/hooks/analysis/useSimpleFileUpload';
@@ -9,7 +9,6 @@ import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { useUrlUpload } from '@/hooks/useUrlUpload';
 import { getUserAnalyses } from '@/services/analysisDataService';
 import { WebsiteUploadTab } from '@/components/upload/WebsiteUploadTab';
-import { FigmaUploadTab } from '@/components/upload/FigmaUploadTab';
 
 interface UploadStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -17,7 +16,7 @@ interface UploadStepProps {
 
 export const UploadStep = ({ workflow }: UploadStepProps) => {
   const { uploadFile, isUploading } = useSimpleFileUpload();
-  const { isProcessing: isUrlProcessing, handleUrlSubmit, handleFigmaSubmit } = useUrlUpload((imageUrl: string) => {
+  const { isProcessing: isUrlProcessing, handleUrlSubmit } = useUrlUpload((imageUrl: string) => {
     // Handle the uploaded image URL by adding it to the workflow
     workflow.addUploadedFile(imageUrl);
     refreshAnalysesAndSetCurrent();
@@ -85,12 +84,12 @@ export const UploadStep = ({ workflow }: UploadStepProps) => {
         <CardHeader>
           <CardTitle className="text-2xl text-center text-slate-100">Upload Your Design</CardTitle>
           <p className="text-slate-200 text-center">
-            Upload images, paste website URLs, or share Figma links for analysis
+            Upload images or paste website URLs for analysis
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
           <Tabs defaultValue="upload" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-slate-800/50 border border-slate-700">
+            <TabsList className="grid w-full grid-cols-2 bg-slate-800/50 border border-slate-700">
               <TabsTrigger value="upload" className="flex items-center gap-2">
                 <Image className="w-4 h-4" />
                 Upload Image
@@ -98,10 +97,6 @@ export const UploadStep = ({ workflow }: UploadStepProps) => {
               <TabsTrigger value="website" className="flex items-center gap-2">
                 <Globe className="w-4 h-4" />
                 Website URL
-              </TabsTrigger>
-              <TabsTrigger value="figma" className="flex items-center gap-2">
-                <Figma className="w-4 h-4" />
-                Figma Link
               </TabsTrigger>
             </TabsList>
             
@@ -131,13 +126,6 @@ export const UploadStep = ({ workflow }: UploadStepProps) => {
             <TabsContent value="website" className="mt-6">
               <WebsiteUploadTab 
                 onUrlSubmit={handleUrlSubmit}
-                isProcessing={isProcessing}
-              />
-            </TabsContent>
-            
-            <TabsContent value="figma" className="mt-6">
-              <FigmaUploadTab 
-                onFigmaSubmit={handleFigmaSubmit}
                 isProcessing={isProcessing}
               />
             </TabsContent>

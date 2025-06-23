@@ -5,7 +5,7 @@ import { useDemoUpload } from './useDemoUpload';
 
 export const useUploadLogic = (onImageUpload: (imageUrl: string) => void) => {
   const { isProcessing: isFileProcessing, handleFileUpload } = useFileUpload(onImageUpload);
-  const { isProcessing: isUrlProcessing, handleUrlSubmit, handleFigmaSubmit } = useUrlUpload(onImageUpload);
+  const { isProcessing: isUrlProcessing, handleUrlSubmit } = useUrlUpload(onImageUpload);
   const { isProcessing: isDemoProcessing, handleDemoUpload } = useDemoUpload(onImageUpload);
 
   const isProcessing = isFileProcessing || isUrlProcessing || isDemoProcessing;
@@ -14,7 +14,6 @@ export const useUploadLogic = (onImageUpload: (imageUrl: string) => void) => {
     isProcessing,
     handleFileUpload,
     handleUrlSubmit,
-    handleFigmaSubmit,
     handleDemoUpload,
   };
 };

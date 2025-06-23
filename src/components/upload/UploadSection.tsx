@@ -1,10 +1,9 @@
 
-import { Image, Figma, Globe } from 'lucide-react';
+import { Image, Globe } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUploadLogic } from '@/hooks/useUploadLogic';
 import { ProcessingState } from './ProcessingState';
 import { FileUploadTab } from './FileUploadTab';
-import { FigmaUploadTab } from './FigmaUploadTab';
 import { WebsiteUploadTab } from './WebsiteUploadTab';
 
 interface UploadSectionProps {
@@ -16,7 +15,6 @@ export const UploadSection = ({ onImageUpload }: UploadSectionProps) => {
     isProcessing,
     handleFileUpload,
     handleUrlSubmit,
-    handleFigmaSubmit,
     handleDemoUpload,
   } = useUploadLogic(onImageUpload);
 
@@ -27,14 +25,10 @@ export const UploadSection = ({ onImageUpload }: UploadSectionProps) => {
   return (
     <div className="max-w-4xl mx-auto">
       <Tabs defaultValue="upload" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-slate-800/50 border border-slate-700">
+        <TabsList className="grid w-full grid-cols-2 bg-slate-800/50 border border-slate-700">
           <TabsTrigger value="upload" className="flex items-center gap-2">
             <Image className="w-4 h-4" />
             Upload Image
-          </TabsTrigger>
-          <TabsTrigger value="figma" className="flex items-center gap-2">
-            <Figma className="w-4 h-4" />
-            Figma Link
           </TabsTrigger>
           <TabsTrigger value="website" className="flex items-center gap-2">
             <Globe className="w-4 h-4" />
@@ -46,13 +40,6 @@ export const UploadSection = ({ onImageUpload }: UploadSectionProps) => {
           <FileUploadTab 
             onFileUpload={handleFileUpload}
             onDemoUpload={handleDemoUpload}
-            isProcessing={isProcessing}
-          />
-        </TabsContent>
-        
-        <TabsContent value="figma" className="mt-6">
-          <FigmaUploadTab 
-            onFigmaSubmit={handleFigmaSubmit}
             isProcessing={isProcessing}
           />
         </TabsContent>
