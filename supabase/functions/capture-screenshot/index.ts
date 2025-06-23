@@ -60,7 +60,7 @@ serve(async (req) => {
       );
     }
 
-    // Build the Screenshot One API URL
+    // Build the Screenshot One API URL with correct parameter names
     const screenshotApiUrl = new URL('https://api.screenshotone.com/take');
     screenshotApiUrl.searchParams.set('access_key', screenshotApiKey);
     screenshotApiUrl.searchParams.set('url', url);
@@ -70,18 +70,28 @@ serve(async (req) => {
     screenshotApiUrl.searchParams.set('device_scale_factor', deviceScaleFactor.toString());
     screenshotApiUrl.searchParams.set('format', format);
     screenshotApiUrl.searchParams.set('cache', cache.toString());
+    screenshotApiUrl.searchParams.set('response_type', 'json');
+    screenshotApiUrl.searchParams.set('store', 'true');
     
     if (delay && delay > 0) {
       screenshotApiUrl.searchParams.set('delay', delay.toString());
     }
 
-    console.log('Making request to Screenshot One API...');
+    console.log('Making request to Screenshot One API with URL:', screenshotApiUrl.toString().replace(screenshotApiKey, '[REDACTED]'));
+    
     const response = await fetch(screenshotApiUrl.toString());
     
+    console.log('Screenshot API response status:', response.status);
+    console.log('Screenshot API response headers:', Object.fromEntries(response.headers.entries()));
+    
     if (!response.ok) {
-      console.error('Screenshot API error:', response.status, response.statusText);
+      const errorText = await response.text();
+      console.error('Screenshot API error details:', errorText);
       return new Response(
-        JSON.stringify({ error: `Screenshot API error: ${response.status} ${response.statusText}` }), 
+        JSON.stringify({ 
+          error: `Screenshot API error: ${response.status} ${response.statusText}`,
+          details: errorText
+        }), 
         { 
           status: response.status, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -89,18 +99,25 @@ serve(async (req) => {
       );
     }
 
-    // Get the screenshot as a blob
-    const screenshotBlob = await response.blob();
-    const screenshotArrayBuffer = await screenshotBlob.arrayBuffer();
+    // Parse the JSON response to get the screenshot URL
+    const responseData = await response.json();
+    console.log('Screenshot API response data:', responseData);
     
-    console.log('Screenshot captured successfully, size:', screenshotArrayBuffer.byteLength, 'bytes');
+    if (!responseData.url) {
+      console.error('No screenshot URL in response:', responseData);
+      return new Response(
+        JSON.stringify({ error: 'No screenshot URL returned from API' }), 
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
     
-    // Return the screenshot as base64 for easy handling in the frontend
-    const screenshotBase64 = btoa(String.fromCharCode(...new Uint8Array(screenshotArrayBuffer)));
-    const dataUrl = `data:image/${format};base64,${screenshotBase64}`;
+    console.log('Screenshot captured successfully, URL:', responseData.url);
     
     return new Response(
-      JSON.stringify({ screenshotUrl: dataUrl }), 
+      JSON.stringify({ screenshotUrl: responseData.url }), 
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
