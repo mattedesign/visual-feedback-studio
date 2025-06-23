@@ -1,9 +1,9 @@
-
 import { UploadStep } from './workflow/UploadStep';
 import { ReviewStep } from './workflow/ReviewStep';
 import { AnnotateStep } from './workflow/AnnotateStep';
 import { AnalyzingStep } from './workflow/AnalyzingStep';
 import { ResultsStep } from './workflow/ResultsStep';
+import { TestAnalysisButton } from './TestAnalysisButton';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -35,6 +35,15 @@ export const AnalysisWorkflow = () => {
   return (
     <div className="min-h-screen bg-slate-900 text-white">
       <div className="container mx-auto px-4 py-8">
+        {/* Test button for API verification */}
+        <div className="mb-6 p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+          <h3 className="text-lg font-medium mb-3">API Test</h3>
+          <p className="text-slate-400 text-sm mb-4">
+            Test the AI analysis functionality to verify your Anthropic API key is working correctly.
+          </p>
+          <TestAnalysisButton />
+        </div>
+
         {/* Progress indicator */}
         <div className="mb-8">
           <div className="flex items-center justify-center space-x-4">
