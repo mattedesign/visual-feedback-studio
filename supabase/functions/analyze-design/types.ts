@@ -31,3 +31,14 @@ export interface AnnotationData {
   businessImpact: 'low' | 'medium' | 'high';
   imageIndex?: number;
 }
+
+export interface ProcessedAnnotation {
+  id: string;
+  x: number;
+  y: number;
+  category: 'ux' | 'visual' | 'accessibility' | 'conversion' | 'brand';
+  severity: 'critical' | 'suggested' | 'enhancement';
+  feedback: string;
+  implementationEffort: 'low' | 'medium' | 'high';
+  businessImpact: 'low' | 'medium' | 'high';
+}

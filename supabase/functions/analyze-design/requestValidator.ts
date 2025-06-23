@@ -1,0 +1,61 @@
+
+import { AnalysisRequest } from './types.ts';
+
+export interface ValidatedRequest {
+  analysisId: string;
+  imagesToProcess: string[];
+  isMultiImage: boolean;
+  analysisPrompt?: string;
+  designType?: string;
+  isComparative?: boolean;
+  aiProvider?: 'openai' | 'claude';
+}
+
+export async function validateAndParseRequest(req: Request): Promise<ValidatedRequest> {
+  let requestBody: AnalysisRequest;
+  
+  try {
+    requestBody = await req.json();
+    console.log('Request body parsed successfully');
+  } catch (parseError) {
+    console.error('Request parsing failed:', parseError);
+    throw new Error('Invalid JSON in request body');
+  }
+
+  const { imageUrl, imageUrls, analysisId, analysisPrompt, designType, isComparative, aiProvider } = requestBody;
+
+  // Determine which images to process
+  const imagesToProcess = imageUrls && imageUrls.length > 0 ? imageUrls : (imageUrl ? [imageUrl] : []);
+  const isMultiImage = imagesToProcess.length > 1;
+
+  console.log('=== Analysis Configuration ===');
+  console.log({
+    analysisId,
+    imageCount: imagesToProcess.length,
+    isComparative: isComparative || isMultiImage,
+    isMultiImage,
+    designType,
+    promptLength: analysisPrompt?.length || 0,
+    requestedProvider: aiProvider || 'auto'
+  });
+
+  // Validate required parameters
+  if (imagesToProcess.length === 0) {
+    console.error('Validation failed: No images provided');
+    throw new Error('At least one image URL is required');
+  }
+  if (!analysisId) {
+    console.error('Validation failed: No analysis ID provided');
+    throw new Error('analysisId is required');
+  }
+
+  return {
+    analysisId,
+    imagesToProcess,
+    isMultiImage,
+    analysisPrompt,
+    designType,
+    isComparative,
+    aiProvider
+  };
+}
