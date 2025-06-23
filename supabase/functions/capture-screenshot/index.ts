@@ -77,8 +77,8 @@ const captureScreenshot = async (requestData: ScreenshotRequest, attempt: number
     // Set user agent to mimic a real browser
     screenshotApiUrl.searchParams.set('user_agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
     
-    // Wait for network idle
-    screenshotApiUrl.searchParams.set('wait_until', 'network_idle');
+    // Use the correct wait_until parameter - networkidle0 instead of network_idle
+    screenshotApiUrl.searchParams.set('wait_until', 'networkidle0');
   } else {
     // Standard delay handling for non-Figma URLs
     if (delay && delay > 0) {
