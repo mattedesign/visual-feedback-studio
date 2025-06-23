@@ -23,6 +23,75 @@ export const useAIAnalysis = ({
   setAnnotations,
   isComparative = false,
 }: UseAIAnalysisProps) => {
+  const buildIntelligentPrompt = useCallback((
+    customPrompt?: string, 
+    imageAnnotations?: Array<{imageUrl: string; annotations: Array<{x: number; y: number; comment: string; id: string}>}>
+  ) => {
+    // Start with base analysis request
+    let intelligentPrompt = '';
+    
+    // HIERARCHY LEVEL 1: Main comment as primary directive
+    if (customPrompt && customPrompt.trim()) {
+      intelligentPrompt += `PRIMARY ANALYSIS REQUEST:\n${customPrompt.trim()}\n\n`;
+    }
+    
+    // HIERARCHY LEVEL 2: User annotations as supporting evidence
+    if (imageAnnotations && imageAnnotations.length > 0) {
+      const hasUserAnnotations = imageAnnotations.some(ia => ia.annotations.length > 0);
+      
+      if (hasUserAnnotations) {
+        intelligentPrompt += `USER-HIGHLIGHTED AREAS FOR FOCUSED ANALYSIS:\n`;
+        intelligentPrompt += `The user has specifically highlighted the following areas that need attention:\n\n`;
+        
+        imageAnnotations.forEach((imageAnnotation, imageIndex) => {
+          if (imageAnnotation.annotations.length > 0) {
+            intelligentPrompt += `Image ${imageIndex + 1} - Specific Areas of Interest:\n`;
+            imageAnnotation.annotations.forEach((annotation, index) => {
+              intelligentPrompt += `${index + 1}. Position (${annotation.x.toFixed(1)}%, ${annotation.y.toFixed(1)}%): ${annotation.comment}\n`;
+            });
+            intelligentPrompt += '\n';
+          }
+        });
+        
+        intelligentPrompt += `ANALYSIS INSTRUCTION: Use these highlighted areas as focal points for your analysis. `;
+        intelligentPrompt += `Provide detailed feedback on these specific concerns while also performing comprehensive analysis of the entire design.\n\n`;
+      }
+    }
+    
+    // HIERARCHY LEVEL 3: Comprehensive baseline analysis instruction
+    if (!customPrompt || customPrompt.trim().length < 20) {
+      intelligentPrompt += `COMPREHENSIVE ANALYSIS REQUIRED:\n`;
+      intelligentPrompt += `Since limited specific guidance was provided, perform a thorough analysis covering:\n`;
+      intelligentPrompt += `• User Experience (UX) - navigation, usability, user flow optimization\n`;
+      intelligentPrompt += `• Visual Design - typography, color usage, visual hierarchy, brand consistency\n`;
+      intelligentPrompt += `• Accessibility - color contrast, readability, inclusive design principles\n`;
+      intelligentPrompt += `• Conversion Optimization - CTAs, forms, trust signals, friction points\n`;
+      intelligentPrompt += `• Business Impact - professional appearance, credibility, competitive positioning\n\n`;
+    }
+    
+    // Add contextual instructions based on analysis type
+    if (imageUrls && imageUrls.length > 1) {
+      intelligentPrompt += `MULTI-IMAGE COMPARATIVE ANALYSIS:\n`;
+      intelligentPrompt += `This is a comparative analysis of ${imageUrls.length} design images. `;
+      intelligentPrompt += `Analyze each image individually and then provide comparative insights:\n`;
+      intelligentPrompt += `• Identify patterns and inconsistencies across designs\n`;
+      intelligentPrompt += `• Determine which design approaches are most effective\n`;
+      intelligentPrompt += `• Provide recommendations for improving consistency\n`;
+      intelligentPrompt += `• Consider user journey implications across different designs\n`;
+      intelligentPrompt += `• Use the imageIndex field (0-based) to specify which image each annotation applies to\n\n`;
+    }
+    
+    // Add quality and completeness requirements
+    intelligentPrompt += `ANALYSIS QUALITY REQUIREMENTS:\n`;
+    intelligentProment += `• Provide specific, actionable feedback with clear reasoning\n`;
+    intelligentPrompt += `• Balance critical issues with enhancement opportunities\n`;
+    intelligentPrompt += `• Include both quick wins and strategic improvements\n`;
+    intelligentPrompt += `• Ensure each annotation provides clear value and implementation guidance\n`;
+    intelligentPrompt += `• Focus on user experience impact and business value\n\n`;
+    
+    return intelligentPrompt;
+  }, [imageUrls]);
+
   const handleAnalyze = useCallback(async (customPrompt?: string, imageAnnotations?: Array<{imageUrl: string; annotations: Array<{x: number; y: number; comment: string; id: string}>}>) => {
     // Determine which images to analyze
     const imagesToAnalyze = imageUrls && imageUrls.length > 0 ? imageUrls : (imageUrl ? [imageUrl] : []);
@@ -38,7 +107,7 @@ export const useAIAnalysis = ({
     setIsAnalyzing(true);
     
     try {
-      console.log('=== AI Analysis Hook Started ===');
+      console.log('=== Enhanced AI Analysis Started ===');
       console.log('Analysis configuration:', { 
         imageCount: imagesToAnalyze.length,
         analysisId: currentAnalysis.id,
@@ -51,64 +120,32 @@ export const useAIAnalysis = ({
       // Update analysis status to indicate it's being processed
       await updateAnalysisStatus(currentAnalysis.id, 'analyzing');
       
-      // Build enhanced analysis prompt
-      let enhancedPrompt = customPrompt || 'Analyze for UX, accessibility, and conversion optimization opportunities.';
+      // Build intelligent prompt using hierarchy system
+      const intelligentPrompt = buildIntelligentPrompt(customPrompt, imageAnnotations);
       
-      if (isMultiImage || isComparative) {
-        enhancedPrompt = `COMPARATIVE ANALYSIS REQUEST: Perform comparative analysis across ${imagesToAnalyze.length} design images. `;
-        enhancedPrompt += 'This is a multi-image comparative analysis - please analyze each image individually and then provide comparative insights identifying similarities, differences, and cross-design recommendations.\n\n';
-      }
-      
-      // Add image-specific annotations if provided
-      if (imageAnnotations && imageAnnotations.length > 0) {
-        enhancedPrompt += 'USER-HIGHLIGHTED AREAS:\n';
-        imageAnnotations.forEach((imageAnnotation, imageIndex) => {
-          if (imageAnnotation.annotations.length > 0) {
-            enhancedPrompt += `Image ${imageIndex + 1} - Specific concerns:\n`;
-            imageAnnotation.annotations.forEach((annotation, index) => {
-              enhancedPrompt += `${index + 1}. At position ${annotation.x.toFixed(1)}%, ${annotation.y.toFixed(1)}%: ${annotation.comment}\n`;
-            });
-            enhancedPrompt += '\n';
-          }
-        });
-      }
-      
-      if (customPrompt && customPrompt.trim()) {
-        enhancedPrompt += `\nADDITIONAL CONTEXT: ${customPrompt}\n\n`;
-      }
-      
-      if (isMultiImage || isComparative) {
-        enhancedPrompt += 'COMPARATIVE ANALYSIS REQUIREMENTS:\n';
-        enhancedPrompt += '- Analyze each image individually first\n';
-        enhancedPrompt += '- Identify patterns and inconsistencies across designs\n';
-        enhancedPrompt += '- Provide specific recommendations for improving consistency\n';
-        enhancedPrompt += '- Highlight which approaches work better and why\n';
-        enhancedPrompt += '- Use imageIndex field (0-based) to specify which image each annotation applies to\n';
-      } else {
-        enhancedPrompt += 'Please provide specific feedback addressing these concerns and identify any additional UX, accessibility, or conversion optimization opportunities.';
-      }
-      
-      console.log('Enhanced prompt created:', {
-        promptLength: enhancedPrompt.length,
-        includesComparativeInstructions: enhancedPrompt.includes('COMPARATIVE ANALYSIS'),
-        includesUserAnnotations: enhancedPrompt.includes('USER-HIGHLIGHTED AREAS')
+      console.log('Intelligent prompt created:', {
+        promptLength: intelligentPrompt.length,
+        hasMainComment: !!(customPrompt && customPrompt.trim()),
+        hasUserAnnotations: !!(imageAnnotations && imageAnnotations.some(ia => ia.annotations.length > 0)),
+        isComparativeAnalysis: isComparative || isMultiImage,
+        followsHierarchy: true
       });
       
       // Update analysis context with enhanced info
       await updateAnalysisContext(currentAnalysis.id, {
-        analysis_prompt: enhancedPrompt,
+        analysis_prompt: intelligentPrompt,
         ai_model_used: 'gpt-4.1-2025-04-14'
       });
 
-      console.log('Calling analyze-design edge function...');
+      console.log('Calling enhanced analyze-design edge function...');
       
-      // Call the AI analysis edge function with multiple images
+      // Call the AI analysis edge function with intelligent prompting
       const { data, error } = await supabase.functions.invoke('analyze-design', {
         body: {
           imageUrls: imagesToAnalyze,
           imageUrl: imagesToAnalyze[0], // Backward compatibility
           analysisId: currentAnalysis.id,
-          analysisPrompt: enhancedPrompt,
+          analysisPrompt: intelligentPrompt,
           designType: currentAnalysis.design_type || 'web',
           isComparative: isComparative || isMultiImage
         }
@@ -118,14 +155,14 @@ export const useAIAnalysis = ({
         console.error('=== Edge Function Error ===');
         console.error('Error details:', error);
         console.error('Error message:', error.message);
-        throw new Error(error.message || 'AI analysis failed');
+        throw new Error(error.message || 'Enhanced AI analysis failed');
       }
 
       console.log('=== Edge Function Response ===');
       console.log('Response data:', data);
 
       if (data?.success && data?.annotations) {
-        console.log('Analysis successful, loading fresh annotations...');
+        console.log('Enhanced analysis successful, loading fresh annotations...');
         
         // Load the fresh annotations from the database
         const freshAnnotations = await getAnnotationsForAnalysis(currentAnalysis.id);
@@ -134,20 +171,20 @@ export const useAIAnalysis = ({
         setAnnotations(freshAnnotations);
         
         const imageText = imagesToAnalyze.length > 1 ? `${imagesToAnalyze.length} images` : 'image';
-        const analysisType = isComparative || isMultiImage ? 'Comparative analysis' : 'Analysis';
+        const analysisType = isComparative || isMultiImage ? 'Enhanced comparative analysis' : 'Enhanced analysis';
         
-        toast.success(`${analysisType} complete! Found ${data.totalAnnotations || freshAnnotations.length} insights across ${imageText}.`, {
+        toast.success(`${analysisType} complete! Found ${data.totalAnnotations || freshAnnotations.length} comprehensive insights across ${imageText}.`, {
           duration: 4000,
         });
         
-        console.log('=== Analysis Hook Completed Successfully ===');
+        console.log('=== Enhanced Analysis Completed Successfully ===');
       } else {
         console.error('Invalid response structure:', data);
-        throw new Error('Invalid response from AI analysis');
+        throw new Error('Invalid response from enhanced AI analysis');
       }
       
     } catch (error) {
-      console.error('=== Analysis Hook Error ===');
+      console.error('=== Enhanced Analysis Error ===');
       console.error('Error name:', error?.name);
       console.error('Error message:', error?.message);
       console.error('Error stack:', error?.stack);
@@ -167,7 +204,7 @@ export const useAIAnalysis = ({
     } finally {
       setIsAnalyzing(false);
     }
-  }, [imageUrl, imageUrls, currentAnalysis, setIsAnalyzing, setAnnotations, isComparative]);
+  }, [imageUrl, imageUrls, currentAnalysis, setIsAnalyzing, setAnnotations, isComparative, buildIntelligentPrompt]);
 
   return {
     handleAnalyze,
