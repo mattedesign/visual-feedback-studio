@@ -48,7 +48,7 @@ const Index = () => {
             AI-Powered Design Feedback
           </h1>
           
-          <p className="text-xl text-slate-300 mb-8 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-xl text-gray-100 mb-8 max-w-3xl mx-auto leading-relaxed">
             Upload your designs and receive intelligent feedback on UX, accessibility, 
             and conversion optimization. Get actionable insights to improve your designs instantly.
           </p>
@@ -67,7 +67,7 @@ const Index = () => {
                 variant="outline" 
                 size="lg"
                 onClick={() => navigate('/auth')}
-                className="border-slate-600 text-slate-300 hover:bg-slate-800 px-8 py-3"
+                className="border-gray-300 text-gray-100 hover:bg-slate-800 hover:text-white px-8 py-3"
               >
                 Sign In
               </Button>
@@ -81,7 +81,7 @@ const Index = () => {
             <CardHeader>
               <Upload className="w-10 h-10 text-blue-400 mb-4" />
               <CardTitle className="text-white">Easy Upload</CardTitle>
-              <CardDescription className="text-slate-400">
+              <CardDescription className="text-gray-200">
                 Drag & drop your designs or paste Figma links for instant analysis
               </CardDescription>
             </CardHeader>
@@ -91,7 +91,7 @@ const Index = () => {
             <CardHeader>
               <Eye className="w-10 h-10 text-purple-400 mb-4" />
               <CardTitle className="text-white">Smart Analysis</CardTitle>
-              <CardDescription className="text-slate-400">
+              <CardDescription className="text-gray-200">
                 AI examines your designs for UX issues, accessibility problems, and optimization opportunities
               </CardDescription>
             </CardHeader>
@@ -101,7 +101,7 @@ const Index = () => {
             <CardHeader>
               <BarChart3 className="w-10 h-10 text-pink-400 mb-4" />
               <CardTitle className="text-white">Actionable Insights</CardTitle>
-              <CardDescription className="text-slate-400">
+              <CardDescription className="text-gray-200">
                 Get specific recommendations with effort estimates and business impact ratings
               </CardDescription>
             </CardHeader>
@@ -115,7 +115,7 @@ const Index = () => {
               <h2 className="text-2xl font-bold text-white mb-4">
                 Ready to improve your designs?
               </h2>
-              <p className="text-slate-200 mb-6">
+              <p className="text-gray-100 mb-6">
                 Join thousands of designers getting AI-powered feedback on their work.
               </p>
               <Button 
