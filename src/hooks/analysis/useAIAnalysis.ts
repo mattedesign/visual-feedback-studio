@@ -83,7 +83,7 @@ export const useAIAnalysis = ({
     
     // Add quality and completeness requirements
     intelligentPrompt += `ANALYSIS QUALITY REQUIREMENTS:\n`;
-    intelligentProment += `• Provide specific, actionable feedback with clear reasoning\n`;
+    intelligentPrompt += `• Provide specific, actionable feedback with clear reasoning\n`;
     intelligentPrompt += `• Balance critical issues with enhancement opportunities\n`;
     intelligentPrompt += `• Include both quick wins and strategic improvements\n`;
     intelligentPrompt += `• Ensure each annotation provides clear value and implementation guidance\n`;
