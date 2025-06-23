@@ -228,7 +228,8 @@ serve(async (req) => {
             severity: annotation.severity,
             feedback: annotation.feedback,
             implementation_effort: annotation.implementationEffort,
-            business_impact: annotation.businessImpact
+            business_impact: annotation.businessImpact,
+            image_index: annotation.imageIndex
           })
           .select()
           .single();

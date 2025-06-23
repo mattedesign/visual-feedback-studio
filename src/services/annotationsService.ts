@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Annotation } from '@/types/analysis';
 import { toast } from 'sonner';
 
-export const saveAnnotation = async (annotation: Omit<Annotation, 'id'>, analysisId: string) => {
+export const saveAnnotation = async (annotation: Omit<Annotation, 'id'>, analysisId: string, imageIndex?: number) => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     toast.error('Please sign in to save annotations');
@@ -20,7 +20,8 @@ export const saveAnnotation = async (annotation: Omit<Annotation, 'id'>, analysi
       severity: annotation.severity,
       feedback: annotation.feedback,
       implementation_effort: annotation.implementationEffort,
-      business_impact: annotation.businessImpact
+      business_impact: annotation.businessImpact,
+      image_index: imageIndex ?? 0
     })
     .select()
     .single();
@@ -39,7 +40,8 @@ export const saveAnnotation = async (annotation: Omit<Annotation, 'id'>, analysi
     severity: data.severity as Annotation['severity'],
     feedback: data.feedback,
     implementationEffort: data.implementation_effort as Annotation['implementationEffort'],
-    businessImpact: data.business_impact as Annotation['businessImpact']
+    businessImpact: data.business_impact as Annotation['businessImpact'],
+    imageIndex: data.image_index ?? 0
   };
 };
 
@@ -63,7 +65,8 @@ export const getAnnotationsForAnalysis = async (analysisId: string): Promise<Ann
     severity: annotation.severity as Annotation['severity'],
     feedback: annotation.feedback,
     implementationEffort: annotation.implementation_effort as Annotation['implementationEffort'],
-    businessImpact: annotation.business_impact as Annotation['businessImpact']
+    businessImpact: annotation.business_impact as Annotation['businessImpact'],
+    imageIndex: annotation.image_index ?? 0
   }));
 };
 

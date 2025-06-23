@@ -65,6 +65,7 @@ export type Database = {
           created_at: string
           feedback: string
           id: string
+          image_index: number | null
           implementation_effort: string
           severity: string
           updated_at: string
@@ -78,6 +79,7 @@ export type Database = {
           created_at?: string
           feedback: string
           id?: string
+          image_index?: number | null
           implementation_effort: string
           severity: string
           updated_at?: string
@@ -91,6 +93,7 @@ export type Database = {
           created_at?: string
           feedback?: string
           id?: string
+          image_index?: number | null
           implementation_effort?: string
           severity?: string
           updated_at?: string
