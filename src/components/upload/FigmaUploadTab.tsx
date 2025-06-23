@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Figma, Link2, Loader2 } from 'lucide-react';
+import { Figma, Link2, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -67,13 +67,27 @@ export const FigmaUploadTab = ({ onFigmaSubmit, isProcessing }: FigmaUploadTabPr
           </Button>
         </div>
 
+        <div className="bg-amber-900/20 border border-amber-500/30 rounded-lg p-4 mb-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <h4 className="text-sm font-medium text-amber-200 mb-1">Important Requirements:</h4>
+              <ul className="text-xs text-amber-100 space-y-1">
+                <li>• Your Figma file must be publicly accessible (not private)</li>
+                <li>• Use "Share" → "Copy link" to get the correct URL</li>
+                <li>• Screenshot capture may take up to 30 seconds</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
         <div className="bg-slate-800/50 rounded-lg p-4">
           <h4 className="text-sm font-medium text-slate-200 mb-2">How it works:</h4>
           <ul className="text-xs text-slate-300 space-y-1">
             <li>• We'll capture a screenshot of your Figma design</li>
-            <li>• Make sure your Figma file is publicly accessible</li>
-            <li>• The captured image will be analyzed for design feedback</li>
             <li>• Works with both file URLs and specific frame links</li>
+            <li>• The captured image will be analyzed for design feedback</li>
+            <li>• Our system handles Figma's loading requirements automatically</li>
           </ul>
         </div>
       </CardContent>

@@ -90,19 +90,19 @@ export const useUrlUpload = (onImageUpload: (imageUrl: string) => void) => {
         return;
       }
 
-      // Show progress message
-      toast.info('Capturing Figma design screenshot...');
+      // Show progress message with longer expected time for Figma
+      toast.info('Capturing Figma design screenshot... This may take up to 30 seconds.');
 
-      // Use Screenshot One to capture the Figma design
+      // Use Screenshot One to capture the Figma design with optimized settings
       const screenshotUrl = await captureWebsiteScreenshot(figmaUrl, {
         fullPage: true,
         viewportWidth: 1200,
         viewportHeight: 800,
-        delay: 3 // Extra delay for Figma to load
+        delay: 8 // 8 seconds delay for Figma to load completely
       });
 
       if (!screenshotUrl) {
-        toast.error('Failed to capture Figma design screenshot');
+        toast.error('Failed to capture Figma design screenshot. Please ensure your Figma file is publicly accessible.');
         setIsProcessing(false);
         return;
       }
@@ -112,7 +112,7 @@ export const useUrlUpload = (onImageUpload: (imageUrl: string) => void) => {
       toast.success('Figma design screenshot captured successfully!');
     } catch (error) {
       console.error('Error processing Figma URL:', error);
-      toast.error('Failed to process Figma URL');
+      toast.error('Failed to process Figma URL. Please ensure your Figma file is publicly accessible.');
     } finally {
       setIsProcessing(false);
     }
