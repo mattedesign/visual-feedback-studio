@@ -110,14 +110,16 @@ const Index = () => {
 
         {/* CTA Section */}
         <div className="text-center">
-          <Card className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/20 backdrop-blur-sm max-w-2xl mx-auto">
-            <CardContent className="p-8">
-              <h2 className="text-2xl font-bold text-white mb-4">
+          <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm max-w-4xl mx-auto">
+            <CardHeader>
+              <CardTitle className="text-2xl text-white">
                 Ready to improve your designs?
-              </h2>
-              <p className="text-gray-100 mb-6">
+              </CardTitle>
+              <CardDescription className="text-gray-200">
                 Join thousands of designers getting AI-powered feedback on their work.
-              </p>
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
               <Button 
                 onClick={handleGetStarted}
                 size="lg"
