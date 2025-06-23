@@ -90,19 +90,28 @@ export const useUrlUpload = (onImageUpload: (imageUrl: string) => void) => {
         return;
       }
 
-      // For Figma, we'll use a design placeholder for now
-      // In production, you'd integrate with Figma's API to get design exports
-      const figmaPlaceholders = [
-        'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=1200&h=800&fit=crop',
-        'https://images.unsplash.com/photo-1558655146-d09347e92766?w=1200&h=800&fit=crop'
-      ];
-      
-      const randomIndex = Math.floor(Math.random() * figmaPlaceholders.length);
-      onImageUpload(figmaPlaceholders[randomIndex]);
-      
-      toast.success('Figma design loaded successfully!');
+      // Show progress message
+      toast.info('Capturing Figma design screenshot...');
+
+      // Use Screenshot One to capture the Figma design
+      const screenshotUrl = await captureWebsiteScreenshot(figmaUrl, {
+        fullPage: true,
+        viewportWidth: 1200,
+        viewportHeight: 800,
+        delay: 3 // Extra delay for Figma to load
+      });
+
+      if (!screenshotUrl) {
+        toast.error('Failed to capture Figma design screenshot');
+        setIsProcessing(false);
+        return;
+      }
+
+      // Pass the screenshot URL to the workflow
+      onImageUpload(screenshotUrl);
+      toast.success('Figma design screenshot captured successfully!');
     } catch (error) {
-      console.error('Error saving Figma URL:', error);
+      console.error('Error processing Figma URL:', error);
       toast.error('Failed to process Figma URL');
     } finally {
       setIsProcessing(false);
