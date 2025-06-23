@@ -38,12 +38,12 @@ export const useUrlUpload = (onImageUpload: (imageUrl: string) => void) => {
       // Show progress message
       toast.info('Capturing website screenshot...');
 
-      // Capture screenshot
+      // Capture screenshot with corrected delay parameter (2 seconds, not 2000ms)
       const screenshotUrl = await captureWebsiteScreenshot(url, {
         fullPage: true,
         viewportWidth: 1200,
         viewportHeight: 800,
-        delay: 2000 // Wait 2 seconds for page to load
+        delay: 2 // 2 seconds delay for page loading
       });
 
       if (!screenshotUrl) {

@@ -70,11 +70,11 @@ serve(async (req) => {
     screenshotApiUrl.searchParams.set('device_scale_factor', deviceScaleFactor.toString());
     screenshotApiUrl.searchParams.set('format', format);
     screenshotApiUrl.searchParams.set('cache', cache.toString());
-    screenshotApiUrl.searchParams.set('response_type', 'json');
-    screenshotApiUrl.searchParams.set('store', 'true');
     
+    // Fix delay parameter - API expects seconds, not milliseconds, and max 30 seconds
     if (delay && delay > 0) {
-      screenshotApiUrl.searchParams.set('delay', delay.toString());
+      const delayInSeconds = Math.min(delay <= 30 ? delay : Math.floor(delay / 1000), 30);
+      screenshotApiUrl.searchParams.set('delay', delayInSeconds.toString());
     }
 
     console.log('Making request to Screenshot One API with URL:', screenshotApiUrl.toString().replace(screenshotApiKey, '[REDACTED]'));
@@ -99,25 +99,18 @@ serve(async (req) => {
       );
     }
 
-    // Parse the JSON response to get the screenshot URL
-    const responseData = await response.json();
-    console.log('Screenshot API response data:', responseData);
+    // Get the screenshot as a blob and convert to data URL for frontend use
+    const screenshotBlob = await response.blob();
+    const screenshotArrayBuffer = await screenshotBlob.arrayBuffer();
     
-    if (!responseData.url) {
-      console.error('No screenshot URL in response:', responseData);
-      return new Response(
-        JSON.stringify({ error: 'No screenshot URL returned from API' }), 
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
+    console.log('Screenshot captured successfully, size:', screenshotArrayBuffer.byteLength, 'bytes');
     
-    console.log('Screenshot captured successfully, URL:', responseData.url);
+    // Return the screenshot as base64 data URL for easy handling in the frontend
+    const screenshotBase64 = btoa(String.fromCharCode(...new Uint8Array(screenshotArrayBuffer)));
+    const dataUrl = `data:image/${format};base64,${screenshotBase64}`;
     
     return new Response(
-      JSON.stringify({ screenshotUrl: responseData.url }), 
+      JSON.stringify({ screenshotUrl: dataUrl }), 
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
