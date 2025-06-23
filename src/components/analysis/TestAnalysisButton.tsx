@@ -23,18 +23,18 @@ export const TestAnalysisButton = () => {
     setDebugInfo('');
 
     try {
-      console.log('=== Starting AI Analysis Test ===');
+      console.log('=== Starting OpenAI Analysis Test ===');
       
       // Use a test image URL that we know exists
       const testImageUrl = 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=800&h=600&fit=crop';
       
-      console.log('Calling AI analysis function with enhanced validation...');
+      console.log('Calling OpenAI analysis function...');
       
       const { data, error } = await supabase.functions.invoke('analyze-design', {
         body: {
           imageUrl: testImageUrl,
           analysisId: 'test-' + Date.now(),
-          analysisPrompt: 'This is a comprehensive test of the AI analysis system. Please provide detailed UX feedback annotations.',
+          analysisPrompt: 'This is a comprehensive test of the OpenAI analysis system. Please provide detailed UX feedback annotations.',
           designType: 'web'
         }
       });
@@ -42,7 +42,7 @@ export const TestAnalysisButton = () => {
       console.log('Function response:', { data, error });
 
       if (error) {
-        console.error('AI analysis test failed:', error);
+        console.error('OpenAI analysis test failed:', error);
         setTestResult('error');
         
         // Enhanced error categorization
@@ -56,23 +56,23 @@ export const TestAnalysisButton = () => {
         setDebugInfo(JSON.stringify(debugData, null, 2));
         
         // Provide specific guidance based on error type
-        if (error.message.includes('Invalid bearer token') || 
+        if (error.message.includes('Incorrect API key') || 
             error.message.includes('authentication_error') ||
             error.message.includes('Authentication failed')) {
-          setTestMessage('❌ API Key Authentication Failed\n\nYour Anthropic API key appears to be invalid or expired. This is the most common cause of analysis failures.\n\n✅ Quick Fix: Re-enter your API key using the button below.');
-          toast.error('API key authentication failed - please update your key');
-        } else if (error.message.includes('ANTHROPIC_API_KEY is not configured')) {
-          setTestMessage('❌ API Key Missing\n\nNo Anthropic API key found in Supabase secrets.\n\n✅ Quick Fix: Add your API key using the button below.');
-          toast.error('API key not configured');
+          setTestMessage('❌ OpenAI API Key Authentication Failed\n\nYour OpenAI API key appears to be invalid or expired.\n\n✅ Quick Fix: Re-enter your OpenAI API key using the button below.');
+          toast.error('OpenAI API key authentication failed - please update your key');
+        } else if (error.message.includes('OPENAI_API_KEY is not configured')) {
+          setTestMessage('❌ OpenAI API Key Missing\n\nNo OpenAI API key found in Supabase secrets.\n\n✅ Quick Fix: Add your OpenAI API key using the button below.');
+          toast.error('OpenAI API key not configured');
         } else if (error.message.includes('Rate limit exceeded')) {
           setTestMessage('⏳ Rate Limit Exceeded\n\nYou\'ve made too many requests. Please wait a moment before trying again.');
           toast.error('Rate limit exceeded - please wait');
         } else if (error.message.includes('Forbidden') || 
                    error.message.includes('may not have access')) {
-          setTestMessage('🚫 Access Denied\n\nYour API key doesn\'t have access to the required Claude models.\n\n✅ Check: Ensure your Anthropic account has sufficient credits and model access.');
+          setTestMessage('🚫 Access Denied\n\nYour API key doesn\'t have access to the required OpenAI models.\n\n✅ Check: Ensure your OpenAI account has sufficient credits and model access.');
           toast.error('Model access denied');
         } else if (error.message.includes('Network or API error')) {
-          setTestMessage('🌐 Network Error\n\nCould not connect to Anthropic API. This may be a temporary connectivity issue.\n\n✅ Try Again: Wait a moment and retry the test.');
+          setTestMessage('🌐 Network Error\n\nCould not connect to OpenAI API. This may be a temporary connectivity issue.\n\n✅ Try Again: Wait a moment and retry the test.');
           toast.error('Network connectivity issue');
         } else {
           setTestMessage(`❌ Analysis Failed\n\n${error.message}\n\n🔍 Check the debug info below for more details.`);
@@ -81,11 +81,11 @@ export const TestAnalysisButton = () => {
         return;
       }
 
-      console.log('AI analysis test completed:', data);
+      console.log('OpenAI analysis test completed:', data);
 
       if (data?.success && data?.annotations && data.annotations.length > 0) {
         setTestResult('success');
-        setTestMessage(`✅ Test Successful!\n\nGenerated ${data.annotations.length} high-quality annotations. Your AI analysis system is working perfectly!\n\n🎉 You can now upload designs for analysis with confidence.`);
+        setTestMessage(`✅ Test Successful!\n\nGenerated ${data.annotations.length} high-quality annotations using OpenAI. Your AI analysis system is working perfectly!\n\n🎉 You can now upload designs for analysis with confidence.`);
         toast.success(`Test successful! Generated ${data.annotations.length} annotations.`);
         
         // Set success debug info
@@ -94,7 +94,8 @@ export const TestAnalysisButton = () => {
           annotationCount: data.annotations.length,
           sampleAnnotation: data.annotations[0],
           testCompleted: true,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          provider: 'OpenAI'
         }, null, 2));
       } else if (data?.error) {
         setTestResult('error');
@@ -125,7 +126,7 @@ export const TestAnalysisButton = () => {
   };
 
   const categorizeError = (errorMessage: string): string => {
-    if (errorMessage.includes('Invalid bearer token') || errorMessage.includes('authentication')) {
+    if (errorMessage.includes('Incorrect API key') || errorMessage.includes('authentication')) {
       return 'auth_error';
     }
     if (errorMessage.includes('Rate limit')) {
@@ -151,12 +152,12 @@ export const TestAnalysisButton = () => {
           {isTesting ? (
             <>
               <div className="animate-spin w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full"></div>
-              Testing Analysis System...
+              Testing OpenAI Analysis...
             </>
           ) : (
             <>
               <Sparkles className="w-4 h-4 mr-2" />
-              Test AI Analysis
+              Test OpenAI Analysis
             </>
           )}
         </Button>
@@ -200,10 +201,10 @@ export const TestAnalysisButton = () => {
         <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700">
           <div className="flex items-center gap-2 mb-3">
             <Key className="w-4 h-4 text-blue-400" />
-            <h4 className="text-sm font-medium text-slate-300">API Key Management</h4>
+            <h4 className="text-sm font-medium text-slate-300">OpenAI API Key Management</h4>
           </div>
           <p className="text-xs text-slate-400 mb-3">
-            If your API key is invalid, you can update it in Supabase Edge Function Secrets.
+            If your OpenAI API key is invalid, you can update it in Supabase Edge Function Secrets.
           </p>
           <div className="flex gap-2">
             <Button
@@ -218,11 +219,11 @@ export const TestAnalysisButton = () => {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => window.open('https://console.anthropic.com/account/keys', '_blank')}
+              onClick={() => window.open('https://platform.openai.com/api-keys', '_blank')}
               className="text-xs"
             >
               <RefreshCw className="w-3 h-3 mr-1" />
-              Get New Key
+              Get OpenAI Key
             </Button>
           </div>
         </div>
@@ -249,12 +250,12 @@ export const TestAnalysisButton = () => {
       )}
 
       <div className="text-xs text-slate-500 space-y-2">
-        <p><strong>💡 Quick Troubleshooting:</strong></p>
+        <p><strong>💡 Quick Troubleshooting (OpenAI):</strong></p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
           <div className="space-y-1">
             <p>🔑 <strong>API Key Issues:</strong></p>
             <ul className="list-disc list-inside space-y-1 ml-2 text-slate-600">
-              <li>Key must start with "sk-ant-"</li>
+              <li>Key must start with "sk-"</li>
               <li>Ensure key is active and has credits</li>
               <li>Check for extra spaces or characters</li>
             </ul>
@@ -262,9 +263,9 @@ export const TestAnalysisButton = () => {
           <div className="space-y-1">
             <p>⚡ <strong>Common Solutions:</strong></p>
             <ul className="list-disc list-inside space-y-1 ml-2 text-slate-600">
-              <li>Generate a new API key</li>
+              <li>Generate a new OpenAI API key</li>
               <li>Wait 1-2 minutes after key updates</li>
-              <li>Check Anthropic account status</li>
+              <li>Check OpenAI account billing status</li>
             </ul>
           </div>
         </div>

@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { AnalysisRequest } from './types.ts';
 import { fetchImageAsBase64 } from './imageProcessor.ts';
 import { createAnalysisPrompt } from './promptBuilder.ts';
-import { analyzeWithClaude } from './claudeClient.ts';
+import { analyzeWithOpenAI } from './openaiClient.ts';
 import { formatAnalysisResponse, formatErrorResponse } from './responseFormatter.ts';
 
 const corsHeaders = {
@@ -17,48 +17,47 @@ serve(async (req) => {
   }
 
   try {
-    console.log('=== AI Analysis Function Started ===');
+    console.log('=== AI Analysis Function Started (OpenAI Mode) ===');
     console.log('Request method:', req.method);
     console.log('Request URL:', req.url);
     
-    // Enhanced environment debugging with validation
-    const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
-    console.log('Environment check - ANTHROPIC_API_KEY exists:', !!anthropicApiKey);
+    // Check for OpenAI API key
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    console.log('Environment check - OPENAI_API_KEY exists:', !!openaiApiKey);
     
-    if (anthropicApiKey) {
-      const cleanKey = anthropicApiKey.trim();
+    if (openaiApiKey) {
+      const cleanKey = openaiApiKey.trim();
       console.log('Environment check:', {
-        apiKeyType: typeof anthropicApiKey,
-        originalLength: anthropicApiKey.length,
+        apiKeyType: typeof openaiApiKey,
+        originalLength: openaiApiKey.length,
         cleanedLength: cleanKey.length,
         firstChars: cleanKey.substring(0, 15),
         lastChars: cleanKey.substring(cleanKey.length - 10),
-        startsCorrectly: cleanKey.startsWith('sk-ant-'),
-        hasValidFormat: /^sk-ant-api03-[A-Za-z0-9_-]+AAA$/.test(cleanKey),
-        hasWhitespace: anthropicApiKey !== cleanKey
+        startsCorrectly: cleanKey.startsWith('sk-'),
+        hasWhitespace: openaiApiKey !== cleanKey
       });
     }
     
-    if (!anthropicApiKey) {
-      console.error('ANTHROPIC_API_KEY environment variable is not set');
-      throw new Error('ANTHROPIC_API_KEY is not configured in Supabase secrets');
+    if (!openaiApiKey) {
+      console.error('OPENAI_API_KEY environment variable is not set');
+      throw new Error('OPENAI_API_KEY is not configured in Supabase secrets');
     }
 
     // Enhanced API key validation
-    const trimmedKey = anthropicApiKey.trim().replace(/[\r\n\t]/g, '');
+    const trimmedKey = openaiApiKey.trim().replace(/[\r\n\t]/g, '');
     console.log('Enhanced key validation:', {
-      originalEqualsProcessed: trimmedKey === anthropicApiKey,
+      originalEqualsProcessed: trimmedKey === openaiApiKey,
       processedLength: trimmedKey.length,
-      hasControlChars: /[\r\n\t]/.test(anthropicApiKey),
-      isValidFormat: /^sk-ant-api03-[A-Za-z0-9_-]+AAA$/.test(trimmedKey)
+      hasControlChars: /[\r\n\t]/.test(openaiApiKey),
+      isValidFormat: trimmedKey.startsWith('sk-')
     });
     
-    if (!trimmedKey.startsWith('sk-ant-')) {
-      console.error('ANTHROPIC_API_KEY does not have expected format (should start with sk-ant-)');
-      throw new Error('ANTHROPIC_API_KEY appears to be invalid - should start with sk-ant-');
+    if (!trimmedKey.startsWith('sk-')) {
+      console.error('OPENAI_API_KEY does not have expected format (should start with sk-)');
+      throw new Error('OPENAI_API_KEY appears to be invalid - should start with sk-');
     }
 
-    // Parse request body with enhanced error handling
+    // Parse request body
     let requestBody;
     try {
       requestBody = await req.json();
@@ -70,7 +69,7 @@ serve(async (req) => {
 
     const { imageUrl, analysisId, analysisPrompt, designType }: AnalysisRequest = requestBody;
 
-    console.log('Starting AI analysis for:', { 
+    console.log('Starting OpenAI analysis for:', { 
       analysisId, 
       imageUrl: imageUrl?.substring(0, 50) + '...', 
       designType,
@@ -85,7 +84,7 @@ serve(async (req) => {
       throw new Error('analysisId is required');
     }
 
-    // Fetch and process the image with enhanced validation
+    // Fetch and process the image
     console.log('Fetching image from URL...');
     const { base64Image, mimeType } = await fetchImageAsBase64(imageUrl);
     console.log('Image processing completed:', {
@@ -99,16 +98,16 @@ serve(async (req) => {
     const systemPrompt = createAnalysisPrompt(analysisPrompt);
     console.log('System prompt created, length:', systemPrompt.length);
 
-    // Analyze with Claude using enhanced client
-    console.log('Calling enhanced Claude API...');
-    const annotations = await analyzeWithClaude(base64Image, mimeType, systemPrompt, trimmedKey);
+    // Analyze with OpenAI
+    console.log('Calling OpenAI API...');
+    const annotations = await analyzeWithOpenAI(base64Image, mimeType, systemPrompt, trimmedKey);
 
     console.log('Analysis completed successfully with', annotations.length, 'annotations');
 
     // Format and return response
     const responseData = formatAnalysisResponse(annotations);
     
-    console.log('=== AI Analysis Function Completed Successfully ===');
+    console.log('=== AI Analysis Function Completed Successfully (OpenAI) ===');
     
     return new Response(
       JSON.stringify(responseData),
@@ -123,7 +122,7 @@ serve(async (req) => {
     
     // Enhanced error categorization for debugging
     let errorCategory = 'unknown_error';
-    if (error.message.includes('Invalid bearer token') || error.message.includes('authentication')) {
+    if (error.message.includes('Incorrect API key') || error.message.includes('authentication')) {
       errorCategory = 'auth_error';
     } else if (error.message.includes('Rate limit')) {
       errorCategory = 'rate_limit';
