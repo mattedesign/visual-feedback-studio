@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,12 +5,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { X, MessageSquare, Sparkles } from 'lucide-react';
+import { MultiImageAnnotateStep } from './MultiImageAnnotateStep';
 
 interface AnnotateStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
 }
 
 export const AnnotateStep = ({ workflow }: AnnotateStepProps) => {
+  // If multiple images are selected, use the multi-image component
+  if (workflow.selectedImages.length > 1) {
+    return <MultiImageAnnotateStep workflow={workflow} />;
+  }
+
   const [showCommentDialog, setShowCommentDialog] = useState(false);
   const [currentPosition, setCurrentPosition] = useState<{ x: number; y: number } | null>(null);
   const [commentText, setCommentText] = useState('');
