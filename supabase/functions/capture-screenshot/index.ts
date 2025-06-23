@@ -38,8 +38,6 @@ const validateScreenshotContent = (base64Data: string): boolean => {
     return false;
   }
   
-  // Additional checks could be added here to detect bot detection pages
-  // For now, we'll rely on size as a basic indicator
   return true;
 };
 
@@ -68,7 +66,7 @@ const captureScreenshot = async (requestData: ScreenshotRequest, attempt: number
 
   const isFigma = isFigmaUrl(url);
 
-  // Build the Screenshot One API URL with enhanced parameters
+  // Build the Screenshot One API URL with only valid parameters
   const screenshotApiUrl = new URL('https://api.screenshotone.com/take');
   screenshotApiUrl.searchParams.set('access_key', screenshotApiKey);
   screenshotApiUrl.searchParams.set('url', url);
@@ -79,42 +77,23 @@ const captureScreenshot = async (requestData: ScreenshotRequest, attempt: number
   screenshotApiUrl.searchParams.set('format', format);
   screenshotApiUrl.searchParams.set('cache', cache.toString());
 
-  // Enhanced Figma-specific optimizations
+  // Enhanced Figma-specific optimizations using only valid parameters
   if (isFigma) {
-    console.log('Applying enhanced Figma-specific optimizations...');
+    console.log('Applying Figma-specific optimizations...');
     
-    // Advanced bot detection avoidance
-    screenshotApiUrl.searchParams.set('ignore_host_errors', 'true');
+    // Use valid parameters for bot detection avoidance
     screenshotApiUrl.searchParams.set('block_ads', 'true');
     screenshotApiUrl.searchParams.set('block_trackers', 'true');
     screenshotApiUrl.searchParams.set('block_cookie_banners', 'true');
-    screenshotApiUrl.searchParams.set('block_requests', 'googletagmanager.com,google-analytics.com,mixpanel.com');
     
-    // Enhanced browser simulation
+    // Enhanced browser simulation with valid user agent
     screenshotApiUrl.searchParams.set('user_agent', getRandomUserAgent());
-    screenshotApiUrl.searchParams.set('accept_language', 'en-US,en;q=0.9');
-    screenshotApiUrl.searchParams.set('timezone', 'America/New_York');
     
-    // Advanced timing and loading parameters
-    const figmaDelay = Math.max(delay || 10, 10); // Minimum 10 seconds for Figma
+    // Advanced timing parameters - minimum 15 seconds for Figma
+    const figmaDelay = Math.max(delay || 15, 15);
     screenshotApiUrl.searchParams.set('delay', Math.min(figmaDelay, 30).toString());
     screenshotApiUrl.searchParams.set('wait_until', 'networkidle0');
-    screenshotApiUrl.searchParams.set('timeout', '60'); // 60 second timeout
-    
-    // Additional headers to appear more like a real browser
-    screenshotApiUrl.searchParams.set('extra_headers', JSON.stringify({
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-      'Accept-Encoding': 'gzip, deflate, br',
-      'DNT': '1',
-      'Upgrade-Insecure-Requests': '1',
-      'Sec-Fetch-Dest': 'document',
-      'Sec-Fetch-Mode': 'navigate',
-      'Sec-Fetch-Site': 'none'
-    }));
-    
-    // Simulate viewport and scrolling behavior
-    screenshotApiUrl.searchParams.set('scroll_delay', '2');
-    screenshotApiUrl.searchParams.set('response_type', 'png');
+    screenshotApiUrl.searchParams.set('timeout', '60');
     
   } else {
     // Standard delay handling for non-Figma URLs
@@ -127,7 +106,8 @@ const captureScreenshot = async (requestData: ScreenshotRequest, attempt: number
     screenshotApiUrl.searchParams.set('user_agent', getRandomUserAgent());
   }
 
-  console.log('Making request to Screenshot One API with enhanced parameters...');
+  console.log('Making request to Screenshot One API...');
+  console.log('API URL:', screenshotApiUrl.toString());
   
   const response = await fetch(screenshotApiUrl.toString());
   
@@ -156,15 +136,15 @@ const attemptFigmaScreenshotWithFallback = async (requestData: ScreenshotRequest
   const maxRetries = 3;
   let lastError: Error | null = null;
 
-  // Strategy 1: Standard approach with enhanced parameters
+  // Strategy 1: Standard approach with valid parameters
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`Strategy 1 - Attempt ${attempt}: Enhanced standard approach`);
+      console.log(`Strategy 1 - Attempt ${attempt}: Standard approach with valid parameters`);
       const response = await captureScreenshot(requestData, attempt);
       const screenshotBlob = await response.blob();
       const screenshotArrayBuffer = await screenshotBlob.arrayBuffer();
       
-      if (screenshotArrayBuffer.byteLength > 5000) { // Reasonable size check
+      if (screenshotArrayBuffer.byteLength > 5000) {
         const screenshotBase64 = btoa(String.fromCharCode(...new Uint8Array(screenshotArrayBuffer)));
         
         if (validateScreenshotContent(screenshotBase64)) {
@@ -187,11 +167,11 @@ const attemptFigmaScreenshotWithFallback = async (requestData: ScreenshotRequest
   }
 
   // Strategy 2: Reduced parameters approach
-  console.log('Strategy 2: Trying with reduced parameters...');
+  console.log('Strategy 2: Trying with minimal parameters...');
   try {
     const reducedRequest = {
       ...requestData,
-      delay: 15, // Shorter delay
+      delay: 10, // Shorter delay
       viewportWidth: 1440,
       viewportHeight: 900,
     };
@@ -203,7 +183,7 @@ const attemptFigmaScreenshotWithFallback = async (requestData: ScreenshotRequest
     if (screenshotArrayBuffer.byteLength > 5000) {
       const screenshotBase64 = btoa(String.fromCharCode(...new Uint8Array(screenshotArrayBuffer)));
       if (validateScreenshotContent(screenshotBase64)) {
-        console.log('Strategy 2: Success with reduced parameters!');
+        console.log('Strategy 2: Success with minimal parameters!');
         return `data:image/${requestData.format || 'png'};base64,${screenshotBase64}`;
       }
     }
@@ -264,7 +244,7 @@ serve(async (req) => {
       statusCode = 500;
       errorMessage = 'Screenshot service configuration error';
     } else if (errorMessage.includes('host_returned_error') || errorMessage.includes('bot detection')) {
-      errorMessage = 'The Figma design could not be captured. Please ensure the design is publicly accessible and try again. If the issue persists, the design may have restricted access.';
+      errorMessage = 'The Figma design could not be captured. Please ensure the design is publicly accessible and try again.';
     } else if (errorMessage.includes('timeout')) {
       errorMessage = 'Screenshot capture timed out. The design may be too complex or have restricted access.';
     }
