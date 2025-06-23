@@ -28,9 +28,9 @@ export const WebsiteUploadTab = ({ onUrlSubmit, isProcessing }: WebsiteUploadTab
     <Card className="bg-slate-800/50 border-slate-700">
       <CardContent className="p-8">
         <div className="text-center mb-6">
-          <Globe className="w-16 h-16 mx-auto mb-4 text-slate-400" />
+          <Globe className="w-16 h-16 mx-auto mb-4 text-slate-300" />
           <h3 className="text-2xl font-semibold mb-3">Analyze Live Website</h3>
-          <p className="text-slate-400">
+          <p className="text-slate-200">
             Enter any website URL to capture and analyze its design
           </p>
         </div>

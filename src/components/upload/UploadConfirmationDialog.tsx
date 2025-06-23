@@ -22,7 +22,7 @@ export const UploadConfirmationDialog = ({
       <AlertDialogContent className="bg-slate-800 border-slate-700">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-white">Upload Successful!</AlertDialogTitle>
-          <AlertDialogDescription className="text-slate-300">
+          <AlertDialogDescription className="text-slate-200">
             Your design "{uploadedAnalysis?.title}" has been uploaded successfully. 
             What would you like to do next?
           </AlertDialogDescription>

@@ -22,7 +22,7 @@ export const WelcomeSection = ({
         <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
           Design Analysis Tool
         </h1>
-        <p className="text-xl text-slate-300 mb-8">
+        <p className="text-xl text-slate-200 mb-8">
           Upload your design and get AI-powered feedback on UX, accessibility, and conversion optimization
         </p>
       </div>

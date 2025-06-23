@@ -33,9 +33,9 @@ export const FigmaUploadTab = ({ onFigmaSubmit, isProcessing }: FigmaUploadTabPr
     <Card className="bg-slate-800/50 border-slate-700">
       <CardContent className="p-8">
         <div className="text-center mb-6">
-          <Figma className="w-16 h-16 mx-auto mb-4 text-slate-400" />
+          <Figma className="w-16 h-16 mx-auto mb-4 text-slate-300" />
           <h3 className="text-2xl font-semibold mb-3">Analyze Figma Design</h3>
-          <p className="text-slate-400">
+          <p className="text-slate-200">
             Paste your Figma file or frame link for direct analysis
           </p>
         </div>

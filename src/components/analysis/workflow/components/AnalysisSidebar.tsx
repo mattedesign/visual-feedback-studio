@@ -61,7 +61,7 @@ export const AnalysisSidebar = ({
         </h4>
         <div className="space-y-2 max-h-32 overflow-y-auto">
           {currentImageAnnotations.length === 0 ? (
-            <div className="text-xs text-slate-400 italic p-2 bg-slate-700/50 rounded">
+            <div className="text-xs text-slate-200 italic p-2 bg-slate-700/50 rounded">
               No comments yet. Click on the image to add feedback points.
             </div>
           ) : (
@@ -73,12 +73,12 @@ export const AnalysisSidebar = ({
                     size="sm"
                     variant="ghost"
                     onClick={() => onDeleteAnnotation(annotation.id)}
-                    className="h-4 w-4 p-0 text-slate-400 hover:text-red-400"
+                    className="h-4 w-4 p-0 text-slate-300 hover:text-red-400"
                   >
                     <X className="w-3 h-3" />
                   </Button>
                 </div>
-                <p className="text-slate-300 text-xs line-clamp-2">{annotation.comment}</p>
+                <p className="text-slate-200 text-xs line-clamp-2">{annotation.comment}</p>
               </div>
             ))
           )}

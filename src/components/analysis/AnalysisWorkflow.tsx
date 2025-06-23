@@ -50,7 +50,7 @@ export const AnalysisWorkflow = () => {
                       ? 'bg-blue-500 text-white'
                       : index < ['upload', 'review', 'annotate', 'analyzing', 'results'].indexOf(workflow.currentStep)
                       ? 'bg-green-500 text-white'
-                      : 'bg-slate-700 text-slate-400'
+                      : 'bg-slate-700 text-slate-300'
                   }`}
                 >
                   {index + 1}
@@ -68,13 +68,13 @@ export const AnalysisWorkflow = () => {
             ))}
           </div>
           <div className="flex items-center justify-center space-x-16 mt-2">
-            <span className="text-xs text-slate-400">Upload</span>
-            <span className="text-xs text-slate-400">Review</span>
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-slate-200">Upload</span>
+            <span className="text-xs text-slate-200">Review</span>
+            <span className="text-xs text-slate-200">
               {workflow.selectedImages.length > 1 ? 'Multi-Annotate' : 'Annotate'}
             </span>
-            <span className="text-xs text-slate-400">Analyzing</span>
-            <span className="text-xs text-slate-400">Results</span>
+            <span className="text-xs text-slate-200">Analyzing</span>
+            <span className="text-xs text-slate-200">Results</span>
           </div>
         </div>
 

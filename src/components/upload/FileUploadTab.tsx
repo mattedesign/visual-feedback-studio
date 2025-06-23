@@ -40,14 +40,14 @@ export const FileUploadTab = ({ onFileUpload, onDemoUpload, isProcessing }: File
           }`}
         >
           <input {...getInputProps()} />
-          <Upload className="w-16 h-16 mx-auto mb-6 text-slate-400" />
+          <Upload className="w-16 h-16 mx-auto mb-6 text-slate-300" />
           <h3 className="text-2xl font-semibold mb-3">
             {isDragActive ? 'Drop your design here' : 'Upload your design'}
           </h3>
-          <p className="text-slate-400 mb-6">
+          <p className="text-slate-200 mb-6">
             Drag and drop your image, or click to browse
           </p>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-300">
             Supports PNG, JPG, WebP, SVG • Max 10MB
           </p>
         </div>
