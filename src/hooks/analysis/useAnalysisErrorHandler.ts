@@ -14,9 +14,16 @@ export const useAnalysisErrorHandler = ({
   
   const handleAnalysisError = useCallback(async (error: unknown) => {
     console.error('=== Enhanced Analysis Error ===');
-    console.error('Error name:', error?.name);
-    console.error('Error message:', error?.message);
-    console.error('Error stack:', error?.stack);
+    
+    // Type guard to safely access error properties
+    if (error && typeof error === 'object') {
+      const errorObj = error as Record<string, unknown>;
+      console.error('Error name:', errorObj.name);
+      console.error('Error message:', errorObj.message);
+      console.error('Error stack:', errorObj.stack);
+    } else {
+      console.error('Error:', error);
+    }
     
     // Update analysis status to failed
     try {
