@@ -22,6 +22,27 @@ const isFigmaUrl = (url: string): boolean => {
   return url.toLowerCase().includes('figma.com');
 };
 
+const getRandomUserAgent = (): string => {
+  const userAgents = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15',
+  ];
+  return userAgents[Math.floor(Math.random() * userAgents.length)];
+};
+
+const validateScreenshotContent = (base64Data: string): boolean => {
+  // Basic validation - check if it's a valid base64 image
+  if (!base64Data || base64Data.length < 1000) {
+    return false;
+  }
+  
+  // Additional checks could be added here to detect bot detection pages
+  // For now, we'll rely on size as a basic indicator
+  return true;
+};
+
 const captureScreenshot = async (requestData: ScreenshotRequest, attempt: number = 1): Promise<Response> => {
   const screenshotApiKey = Deno.env.get('SCREENSHOT_ONE_ACCESS_KEY');
   
@@ -47,7 +68,7 @@ const captureScreenshot = async (requestData: ScreenshotRequest, attempt: number
 
   const isFigma = isFigmaUrl(url);
 
-  // Build the Screenshot One API URL with correct parameter names
+  // Build the Screenshot One API URL with enhanced parameters
   const screenshotApiUrl = new URL('https://api.screenshotone.com/take');
   screenshotApiUrl.searchParams.set('access_key', screenshotApiKey);
   screenshotApiUrl.searchParams.set('url', url);
@@ -58,36 +79,55 @@ const captureScreenshot = async (requestData: ScreenshotRequest, attempt: number
   screenshotApiUrl.searchParams.set('format', format);
   screenshotApiUrl.searchParams.set('cache', cache.toString());
 
-  // Figma-specific optimizations
+  // Enhanced Figma-specific optimizations
   if (isFigma) {
-    console.log('Applying Figma-specific optimizations...');
+    console.log('Applying enhanced Figma-specific optimizations...');
     
-    // Ignore host errors for Figma (they often return non-2xx status codes)
+    // Advanced bot detection avoidance
     screenshotApiUrl.searchParams.set('ignore_host_errors', 'true');
-    
-    // Enable JavaScript rendering
     screenshotApiUrl.searchParams.set('block_ads', 'true');
     screenshotApiUrl.searchParams.set('block_trackers', 'true');
     screenshotApiUrl.searchParams.set('block_cookie_banners', 'true');
+    screenshotApiUrl.searchParams.set('block_requests', 'googletagmanager.com,google-analytics.com,mixpanel.com');
     
-    // Increase delay for Figma to load properly (minimum 5 seconds for Figma)
-    const figmaDelay = Math.max(delay || 5, 5);
+    // Enhanced browser simulation
+    screenshotApiUrl.searchParams.set('user_agent', getRandomUserAgent());
+    screenshotApiUrl.searchParams.set('accept_language', 'en-US,en;q=0.9');
+    screenshotApiUrl.searchParams.set('timezone', 'America/New_York');
+    
+    // Advanced timing and loading parameters
+    const figmaDelay = Math.max(delay || 10, 10); // Minimum 10 seconds for Figma
     screenshotApiUrl.searchParams.set('delay', Math.min(figmaDelay, 30).toString());
-    
-    // Set user agent to mimic a real browser
-    screenshotApiUrl.searchParams.set('user_agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-    
-    // Use the correct wait_until parameter - networkidle0 instead of network_idle
     screenshotApiUrl.searchParams.set('wait_until', 'networkidle0');
+    screenshotApiUrl.searchParams.set('timeout', '60'); // 60 second timeout
+    
+    // Additional headers to appear more like a real browser
+    screenshotApiUrl.searchParams.set('extra_headers', JSON.stringify({
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'DNT': '1',
+      'Upgrade-Insecure-Requests': '1',
+      'Sec-Fetch-Dest': 'document',
+      'Sec-Fetch-Mode': 'navigate',
+      'Sec-Fetch-Site': 'none'
+    }));
+    
+    // Simulate viewport and scrolling behavior
+    screenshotApiUrl.searchParams.set('scroll_delay', '2');
+    screenshotApiUrl.searchParams.set('response_type', 'png');
+    
   } else {
     // Standard delay handling for non-Figma URLs
     if (delay && delay > 0) {
       const delayInSeconds = Math.min(delay <= 30 ? delay : Math.floor(delay / 1000), 30);
       screenshotApiUrl.searchParams.set('delay', delayInSeconds.toString());
     }
+    
+    // Basic user agent for non-Figma URLs
+    screenshotApiUrl.searchParams.set('user_agent', getRandomUserAgent());
   }
 
-  console.log('Making request to Screenshot One API with URL:', screenshotApiUrl.toString().replace(screenshotApiKey, '[REDACTED]'));
+  console.log('Making request to Screenshot One API with enhanced parameters...');
   
   const response = await fetch(screenshotApiUrl.toString());
   
@@ -112,6 +152,70 @@ const captureScreenshot = async (requestData: ScreenshotRequest, attempt: number
   return response;
 };
 
+const attemptFigmaScreenshotWithFallback = async (requestData: ScreenshotRequest): Promise<string> => {
+  const maxRetries = 3;
+  let lastError: Error | null = null;
+
+  // Strategy 1: Standard approach with enhanced parameters
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`Strategy 1 - Attempt ${attempt}: Enhanced standard approach`);
+      const response = await captureScreenshot(requestData, attempt);
+      const screenshotBlob = await response.blob();
+      const screenshotArrayBuffer = await screenshotBlob.arrayBuffer();
+      
+      if (screenshotArrayBuffer.byteLength > 5000) { // Reasonable size check
+        const screenshotBase64 = btoa(String.fromCharCode(...new Uint8Array(screenshotArrayBuffer)));
+        
+        if (validateScreenshotContent(screenshotBase64)) {
+          console.log(`Strategy 1 - Attempt ${attempt}: Success! Screenshot size:`, screenshotArrayBuffer.byteLength, 'bytes');
+          return `data:image/${requestData.format || 'png'};base64,${screenshotBase64}`;
+        }
+      }
+      
+      console.log(`Strategy 1 - Attempt ${attempt}: Screenshot too small or invalid, retrying...`);
+    } catch (error) {
+      lastError = error;
+      console.error(`Strategy 1 - Attempt ${attempt} failed:`, error.message);
+      
+      if (attempt < maxRetries) {
+        const waitTime = Math.pow(2, attempt - 1) * 2000; // 2s, 4s, 8s
+        console.log(`Waiting ${waitTime}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      }
+    }
+  }
+
+  // Strategy 2: Reduced parameters approach
+  console.log('Strategy 2: Trying with reduced parameters...');
+  try {
+    const reducedRequest = {
+      ...requestData,
+      delay: 15, // Shorter delay
+      viewportWidth: 1440,
+      viewportHeight: 900,
+    };
+    
+    const response = await captureScreenshot(reducedRequest, 1);
+    const screenshotBlob = await response.blob();
+    const screenshotArrayBuffer = await screenshotBlob.arrayBuffer();
+    
+    if (screenshotArrayBuffer.byteLength > 5000) {
+      const screenshotBase64 = btoa(String.fromCharCode(...new Uint8Array(screenshotArrayBuffer)));
+      if (validateScreenshotContent(screenshotBase64)) {
+        console.log('Strategy 2: Success with reduced parameters!');
+        return `data:image/${requestData.format || 'png'};base64,${screenshotBase64}`;
+      }
+    }
+  } catch (error) {
+    console.error('Strategy 2 failed:', error.message);
+    lastError = error;
+  }
+
+  // If all strategies fail, throw the last error
+  throw lastError || new Error('All screenshot capture strategies failed');
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -120,45 +224,33 @@ serve(async (req) => {
 
   try {
     const requestData: ScreenshotRequest = await req.json();
-    const maxRetries = isFigmaUrl(requestData.url) ? 3 : 1;
-    let lastError: Error | null = null;
+    const isFigma = isFigmaUrl(requestData.url);
+    
+    console.log(`Processing ${isFigma ? 'Figma' : 'standard'} URL:`, requestData.url);
 
-    // Retry logic with exponential backoff
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        const response = await captureScreenshot(requestData, attempt);
-        
-        // Get the screenshot as a blob and convert to data URL for frontend use
-        const screenshotBlob = await response.blob();
-        const screenshotArrayBuffer = await screenshotBlob.arrayBuffer();
-        
-        console.log(`Attempt ${attempt}: Screenshot captured successfully, size:`, screenshotArrayBuffer.byteLength, 'bytes');
-        
-        // Return the screenshot as base64 data URL for easy handling in the frontend
-        const screenshotBase64 = btoa(String.fromCharCode(...new Uint8Array(screenshotArrayBuffer)));
-        const dataUrl = `data:image/${requestData.format || 'png'};base64,${screenshotBase64}`;
-        
-        return new Response(
-          JSON.stringify({ screenshotUrl: dataUrl }), 
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
-      } catch (error) {
-        lastError = error;
-        console.error(`Attempt ${attempt} failed:`, error.message);
-        
-        // If this isn't the last attempt, wait before retrying
-        if (attempt < maxRetries) {
-          const waitTime = Math.pow(2, attempt - 1) * 1000; // Exponential backoff: 1s, 2s, 4s
-          console.log(`Waiting ${waitTime}ms before retry...`);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
-        }
-      }
+    let screenshotUrl: string;
+
+    if (isFigma) {
+      // Use enhanced Figma capture with fallback strategies
+      screenshotUrl = await attemptFigmaScreenshotWithFallback(requestData);
+    } else {
+      // Standard single-attempt capture for non-Figma URLs
+      const response = await captureScreenshot(requestData, 1);
+      const screenshotBlob = await response.blob();
+      const screenshotArrayBuffer = await screenshotBlob.arrayBuffer();
+      
+      console.log('Standard capture completed, size:', screenshotArrayBuffer.byteLength, 'bytes');
+      
+      const screenshotBase64 = btoa(String.fromCharCode(...new Uint8Array(screenshotArrayBuffer)));
+      screenshotUrl = `data:image/${requestData.format || 'png'};base64,${screenshotBase64}`;
     }
-
-    // If all retries failed, return the last error
-    throw lastError;
+    
+    return new Response(
+      JSON.stringify({ screenshotUrl }), 
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
   } catch (error) {
     console.error('Error in capture-screenshot function:', error);
     
@@ -171,14 +263,17 @@ serve(async (req) => {
     } else if (errorMessage.includes('API key not configured')) {
       statusCode = 500;
       errorMessage = 'Screenshot service configuration error';
-    } else if (errorMessage.includes('host_returned_error')) {
-      errorMessage = 'The target website is not accessible or returned an error. For Figma URLs, please ensure the design is publicly accessible.';
+    } else if (errorMessage.includes('host_returned_error') || errorMessage.includes('bot detection')) {
+      errorMessage = 'The Figma design could not be captured. Please ensure the design is publicly accessible and try again. If the issue persists, the design may have restricted access.';
+    } else if (errorMessage.includes('timeout')) {
+      errorMessage = 'Screenshot capture timed out. The design may be too complex or have restricted access.';
     }
     
     return new Response(
       JSON.stringify({ 
         error: errorMessage,
-        details: error.message !== errorMessage ? error.message : undefined
+        details: error.message !== errorMessage ? error.message : undefined,
+        isFigmaUrl: error.message.includes('figma.com') ? true : undefined
       }), 
       { 
         status: statusCode, 

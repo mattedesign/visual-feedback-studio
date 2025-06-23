@@ -90,19 +90,21 @@ export const useUrlUpload = (onImageUpload: (imageUrl: string) => void) => {
         return;
       }
 
-      // Show progress message with longer expected time for Figma
-      toast.info('Capturing Figma design screenshot... This may take up to 30 seconds.');
+      // Show enhanced progress message with longer expected time for Figma
+      toast.info('Capturing Figma design screenshot... This may take up to 60 seconds due to advanced processing.', {
+        duration: 5000,
+      });
 
-      // Use Screenshot One to capture the Figma design with optimized settings
+      // Use enhanced Screenshot One capture for Figma with optimized settings
       const screenshotUrl = await captureWebsiteScreenshot(figmaUrl, {
         fullPage: true,
         viewportWidth: 1200,
         viewportHeight: 800,
-        delay: 8 // 8 seconds delay for Figma to load completely
+        delay: 12 // 12 seconds delay for Figma to load completely with enhanced processing
       });
 
       if (!screenshotUrl) {
-        toast.error('Failed to capture Figma design screenshot. Please ensure your Figma file is publicly accessible.');
+        toast.error('Failed to capture Figma design screenshot. Please ensure your Figma file is publicly accessible and try again.');
         setIsProcessing(false);
         return;
       }
@@ -112,7 +114,17 @@ export const useUrlUpload = (onImageUpload: (imageUrl: string) => void) => {
       toast.success('Figma design screenshot captured successfully!');
     } catch (error) {
       console.error('Error processing Figma URL:', error);
-      toast.error('Failed to process Figma URL. Please ensure your Figma file is publicly accessible.');
+      
+      // Enhanced error messaging for Figma-specific issues
+      let errorMessage = 'Failed to process Figma URL. Please ensure your Figma file is publicly accessible.';
+      
+      if (error.message.includes('timeout')) {
+        errorMessage = 'Figma capture timed out. The design may be too complex or have restricted access.';
+      } else if (error.message.includes('bot detection') || error.message.includes('host_returned_error')) {
+        errorMessage = 'Unable to access the Figma design. Please check that the link is public and accessible.';
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setIsProcessing(false);
     }
