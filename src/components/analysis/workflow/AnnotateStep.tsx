@@ -34,12 +34,12 @@ export const AnnotateStep = ({ workflow }: AnnotateStepProps) => {
   };
 
   const handleSaveComment = () => {
-    if (!currentPosition || !commentText.trim()) return;
+    if (!currentPosition || !commentText.trim() || !workflow.selectedImageUrl) return;
 
     if (editingId) {
-      workflow.updateUserAnnotation(editingId, commentText);
+      workflow.updateUserAnnotation(workflow.selectedImageUrl, editingId, commentText);
     } else {
-      workflow.addUserAnnotation({
+      workflow.addUserAnnotation(workflow.selectedImageUrl, {
         x: currentPosition.x,
         y: currentPosition.y,
         comment: commentText
@@ -63,7 +63,8 @@ export const AnnotateStep = ({ workflow }: AnnotateStepProps) => {
   };
 
   const handleDeleteAnnotation = (id: string) => {
-    workflow.removeUserAnnotation(id);
+    if (!workflow.selectedImageUrl) return;
+    workflow.removeUserAnnotation(workflow.selectedImageUrl, id);
   };
 
   const handleSubmitForAnalysis = () => {
