@@ -4,7 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 import { AnalysisRequest } from './types.ts';
 import { fetchImageAsBase64 } from './imageProcessor.ts';
 import { createAnalysisPrompt } from './promptBuilder.ts';
-import { analyzeWithOpenAI } from './openaiClient.ts';
+import { analyzeWithAIProvider, determineOptimalProvider, AIProvider } from './aiProviderRouter.ts';
 import { formatAnalysisResponse, formatErrorResponse } from './responseFormatter.ts';
 
 const corsHeaders = {
@@ -18,50 +18,29 @@ serve(async (req) => {
   }
 
   try {
-    console.log('=== AI Analysis Edge Function Started ===');
+    console.log('=== Enhanced AI Analysis Edge Function Started ===');
     console.log('Request method:', req.method);
     console.log('Request URL:', req.url);
     console.log('Timestamp:', new Date().toISOString());
     
     // Enhanced environment validation
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
     console.log('Environment validation:', {
-      openaiKeyExists: !!openaiApiKey,
-      openaiKeyLength: openaiApiKey?.length || 0,
-      openaiKeyPrefix: openaiApiKey?.substring(0, 7) || 'none',
       supabaseUrlExists: !!supabaseUrl,
-      supabaseServiceKeyExists: !!supabaseServiceKey
+      supabaseServiceKeyExists: !!supabaseServiceKey,
+      openaiKeyExists: !!Deno.env.get('OPENAI_API_KEY'),
+      claudeKeyExists: !!Deno.env.get('ANTHROPIC_API_KEY')
     });
-    
-    if (!openaiApiKey) {
-      console.error('CRITICAL: OPENAI_API_KEY environment variable is not set');
-      throw new Error('OPENAI_API_KEY is not configured in Supabase secrets');
-    }
 
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error('CRITICAL: Supabase configuration missing');
       throw new Error('Supabase configuration is missing');
     }
 
-    // Initialize Supabase client with service role key for database operations
+    // Initialize Supabase client
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Enhanced API key validation
-    const trimmedKey = openaiApiKey.trim().replace(/[\r\n\t]/g, '');
-    console.log('API key validation:', {
-      originalEqualsProcessed: trimmedKey === openaiApiKey,
-      processedLength: trimmedKey.length,
-      hasControlChars: /[\r\n\t]/.test(openaiApiKey),
-      isValidFormat: trimmedKey.startsWith('sk-')
-    });
-    
-    if (!trimmedKey.startsWith('sk-')) {
-      console.error('CRITICAL: OPENAI_API_KEY does not have expected format');
-      throw new Error('OPENAI_API_KEY appears to be invalid - should start with sk-');
-    }
 
     // Parse and validate request body
     let requestBody: AnalysisRequest;
@@ -73,7 +52,7 @@ serve(async (req) => {
       throw new Error('Invalid JSON in request body');
     }
 
-    const { imageUrl, imageUrls, analysisId, analysisPrompt, designType, isComparative } = requestBody;
+    const { imageUrl, imageUrls, analysisId, analysisPrompt, designType, isComparative, aiProvider } = requestBody;
 
     // Determine which images to process
     const imagesToProcess = imageUrls && imageUrls.length > 0 ? imageUrls : (imageUrl ? [imageUrl] : []);
@@ -87,8 +66,7 @@ serve(async (req) => {
       isMultiImage,
       designType,
       promptLength: analysisPrompt?.length || 0,
-      requestHasImageUrls: !!imageUrls,
-      requestHasImageUrl: !!imageUrl
+      requestedProvider: aiProvider || 'auto'
     });
 
     // Validate required parameters
@@ -101,17 +79,27 @@ serve(async (req) => {
       throw new Error('analysisId is required');
     }
 
+    // Determine AI provider configuration
+    let providerConfig;
+    if (aiProvider && (aiProvider === 'openai' || aiProvider === 'claude')) {
+      // Use explicitly requested provider
+      providerConfig = { provider: aiProvider as AIProvider };
+      console.log(`Using explicitly requested provider: ${aiProvider}`);
+    } else {
+      // Auto-determine optimal provider
+      providerConfig = determineOptimalProvider();
+      console.log(`Auto-determined provider config:`, providerConfig);
+    }
+
     // Enhanced image processing with detailed logging and timeout protection
     console.log('=== Image Processing Phase ===');
     
-    // Process images with individual error handling and timeout
     const processedImages = [];
     for (let index = 0; index < imagesToProcess.length; index++) {
       const url = imagesToProcess[index];
       console.log(`Processing image ${index + 1}/${imagesToProcess.length}: ${url.substring(0, 50)}...`);
       
       try {
-        // Add timeout protection for individual image processing
         const timeoutPromise = new Promise((_, reject) => {
           setTimeout(() => reject(new Error('Image processing timeout (30s)')), 30000);
         });
@@ -171,36 +159,37 @@ serve(async (req) => {
       isComparativeAnalysis: isComparative || isMultiImage
     });
 
-    // Call OpenAI with enhanced error handling and timeout
-    console.log('=== OpenAI Analysis Phase ===');
+    // Call AI Provider with enhanced error handling and timeout
+    console.log('=== AI Provider Analysis Phase ===');
     let annotations;
     try {
-      const openaiTimeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('OpenAI request timeout (120s)')), 120000);
+      const aiTimeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('AI request timeout (120s)')), 120000);
       });
       
-      const openaiPromise = analyzeWithOpenAI(
+      const aiPromise = analyzeWithAIProvider(
         primaryImage.base64Image, 
         primaryImage.mimeType, 
         enhancedPrompt, 
-        trimmedKey
+        providerConfig
       );
       
-      annotations = await Promise.race([openaiPromise, openaiTimeoutPromise]);
+      annotations = await Promise.race([aiPromise, aiTimeoutPromise]);
       
-      console.log('OpenAI analysis completed:', {
+      console.log('AI analysis completed:', {
         annotationCount: annotations.length,
-        hasAnnotations: annotations.length > 0
+        hasAnnotations: annotations.length > 0,
+        usedProvider: providerConfig.provider
       });
-    } catch (openaiError) {
-      console.error('OpenAI analysis failed:', openaiError);
-      throw new Error(`OpenAI analysis failed: ${openaiError.message}`);
+    } catch (aiError) {
+      console.error('AI analysis failed:', aiError);
+      throw new Error(`AI analysis failed: ${aiError.message}`);
     }
 
     // Process annotations with imageIndex handling
     const processedAnnotations = annotations.map(annotation => ({
       ...annotation,
-      imageIndex: annotation.imageIndex ?? 0 // Default to first image if not specified
+      imageIndex: annotation.imageIndex ?? 0
     }));
 
     console.log('Annotations processed:', {
@@ -260,7 +249,8 @@ serve(async (req) => {
       success: responseData.success,
       totalAnnotations: responseData.totalAnnotations,
       totalSavedAnnotations: savedAnnotations.length,
-      isComparative: isComparative || isMultiImage
+      isComparative: isComparative || isMultiImage,
+      usedProvider: providerConfig.provider
     });
     
     return new Response(
@@ -291,7 +281,7 @@ serve(async (req) => {
     } else if (error.message.includes('JSON') || error.message.includes('parse')) {
       errorCategory = 'parsing_error';
       errorSeverity = 'low';
-    } else if (error.message.includes('OPENAI_API_KEY')) {
+    } else if (error.message.includes('API key not configured')) {
       errorCategory = 'config_error';
       errorSeverity = 'high';
     } else if (error.message.includes('Database save failed')) {

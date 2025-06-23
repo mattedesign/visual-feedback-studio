@@ -18,6 +18,7 @@ export interface AnalysisRequest {
   analysisPrompt?: string;
   designType?: string;
   isComparative?: boolean;
+  aiProvider?: 'openai' | 'claude'; // New field for provider selection
 }
 
 export interface AnalysisResponse {

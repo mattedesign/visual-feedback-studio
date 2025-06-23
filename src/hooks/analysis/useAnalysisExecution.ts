@@ -5,6 +5,7 @@ import { AnalysisWithFiles, updateAnalysisStatus, updateAnalysisContext } from '
 import { getAnnotationsForAnalysis } from '@/services/annotationsService';
 import { supabase } from '@/integrations/supabase/client';
 import { Annotation } from '@/types/analysis';
+import { AIProvider } from '@/types/aiProvider';
 
 interface UseAnalysisExecutionProps {
   currentAnalysis: AnalysisWithFiles | null;
@@ -21,7 +22,8 @@ export const useAnalysisExecution = ({
   const executeAnalysis = useCallback(async (
     imagesToAnalyze: string[],
     intelligentPrompt: string,
-    isComparative: boolean
+    isComparative: boolean,
+    aiProvider?: AIProvider
   ) => {
     console.log('=== Enhanced AI Analysis Started ===');
     console.log('Analysis configuration:', { 
@@ -29,6 +31,7 @@ export const useAnalysisExecution = ({
       analysisId: currentAnalysis?.id,
       isComparative,
       promptLength: intelligentPrompt.length,
+      aiProvider: aiProvider || 'auto'
     });
     
     // Update analysis status to indicate it's being processed
@@ -38,13 +41,13 @@ export const useAnalysisExecution = ({
       // Update analysis context with enhanced info
       await updateAnalysisContext(currentAnalysis.id, {
         analysis_prompt: intelligentPrompt,
-        ai_model_used: 'gpt-4.1-2025-04-14'
+        ai_model_used: aiProvider || 'auto-selected'
       });
     }
 
     console.log('Calling enhanced analyze-design edge function...');
     
-    // Call the AI analysis edge function with intelligent prompting
+    // Call the AI analysis edge function with provider selection
     const { data, error } = await supabase.functions.invoke('analyze-design', {
       body: {
         imageUrls: imagesToAnalyze,
@@ -52,7 +55,8 @@ export const useAnalysisExecution = ({
         analysisId: currentAnalysis?.id,
         analysisPrompt: intelligentPrompt,
         designType: currentAnalysis?.design_type || 'web',
-        isComparative
+        isComparative,
+        aiProvider // Pass the selected provider
       }
     });
 
@@ -77,8 +81,9 @@ export const useAnalysisExecution = ({
       
       const imageText = imagesToAnalyze.length > 1 ? `${imagesToAnalyze.length} images` : 'image';
       const analysisType = isComparative ? 'Enhanced comparative analysis' : 'Enhanced analysis';
+      const providerText = aiProvider ? ` using ${aiProvider.toUpperCase()}` : ' with smart provider selection';
       
-      toast.success(`${analysisType} complete! Found ${data.totalAnnotations || freshAnnotations.length} comprehensive insights across ${imageText}.`, {
+      toast.success(`${analysisType} complete${providerText}! Found ${data.totalAnnotations || freshAnnotations.length} comprehensive insights across ${imageText}.`, {
         duration: 4000,
       });
       
