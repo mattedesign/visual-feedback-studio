@@ -7,27 +7,26 @@ export async function analyzeWithClaude(
   systemPrompt: string,
   anthropicApiKey: string
 ): Promise<AnnotationData[]> {
-  console.log('=== Starting Claude API Analysis ===');
+  console.log('=== Starting Simplified Claude API Analysis ===');
   
   if (!anthropicApiKey) {
     throw new Error('ANTHROPIC_API_KEY is not configured');
   }
 
-  // Enhanced API key validation and cleaning
+  // Basic API key cleaning and validation
   const cleanApiKey = anthropicApiKey.trim().replace(/[\r\n\t]/g, '');
-  console.log('API key validation:', {
+  console.log('Basic API key validation:', {
     exists: !!cleanApiKey,
     length: cleanApiKey.length,
-    startsWithPrefix: cleanApiKey.startsWith('sk-ant-'),
-    hasValidStructure: /^sk-ant-api03-[A-Za-z0-9_-]+AAA$/.test(cleanApiKey)
+    startsWithPrefix: cleanApiKey.startsWith('sk-ant-')
   });
   
   if (!cleanApiKey.startsWith('sk-ant-')) {
     throw new Error('Invalid Anthropic API key format. API key should start with sk-ant-');
   }
   
-  if (cleanApiKey.length < 90) {
-    throw new Error('Anthropic API key appears to be incomplete or truncated');
+  if (cleanApiKey.length < 50) {
+    throw new Error('Anthropic API key appears to be too short');
   }
 
   // Validate base64 image data
@@ -35,29 +34,21 @@ export async function analyzeWithClaude(
     throw new Error('Invalid image data: base64 string is empty');
   }
 
-  // Enhanced base64 validation
+  // Test API key with a simple text-only request first
+  console.log('Testing API key with simple text request...');
   try {
-    // Test if it's valid base64
-    atob(base64Image.substring(0, 100)); // Test first 100 chars
-  } catch (error) {
-    throw new Error('Invalid base64 image data encoding');
-  }
-
-  // Test API key with latest models
-  console.log('Testing API key with latest Claude 4 model...');
-  try {
-    await testApiKeyWithLatestModel(cleanApiKey);
-    console.log('API key test successful with Claude 4');
+    await testApiKeySimple(cleanApiKey);
+    console.log('API key test successful');
   } catch (error) {
     console.error('API key test failed:', error.message);
     throw new Error(`API key authentication failed: ${error.message}`);
   }
 
-  // Use the latest Claude 4 models for better performance
+  // Use basic, widely available Claude models
   const models = [
-    'claude-3-5-haiku-20241022',   // Latest fast model
-    'claude-3-5-sonnet-20241022',  // Fallback to reliable model
-    'claude-3-haiku-20240307'      // Additional fallback
+    'claude-3-haiku-20240307',     // Most basic model, should work with all keys
+    'claude-3-sonnet-20240229',    // Fallback basic model
+    'claude-3-5-haiku-20241022'    // Newer model as last resort
   ];
 
   let lastError;
@@ -88,9 +79,9 @@ export async function analyzeWithClaude(
   throw lastError || new Error('All Claude models failed');
 }
 
-async function testApiKeyWithLatestModel(apiKey: string): Promise<void> {
+async function testApiKeySimple(apiKey: string): Promise<void> {
   const testPayload = {
-    model: 'claude-3-5-haiku-20241022',
+    model: 'claude-3-haiku-20240307',
     max_tokens: 10,
     messages: [
       {
@@ -100,15 +91,14 @@ async function testApiKeyWithLatestModel(apiKey: string): Promise<void> {
     ]
   };
 
-  console.log('Making API key test request with Claude 3.5 Haiku...');
+  console.log('Making simple API test request...');
   
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
-      'anthropic-version': '2023-06-01',
-      'User-Agent': 'Supabase-Edge-Function/2.0'
+      'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify(testPayload)
   });
@@ -131,19 +121,13 @@ async function testApiKeyWithLatestModel(apiKey: string): Promise<void> {
     }
     
     if (response.status === 403) {
-      throw new Error(`Access forbidden: ${errorDetails.error?.message || 'API key may not have required permissions'}`);
+      throw new Error(`Access forbidden: ${errorDetails.error?.message || 'API key lacks permissions'}`);
     }
     
     throw new Error(`API test failed (${response.status}): ${errorDetails.error?.message || errorText}`);
   }
 
-  // Validate response structure
-  const responseData = await response.json();
-  if (!responseData.content || !Array.isArray(responseData.content)) {
-    throw new Error('Invalid API response structure');
-  }
-  
-  console.log('API key test completed successfully with Claude 3.5 Haiku');
+  console.log('Simple API key test completed successfully');
 }
 
 async function callClaudeWithModel(
@@ -154,10 +138,10 @@ async function callClaudeWithModel(
   model: string
 ): Promise<AnnotationData[]> {
   
-  // Enhanced request payload optimized for Claude 4
+  // Simplified request payload
   const requestPayload = {
     model: model,
-    max_tokens: 4000,
+    max_tokens: 3000,
     messages: [
       {
         role: 'user',
@@ -176,8 +160,7 @@ async function callClaudeWithModel(
           }
         ]
       }
-    ],
-    system: "You are an expert UX analyst. Always return your analysis as a valid JSON array of annotation objects with x, y coordinates as percentages, category, severity, feedback, implementationEffort, and businessImpact fields."
+    ]
   };
 
   console.log(`Making request to ${model}`, {
@@ -191,9 +174,7 @@ async function callClaudeWithModel(
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
-      'anthropic-version': '2023-06-01',
-      'User-Agent': 'Supabase-Edge-Function/2.0',
-      'Accept': 'application/json'
+      'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify(requestPayload)
   });
@@ -213,17 +194,14 @@ async function callClaudeWithModel(
       errorDetails = { message: responseText };
     }
     
-    // Enhanced error categorization
+    // Simplified error categorization
     if (response.status === 401) {
-      throw new Error(`Invalid bearer token. API key authentication failed.`);
+      throw new Error(`Authentication failed: Invalid API key`);
     }
     
     if (response.status === 400) {
       const errorMsg = errorDetails?.error?.message || responseText;
-      if (errorMsg.includes('base64')) {
-        throw new Error(`Image encoding error: ${errorMsg}`);
-      }
-      throw new Error(`Bad request: ${errorMsg}`);
+      throw new Error(`Bad request: ${errorMsg.substring(0, 200)}`);
     }
     
     if (response.status === 429) {
@@ -231,23 +209,22 @@ async function callClaudeWithModel(
     }
     
     if (response.status === 403) {
-      throw new Error(`Forbidden: Your API key may not have access to model ${model}`);
+      throw new Error(`Access denied: API key may not have access to model ${model}`);
     }
     
     if (response.status >= 500) {
-      throw new Error(`Server error (${response.status}): Anthropic API is temporarily unavailable`);
+      throw new Error(`Server error: Anthropic API temporarily unavailable`);
     }
     
     const errorMsg = errorDetails?.error?.message || responseText;
-    throw new Error(`API error (${response.status}): ${errorMsg}`);
+    throw new Error(`API error (${response.status}): ${errorMsg.substring(0, 200)}`);
   }
 
   let aiResponse;
   try {
     aiResponse = JSON.parse(responseText);
     console.log(`Successful response from ${model}`, {
-      contentLength: aiResponse.content?.[0]?.text?.length || 0,
-      usage: aiResponse.usage
+      contentLength: aiResponse.content?.[0]?.text?.length || 0
     });
   } catch (parseError) {
     console.error('Failed to parse response:', parseError);
@@ -255,7 +232,7 @@ async function callClaudeWithModel(
     throw new Error('Failed to parse API response as JSON');
   }
 
-  // Enhanced response validation
+  // Basic response validation
   if (!aiResponse.content || !Array.isArray(aiResponse.content) || aiResponse.content.length === 0) {
     throw new Error('Invalid response structure: missing content array');
   }
@@ -272,7 +249,7 @@ function parseClaudeResponse(aiResponse: any): AnnotationData[] {
     const content = aiResponse.content[0].text;
     console.log('Raw AI response content preview:', content.substring(0, 300));
     
-    // Enhanced JSON extraction with multiple patterns
+    // Look for JSON array in the response
     let jsonMatch = content.match(/\[[\s\S]*?\]/);
     
     if (!jsonMatch) {
@@ -280,23 +257,6 @@ function parseClaudeResponse(aiResponse: any): AnnotationData[] {
       jsonMatch = content.match(/```json\s*(\[[\s\S]*?\])\s*```/);
       if (jsonMatch) {
         jsonMatch[0] = jsonMatch[1];
-      }
-    }
-    
-    if (!jsonMatch) {
-      // Try finding JSON between specific markers
-      const startMarkers = ['annotations:', 'result:', '['];
-      
-      for (const start of startMarkers) {
-        const startIndex = content.toLowerCase().indexOf(start);
-        if (startIndex !== -1) {
-          const substring = content.substring(startIndex);
-          const arrayMatch = substring.match(/\[[\s\S]*?\]/);
-          if (arrayMatch) {
-            jsonMatch = arrayMatch;
-            break;
-          }
-        }
       }
     }
     
@@ -312,44 +272,37 @@ function parseClaudeResponse(aiResponse: any): AnnotationData[] {
       
       console.log('Successfully parsed annotations:', annotations.length);
       
-      // Enhanced validation with detailed feedback
-      const validAnnotations = annotations.filter((ann: any, index: number) => {
-        const isValid = typeof ann.x === 'number' && 
-                       typeof ann.y === 'number' && 
-                       ann.category && 
-                       ann.severity && 
-                       ann.feedback;
-        
-        if (!isValid) {
-          console.warn(`Invalid annotation at index ${index}:`, ann);
-        }
-        
-        return isValid;
+      // Basic validation
+      const validAnnotations = annotations.filter((ann: any) => {
+        return typeof ann.x === 'number' && 
+               typeof ann.y === 'number' && 
+               ann.category && 
+               ann.severity && 
+               ann.feedback;
       });
       
       if (validAnnotations.length === 0) {
-        throw new Error('No valid annotations found in response - all annotations missing required fields');
+        throw new Error('No valid annotations found in response');
       }
       
-      console.log(`Returning ${validAnnotations.length} valid annotations out of ${annotations.length} total`);
+      console.log(`Returning ${validAnnotations.length} valid annotations`);
       return validAnnotations;
     } else {
       console.error('No JSON array found in AI response');
-      console.log('Full content for debugging:', content);
-      throw new Error('No JSON array found in response - AI may have returned text instead of structured data');
+      console.log('Full content for debugging:', content.substring(0, 500));
+      throw new Error('No JSON array found in response');
     }
   } catch (parseError) {
     console.error('Error parsing AI response:', parseError);
-    console.error('Response structure:', Object.keys(aiResponse));
     
-    // Return a helpful error annotation with enhanced details
+    // Return a helpful error annotation
     return [
       {
         x: 50,
         y: 30,
         category: 'ux',
         severity: 'critical', 
-        feedback: `AI analysis failed due to response parsing error: ${parseError.message}. Please try again or check your API key configuration.`,
+        feedback: `AI analysis failed: ${parseError.message}. Please try again.`,
         implementationEffort: 'low',
         businessImpact: 'high'
       }
