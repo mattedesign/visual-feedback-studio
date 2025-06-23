@@ -31,6 +31,14 @@ export const AnalysisSidebar = ({
   onAnalysisContextChange,
   onDeleteAnnotation,
 }: AnalysisSidebarProps) => {
+  // Ensure we're working with clean user input
+  const userContext = typeof analysisContext === 'string' ? analysisContext : '';
+  
+  const handleContextChange = (value: string) => {
+    console.log('AnalysisSidebar: User context changed:', value.substring(0, 50) + '...');
+    onAnalysisContextChange(value);
+  };
+
   return (
     <div className="space-y-4">
       <div>
@@ -85,14 +93,14 @@ export const AnalysisSidebar = ({
         </div>
       </div>
 
-      {/* Analysis context */}
+      {/* User analysis context input */}
       <div>
         <label className="block text-sm font-medium mb-2">
           {isComparative ? 'Comparative Analysis Context' : 'General Analysis Context'}
         </label>
         <Textarea
-          value={analysisContext}
-          onChange={(e) => onAnalysisContextChange(e.target.value)}
+          value={userContext}
+          onChange={(e) => handleContextChange(e.target.value)}
           placeholder={
             isComparative 
               ? "Describe what you want to compare across these images (e.g., 'Compare the conversion flows', 'Analyze consistency in branding')"
@@ -101,6 +109,9 @@ export const AnalysisSidebar = ({
           className="bg-white dark:bg-slate-200 border-slate-300 dark:border-slate-400 text-slate-900 placeholder:text-slate-600"
           rows={4}
         />
+        <div className="text-xs text-slate-400 mt-1">
+          This context will guide the AI analysis and help provide more relevant insights.
+        </div>
       </div>
     </div>
   );

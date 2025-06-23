@@ -149,9 +149,20 @@ export const updateAnalysisContext = async (
     ai_model_used?: string;
   }
 ) => {
+  console.log('Updating analysis context with technical metadata only:', context);
+  
+  // Filter out any user-facing context that shouldn't be overwritten
+  const technicalContext = {
+    design_type: context.design_type,
+    business_goals: context.business_goals,
+    target_audience: context.target_audience,
+    ai_model_used: context.ai_model_used
+    // Note: analysis_prompt is intentionally excluded to preserve user input
+  };
+
   const { error } = await supabase
     .from('analyses')
-    .update(context)
+    .update(technicalContext)
     .eq('id', analysisId);
 
   if (error) {
@@ -159,6 +170,28 @@ export const updateAnalysisContext = async (
     return false;
   }
 
+  console.log('Technical analysis context updated successfully');
+  return true;
+};
+
+// New function to update only user-provided analysis prompt
+export const updateUserAnalysisPrompt = async (
+  analysisId: string,
+  userPrompt: string
+) => {
+  console.log('Updating user analysis prompt:', userPrompt.substring(0, 100) + '...');
+  
+  const { error } = await supabase
+    .from('analyses')
+    .update({ analysis_prompt: userPrompt })
+    .eq('id', analysisId);
+
+  if (error) {
+    console.error('Error updating user analysis prompt:', error);
+    return false;
+  }
+
+  console.log('User analysis prompt updated successfully');
   return true;
 };
 

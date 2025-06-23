@@ -105,6 +105,12 @@ export const useAnalysisWorkflow = () => {
     return imageAnnotations.reduce((total, ia) => total + ia.annotations.length, 0);
   };
 
+  // Safe setter for analysis context that preserves user input
+  const updateAnalysisContext = (value: string) => {
+    console.log('Updating user analysis context:', value.substring(0, 100) + '...');
+    setAnalysisContext(value);
+  };
+
   const resetWorkflow = () => {
     console.log('Resetting workflow state');
     setCurrentStep('upload');
@@ -159,7 +165,7 @@ export const useAnalysisWorkflow = () => {
     removeUserAnnotation,
     updateUserAnnotation,
     getTotalAnnotationsCount,
-    setAnalysisContext,
+    setAnalysisContext: updateAnalysisContext,
     setCurrentAnalysis,
     setAiAnnotations,
     setIsAnalyzing,

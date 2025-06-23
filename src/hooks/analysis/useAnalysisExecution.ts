@@ -21,7 +21,7 @@ export const useAnalysisExecution = ({
   
   const executeAnalysis = useCallback(async (
     imagesToAnalyze: string[],
-    intelligentPrompt: string,
+    userAnalysisPrompt: string,
     isComparative: boolean,
     aiProvider?: AIProvider
   ) => {
@@ -30,7 +30,7 @@ export const useAnalysisExecution = ({
       imageCount: imagesToAnalyze.length,
       analysisId: currentAnalysis?.id,
       isComparative,
-      promptLength: intelligentPrompt.length,
+      userPromptLength: userAnalysisPrompt.length,
       aiProvider: aiProvider || 'auto'
     });
     
@@ -38,9 +38,8 @@ export const useAnalysisExecution = ({
     if (currentAnalysis) {
       await updateAnalysisStatus(currentAnalysis.id, 'analyzing');
       
-      // Update analysis context with enhanced info
+      // Update analysis context with technical metadata (separate from user context)
       await updateAnalysisContext(currentAnalysis.id, {
-        analysis_prompt: intelligentPrompt,
         ai_model_used: aiProvider || 'auto-selected'
       });
     }
@@ -53,7 +52,7 @@ export const useAnalysisExecution = ({
         imageUrls: imagesToAnalyze,
         imageUrl: imagesToAnalyze[0], // Backward compatibility
         analysisId: currentAnalysis?.id,
-        analysisPrompt: intelligentPrompt,
+        analysisPrompt: userAnalysisPrompt, // Use the user's actual prompt
         designType: currentAnalysis?.design_type || 'web',
         isComparative,
         aiProvider // Pass the selected provider
