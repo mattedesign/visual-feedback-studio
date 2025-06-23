@@ -115,7 +115,7 @@ const Index = () => {
               <h2 className="text-2xl font-bold text-white mb-4">
                 Ready to improve your designs?
               </h2>
-              <p className="text-slate-300 mb-6">
+              <p className="text-slate-200 mb-6">
                 Join thousands of designers getting AI-powered feedback on their work.
               </p>
               <Button 
