@@ -40,7 +40,7 @@ export const WebsiteUploadTab = ({ onUrlSubmit, isProcessing }: WebsiteUploadTab
             placeholder="https://example.com"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            className="bg-slate-700 border-slate-600"
+            className="bg-white dark:bg-slate-200 border-slate-300 dark:border-slate-400 text-slate-900 placeholder:text-slate-600"
           />
           <Button 
             onClick={handleSubmit}

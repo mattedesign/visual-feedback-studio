@@ -98,7 +98,7 @@ export const AnalysisSidebar = ({
               ? "Describe what you want to compare across these images (e.g., 'Compare the conversion flows', 'Analyze consistency in branding')"
               : "Add context for analyzing all images individually..."
           }
-          className="bg-slate-700 border-slate-600"
+          className="bg-white dark:bg-slate-200 border-slate-300 dark:border-slate-400 text-slate-900 placeholder:text-slate-600"
           rows={4}
         />
       </div>

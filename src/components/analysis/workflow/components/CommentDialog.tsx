@@ -44,7 +44,7 @@ export const CommentDialog = ({
             value={commentText}
             onChange={(e) => onCommentTextChange(e.target.value)}
             placeholder="What specific feedback do you have for this area? Be detailed about what needs improvement..."
-            className="bg-slate-700 border-slate-600"
+            className="bg-white dark:bg-slate-200 border-slate-300 dark:border-slate-400 text-slate-900 placeholder:text-slate-600"
             rows={4}
             autoFocus
           />

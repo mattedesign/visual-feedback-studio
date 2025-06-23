@@ -112,10 +112,10 @@
 @layer components {
   /* Input Field Enhancements */
   .enhanced-input {
-    @apply bg-white dark:bg-slate-800;
-    @apply border-2 border-slate-300 dark:border-slate-600;
-    @apply text-slate-900 dark:text-slate-100;
-    @apply placeholder:text-slate-500 dark:placeholder:text-slate-400;
+    @apply bg-white dark:bg-slate-200;
+    @apply border-2 border-slate-300 dark:border-slate-400;
+    @apply text-slate-900 dark:text-slate-900;
+    @apply placeholder:text-slate-500 dark:placeholder:text-slate-600;
     @apply transition-all duration-200 ease-in-out;
     @apply focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20;
     @apply hover:border-slate-400 dark:hover:border-slate-500;
@@ -123,9 +123,9 @@
 
   /* Select/Dropdown Enhancements */
   .enhanced-select {
-    @apply bg-white dark:bg-slate-800;
-    @apply border-2 border-slate-300 dark:border-slate-600;
-    @apply text-slate-900 dark:text-slate-100;
+    @apply bg-white dark:bg-slate-200;
+    @apply border-2 border-slate-300 dark:border-slate-400;
+    @apply text-slate-900 dark:text-slate-900;
     @apply transition-all duration-200 ease-in-out;
     @apply focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20;
     @apply hover:border-slate-400 dark:hover:border-slate-500;
@@ -133,10 +133,10 @@
 
   /* Textarea Enhancements */
   .enhanced-textarea {
-    @apply bg-white dark:bg-slate-800;
-    @apply border-2 border-slate-300 dark:border-slate-600;
-    @apply text-slate-900 dark:text-slate-100;
-    @apply placeholder:text-slate-500 dark:placeholder:text-slate-400;
+    @apply bg-white dark:bg-slate-200;
+    @apply border-2 border-slate-300 dark:border-slate-400;
+    @apply text-slate-900 dark:text-slate-900;
+    @apply placeholder:text-slate-500 dark:placeholder:text-slate-600;
     @apply transition-all duration-200 ease-in-out;
     @apply focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20;
     @apply hover:border-slate-400 dark:hover:border-slate-500;
@@ -172,18 +172,18 @@
 
   /* Dropdown Content Enhancements */
   .enhanced-dropdown-content {
-    @apply bg-white dark:bg-slate-800;
-    @apply border-2 border-slate-200 dark:border-slate-700;
-    @apply shadow-lg;
+    @apply bg-white dark:bg-slate-100;
+    @apply border-2 border-slate-200 dark:border-slate-400;
+    @apply shadow-xl;
     @apply z-50;
     @apply backdrop-blur-sm;
   }
 
   .enhanced-dropdown-item {
     @apply px-3 py-2;
-    @apply text-slate-900 dark:text-slate-100;
-    @apply hover:bg-slate-100 dark:hover:bg-slate-700;
-    @apply focus:bg-slate-100 dark:focus:bg-slate-700;
+    @apply text-slate-900 dark:text-slate-900;
+    @apply hover:bg-slate-100 dark:hover:bg-slate-200;
+    @apply focus:bg-slate-100 dark:focus:bg-slate-200;
     @apply cursor-pointer;
     @apply transition-colors duration-150;
   }

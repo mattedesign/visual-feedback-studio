@@ -45,7 +45,7 @@ export const FigmaUploadTab = ({ onFigmaSubmit, isProcessing }: FigmaUploadTabPr
             placeholder="https://figma.com/file/..."
             value={figmaUrl}
             onChange={(e) => setFigmaUrl(e.target.value)}
-            className="bg-slate-700 border-slate-600"
+            className="bg-white dark:bg-slate-200 border-slate-300 dark:border-slate-400 text-slate-900 placeholder:text-slate-600"
           />
           <Button 
             onClick={handleSubmit}
