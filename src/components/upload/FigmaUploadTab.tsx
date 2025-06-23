@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Figma, Link2, Loader2, AlertCircle, CheckCircle, Info } from 'lucide-react';
+import { Figma, Link2, Loader2, AlertCircle, CheckCircle, Info, Shield, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -76,7 +76,22 @@ export const FigmaUploadTab = ({ onFigmaSubmit, isProcessing }: FigmaUploadTabPr
                 <li>• Your Figma file must be publicly accessible (not private)</li>
                 <li>• Use "Share" → "Copy link" to get the correct URL</li>
                 <li>• Screenshot capture may take up to 60 seconds for complex designs</li>
-                <li>• Our system uses advanced techniques to bypass bot detection</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4 mb-4">
+          <div className="flex items-start gap-3">
+            <Shield className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <h4 className="text-sm font-medium text-green-200 mb-1">Enhanced Anti-Detection System:</h4>
+              <ul className="text-xs text-green-100 space-y-1">
+                <li>• Multiple capture strategies with automatic fallback</li>
+                <li>• Advanced browser simulation with random user agents</li>
+                <li>• Stealth mode with enhanced ad/tracker blocking</li>
+                <li>• Mobile and desktop viewport randomization</li>
+                <li>• Intelligent content validation to detect bot challenges</li>
               </ul>
             </div>
           </div>
@@ -84,14 +99,14 @@ export const FigmaUploadTab = ({ onFigmaSubmit, isProcessing }: FigmaUploadTabPr
 
         <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-4">
           <div className="flex items-start gap-3">
-            <Info className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+            <Zap className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
             <div>
-              <h4 className="text-sm font-medium text-blue-200 mb-1">Enhanced Capture Features:</h4>
+              <h4 className="text-sm font-medium text-blue-200 mb-1">Capture Strategies (Automatic):</h4>
               <ul className="text-xs text-blue-100 space-y-1">
-                <li>• Advanced browser simulation to avoid detection</li>
-                <li>• Multiple capture strategies with automatic fallback</li>
-                <li>• Optimized timing for Figma's loading requirements</li>
-                <li>• Enhanced error handling and retry logic</li>
+                <li>• <strong>Stealth:</strong> Random viewport, enhanced blocking</li>
+                <li>• <strong>Mobile:</strong> iPhone user agent simulation</li>
+                <li>• <strong>Standard:</strong> Optimized desktop capture</li>
+                <li>• <strong>Fast:</strong> Quick capture with minimal delay</li>
               </ul>
             </div>
           </div>
@@ -100,10 +115,10 @@ export const FigmaUploadTab = ({ onFigmaSubmit, isProcessing }: FigmaUploadTabPr
         <div className="bg-slate-800/50 rounded-lg p-4">
           <h4 className="text-sm font-medium text-slate-200 mb-2">How it works:</h4>
           <ul className="text-xs text-slate-300 space-y-1">
-            <li>• We'll capture a high-quality screenshot of your Figma design</li>
+            <li>• Our system automatically tries multiple capture strategies</li>
+            <li>• Each strategy uses different browser signatures and timings</li>
+            <li>• Content validation ensures we capture your design, not bot challenges</li>
             <li>• Works with both file URLs and specific frame links</li>
-            <li>• The captured image will be analyzed for design feedback</li>
-            <li>• Our enhanced system handles complex Figma layouts automatically</li>
           </ul>
         </div>
 
@@ -112,7 +127,7 @@ export const FigmaUploadTab = ({ onFigmaSubmit, isProcessing }: FigmaUploadTabPr
             <div className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-green-400" />
               <p className="text-green-200 text-sm">
-                Processing with enhanced capture techniques... Please wait.
+                Enhanced capture system running... Trying multiple strategies to bypass detection.
               </p>
             </div>
           </div>

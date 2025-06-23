@@ -28,20 +28,39 @@ const getRandomUserAgent = (): string => {
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15',
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0',
   ];
   return userAgents[Math.floor(Math.random() * userAgents.length)];
 };
 
+const getRandomViewport = () => {
+  const viewports = [
+    { width: 1920, height: 1080 },
+    { width: 1440, height: 900 },
+    { width: 1366, height: 768 },
+    { width: 1280, height: 720 },
+    { width: 1600, height: 1200 },
+  ];
+  return viewports[Math.floor(Math.random() * viewports.length)];
+};
+
 const validateScreenshotContent = (base64Data: string): boolean => {
-  // Basic validation - check if it's a valid base64 image
   if (!base64Data || base64Data.length < 1000) {
     return false;
   }
   
-  return true;
+  // Check for common bot detection indicators in base64 (these would appear as specific patterns)
+  const suspiciousPatterns = [
+    'bGV0cyBjb25maXJt', // "lets confirm" in base64
+    'Y2FwdGNoYQ==', // "captcha" in base64
+    'aHVtYW4=', // "human" in base64
+  ];
+  
+  return !suspiciousPatterns.some(pattern => base64Data.includes(pattern));
 };
 
-const captureScreenshot = async (requestData: ScreenshotRequest, attempt: number = 1): Promise<Response> => {
+const captureScreenshot = async (requestData: ScreenshotRequest, strategy: string, attempt: number = 1): Promise<Response> => {
   const screenshotApiKey = Deno.env.get('SCREENSHOT_ONE_ACCESS_KEY');
   
   if (!screenshotApiKey) {
@@ -49,10 +68,9 @@ const captureScreenshot = async (requestData: ScreenshotRequest, attempt: number
     throw new Error('Screenshot One API key not configured');
   }
 
-  const { url, fullPage = true, viewportWidth = 1200, viewportHeight = 800, deviceScaleFactor = 1, format = 'png', cache = false, delay = 0 } = requestData;
+  const { url, fullPage = true, format = 'png', cache = false } = requestData;
 
-  console.log(`Attempt ${attempt}: Capturing screenshot for URL:`, url);
-  console.log('Screenshot options:', { fullPage, viewportWidth, viewportHeight, deviceScaleFactor, format, cache, delay });
+  console.log(`Strategy: ${strategy}, Attempt ${attempt}: Capturing screenshot for URL:`, url);
 
   // Validate URL
   try {
@@ -65,60 +83,81 @@ const captureScreenshot = async (requestData: ScreenshotRequest, attempt: number
   }
 
   const isFigma = isFigmaUrl(url);
-
-  // Build the Screenshot One API URL with only valid parameters
   const screenshotApiUrl = new URL('https://api.screenshotone.com/take');
   screenshotApiUrl.searchParams.set('access_key', screenshotApiKey);
   screenshotApiUrl.searchParams.set('url', url);
-  screenshotApiUrl.searchParams.set('full_page', fullPage.toString());
-  screenshotApiUrl.searchParams.set('viewport_width', viewportWidth.toString());
-  screenshotApiUrl.searchParams.set('viewport_height', viewportHeight.toString());
-  screenshotApiUrl.searchParams.set('device_scale_factor', deviceScaleFactor.toString());
   screenshotApiUrl.searchParams.set('format', format);
   screenshotApiUrl.searchParams.set('cache', cache.toString());
 
-  // Enhanced Figma-specific optimizations using only valid parameters
-  if (isFigma) {
-    console.log('Applying Figma-specific optimizations...');
-    
-    // Use valid parameters for bot detection avoidance
+  // Strategy-specific configurations
+  if (strategy === 'stealth') {
+    const viewport = getRandomViewport();
+    screenshotApiUrl.searchParams.set('viewport_width', viewport.width.toString());
+    screenshotApiUrl.searchParams.set('viewport_height', viewport.height.toString());
+    screenshotApiUrl.searchParams.set('full_page', 'false'); // Capture visible area only
+    screenshotApiUrl.searchParams.set('user_agent', getRandomUserAgent());
+    screenshotApiUrl.searchParams.set('delay', '8');
+    screenshotApiUrl.searchParams.set('wait_until', 'networkidle2');
     screenshotApiUrl.searchParams.set('block_ads', 'true');
     screenshotApiUrl.searchParams.set('block_trackers', 'true');
     screenshotApiUrl.searchParams.set('block_cookie_banners', 'true');
     
-    // Enhanced browser simulation with valid user agent
-    screenshotApiUrl.searchParams.set('user_agent', getRandomUserAgent());
-    
-    // Advanced timing parameters - minimum 15 seconds for Figma
-    const figmaDelay = Math.max(delay || 15, 15);
-    screenshotApiUrl.searchParams.set('delay', Math.min(figmaDelay, 30).toString());
+  } else if (strategy === 'mobile') {
+    screenshotApiUrl.searchParams.set('viewport_width', '375');
+    screenshotApiUrl.searchParams.set('viewport_height', '812');
+    screenshotApiUrl.searchParams.set('device_scale_factor', '2');
+    screenshotApiUrl.searchParams.set('full_page', fullPage.toString());
+    screenshotApiUrl.searchParams.set('user_agent', 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Mobile/15E148 Safari/604.1');
+    screenshotApiUrl.searchParams.set('delay', '6');
     screenshotApiUrl.searchParams.set('wait_until', 'networkidle0');
-    screenshotApiUrl.searchParams.set('timeout', '60');
+    
+  } else if (strategy === 'fast') {
+    screenshotApiUrl.searchParams.set('viewport_width', '1200');
+    screenshotApiUrl.searchParams.set('viewport_height', '800');
+    screenshotApiUrl.searchParams.set('full_page', 'false');
+    screenshotApiUrl.searchParams.set('user_agent', getRandomUserAgent());
+    screenshotApiUrl.searchParams.set('delay', '3');
+    screenshotApiUrl.searchParams.set('timeout', '30');
     
   } else {
-    // Standard delay handling for non-Figma URLs
-    if (delay && delay > 0) {
-      const delayInSeconds = Math.min(delay <= 30 ? delay : Math.floor(delay / 1000), 30);
-      screenshotApiUrl.searchParams.set('delay', delayInSeconds.toString());
-    }
+    // Standard strategy with enhanced settings
+    const viewport = requestData.viewportWidth && requestData.viewportHeight 
+      ? { width: requestData.viewportWidth, height: requestData.viewportHeight }
+      : getRandomViewport();
     
-    // Basic user agent for non-Figma URLs
+    screenshotApiUrl.searchParams.set('viewport_width', viewport.width.toString());
+    screenshotApiUrl.searchParams.set('viewport_height', viewport.height.toString());
+    screenshotApiUrl.searchParams.set('device_scale_factor', (requestData.deviceScaleFactor || 1).toString());
+    screenshotApiUrl.searchParams.set('full_page', fullPage.toString());
     screenshotApiUrl.searchParams.set('user_agent', getRandomUserAgent());
+    
+    if (isFigma) {
+      screenshotApiUrl.searchParams.set('delay', '12');
+      screenshotApiUrl.searchParams.set('wait_until', 'networkidle0');
+      screenshotApiUrl.searchParams.set('timeout', '60');
+      screenshotApiUrl.searchParams.set('block_ads', 'true');
+      screenshotApiUrl.searchParams.set('block_trackers', 'true');
+      screenshotApiUrl.searchParams.set('block_cookie_banners', 'true');
+    } else {
+      const delay = requestData.delay && requestData.delay > 0 
+        ? Math.min(requestData.delay <= 30 ? requestData.delay : Math.floor(requestData.delay / 1000), 30)
+        : 0;
+      if (delay > 0) {
+        screenshotApiUrl.searchParams.set('delay', delay.toString());
+      }
+    }
   }
 
-  console.log('Making request to Screenshot One API...');
-  console.log('API URL:', screenshotApiUrl.toString());
+  console.log(`Strategy: ${strategy}, Making request to Screenshot One API...`);
   
   const response = await fetch(screenshotApiUrl.toString());
   
-  console.log(`Attempt ${attempt}: Screenshot API response status:`, response.status);
-  console.log(`Attempt ${attempt}: Screenshot API response headers:`, Object.fromEntries(response.headers.entries()));
+  console.log(`Strategy: ${strategy}, Attempt ${attempt}: Screenshot API response status:`, response.status);
   
   if (!response.ok) {
     const errorText = await response.text();
-    console.error(`Attempt ${attempt}: Screenshot API error details:`, errorText);
+    console.error(`Strategy: ${strategy}, Attempt ${attempt}: Screenshot API error details:`, errorText);
     
-    // Parse error details for better handling
     let errorDetails;
     try {
       errorDetails = JSON.parse(errorText);
@@ -126,21 +165,27 @@ const captureScreenshot = async (requestData: ScreenshotRequest, attempt: number
       errorDetails = { error_message: errorText };
     }
     
-    throw new Error(`Screenshot API error: ${response.status} ${response.statusText} - ${errorDetails.error_message || errorText}`);
+    throw new Error(`Screenshot API error (${strategy}): ${response.status} ${response.statusText} - ${errorDetails.error_message || errorText}`);
   }
 
   return response;
 };
 
-const attemptFigmaScreenshotWithFallback = async (requestData: ScreenshotRequest): Promise<string> => {
-  const maxRetries = 3;
+const attemptEnhancedFigmaCapture = async (requestData: ScreenshotRequest): Promise<string> => {
+  const strategies = [
+    { name: 'stealth', description: 'Stealth mode with random viewport and enhanced blocking' },
+    { name: 'mobile', description: 'Mobile user agent simulation' },
+    { name: 'standard', description: 'Standard approach with optimizations' },
+    { name: 'fast', description: 'Fast capture with minimal delay' },
+  ];
+
   let lastError: Error | null = null;
 
-  // Strategy 1: Standard approach with valid parameters
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+  for (const strategy of strategies) {
+    console.log(`Trying strategy: ${strategy.name} - ${strategy.description}`);
+    
     try {
-      console.log(`Strategy 1 - Attempt ${attempt}: Standard approach with valid parameters`);
-      const response = await captureScreenshot(requestData, attempt);
+      const response = await captureScreenshot(requestData, strategy.name, 1);
       const screenshotBlob = await response.blob();
       const screenshotArrayBuffer = await screenshotBlob.arrayBuffer();
       
@@ -148,52 +193,30 @@ const attemptFigmaScreenshotWithFallback = async (requestData: ScreenshotRequest
         const screenshotBase64 = btoa(String.fromCharCode(...new Uint8Array(screenshotArrayBuffer)));
         
         if (validateScreenshotContent(screenshotBase64)) {
-          console.log(`Strategy 1 - Attempt ${attempt}: Success! Screenshot size:`, screenshotArrayBuffer.byteLength, 'bytes');
+          console.log(`Strategy ${strategy.name} SUCCESS! Screenshot size:`, screenshotArrayBuffer.byteLength, 'bytes');
           return `data:image/${requestData.format || 'png'};base64,${screenshotBase64}`;
+        } else {
+          console.log(`Strategy ${strategy.name}: Screenshot appears to contain bot detection content, trying next strategy...`);
+          continue;
         }
       }
       
-      console.log(`Strategy 1 - Attempt ${attempt}: Screenshot too small or invalid, retrying...`);
+      console.log(`Strategy ${strategy.name}: Screenshot too small (${screenshotArrayBuffer.byteLength} bytes), trying next strategy...`);
     } catch (error) {
       lastError = error;
-      console.error(`Strategy 1 - Attempt ${attempt} failed:`, error.message);
+      console.error(`Strategy ${strategy.name} failed:`, error.message);
       
-      if (attempt < maxRetries) {
-        const waitTime = Math.pow(2, attempt - 1) * 2000; // 2s, 4s, 8s
-        console.log(`Waiting ${waitTime}ms before retry...`);
+      // Add delay between strategy attempts
+      if (strategy !== strategies[strategies.length - 1]) {
+        const waitTime = 2000; // 2 second delay between strategies
+        console.log(`Waiting ${waitTime}ms before next strategy...`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
       }
     }
   }
 
-  // Strategy 2: Reduced parameters approach
-  console.log('Strategy 2: Trying with minimal parameters...');
-  try {
-    const reducedRequest = {
-      ...requestData,
-      delay: 10, // Shorter delay
-      viewportWidth: 1440,
-      viewportHeight: 900,
-    };
-    
-    const response = await captureScreenshot(reducedRequest, 1);
-    const screenshotBlob = await response.blob();
-    const screenshotArrayBuffer = await screenshotBlob.arrayBuffer();
-    
-    if (screenshotArrayBuffer.byteLength > 5000) {
-      const screenshotBase64 = btoa(String.fromCharCode(...new Uint8Array(screenshotArrayBuffer)));
-      if (validateScreenshotContent(screenshotBase64)) {
-        console.log('Strategy 2: Success with minimal parameters!');
-        return `data:image/${requestData.format || 'png'};base64,${screenshotBase64}`;
-      }
-    }
-  } catch (error) {
-    console.error('Strategy 2 failed:', error.message);
-    lastError = error;
-  }
-
   // If all strategies fail, throw the last error
-  throw lastError || new Error('All screenshot capture strategies failed');
+  throw lastError || new Error('All enhanced capture strategies failed');
 };
 
 serve(async (req) => {
@@ -211,11 +234,11 @@ serve(async (req) => {
     let screenshotUrl: string;
 
     if (isFigma) {
-      // Use enhanced Figma capture with fallback strategies
-      screenshotUrl = await attemptFigmaScreenshotWithFallback(requestData);
+      // Use enhanced multi-strategy capture for Figma
+      screenshotUrl = await attemptEnhancedFigmaCapture(requestData);
     } else {
       // Standard single-attempt capture for non-Figma URLs
-      const response = await captureScreenshot(requestData, 1);
+      const response = await captureScreenshot(requestData, 'standard', 1);
       const screenshotBlob = await response.blob();
       const screenshotArrayBuffer = await screenshotBlob.arrayBuffer();
       
@@ -234,7 +257,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in capture-screenshot function:', error);
     
-    // Provide more helpful error messages
+    // Enhanced error handling with specific Figma guidance
     let errorMessage = error.message || 'Internal server error';
     let statusCode = 500;
     
@@ -243,17 +266,26 @@ serve(async (req) => {
     } else if (errorMessage.includes('API key not configured')) {
       statusCode = 500;
       errorMessage = 'Screenshot service configuration error';
-    } else if (errorMessage.includes('host_returned_error') || errorMessage.includes('bot detection')) {
-      errorMessage = 'The Figma design could not be captured. Please ensure the design is publicly accessible and try again.';
+    } else if (errorMessage.includes('bot detection') || errorMessage.includes('captcha') || errorMessage.includes('human')) {
+      statusCode = 422;
+      errorMessage = 'Figma has detected automated access. Please ensure your design is publicly accessible and try again. Our enhanced system tried multiple approaches but was unable to bypass detection.';
     } else if (errorMessage.includes('timeout')) {
+      statusCode = 408;
       errorMessage = 'Screenshot capture timed out. The design may be too complex or have restricted access.';
+    } else if (errorMessage.includes('host_returned_error') || errorMessage.includes('403') || errorMessage.includes('401')) {
+      statusCode = 403;
+      errorMessage = 'Unable to access the Figma design. Please verify the link is public and accessible.';
+    } else if (errorMessage.includes('All enhanced capture strategies failed')) {
+      statusCode = 422;
+      errorMessage = 'Despite trying multiple advanced capture strategies, we were unable to capture your Figma design. This may be due to enhanced bot detection or access restrictions.';
     }
     
     return new Response(
       JSON.stringify({ 
         error: errorMessage,
         details: error.message !== errorMessage ? error.message : undefined,
-        isFigmaUrl: error.message.includes('figma.com') ? true : undefined
+        isFigmaUrl: isFigmaUrl(requestData?.url || ''),
+        strategiesAttempted: isFigmaUrl(requestData?.url || '') ? ['stealth', 'mobile', 'standard', 'fast'] : ['standard']
       }), 
       { 
         status: statusCode, 

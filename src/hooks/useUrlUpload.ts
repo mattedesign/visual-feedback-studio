@@ -90,9 +90,9 @@ export const useUrlUpload = (onImageUpload: (imageUrl: string) => void) => {
         return;
       }
 
-      // Show enhanced progress message with longer expected time for Figma
-      toast.info('Capturing Figma design screenshot... This may take up to 60 seconds due to advanced processing.', {
-        duration: 5000,
+      // Show enhanced progress message with multiple strategies info
+      toast.info('Launching enhanced Figma capture system... Our AI will try multiple strategies to bypass detection.', {
+        duration: 6000,
       });
 
       // Use enhanced Screenshot One capture for Figma with optimized settings
@@ -104,27 +104,33 @@ export const useUrlUpload = (onImageUpload: (imageUrl: string) => void) => {
       });
 
       if (!screenshotUrl) {
-        toast.error('Failed to capture Figma design screenshot. Please ensure your Figma file is publicly accessible and try again.');
+        toast.error('All capture strategies failed. Please ensure your Figma file is publicly accessible and try again.');
         setIsProcessing(false);
         return;
       }
 
       // Pass the screenshot URL to the workflow
       onImageUpload(screenshotUrl);
-      toast.success('Figma design screenshot captured successfully!');
+      toast.success('Figma design captured successfully using enhanced anti-detection system!');
     } catch (error) {
       console.error('Error processing Figma URL:', error);
       
-      // Enhanced error messaging for Figma-specific issues
-      let errorMessage = 'Failed to process Figma URL. Please ensure your Figma file is publicly accessible.';
+      // Enhanced error messaging for different failure scenarios
+      let errorMessage = 'Failed to capture Figma design despite trying multiple strategies.';
       
       if (error.message.includes('timeout')) {
-        errorMessage = 'Figma capture timed out. The design may be too complex or have restricted access.';
-      } else if (error.message.includes('bot detection') || error.message.includes('host_returned_error')) {
+        errorMessage = 'Capture timed out after trying all strategies. The design may be too complex or have restricted access.';
+      } else if (error.message.includes('bot detection') || error.message.includes('captcha') || error.message.includes('human')) {
+        errorMessage = 'Figma detected our capture attempts despite using advanced anti-detection methods. Please verify your link is public.';
+      } else if (error.message.includes('403') || error.message.includes('401') || error.message.includes('host_returned_error')) {
         errorMessage = 'Unable to access the Figma design. Please check that the link is public and accessible.';
+      } else if (error.message.includes('All enhanced capture strategies failed')) {
+        errorMessage = 'Our advanced capture system tried multiple approaches but was unable to capture your design. This may be due to enhanced bot detection.';
       }
       
-      toast.error(errorMessage);
+      toast.error(errorMessage, {
+        duration: 8000,
+      });
     } finally {
       setIsProcessing(false);
     }
