@@ -16,7 +16,7 @@ export async function analyzeWithClaude(
   // Trim any whitespace from the API key
   const cleanApiKey = anthropicApiKey.trim();
   
-  console.log('Using Claude model: claude-3-5-sonnet-20241022');
+  console.log('Using Claude model: claude-sonnet-4-20250514');
   console.log('API key length:', cleanApiKey.length);
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -27,7 +27,7 @@ export async function analyzeWithClaude(
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 4000,
       messages: [
         {
