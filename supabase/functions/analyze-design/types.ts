@@ -1,12 +1,15 @@
 
 export interface AnalysisRequest {
-  imageUrl: string;
+  imageUrl?: string; // Keep for backward compatibility
+  imageUrls?: string[]; // New field for multiple images
   analysisId: string;
   analysisPrompt?: string;
   designType?: string;
+  isComparative?: boolean;
 }
 
-export interface AnnotationData {
+export interface Annotation {
+  id: string;
   x: number;
   y: number;
   category: 'ux' | 'visual' | 'accessibility' | 'conversion' | 'brand';
@@ -14,8 +17,5 @@ export interface AnnotationData {
   feedback: string;
   implementationEffort: 'low' | 'medium' | 'high';
   businessImpact: 'low' | 'medium' | 'high';
-}
-
-export interface ProcessedAnnotation extends AnnotationData {
-  id: string;
+  imageIndex?: number; // To identify which image this annotation belongs to
 }

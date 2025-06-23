@@ -4,7 +4,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { getAnnotationsForAnalysis } from '@/services/annotationsService';
 
 interface AnalyzingStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -21,7 +20,9 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
         // Create analysis context from user annotations and general context
         let analysisPrompt = '';
         
-        if (workflow.selectedImages.length > 1) {
+        const isComparative = workflow.selectedImages.length > 1;
+        
+        if (isComparative) {
           analysisPrompt = `Perform comparative analysis across ${workflow.selectedImages.length} design images. `;
           analysisPrompt += 'Please analyze each image individually and then provide comparative insights.\n\n';
         } else {
@@ -43,22 +44,21 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
           analysisPrompt += `General context and comparative analysis request: ${workflow.analysisContext}\n\n`;
         }
         
-        if (workflow.selectedImages.length > 1) {
+        if (isComparative) {
           analysisPrompt += 'Please provide specific feedback for each image and highlight key differences, similarities, and recommendations for comparative improvements.';
         } else {
           analysisPrompt += 'Please provide specific feedback addressing these concerns and identify any additional UX, accessibility, or conversion optimization opportunities.';
         }
 
-        // For now, analyze the first image (in a real implementation, you'd need to handle multiple images)
-        const primaryImageUrl = workflow.selectedImages[0];
-
-        // Call the AI analysis edge function
+        // Call the AI analysis edge function with multiple images
         const { data, error } = await supabase.functions.invoke('analyze-design', {
           body: {
-            imageUrl: primaryImageUrl,
+            imageUrls: workflow.selectedImages,
+            imageUrl: workflow.selectedImages[0], // Backward compatibility
             analysisId: workflow.currentAnalysis?.id || 'temp',
             analysisPrompt,
-            designType: 'web'
+            designType: 'web',
+            isComparative
           }
         });
 
@@ -73,7 +73,8 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
           workflow.setAiAnnotations(data.annotations);
           workflow.goToStep('results');
           const imageText = workflow.selectedImages.length > 1 ? `${workflow.selectedImages.length} images` : 'image';
-          toast.success(`Analysis complete! Found ${data.totalAnnotations} insights across ${imageText}.`);
+          const analysisType = isComparative ? 'Comparative analysis' : 'Analysis';
+          toast.success(`${analysisType} complete! Found ${data.totalAnnotations} insights across ${imageText}.`);
         } else {
           throw new Error('Invalid response from AI analysis');
         }

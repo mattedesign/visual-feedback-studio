@@ -54,45 +54,82 @@ serve(async (req) => {
       throw new Error('Invalid JSON in request body');
     }
 
-    const { imageUrl, analysisId, analysisPrompt, designType }: AnalysisRequest = requestBody;
+    const { imageUrl, imageUrls, analysisId, analysisPrompt, designType, isComparative }: AnalysisRequest = requestBody;
+
+    // Determine which images to process
+    const imagesToProcess = imageUrls && imageUrls.length > 0 ? imageUrls : (imageUrl ? [imageUrl] : []);
+    const isMultiImage = imagesToProcess.length > 1;
 
     console.log('Starting OpenAI analysis for:', { 
       analysisId, 
-      imageUrl: imageUrl?.substring(0, 50) + '...', 
+      imageCount: imagesToProcess.length,
+      isComparative: isComparative || isMultiImage,
       designType,
       promptLength: analysisPrompt?.length 
     });
 
     // Validate required parameters
-    if (!imageUrl) {
-      throw new Error('imageUrl is required');
+    if (imagesToProcess.length === 0) {
+      throw new Error('At least one image URL is required');
     }
     if (!analysisId) {
       throw new Error('analysisId is required');
     }
 
-    // Fetch and process the image
-    console.log('Fetching image from URL...');
-    const { base64Image, mimeType } = await fetchImageAsBase64(imageUrl);
-    console.log('Image processing completed:', {
-      mimeType,
-      base64Size: base64Image.length,
-      isValidBase64: /^[A-Za-z0-9+/]*={0,2}$/.test(base64Image.substring(0, 100))
+    // Fetch and process all images
+    console.log('Fetching images from URLs...');
+    const imagePromises = imagesToProcess.map(async (url, index) => {
+      const { base64Image, mimeType } = await fetchImageAsBase64(url);
+      console.log(`Image ${index + 1} processed:`, {
+        mimeType,
+        base64Size: base64Image.length,
+        isValidBase64: /^[A-Za-z0-9+/]*={0,2}$/.test(base64Image.substring(0, 100))
+      });
+      return { base64Image, mimeType, index };
     });
+
+    const processedImages = await Promise.all(imagePromises);
 
     // Create analysis prompt
     console.log('Creating analysis prompt...');
-    const systemPrompt = createAnalysisPrompt(analysisPrompt);
+    const systemPrompt = createAnalysisPrompt(
+      analysisPrompt, 
+      isComparative || isMultiImage, 
+      imagesToProcess.length
+    );
     console.log('System prompt created, length:', systemPrompt.length);
+
+    // For comparative analysis, we'll analyze with the first image as primary
+    // and include context about multiple images in the prompt
+    const primaryImage = processedImages[0];
+    
+    // Enhanced prompt for multi-image analysis
+    let enhancedPrompt = systemPrompt;
+    if (isMultiImage) {
+      enhancedPrompt += `\n\nYou are analyzing ${imagesToProcess.length} images. The primary image is provided for visual analysis. `;
+      enhancedPrompt += `When providing annotations, use the imageIndex field (0-based) to specify which image each annotation applies to. `;
+      enhancedPrompt += `Focus on identifying patterns, inconsistencies, and opportunities for improvement across all designs.`;
+    }
 
     // Analyze with OpenAI
     console.log('Calling OpenAI API...');
-    const annotations = await analyzeWithOpenAI(base64Image, mimeType, systemPrompt, trimmedKey);
+    const annotations = await analyzeWithOpenAI(
+      primaryImage.base64Image, 
+      primaryImage.mimeType, 
+      enhancedPrompt, 
+      trimmedKey
+    );
 
     console.log('Analysis completed successfully with', annotations.length, 'annotations');
 
+    // Add imageIndex to annotations if not present (for backward compatibility)
+    const processedAnnotations = annotations.map(annotation => ({
+      ...annotation,
+      imageIndex: annotation.imageIndex ?? 0 // Default to first image if not specified
+    }));
+
     // Format and return response
-    const responseData = formatAnalysisResponse(annotations);
+    const responseData = formatAnalysisResponse(processedAnnotations);
     
     console.log('=== AI Analysis Function Completed Successfully (OpenAI) ===');
     

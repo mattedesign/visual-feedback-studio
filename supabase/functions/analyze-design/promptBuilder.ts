@@ -21,6 +21,7 @@ For each issue you identify, provide:
 4. Detailed feedback explaining the issue, comparison insights, and recommended solution
 5. Implementation effort: low, medium, or high
 6. Business impact: low, medium, or high
+7. Image index (0-based) to identify which image the annotation applies to
 
 Focus on comparative insights and cross-design consistency issues.
 
@@ -33,7 +34,8 @@ Respond with a JSON array of annotations in this exact format:
     "severity": "critical",
     "feedback": "Detailed comparison analysis and recommended solution",
     "implementationEffort": "low",
-    "businessImpact": "high"
+    "businessImpact": "high",
+    "imageIndex": 0
   }
 ]
 
