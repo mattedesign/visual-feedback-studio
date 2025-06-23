@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 import { AnalysisRequest } from './types.ts';
 import { fetchImageAsBase64 } from './imageProcessor.ts';
 import { createAnalysisPrompt } from './promptBuilder.ts';
@@ -24,16 +25,29 @@ serve(async (req) => {
     
     // Enhanced environment validation
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
     console.log('Environment validation:', {
       openaiKeyExists: !!openaiApiKey,
       openaiKeyLength: openaiApiKey?.length || 0,
-      openaiKeyPrefix: openaiApiKey?.substring(0, 7) || 'none'
+      openaiKeyPrefix: openaiApiKey?.substring(0, 7) || 'none',
+      supabaseUrlExists: !!supabaseUrl,
+      supabaseServiceKeyExists: !!supabaseServiceKey
     });
     
     if (!openaiApiKey) {
       console.error('CRITICAL: OPENAI_API_KEY environment variable is not set');
       throw new Error('OPENAI_API_KEY is not configured in Supabase secrets');
     }
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('CRITICAL: Supabase configuration missing');
+      throw new Error('Supabase configuration is missing');
+    }
+
+    // Initialize Supabase client with service role key for database operations
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Enhanced API key validation
     const trimmedKey = openaiApiKey.trim().replace(/[\r\n\t]/g, '');
@@ -198,6 +212,45 @@ serve(async (req) => {
       }, {} as Record<number, number>)
     });
 
+    // Save annotations to database
+    console.log('=== Database Save Phase ===');
+    const savedAnnotations = [];
+    
+    for (const annotation of processedAnnotations) {
+      try {
+        const { data, error } = await supabase
+          .from('annotations')
+          .insert({
+            analysis_id: analysisId,
+            x: annotation.x,
+            y: annotation.y,
+            category: annotation.category,
+            severity: annotation.severity,
+            feedback: annotation.feedback,
+            implementation_effort: annotation.implementationEffort,
+            business_impact: annotation.businessImpact
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error saving annotation:', error);
+          throw new Error(`Database save failed: ${error.message}`);
+        }
+
+        savedAnnotations.push(data);
+        console.log('Annotation saved successfully:', data.id);
+      } catch (saveError) {
+        console.error('Failed to save annotation:', saveError);
+        throw new Error(`Failed to save annotation: ${saveError.message}`);
+      }
+    }
+
+    console.log('All annotations saved to database:', {
+      totalSaved: savedAnnotations.length,
+      savedIds: savedAnnotations.map(a => a.id)
+    });
+
     // Format response
     const responseData = formatAnalysisResponse(processedAnnotations);
     
@@ -205,6 +258,7 @@ serve(async (req) => {
     console.log('Final response:', {
       success: responseData.success,
       totalAnnotations: responseData.totalAnnotations,
+      totalSavedAnnotations: savedAnnotations.length,
       isComparative: isComparative || isMultiImage
     });
     
@@ -238,6 +292,9 @@ serve(async (req) => {
       errorSeverity = 'low';
     } else if (error.message.includes('OPENAI_API_KEY')) {
       errorCategory = 'config_error';
+      errorSeverity = 'high';
+    } else if (error.message.includes('Database save failed')) {
+      errorCategory = 'database_error';
       errorSeverity = 'high';
     }
     
