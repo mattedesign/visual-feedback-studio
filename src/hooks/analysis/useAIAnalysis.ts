@@ -1,10 +1,12 @@
 
 import { useCallback } from 'react';
-import { AnalysisWithFiles, updateAnalysisStatus } from '@/services/analysisDataService';
+import { AnalysisWithFiles } from '@/services/analysisDataService';
 import { Annotation } from '@/types/analysis';
 import { usePromptBuilder } from './usePromptBuilder';
 import { useAnalysisExecution } from './useAnalysisExecution';
 import { useAnalysisValidation } from './useAnalysisValidation';
+import { useAnalysisConfiguration } from './useAnalysisConfiguration';
+import { useAnalysisErrorHandler } from './useAnalysisErrorHandler';
 
 interface UseAIAnalysisProps {
   imageUrl?: string | null;
@@ -30,6 +32,16 @@ export const useAIAnalysis = ({
     setAnnotations,
   });
   const { validateAnalysisInputs } = useAnalysisValidation();
+  const { prepareAnalysisConfiguration } = useAnalysisConfiguration({
+    imageUrl,
+    imageUrls,
+    currentAnalysis,
+    isComparative,
+  });
+  const { handleAnalysisError } = useAnalysisErrorHandler({
+    currentAnalysis,
+    setIsAnalyzing,
+  });
 
   const handleAnalyze = useCallback(async (
     customPrompt?: string, 
@@ -42,23 +54,17 @@ export const useAIAnalysis = ({
     
     try {
       // Validate inputs and get images to analyze
-      const { imagesToAnalyze, isMultiImage } = validateAnalysisInputs(
+      const { imagesToAnalyze } = validateAnalysisInputs(
         imageUrl, 
         imageUrls, 
         currentAnalysis
       );
 
-      const finalIsComparative = isComparative || isMultiImage;
-      
-      console.log('=== Enhanced AI Analysis Started ===');
-      console.log('Analysis configuration:', { 
-        imageCount: imagesToAnalyze.length,
-        analysisId: currentAnalysis?.id,
-        isComparative: finalIsComparative,
-        hasImageAnnotations: !!imageAnnotations,
-        hasCustomPrompt: !!customPrompt?.trim(),
-        userAnnotationsCount: imageAnnotations?.reduce((total, ia) => total + ia.annotations.length, 0) || 0
-      });
+      // Prepare analysis configuration
+      const { finalIsComparative } = prepareAnalysisConfiguration(
+        customPrompt,
+        imageAnnotations
+      );
       
       // Build intelligent prompt using hierarchy system
       const intelligentPrompt = buildIntelligentPrompt(customPrompt, imageAnnotations, imageUrls);
@@ -75,27 +81,7 @@ export const useAIAnalysis = ({
       await executeAnalysis(imagesToAnalyze, intelligentPrompt, finalIsComparative);
       
     } catch (error) {
-      console.error('=== Enhanced Analysis Error ===');
-      console.error('Error name:', error?.name);
-      console.error('Error message:', error?.message);
-      console.error('Error stack:', error?.stack);
-      
-      // Update analysis status to failed
-      try {
-        if (currentAnalysis) {
-          await updateAnalysisStatus(currentAnalysis.id, 'failed');
-        }
-      } catch (statusError) {
-        console.error('Failed to update analysis status:', statusError);
-      }
-      
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      console.error('Final error message:', errorMessage);
-      
-      // Re-throw to allow retry logic in AnalyzingStep
-      throw error;
-    } finally {
-      setIsAnalyzing(false);
+      await handleAnalysisError(error);
     }
   }, [
     imageUrl, 
@@ -103,10 +89,11 @@ export const useAIAnalysis = ({
     currentAnalysis, 
     setIsAnalyzing, 
     setAnnotations, 
-    isComparative, 
     buildIntelligentPrompt, 
     executeAnalysis, 
-    validateAnalysisInputs
+    validateAnalysisInputs,
+    prepareAnalysisConfiguration,
+    handleAnalysisError
   ]);
 
   return {
