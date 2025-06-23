@@ -3,17 +3,24 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Sparkles, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { Sparkles, CheckCircle, XCircle, AlertTriangle, Copy } from 'lucide-react';
 
 export const TestAnalysisButton = () => {
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<'success' | 'error' | 'warning' | null>(null);
   const [testMessage, setTestMessage] = useState<string>('');
+  const [debugInfo, setDebugInfo] = useState<string>('');
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Debug info copied to clipboard');
+  };
 
   const testAnalysis = async () => {
     setIsTesting(true);
     setTestResult(null);
     setTestMessage('');
+    setDebugInfo('');
 
     try {
       console.log('Testing AI analysis with demo image...');
@@ -32,18 +39,37 @@ export const TestAnalysisButton = () => {
         }
       });
 
+      console.log('Function response:', { data, error });
+
       if (error) {
         console.error('AI analysis test failed:', error);
         setTestResult('error');
         
-        if (error.message.includes('Invalid Anthropic API key') || error.message.includes('authentication_error')) {
-          setTestMessage('API key authentication failed. Please check your Anthropic API key in Supabase secrets.');
+        // Collect debug information
+        const debugData = {
+          error: error,
+          timestamp: new Date().toISOString(),
+          testImageUrl,
+          functionResponse: data
+        };
+        setDebugInfo(JSON.stringify(debugData, null, 2));
+        
+        if (error.message.includes('Invalid Anthropic API key') || 
+            error.message.includes('authentication_error') ||
+            error.message.includes('Invalid bearer token')) {
+          setTestMessage('API key authentication failed. The Anthropic API key may be invalid, expired, or incorrectly formatted. Please check that your API key starts with "sk-ant-" and is active.');
           toast.error('Authentication failed - please verify your Anthropic API key');
         } else if (error.message.includes('ANTHROPIC_API_KEY is not configured')) {
           setTestMessage('API key not found. Please add your Anthropic API key to Supabase secrets.');
           toast.error('API key not configured');
+        } else if (error.message.includes('Rate limit exceeded')) {
+          setTestMessage('Rate limit exceeded. Please wait a moment and try again.');
+          toast.error('Rate limit exceeded');
+        } else if (error.message.includes('Network or API error')) {
+          setTestMessage('Network connectivity issue. Please check your internet connection and try again.');
+          toast.error('Network error');
         } else {
-          setTestMessage(error.message);
+          setTestMessage(`Test failed: ${error.message}`);
           toast.error(`Test failed: ${error.message}`);
         }
         return;
@@ -56,14 +82,24 @@ export const TestAnalysisButton = () => {
         setTestMessage(`Generated ${data.annotations.length} annotations successfully!`);
         toast.success(`Test successful! Generated ${data.annotations.length} annotations.`);
         console.log('Test annotations:', data.annotations);
+        
+        // Set success debug info
+        setDebugInfo(JSON.stringify({
+          success: true,
+          annotationCount: data.annotations.length,
+          annotations: data.annotations,
+          timestamp: new Date().toISOString()
+        }, null, 2));
       } else if (data?.error) {
         setTestResult('error');
         setTestMessage(data.details || data.error);
         toast.error(`Test failed: ${data.error}`);
+        setDebugInfo(JSON.stringify(data, null, 2));
       } else {
         setTestResult('warning');
         setTestMessage('Function completed but returned unexpected format');
         toast.error('Test failed: No annotations returned');
+        setDebugInfo(JSON.stringify(data || {}, null, 2));
       }
 
     } catch (error) {
@@ -71,6 +107,11 @@ export const TestAnalysisButton = () => {
       setTestResult('error');
       setTestMessage(error.message);
       toast.error(`Test error: ${error.message}`);
+      setDebugInfo(JSON.stringify({
+        error: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      }, null, 2));
     } finally {
       setIsTesting(false);
     }
@@ -130,6 +171,36 @@ export const TestAnalysisButton = () => {
           {testMessage}
         </div>
       )}
+
+      {debugInfo && (
+        <div className="p-3 rounded-lg bg-slate-800/50 border border-slate-700">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-sm font-medium text-slate-300">Debug Information</h4>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => copyToClipboard(debugInfo)}
+              className="h-6 px-2 text-xs"
+            >
+              <Copy className="w-3 h-3 mr-1" />
+              Copy
+            </Button>
+          </div>
+          <pre className="text-xs text-slate-400 overflow-auto max-h-48 whitespace-pre-wrap">
+            {debugInfo}
+          </pre>
+        </div>
+      )}
+
+      <div className="text-xs text-slate-500 space-y-1">
+        <p><strong>Troubleshooting Tips:</strong></p>
+        <ul className="list-disc list-inside space-y-1 ml-2">
+          <li>Ensure your Anthropic API key starts with "sk-ant-" and is active</li>
+          <li>Check that you have sufficient API credits in your Anthropic account</li>
+          <li>Verify you haven't exceeded rate limits (try again in a few moments)</li>
+          <li>Make sure your API key has access to Claude models</li>
+        </ul>
+      </div>
     </div>
   );
 };
