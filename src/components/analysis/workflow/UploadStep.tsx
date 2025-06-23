@@ -68,8 +68,8 @@ export const UploadStep = ({ workflow }: UploadStepProps) => {
     <div className="max-w-4xl mx-auto">
       <Card className="bg-slate-800/50 border-slate-700">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Upload Your Design</CardTitle>
-          <p className="text-slate-400 text-center">
+          <CardTitle className="text-2xl text-center text-slate-100">Upload Your Design</CardTitle>
+          <p className="text-slate-200 text-center">
             Upload one or more images to analyze. You can add up to 5 images.
           </p>
         </CardHeader>
@@ -83,21 +83,21 @@ export const UploadStep = ({ workflow }: UploadStepProps) => {
             }`}
           >
             <input {...getInputProps()} />
-            <Upload className="w-16 h-16 mx-auto mb-6 text-slate-400" />
-            <h3 className="text-xl font-semibold mb-3">
+            <Upload className="w-16 h-16 mx-auto mb-6 text-slate-300" />
+            <h3 className="text-xl font-semibold mb-3 text-slate-100">
               {isDragActive ? 'Drop your images here' : 'Upload your designs'}
             </h3>
-            <p className="text-slate-400 mb-6">
+            <p className="text-slate-200 mb-6">
               Drag and drop your images, or click to browse
             </p>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-300">
               Supports PNG, JPG, WebP, SVG • Max 50MB per file • Up to 5 files
             </p>
           </div>
 
           {workflow.uploadedFiles.length > 0 && (
             <div className="space-y-4">
-              <h4 className="text-lg font-medium">Uploaded Files ({workflow.uploadedFiles.length})</h4>
+              <h4 className="text-lg font-medium text-slate-100">Uploaded Files ({workflow.uploadedFiles.length})</h4>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {workflow.uploadedFiles.map((url, index) => (
                   <div key={url} className="relative">
@@ -112,7 +112,7 @@ export const UploadStep = ({ workflow }: UploadStepProps) => {
               
               {workflow.currentAnalysis && (
                 <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-3">
-                  <p className="text-green-300 text-sm">
+                  <p className="text-green-200 text-sm">
                     ✓ Analysis session created: {workflow.currentAnalysis.id}
                   </p>
                 </div>
