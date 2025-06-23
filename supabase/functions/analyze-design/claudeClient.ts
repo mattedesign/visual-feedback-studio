@@ -43,21 +43,21 @@ export async function analyzeWithClaude(
     throw new Error('Invalid base64 image data encoding');
   }
 
-  // Test API key with enhanced validation
-  console.log('Testing API key with enhanced validation...');
+  // Test API key with latest models
+  console.log('Testing API key with latest Claude 4 model...');
   try {
-    await testApiKeyEnhanced(cleanApiKey);
-    console.log('API key test successful');
+    await testApiKeyWithLatestModel(cleanApiKey);
+    console.log('API key test successful with Claude 4');
   } catch (error) {
     console.error('API key test failed:', error.message);
     throw new Error(`API key authentication failed: ${error.message}`);
   }
 
-  // Updated models list with latest Claude 4 models
+  // Use the latest Claude 4 models for better performance
   const models = [
-    'claude-3-5-sonnet-20241022',  // Most reliable current model
-    'claude-3-haiku-20240307',     // Fastest fallback
-    'claude-3-sonnet-20240229'     // Additional fallback
+    'claude-3-5-haiku-20241022',   // Latest fast model
+    'claude-3-5-sonnet-20241022',  // Fallback to reliable model
+    'claude-3-haiku-20240307'      // Additional fallback
   ];
 
   let lastError;
@@ -65,7 +65,7 @@ export async function analyzeWithClaude(
   for (const model of models) {
     try {
       console.log(`Attempting analysis with model: ${model}`);
-      const result = await callClaudeWithModelEnhanced(base64Image, mimeType, systemPrompt, cleanApiKey, model);
+      const result = await callClaudeWithModel(base64Image, mimeType, systemPrompt, cleanApiKey, model);
       console.log(`Analysis successful with model: ${model}`);
       return result;
     } catch (error) {
@@ -88,9 +88,9 @@ export async function analyzeWithClaude(
   throw lastError || new Error('All Claude models failed');
 }
 
-async function testApiKeyEnhanced(apiKey: string): Promise<void> {
+async function testApiKeyWithLatestModel(apiKey: string): Promise<void> {
   const testPayload = {
-    model: 'claude-3-5-sonnet-20241022',
+    model: 'claude-3-5-haiku-20241022',
     max_tokens: 10,
     messages: [
       {
@@ -100,7 +100,7 @@ async function testApiKeyEnhanced(apiKey: string): Promise<void> {
     ]
   };
 
-  console.log('Making enhanced API key test request...');
+  console.log('Making API key test request with Claude 3.5 Haiku...');
   
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -143,10 +143,10 @@ async function testApiKeyEnhanced(apiKey: string): Promise<void> {
     throw new Error('Invalid API response structure');
   }
   
-  console.log('API key test completed successfully with valid response structure');
+  console.log('API key test completed successfully with Claude 3.5 Haiku');
 }
 
-async function callClaudeWithModelEnhanced(
+async function callClaudeWithModel(
   base64Image: string,
   mimeType: string,
   systemPrompt: string,
@@ -154,7 +154,7 @@ async function callClaudeWithModelEnhanced(
   model: string
 ): Promise<AnnotationData[]> {
   
-  // Enhanced request payload with better error handling
+  // Enhanced request payload optimized for Claude 4
   const requestPayload = {
     model: model,
     max_tokens: 4000,
@@ -177,11 +177,10 @@ async function callClaudeWithModelEnhanced(
         ]
       }
     ],
-    // Add system message for better consistency
-    system: "You are an expert UX analyst. Always return your analysis as a valid JSON array of annotation objects."
+    system: "You are an expert UX analyst. Always return your analysis as a valid JSON array of annotation objects with x, y coordinates as percentages, category, severity, feedback, implementationEffort, and businessImpact fields."
   };
 
-  console.log(`Making enhanced request to ${model}`, {
+  console.log(`Making request to ${model}`, {
     imageSize: base64Image.length,
     mimeType,
     promptLength: systemPrompt.length
@@ -199,13 +198,13 @@ async function callClaudeWithModelEnhanced(
     body: JSON.stringify(requestPayload)
   });
 
-  console.log(`Enhanced API response: ${response.status} ${response.statusText}`);
+  console.log(`API response: ${response.status} ${response.statusText}`);
 
   const responseText = await response.text();
   console.log('Response size:', responseText.length);
   
   if (!response.ok) {
-    console.error('Enhanced API error response:', responseText.substring(0, 500));
+    console.error('API error response:', responseText.substring(0, 500));
     
     let errorDetails;
     try {
@@ -265,10 +264,10 @@ async function callClaudeWithModelEnhanced(
     throw new Error('Invalid response structure: missing text content');
   }
 
-  return parseClaudeResponseEnhanced(aiResponse);
+  return parseClaudeResponse(aiResponse);
 }
 
-function parseClaudeResponseEnhanced(aiResponse: any): AnnotationData[] {
+function parseClaudeResponse(aiResponse: any): AnnotationData[] {
   try {
     const content = aiResponse.content[0].text;
     console.log('Raw AI response content preview:', content.substring(0, 300));
@@ -287,7 +286,6 @@ function parseClaudeResponseEnhanced(aiResponse: any): AnnotationData[] {
     if (!jsonMatch) {
       // Try finding JSON between specific markers
       const startMarkers = ['annotations:', 'result:', '['];
-      const endMarkers = [']', 'end', '```'];
       
       for (const start of startMarkers) {
         const startIndex = content.toLowerCase().indexOf(start);
@@ -351,7 +349,7 @@ function parseClaudeResponseEnhanced(aiResponse: any): AnnotationData[] {
         y: 30,
         category: 'ux',
         severity: 'critical', 
-        feedback: `AI analysis failed due to response parsing error: ${parseError.message}. This may indicate an API configuration issue or the AI returned an unexpected format. Please try again or check your API key configuration.`,
+        feedback: `AI analysis failed due to response parsing error: ${parseError.message}. Please try again or check your API key configuration.`,
         implementationEffort: 'low',
         businessImpact: 'high'
       }
