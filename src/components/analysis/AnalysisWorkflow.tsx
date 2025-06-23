@@ -2,6 +2,7 @@
 import { UploadStep } from './workflow/UploadStep';
 import { ReviewStep } from './workflow/ReviewStep';
 import { AnnotateStep } from './workflow/AnnotateStep';
+import { MultiImageAnnotateStep } from './workflow/MultiImageAnnotateStep';
 import { AnalyzingStep } from './workflow/AnalyzingStep';
 import { ResultsStep } from './workflow/ResultsStep';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
@@ -22,7 +23,10 @@ export const AnalysisWorkflow = () => {
       case 'review':
         return <ReviewStep workflow={workflow} />;
       case 'annotate':
-        return <AnnotateStep workflow={workflow} />;
+        // Use MultiImageAnnotateStep for multiple images, regular AnnotateStep for single image
+        return workflow.selectedImages.length > 1 
+          ? <MultiImageAnnotateStep workflow={workflow} />
+          : <AnnotateStep workflow={workflow} />;
       case 'analyzing':
         return <AnalyzingStep workflow={workflow} />;
       case 'results':
@@ -66,7 +70,9 @@ export const AnalysisWorkflow = () => {
           <div className="flex items-center justify-center space-x-16 mt-2">
             <span className="text-xs text-slate-400">Upload</span>
             <span className="text-xs text-slate-400">Review</span>
-            <span className="text-xs text-slate-400">Annotate</span>
+            <span className="text-xs text-slate-400">
+              {workflow.selectedImages.length > 1 ? 'Multi-Annotate' : 'Annotate'}
+            </span>
             <span className="text-xs text-slate-400">Analyzing</span>
             <span className="text-xs text-slate-400">Results</span>
           </div>

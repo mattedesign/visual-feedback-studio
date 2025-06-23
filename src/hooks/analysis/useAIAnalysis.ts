@@ -23,7 +23,7 @@ export const useAIAnalysis = ({
   setAnnotations,
   isComparative = false,
 }: UseAIAnalysisProps) => {
-  const handleAnalyze = useCallback(async (customPrompt?: string) => {
+  const handleAnalyze = useCallback(async (customPrompt?: string, imageAnnotations?: Array<{imageUrl: string; annotations: Array<{x: number; y: number; comment: string; id: string}>}>) => {
     // Determine which images to analyze
     const imagesToAnalyze = imageUrls && imageUrls.length > 0 ? imageUrls : (imageUrl ? [imageUrl] : []);
     
@@ -32,21 +32,54 @@ export const useAIAnalysis = ({
       return;
     }
 
+    const isMultiImage = imagesToAnalyze.length > 1;
     setIsAnalyzing(true);
     
     try {
       console.log('Starting AI analysis for:', { 
         imageCount: imagesToAnalyze.length,
         analysisId: currentAnalysis.id,
-        isComparative 
+        isComparative: isComparative || isMultiImage,
+        hasImageAnnotations: !!imageAnnotations
       });
       
       // Update analysis status to indicate it's being processed
       await updateAnalysisStatus(currentAnalysis.id, 'analyzing');
       
-      // Update analysis context with basic info
+      // Build enhanced analysis prompt
+      let enhancedPrompt = customPrompt || 'Analyze for UX, accessibility, and conversion optimization opportunities.';
+      
+      if (isMultiImage || isComparative) {
+        enhancedPrompt = `Perform comparative analysis across ${imagesToAnalyze.length} design images. `;
+        enhancedPrompt += 'Analyze each image individually and then provide comparative insights.\n\n';
+      }
+      
+      // Add image-specific annotations if provided
+      if (imageAnnotations && imageAnnotations.length > 0) {
+        imageAnnotations.forEach((imageAnnotation, imageIndex) => {
+          if (imageAnnotation.annotations.length > 0) {
+            enhancedPrompt += `Image ${imageIndex + 1} - User highlighted areas:\n`;
+            imageAnnotation.annotations.forEach((annotation, index) => {
+              enhancedPrompt += `${index + 1}. At position ${annotation.x.toFixed(1)}%, ${annotation.y.toFixed(1)}%: ${annotation.comment}\n`;
+            });
+            enhancedPrompt += '\n';
+          }
+        });
+      }
+      
+      if (customPrompt && customPrompt.trim()) {
+        enhancedPrompt += `\nAdditional context: ${customPrompt}\n\n`;
+      }
+      
+      if (isMultiImage || isComparative) {
+        enhancedPrompt += 'Please provide specific feedback for each image and highlight key differences, similarities, and recommendations for comparative improvements.';
+      } else {
+        enhancedPrompt += 'Please provide specific feedback addressing these concerns and identify any additional UX, accessibility, or conversion optimization opportunities.';
+      }
+      
+      // Update analysis context with enhanced info
       await updateAnalysisContext(currentAnalysis.id, {
-        analysis_prompt: customPrompt || 'AI-powered design analysis focusing on UX, accessibility, and conversion optimization',
+        analysis_prompt: enhancedPrompt,
         ai_model_used: 'gpt-4o'
       });
 
@@ -56,9 +89,9 @@ export const useAIAnalysis = ({
           imageUrls: imagesToAnalyze,
           imageUrl: imagesToAnalyze[0], // Backward compatibility
           analysisId: currentAnalysis.id,
-          analysisPrompt: customPrompt || 'Analyze this design for UX, accessibility, and conversion optimization opportunities. Focus on critical issues that impact user experience and business goals.',
+          analysisPrompt: enhancedPrompt,
           designType: currentAnalysis.design_type || 'web',
-          isComparative: isComparative || imagesToAnalyze.length > 1
+          isComparative: isComparative || isMultiImage
         }
       });
 
@@ -75,7 +108,7 @@ export const useAIAnalysis = ({
         setAnnotations(freshAnnotations);
         
         const imageText = imagesToAnalyze.length > 1 ? `${imagesToAnalyze.length} images` : 'image';
-        const analysisType = isComparative || imagesToAnalyze.length > 1 ? 'Comparative analysis' : 'Analysis';
+        const analysisType = isComparative || isMultiImage ? 'Comparative analysis' : 'Analysis';
         
         toast.success(`${analysisType} complete! Found ${data.totalAnnotations} insights across ${imageText}.`, {
           duration: 4000,

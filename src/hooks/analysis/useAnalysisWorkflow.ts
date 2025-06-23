@@ -108,6 +108,25 @@ export const useAnalysisWorkflow = () => {
     setIsAnalyzing(false);
   };
 
+  // Smart workflow progression based on number of images
+  const proceedFromUpload = (imageUrls: string[]) => {
+    if (imageUrls.length === 1) {
+      // Single image: Upload → Annotate (skip review)
+      selectImage(imageUrls[0]);
+      goToStep('annotate');
+    } else {
+      // Multiple images: Upload → Review
+      selectImages(imageUrls);
+      goToStep('review');
+    }
+  };
+
+  const proceedFromReview = () => {
+    // Always go to annotate step from review
+    // The AnalysisWorkflow component will determine which annotate component to use
+    goToStep('annotate');
+  };
+
   return {
     currentStep,
     uploadedFiles,
@@ -132,5 +151,7 @@ export const useAnalysisWorkflow = () => {
     setAiAnnotations,
     setIsAnalyzing,
     resetWorkflow,
+    proceedFromUpload,
+    proceedFromReview,
   };
 };
