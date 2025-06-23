@@ -7,9 +7,11 @@ export async function analyzeWithClaude(
   base64Image: string,
   mimeType: string,
   systemPrompt: string,
-  anthropicApiKey: string
+  anthropicApiKey: string,
+  requestedModel?: string
 ): Promise<AnnotationData[]> {
-  console.log('=== Starting Simplified Claude API Analysis ===');
+  console.log('=== Starting Enhanced Claude API Analysis ===');
+  console.log('Requested Claude model:', requestedModel);
   
   // Validate and test API key
   const cleanApiKey = await validateAndTestApiKey(anthropicApiKey);
@@ -19,6 +21,6 @@ export async function analyzeWithClaude(
     throw new Error('Invalid image data: base64 string is empty');
   }
 
-  // Analyze with Claude models
-  return await analyzeWithClaudeModels(base64Image, mimeType, systemPrompt, cleanApiKey);
+  // Analyze with Claude models (with model selection support)
+  return await analyzeWithClaudeModels(base64Image, mimeType, systemPrompt, cleanApiKey, requestedModel);
 }

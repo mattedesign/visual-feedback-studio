@@ -7,6 +7,7 @@ export type AIProvider = 'openai' | 'claude';
 
 export interface AIProviderConfig {
   provider: AIProvider;
+  model?: string;
   fallbackProvider?: AIProvider;
 }
 
@@ -18,12 +19,13 @@ export async function analyzeWithAIProvider(
 ): Promise<AnnotationData[]> {
   console.log('=== AI Provider Router Started ===');
   console.log('Primary provider:', config.provider);
+  console.log('Requested model:', config.model);
   console.log('Fallback provider:', config.fallbackProvider || 'none');
 
   try {
-    // Try primary provider
-    const result = await callProvider(config.provider, base64Image, mimeType, prompt);
-    console.log(`Primary provider ${config.provider} succeeded`);
+    // Try primary provider with requested model
+    const result = await callProvider(config.provider, base64Image, mimeType, prompt, config.model);
+    console.log(`Primary provider ${config.provider} succeeded${config.model ? ` with model ${config.model}` : ''}`);
     return result;
   } catch (primaryError) {
     console.error(`Primary provider ${config.provider} failed:`, primaryError.message);
@@ -50,7 +52,8 @@ async function callProvider(
   provider: AIProvider,
   base64Image: string,
   mimeType: string,
-  prompt: string
+  prompt: string,
+  model?: string
 ): Promise<AnnotationData[]> {
   switch (provider) {
     case 'openai':
@@ -58,14 +61,14 @@ async function callProvider(
       if (!openaiApiKey) {
         throw new Error('OpenAI API key not configured');
       }
-      return await analyzeWithOpenAI(base64Image, mimeType, prompt, openaiApiKey);
+      return await analyzeWithOpenAI(base64Image, mimeType, prompt, openaiApiKey, model);
       
     case 'claude':
       const claudeApiKey = Deno.env.get('ANTHROPIC_API_KEY');
       if (!claudeApiKey) {
         throw new Error('Claude API key not configured');
       }
-      return await analyzeWithClaude(base64Image, mimeType, prompt, claudeApiKey);
+      return await analyzeWithClaude(base64Image, mimeType, prompt, claudeApiKey, model);
       
     default:
       throw new Error(`Unsupported AI provider: ${provider}`);

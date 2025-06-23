@@ -29,6 +29,14 @@ serve(async (req) => {
     // Parse and validate request
     const validatedRequest = await validateAndParseRequest(req);
     
+    console.log('Request configuration:', {
+      imageCount: validatedRequest.imagesToProcess.length,
+      aiProvider: validatedRequest.aiProvider,
+      model: validatedRequest.model,
+      testMode: validatedRequest.testMode,
+      isComparative: validatedRequest.isComparative
+    });
+    
     // Process images
     const processedImages = await processImages(validatedRequest.imagesToProcess);
     
@@ -43,12 +51,13 @@ serve(async (req) => {
     // For comparative analysis, use the first image as primary
     const primaryImage = processedImages[0];
     
-    // Perform AI analysis
+    // Perform AI analysis with model selection support
     const annotations = await performAIAnalysis(
       primaryImage.base64Image,
       primaryImage.mimeType,
       enhancedPrompt,
-      validatedRequest.aiProvider
+      validatedRequest.aiProvider,
+      validatedRequest.model
     );
 
     // Save annotations to database
@@ -62,13 +71,20 @@ serve(async (req) => {
     // Format response
     const responseData = formatAnalysisResponse(annotations);
     
+    // Add model information to response for testing purposes
+    responseData.providerUsed = validatedRequest.aiProvider || 'auto-selected';
+    responseData.modelUsed = validatedRequest.model || 'default';
+    responseData.testMode = validatedRequest.testMode || false;
+    
     console.log('=== Analysis Completed Successfully ===');
     console.log('Final response:', {
       success: responseData.success,
       totalAnnotations: responseData.totalAnnotations,
       totalSavedAnnotations: savedAnnotations.length,
       isComparative: validatedRequest.isComparative || validatedRequest.isMultiImage,
-      usedProvider: 'determined by AI provider router'
+      providerUsed: responseData.providerUsed,
+      modelUsed: responseData.modelUsed,
+      testMode: responseData.testMode
     });
     
     return new Response(

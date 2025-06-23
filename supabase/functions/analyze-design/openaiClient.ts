@@ -3,14 +3,20 @@ export async function analyzeWithOpenAI(
   base64Image: string,
   mimeType: string,
   prompt: string,
-  apiKey: string
+  apiKey: string,
+  requestedModel?: string
 ) {
   console.log('=== OpenAI Client Started ===');
+  
+  // Default to the flagship model if no specific model is requested
+  const model = requestedModel || 'gpt-4.1-2025-04-14';
+  
   console.log('Request configuration:', {
     imageSize: base64Image.length,
     mimeType,
     promptLength: prompt.length,
-    model: 'gpt-4.1-2025-04-14'
+    model,
+    requestedModel: requestedModel || 'default'
   });
 
   try {
@@ -21,7 +27,7 @@ export async function analyzeWithOpenAI(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-2025-04-14',
+        model: model,
         messages: [
           {
             role: 'user',
@@ -40,7 +46,7 @@ export async function analyzeWithOpenAI(
             ]
           }
         ],
-        max_tokens: 4000,
+        max_tokens: model.includes('o3') || model.includes('o4') ? 8000 : 4000, // Higher limits for reasoning models
         temperature: 0.3,
       }),
     });
@@ -52,7 +58,8 @@ export async function analyzeWithOpenAI(
       console.error('OpenAI API error response:', {
         status: response.status,
         statusText: response.statusText,
-        body: errorText
+        body: errorText,
+        model: model
       });
       
       let errorMessage = `OpenAI API error: ${response.status} ${response.statusText}`;
@@ -61,6 +68,13 @@ export async function analyzeWithOpenAI(
         const errorData = JSON.parse(errorText);
         if (errorData.error?.message) {
           errorMessage = errorData.error.message;
+        }
+        
+        // Check for model-specific errors
+        if (errorData.error?.code === 'model_not_found' || 
+            errorMessage.includes('model') && errorMessage.includes('does not exist')) {
+          console.log(`Model ${model} not available, will try fallback if configured`);
+          throw new Error(`Model ${model} not available: ${errorMessage}`);
         }
       } catch (parseError) {
         console.error('Failed to parse error response:', parseError);
@@ -73,7 +87,9 @@ export async function analyzeWithOpenAI(
     console.log('OpenAI API response received:', {
       hasChoices: !!data.choices,
       choicesLength: data.choices?.length || 0,
-      hasContent: !!data.choices?.[0]?.message?.content
+      hasContent: !!data.choices?.[0]?.message?.content,
+      model: data.model || model,
+      usage: data.usage
     });
 
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
@@ -155,12 +171,14 @@ export async function analyzeWithOpenAI(
 
     console.log('=== OpenAI Client Completed Successfully ===');
     console.log('Final annotation count:', validatedAnnotations.length);
+    console.log('Model used:', data.model || model);
     
     return validatedAnnotations;
 
   } catch (error) {
     console.error('=== OpenAI Client Error ===');
     console.error('Error details:', error);
+    console.error('Model attempted:', model);
     throw error;
   }
 }
