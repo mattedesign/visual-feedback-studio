@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { 
   KnowledgeEntry, 
@@ -11,7 +10,6 @@ import {
 
 export class VectorKnowledgeService {
   private static instance: VectorKnowledgeService;
-  private openaiApiKey: string | null = null;
 
   private constructor() {
     // Private constructor for singleton pattern
@@ -25,39 +23,28 @@ export class VectorKnowledgeService {
   }
 
   /**
-   * Set OpenAI API key for embedding generation
-   */
-  public setOpenAIKey(apiKey: string): void {
-    this.openaiApiKey = apiKey;
-  }
-
-  /**
-   * Generate embeddings using OpenAI's text-embedding-ada-002 model
+   * Generate embeddings using the Supabase edge function
    */
   private async generateEmbedding(text: string): Promise<number[]> {
-    if (!this.openaiApiKey) {
-      throw new Error('OpenAI API key not configured. Call setOpenAIKey() first.');
-    }
-
     try {
-      const response = await fetch('https://api.openai.com/v1/embeddings', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.openaiApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          input: text,
-          model: 'text-embedding-ada-002',
-        }),
+      console.log('Generating embedding via edge function for text:', text.substring(0, 100) + '...');
+      
+      const { data, error } = await supabase.functions.invoke('generate-embeddings', {
+        body: { text }
       });
 
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+      if (error) {
+        console.error('Error calling generate-embeddings function:', error);
+        throw new Error(`Failed to generate embedding: ${error.message}`);
       }
 
-      const data: EmbeddingResponse = await response.json();
-      return data.data[0].embedding;
+      if (!data || !data.embedding) {
+        console.error('Invalid response from generate-embeddings function:', data);
+        throw new Error('Invalid response from embedding service');
+      }
+
+      console.log('Successfully generated embedding with dimensions:', data.embedding.length);
+      return data.embedding;
     } catch (error) {
       console.error('Error generating embedding:', error);
       throw new Error('Failed to generate embedding');

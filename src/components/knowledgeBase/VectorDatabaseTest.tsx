@@ -10,12 +10,11 @@ import { KnowledgeEntry } from '@/types/vectorDatabase';
 import { toast } from 'sonner';
 
 export const VectorDatabaseTest = () => {
-  const [openaiKey, setOpenaiKey] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [newEntry, setNewEntry] = useState({
     title: '',
     content: '',
-    category: 'ux' as KnowledgeEntry['category'],
+    category: 'ux-patterns' as KnowledgeEntry['category'],
     source: 'test',
     tags: [] as string[]
   });
@@ -25,18 +24,8 @@ export const VectorDatabaseTest = () => {
     searchResults,
     searchKnowledge,
     addKnowledgeEntry,
-    setOpenAIKey,
     clearResults
   } = useVectorKnowledge();
-
-  const handleSetApiKey = () => {
-    if (!openaiKey.trim()) {
-      toast.error('Please enter your OpenAI API key');
-      return;
-    }
-    setOpenAIKey(openaiKey);
-    toast.success('OpenAI API key set successfully');
-  };
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
@@ -57,7 +46,7 @@ export const VectorDatabaseTest = () => {
       setNewEntry({
         title: '',
         content: '',
-        category: 'ux',
+        category: 'ux-patterns',
         source: 'test',
         tags: []
       });
@@ -74,20 +63,6 @@ export const VectorDatabaseTest = () => {
           <CardTitle>Vector Database Test</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* API Key Setup */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">OpenAI API Key</label>
-            <div className="flex gap-2">
-              <Input
-                type="password"
-                placeholder="Enter your OpenAI API key"
-                value={openaiKey}
-                onChange={(e) => setOpenaiKey(e.target.value)}
-              />
-              <Button onClick={handleSetApiKey}>Set Key</Button>
-            </div>
-          </div>
-
           {/* Add Knowledge Entry */}
           <div className="space-y-2">
             <h3 className="text-lg font-semibold">Add Knowledge Entry</h3>
@@ -106,7 +81,7 @@ export const VectorDatabaseTest = () => {
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ux">UX</SelectItem>
+                <SelectItem value="ux-patterns">UX Patterns</SelectItem>
                 <SelectItem value="visual">Visual</SelectItem>
                 <SelectItem value="accessibility">Accessibility</SelectItem>
                 <SelectItem value="conversion">Conversion</SelectItem>

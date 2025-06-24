@@ -83,10 +83,6 @@ export const useVectorKnowledge = () => {
     }
   }, []);
 
-  const setOpenAIKey = useCallback((apiKey: string) => {
-    vectorKnowledgeService.setOpenAIKey(apiKey);
-  }, []);
-
   return {
     isLoading,
     searchResults,
@@ -95,7 +91,6 @@ export const useVectorKnowledge = () => {
     searchPatterns,
     addKnowledgeEntry,
     addCompetitorPattern,
-    setOpenAIKey,
     clearResults: () => {
       setSearchResults([]);
       setPatternResults([]);

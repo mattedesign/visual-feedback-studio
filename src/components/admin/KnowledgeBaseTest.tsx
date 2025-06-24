@@ -11,11 +11,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useVectorKnowledge } from '@/hooks/knowledgeBase/useVectorKnowledge';
 import { KnowledgeEntry } from '@/types/vectorDatabase';
 import { toast } from 'sonner';
-import { Search, Plus, Database, TestTube } from 'lucide-react';
+import { Search, Plus, TestTube } from 'lucide-react';
 
 export const KnowledgeBaseTest = () => {
-  const [openaiKey, setOpenaiKey] = useState('');
-  const [isKeySet, setIsKeySet] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [testEntry, setTestEntry] = useState({
     title: 'Button Color Psychology in UX',
@@ -32,26 +30,10 @@ export const KnowledgeBaseTest = () => {
     searchResults,
     searchKnowledge,
     addKnowledgeEntry,
-    setOpenAIKey,
     clearResults
   } = useVectorKnowledge();
 
-  const handleSetApiKey = () => {
-    if (!openaiKey.trim()) {
-      toast.error('Please enter your OpenAI API key');
-      return;
-    }
-    setOpenAIKey(openaiKey);
-    setIsKeySet(true);
-    toast.success('OpenAI API key configured successfully');
-  };
-
   const handleAddTestEntry = async () => {
-    if (!isKeySet) {
-      toast.error('Please set your OpenAI API key first');
-      return;
-    }
-
     try {
       const result = await addKnowledgeEntry(testEntry);
       console.log('Test entry added successfully:', result);
@@ -62,12 +44,7 @@ export const KnowledgeBaseTest = () => {
     }
   };
 
-  const handleSearch = async () => {
-    if (!isKeySet) {
-      toast.error('Please set your OpenAI API key first');
-      return;
-    }
-    
+  const handleSearch = async () => {    
     if (!searchQuery.trim()) {
       toast.error('Please enter a search query');
       return;
@@ -95,38 +72,6 @@ export const KnowledgeBaseTest = () => {
           Test the vector knowledge system functionality
         </p>
       </div>
-
-      {/* API Key Configuration */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Database className="w-5 h-5" />
-            API Configuration
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <Input
-              type="password"
-              placeholder="Enter your OpenAI API key"
-              value={openaiKey}
-              onChange={(e) => setOpenaiKey(e.target.value)}
-              disabled={isKeySet}
-            />
-            <Button 
-              onClick={handleSetApiKey}
-              disabled={isKeySet || !openaiKey.trim()}
-            >
-              {isKeySet ? 'Key Set ✓' : 'Set API Key'}
-            </Button>
-          </div>
-          {isKeySet && (
-            <p className="text-sm text-green-600">
-              ✓ OpenAI API key configured successfully
-            </p>
-          )}
-        </CardContent>
-      </Card>
 
       <div className="grid md:grid-cols-2 gap-6">
         {/* Add Test Entry */}
@@ -180,7 +125,7 @@ export const KnowledgeBaseTest = () => {
 
             <Button 
               onClick={handleAddTestEntry} 
-              disabled={isLoading || !isKeySet}
+              disabled={isLoading}
               className="w-full"
             >
               {isLoading ? 'Adding...' : 'Add Test Entry'}
@@ -206,7 +151,7 @@ export const KnowledgeBaseTest = () => {
               />
               <Button 
                 onClick={handleSearch} 
-                disabled={isLoading || !isKeySet}
+                disabled={isLoading}
               >
                 {isLoading ? 'Searching...' : 'Search'}
               </Button>
@@ -296,11 +241,7 @@ export const KnowledgeBaseTest = () => {
           <CardTitle>Test Status</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-3 bg-gray-50 rounded">
-              <p className="text-sm text-gray-600">API Key</p>
-              <p className="font-semibold">{isKeySet ? '✓ Configured' : '✗ Not Set'}</p>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="text-center p-3 bg-gray-50 rounded">
               <p className="text-sm text-gray-600">Loading State</p>
               <p className="font-semibold">{isLoading ? '⏳ Processing' : '✓ Ready'}</p>
