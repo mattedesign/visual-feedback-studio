@@ -1,5 +1,3 @@
-// supabase/functions/build-rag-context/index.ts
-// FIXED VERSION: Correct RPC parameters and embedding generation
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -35,7 +33,7 @@ serve(async (req) => {
     const searchQueries = generateSearchQueries(userPrompt, imageAnnotations);
     console.log('Generated search queries:', searchQueries);
     
-    // Retrieve relevant knowledge using CORRECTED parameters
+    // Retrieve relevant knowledge using embeddings
     const relevantKnowledge = await retrieveKnowledge(supabaseClient, searchQueries);
     console.log('Retrieved knowledge entries:', relevantKnowledge.length);
     
@@ -76,13 +74,13 @@ serve(async (req) => {
   }
 })
 
-// FIXED: Generate embeddings for search queries
+// Generate embeddings using OpenAI
 async function generateEmbedding(text: string): Promise<number[]> {
   try {
     const response = await fetch('https://api.openai.com/v1/embeddings', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY_RAG')}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -103,7 +101,7 @@ async function generateEmbedding(text: string): Promise<number[]> {
   }
 }
 
-// FIXED: Use correct RPC parameters
+// Retrieve knowledge using the match_knowledge RPC function
 async function retrieveKnowledge(supabaseClient: any, queries: string[]) {
   const allResults = [];
   
@@ -111,12 +109,12 @@ async function retrieveKnowledge(supabaseClient: any, queries: string[]) {
     try {
       console.log(`🔍 Searching for: "${query}"`);
       
-      // FIXED: Generate embedding for the query
+      // Generate embedding for the query
       const queryEmbedding = await generateEmbedding(query);
       
-      // FIXED: Use correct parameter name and format
+      // Call the match_knowledge RPC function
       const { data, error } = await supabaseClient.rpc('match_knowledge', {
-        query_embedding: `[${queryEmbedding.join(',')}]`,  // FIXED: Correct parameter name and format
+        query_embedding: `[${queryEmbedding.join(',')}]`,
         match_threshold: 0.7,
         match_count: 3
       });
@@ -134,6 +132,7 @@ async function retrieveKnowledge(supabaseClient: any, queries: string[]) {
       }
     } catch (error) {
       console.error(`Query failed for "${query}":`, error);
+      // Continue with other queries even if one fails
     }
   }
   
@@ -160,6 +159,7 @@ function generateSearchQueries(userPrompt?: string, annotations?: any[]): string
     if (words.includes('navigation')) queries.push('navigation UX');
     if (words.includes('landing')) queries.push('landing page conversion');
     if (words.includes('dashboard')) queries.push('dashboard UX design');
+    if (words.includes('accessibility')) queries.push('accessibility guidelines');
   }
   
   // Add annotation-based queries
