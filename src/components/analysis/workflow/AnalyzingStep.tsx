@@ -13,8 +13,7 @@ interface AnalyzingStepProps {
 export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState('Initializing analysis...');
-  const [retryCount, setRetryCount] = useState(0);
-  const maxRetries = 3;
+  const [hasStarted, setHasStarted] = useState(false);
 
   // Use enhanced AI analysis with RAG integration
   const { 
@@ -42,100 +41,84 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
     }
   }, [isBuilding, ragContext]);
 
+  // Start analysis only once when component mounts
   useEffect(() => {
-    const performAnalysis = async () => {
-      console.log('=== Starting Enhanced Analysis Process ===');
-      console.log('Selected images:', workflow.selectedImages.length);
-      console.log('Current analysis:', workflow.currentAnalysis?.id);
-      console.log('User annotations:', workflow.getTotalAnnotationsCount());
-      console.log('Analysis context:', workflow.analysisContext || 'None provided');
+    if (!hasStarted && workflow.selectedImages.length > 0 && workflow.currentAnalysis) {
+      setHasStarted(true);
+      performAnalysis();
+    }
+  }, [hasStarted, workflow.selectedImages.length, workflow.currentAnalysis]);
 
-      // Basic validation
-      if (workflow.selectedImages.length === 0) {
-        console.error('No images selected for analysis');
-        toast.error('No images selected for analysis');
-        return;
-      }
+  const performAnalysis = async () => {
+    console.log('=== Starting Enhanced Analysis Process ===');
+    console.log('Selected images:', workflow.selectedImages.length);
+    console.log('Current analysis:', workflow.currentAnalysis?.id);
+    console.log('User annotations:', workflow.getTotalAnnotationsCount());
+    console.log('Analysis context:', workflow.analysisContext || 'None provided');
 
-      if (!workflow.currentAnalysis) {
-        console.error('No current analysis found');
-        toast.error('Analysis session not found. Please go back and upload your images again.');
-        return;
-      }
+    // Basic validation
+    if (workflow.selectedImages.length === 0) {
+      console.error('No images selected for analysis');
+      toast.error('No images selected for analysis');
+      return;
+    }
 
-      try {
-        setCurrentStep('Preparing images...');
-        setAnalysisProgress(10);
+    if (!workflow.currentAnalysis) {
+      console.error('No current analysis found');
+      toast.error('Analysis session not found. Please go back and upload your images again.');
+      return;
+    }
 
-        // Validate images are accessible
-        const imageValidationPromises = workflow.selectedImages.map(async (imageUrl, index) => {
-          try {
-            const response = await fetch(imageUrl, { method: 'HEAD' });
-            if (!response.ok) {
-              throw new Error(`Image ${index + 1} not accessible: ${response.status}`);
-            }
-            console.log(`Image ${index + 1} validated successfully`);
-            return true;
-          } catch (error) {
-            console.error(`Image ${index + 1} validation failed:`, error);
-            throw error;
+    try {
+      setCurrentStep('Preparing images...');
+      setAnalysisProgress(10);
+
+      // Validate images are accessible
+      const imageValidationPromises = workflow.selectedImages.map(async (imageUrl, index) => {
+        try {
+          const response = await fetch(imageUrl, { method: 'HEAD' });
+          if (!response.ok) {
+            throw new Error(`Image ${index + 1} not accessible: ${response.status}`);
           }
-        });
-
-        await Promise.all(imageValidationPromises);
-        setAnalysisProgress(25);
-
-        setCurrentStep('Starting RAG-enhanced analysis...');
-
-        // Execute analysis with RAG enhancement
-        await handleAnalyze(workflow.analysisContext, workflow.imageAnnotations);
-        
-        setAnalysisProgress(100);
-        setCurrentStep('Analysis complete!');
-        
-        console.log('=== RAG-Enhanced Analysis Completed Successfully ===');
-        
-        // Small delay to show completion before transitioning
-        setTimeout(() => {
-          workflow.goToStep('results');
-        }, 1000);
-
-      } catch (error) {
-        console.error('=== Analysis Failed ===');
-        console.error('Error details:', error);
-        console.error('Retry count:', retryCount);
-        
-        if (retryCount < maxRetries) {
-          const nextRetry = retryCount + 1;
-          console.log(`Attempting retry ${nextRetry}/${maxRetries}`);
-          setRetryCount(nextRetry);
-          setCurrentStep(`Retrying analysis (${nextRetry}/${maxRetries})...`);
-          setAnalysisProgress(0);
-          
-          // Exponential backoff: 2s, 4s, 8s
-          const delay = Math.pow(2, retryCount) * 2000;
-          setTimeout(() => {
-            performAnalysis();
-          }, delay);
-          
-          toast(`Analysis failed, retrying in ${delay/1000} seconds... (${nextRetry}/${maxRetries})`, {
-            duration: delay - 500,
-          });
-        } else {
-          console.error('Max retries exceeded, giving up');
-          setCurrentStep('Analysis failed after multiple attempts');
-          workflow.setIsAnalyzing(false);
-          
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-          toast.error(`Analysis failed: ${errorMessage}. Please try again or contact support if the issue persists.`, {
-            duration: 8000,
-          });
+          console.log(`Image ${index + 1} validated successfully`);
+          return true;
+        } catch (error) {
+          console.error(`Image ${index + 1} validation failed:`, error);
+          throw error;
         }
-      }
-    };
+      });
 
-    performAnalysis();
-  }, [workflow, handleAnalyze, retryCount]);
+      await Promise.all(imageValidationPromises);
+      setAnalysisProgress(25);
+
+      setCurrentStep('Starting RAG-enhanced analysis...');
+
+      // Execute analysis with RAG enhancement
+      await handleAnalyze(workflow.analysisContext, workflow.imageAnnotations);
+      
+      setAnalysisProgress(100);
+      setCurrentStep('Analysis complete!');
+      
+      console.log('=== RAG-Enhanced Analysis Completed Successfully ===');
+      
+      // Small delay to show completion before transitioning
+      setTimeout(() => {
+        workflow.goToStep('results');
+      }, 1000);
+
+    } catch (error) {
+      console.error('=== Analysis Failed ===');
+      console.error('Error details:', error);
+      
+      setCurrentStep('Analysis failed');
+      workflow.setIsAnalyzing(false);
+      
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      toast.error(`Analysis failed: ${errorMessage}. Please try again or contact support if the issue persists.`, {
+        duration: 8000,
+      });
+    }
+  };
 
   const totalAnnotations = workflow.getTotalAnnotationsCount();
   const isMultiImage = workflow.selectedImages.length > 1;
@@ -165,11 +148,6 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
               <p className="text-slate-400 mb-2">
                 {currentStep}
               </p>
-              {retryCount > 0 && (
-                <p className="text-yellow-400 text-sm">
-                  Retry attempt {retryCount} of {maxRetries}
-                </p>
-              )}
             </div>
 
             {/* Research Context Building Indicator */}

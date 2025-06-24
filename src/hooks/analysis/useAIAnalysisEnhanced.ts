@@ -41,7 +41,8 @@ export const useAIAnalysisEnhanced = ({
       imageCount: imageUrls.length,
       isComparative,
       provider: selectedProvider,
-      hasAnnotations: !!imageAnnotations?.length
+      hasAnnotations: !!imageAnnotations?.length,
+      promptLength: analysisPrompt.length
     });
 
     setIsAnalyzing(true);

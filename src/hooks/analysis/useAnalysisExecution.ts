@@ -111,7 +111,8 @@ export const useAnalysisExecution = ({
           // RAG enhancement fields
           ragEnabled: true,
           ragContext: ragData,
-          researchCitations: ragData?.researchCitations || []
+          researchCitations: ragData?.researchCitations || [],
+          enhancedPrompt: ragData?.enhancedPrompt || userAnalysisPrompt
         }
       });
 
