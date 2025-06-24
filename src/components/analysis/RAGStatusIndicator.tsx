@@ -1,44 +1,24 @@
 
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Sparkles, AlertCircle, CheckCircle } from 'lucide-react';
+import { BookOpen, Sparkles, AlertCircle } from 'lucide-react';
 
 interface RAGStatusIndicatorProps {
   hasResearchContext: boolean;
   researchSourcesCount: number;
   isAnalyzing?: boolean;
-  isBuilding?: boolean;
 }
 
 export const RAGStatusIndicator: React.FC<RAGStatusIndicatorProps> = ({
   hasResearchContext,
   researchSourcesCount,
-  isAnalyzing = false,
-  isBuilding = false
+  isAnalyzing = false
 }) => {
-  if (isBuilding) {
-    return (
-      <div className="flex items-center gap-2 text-blue-400 animate-pulse">
-        <Sparkles className="w-4 h-4 animate-spin" />
-        <span className="text-sm">Building research context...</span>
-      </div>
-    );
-  }
-
-  if (isAnalyzing && hasResearchContext) {
-    return (
-      <div className="flex items-center gap-2 text-green-400">
-        <CheckCircle className="w-4 h-4" />
-        <span className="text-sm">Research-enhanced analysis in progress...</span>
-      </div>
-    );
-  }
-
   if (isAnalyzing) {
     return (
       <div className="flex items-center gap-2 text-blue-400">
         <Sparkles className="w-4 h-4 animate-spin" />
-        <span className="text-sm">Standard analysis in progress...</span>
+        <span className="text-sm">Enhancing analysis with research...</span>
       </div>
     );
   }

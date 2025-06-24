@@ -1,4 +1,3 @@
-
 // supabase/functions/build-rag-context/index.ts
 // FIXED VERSION: Correct RPC parameters and embedding generation
 
@@ -79,27 +78,20 @@ serve(async (req) => {
 
 // FIXED: Generate embeddings for search queries
 async function generateEmbedding(text: string): Promise<number[]> {
-  const openaiKey = Deno.env.get('OPENAI_API_KEY');
-  if (!openaiKey) {
-    throw new Error('OpenAI API key not configured');
-  }
-
   try {
     const response = await fetch('https://api.openai.com/v1/embeddings', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openaiKey}`,
+        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        input: text.substring(0, 8000), // Limit input length
+        input: text,
         model: 'text-embedding-3-small'
       })
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('OpenAI API error:', response.status, errorText);
       throw new Error(`OpenAI API error: ${response.statusText}`);
     }
 
@@ -111,7 +103,7 @@ async function generateEmbedding(text: string): Promise<number[]> {
   }
 }
 
-// FIXED: Use correct RPC parameters and handle errors gracefully
+// FIXED: Use correct RPC parameters
 async function retrieveKnowledge(supabaseClient: any, queries: string[]) {
   const allResults = [];
   
@@ -119,14 +111,14 @@ async function retrieveKnowledge(supabaseClient: any, queries: string[]) {
     try {
       console.log(`🔍 Searching for: "${query}"`);
       
-      // Generate embedding for the query
+      // FIXED: Generate embedding for the query
       const queryEmbedding = await generateEmbedding(query);
       
-      // Use the match_knowledge RPC function with correct parameter format
+      // FIXED: Use correct parameter name and format
       const { data, error } = await supabaseClient.rpc('match_knowledge', {
-        query_embedding: queryEmbedding,
-        match_threshold: 0.6,
-        match_count: 4
+        query_embedding: `[${queryEmbedding.join(',')}]`,  // FIXED: Correct parameter name and format
+        match_threshold: 0.7,
+        match_count: 3
       });
       
       if (error) {
@@ -136,20 +128,16 @@ async function retrieveKnowledge(supabaseClient: any, queries: string[]) {
       
       if (data && data.length > 0) {
         console.log(`Found ${data.length} results for "${query}"`);
-        allResults.push(...data.map(item => ({
-          ...item,
-          source: item.source || 'UX Research Database'
-        })));
+        allResults.push(...data);
       } else {
         console.log(`No results found for "${query}"`);
       }
     } catch (error) {
       console.error(`Query failed for "${query}":`, error);
-      // Continue with other queries even if one fails
     }
   }
   
-  // Remove duplicates based on ID and return top results
+  // Remove duplicates based on ID and return top 8
   const unique = allResults.filter((item, index, self) => 
     index === self.findIndex(t => t.id === item.id)
   );
@@ -163,25 +151,15 @@ function generateSearchQueries(userPrompt?: string, annotations?: any[]): string
   
   if (userPrompt) {
     const words = userPrompt.toLowerCase();
-    
-    // Add specific queries based on user prompt content
-    if (words.includes('button')) queries.push('button design UX patterns');
-    if (words.includes('form')) queries.push('form design conversion best practices');
-    if (words.includes('checkout')) queries.push('checkout optimization research');
-    if (words.includes('mobile')) queries.push('mobile UX design patterns');
-    if (words.includes('ecommerce') || words.includes('shop')) queries.push('ecommerce UX research');
-    if (words.includes('saas')) queries.push('saas design patterns research');
-    if (words.includes('navigation')) queries.push('navigation UX research');
-    if (words.includes('landing')) queries.push('landing page conversion research');
-    if (words.includes('dashboard')) queries.push('dashboard UX design research');
-    if (words.includes('accessibility')) queries.push('accessibility UX research');
-    if (words.includes('trust') || words.includes('credibility')) queries.push('trust signals UX research');
-    
-    // Add the user prompt itself as a search query (truncated)
-    const cleanPrompt = userPrompt.trim().substring(0, 100);
-    if (cleanPrompt.length > 10) {
-      queries.push(cleanPrompt);
-    }
+    if (words.includes('button')) queries.push('button design UX');
+    if (words.includes('form')) queries.push('form design conversion');
+    if (words.includes('checkout')) queries.push('checkout optimization');
+    if (words.includes('mobile')) queries.push('mobile UX patterns');
+    if (words.includes('ecommerce') || words.includes('shop')) queries.push('ecommerce UX patterns');
+    if (words.includes('saas')) queries.push('saas design patterns');
+    if (words.includes('navigation')) queries.push('navigation UX');
+    if (words.includes('landing')) queries.push('landing page conversion');
+    if (words.includes('dashboard')) queries.push('dashboard UX design');
   }
   
   // Add annotation-based queries
@@ -189,78 +167,51 @@ function generateSearchQueries(userPrompt?: string, annotations?: any[]): string
     annotations.forEach(imgAnnotation => {
       if (imgAnnotation.annotations) {
         imgAnnotation.annotations.forEach(ann => {
-          if (ann.comment && ann.comment.length > 15) {
-            queries.push(ann.comment.substring(0, 80));
+          if (ann.comment && ann.comment.length > 10) {
+            queries.push(ann.comment.substring(0, 50));
           }
         });
       }
     });
   }
   
-  // Remove duplicates and return
-  return [...new Set(queries)];
+  return [...new Set(queries)]; // Remove duplicates
 }
 
 function buildResearchPrompt(userPrompt: string = '', knowledge: any[]): string {
-  let enhancedPrompt = `RESEARCH-ENHANCED UX ANALYSIS
-
-You are a senior UX consultant with access to research-backed insights. Provide expert analysis that references specific research findings.
-
-`;
+  let prompt = `You are an expert UX analyst with access to research insights.\n\n`;
   
   if (userPrompt.trim()) {
-    enhancedPrompt += `USER REQUEST:
-${userPrompt.trim()}
-
-`;
+    prompt += `PRIMARY REQUEST: ${userPrompt.trim()}\n\n`;
   }
   
   if (knowledge.length > 0) {
-    enhancedPrompt += `RESEARCH CONTEXT:
-You have access to ${knowledge.length} relevant UX research insights:
-
-`;
+    prompt += `RESEARCH CONTEXT:\nYour analysis should be informed by these research insights:\n\n`;
     knowledge.forEach((entry, i) => {
-      enhancedPrompt += `${i + 1}. "${entry.title}"
-   Category: ${entry.category}
-   Key Insight: ${entry.content.substring(0, 200)}...
-   Source: ${entry.source || 'UX Research Database'}
-   Relevance: ${((entry.similarity || 0) * 100).toFixed(1)}%
-
-`;
+      prompt += `${i + 1}. ${entry.title}\n`;
+      prompt += `   ${entry.content.substring(0, 200)}...\n`;
+      prompt += `   Source: ${entry.source || 'UX Research Database'}\n`;
+      prompt += `   Category: ${entry.category}\n\n`;
     });
     
-    enhancedPrompt += `ANALYSIS REQUIREMENTS:
-• Ground all recommendations in the provided research insights
-• Reference specific research sources for each major recommendation  
-• Explain how recommendations connect to established UX principles
-• Prioritize recommendations based on research-backed impact
-• Include specific metrics or benchmarks when available from research
-• Provide implementation guidance based on research best practices
-
-OUTPUT FORMAT:
-Structure annotations to clearly indicate which research sources support each recommendation. Include research citations and explain the connection between research and your specific recommendations.
-
-`;
-  } else {
-    enhancedPrompt += `RESEARCH CONTEXT:
-Limited research context available. Provide analysis based on established UX principles and industry best practices.
-
-`;
+    prompt += `ANALYSIS INSTRUCTIONS:\n`;
+    prompt += `- Reference specific research findings when making recommendations\n`;
+    prompt += `- Cite sources for any claims you make\n`;
+    prompt += `- Provide industry-specific insights when possible\n`;
+    prompt += `- Include quantitative benchmarks or metrics when available\n`;
+    prompt += `- Focus on actionable, business-impact driven recommendations\n\n`;
   }
   
-  enhancedPrompt += `Please analyze the provided design and generate detailed, research-backed feedback annotations.`;
-  
-  return enhancedPrompt;
+  prompt += `Please provide detailed, research-backed UX feedback annotations.`;
+  return prompt;
 }
 
 function inferIndustry(prompt?: string): string {
   if (!prompt) return 'general';
   const p = prompt.toLowerCase();
-  if (p.includes('ecommerce') || p.includes('shop') || p.includes('cart') || p.includes('checkout')) return 'ecommerce';
-  if (p.includes('saas') || p.includes('software') || p.includes('dashboard')) return 'saas';
-  if (p.includes('fintech') || p.includes('finance') || p.includes('banking')) return 'fintech';
-  if (p.includes('healthcare') || p.includes('medical') || p.includes('health')) return 'healthcare';
-  if (p.includes('education') || p.includes('learning') || p.includes('course')) return 'education';
+  if (p.includes('ecommerce') || p.includes('shop') || p.includes('cart')) return 'ecommerce';
+  if (p.includes('saas') || p.includes('software')) return 'saas';
+  if (p.includes('fintech') || p.includes('finance')) return 'fintech';
+  if (p.includes('healthcare') || p.includes('medical')) return 'healthcare';
   return 'general';
 }
