@@ -1,4 +1,22 @@
 
+export interface RAGContext {
+  retrievedKnowledge: {
+    relevantPatterns: Array<{
+      id: string;
+      title: string;
+      content: string;
+      category: string;
+      source: string;
+    }>;
+    competitorInsights: any[];
+  };
+  enhancedPrompt: string;
+  researchCitations: string[];
+  industryContext: string;
+  buildTimestamp?: string;
+  searchQueries?: string[];
+}
+
 export interface AnalysisRequest {
   imageUrl?: string; // Keep for backward compatibility
   imageUrls?: string[]; // New field for multiple images
@@ -7,6 +25,26 @@ export interface AnalysisRequest {
   designType?: string;
   isComparative?: boolean;
   aiProvider?: 'openai' | 'claude'; // New field for provider selection
+  model?: string;
+  testMode?: boolean;
+  // RAG fields:
+  ragEnabled?: boolean;
+  ragContext?: RAGContext;
+  researchCitations?: string[];
+}
+
+export interface EnhancedAnalysisResponse {
+  success: boolean;
+  annotations: AnnotationData[];
+  totalAnnotations: number;
+  providerUsed?: string;
+  modelUsed?: string;
+  testMode?: boolean;
+  // RAG response fields:
+  researchEnhanced?: boolean;
+  knowledgeSourcesUsed?: number;
+  researchCitations?: string[];
+  industryContext?: string;
 }
 
 export interface Annotation {
