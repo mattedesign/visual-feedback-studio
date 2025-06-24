@@ -1,4 +1,3 @@
-
 import { Badge } from '@/components/ui/badge';
 import { Annotation } from '@/types/analysis';
 
@@ -19,6 +18,8 @@ export const AIInsightsList = ({
   onAnnotationClick,
   getSeverityColor,
 }: AIInsightsListProps) => {
+  // This component is now replaced by DetailedAnnotationsList
+  // Keeping it for backward compatibility but it's essentially a wrapper
   return (
     <div>
       <h3 className="text-xl font-bold mb-4 text-gray-900">

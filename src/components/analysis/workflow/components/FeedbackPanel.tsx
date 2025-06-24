@@ -1,7 +1,10 @@
 
 import { Annotation } from '@/types/analysis';
 import { CurrentImageSummary } from './CurrentImageSummary';
-import { AIInsightsList } from './AIInsightsList';
+import { OverallAnalysisSummary } from './OverallAnalysisSummary';
+import { CategorySummaries } from './CategorySummaries';
+import { PrioritySummary } from './PrioritySummary';
+import { DetailedAnnotationsList } from './DetailedAnnotationsList';
 import { DetailedFeedbackCard } from './DetailedFeedbackCard';
 
 interface FeedbackPanelProps {
@@ -32,21 +35,48 @@ export const FeedbackPanel = ({
 }: FeedbackPanelProps) => {
   return (
     <div className="space-y-6">
-      <CurrentImageSummary
-        currentImageAIAnnotations={currentImageAIAnnotations}
-        currentImageUserAnnotations={currentImageUserAnnotations}
-        isMultiImage={isMultiImage}
-      />
+      {/* Analysis Summary Section */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-bold text-gray-900 border-b border-gray-200 pb-2">
+          📊 Analysis Summary
+        </h2>
+        
+        <OverallAnalysisSummary 
+          annotations={aiAnnotations}
+          isMultiImage={isMultiImage}
+          imageCount={isMultiImage ? Math.max(...aiAnnotations.map(a => (a.imageIndex ?? 0) + 1)) : 1}
+        />
+        
+        <CategorySummaries annotations={aiAnnotations} />
+        
+        <PrioritySummary annotations={aiAnnotations} />
+      </div>
 
-      <AIInsightsList
-        currentImageAIAnnotations={currentImageAIAnnotations}
-        activeImageIndex={activeImageIndex}
-        isMultiImage={isMultiImage}
-        activeAnnotation={activeAnnotation}
-        onAnnotationClick={onAnnotationClick}
-        getSeverityColor={getSeverityColor}
-      />
+      {/* Current Image Summary (for multi-image) */}
+      {isMultiImage && (
+        <CurrentImageSummary
+          currentImageAIAnnotations={currentImageAIAnnotations}
+          currentImageUserAnnotations={currentImageUserAnnotations}
+          isMultiImage={isMultiImage}
+        />
+      )}
 
+      {/* Individual Comments Section */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-bold text-gray-900 border-b border-gray-200 pb-2">
+          💬 Individual Comments
+        </h2>
+        
+        <DetailedAnnotationsList
+          annotations={isMultiImage ? currentImageAIAnnotations : aiAnnotations}
+          activeAnnotation={activeAnnotation}
+          onAnnotationClick={onAnnotationClick}
+          getSeverityColor={getSeverityColor}
+          isMultiImage={isMultiImage}
+        />
+      </div>
+
+      {/* Selected Annotation Details */}
       <DetailedFeedbackCard
         activeAnnotation={activeAnnotation}
         aiAnnotations={aiAnnotations}
