@@ -101,7 +101,7 @@ export const useAIAnalysis = ({
         const analysisQuery = [
           customPrompt || 'Design analysis',
           finalIsComparative ? 'comparative design analysis' : 'single design analysis',
-          currentAnalysis?.designType || 'web design',
+          currentAnalysis?.design_type || 'web design',
           'UX research best practices'
         ].filter(Boolean).join(' ');
 
@@ -111,7 +111,7 @@ export const useAIAnalysis = ({
         ragContext = await buildRAGContext(analysisQuery, {
           maxResults: 8,
           similarityThreshold: 0.7,
-          categoryFilter: currentAnalysis?.designType === 'mobile' ? 'mobile' : undefined
+          categoryFilter: currentAnalysis?.design_type === 'mobile' ? 'mobile' : undefined
         });
 
         console.log('✅ RAG context built successfully:', {
@@ -131,7 +131,7 @@ export const useAIAnalysis = ({
         // Enhance the prompt with research context
         if (ragContext.totalRelevantEntries > 0) {
           const analysisType = finalIsComparative ? 'comprehensive' : 
-                             currentAnalysis?.designType === 'mobile' ? 'ux' : 'comprehensive';
+                             currentAnalysis?.design_type === 'mobile' ? 'ux' : 'comprehensive';
           
           enhancedPrompt = enhancePromptWithResearch(intelligentPrompt, ragContext, analysisType);
           ragSuccessful = true;
