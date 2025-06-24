@@ -33,37 +33,56 @@ export const FeedbackPanel = ({
   aiAnnotations,
   getSeverityColor,
 }: FeedbackPanelProps) => {
-  // Enhanced feedback validation
+  // Fixed validation logic - be more lenient with what constitutes valid feedback
   const validateAnnotations = (annotations: Annotation[]) => {
     return annotations.filter(annotation => {
+      // Check if feedback exists and is not empty or placeholder text
       const hasValidFeedback = annotation.feedback && 
-        annotation.feedback.trim() !== '' && 
-        annotation.feedback !== 'No feedback provided' &&
-        annotation.feedback !== 'Feedback not provided';
+        annotation.feedback.trim().length > 0 && 
+        !annotation.feedback.toLowerCase().includes('no feedback') &&
+        !annotation.feedback.toLowerCase().includes('feedback not provided');
       
-      const hasValidMetadata = annotation.severity && 
-        annotation.category && 
-        annotation.implementationEffort && 
-        annotation.businessImpact;
+      // Check if basic required fields exist
+      const hasBasicFields = annotation.severity && annotation.category;
       
-      return hasValidFeedback && hasValidMetadata;
+      // Be more lenient - only require feedback and basic categorization
+      console.log('Annotation validation:', {
+        id: annotation.id,
+        hasValidFeedback,
+        hasBasicFields,
+        feedbackPreview: annotation.feedback?.substring(0, 50),
+        severity: annotation.severity,
+        category: annotation.category
+      });
+      
+      return hasValidFeedback && hasBasicFields;
     });
   };
 
   const validCurrentAnnotations = validateAnnotations(currentImageAIAnnotations);
   const validAllAnnotations = validateAnnotations(aiAnnotations);
 
-  // Debug logging for annotation validation
-  console.log('FeedbackPanel Debug:', {
+  // Enhanced debug logging
+  console.log('FeedbackPanel Enhanced Debug:', {
     totalAnnotations: aiAnnotations.length,
     validAnnotations: validAllAnnotations.length,
     currentImageAnnotations: currentImageAIAnnotations.length,
     validCurrentImageAnnotations: validCurrentAnnotations.length,
-    sampleAnnotation: aiAnnotations[0] ? {
-      hasFeedback: !!aiAnnotations[0].feedback,
+    firstAnnotationSample: aiAnnotations[0] ? {
+      id: aiAnnotations[0].id,
+      feedback: aiAnnotations[0].feedback,
       feedbackLength: aiAnnotations[0].feedback?.length || 0,
-      feedbackPreview: aiAnnotations[0].feedback?.substring(0, 50) || 'N/A'
-    } : null
+      severity: aiAnnotations[0].severity,
+      category: aiAnnotations[0].category,
+      implementationEffort: aiAnnotations[0].implementationEffort,
+      businessImpact: aiAnnotations[0].businessImpact
+    } : null,
+    validationResults: aiAnnotations.slice(0, 3).map(ann => ({
+      id: ann.id,
+      hasValidFeedback: ann.feedback && ann.feedback.trim().length > 0,
+      feedbackPreview: ann.feedback?.substring(0, 30),
+      hasRequiredFields: !!(ann.severity && ann.category)
+    }))
   });
 
   return (
@@ -131,8 +150,29 @@ export const FeedbackPanel = ({
           </div>
         </div>
         
-        {/* Show message if no valid annotations */}
-        {validAllAnnotations.length === 0 ? (
+        {/* Show message if no valid annotations but raw annotations exist */}
+        {validAllAnnotations.length === 0 && aiAnnotations.length > 0 ? (
+          <div className="text-center py-8 text-amber-600 bg-amber-50 rounded-lg border-2 border-amber-200">
+            <div className="space-y-3">
+              <div className="text-4xl">⚠️</div>
+              <h3 className="text-lg font-medium">Analysis Data Found But Processing Issue Detected</h3>
+              <div className="text-sm space-y-2">
+                <p>We found {aiAnnotations.length} analysis results, but they may be incomplete.</p>
+                <div className="bg-white p-3 rounded border text-xs text-left max-w-md mx-auto">
+                  <strong>Debug Info:</strong>
+                  <div className="mt-1 space-y-1">
+                    <div>Total annotations: {aiAnnotations.length}</div>
+                    <div>Valid annotations: {validAllAnnotations.length}</div>
+                    <div>Sample feedback: "{aiAnnotations[0]?.feedback?.substring(0, 50) || 'None'}"</div>
+                  </div>
+                </div>
+                <p className="mt-4 text-xs text-gray-500">
+                  This suggests a data formatting issue in the analysis pipeline.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : validAllAnnotations.length === 0 ? (
           <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
             <div className="space-y-3">
               <div className="text-4xl">🤔</div>
