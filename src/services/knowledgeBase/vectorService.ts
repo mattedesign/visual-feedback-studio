@@ -114,10 +114,10 @@ class VectorKnowledgeService {
         query: query.substring(0, 50) + '...'
       });
 
-      // Map database results to KnowledgeEntry type
+      // Map database results to KnowledgeEntry type with proper defaults
       const results = (data || []).map(item => ({
         ...item,
-        source: item.source || '', // Provide default empty string
+        source: item.source || '', // Provide default for source
         category: item.category as KnowledgeEntry['category'], // Type assertion for category
       }));
 
@@ -194,10 +194,11 @@ class VectorKnowledgeService {
         query: query.substring(0, 50) + '...'
       });
 
-      // Map database results to CompetitorPattern type, providing defaults for missing fields
+      // Map database results to CompetitorPattern type with proper type assertions and defaults
       const results = (data || []).map(item => ({
         ...item,
-        // Provide defaults for legacy fields
+        pattern_type: item.pattern_type as CompetitorPattern['pattern_type'], // Type assertion
+        // Provide defaults for legacy fields that might not be in database
         domain: item.domain || '',
         design_elements: item.design_elements || {},
         performance_metrics: item.performance_metrics || {},

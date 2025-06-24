@@ -3,7 +3,7 @@ export interface KnowledgeEntry {
   id: string;
   title: string;
   content: string;
-  source?: string; // Made optional to match database usage
+  source: string; // Fixed: made required to match RPC function return
   category: 'ux' | 'visual' | 'accessibility' | 'conversion' | 'brand' | 'ecommerce-patterns' | 'ux-research' | 'ux-patterns' | 'saas-patterns' | 'fintech-patterns';
   industry?: string;
   element_type?: string;
@@ -27,11 +27,11 @@ export interface CompetitorPattern {
   embedding?: string; // Database stores as string
   created_at?: string;
   updated_at?: string;
-  // Legacy fields for backward compatibility - made optional
-  domain?: string;
-  design_elements?: any;
-  performance_metrics?: any;
-  analysis_date?: string;
+  // Legacy fields - made required to match RPC function usage
+  domain: string;
+  design_elements: any;
+  performance_metrics: any;
+  analysis_date: string;
   screenshot_url?: string;
 }
 
