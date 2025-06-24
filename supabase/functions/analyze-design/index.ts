@@ -34,18 +34,23 @@ serve(async (req) => {
       aiProvider: validatedRequest.aiProvider,
       model: validatedRequest.model,
       testMode: validatedRequest.testMode,
-      isComparative: validatedRequest.isComparative
+      isComparative: validatedRequest.isComparative,
+      ragEnabled: validatedRequest.ragEnabled || false,
+      ragKnowledgeCount: validatedRequest.ragContext?.retrievedKnowledge.relevantPatterns.length || 0,
+      ragCitationsCount: validatedRequest.researchCitations?.length || 0,
+      ragIndustryContext: validatedRequest.ragContext?.industryContext || 'none'
     });
     
     // Process images
     const processedImages = await processImages(validatedRequest.imagesToProcess);
     
-    // Create enhanced prompt
+    // Create enhanced prompt with RAG context
     const enhancedPrompt = createEnhancedPrompt(
       validatedRequest.analysisPrompt,
       validatedRequest.isComparative,
       validatedRequest.isMultiImage,
-      validatedRequest.imagesToProcess
+      validatedRequest.imagesToProcess,
+      validatedRequest.ragContext
     );
 
     // For comparative analysis, use the first image as primary
@@ -76,6 +81,18 @@ serve(async (req) => {
     responseData.modelUsed = validatedRequest.model || 'default';
     responseData.testMode = validatedRequest.testMode || false;
     
+    // Add RAG information to response
+    if (validatedRequest.ragEnabled && validatedRequest.ragContext) {
+      responseData.researchEnhanced = true;
+      responseData.knowledgeSourcesUsed = validatedRequest.ragContext.retrievedKnowledge.relevantPatterns.length;
+      responseData.researchCitations = validatedRequest.researchCitations || [];
+      responseData.industryContext = validatedRequest.ragContext.industryContext;
+    } else {
+      responseData.researchEnhanced = false;
+      responseData.knowledgeSourcesUsed = 0;
+      responseData.researchCitations = [];
+    }
+    
     console.log('=== Analysis Completed Successfully ===');
     console.log('Final response:', {
       success: responseData.success,
@@ -84,7 +101,10 @@ serve(async (req) => {
       isComparative: validatedRequest.isComparative || validatedRequest.isMultiImage,
       providerUsed: responseData.providerUsed,
       modelUsed: responseData.modelUsed,
-      testMode: responseData.testMode
+      testMode: responseData.testMode,
+      researchEnhanced: responseData.researchEnhanced,
+      knowledgeSourcesUsed: responseData.knowledgeSourcesUsed,
+      ragCitationsCount: responseData.researchCitations?.length || 0
     });
     
     return new Response(
