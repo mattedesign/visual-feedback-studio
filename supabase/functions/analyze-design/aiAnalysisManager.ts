@@ -15,9 +15,7 @@ export async function performAIAnalysis(
   
   // Determine AI provider configuration
   let providerConfig: AIProviderConfig;
-  if (requestedProvider && (requeste
-
-dProvider === 'openai' || requestedProvider === 'claude')) {
+  if (requestedProvider && (requestedProvider === 'openai' || requestedProvider === 'claude')) {
     // Use explicitly requested provider
     providerConfig = { 
       provider: requestedProvider as AIProvider,

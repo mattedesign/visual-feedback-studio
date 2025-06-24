@@ -10,8 +10,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Maximum image size in bytes (3MB - reduced from 5MB)
-const MAX_IMAGE_SIZE = 3 * 1024 * 1024;
+// Maximum image size in bytes (2MB - further reduced for better stability)
+const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -29,13 +29,13 @@ serve(async (req) => {
     // Check content length before processing
     const contentLength = response.headers.get('content-length');
     if (contentLength && parseInt(contentLength) > MAX_IMAGE_SIZE) {
-      console.warn('Image too large:', contentLength, 'bytes. Reducing quality.');
+      console.warn('Image too large:', contentLength, 'bytes. Retrying with reduced settings.');
       
-      // Retry with reduced quality for large images
+      // Retry with very conservative settings for large images
       const reducedQualityRequest = {
         ...requestData,
-        viewportWidth: Math.min(requestData.viewportWidth || 1200, 800),
-        viewportHeight: Math.min(requestData.viewportHeight || 800, 600),
+        viewportWidth: 800,
+        viewportHeight: 600,
         format: 'jpg' as const,
         deviceScaleFactor: 1
       };
@@ -44,7 +44,7 @@ serve(async (req) => {
       const retryBlob = await retryResponse.blob();
       
       if (retryBlob.size > MAX_IMAGE_SIZE) {
-        throw new Error('Screenshot too large even after optimization. Please try a different URL.');
+        throw new Error('Screenshot too large even after optimization. Please try a simpler page.');
       }
       
       return await processImageResponse(retryBlob, reducedQualityRequest.format || 'jpg');
@@ -54,12 +54,13 @@ serve(async (req) => {
     console.log('Screenshot capture completed, size:', screenshotBlob.size, 'bytes');
     
     if (screenshotBlob.size > MAX_IMAGE_SIZE) {
-      throw new Error('Screenshot too large. Please try a different URL or contact support.');
+      throw new Error('Screenshot too large. Please try a simpler page or contact support.');
     }
     
     return await processImageResponse(screenshotBlob, requestData.format || 'png');
     
   } catch (error) {
+    console.error('Screenshot capture error:', error);
     return handleError(error);
   }
 });
@@ -78,37 +79,54 @@ async function processImageResponse(blob: Blob, format: string): Promise<Respons
     
     console.log('Array buffer created, size:', uint8Array.length);
     
-    // Use a more efficient base64 encoding approach
+    // Use a memory-efficient base64 conversion that avoids stack overflow
     let base64 = '';
-    const chunkSize = 8192; // Smaller chunks to prevent stack overflow
+    const chunkSize = 1024; // Small chunks to prevent stack overflow
     
-    // Process in small chunks to avoid stack overflow
+    console.log('Starting base64 conversion with chunk size:', chunkSize);
+    
+    // Process in very small chunks to avoid any stack issues
     for (let i = 0; i < uint8Array.length; i += chunkSize) {
-      const chunk = uint8Array.slice(i, i + chunkSize);
+      const end = Math.min(i + chunkSize, uint8Array.length);
+      const chunk = uint8Array.subarray(i, end);
       
-      // Convert chunk to string safely
+      // Convert each byte to character individually to avoid spreading large arrays
       let chunkString = '';
       for (let j = 0; j < chunk.length; j++) {
         chunkString += String.fromCharCode(chunk[j]);
       }
       
       // Encode chunk to base64
-      base64 += btoa(chunkString);
+      try {
+        base64 += btoa(chunkString);
+      } catch (btoaError) {
+        console.error('btoa error at chunk', i, ':', btoaError);
+        throw new Error('Failed to encode image data to base64');
+      }
       
-      // Log progress for large images
-      if (i % (chunkSize * 10) === 0) {
-        console.log('Processing progress:', Math.round((i / uint8Array.length) * 100), '%');
+      // Log progress every 100 chunks to avoid too much logging
+      if ((i / chunkSize) % 100 === 0) {
+        const progress = Math.round((i / uint8Array.length) * 100);
+        console.log('Base64 conversion progress:', progress, '%');
       }
     }
     
     const screenshotUrl = `data:image/${format};base64,${base64}`;
     
-    console.log('Base64 conversion completed, final size:', screenshotUrl.length, 'characters');
+    console.log('Base64 conversion completed successfully');
+    console.log('Final base64 string length:', screenshotUrl.length, 'characters');
     
     // Validate the result
     if (screenshotUrl.length < 100) {
       throw new Error('Generated base64 data appears to be invalid or too small');
     }
+    
+    // Additional validation - check if the base64 string looks valid
+    if (!screenshotUrl.startsWith(`data:image/${format};base64,`)) {
+      throw new Error('Generated data URL format is invalid');
+    }
+    
+    console.log('Screenshot processing completed successfully');
     
     return new Response(
       JSON.stringify({ screenshotUrl }), 
@@ -117,12 +135,20 @@ async function processImageResponse(blob: Blob, format: string): Promise<Respons
       }
     );
   } catch (conversionError) {
-    console.error('Error during base64 conversion:', conversionError);
+    console.error('Error during image processing:', conversionError);
     console.error('Conversion error details:', {
       message: conversionError?.message,
       name: conversionError?.name,
-      stack: conversionError?.stack
+      stack: conversionError?.stack?.substring(0, 500) // Limit stack trace length
     });
-    throw new Error('Failed to process screenshot image. The image may be too large or corrupted.');
+    
+    // Provide more specific error messages based on the error type
+    if (conversionError?.message?.includes('btoa')) {
+      throw new Error('Failed to encode image data. The image may contain invalid characters.');
+    } else if (conversionError?.message?.includes('stack')) {
+      throw new Error('Image too complex to process. Please try a simpler page.');
+    } else {
+      throw new Error('Failed to process screenshot image. Please try again or contact support.');
+    }
   }
 }
