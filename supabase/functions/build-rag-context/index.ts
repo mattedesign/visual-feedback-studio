@@ -33,8 +33,8 @@ serve(async (req) => {
     const searchQueries = generateSearchQueries(userPrompt, imageAnnotations);
     console.log('Generated search queries:', searchQueries);
     
-    // Retrieve relevant knowledge using embeddings
-    const relevantKnowledge = await retrieveKnowledge(supabaseClient, searchQueries);
+    // Retrieve relevant knowledge using embeddings and match_knowledge RPC
+    const relevantKnowledge = await retrieveKnowledgeWithEmbeddings(supabaseClient, searchQueries);
     console.log('Retrieved knowledge entries:', relevantKnowledge.length);
     
     // Build enhanced prompt with research context
@@ -46,7 +46,7 @@ serve(async (req) => {
         competitorInsights: []
       },
       enhancedPrompt,
-      researchCitations: relevantKnowledge.map(k => `${k.title} - ${k.source || 'Research Database'}`),
+      researchCitations: relevantKnowledge.map(k => `${k.title} - ${k.source || 'UX Research Database'}`),
       industryContext: inferIndustry(userPrompt),
       buildTimestamp: new Date().toISOString()
     };
@@ -74,13 +74,21 @@ serve(async (req) => {
   }
 })
 
-// Generate embeddings using OpenAI
+// Generate embeddings using OpenAI with the RAG-specific API key
 async function generateEmbedding(text: string): Promise<number[]> {
   try {
+    const apiKey = Deno.env.get('OPENAI_API_KEY_RAG');
+    if (!apiKey) {
+      console.error('OPENAI_API_KEY_RAG not found in environment variables');
+      throw new Error('OpenAI RAG API key not configured');
+    }
+
+    console.log(`🔗 Generating embedding for: "${text.substring(0, 100)}..."`);
+    
     const response = await fetch('https://api.openai.com/v1/embeddings', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY_RAG')}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -90,10 +98,13 @@ async function generateEmbedding(text: string): Promise<number[]> {
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('OpenAI embeddings API error:', response.status, errorText);
+      throw new Error(`OpenAI embeddings API error: ${response.status} ${response.statusText}`);
     }
 
     const result = await response.json();
+    console.log('✅ Embedding generated successfully, dimensions:', result.data[0].embedding.length);
     return result.data[0].embedding;
   } catch (error) {
     console.error('Error generating embedding:', error);
@@ -101,8 +112,8 @@ async function generateEmbedding(text: string): Promise<number[]> {
   }
 }
 
-// Retrieve knowledge using the match_knowledge RPC function
-async function retrieveKnowledge(supabaseClient: any, queries: string[]) {
+// Retrieve knowledge using embeddings and the match_knowledge RPC function
+async function retrieveKnowledgeWithEmbeddings(supabaseClient: any, queries: string[]) {
   const allResults = [];
   
   for (const query of queries) {
@@ -112,9 +123,12 @@ async function retrieveKnowledge(supabaseClient: any, queries: string[]) {
       // Generate embedding for the query
       const queryEmbedding = await generateEmbedding(query);
       
+      // Convert embedding array to vector format for PostgreSQL
+      const embeddingVector = `[${queryEmbedding.join(',')}]`;
+      
       // Call the match_knowledge RPC function
       const { data, error } = await supabaseClient.rpc('match_knowledge', {
-        query_embedding: `[${queryEmbedding.join(',')}]`,
+        query_embedding: embeddingVector,
         match_threshold: 0.7,
         match_count: 3
       });
@@ -125,13 +139,18 @@ async function retrieveKnowledge(supabaseClient: any, queries: string[]) {
       }
       
       if (data && data.length > 0) {
-        console.log(`Found ${data.length} results for "${query}"`);
-        allResults.push(...data);
+        console.log(`✅ Found ${data.length} results for "${query}"`);
+        // Add source field if missing
+        const resultsWithSource = data.map((item: any) => ({
+          ...item,
+          source: item.source || 'UX Research Database'
+        }));
+        allResults.push(...resultsWithSource);
       } else {
-        console.log(`No results found for "${query}"`);
+        console.log(`ℹ️ No results found for "${query}"`);
       }
     } catch (error) {
-      console.error(`Query failed for "${query}":`, error);
+      console.error(`❌ Query failed for "${query}":`, error);
       // Continue with other queries even if one fails
     }
   }
@@ -141,7 +160,7 @@ async function retrieveKnowledge(supabaseClient: any, queries: string[]) {
     index === self.findIndex(t => t.id === item.id)
   );
   
-  console.log(`Total unique results: ${unique.length}`);
+  console.log(`📊 Total unique results: ${unique.length}`);
   return unique.slice(0, 8);
 }
 
@@ -160,6 +179,10 @@ function generateSearchQueries(userPrompt?: string, annotations?: any[]): string
     if (words.includes('landing')) queries.push('landing page conversion');
     if (words.includes('dashboard')) queries.push('dashboard UX design');
     if (words.includes('accessibility')) queries.push('accessibility guidelines');
+    if (words.includes('contrast')) queries.push('color contrast accessibility');
+    
+    // Add the full user prompt as a search query
+    queries.push(userPrompt.trim());
   }
   
   // Add annotation-based queries
@@ -189,9 +212,13 @@ function buildResearchPrompt(userPrompt: string = '', knowledge: any[]): string 
     prompt += `RESEARCH CONTEXT:\nYour analysis should be informed by these research insights:\n\n`;
     knowledge.forEach((entry, i) => {
       prompt += `${i + 1}. ${entry.title}\n`;
-      prompt += `   ${entry.content.substring(0, 200)}...\n`;
+      prompt += `   ${entry.content.substring(0, 250)}...\n`;
       prompt += `   Source: ${entry.source || 'UX Research Database'}\n`;
-      prompt += `   Category: ${entry.category}\n\n`;
+      prompt += `   Category: ${entry.category}\n`;
+      if (entry.tags && entry.tags.length > 0) {
+        prompt += `   Tags: ${entry.tags.join(', ')}\n`;
+      }
+      prompt += `\n`;
     });
     
     prompt += `ANALYSIS INSTRUCTIONS:\n`;
@@ -202,7 +229,7 @@ function buildResearchPrompt(userPrompt: string = '', knowledge: any[]): string 
     prompt += `- Focus on actionable, business-impact driven recommendations\n\n`;
   }
   
-  prompt += `Please provide detailed, research-backed UX feedback annotations.`;
+  prompt += `Please provide detailed, research-backed UX feedback annotations in JSON format.`;
   return prompt;
 }
 
