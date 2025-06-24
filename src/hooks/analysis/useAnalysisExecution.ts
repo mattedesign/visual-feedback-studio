@@ -1,4 +1,3 @@
-
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { AnalysisWithFiles, updateAnalysisStatus, updateAnalysisContext } from '@/services/analysisDataService';
@@ -58,8 +57,7 @@ export const useAnalysisExecution = ({
     if (currentAnalysis) {
       await updateAnalysisStatus(currentAnalysis.id, 'analyzing');
       await updateAnalysisContext(currentAnalysis.id, {
-        ai_model_used: aiProvider || 'auto-selected',
-        analysis_type: 'rag-enhanced'
+        ai_model_used: aiProvider || 'auto-selected'
       });
     }
 
