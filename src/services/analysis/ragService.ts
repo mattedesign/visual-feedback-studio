@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { vectorKnowledgeService } from '@/services/knowledgeBase/vectorService';
 import { KnowledgeEntry, SearchFilters } from '@/types/vectorDatabase';
@@ -13,9 +12,6 @@ interface RAGContext {
     searchQueries: string[];
     processingTime: number;
     industryContext: string;
-    actualThreshold?: number;
-    queriesGenerated?: number;
-    error?: string;
   };
 }
 
@@ -56,7 +52,7 @@ export class RAGService {
   }
 
   /**
-   * Build RAG context using the improved dedicated edge function with LOWERED threshold
+   * Build RAG context using the dedicated edge function
    */
   public async buildRAGContext(
     analysisQuery: string,
@@ -68,17 +64,16 @@ export class RAGService {
     } = {}
   ): Promise<RAGContext> {
     try {
-      console.log('🔍 Building RAG context via improved edge function...', {
+      console.log('🔍 Building RAG context via edge function...', {
         query: analysisQuery.substring(0, 100) + '...',
-        options,
-        threshold: options.similarityThreshold || 0.4 // LOWERED DEFAULT THRESHOLD
+        options
       });
 
       const { data, error } = await supabase.functions.invoke('build-rag-context', {
         body: {
           analysisQuery,
-          maxResults: options.maxResults || 8,
-          similarityThreshold: options.similarityThreshold || 0.4, // LOWERED from 0.5
+          maxResults: options.maxResults || 10,
+          similarityThreshold: options.similarityThreshold || 0.7,
           categoryFilter: options.categoryFilter,
           industryFilter: options.industryFilter,
         }
@@ -86,93 +81,32 @@ export class RAGService {
 
       if (error) {
         console.error('❌ RAG context building failed:', error);
-        
-        // Return fallback context instead of throwing
-        return {
-          relevantKnowledge: [],
-          totalRelevantEntries: 0,
-          categories: [],
-          searchQuery: analysisQuery,
-          enhancedPrompt: this.buildFallbackPrompt(analysisQuery),
-          retrievalMetadata: {
-            searchQueries: [],
-            processingTime: 0,
-            industryContext: 'general',
-            error: error.message
-          }
-        };
+        throw new Error(`Failed to build RAG context: ${error.message}`);
       }
 
       if (!data) {
-        console.warn('⚠️ No data returned from RAG context builder');
-        return {
-          relevantKnowledge: [],
-          totalRelevantEntries: 0,
-          categories: [],
-          searchQuery: analysisQuery,
-          enhancedPrompt: this.buildFallbackPrompt(analysisQuery),
-          retrievalMetadata: {
-            searchQueries: [],
-            processingTime: 0,
-            industryContext: 'general',
-            error: 'No data returned'
-          }
-        };
+        throw new Error('No data returned from RAG context builder');
       }
 
       const context: RAGContext = {
         relevantKnowledge: data.relevantKnowledge || [],
         totalRelevantEntries: data.totalRelevantEntries || 0,
         categories: data.categories || [],
-        searchQuery: data.searchQuery || analysisQuery,
+        searchQuery: data.searchQuery,
         enhancedPrompt: data.enhancedPrompt,
-        retrievalMetadata: data.retrievalMetadata || {
-          searchQueries: [],
-          processingTime: 0,
-          industryContext: 'general'
-        }
+        retrievalMetadata: data.retrievalMetadata,
       };
 
       console.log(`✅ RAG context built successfully:`, {
         knowledgeCount: context.totalRelevantEntries,
         categories: context.categories,
-        processingTime: context.retrievalMetadata?.processingTime,
-        threshold: context.retrievalMetadata?.actualThreshold || options.similarityThreshold || 0.4,
-        queriesGenerated: context.retrievalMetadata?.queriesGenerated,
-        hasError: !!context.retrievalMetadata?.error
+        processingTime: context.retrievalMetadata?.processingTime
       });
-
-      // Log detailed results for debugging
-      if (context.totalRelevantEntries > 0) {
-        console.log('🎯 Retrieved knowledge preview:', 
-          context.relevantKnowledge.slice(0, 3).map(k => ({
-            title: k.title?.substring(0, 40),
-            similarity: k.similarity?.toFixed(3),
-            category: k.category
-          }))
-        );
-      } else {
-        console.warn('⚠️ No knowledge retrieved - check threshold and queries');
-      }
 
       return context;
     } catch (error) {
       console.error('❌ Error building RAG context:', error);
-      
-      // Return fallback context instead of throwing
-      return {
-        relevantKnowledge: [],
-        totalRelevantEntries: 0,
-        categories: [],
-        searchQuery: analysisQuery,
-        enhancedPrompt: this.buildFallbackPrompt(analysisQuery),
-        retrievalMetadata: {
-          searchQueries: [],
-          processingTime: 0,
-          industryContext: 'general',
-          error: error.message || 'Unknown error'
-        }
-      };
+      throw new Error('Failed to build RAG context');
     }
   }
 
@@ -184,11 +118,7 @@ export class RAGService {
     ragContext: RAGContext,
     analysisType: 'ux' | 'conversion' | 'accessibility' | 'comprehensive' = 'comprehensive'
   ): string {
-    console.log('🔧 Enhancing prompt with research context...', {
-      hasContext: ragContext.totalRelevantEntries > 0,
-      knowledgeCount: ragContext.totalRelevantEntries,
-      categories: ragContext.categories
-    });
+    console.log('🔧 Enhancing prompt with research context...');
 
     // If the RAG context already includes an enhanced prompt, use it
     if (ragContext.enhancedPrompt) {
@@ -196,35 +126,60 @@ export class RAGService {
       return ragContext.enhancedPrompt;
     }
 
-    // Enhanced fallback prompt building
-    return this.buildFallbackPrompt(userPrompt, ragContext.totalRelevantEntries > 0 ? ragContext : undefined);
-  }
+    // Fallback to manual prompt building if no enhanced prompt is available
+    let enhancedPrompt = `RESEARCH-BACKED DESIGN ANALYSIS REQUEST\n\n`;
 
-  /**
-   * Improved fallback prompt building
-   */
-  private buildFallbackPrompt(userPrompt: string, ragContext?: RAGContext): string {
-    let prompt = `UX DESIGN ANALYSIS\n\n`;
-    
-    if (userPrompt.trim()) {
-      prompt += `USER REQUEST: ${userPrompt}\n\n`;
-    }
+    // Add user's original prompt
+    enhancedPrompt += `USER REQUEST:\n${userPrompt}\n\n`;
 
-    if (ragContext && ragContext.totalRelevantEntries > 0) {
-      prompt += `RESEARCH CONTEXT: Analysis enhanced with ${ragContext.totalRelevantEntries} UX research insights.\n\n`;
+    // Add research context section
+    if (ragContext.relevantKnowledge.length > 0) {
+      enhancedPrompt += `RELEVANT UX RESEARCH CONTEXT:\n`;
+      enhancedPrompt += `You have access to ${ragContext.totalRelevantEntries} relevant research entries covering: ${ragContext.categories.join(', ')}\n\n`;
+
+      // Add top research insights
+      enhancedPrompt += `KEY RESEARCH INSIGHTS TO CONSIDER:\n`;
+      ragContext.relevantKnowledge.slice(0, 6).forEach((entry, index) => {
+        enhancedPrompt += `${index + 1}. ${entry.title} (Relevance: ${(entry.similarity * 100).toFixed(1)}%)\n`;
+        enhancedPrompt += `   Insight: ${entry.content.substring(0, 200)}...\n`;
+        enhancedPrompt += `   Source: ${entry.source || 'UX Research Database'}\n`;
+        enhancedPrompt += `   Category: ${entry.category}\n\n`;
+      });
+
+      // Add specific guidance based on analysis type
+      enhancedPrompt += `ANALYSIS GUIDANCE:\n`;
+      switch (analysisType) {
+        case 'ux':
+          enhancedPrompt += `Focus on user experience principles, usability heuristics, and user behavior patterns from the research.\n`;
+          break;
+        case 'conversion':
+          enhancedPrompt += `Emphasize conversion optimization strategies, form design, and trust signals from the research.\n`;
+          break;
+        case 'accessibility':
+          enhancedPrompt += `Prioritize accessibility guidelines, inclusive design principles, and WCAG compliance from the research.\n`;
+          break;
+        default:
+          enhancedPrompt += `Provide comprehensive analysis covering UX, conversion, accessibility, and visual design principles from the research.\n`;
+      }
+
+      enhancedPrompt += `\nRESEARCH-BACKED ANALYSIS REQUIREMENTS:\n`;
+      enhancedPrompt += `• Ground all recommendations in the provided research insights\n`;
+      enhancedPrompt += `• Cite specific research sources for each recommendation\n`;
+      enhancedPrompt += `• Include relevance scores for cited research\n`;
+      enhancedPrompt += `• Explain how each recommendation connects to established UX principles\n`;
+      enhancedPrompt += `• Prioritize recommendations based on research-backed impact\n`;
+      enhancedPrompt += `• Provide implementation guidance based on research best practices\n\n`;
+
     } else {
-      prompt += `STANDARD ANALYSIS: Based on established UX principles and best practices.\n\n`;
+      enhancedPrompt += `RESEARCH CONTEXT:\n`;
+      enhancedPrompt += `No highly relevant research entries found for this specific query. Provide analysis based on general UX principles and best practices.\n\n`;
     }
 
-    prompt += `ANALYSIS REQUIREMENTS:\n`;
-    prompt += `• Provide specific, actionable UX feedback\n`;
-    prompt += `• Reference established design principles\n`;
-    prompt += `• Include accessibility considerations\n`;
-    prompt += `• Consider conversion optimization opportunities\n`;
-    prompt += `• Prioritize recommendations by user impact\n\n`;
+    enhancedPrompt += `OUTPUT FORMAT:\n`;
+    enhancedPrompt += `Structure your response to clearly indicate which research sources support each recommendation. Include research citations and explain the connection between the research and your specific recommendations.\n`;
 
-    prompt += `Please provide detailed UX feedback annotations.`;
-    return prompt;
+    console.log(`✅ Enhanced prompt created (${enhancedPrompt.length} characters)`);
+    return enhancedPrompt;
   }
 
   /**
@@ -279,7 +234,7 @@ export class RAGService {
       const result: EnhancedAnalysisResult = {
         recommendations,
         researchSummary,
-        methodology: `Analysis enhanced with ${ragContext.totalRelevantEntries} relevant UX research sources using vector similarity search (threshold: 0.5). Recommendations are backed by peer-reviewed research and industry best practices.`,
+        methodology: `Analysis enhanced with ${ragContext.totalRelevantEntries} relevant UX research sources using vector similarity search (threshold: 0.7). Recommendations are backed by peer-reviewed research and industry best practices.`,
       };
 
       console.log(`✅ Formatted ${recommendations.length} research-backed recommendations`);
