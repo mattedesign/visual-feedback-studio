@@ -21,11 +21,11 @@ export const useEnhancedAuth = () => {
   });
 
   useEffect(() => {
-    console.log('=== Enhanced useAuth Hook Initialization ===');
+    console.log('=== Enhanced useAuth Hook Initialization (Hosted) ===');
     
     let mounted = true;
     
-    // Test connection first
+    // Test connection to hosted instance
     const testConnection = async () => {
       try {
         const { error } = await supabase.from('analyses').select('count').limit(1);
@@ -52,7 +52,7 @@ export const useEnhancedAuth = () => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Enhanced auth state change:', event, session?.user?.email);
+        console.log('Enhanced auth state change (hosted):', event, session?.user?.email);
         
         if (!mounted) return;
         
@@ -66,13 +66,13 @@ export const useEnhancedAuth = () => {
         
         // Log auth events for debugging
         if (event === 'SIGNED_IN') {
-          console.log('User signed in successfully');
+          console.log('User signed in successfully (hosted)');
         } else if (event === 'SIGNED_OUT') {
-          console.log('User signed out');
+          console.log('User signed out (hosted)');
         } else if (event === 'TOKEN_REFRESHED') {
-          console.log('Auth token refreshed');
+          console.log('Auth token refreshed (hosted)');
         } else if (event === 'USER_UPDATED') {
-          console.log('User data updated');
+          console.log('User data updated (hosted)');
         }
       }
     );
@@ -87,14 +87,14 @@ export const useEnhancedAuth = () => {
           
           if (mounted) {
             if (error) {
-              console.error('Session check error:', error);
+              console.error('Session check error (hosted):', error);
               setAuthState(prev => ({
                 ...prev,
                 error: error.message,
                 loading: false
               }));
             } else {
-              console.log('Initial session check:', session?.user?.email);
+              console.log('Initial session check (hosted):', session?.user?.email);
               setAuthState(prev => ({
                 ...prev,
                 session,
@@ -106,7 +106,7 @@ export const useEnhancedAuth = () => {
           }
         } catch (err) {
           if (mounted) {
-            console.error('Session initialization failed:', err);
+            console.error('Session initialization failed (hosted):', err);
             setAuthState(prev => ({
               ...prev,
               error: err instanceof Error ? err.message : 'Session check failed',
@@ -123,13 +123,13 @@ export const useEnhancedAuth = () => {
 
     return () => {
       mounted = false;
-      console.log('Cleaning up enhanced auth subscription');
+      console.log('Cleaning up enhanced auth subscription (hosted)');
       subscription.unsubscribe();
     };
   }, []);
 
   const signOut = async () => {
-    console.log('Enhanced sign out initiated...');
+    console.log('Enhanced sign out initiated (hosted)...');
     
     try {
       setAuthState(prev => ({ ...prev, error: null }));
@@ -137,14 +137,14 @@ export const useEnhancedAuth = () => {
       const { error } = await supabase.auth.signOut();
       
       if (error) {
-        console.error('Sign out error:', error);
+        console.error('Sign out error (hosted):', error);
         setAuthState(prev => ({ ...prev, error: error.message }));
         throw error;
       }
       
-      console.log('Sign out successful');
+      console.log('Sign out successful (hosted)');
     } catch (err) {
-      console.error('Sign out failed:', err);
+      console.error('Sign out failed (hosted):', err);
       throw err;
     }
   };

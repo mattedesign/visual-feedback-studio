@@ -18,12 +18,12 @@ export const useConnectionStatus = () => {
   });
 
   const testConnection = async (retryAttempt = 0) => {
-    console.log(`Testing connection attempt ${retryAttempt + 1}`);
+    console.log(`Testing connection to hosted Supabase (attempt ${retryAttempt + 1})`);
     
     try {
       setStatus(prev => ({ ...prev, isLoading: true, error: null }));
       
-      // Test basic connectivity first
+      // Test basic connectivity to the hosted instance
       const { data, error } = await supabase
         .from('analyses')
         .select('count')
@@ -33,7 +33,7 @@ export const useConnectionStatus = () => {
         throw new Error(`Database query failed: ${error.message}`);
       }
       
-      console.log('Connection test successful');
+      console.log('Connection to hosted Supabase successful');
       setStatus({
         isConnected: true,
         isLoading: false,
@@ -60,11 +60,10 @@ export const useConnectionStatus = () => {
   const retryConnection = async () => {
     const success = await testConnection(status.retryCount + 1);
     
-    // If still failing after retry, suggest solutions
     if (!success && status.retryCount >= 2) {
       setStatus(prev => ({
         ...prev,
-        error: `Connection failed after ${prev.retryCount + 1} attempts. Please check if Supabase is running locally on port 54321.`
+        error: `Connection failed after ${prev.retryCount + 1} attempts. Please check your internet connection and try again.`
       }));
     }
     

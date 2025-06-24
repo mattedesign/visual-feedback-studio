@@ -12,7 +12,7 @@ export const ConnectionStatus = () => {
       <Alert className="mb-4">
         <RefreshCw className="h-4 w-4 animate-spin" />
         <AlertDescription>
-          Testing connection to Supabase...
+          Connecting to Supabase...
         </AlertDescription>
       </Alert>
     );
@@ -34,7 +34,7 @@ export const ConnectionStatus = () => {
       <XCircle className="h-4 w-4" />
       <AlertDescription className="mb-3">
         <div className="space-y-2">
-          <p>Connection to Supabase failed</p>
+          <p>Unable to connect to Supabase</p>
           <p className="text-sm">{error}</p>
           {retryCount > 0 && (
             <p className="text-sm">Retry attempts: {retryCount}</p>
@@ -52,8 +52,7 @@ export const ConnectionStatus = () => {
           Retry Connection
         </Button>
         <div className="text-xs text-muted-foreground">
-          <p>Make sure Supabase is running locally:</p>
-          <code className="bg-slate-100 px-1 rounded text-xs">supabase start</code>
+          <p>Please check your internet connection and try again.</p>
         </div>
       </div>
     </Alert>
