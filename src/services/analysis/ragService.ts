@@ -1,5 +1,5 @@
 
-import { vectorKnowledgeService } from '@/services/knowledgeBase/vectorService';
+import { supabase } from '@/integrations/supabase/client';
 import { KnowledgeEntry, SearchFilters } from '@/types/vectorDatabase';
 
 interface RAGContext {
@@ -7,6 +7,12 @@ interface RAGContext {
   totalRelevantEntries: number;
   categories: string[];
   searchQuery: string;
+  enhancedPrompt?: string;
+  retrievalMetadata?: {
+    searchQueries: string[];
+    processingTime: number;
+    industryContext: string;
+  };
 }
 
 interface ResearchBackedRecommendation {
@@ -46,7 +52,7 @@ export class RAGService {
   }
 
   /**
-   * Build RAG context by retrieving relevant knowledge for analysis query
+   * Build RAG context using the dedicated edge function
    */
   public async buildRAGContext(
     analysisQuery: string,
@@ -58,33 +64,44 @@ export class RAGService {
     } = {}
   ): Promise<RAGContext> {
     try {
-      console.log('🔍 Building RAG context for query:', analysisQuery.substring(0, 100) + '...');
+      console.log('🔍 Building RAG context via edge function...', {
+        query: analysisQuery.substring(0, 100) + '...',
+        options
+      });
 
-      const searchFilters: SearchFilters = {
-        match_count: options.maxResults || 10,
-        match_threshold: options.similarityThreshold || 0.7,
-        category: options.categoryFilter,
-        industry: options.industryFilter,
-      };
+      const { data, error } = await supabase.functions.invoke('build-rag-context', {
+        body: {
+          analysisQuery,
+          maxResults: options.maxResults || 10,
+          similarityThreshold: options.similarityThreshold || 0.7,
+          categoryFilter: options.categoryFilter,
+          industryFilter: options.industryFilter,
+        }
+      });
 
-      // Search for relevant knowledge entries
-      const relevantKnowledge = await vectorKnowledgeService.searchKnowledge(
-        analysisQuery,
-        searchFilters
-      );
+      if (error) {
+        console.error('❌ RAG context building failed:', error);
+        throw new Error(`Failed to build RAG context: ${error.message}`);
+      }
 
-      // Extract unique categories from results
-      const categories = [...new Set(relevantKnowledge.map(entry => entry.category))];
+      if (!data) {
+        throw new Error('No data returned from RAG context builder');
+      }
 
       const context: RAGContext = {
-        relevantKnowledge,
-        totalRelevantEntries: relevantKnowledge.length,
-        categories,
-        searchQuery: analysisQuery,
+        relevantKnowledge: data.relevantKnowledge || [],
+        totalRelevantEntries: data.totalRelevantEntries || 0,
+        categories: data.categories || [],
+        searchQuery: data.searchQuery,
+        enhancedPrompt: data.enhancedPrompt,
+        retrievalMetadata: data.retrievalMetadata,
       };
 
-      console.log(`✅ RAG context built: ${relevantKnowledge.length} relevant entries found`);
-      console.log(`📊 Categories covered: ${categories.join(', ')}`);
+      console.log(`✅ RAG context built successfully:`, {
+        knowledgeCount: context.totalRelevantEntries,
+        categories: context.categories,
+        processingTime: context.retrievalMetadata?.processingTime
+      });
 
       return context;
     } catch (error) {
@@ -101,8 +118,15 @@ export class RAGService {
     ragContext: RAGContext,
     analysisType: 'ux' | 'conversion' | 'accessibility' | 'comprehensive' = 'comprehensive'
   ): string {
-    console.log('🔧 Enhancing analysis prompt with research context...');
+    console.log('🔧 Enhancing prompt with research context...');
 
+    // If the RAG context already includes an enhanced prompt, use it
+    if (ragContext.enhancedPrompt) {
+      console.log('✅ Using pre-built enhanced prompt from RAG context');
+      return ragContext.enhancedPrompt;
+    }
+
+    // Fallback to manual prompt building if no enhanced prompt is available
     let enhancedPrompt = `RESEARCH-BACKED DESIGN ANALYSIS REQUEST\n\n`;
 
     // Add user's original prompt

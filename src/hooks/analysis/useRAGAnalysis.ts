@@ -23,7 +23,11 @@ export const useRAGAnalysis = () => {
       const context = await ragService.buildRAGContext(analysisQuery, options);
       setRagContext(context);
       
-      toast.success(`Found ${context.totalRelevantEntries} relevant research sources`);
+      const successMessage = context.totalRelevantEntries > 0 
+        ? `Found ${context.totalRelevantEntries} relevant research sources`
+        : 'No specific research found, using general UX principles';
+      
+      toast.success(successMessage);
       console.log('✅ RAG context built successfully');
       
       return context;
