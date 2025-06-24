@@ -31,8 +31,8 @@ export const captureScreenshot = async (requestData: ScreenshotRequest): Promise
     : getRandomViewport();
   
   // Further limit viewport size to prevent overly large images
-  const maxWidth = 800; // Further reduced from 1000
-  const maxHeight = 600; // Further reduced from 700
+  const maxWidth = 800;
+  const maxHeight = 600;
   const optimizedViewport = {
     width: Math.min(viewport.width, maxWidth),
     height: Math.min(viewport.height, maxHeight)
@@ -46,31 +46,30 @@ export const captureScreenshot = async (requestData: ScreenshotRequest): Promise
   
   // Add quality optimization for smaller file sizes
   if (format === 'jpg' || format === 'jpeg') {
-    screenshotApiUrl.searchParams.set('image_quality', '60'); // Further reduced quality
+    screenshotApiUrl.searchParams.set('image_quality', '60');
   }
   
-  // Optimize for web performance and smaller images
+  // Optimize for web performance and smaller images - REMOVED optimize_for_print
   screenshotApiUrl.searchParams.set('block_ads', 'true');
   screenshotApiUrl.searchParams.set('block_cookie_banners', 'true');
   screenshotApiUrl.searchParams.set('block_trackers', 'true');
   screenshotApiUrl.searchParams.set('block_chats', 'true');
-  screenshotApiUrl.searchParams.set('optimize_for_print', 'false');
   
   // Reduce wait time to get smaller screenshots
   const delay = requestData.delay && requestData.delay > 0 
-    ? Math.min(requestData.delay <= 30 ? requestData.delay : Math.floor(requestData.delay / 1000), 10) // Further reduced max delay
+    ? Math.min(requestData.delay <= 30 ? requestData.delay : Math.floor(requestData.delay / 1000), 10)
     : 1;
   screenshotApiUrl.searchParams.set('delay', delay.toString());
 
   console.log('Making request to Screenshot One API with optimized parameters...');
   console.log('Viewport:', optimizedViewport);
   console.log('Delay:', delay);
-  console.log('Format and quality settings applied for smaller file size');
+  console.log('Removed optimize_for_print parameter to fix API error');
   
   try {
     // Add timeout to prevent hanging requests
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000); // Reduced timeout
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
     
     const response = await fetch(screenshotApiUrl.toString(), {
       method: 'GET',
