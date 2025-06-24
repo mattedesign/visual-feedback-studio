@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
@@ -22,14 +23,22 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
     setAnnotations: workflow.setAiAnnotations
   });
 
-  // Update step text based on RAG status
+  // Enhanced debugging for RAG context
   useEffect(() => {
     if (isBuilding) {
+      console.log('🔍 RAG Context Building Started');
       setCurrentStep('Building research context...');
     } else if (ragContext && !isBuilding) {
-      setCurrentStep('Performing research-enhanced analysis...');
+      console.log('✅ RAG Context Built Successfully:', {
+        knowledgeEntries: ragContext.retrievedKnowledge?.relevantPatterns?.length || 0,
+        competitorInsights: ragContext.retrievedKnowledge?.competitorInsights?.length || 0,
+        citations: ragContext.researchCitations?.length || 0,
+        industryContext: ragContext.industryContext,
+        enhancedPromptLength: ragContext.enhancedPrompt?.length || 0
+      });
+      setCurrentStep(`Research-enhanced analysis (${researchSourcesCount} sources found)...`);
     }
-  }, [isBuilding, ragContext]);
+  }, [isBuilding, ragContext, researchSourcesCount]);
 
   useEffect(() => {
     const performAnalysis = async () => {
@@ -97,6 +106,23 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
         setCurrentStep('Analysis complete!');
         
         console.log('=== RAG-Enhanced Analysis Completed Successfully ===');
+        
+        // Enhanced success logging
+        if (ragContext) {
+          console.log('🎯 RAG Enhancement Results:', {
+            researchSourcesUsed: researchSourcesCount,
+            citationsGenerated: ragContext.researchCitations?.length || 0,
+            industryContextDetected: ragContext.industryContext,
+            promptEnhanced: !!ragContext.enhancedPrompt,
+            knowledgeEntriesFound: ragContext.retrievedKnowledge?.relevantPatterns?.length || 0
+          });
+
+          if (researchSourcesCount > 0) {
+            toast.success(`Analysis enhanced with ${researchSourcesCount} research sources and ${ragContext.researchCitations?.length || 0} citations!`);
+          } else {
+            toast.warning('Analysis completed but no research sources found. Consider adding more knowledge to your database.');
+          }
+        }
         
         // Small delay to show completion before transitioning
         setTimeout(() => {
@@ -197,6 +223,11 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
                 <p className="text-xs text-green-400 mt-1">
                   Analysis enhanced with {ragContext.industryContext || 'UX'} research
                 </p>
+                {ragContext.researchCitations && ragContext.researchCitations.length > 0 && (
+                  <p className="text-xs text-green-300 mt-1">
+                    📚 {ragContext.researchCitations.length} research citations will be included
+                  </p>
+                )}
               </div>
             )}
 
