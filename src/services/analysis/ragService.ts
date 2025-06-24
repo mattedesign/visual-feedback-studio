@@ -1,5 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
+import { vectorKnowledgeService } from '@/services/knowledgeBase/vectorService';
 import { KnowledgeEntry, SearchFilters } from '@/types/vectorDatabase';
 
 interface RAGContext {
