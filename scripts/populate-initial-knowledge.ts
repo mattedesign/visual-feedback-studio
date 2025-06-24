@@ -360,49 +360,4 @@ async function populateInitialKnowledge(): Promise<PopulationResult> {
   return result;
 }
 
-// Main execution function
-async function main() {
-  try {
-    const startTime = Date.now();
-    console.log('🎯 UX Knowledge Base Population Script');
-    console.log('=====================================\n');
-    
-    const result = await populateInitialKnowledge();
-    
-    const endTime = Date.now();
-    const duration = ((endTime - startTime) / 1000).toFixed(2);
-    
-    console.log('📊 POPULATION SUMMARY');
-    console.log('=====================');
-    console.log(`📚 Total entries processed: ${result.totalEntries}`);
-    console.log(`✅ Successfully added: ${result.successfullyAdded}`);
-    console.log(`❌ Failed: ${result.failed}`);
-    console.log(`⏱️  Total time: ${duration} seconds`);
-    
-    if (result.errors.length > 0) {
-      console.log('\n🚨 ERRORS ENCOUNTERED:');
-      result.errors.forEach((error, index) => {
-        console.log(`${index + 1}. ${error}`);
-      });
-    }
-    
-    if (result.successfullyAdded > 0) {
-      console.log('\n🎉 Knowledge base population completed!');
-      console.log('You can now test the vector search functionality in your app.');
-    } else {
-      console.log('\n⚠️  No entries were added successfully. Please check the errors above.');
-      throw new Error('No entries were added successfully');
-    }
-    
-  } catch (error) {
-    console.error('💥 Script execution failed:', error);
-    throw error;
-  }
-}
-
-// Execute the script only if run directly
-if (require.main === module) {
-  main();
-}
-
 export { populateInitialKnowledge, CORE_UX_KNOWLEDGE };
