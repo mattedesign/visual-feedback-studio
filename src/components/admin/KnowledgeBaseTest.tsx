@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,10 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Progress } from '@/components/ui/progress';
 import { useVectorKnowledge } from '@/hooks/knowledgeBase/useVectorKnowledge';
+import { useKnowledgePopulation } from '@/hooks/knowledgeBase/useKnowledgePopulation';
 import { KnowledgeEntry } from '@/types/vectorDatabase';
 import { toast } from 'sonner';
-import { Search, Plus, TestTube } from 'lucide-react';
+import { Search, Plus, TestTube, Database, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 export const KnowledgeBaseTest = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -32,6 +33,14 @@ export const KnowledgeBaseTest = () => {
     addKnowledgeEntry,
     clearResults
   } = useVectorKnowledge();
+
+  const {
+    isPopulating,
+    progress,
+    verificationResults,
+    populateKnowledgeBase,
+    clearResults: clearPopulationResults
+  } = useKnowledgePopulation();
 
   const handleAddTestEntry = async () => {
     try {
@@ -61,6 +70,42 @@ export const KnowledgeBaseTest = () => {
     'form design best practices'
   ];
 
+  const getStageIcon = () => {
+    if (!progress) return null;
+    
+    switch (progress.stage) {
+      case 'preparing':
+      case 'populating':
+      case 'verifying':
+        return <Loader2 className="w-4 h-4 animate-spin" />;
+      case 'completed':
+        return <CheckCircle className="w-4 h-4 text-green-600" />;
+      case 'error':
+        return <AlertCircle className="w-4 h-4 text-red-600" />;
+      default:
+        return null;
+    }
+  };
+
+  const getStageText = () => {
+    if (!progress) return '';
+    
+    switch (progress.stage) {
+      case 'preparing':
+        return 'Preparing to populate knowledge base...';
+      case 'populating':
+        return `Adding entry ${progress.currentEntry}/${progress.totalEntries}: ${progress.currentTitle}`;
+      case 'verifying':
+        return 'Verifying knowledge base...';
+      case 'completed':
+        return 'Knowledge base population completed!';
+      case 'error':
+        return 'Population failed - check console for details';
+      default:
+        return '';
+    }
+  };
+
   return (
     <div className="space-y-6 p-6 max-w-6xl mx-auto">
       <div className="text-center">
@@ -72,6 +117,124 @@ export const KnowledgeBaseTest = () => {
           Test the vector knowledge system functionality
         </p>
       </div>
+
+      {/* Population Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="w-5 h-5" />
+            Knowledge Base Population
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button 
+              onClick={populateKnowledgeBase} 
+              disabled={isPopulating}
+              className="flex-1"
+              size="lg"
+            >
+              {isPopulating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Populating Knowledge Base...
+                </>
+              ) : (
+                <>
+                  <Database className="w-4 h-4 mr-2" />
+                  Populate Full Knowledge Base
+                </>
+              )}
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              onClick={clearPopulationResults}
+              disabled={isPopulating}
+            >
+              Clear Results
+            </Button>
+          </div>
+
+          {progress && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                {getStageIcon()}
+                <span className="text-sm font-medium">{getStageText()}</span>
+              </div>
+              
+              {progress.stage === 'populating' && (
+                <div className="space-y-2">
+                  <Progress 
+                    value={(progress.currentEntry / progress.totalEntries) * 100} 
+                    className="w-full" 
+                  />
+                  <p className="text-xs text-gray-500 text-center">
+                    {progress.currentEntry} of {progress.totalEntries} entries processed
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Verification Results */}
+      {verificationResults && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Population Verification Results</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center p-3 bg-green-50 rounded-lg">
+                <p className="text-sm text-gray-600">Total Entries</p>
+                <p className="text-2xl font-bold text-green-600">{verificationResults.totalEntries}</p>
+              </div>
+              <div className="text-center p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-gray-600">Categories</p>
+                <p className="text-2xl font-bold text-blue-600">{verificationResults.categoryBreakdown.length}</p>
+              </div>
+              <div className="text-center p-3 bg-purple-50 rounded-lg">
+                <p className="text-sm text-gray-600">Sample Entries</p>
+                <p className="text-2xl font-bold text-purple-600">{verificationResults.sampleEntries.length}</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="font-semibold">Category Breakdown:</h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {verificationResults.categoryBreakdown.map(({ category, count }) => (
+                  <Badge key={category} variant="outline" className="justify-between">
+                    <span>{category}</span>
+                    <span className="ml-2 font-bold">{count}</span>
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="font-semibold">Sample Entries Added:</h4>
+              <ScrollArea className="h-48">
+                <div className="space-y-2">
+                  {verificationResults.sampleEntries.map((entry, index) => (
+                    <div key={entry.id} className="border rounded p-3 text-sm">
+                      <div className="font-medium">{entry.title}</div>
+                      <div className="text-gray-600 mt-1">{entry.content.substring(0, 100)}...</div>
+                      <div className="flex gap-2 mt-2">
+                        <Badge variant="secondary" className="text-xs">{entry.category}</Badge>
+                        {entry.industry && (
+                          <Badge variant="outline" className="text-xs">{entry.industry}</Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid md:grid-cols-2 gap-6">
         {/* Add Test Entry */}
@@ -244,7 +407,7 @@ export const KnowledgeBaseTest = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="text-center p-3 bg-gray-50 rounded">
               <p className="text-sm text-gray-600">Loading State</p>
-              <p className="font-semibold">{isLoading ? '⏳ Processing' : '✓ Ready'}</p>
+              <p className="font-semibold">{isLoading || isPopulating ? '⏳ Processing' : '✓ Ready'}</p>
             </div>
             <div className="text-center p-3 bg-gray-50 rounded">
               <p className="text-sm text-gray-600">Results Found</p>
