@@ -219,7 +219,7 @@ async function verifyKnowledgeBase(): Promise<void> {
 
     if (connectionError) {
       console.error('❌ Database connection failed:', connectionError.message);
-      process.exit(1);
+      throw new Error('Database connection failed');
     }
     console.log('✅ Database connection successful\n');
 
@@ -243,13 +243,8 @@ async function verifyKnowledgeBase(): Promise<void> {
 
   } catch (error) {
     console.error('💥 Verification failed with error:', error);
-    process.exit(1);
+    throw error;
   }
-}
-
-// Execute verification if run directly
-if (require.main === module) {
-  verifyKnowledgeBase();
 }
 
 export { verifyKnowledgeBase, getTotalKnowledgeCount, getCategoryBreakdown, getSampleEntries, verifyEmbeddings };
