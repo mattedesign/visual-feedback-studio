@@ -3,29 +3,45 @@ export interface KnowledgeEntry {
   id: string;
   title: string;
   content: string;
-  category: 'ux' | 'visual' | 'accessibility' | 'conversion' | 'brand';
-  tags: string[];
-  embedding?: number[];
-  metadata: Record<string, any>;
-  created_at: string;
-  updated_at: string;
+  source: string;
+  category: 'ux' | 'visual' | 'accessibility' | 'conversion' | 'brand' | 'ecommerce-patterns' | 'ux-research' | 'ux-patterns' | 'saas-patterns' | 'fintech-patterns';
+  industry?: string;
+  element_type?: string;
+  metadata?: any;
+  similarity?: number;
+  created_at?: string;
+  updated_at?: string;
+  embedding?: string;
+  tags?: string[];
 }
 
 export interface CompetitorPattern {
   id: string;
-  pattern_name: string;
-  description: string;
-  industry?: string;
-  pattern_type: 'layout' | 'navigation' | 'color' | 'typography' | 'interaction';
-  embedding?: number[];
-  examples: any[];
-  effectiveness_score: number;
-  created_at: string;
-  updated_at: string;
+  domain: string;
+  industry: string;
+  pattern_type: 'layout' | 'navigation' | 'color' | 'typography' | 'interaction' | 'conversion' | 'form' | 'checkout';
+  design_elements: any;
+  performance_metrics: any;
+  screenshot_url?: string;
+  analysis_date: string;
+  embedding?: string;
+  created_at?: string;
+  updated_at?: string;
+  pattern_name?: string;
+  description?: string;
+  effectiveness_score?: number;
+  examples?: any;
 }
 
-export interface SimilaritySearchResult<T> extends T {
-  similarity: number;
+export interface RankedKnowledgeEntry extends KnowledgeEntry {
+  relevanceScore: number;
+  freshnessScore: number;
+  authorityScore: number;
+  overallScore: number;
+}
+
+export interface SimilaritySearchResult<T> {
+  data: T & { similarity: number };
 }
 
 export interface SearchFilters {

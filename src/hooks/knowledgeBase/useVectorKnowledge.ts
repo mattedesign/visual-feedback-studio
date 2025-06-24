@@ -4,15 +4,14 @@ import { vectorKnowledgeService } from '@/services/knowledgeBase/vectorService';
 import { 
   KnowledgeEntry, 
   CompetitorPattern, 
-  SimilaritySearchResult, 
   SearchFilters 
 } from '@/types/vectorDatabase';
 import { toast } from 'sonner';
 
 export const useVectorKnowledge = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [searchResults, setSearchResults] = useState<SimilaritySearchResult<KnowledgeEntry>[]>([]);
-  const [patternResults, setPatternResults] = useState<SimilaritySearchResult<CompetitorPattern>[]>([]);
+  const [searchResults, setSearchResults] = useState<Array<KnowledgeEntry & { similarity: number }>>([]);
+  const [patternResults, setPatternResults] = useState<Array<CompetitorPattern & { similarity: number }>>([]);
 
   const searchKnowledge = useCallback(async (query: string, filters?: SearchFilters) => {
     if (!query.trim()) {

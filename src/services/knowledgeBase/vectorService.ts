@@ -1,8 +1,8 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { 
   KnowledgeEntry, 
   CompetitorPattern, 
+  RankedKnowledgeEntry,
   SimilaritySearchResult, 
   SearchFilters,
   EmbeddingResponse 
@@ -77,9 +77,9 @@ export class VectorKnowledgeService {
           title: entry.title,
           content: entry.content,
           category: entry.category,
-          tags: entry.tags,
+          tags: entry.tags || [],
           embedding: `[${embedding.join(',')}]`,
-          metadata: entry.metadata,
+          metadata: entry.metadata || {},
         })
         .select()
         .single();
@@ -89,7 +89,21 @@ export class VectorKnowledgeService {
         throw new Error(`Failed to add knowledge entry: ${error.message}`);
       }
 
-      return data;
+      // Transform the database response to match our interface
+      return {
+        id: data.id,
+        title: data.title,
+        content: data.content,
+        source: entry.source,
+        category: data.category as KnowledgeEntry['category'],
+        industry: entry.industry,
+        element_type: entry.element_type,
+        metadata: data.metadata,
+        tags: data.tags,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        embedding: data.embedding
+      };
     } catch (error) {
       console.error('Error in addKnowledgeEntry:', error);
       throw error;
@@ -102,18 +116,18 @@ export class VectorKnowledgeService {
   public async addCompetitorPattern(pattern: Omit<CompetitorPattern, 'id' | 'created_at' | 'updated_at'>): Promise<CompetitorPattern> {
     try {
       // Generate embedding for the pattern description
-      const embedding = await this.generateEmbedding(`${pattern.pattern_name} ${pattern.description}`);
+      const embedding = await this.generateEmbedding(`${pattern.pattern_name || pattern.domain} ${pattern.description || ''}`);
 
       const { data, error } = await supabase
         .from('competitor_patterns')
         .insert({
-          pattern_name: pattern.pattern_name,
-          description: pattern.description,
+          pattern_name: pattern.pattern_name || pattern.domain,
+          description: pattern.description || '',
           industry: pattern.industry,
           pattern_type: pattern.pattern_type,
           embedding: `[${embedding.join(',')}]`,
-          examples: pattern.examples,
-          effectiveness_score: pattern.effectiveness_score,
+          examples: pattern.examples || [],
+          effectiveness_score: pattern.effectiveness_score || 0,
         })
         .select()
         .single();
@@ -123,7 +137,24 @@ export class VectorKnowledgeService {
         throw new Error(`Failed to add competitor pattern: ${error.message}`);
       }
 
-      return data;
+      // Transform the database response to match our interface
+      return {
+        id: data.id,
+        domain: pattern.domain,
+        industry: data.industry,
+        pattern_type: data.pattern_type as CompetitorPattern['pattern_type'],
+        design_elements: pattern.design_elements,
+        performance_metrics: pattern.performance_metrics,
+        screenshot_url: pattern.screenshot_url,
+        analysis_date: pattern.analysis_date,
+        pattern_name: data.pattern_name,
+        description: data.description,
+        effectiveness_score: Number(data.effectiveness_score),
+        examples: data.examples,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        embedding: data.embedding
+      };
     } catch (error) {
       console.error('Error in addCompetitorPattern:', error);
       throw error;
@@ -136,7 +167,7 @@ export class VectorKnowledgeService {
   public async searchKnowledge(
     query: string, 
     filters: SearchFilters = {}
-  ): Promise<SimilaritySearchResult<KnowledgeEntry>[]> {
+  ): Promise<Array<KnowledgeEntry & { similarity: number }>> {
     try {
       // Generate embedding for the search query
       const queryEmbedding = await this.generateEmbedding(query);
@@ -153,7 +184,19 @@ export class VectorKnowledgeService {
         throw new Error(`Failed to search knowledge: ${error.message}`);
       }
 
-      return data || [];
+      // Transform the database response to match our interface
+      return (data || []).map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        content: item.content,
+        source: '', // Default source since it's not in the database
+        category: item.category as KnowledgeEntry['category'],
+        metadata: item.metadata,
+        tags: item.tags,
+        similarity: item.similarity,
+        created_at: item.created_at,
+        updated_at: item.updated_at
+      }));
     } catch (error) {
       console.error('Error in searchKnowledge:', error);
       throw error;
@@ -166,7 +209,7 @@ export class VectorKnowledgeService {
   public async searchPatterns(
     query: string, 
     filters: SearchFilters = {}
-  ): Promise<SimilaritySearchResult<CompetitorPattern>[]> {
+  ): Promise<Array<CompetitorPattern & { similarity: number }>> {
     try {
       // Generate embedding for the search query
       const queryEmbedding = await this.generateEmbedding(query);
@@ -184,7 +227,24 @@ export class VectorKnowledgeService {
         throw new Error(`Failed to search patterns: ${error.message}`);
       }
 
-      return data || [];
+      // Transform the database response to match our interface
+      return (data || []).map((item: any) => ({
+        id: item.id,
+        domain: '', // Default domain since it's not in the database
+        industry: item.industry,
+        pattern_type: item.pattern_type as CompetitorPattern['pattern_type'],
+        design_elements: {},
+        performance_metrics: {},
+        analysis_date: item.created_at || new Date().toISOString(),
+        pattern_name: item.pattern_name,
+        description: item.description,
+        effectiveness_score: Number(item.effectiveness_score),
+        examples: item.examples,
+        similarity: item.similarity,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        embedding: item.embedding
+      }));
     } catch (error) {
       console.error('Error in searchPatterns:', error);
       throw error;
@@ -209,7 +269,19 @@ export class VectorKnowledgeService {
         throw new Error(`Failed to fetch knowledge entries: ${error.message}`);
       }
 
-      return data || [];
+      // Transform the database response to match our interface
+      return (data || []).map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        content: item.content,
+        source: '', // Default source since it's not in the database
+        category: item.category as KnowledgeEntry['category'],
+        metadata: item.metadata,
+        tags: item.tags,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        embedding: item.embedding
+      }));
     } catch (error) {
       console.error('Error in getAllKnowledgeEntries:', error);
       throw error;
@@ -241,7 +313,23 @@ export class VectorKnowledgeService {
         throw new Error(`Failed to fetch competitor patterns: ${error.message}`);
       }
 
-      return data || [];
+      // Transform the database response to match our interface
+      return (data || []).map((item: any) => ({
+        id: item.id,
+        domain: '', // Default domain since it's not in the database
+        industry: item.industry,
+        pattern_type: item.pattern_type as CompetitorPattern['pattern_type'],
+        design_elements: {},
+        performance_metrics: {},
+        analysis_date: item.created_at || new Date().toISOString(),
+        pattern_name: item.pattern_name,
+        description: item.description,
+        effectiveness_score: Number(item.effectiveness_score),
+        examples: item.examples,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        embedding: item.embedding
+      }));
     } catch (error) {
       console.error('Error in getAllCompetitorPatterns:', error);
       throw error;
@@ -289,7 +377,21 @@ export class VectorKnowledgeService {
         throw new Error(`Failed to update knowledge entry: ${error.message}`);
       }
 
-      return data;
+      // Transform the database response to match our interface
+      return {
+        id: data.id,
+        title: data.title,
+        content: data.content,
+        source: updates.source || '',
+        category: data.category as KnowledgeEntry['category'],
+        industry: updates.industry,
+        element_type: updates.element_type,
+        metadata: data.metadata,
+        tags: data.tags,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        embedding: data.embedding
+      };
     } catch (error) {
       console.error('Error in updateKnowledgeEntry:', error);
       throw error;
@@ -345,7 +447,11 @@ export class VectorKnowledgeService {
         entries.map(async (entry) => {
           const embedding = await this.generateEmbedding(`${entry.title} ${entry.content}`);
           return {
-            ...entry,
+            title: entry.title,
+            content: entry.content,
+            category: entry.category,
+            tags: entry.tags || [],
+            metadata: entry.metadata || {},
             embedding: `[${embedding.join(',')}]`,
           };
         })
@@ -361,7 +467,21 @@ export class VectorKnowledgeService {
         throw new Error(`Failed to batch add knowledge entries: ${error.message}`);
       }
 
-      return data || [];
+      // Transform the database response to match our interface
+      return (data || []).map((item: any, index: number) => ({
+        id: item.id,
+        title: item.title,
+        content: item.content,
+        source: entries[index].source,
+        category: item.category as KnowledgeEntry['category'],
+        industry: entries[index].industry,
+        element_type: entries[index].element_type,
+        metadata: item.metadata,
+        tags: item.tags,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        embedding: item.embedding
+      }));
     } catch (error) {
       console.error('Error in batchAddKnowledgeEntries:', error);
       throw error;
