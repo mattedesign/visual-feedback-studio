@@ -14,6 +14,7 @@ export const captureScreenshot = async (requestData: ScreenshotRequest): Promise
   const { url, fullPage = true, format = 'png', cache = false } = requestData;
 
   console.log('Capturing screenshot for URL:', url);
+  console.log('Request parameters:', { fullPage, format, cache });
 
   // Validate URL
   validateUrl(url);
@@ -24,43 +25,84 @@ export const captureScreenshot = async (requestData: ScreenshotRequest): Promise
   screenshotApiUrl.searchParams.set('format', format);
   screenshotApiUrl.searchParams.set('cache', cache.toString());
 
-  // Use enhanced settings for better screenshot quality
+  // Use optimized settings for better performance and smaller file sizes
   const viewport = requestData.viewportWidth && requestData.viewportHeight 
     ? { width: requestData.viewportWidth, height: requestData.viewportHeight }
     : getRandomViewport();
   
-  screenshotApiUrl.searchParams.set('viewport_width', viewport.width.toString());
-  screenshotApiUrl.searchParams.set('viewport_height', viewport.height.toString());
+  // Limit viewport size to prevent overly large images
+  const maxWidth = 1200;
+  const maxHeight = 800;
+  const optimizedViewport = {
+    width: Math.min(viewport.width, maxWidth),
+    height: Math.min(viewport.height, maxHeight)
+  };
+  
+  screenshotApiUrl.searchParams.set('viewport_width', optimizedViewport.width.toString());
+  screenshotApiUrl.searchParams.set('viewport_height', optimizedViewport.height.toString());
   screenshotApiUrl.searchParams.set('device_scale_factor', (requestData.deviceScaleFactor || 1).toString());
   screenshotApiUrl.searchParams.set('full_page', fullPage.toString());
   screenshotApiUrl.searchParams.set('user_agent', getRandomUserAgent());
   
+  // Add quality optimization for smaller file sizes
+  if (format === 'jpg' || format === 'jpeg') {
+    screenshotApiUrl.searchParams.set('image_quality', '85'); // Reduce quality for smaller size
+  }
+  
+  // Optimize for web performance
+  screenshotApiUrl.searchParams.set('block_ads', 'true');
+  screenshotApiUrl.searchParams.set('block_cookie_banners', 'true');
+  screenshotApiUrl.searchParams.set('block_trackers', 'true');
+  
   const delay = requestData.delay && requestData.delay > 0 
     ? Math.min(requestData.delay <= 30 ? requestData.delay : Math.floor(requestData.delay / 1000), 30)
-    : 0;
-  if (delay > 0) {
-    screenshotApiUrl.searchParams.set('delay', delay.toString());
-  }
+    : 2; // Default 2 second delay for page loading
+  screenshotApiUrl.searchParams.set('delay', delay.toString());
 
-  console.log('Making request to Screenshot One API...');
+  console.log('Making request to Screenshot One API with optimized parameters...');
+  console.log('Viewport:', optimizedViewport);
+  console.log('Delay:', delay);
   
-  const response = await fetch(screenshotApiUrl.toString());
-  
-  console.log('Screenshot API response status:', response.status);
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Screenshot API error details:', errorText);
+  try {
+    const response = await fetch(screenshotApiUrl.toString(), {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'DesignAnalyzer/1.0'
+      }
+    });
     
-    let errorDetails;
-    try {
-      errorDetails = JSON.parse(errorText);
-    } catch {
-      errorDetails = { error_message: errorText };
+    console.log('Screenshot API response status:', response.status);
+    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Screenshot API error details:', errorText);
+      
+      let errorDetails;
+      try {
+        errorDetails = JSON.parse(errorText);
+      } catch {
+        errorDetails = { error_message: errorText };
+      }
+      
+      // Handle specific API errors
+      if (response.status === 403) {
+        throw new Error('Access denied: The website may be blocking screenshot capture or the URL may be invalid');
+      } else if (response.status === 422) {
+        throw new Error('Invalid request parameters: Please check the URL format');
+      } else if (response.status === 429) {
+        throw new Error('Rate limit exceeded: Please try again later');
+      }
+      
+      throw new Error(`Screenshot API error: ${response.status} ${response.statusText} - ${errorDetails.error_message || errorText}`);
     }
-    
-    throw new Error(`Screenshot API error: ${response.status} ${response.statusText} - ${errorDetails.error_message || errorText}`);
-  }
 
-  return response;
+    return response;
+  } catch (fetchError) {
+    console.error('Network error during screenshot capture:', fetchError);
+    if (fetchError instanceof TypeError && fetchError.message.includes('fetch')) {
+      throw new Error('Network error: Unable to connect to screenshot service');
+    }
+    throw fetchError;
+  }
 };
