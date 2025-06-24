@@ -1,4 +1,3 @@
-
 import { vectorKnowledgeService } from '@/services/knowledgeBase/vectorService';
 import { KnowledgeEntry } from '@/types/vectorDatabase';
 
@@ -359,13 +358,6 @@ export class KnowledgeIngestionService {
     
     console.log(`Parsed ${entries.length} entries from API response`);
     return entries;
-  }
-
-  /**
-   * Set OpenAI API key for the vector service
-   */
-  public setOpenAIKey(apiKey: string): void {
-    this.vectorService.setOpenAIKey(apiKey);
   }
 }
 
