@@ -86,6 +86,33 @@ const Auth = () => {
     }
   };
 
+  // Add magic link handler
+  const handleMagicLink = async () => {
+    if (!email) {
+      toast.error('Please enter your email address first');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/analysis`
+        }
+      });
+
+      if (error) throw error;
+      
+      toast.success('Check your email for the magic link!');
+    } catch (error: any) {
+      console.error('Magic link error:', error);
+      toast.error(error.message || 'Failed to send magic link');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-slate-800 border-slate-700">
@@ -132,6 +159,19 @@ const Auth = () => {
             </Button>
           </form>
           
+          {!isSignUp && (
+            <div className="mt-4">
+              <Button
+                onClick={handleMagicLink}
+                disabled={loading}
+                variant="outline"
+                className="w-full border-slate-600 text-slate-300 hover:bg-slate-700"
+              >
+                Send Magic Link
+              </Button>
+            </div>
+          )}
+          
           <div className="mt-4 text-center">
             <button
               type="button"
@@ -149,6 +189,7 @@ const Auth = () => {
             <div className="mt-4 p-3 bg-slate-700 rounded text-sm text-slate-300">
               <p className="font-medium">Development Mode:</p>
               <p>Email confirmations are disabled for faster testing.</p>
+              <p>Magic links will redirect to the correct port (5173).</p>
             </div>
           )}
         </CardContent>
