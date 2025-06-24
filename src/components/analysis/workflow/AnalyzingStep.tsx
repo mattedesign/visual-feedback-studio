@@ -2,8 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
-import { useRAGAnalysis } from '@/hooks/analysis/useRAGAnalysis';
-import { useAnalysisExecutionEnhanced } from '@/hooks/analysis/useAnalysisExecutionEnhanced';
+import { useAIAnalysis } from '@/hooks/analysis/useAIAnalysis';
 import { RAGStatusIndicator } from '../RAGStatusIndicator';
 import { toast } from 'sonner';
 
@@ -17,21 +16,13 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
   const [retryCount, setRetryCount] = useState(0);
   const maxRetries = 3;
 
-  // Use RAG-enhanced analysis system
-  const {
-    isBuilding,
-    ragContext,
-    buildRAGContext,
-    enhancePromptWithResearch,
-    hasResearchContext,
-    researchSourcesCount,
-    researchCategories
-  } = useRAGAnalysis();
-
-  const { executeAnalysis } = useAnalysisExecutionEnhanced({
+  // Updated to capture RAG state from useAIAnalysis
+  const { handleAnalyze, ragContext, isBuilding, hasResearchContext, researchSourcesCount } = useAIAnalysis({
+    imageUrls: workflow.selectedImages,
     currentAnalysis: workflow.currentAnalysis,
     setIsAnalyzing: workflow.setIsAnalyzing,
     setAnnotations: workflow.setAiAnnotations,
+    isComparative: workflow.selectedImages.length > 1
   });
 
   // Update step text based on RAG status
@@ -44,8 +35,8 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
   }, [isBuilding, ragContext]);
 
   useEffect(() => {
-    const performRAGEnhancedAnalysis = async () => {
-      console.log('=== Starting RAG-Enhanced Analysis ===');
+    const performAnalysis = async () => {
+      console.log('=== Starting Analysis Validation ===');
       console.log('Selected images:', workflow.selectedImages.length);
       console.log('Current analysis:', workflow.currentAnalysis?.id);
       console.log('User annotations:', workflow.getTotalAnnotationsCount());
@@ -59,7 +50,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       }
 
       if (!workflow.currentAnalysis) {
-        console.error('No current analysis found');
+        console.error('No current analysis found - this is the main issue');
         toast.error('Analysis session not found. Please go back and upload your images again.');
         return;
       }
@@ -78,10 +69,10 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
             if (!response.ok) {
               throw new Error(`Image ${index + 1} not accessible: ${response.status}`);
             }
-            console.log(`✅ Image ${index + 1} validated successfully`);
+            console.log(`Image ${index + 1} validated successfully`);
             return true;
           } catch (error) {
-            console.error(`❌ Image ${index + 1} validation failed:`, error);
+            console.error(`Image ${index + 1} validation failed:`, error);
             throw error;
           }
         });
@@ -89,67 +80,21 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
         await Promise.all(imageValidationPromises);
         setAnalysisProgress(25);
 
-        // Step 1: Build RAG context
         setCurrentStep('Building research context...');
         setAnalysisProgress(40);
-        
-        console.log('🔍 Building RAG context...');
-        const analysisQuery = workflow.analysisContext || 'UX design analysis with research insights';
-        
-        let context;
-        try {
-          context = await buildRAGContext(analysisQuery, {
-            maxResults: 8,
-            similarityThreshold: 0.7,
-          });
-          console.log(`✅ RAG context built: ${context.totalRelevantEntries} research sources found`);
-        } catch (error) {
-          console.warn('⚠️ RAG context building failed, proceeding with standard analysis:', error);
-          context = null;
-        }
 
-        // Step 2: Enhance prompt with research
         setCurrentStep('Enhancing analysis with UX research...');
         setAnalysisProgress(60);
 
-        let enhancedPrompt = workflow.analysisContext || 'Analyze this design for UX improvements';
-        
-        if (context && context.totalRelevantEntries > 0) {
-          console.log('🔧 Enhancing prompt with research context...');
-          try {
-            enhancedPrompt = enhancePromptWithResearch(
-              workflow.analysisContext || 'Analyze this design for UX improvements',
-              context,
-              'comprehensive'
-            );
-            console.log('✅ Prompt enhanced with research');
-          } catch (error) {
-            console.warn('⚠️ Prompt enhancement failed, using original prompt:', error);
-          }
-        }
-
-        // Step 3: Execute analysis
         setCurrentStep('Sending to AI for analysis...');
         setAnalysisProgress(80);
 
-        console.log('🚀 Executing enhanced analysis...');
-        await executeAnalysis(
-          workflow.selectedImages,
-          enhancedPrompt,
-          workflow.selectedImages.length > 1,
-          {
-            hasRAGContext: context !== null,
-            researchSourceCount: context?.totalRelevantEntries || 0,
-            categories: context?.categories || [],
-          }
-        );
+        await handleAnalyze(workflow.analysisContext, workflow.imageAnnotations);
         
         setAnalysisProgress(100);
         setCurrentStep('Analysis complete!');
         
         console.log('=== RAG-Enhanced Analysis Completed Successfully ===');
-        console.log('Research sources used:', context?.totalRelevantEntries || 0);
-        console.log('Research categories:', context?.categories || []);
         
         // Small delay to show completion before transitioning
         setTimeout(() => {
@@ -157,7 +102,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
         }, 1000);
 
       } catch (error) {
-        console.error('=== RAG-Enhanced Analysis Failed ===');
+        console.error('=== Analysis Failed ===');
         console.error('Error details:', error);
         console.error('Retry count:', retryCount);
         
@@ -171,7 +116,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
           // Exponential backoff: 2s, 4s, 8s
           const delay = Math.pow(2, retryCount) * 2000;
           setTimeout(() => {
-            performRAGEnhancedAnalysis();
+            performAnalysis();
           }, delay);
           
           toast(`Analysis failed, retrying in ${delay/1000} seconds... (${nextRetry}/${maxRetries})`, {
@@ -190,8 +135,8 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       }
     };
 
-    performRAGEnhancedAnalysis();
-  }, [workflow, buildRAGContext, enhancePromptWithResearch, executeAnalysis, retryCount]);
+    performAnalysis();
+  }, [workflow, handleAnalyze, retryCount]);
 
   const totalAnnotations = workflow.getTotalAnnotationsCount();
   const isMultiImage = workflow.selectedImages.length > 1;
@@ -244,11 +189,11 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
                 <div className="flex items-center justify-center gap-2">
                   <div className="text-green-400">✅</div>
                   <span className="text-sm text-green-300 font-medium">
-                    Research context ready: {ragContext.totalRelevantEntries} insights found
+                    Research context ready: {ragContext.retrievedKnowledge?.relevantPatterns?.length || researchSourcesCount} insights found
                   </span>
                 </div>
                 <p className="text-xs text-green-400 mt-1">
-                  Analysis enhanced with {researchCategories.join(', ') || 'UX'} research
+                  Analysis enhanced with {ragContext.industryContext || 'UX'} research
                 </p>
               </div>
             )}
@@ -270,9 +215,6 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
                 <li>• Research-backed UX and accessibility recommendations</li>
                 <li>• Evidence-based conversion optimization opportunities</li>
                 <li>• Citations from peer-reviewed UX studies</li>
-                {hasResearchContext && (
-                  <li>• Enhanced with {researchSourcesCount} research sources from {researchCategories.join(', ')}</li>
-                )}
               </ul>
             </div>
 
