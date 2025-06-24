@@ -38,17 +38,21 @@ supabase.auth.onAuthStateChange((event, session) => {
 });
 
 // Test connection on initialization
-supabase
-  .from('analyses')
-  .select('count')
-  .limit(1)
-  .then(({ data, error }) => {
+const testConnection = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('analyses')
+      .select('count')
+      .limit(1);
+    
     if (error) {
       console.error('Initial connection test failed:', error);
     } else {
       console.log('Initial connection test successful');
     }
-  })
-  .catch((err) => {
+  } catch (err) {
     console.error('Connection test error:', err);
-  });
+  }
+};
+
+testConnection();
