@@ -1,3 +1,4 @@
+
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { AnalysisWithFiles, updateAnalysisStatus, updateAnalysisContext } from '@/services/analysisDataService';
@@ -81,10 +82,11 @@ export const useAnalysisExecution = ({
         setRagContext(ragData);
         console.log('📚 Research context built:', {
           knowledgeEntries: ragData.retrievedKnowledge.relevantPatterns.length,
-          citations: ragData.researchCitations.length
+          citations: ragData.researchCitations.length,
+          industry: ragData.industryContext
         });
       } else {
-        console.warn('RAG context building failed, proceeding with standard analysis');
+        console.warn('RAG context building failed, proceeding with standard analysis:', ragError);
       }
     } catch (error) {
       console.warn('RAG context error:', error);
@@ -133,13 +135,21 @@ export const useAnalysisExecution = ({
         ? ` with ${ragContextData.retrievedKnowledge.relevantPatterns.length} research insights`
         : '';
       
-      toast.success(`Analysis completed${researchInfo}!`);
+      const imageText = imagesToAnalyze.length > 1 ? 
+        `${imagesToAnalyze.length} images` : 'image';
+      const analysisType = isComparative ? 'Enhanced comparative analysis' : 'Enhanced analysis';
+      const providerText = aiProvider ? ` using ${aiProvider.toUpperCase()}` : ' with smart provider selection';
       
+      toast.success(`${analysisType} complete${providerText}! Found ${data.totalAnnotations || freshAnnotations.length} comprehensive insights across ${imageText}${researchInfo}.`, {
+        duration: 4000,
+      });
+      
+      console.log('=== RAG-Enhanced Analysis Completed Successfully ===');
     } else {
-      throw new Error(data?.error || 'Analysis failed to generate annotations');
+      console.error('Invalid response structure:', data);
+      throw new Error('Invalid response from RAG-enhanced analysis');
     }
-    
-  }, [currentAnalysis, setIsAnalyzing, setAnnotations]);
+  }, [currentAnalysis, setAnnotations]);
 
   return {
     executeAnalysis,
