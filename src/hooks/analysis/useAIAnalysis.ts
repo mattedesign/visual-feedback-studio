@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { AnalysisWithFiles } from '@/services/analysisDataService';
 import { Annotation } from '@/types/analysis';
@@ -28,11 +27,14 @@ export const useAIAnalysis = ({
   isComparative = false,
 }: UseAIAnalysisProps) => {
   const { buildIntelligentPrompt } = usePromptBuilder();
-  const { executeAnalysis } = useAnalysisExecution({
+  
+  // Updated to capture RAG state from useAnalysisExecution
+  const { executeAnalysis, ragContext, isBuilding } = useAnalysisExecution({
     currentAnalysis,
     setIsAnalyzing,
     setAnnotations,
   });
+  
   const { validateAnalysisInputs } = useAnalysisValidation();
   const { prepareAnalysisConfiguration } = useAnalysisConfiguration({
     imageUrl,
@@ -215,9 +217,12 @@ export const useAIAnalysis = ({
     clearRAGData
   ]);
 
+  // Updated return statement to expose RAG state to components
   return {
     handleAnalyze,
-    // Expose RAG-related state for debugging/monitoring
+    // Expose RAG-related state for UI components
+    ragContext,           // NEW: RAG context information
+    isBuilding,          // NEW: RAG building state
     hasResearchContext,
     researchSourcesCount,
   };
