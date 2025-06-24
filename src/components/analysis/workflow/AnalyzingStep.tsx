@@ -15,6 +15,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState('Initializing analysis...');
   const [retryCount, setRetryCount] = useState(0);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
   const maxRetries = 3;
 
   // Use RAG-enhanced analysis system
@@ -39,7 +40,12 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
     if (isBuilding) {
       setCurrentStep('Building research context...');
     } else if (ragContext && !isBuilding) {
-      setCurrentStep('Performing research-enhanced analysis...');
+      const count = ragContext.totalRelevantEntries || 0;
+      if (count > 0) {
+        setCurrentStep(`Research-enhanced analysis with ${count} insights...`);
+      } else {
+        setCurrentStep('Performing standard analysis (no research found)...');
+      }
     }
   }, [isBuilding, ragContext]);
 
@@ -89,23 +95,45 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
         await Promise.all(imageValidationPromises);
         setAnalysisProgress(25);
 
-        // Step 1: Build RAG context
+        // Step 1: Build RAG context with IMPROVED settings
         setCurrentStep('Building research context...');
         setAnalysisProgress(40);
         
-        console.log('🔍 Building RAG context...');
+        console.log('🔍 Building RAG context with improved settings...');
         const analysisQuery = workflow.analysisContext || 'UX design analysis with research insights';
         
         let context;
         try {
           context = await buildRAGContext(analysisQuery, {
             maxResults: 8,
-            similarityThreshold: 0.7,
+            similarityThreshold: 0.5, // LOWERED from 0.7
           });
+          
           console.log(`✅ RAG context built: ${context.totalRelevantEntries} research sources found`);
+          
+          // Store debug info for display
+          setDebugInfo({
+            threshold: 0.5,
+            queriesGenerated: context.retrievalMetadata?.queriesGenerated || 0,
+            processingTime: context.retrievalMetadata?.processingTime || 0,
+            categories: context.categories,
+            hasError: !!context.retrievalMetadata?.error,
+            error: context.retrievalMetadata?.error
+          });
+          
+          if (context.totalRelevantEntries === 0) {
+            console.warn('⚠️ No knowledge retrieved - this may indicate an issue with the knowledge base or search parameters');
+            toast('No specific research found for this query, proceeding with general UX analysis', {
+              duration: 4000,
+            });
+          }
         } catch (error) {
           console.warn('⚠️ RAG context building failed, proceeding with standard analysis:', error);
           context = null;
+          setDebugInfo({
+            error: error.message,
+            fallbackUsed: true
+          });
         }
 
         // Step 2: Enhance prompt with research
@@ -138,7 +166,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
           enhancedPrompt,
           workflow.selectedImages.length > 1,
           {
-            hasRAGContext: context !== null,
+            hasRAGContext: context !== null && context.totalRelevantEntries > 0,
             researchSourceCount: context?.totalRelevantEntries || 0,
             categories: context?.categories || [],
           }
@@ -150,6 +178,13 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
         console.log('=== RAG-Enhanced Analysis Completed Successfully ===');
         console.log('Research sources used:', context?.totalRelevantEntries || 0);
         console.log('Research categories:', context?.categories || []);
+        
+        // Show success message with research info
+        if (context && context.totalRelevantEntries > 0) {
+          toast.success(`Analysis complete with ${context.totalRelevantEntries} research insights from ${context.categories.join(', ')}!`, {
+            duration: 5000,
+          });
+        }
         
         // Small delay to show completion before transitioning
         setTimeout(() => {
@@ -250,6 +285,21 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
                 <p className="text-xs text-green-400 mt-1">
                   Analysis enhanced with {researchCategories.join(', ') || 'UX'} research
                 </p>
+              </div>
+            )}
+
+            {/* Debug Information (Development Mode) */}
+            {debugInfo && (
+              <div className="mt-4 p-3 bg-gray-900/20 border border-gray-500/30 rounded-lg text-left">
+                <div className="text-xs text-gray-300">
+                  <div className="font-medium mb-1">🔧 Debug Info:</div>
+                  {debugInfo.threshold && <div>Similarity threshold: {debugInfo.threshold}</div>}
+                  {debugInfo.queriesGenerated && <div>Search queries: {debugInfo.queriesGenerated}</div>}
+                  {debugInfo.processingTime && <div>Processing time: {debugInfo.processingTime}ms</div>}
+                  {debugInfo.categories && <div>Categories: {debugInfo.categories.join(', ')}</div>}
+                  {debugInfo.error && <div className="text-red-400">Error: {debugInfo.error}</div>}
+                  {debugInfo.fallbackUsed && <div className="text-yellow-400">Using fallback analysis</div>}
+                </div>
               </div>
             )}
 
