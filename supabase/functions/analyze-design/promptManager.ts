@@ -1,3 +1,4 @@
+
 import { createAnalysisPrompt } from './promptBuilder.ts';
 import { RAGContext } from './types.ts';
 
@@ -18,25 +19,24 @@ export function createEnhancedPrompt(
     ragKnowledgeCount: ragContext?.retrievedKnowledge.relevantPatterns.length || 0
   });
 
-  // NEW: If RAG context is available, use the enhanced prompt
+  // CRITICAL FIX: Always use the RAG-enhanced prompt when available
   if (ragContext?.enhancedPrompt) {
-    console.log('📚 Using RAG-enhanced prompt with research context');
+    console.log('🎯 Using RAG-enhanced prompt with research context');
     console.log('Research context details:', {
       knowledgeEntries: ragContext.retrievedKnowledge.relevantPatterns.length,
       competitorInsights: ragContext.retrievedKnowledge.competitorInsights.length,
       industry: ragContext.industryContext,
       citationsCount: ragContext.researchCitations.length,
-      buildTimestamp: ragContext.buildTimestamp
+      enhancedPromptLength: ragContext.enhancedPrompt.length
     });
     
-    // Return the research-enhanced prompt immediately
+    // Return the research-enhanced prompt immediately - this contains all the citations
     return ragContext.enhancedPrompt;
   }
 
-  // Fallback: Use existing prompt building logic
-  console.log('📊 Using standard prompt (no RAG context available)');
+  // Fallback: Use existing prompt building logic when no RAG context
+  console.log('📊 No RAG context available, using standard prompt builder');
   
-  // Your existing prompt building logic continues here (unchanged)...
   const systemPrompt = createAnalysisPrompt(
     analysisPrompt, 
     isComparative || isMultiImage, 

@@ -71,7 +71,7 @@ export const useAnalysisExecution = ({
         body: {
           imageUrls: imagesToAnalyze,
           userPrompt: userAnalysisPrompt,
-          imageAnnotations: [], // Add user annotations if available
+          imageAnnotations: [],
           analysisId: currentAnalysis?.id
         }
       });
@@ -94,18 +94,27 @@ export const useAnalysisExecution = ({
       // Step 2: Execute analysis with RAG enhancement
       console.log('🚀 Executing RAG-enhanced analysis...');
       
+      // CRITICAL FIX: Use the enhanced prompt when RAG context is available
+      const promptToUse = ragData?.enhancedPrompt || userAnalysisPrompt;
+      console.log('Prompt decision:', {
+        hasRAGContext: !!ragData,
+        usingEnhancedPrompt: !!ragData?.enhancedPrompt,
+        originalPromptLength: userAnalysisPrompt.length,
+        finalPromptLength: promptToUse.length
+      });
+      
       const { data, error } = await supabase.functions.invoke('analyze-design', {
         body: {
           imageUrls: imagesToAnalyze,
           imageUrl: imagesToAnalyze[0], // Keep for backward compatibility
           analysisId: currentAnalysis?.id,
-          analysisPrompt: userAnalysisPrompt, // Original user prompt
+          analysisPrompt: promptToUse, // Use enhanced prompt here instead of original
           designType: currentAnalysis?.design_type || 'web',
           isComparative,
           aiProvider,
           // RAG enhancement fields
           ragEnabled: true,
-          ragContext: ragData, // Pass the full RAG context
+          ragContext: ragData,
           researchCitations: ragData?.researchCitations || []
         }
       });
@@ -146,7 +155,8 @@ export const useAnalysisExecution = ({
           researchEnhanced: data.researchEnhanced,
           knowledgeSourcesUsed: data.knowledgeSourcesUsed,
           citationsCount: data.researchCitations?.length || 0,
-          industryContext: data.industryContext
+          industryContext: data.industryContext,
+          promptUsed: promptToUse.length > 500 ? 'Enhanced' : 'Original'
         });
       } else {
         console.error('Invalid response structure:', data);

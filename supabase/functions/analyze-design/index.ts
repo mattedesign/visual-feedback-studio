@@ -38,7 +38,8 @@ serve(async (req) => {
       ragEnabled: validatedRequest.ragEnabled || false,
       ragKnowledgeCount: validatedRequest.ragContext?.retrievedKnowledge.relevantPatterns.length || 0,
       ragCitationsCount: validatedRequest.researchCitations?.length || 0,
-      ragIndustryContext: validatedRequest.ragContext?.industryContext || 'none'
+      ragIndustryContext: validatedRequest.ragContext?.industryContext || 'none',
+      hasEnhancedPrompt: !!validatedRequest.ragContext?.enhancedPrompt
     });
     
     // Process images
@@ -46,28 +47,38 @@ serve(async (req) => {
     const processedImages = await processImages(validatedRequest.imagesToProcess);
     console.log('Images processed successfully:', processedImages.length);
     
-    // Create enhanced prompt with RAG context - THIS IS THE KEY FIX
-    console.log('=== Creating RAG-Enhanced Prompt ===');
-    const enhancedPrompt = createEnhancedPrompt(
-      validatedRequest.analysisPrompt,
-      validatedRequest.isComparative,
-      validatedRequest.isMultiImage,
-      validatedRequest.imagesToProcess,
-      validatedRequest.ragContext // This will use the research-enhanced prompt
-    );
+    // CRITICAL FIX: Determine the final prompt to use
+    let finalPrompt: string;
     
-    console.log('Enhanced prompt details:', {
-      originalPromptLength: validatedRequest.analysisPrompt?.length || 0,
-      enhancedPromptLength: enhancedPrompt.length,
-      hasRAGContext: !!validatedRequest.ragContext,
-      ragPromptLength: validatedRequest.ragContext?.enhancedPrompt?.length || 0
+    if (validatedRequest.ragEnabled && validatedRequest.ragContext?.enhancedPrompt) {
+      // Use the RAG-enhanced prompt directly (contains research citations)
+      finalPrompt = validatedRequest.ragContext.enhancedPrompt;
+      console.log('✅ Using RAG-enhanced prompt with research citations');
+    } else {
+      // Fallback to standard prompt creation
+      finalPrompt = createEnhancedPrompt(
+        validatedRequest.analysisPrompt,
+        validatedRequest.isComparative,
+        validatedRequest.isMultiImage,
+        validatedRequest.imagesToProcess,
+        validatedRequest.ragContext
+      );
+      console.log('📊 Using standard enhanced prompt');
+    }
+    
+    console.log('Final prompt details:', {
+      promptLength: finalPrompt.length,
+      containsResearchCitations: finalPrompt.includes('Based on') || finalPrompt.includes('research shows') || finalPrompt.includes('Nielsen'),
+      containsWCAG: finalPrompt.includes('WCAG'),
+      containsHeuristics: finalPrompt.includes('heuristic'),
+      ragEnhanced: validatedRequest.ragEnabled && !!validatedRequest.ragContext?.enhancedPrompt
     });
 
     // For comparative analysis, use the first image as primary
     const primaryImage = processedImages[0];
     
-    // Perform AI analysis with RAG-enhanced prompt
-    console.log('=== Starting RAG-Enhanced AI Analysis ===');
+    // Perform AI analysis with the final prompt
+    console.log('=== Starting AI Analysis with Final Prompt ===');
     console.log('Using provider:', validatedRequest.aiProvider);
     console.log('Using model:', validatedRequest.model);
     
@@ -75,12 +86,12 @@ serve(async (req) => {
     const annotations = await performAIAnalysis(
       primaryImage.base64Image,
       primaryImage.mimeType,
-      enhancedPrompt, // This now contains research citations and enhanced context
+      finalPrompt, // This now contains research citations when available
       validatedRequest.aiProvider,
       validatedRequest.model
     );
     const analysisTime = Date.now() - startTime;
-    console.log(`RAG-enhanced AI analysis completed in ${analysisTime}ms`);
+    console.log(`AI analysis completed in ${analysisTime}ms`);
     console.log('Annotations received:', annotations.length);
 
     // Save annotations to database
@@ -101,17 +112,19 @@ serve(async (req) => {
     responseData.modelUsed = validatedRequest.model || 'default';
     responseData.testMode = validatedRequest.testMode || false;
     
-    // Add RAG information to response - ENHANCED
+    // Add RAG information to response
     if (validatedRequest.ragEnabled && validatedRequest.ragContext) {
       responseData.researchEnhanced = true;
       responseData.knowledgeSourcesUsed = validatedRequest.ragContext.retrievedKnowledge.relevantPatterns.length;
       responseData.researchCitations = validatedRequest.researchCitations || [];
       responseData.industryContext = validatedRequest.ragContext.industryContext;
       responseData.ragBuildTimestamp = validatedRequest.ragContext.buildTimestamp;
+      responseData.usedEnhancedPrompt = !!validatedRequest.ragContext.enhancedPrompt;
     } else {
       responseData.researchEnhanced = false;
       responseData.knowledgeSourcesUsed = 0;
       responseData.researchCitations = [];
+      responseData.usedEnhancedPrompt = false;
     }
     
     console.log('=== RAG-Enhanced Analysis Completed Successfully ===');
@@ -126,6 +139,7 @@ serve(async (req) => {
       researchEnhanced: responseData.researchEnhanced,
       knowledgeSourcesUsed: responseData.knowledgeSourcesUsed,
       ragCitationsCount: responseData.researchCitations?.length || 0,
+      usedEnhancedPrompt: responseData.usedEnhancedPrompt,
       totalProcessingTime: `${analysisTime}ms`
     });
     
