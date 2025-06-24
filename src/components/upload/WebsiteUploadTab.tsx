@@ -2,8 +2,9 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Globe, Loader2 } from 'lucide-react';
+import { Globe, Loader2, AlertCircle, CheckCircle, TestTube } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface WebsiteUploadTabProps {
   onUrlSubmit: (url: string) => Promise<void>;
@@ -12,13 +13,42 @@ interface WebsiteUploadTabProps {
 
 export const WebsiteUploadTab = ({ onUrlSubmit, isProcessing }: WebsiteUploadTabProps) => {
   const [url, setUrl] = useState('');
+  const [lastError, setLastError] = useState<string | null>(null);
+  const [lastSuccess, setLastSuccess] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url.trim()) return;
     
-    await onUrlSubmit(url.trim());
-    setUrl(''); // Clear the input after submission
+    console.log('WebsiteUploadTab: Form submitted with URL:', url.trim());
+    
+    // Clear previous messages
+    setLastError(null);
+    setLastSuccess(null);
+    
+    try {
+      await onUrlSubmit(url.trim());
+      setLastSuccess('Website screenshot captured successfully!');
+      setUrl(''); // Clear the input after successful submission
+    } catch (error) {
+      console.error('WebsiteUploadTab: Error during submission:', error);
+      setLastError(error instanceof Error ? error.message : 'Failed to process website URL');
+    }
+  };
+
+  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUrl(e.target.value);
+    // Clear messages when user starts typing
+    if (lastError || lastSuccess) {
+      setLastError(null);
+      setLastSuccess(null);
+    }
+  };
+
+  const handleTestUrl = () => {
+    const testUrl = 'https://example.com';
+    setUrl(testUrl);
+    console.log('Test URL set:', testUrl);
   };
 
   return (
@@ -31,17 +61,41 @@ export const WebsiteUploadTab = ({ onUrlSubmit, isProcessing }: WebsiteUploadTab
             Enter a website URL to capture a screenshot for analysis
           </p>
         </div>
+
+        {lastError && (
+          <Alert className="mb-4" variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{lastError}</AlertDescription>
+          </Alert>
+        )}
+
+        {lastSuccess && (
+          <Alert className="mb-4 border-green-500/50 text-green-200">
+            <CheckCircle className="h-4 w-4" />
+            <AlertDescription>{lastSuccess}</AlertDescription>
+          </Alert>
+        )}
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex gap-3">
             <Input
               type="url"
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
+              onChange={handleUrlChange}
               placeholder="https://example.com"
               className="bg-white dark:bg-slate-200 border-slate-300 dark:border-slate-400 text-slate-900 placeholder:text-slate-600"
               disabled={isProcessing}
             />
+            <Button
+              type="button"
+              onClick={handleTestUrl}
+              variant="outline"
+              disabled={isProcessing}
+              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+            >
+              <TestTube className="w-4 h-4 mr-2" />
+              Test
+            </Button>
             <Button
               type="submit"
               disabled={!url.trim() || isProcessing}
@@ -68,8 +122,17 @@ export const WebsiteUploadTab = ({ onUrlSubmit, isProcessing }: WebsiteUploadTab
               <li>• The screenshot will be loaded for analysis</li>
               <li>• You can then add annotations and get AI feedback</li>
               <li>• Make sure the URL includes http:// or https://</li>
+              <li>• Use the Test button to quickly try with example.com</li>
             </ul>
           </div>
+
+          {isProcessing && (
+            <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
+              <p className="text-blue-200 text-sm">
+                📸 Capturing screenshot... This may take a few seconds.
+              </p>
+            </div>
+          )}
         </form>
       </CardContent>
     </Card>
