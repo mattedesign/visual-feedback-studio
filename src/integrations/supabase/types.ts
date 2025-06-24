@@ -154,9 +154,13 @@ export type Database = {
           category: string
           content: string
           created_at: string
+          element_type: string | null
           embedding: string | null
+          freshness_score: number | null
           id: string
+          industry: string | null
           metadata: Json | null
+          source: string | null
           tags: string[] | null
           title: string
           updated_at: string
@@ -165,9 +169,13 @@ export type Database = {
           category: string
           content: string
           created_at?: string
+          element_type?: string | null
           embedding?: string | null
+          freshness_score?: number | null
           id?: string
+          industry?: string | null
           metadata?: Json | null
+          source?: string | null
           tags?: string[] | null
           title: string
           updated_at?: string
@@ -176,9 +184,13 @@ export type Database = {
           category?: string
           content?: string
           created_at?: string
+          element_type?: string | null
           embedding?: string | null
+          freshness_score?: number | null
           id?: string
+          industry?: string | null
           metadata?: Json | null
+          source?: string | null
           tags?: string[] | null
           title?: string
           updated_at?: string
@@ -316,6 +328,8 @@ export type Database = {
           category: string
           tags: string[]
           metadata: Json
+          created_at: string
+          updated_at: string
           similarity: number
         }[]
       }

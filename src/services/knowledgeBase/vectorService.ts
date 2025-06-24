@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { 
   KnowledgeEntry, 
@@ -77,6 +78,9 @@ export class VectorKnowledgeService {
           title: entry.title,
           content: entry.content,
           category: entry.category,
+          source: entry.source || '',
+          industry: entry.industry,
+          element_type: entry.element_type,
           tags: entry.tags || [],
           embedding: `[${embedding.join(',')}]`,
           metadata: entry.metadata || {},
@@ -89,15 +93,14 @@ export class VectorKnowledgeService {
         throw new Error(`Failed to add knowledge entry: ${error.message}`);
       }
 
-      // Transform the database response to match our interface
       return {
         id: data.id,
         title: data.title,
         content: data.content,
-        source: entry.source,
+        source: data.source || '',
         category: data.category as KnowledgeEntry['category'],
-        industry: entry.industry,
-        element_type: entry.element_type,
+        industry: data.industry,
+        element_type: data.element_type,
         metadata: data.metadata,
         tags: data.tags,
         created_at: data.created_at,
@@ -137,7 +140,6 @@ export class VectorKnowledgeService {
         throw new Error(`Failed to add competitor pattern: ${error.message}`);
       }
 
-      // Transform the database response to match our interface
       return {
         id: data.id,
         domain: pattern.domain,
@@ -189,7 +191,7 @@ export class VectorKnowledgeService {
         id: item.id,
         title: item.title,
         content: item.content,
-        source: '', // Default source since it's not in the database
+        source: item.source || '',
         category: item.category as KnowledgeEntry['category'],
         metadata: item.metadata,
         tags: item.tags,
