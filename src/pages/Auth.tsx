@@ -41,20 +41,17 @@ const Auth = () => {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/analysis`
-          }
         });
 
         if (error) throw error;
         
-        // Since email confirmations are disabled, users are immediately confirmed
-        if (data.user && !data.session) {
-          toast.success('Account created! Please sign in with your credentials.');
-          setIsSignUp(false); // Switch to sign in mode
-        } else if (data.session) {
+        // Since email confirmations are disabled, users are immediately confirmed and signed in
+        if (data.session) {
           toast.success('Account created and signed in successfully!');
           // Navigation will be handled by the auth state change listener
+        } else {
+          toast.success('Account created successfully! Please sign in.');
+          setIsSignUp(false); // Switch to sign in mode
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -73,11 +70,11 @@ const Auth = () => {
       // Provide more specific error messages
       if (error.message.includes('Invalid login credentials')) {
         toast.error('Invalid email or password. Please check your credentials and try again.');
-      } else if (error.message.includes('Email not confirmed')) {
-        toast.error('Please check your email and click the confirmation link.');
       } else if (error.message.includes('User already registered')) {
         toast.error('An account with this email already exists. Please sign in instead.');
         setIsSignUp(false);
+      } else if (error.message.includes('Password should be at least 6 characters')) {
+        toast.error('Password should be at least 6 characters long.');
       } else {
         toast.error(error.message || 'An error occurred during authentication');
       }
@@ -86,7 +83,7 @@ const Auth = () => {
     }
   };
 
-  // Add magic link handler
+  // Simplified magic link handler (optional feature)
   const handleMagicLink = async () => {
     if (!email) {
       toast.error('Please enter your email address first');
@@ -97,9 +94,6 @@ const Auth = () => {
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/analysis`
-        }
       });
 
       if (error) throw error;
@@ -189,7 +183,7 @@ const Auth = () => {
             <div className="mt-4 p-3 bg-slate-700 rounded text-sm text-slate-300">
               <p className="font-medium">Development Mode:</p>
               <p>Email confirmations are disabled for faster testing.</p>
-              <p>Magic links will redirect to the correct port (5173).</p>
+              <p>Users are automatically signed in after registration.</p>
             </div>
           )}
         </CardContent>
