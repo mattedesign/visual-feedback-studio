@@ -26,6 +26,8 @@ export const useAuth = () => {
       async (event, session) => {
         if (!mounted) return;
         
+        console.log('Auth state changed:', event, session?.user?.email);
+        
         setAuthState(prev => ({
           ...prev,
           session,
@@ -39,16 +41,19 @@ export const useAuth = () => {
     // Initialize session check
     const initialize = async () => {
       try {
+        console.log('Initializing auth session...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (mounted) {
           if (error) {
+            console.error('Session initialization error:', error);
             setAuthState(prev => ({
               ...prev,
               error: error.message,
               loading: false
             }));
           } else {
+            console.log('Session initialized:', session?.user?.email || 'No session');
             setAuthState(prev => ({
               ...prev,
               session,
@@ -59,6 +64,7 @@ export const useAuth = () => {
           }
         }
       } catch (err) {
+        console.error('Auth initialization error:', err);
         if (mounted) {
           setAuthState(prev => ({
             ...prev,
@@ -81,13 +87,18 @@ export const useAuth = () => {
     try {
       setAuthState(prev => ({ ...prev, error: null }));
       
+      console.log('Signing out...');
       const { error } = await supabase.auth.signOut();
       
       if (error) {
+        console.error('Sign out error:', error);
         setAuthState(prev => ({ ...prev, error: error.message }));
         throw error;
       }
+      
+      console.log('Signed out successfully');
     } catch (err) {
+      console.error('Sign out failed:', err);
       throw err;
     }
   };
