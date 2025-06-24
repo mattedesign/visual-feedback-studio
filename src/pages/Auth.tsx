@@ -7,7 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { AlertTriangle, Info, CheckCircle } from 'lucide-react';
+import { AlertTriangle, Info } from 'lucide-react';
+import { ConnectionStatus } from '@/components/auth/ConnectionStatus';
+import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -15,89 +17,34 @@ const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [debugInfo, setDebugInfo] = useState<any>(null);
-  const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error'>('checking');
   const navigate = useNavigate();
+  
+  const { user, session, isConnected, error: authError, clearError } = useEnhancedAuth();
 
-  // Check Supabase connection and configuration on component mount
+  // Redirect if already authenticated
   useEffect(() => {
-    const checkSupabaseConnection = async () => {
-      console.log('=== Checking Supabase Connection ===');
-      
-      try {
-        // Check environment variables
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "http://127.0.0.1:54321";
-        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "your-anon-key";
-        
-        console.log('Supabase URL:', supabaseUrl);
-        console.log('Supabase Key exists:', !!supabaseKey);
-        console.log('Using local development:', supabaseUrl.includes('127.0.0.1') || supabaseUrl.includes('localhost'));
-        
-        // Test basic connection
-        const { data, error } = await supabase.from('analyses').select('count').limit(1);
-        
-        if (error) {
-          console.error('Connection test failed:', error);
-          setConnectionStatus('error');
-          setDebugInfo({
-            error: error.message,
-            code: error.code,
-            details: error.details,
-            hint: error.hint,
-            supabaseUrl,
-            timestamp: new Date().toISOString()
-          });
-        } else {
-          console.log('Connection test successful');
-          setConnectionStatus('connected');
-        }
-      } catch (err) {
-        console.error('Connection check failed:', err);
-        setConnectionStatus('error');
-        setDebugInfo({
-          error: 'Failed to connect to Supabase',
-          details: err instanceof Error ? err.message : 'Unknown error',
-          timestamp: new Date().toISOString()
-        });
-      }
-    };
-
-    checkSupabaseConnection();
-  }, []);
-
-  useEffect(() => {
-    // Check if user is already signed in
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) {
-        console.error('Session check error:', error);
-        return;
-      }
-      
-      if (session) {
-        console.log('User already authenticated, redirecting...');
-        navigate('/analysis');
-      }
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state change:', event, session?.user?.email);
-      
-      if (session) {
-        navigate('/analysis');
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    if (session && user) {
+      console.log('User already authenticated, redirecting...');
+      navigate('/analysis');
+    }
+  }, [session, user, navigate]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isConnected) {
+      toast.error('Cannot authenticate: No connection to Supabase. Please check if Supabase is running locally.');
+      return;
+    }
+    
     setLoading(true);
     setDebugInfo(null);
+    clearError();
 
-    console.log('=== Starting Authentication ===');
+    console.log('=== Starting Enhanced Authentication ===');
     console.log('Email:', email);
     console.log('Is Sign Up:', isSignUp);
+    console.log('Connection Status:', isConnected);
     console.log('Timestamp:', new Date().toISOString());
 
     try {
@@ -146,6 +93,7 @@ const Auth = () => {
       console.error('Error message:', error.message);
       console.error('Error code:', error.code);
       console.error('Network status:', navigator.onLine ? 'Online' : 'Offline');
+      console.error('Connection status:', isConnected);
       
       // Store debug information
       setDebugInfo({
@@ -154,6 +102,7 @@ const Auth = () => {
         details: error.details,
         hint: error.hint,
         networkOnline: navigator.onLine,
+        supabaseConnected: isConnected,
         timestamp: new Date().toISOString(),
         operation: isSignUp ? 'signUp' : 'signIn',
         email: email
@@ -161,7 +110,7 @@ const Auth = () => {
       
       // Provide specific error messages
       if (error.message.includes('Failed to fetch') || error.message.includes('fetch')) {
-        toast.error('Connection failed. Please check your internet connection and try again.');
+        toast.error('Connection failed. Please ensure Supabase is running locally on port 54321.');
       } else if (error.message.includes('Invalid login credentials')) {
         toast.error('Invalid email or password. Please check your credentials and try again.');
       } else if (error.message.includes('User already registered')) {
@@ -182,6 +131,11 @@ const Auth = () => {
   const handleMagicLink = async () => {
     if (!email) {
       toast.error('Please enter your email address first');
+      return;
+    }
+
+    if (!isConnected) {
+      toast.error('Cannot send magic link: No connection to Supabase');
       return;
     }
 
@@ -208,39 +162,6 @@ const Auth = () => {
     }
   };
 
-  const renderConnectionStatus = () => {
-    if (connectionStatus === 'checking') {
-      return (
-        <Alert className="mb-4">
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            Checking Supabase connection...
-          </AlertDescription>
-        </Alert>
-      );
-    }
-
-    if (connectionStatus === 'error') {
-      return (
-        <Alert className="mb-4" variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            Connection to Supabase failed. Please check if your local Supabase instance is running.
-          </AlertDescription>
-        </Alert>
-      );
-    }
-
-    return (
-      <Alert className="mb-4 border-green-200 bg-green-50">
-        <CheckCircle className="h-4 w-4 text-green-600" />
-        <AlertDescription className="text-green-800">
-          Connected to Supabase successfully
-        </AlertDescription>
-      </Alert>
-    );
-  };
-
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-slate-800 border-slate-700">
@@ -256,7 +177,16 @@ const Auth = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {renderConnectionStatus()}
+          <ConnectionStatus />
+          
+          {authError && (
+            <Alert className="mb-4" variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                Authentication Error: {authError}
+              </AlertDescription>
+            </Alert>
+          )}
           
           <form onSubmit={handleAuth} className="space-y-4">
             <div>
@@ -282,7 +212,7 @@ const Auth = () => {
             </div>
             <Button
               type="submit"
-              disabled={loading || connectionStatus === 'error'}
+              disabled={loading || !isConnected}
               className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
             >
               {loading ? 'Loading...' : (isSignUp ? 'Sign Up' : 'Sign In')}
@@ -293,7 +223,7 @@ const Auth = () => {
             <div className="mt-4">
               <Button
                 onClick={handleMagicLink}
-                disabled={loading || connectionStatus === 'error'}
+                disabled={loading || !isConnected}
                 variant="outline"
                 className="w-full border-slate-600 text-slate-300 hover:bg-slate-700"
               >
@@ -327,9 +257,10 @@ const Auth = () => {
           {process.env.NODE_ENV === 'development' && (
             <div className="mt-4 p-3 bg-slate-700 rounded text-sm text-slate-300">
               <p className="font-medium">Development Mode:</p>
-              <p>Local Supabase should be running on port 54321</p>
-              <p>Email confirmations may be disabled for faster testing</p>
-              <p>Check console for detailed debugging information</p>
+              <p>• Supabase should be running: <code>supabase start</code></p>
+              <p>• Local instance: http://127.0.0.1:54321</p>
+              <p>• Connection status: {isConnected ? '✅ Connected' : '❌ Disconnected'}</p>
+              <p>• Check console for detailed debugging information</p>
             </div>
           )}
         </CardContent>
