@@ -1,5 +1,5 @@
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { AnalysisWithFiles, updateAnalysisStatus, updateAnalysisContext } from '@/services/analysisDataService';
 import { getAnnotationsForAnalysis } from '@/services/annotationsService';
@@ -13,11 +13,30 @@ interface UseAnalysisExecutionProps {
   setAnnotations: (annotations: Annotation[]) => void;
 }
 
+interface RAGContext {
+  retrievedKnowledge: {
+    relevantPatterns: Array<{
+      id: string;
+      title: string;
+      content: string;
+      category: string;
+      source: string;
+    }>;
+    competitorInsights: any[];
+  };
+  enhancedPrompt: string;
+  researchCitations: string[];
+  industryContext: string;
+}
+
 export const useAnalysisExecution = ({
   currentAnalysis,
   setIsAnalyzing,
   setAnnotations,
 }: UseAnalysisExecutionProps) => {
+  
+  const [ragContext, setRagContext] = useState<RAGContext | null>(null);
+  const [isBuilding, setIsBuilding] = useState(false);
   
   const executeAnalysis = useCallback(async (
     imagesToAnalyze: string[],
@@ -25,75 +44,108 @@ export const useAnalysisExecution = ({
     isComparative: boolean,
     aiProvider?: AIProvider
   ) => {
-    console.log('=== Enhanced AI Analysis Started ===');
+    console.log('=== RAG-Enhanced Analysis Started ===');
     console.log('Analysis configuration:', { 
       imageCount: imagesToAnalyze.length,
       analysisId: currentAnalysis?.id,
       isComparative,
       userPromptLength: userAnalysisPrompt.length,
-      aiProvider: aiProvider || 'auto'
+      aiProvider: aiProvider || 'auto',
+      ragEnabled: true
     });
     
-    // Update analysis status to indicate it's being processed
+    // Update analysis status
     if (currentAnalysis) {
       await updateAnalysisStatus(currentAnalysis.id, 'analyzing');
-      
-      // Update analysis context with technical metadata (separate from user context)
       await updateAnalysisContext(currentAnalysis.id, {
-        ai_model_used: aiProvider || 'auto-selected'
+        ai_model_used: aiProvider || 'auto-selected',
+        analysis_type: 'rag-enhanced'
       });
     }
 
-    console.log('Calling enhanced analyze-design edge function...');
+    // Build RAG Context First
+    setIsBuilding(true);
+    console.log('🔍 Building research context...');
     
-    // Call the AI analysis edge function with provider selection
+    let ragContextData: RAGContext | null = null;
+    
+    try {
+      const { data: ragData, error: ragError } = await supabase.functions.invoke('build-rag-context', {
+        body: {
+          imageUrls: imagesToAnalyze,
+          userPrompt: userAnalysisPrompt,
+          analysisId: currentAnalysis?.id
+        }
+      });
+
+      if (!ragError && ragData) {
+        ragContextData = ragData;
+        setRagContext(ragData);
+        console.log('📚 Research context built:', {
+          knowledgeEntries: ragData.retrievedKnowledge.relevantPatterns.length,
+          citations: ragData.researchCitations.length
+        });
+      } else {
+        console.warn('RAG context building failed, proceeding with standard analysis');
+      }
+    } catch (error) {
+      console.warn('RAG context error:', error);
+    } finally {
+      setIsBuilding(false);
+    }
+
+    console.log('🚀 Executing analysis with research context...');
+    
+    // Call analyze-design with RAG context
     const { data, error } = await supabase.functions.invoke('analyze-design', {
       body: {
         imageUrls: imagesToAnalyze,
-        imageUrl: imagesToAnalyze[0], // Backward compatibility
+        imageUrl: imagesToAnalyze[0],
         analysisId: currentAnalysis?.id,
-        analysisPrompt: userAnalysisPrompt, // Use the user's actual prompt
+        analysisPrompt: ragContextData?.enhancedPrompt || userAnalysisPrompt,
         designType: currentAnalysis?.design_type || 'web',
         isComparative,
-        aiProvider // Pass the selected provider
+        aiProvider,
+        // RAG enhancement fields
+        ragEnabled: !!ragContextData,
+        ragContext: ragContextData,
+        researchCitations: ragContextData?.researchCitations || []
       }
     });
 
     if (error) {
-      console.error('=== Edge Function Error ===');
+      console.error('=== Analysis Error ===');
       console.error('Error details:', error);
-      console.error('Error message:', error.message);
-      throw new Error(error.message || 'Enhanced AI analysis failed');
+      throw new Error(error.message || 'RAG-enhanced analysis failed');
     }
 
-    console.log('=== Edge Function Response ===');
+    console.log('=== Analysis Response ===');
     console.log('Response data:', data);
 
     if (data?.success && data?.annotations) {
-      console.log('Enhanced analysis successful, loading fresh annotations...');
+      console.log('✅ RAG-enhanced analysis successful!');
       
-      // Load the fresh annotations from the database
       const freshAnnotations = await getAnnotationsForAnalysis(currentAnalysis!.id);
-      console.log('Fresh annotations loaded:', freshAnnotations.length);
+      console.log('📋 Annotations loaded:', freshAnnotations.length);
       
       setAnnotations(freshAnnotations);
       
-      const imageText = imagesToAnalyze.length > 1 ? `${imagesToAnalyze.length} images` : 'image';
-      const analysisType = isComparative ? 'Enhanced comparative analysis' : 'Enhanced analysis';
-      const providerText = aiProvider ? ` using ${aiProvider.toUpperCase()}` : ' with smart provider selection';
+      // Enhanced success message
+      const researchInfo = ragContextData 
+        ? ` with ${ragContextData.retrievedKnowledge.relevantPatterns.length} research insights`
+        : '';
       
-      toast.success(`${analysisType} complete${providerText}! Found ${data.totalAnnotations || freshAnnotations.length} comprehensive insights across ${imageText}.`, {
-        duration: 4000,
-      });
+      toast.success(`Analysis completed${researchInfo}!`);
       
-      console.log('=== Enhanced Analysis Completed Successfully ===');
     } else {
-      console.error('Invalid response structure:', data);
-      throw new Error('Invalid response from enhanced AI analysis');
+      throw new Error(data?.error || 'Analysis failed to generate annotations');
     }
-  }, [currentAnalysis, setAnnotations]);
+    
+  }, [currentAnalysis, setIsAnalyzing, setAnnotations]);
 
   return {
     executeAnalysis,
+    ragContext,
+    isBuilding
   };
 };
