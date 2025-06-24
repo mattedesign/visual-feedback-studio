@@ -1,4 +1,3 @@
-
 // supabase/functions/build-rag-context/index.ts
 // FIXED VERSION: Better debugging, lower threshold, improved query generation
 
@@ -23,7 +22,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { analysisQuery, maxResults = 8, similarityThreshold = 0.5 } = await req.json()
+    const { analysisQuery, maxResults = 8, similarityThreshold = 0.4 } = await req.json() // LOWERED DEFAULT
     
     console.log('RAG Context Request:', {
       analysisQuery: analysisQuery?.substring(0, 100) + '...',
@@ -33,18 +32,18 @@ serve(async (req) => {
     });
 
     // First, check if we have knowledge entries in the database
-    const { data: knowledgeCount, error: countError } = await supabaseClient
+    const { count: knowledgeCount, error: countError } = await supabaseClient
       .from('knowledge_entries')
-      .select('id', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true });
 
     if (countError) {
       console.error('❌ Error counting knowledge entries:', countError);
       throw new Error(`Database connection failed: ${countError.message}`);
     }
 
-    console.log(`📊 Knowledge entries in database: ${knowledgeCount?.length || 0}`);
+    console.log(`📊 Knowledge entries in database: ${knowledgeCount || 0}`);
 
-    if (!knowledgeCount || knowledgeCount.length === 0) {
+    if (!knowledgeCount || knowledgeCount === 0) {
       console.warn('⚠️ No knowledge entries found in database');
       return new Response(JSON.stringify({
         relevantKnowledge: [],
@@ -148,7 +147,7 @@ async function generateEmbedding(text: string): Promise<number[]> {
       },
       body: JSON.stringify({
         input: text,
-        model: 'text-embedding-3-small'
+        model: 'text-embedding-3-small' // CONSISTENT MODEL
       })
     });
 
@@ -168,7 +167,7 @@ async function generateEmbedding(text: string): Promise<number[]> {
 }
 
 // IMPROVED: Knowledge retrieval with better error handling and debugging
-async function retrieveKnowledgeImproved(supabaseClient: any, queries: string[], threshold: number = 0.5) {
+async function retrieveKnowledgeImproved(supabaseClient: any, queries: string[], threshold: number = 0.4) { // LOWERED DEFAULT
   const allResults = [];
   
   console.log(`🔍 Starting knowledge retrieval with threshold: ${threshold}`);

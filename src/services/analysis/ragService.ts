@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { vectorKnowledgeService } from '@/services/knowledgeBase/vectorService';
 import { KnowledgeEntry, SearchFilters } from '@/types/vectorDatabase';
@@ -55,7 +56,7 @@ export class RAGService {
   }
 
   /**
-   * Build RAG context using the improved dedicated edge function
+   * Build RAG context using the improved dedicated edge function with LOWERED threshold
    */
   public async buildRAGContext(
     analysisQuery: string,
@@ -69,14 +70,15 @@ export class RAGService {
     try {
       console.log('🔍 Building RAG context via improved edge function...', {
         query: analysisQuery.substring(0, 100) + '...',
-        options
+        options,
+        threshold: options.similarityThreshold || 0.4 // LOWERED DEFAULT THRESHOLD
       });
 
       const { data, error } = await supabase.functions.invoke('build-rag-context', {
         body: {
           analysisQuery,
           maxResults: options.maxResults || 8,
-          similarityThreshold: options.similarityThreshold || 0.5, // LOWERED from 0.7
+          similarityThreshold: options.similarityThreshold || 0.4, // LOWERED from 0.5
           categoryFilter: options.categoryFilter,
           industryFilter: options.industryFilter,
         }
@@ -135,7 +137,7 @@ export class RAGService {
         knowledgeCount: context.totalRelevantEntries,
         categories: context.categories,
         processingTime: context.retrievalMetadata?.processingTime,
-        threshold: context.retrievalMetadata?.actualThreshold,
+        threshold: context.retrievalMetadata?.actualThreshold || options.similarityThreshold || 0.4,
         queriesGenerated: context.retrievalMetadata?.queriesGenerated,
         hasError: !!context.retrievalMetadata?.error
       });

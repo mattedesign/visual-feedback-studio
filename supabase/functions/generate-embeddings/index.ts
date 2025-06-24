@@ -26,8 +26,10 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🔄 Embedding generation request received');
+    
     if (!openAIApiKey) {
-      console.error('OpenAI API key not found in environment variables');
+      console.error('❌ OpenAI API key not found in environment variables');
       return new Response(
         JSON.stringify({ error: 'OpenAI API key not configured' }),
         { 
@@ -40,6 +42,7 @@ serve(async (req) => {
     const { text }: EmbeddingRequest = await req.json();
 
     if (!text || typeof text !== 'string') {
+      console.error('❌ Invalid text input:', { text: typeof text });
       return new Response(
         JSON.stringify({ error: 'Text is required and must be a string' }),
         { 
@@ -49,8 +52,9 @@ serve(async (req) => {
       );
     }
 
-    console.log('Generating embedding for text:', text.substring(0, 100) + '...');
+    console.log('📝 Generating embedding for text:', text.substring(0, 100) + '...');
 
+    // Use the same model as build-rag-context function for consistency
     const response = await fetch('https://api.openai.com/v1/embeddings', {
       method: 'POST',
       headers: {
@@ -59,13 +63,13 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         input: text,
-        model: 'text-embedding-ada-002',
+        model: 'text-embedding-3-small' // CONSISTENT MODEL
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI API error:', response.status, errorText);
+      console.error('❌ OpenAI API error:', response.status, errorText);
       return new Response(
         JSON.stringify({ error: `OpenAI API error: ${response.status} ${response.statusText}` }),
         { 
@@ -78,7 +82,7 @@ serve(async (req) => {
     const data: OpenAIEmbeddingResponse = await response.json();
     
     if (!data.data || !data.data[0] || !data.data[0].embedding) {
-      console.error('Invalid OpenAI response structure:', data);
+      console.error('❌ Invalid OpenAI response structure:', data);
       return new Response(
         JSON.stringify({ error: 'Invalid response from OpenAI' }),
         { 
@@ -89,7 +93,11 @@ serve(async (req) => {
     }
 
     const embedding = data.data[0].embedding;
-    console.log('Successfully generated embedding with dimensions:', embedding.length);
+    console.log('✅ Embedding generated successfully:', {
+      dimensions: embedding.length,
+      textLength: text.length,
+      firstFewValues: embedding.slice(0, 3)
+    });
 
     return new Response(
       JSON.stringify({ embedding }),
@@ -99,7 +107,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in generate-embeddings function:', error);
+    console.error('❌ Error in generate-embeddings function:', error);
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
       {
