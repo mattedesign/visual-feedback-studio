@@ -7,6 +7,29 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+interface KnowledgeEntry {
+  id: string;
+  title: string;
+  content: string;
+  source: string;
+  category: string;
+  similarity?: number;
+  tags?: string[];
+}
+
+interface RAGResponse {
+  retrievedKnowledge: {
+    relevantPatterns: KnowledgeEntry[];
+    competitorInsights: KnowledgeEntry[];
+  };
+  enhancedPrompt: string;
+  researchCitations: string[];
+  industryContext: string;
+  buildTimestamp: string;
+  searchTermsUsed: string[];
+  totalEntriesFound: number;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -20,22 +43,22 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { imageUrls, userPrompt, imageAnnotations, analysisId } = await req.json()
+    const { userPrompt, imageUrls, imageAnnotations, analysisId } = await req.json()
     
     console.log('RAG Context Request:', {
-      imageCount: imageUrls?.length || 0,
       hasPrompt: !!userPrompt,
-      hasAnnotations: !!imageAnnotations && imageAnnotations.length > 0,
+      promptLength: userPrompt?.length || 0,
       analysisId,
-      userPrompt: userPrompt?.substring(0, 100) || 'none'
+      imageCount: imageUrls?.length || 0
     });
 
-    // Step 1: Extract search terms from user prompt
-    const searchTerms = extractSearchTerms(userPrompt || '');
-    console.log('🔍 Extracted search terms:', searchTerms);
+    // Step 1: Extract UX-specific search terms from user prompt
+    const searchTerms = extractUXSearchTerms(userPrompt || '');
+    console.log('🔍 Extracted UX search terms:', searchTerms);
 
-    // Step 2: Generate embeddings and search for each term
-    const allKnowledgeEntries = [];
+    // Step 2: Generate embeddings and search for relevant knowledge
+    const allKnowledgeEntries: KnowledgeEntry[] = [];
+    const processedTerms: string[] = [];
     
     for (const term of searchTerms) {
       try {
@@ -48,7 +71,7 @@ serve(async (req) => {
         // Search knowledge base using the match_knowledge RPC function
         const { data: entries, error } = await supabaseClient.rpc('match_knowledge', {
           query_embedding: `[${embedding.join(',')}]`,
-          match_threshold: 0.6, // Lower threshold to get more results
+          match_threshold: 0.5, // Lower threshold to get more results
           match_count: 5
         });
 
@@ -59,8 +82,21 @@ serve(async (req) => {
 
         if (entries && entries.length > 0) {
           console.log(`✅ Found ${entries.length} entries for "${term}":`, 
-            entries.map(e => e.title).join(', '));
-          allKnowledgeEntries.push(...entries);
+            entries.map((e: any) => e.title).join(', '));
+          
+          // Transform entries to match expected format
+          const transformedEntries = entries.map((entry: any) => ({
+            id: entry.id,
+            title: entry.title,
+            content: entry.content,
+            source: entry.source || 'UX Research Database',
+            category: entry.category,
+            similarity: entry.similarity,
+            tags: entry.tags || []
+          }));
+          
+          allKnowledgeEntries.push(...transformedEntries);
+          processedTerms.push(term);
         } else {
           console.log(`ℹ️ No entries found for "${term}"`);
         }
@@ -75,43 +111,50 @@ serve(async (req) => {
     const uniqueEntries = removeDuplicateEntries(allKnowledgeEntries);
     console.log(`📊 Total unique knowledge entries found: ${uniqueEntries.length}`);
 
-    // Step 4: Build enhanced prompt with the retrieved knowledge
+    // Step 4: Separate relevant patterns from competitor insights
+    const relevantPatterns = uniqueEntries.filter(entry => 
+      entry.category !== 'competitor-insights'
+    );
+    const competitorInsights = uniqueEntries.filter(entry => 
+      entry.category === 'competitor-insights'
+    );
+
+    // Step 5: Build enhanced prompt with research context
     const enhancedPrompt = buildEnhancedPrompt(userPrompt || '', uniqueEntries);
 
-    // Step 5: Prepare response
-    const ragContext = {
+    // Step 6: Build research citations
+    const researchCitations = uniqueEntries.map(entry => 
+      `${entry.title} - ${entry.source} (${((entry.similarity || 0) * 100).toFixed(1)}% match)`
+    );
+
+    // Step 7: Infer industry context
+    const industryContext = inferIndustryContext(userPrompt);
+
+    // Step 8: Prepare final RAG response
+    const ragResponse: RAGResponse = {
       retrievedKnowledge: {
-        relevantPatterns: uniqueEntries.map(entry => ({
-          id: entry.id,
-          title: entry.title,
-          content: entry.content,
-          category: entry.category,
-          source: entry.source || 'UX Research Database',
-          similarity: entry.similarity,
-          tags: entry.tags || []
-        })),
-        competitorInsights: []
+        relevantPatterns,
+        competitorInsights
       },
       enhancedPrompt,
-      researchCitations: uniqueEntries.map(entry => 
-        `${entry.title} - ${entry.source || 'UX Research Database'} (${(entry.similarity * 100).toFixed(1)}% match)`
-      ),
-      industryContext: inferIndustry(userPrompt),
+      researchCitations,
+      industryContext,
       buildTimestamp: new Date().toISOString(),
-      searchTermsUsed: searchTerms,
+      searchTermsUsed: processedTerms,
       totalEntriesFound: uniqueEntries.length
     };
 
     console.log('✅ RAG Context Built Successfully:', {
-      knowledgeEntries: uniqueEntries.length,
-      citations: ragContext.researchCitations.length,
-      industry: ragContext.industryContext,
-      promptLength: enhancedPrompt.length,
-      searchTerms: searchTerms,
-      topEntries: uniqueEntries.slice(0, 3).map(e => e.title)
+      relevantPatterns: relevantPatterns.length,
+      competitorInsights: competitorInsights.length,
+      totalEntries: uniqueEntries.length,
+      citations: researchCitations.length,
+      industry: industryContext,
+      searchTermsProcessed: processedTerms.length,
+      enhancedPromptLength: enhancedPrompt.length
     });
 
-    return new Response(JSON.stringify(ragContext), {
+    return new Response(JSON.stringify(ragResponse), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
 
@@ -119,7 +162,17 @@ serve(async (req) => {
     console.error('❌ RAG Context Builder Error:', error);
     return new Response(JSON.stringify({ 
       error: error.message,
-      details: 'Failed to build RAG context'
+      details: 'Failed to build RAG context',
+      retrievedKnowledge: {
+        relevantPatterns: [],
+        competitorInsights: []
+      },
+      enhancedPrompt: '',
+      researchCitations: [],
+      industryContext: 'general',
+      buildTimestamp: new Date().toISOString(),
+      searchTermsUsed: [],
+      totalEntriesFound: 0
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -127,61 +180,66 @@ serve(async (req) => {
   }
 })
 
-// Extract meaningful search terms from user prompt
-function extractSearchTerms(userPrompt: string): string[] {
+// Extract UX-specific search terms from user prompt
+function extractUXSearchTerms(userPrompt: string): string[] {
   const terms = new Set<string>();
   
-  // Always include base terms
+  // Always include fundamental UX terms
   terms.add('UX best practices');
-  terms.add('design guidelines');
+  terms.add('user experience design');
   
   const lowerPrompt = userPrompt.toLowerCase();
   
-  // UI/UX specific terms
+  // UI Component terms
   if (lowerPrompt.includes('button')) {
     terms.add('button design');
-    terms.add('button UX');
-    terms.add('button color psychology');
-  }
-  
-  if (lowerPrompt.includes('accessibility')) {
-    terms.add('accessibility guidelines');
-    terms.add('WCAG standards');
-    terms.add('inclusive design');
-  }
-  
-  if (lowerPrompt.includes('contrast')) {
-    terms.add('color contrast');
-    terms.add('accessibility contrast');
-    terms.add('WCAG color contrast');
+    terms.add('button usability');
+    terms.add('CTA design');
   }
   
   if (lowerPrompt.includes('form')) {
     terms.add('form design');
     terms.add('form usability');
-    terms.add('input design');
+    terms.add('input field design');
   }
   
   if (lowerPrompt.includes('navigation')) {
     terms.add('navigation design');
-    terms.add('menu design');
-    terms.add('user navigation');
+    terms.add('menu usability');
+    terms.add('information architecture');
   }
   
-  if (lowerPrompt.includes('mobile')) {
+  // Accessibility terms
+  if (lowerPrompt.includes('accessibility') || lowerPrompt.includes('contrast')) {
+    terms.add('accessibility guidelines');
+    terms.add('WCAG compliance');
+    terms.add('inclusive design');
+    terms.add('color contrast');
+  }
+  
+  // Conversion terms
+  if (lowerPrompt.includes('conversion') || lowerPrompt.includes('cta')) {
+    terms.add('conversion optimization');
+    terms.add('call to action');
+    terms.add('user engagement');
+  }
+  
+  // Mobile/responsive terms
+  if (lowerPrompt.includes('mobile') || lowerPrompt.includes('responsive')) {
     terms.add('mobile UX');
     terms.add('responsive design');
-    terms.add('mobile usability');
+    terms.add('touch interface');
   }
   
-  if (lowerPrompt.includes('usability')) {
+  // Usability terms
+  if (lowerPrompt.includes('usability') || lowerPrompt.includes('user')) {
     terms.add('usability heuristics');
-    terms.add('Nielsen heuristics');
     terms.add('user testing');
+    terms.add('user behavior');
   }
   
-  // Add the full prompt as a search term if it's not too long
-  if (userPrompt.length > 5 && userPrompt.length < 100) {
+  // Add the original prompt as a search term if it's a reasonable length
+  if (userPrompt.length > 10 && userPrompt.length < 200) {
     terms.add(userPrompt);
   }
   
@@ -218,20 +276,23 @@ async function generateEmbedding(text: string): Promise<number[]> {
   return result.data[0].embedding;
 }
 
-// Remove duplicate entries based on ID
-function removeDuplicateEntries(entries: any[]): any[] {
-  const seen = new Set();
-  return entries.filter(entry => {
+// Remove duplicate entries based on ID and sort by similarity
+function removeDuplicateEntries(entries: KnowledgeEntry[]): KnowledgeEntry[] {
+  const seen = new Set<string>();
+  const unique = entries.filter(entry => {
     if (seen.has(entry.id)) {
       return false;
     }
     seen.add(entry.id);
     return true;
-  }).sort((a, b) => (b.similarity || 0) - (a.similarity || 0)).slice(0, 10);
+  });
+  
+  // Sort by similarity score (highest first)
+  return unique.sort((a, b) => (b.similarity || 0) - (a.similarity || 0)).slice(0, 15);
 }
 
 // Build enhanced prompt with research context
-function buildEnhancedPrompt(userPrompt: string, knowledgeEntries: any[]): string {
+function buildEnhancedPrompt(userPrompt: string, knowledgeEntries: KnowledgeEntry[]): string {
   let prompt = `You are an expert UX analyst with access to research-backed insights.\n\n`;
   
   if (userPrompt.trim()) {
@@ -243,9 +304,9 @@ function buildEnhancedPrompt(userPrompt: string, knowledgeEntries: any[]): strin
     prompt += `Your analysis should be informed by these ${knowledgeEntries.length} research insights:\n\n`;
     
     knowledgeEntries.forEach((entry, i) => {
-      prompt += `${i + 1}. **${entry.title}** (${(entry.similarity * 100).toFixed(1)}% match)\n`;
-      prompt += `   Content: ${entry.content.substring(0, 300)}...\n`;
-      prompt += `   Source: ${entry.source || 'UX Research Database'}\n`;
+      prompt += `${i + 1}. **${entry.title}** (${((entry.similarity || 0) * 100).toFixed(1)}% match)\n`;
+      prompt += `   Content: ${entry.content.substring(0, 250)}...\n`;
+      prompt += `   Source: ${entry.source}\n`;
       prompt += `   Category: ${entry.category}\n`;
       if (entry.tags && entry.tags.length > 0) {
         prompt += `   Tags: ${entry.tags.join(', ')}\n`;
@@ -255,7 +316,7 @@ function buildEnhancedPrompt(userPrompt: string, knowledgeEntries: any[]): strin
     
     prompt += `ANALYSIS INSTRUCTIONS:\n`;
     prompt += `- Ground all recommendations in the provided research insights\n`;
-    prompt += `- Cite specific sources when making claims (e.g., "According to Nielsen's Heuristics...")\n`;
+    prompt += `- Cite specific sources when making claims\n`;
     prompt += `- Reference similarity scores to indicate confidence in research relevance\n`;
     prompt += `- Provide actionable, research-backed recommendations\n`;
     prompt += `- Include quantitative data or benchmarks when available\n\n`;
@@ -268,12 +329,25 @@ function buildEnhancedPrompt(userPrompt: string, knowledgeEntries: any[]): strin
 }
 
 // Infer industry context from prompt
-function inferIndustry(prompt?: string): string {
+function inferIndustryContext(prompt?: string): string {
   if (!prompt) return 'general';
   const p = prompt.toLowerCase();
-  if (p.includes('ecommerce') || p.includes('shop') || p.includes('cart')) return 'ecommerce';
-  if (p.includes('saas') || p.includes('software')) return 'saas';
-  if (p.includes('fintech') || p.includes('finance')) return 'fintech';
-  if (p.includes('healthcare') || p.includes('medical')) return 'healthcare';
+  
+  if (p.includes('ecommerce') || p.includes('shop') || p.includes('cart') || p.includes('checkout')) {
+    return 'ecommerce';
+  }
+  if (p.includes('saas') || p.includes('software') || p.includes('dashboard')) {
+    return 'saas';
+  }
+  if (p.includes('fintech') || p.includes('finance') || p.includes('banking')) {
+    return 'fintech';
+  }
+  if (p.includes('healthcare') || p.includes('medical') || p.includes('health')) {
+    return 'healthcare';
+  }
+  if (p.includes('education') || p.includes('learning') || p.includes('course')) {
+    return 'education';
+  }
+  
   return 'general';
 }
