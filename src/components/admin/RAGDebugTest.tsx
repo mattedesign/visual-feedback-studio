@@ -16,7 +16,8 @@ import {
   Database,
   Zap,
   Settings,
-  RefreshCw
+  RefreshCw,
+  TrendingUp
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -34,6 +35,9 @@ interface RAGTestResult {
   embeddingSuccess?: boolean;
   databaseQuerySuccess?: boolean;
   promptEnhancementSuccess?: boolean;
+  similarityScores?: number[];
+  thresholdsUsed?: number[];
+  fallbackTriggered?: boolean;
 }
 
 interface DatabaseTestResult {
@@ -163,7 +167,7 @@ export const RAGDebugTest = () => {
     setDebugLogs([]);
     
     try {
-      addDebugLog('Starting RAG context building test...');
+      addDebugLog('Starting Enhanced RAG context building test...');
       addDebugLog(`Test prompt: "${testPrompt}"`);
 
       // Call the build-rag-context function directly
@@ -184,7 +188,7 @@ export const RAGDebugTest = () => {
       addDebugLog('✅ RAG function call successful');
       addDebugLog(`Response data structure: ${JSON.stringify(Object.keys(data || {}))}`);
 
-      // Analyze the response
+      // Analyze the enhanced response
       const result: RAGTestResult = {
         success: true,
         stage: 'completed',
@@ -196,7 +200,9 @@ export const RAGDebugTest = () => {
         debugLogs: [...debugLogs],
         embeddingSuccess: (data?.searchTermsUsed?.length || 0) > 0,
         databaseQuerySuccess: (data?.totalEntriesFound || 0) > 0,
-        promptEnhancementSuccess: (data?.enhancedPrompt?.length || 0) > testPrompt.length
+        promptEnhancementSuccess: (data?.enhancedPrompt?.length || 0) > testPrompt.length,
+        similarityScores: data?.retrievedKnowledge?.relevantPatterns?.map((entry: any) => entry.similarity) || [],
+        fallbackTriggered: (data?.searchTermsUsed || []).includes('general UX knowledge')
       };
 
       addDebugLog(`Search terms extracted: ${result.searchTerms?.length || 0}`);
@@ -204,13 +210,23 @@ export const RAGDebugTest = () => {
       addDebugLog(`Citations generated: ${result.citations?.length || 0}`);
       addDebugLog(`Industry context: ${result.industryContext}`);
       addDebugLog(`Enhanced prompt length: ${result.enhancedPromptLength} chars`);
+      
+      if (result.similarityScores && result.similarityScores.length > 0) {
+        const avgSimilarity = result.similarityScores.reduce((a, b) => a + b, 0) / result.similarityScores.length;
+        addDebugLog(`Average similarity score: ${(avgSimilarity * 100).toFixed(2)}%`);
+        addDebugLog(`Similarity range: ${(Math.min(...result.similarityScores) * 100).toFixed(2)}% - ${(Math.max(...result.similarityScores) * 100).toFixed(2)}%`);
+      }
+
+      if (result.fallbackTriggered) {
+        addDebugLog('⚠️ Fallback logic was triggered - consider populating more relevant knowledge entries');
+      }
 
       if (result.knowledgeCount === 0) {
         addDebugLog('⚠️ WARNING: No knowledge entries found - this may indicate:');
         addDebugLog('  - Empty knowledge base');
         addDebugLog('  - Embedding generation failure');
         addDebugLog('  - Database query issues');
-        addDebugLog('  - Similarity threshold too high');
+        addDebugLog('  - All similarity scores below minimum threshold');
       }
 
       if (result.citations && result.citations.length > 0) {
@@ -340,12 +356,12 @@ export const RAGDebugTest = () => {
             {isTestingRAG ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Testing RAG Function...
+                Testing Enhanced RAG Function...
               </>
             ) : (
               <>
                 <Play className="w-4 h-4 mr-2" />
-                Test RAG Context Building
+                Test Enhanced RAG Context Building
               </>
             )}
           </Button>
@@ -400,14 +416,15 @@ export const RAGDebugTest = () => {
               ) : (
                 <AlertCircle className="h-5 w-5 text-red-600" />
               )}
-              RAG Function Test Results
+              Enhanced RAG Function Test Results
             </CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="details">Details</TabsTrigger>
+                <TabsTrigger value="performance">Performance</TabsTrigger>
                 <TabsTrigger value="citations">Citations</TabsTrigger>
                 <TabsTrigger value="debug">Debug Logs</TabsTrigger>
               </TabsList>
@@ -473,6 +490,18 @@ export const RAGDebugTest = () => {
                       {testResult.promptEnhancementSuccess ? 'Enhanced' : 'Unchanged'}
                     </div>
                   </div>
+
+                  {testResult.fallbackTriggered && (
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4" />
+                        Fallback Logic
+                      </span>
+                      <Badge variant="outline" className="text-yellow-600 border-yellow-600">
+                        Triggered
+                      </Badge>
+                    </div>
+                  )}
                 </div>
 
                 {!testResult.success && testResult.error && (
@@ -511,6 +540,52 @@ export const RAGDebugTest = () => {
                     )}
                   </div>
                 </div>
+              </TabsContent>
+
+              <TabsContent value="performance" className="space-y-4">
+                <h4 className="font-medium">Performance Metrics</h4>
+                {testResult.similarityScores && testResult.similarityScores.length > 0 ? (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-3 bg-blue-50 rounded">
+                        <div className="text-sm text-gray-600">Average Similarity</div>
+                        <div className="text-lg font-bold text-blue-600">
+                          {(testResult.similarityScores.reduce((a, b) => a + b, 0) / testResult.similarityScores.length * 100).toFixed(1)}%
+                        </div>
+                      </div>
+                      <div className="p-3 bg-green-50 rounded">
+                        <div className="text-sm text-gray-600">Best Match</div>
+                        <div className="text-lg font-bold text-green-600">
+                          {(Math.max(...testResult.similarityScores) * 100).toFixed(1)}%
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <h5 className="font-medium mb-2">Similarity Distribution</h5>
+                      <div className="space-y-1">
+                        {testResult.similarityScores.map((score, index) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <span className="text-sm">Entry {index + 1}:</span>
+                            <div className="flex-1 bg-gray-200 rounded-full h-2">
+                              <div 
+                                className="bg-blue-500 h-2 rounded-full" 
+                                style={{ width: `${score * 100}%` }}
+                              />
+                            </div>
+                            <span className="text-sm font-mono">{(score * 100).toFixed(1)}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <Alert>
+                    <TrendingUp className="h-4 w-4" />
+                    <AlertDescription>
+                      No similarity scores available. This indicates that no knowledge entries were matched.
+                    </AlertDescription>
+                  </Alert>
+                )}
               </TabsContent>
 
               <TabsContent value="citations" className="space-y-3">
