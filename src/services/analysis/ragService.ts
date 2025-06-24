@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { vectorKnowledgeService } from '@/services/knowledgeBase/vectorService';
 import { KnowledgeEntry, SearchFilters } from '@/types/vectorDatabase';
@@ -345,7 +346,7 @@ export class RAGService {
     return ragContext.relevantKnowledge.slice(0, 3).map((entry, index) => ({
       recommendation: `Apply insights from ${entry.title}`,
       reasoning: `Based on research showing: ${entry.content.substring(0, 100)}...`,
-      priority: (index === 0 ? 'high' : index === 1 ? 'medium' : 'low') as const,
+      priority: (index === 0 ? 'high' : index === 1 ? 'medium' : 'low') as 'high' | 'medium' | 'low',
       category: entry.category,
       supportingResearch: [{
         title: entry.title,
