@@ -38,7 +38,7 @@ const Auth = () => {
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -48,7 +48,14 @@ const Auth = () => {
 
         if (error) throw error;
         
-        toast.success('Check your email for the confirmation link!');
+        // Since email confirmations are disabled, users are immediately confirmed
+        if (data.user && !data.session) {
+          toast.success('Account created! Please sign in with your credentials.');
+          setIsSignUp(false); // Switch to sign in mode
+        } else if (data.session) {
+          toast.success('Account created and signed in successfully!');
+          // Navigation will be handled by the auth state change listener
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -58,9 +65,22 @@ const Auth = () => {
         if (error) throw error;
         
         toast.success('Welcome back!');
+        // Navigation will be handled by the auth state change listener
       }
     } catch (error: any) {
-      toast.error(error.message);
+      console.error('Auth error:', error);
+      
+      // Provide more specific error messages
+      if (error.message.includes('Invalid login credentials')) {
+        toast.error('Invalid email or password. Please check your credentials and try again.');
+      } else if (error.message.includes('Email not confirmed')) {
+        toast.error('Please check your email and click the confirmation link.');
+      } else if (error.message.includes('User already registered')) {
+        toast.error('An account with this email already exists. Please sign in instead.');
+        setIsSignUp(false);
+      } else {
+        toast.error(error.message || 'An error occurred during authentication');
+      }
     } finally {
       setLoading(false);
     }
@@ -99,6 +119,7 @@ const Auth = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={6}
                 className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
               />
             </div>
@@ -123,6 +144,13 @@ const Auth = () => {
               }
             </button>
           </div>
+          
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-4 p-3 bg-slate-700 rounded text-sm text-slate-300">
+              <p className="font-medium">Development Mode:</p>
+              <p>Email confirmations are disabled for faster testing.</p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
