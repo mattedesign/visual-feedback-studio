@@ -14,7 +14,9 @@ import {
   Loader2,
   Search,
   Database,
-  Zap
+  Zap,
+  Settings,
+  RefreshCw
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -34,16 +36,126 @@ interface RAGTestResult {
   promptEnhancementSuccess?: boolean;
 }
 
+interface DatabaseTestResult {
+  success: boolean;
+  error?: any;
+  data?: any;
+  timestamp: string;
+  count: number;
+}
+
 export const RAGDebugTest = () => {
   const [testPrompt, setTestPrompt] = useState('Analyze this checkout flow for conversion optimization and accessibility issues');
   const [isTestingRAG, setIsTestingRAG] = useState(false);
+  const [isPopulating, setIsPopulating] = useState(false);
+  const [isTestingDB, setIsTestingDB] = useState(false);
   const [testResult, setTestResult] = useState<RAGTestResult | null>(null);
+  const [dbTestResult, setDbTestResult] = useState<DatabaseTestResult | null>(null);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
 
   const addDebugLog = useCallback((message: string) => {
     console.log(`[RAG DEBUG] ${message}`);
     setDebugLogs(prev => [...prev, `${new Date().toISOString()}: ${message}`]);
   }, []);
+
+  const populateTestData = async () => {
+    setIsPopulating(true);
+    addDebugLog('🔧 Starting test knowledge population...');
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('populate-test-knowledge', {
+        body: {}
+      });
+
+      if (error) {
+        addDebugLog(`❌ Population failed: ${error.message}`);
+        toast.error(`Failed to populate test data: ${error.message}`);
+      } else {
+        addDebugLog(`✅ Test data populated: ${JSON.stringify(data)}`);
+        toast.success(data?.message || 'Test knowledge entries populated successfully!');
+      }
+    } catch (error) {
+      addDebugLog(`❌ Population failed with exception: ${error.message}`);
+      toast.error(`Population failed: ${error.message}`);
+    } finally {
+      setIsPopulating(false);
+    }
+  };
+
+  const testDatabaseAccess = async () => {
+    setIsTestingDB(true);
+    setDbTestResult(null);
+    addDebugLog('🔍 Testing direct database access...');
+    
+    try {
+      const { data, error } = await supabase
+        .from('knowledge_entries')
+        .select('id, title, category, tags')
+        .limit(5);
+
+      const result: DatabaseTestResult = {
+        success: !error,
+        error: error,
+        data: data,
+        timestamp: new Date().toISOString(),
+        count: data?.length || 0
+      };
+      
+      setDbTestResult(result);
+
+      if (error) {
+        addDebugLog(`❌ Database access failed: ${error.message}`);
+        toast.error(`Database test failed: ${error.message}`);
+      } else {
+        addDebugLog(`✅ Database access successful: Found ${data?.length || 0} entries`);
+        toast.success(`Database test passed! Found ${data?.length || 0} knowledge entries`);
+      }
+    } catch (error) {
+      addDebugLog(`❌ Database test failed with exception: ${error.message}`);
+      const result: DatabaseTestResult = {
+        success: false,
+        error: { message: error.message },
+        data: null,
+        timestamp: new Date().toISOString(),
+        count: 0
+      };
+      setDbTestResult(result);
+      toast.error(`Database test failed: ${error.message}`);
+    } finally {
+      setIsTestingDB(false);
+    }
+  };
+
+  const testEnvironmentVars = async () => {
+    addDebugLog('🔍 Testing environment variable access...');
+    try {
+      const { data, error } = await supabase.functions.invoke('build-rag-context', {
+        body: {
+          userPrompt: "test environment",
+          imageUrls: [],
+          imageAnnotations: [],
+          analysisId: 'env-test-' + Date.now()
+        }
+      });
+
+      if (error) {
+        addDebugLog(`Environment test error: ${error.message}`);
+        if (error.message.includes('Missing required environment variables')) {
+          toast.error('Environment variables are not properly configured');
+        } else if (error.message.includes('OPENAI_API_KEY_RAG')) {
+          toast.error('OpenAI API key is missing or invalid');
+        } else {
+          toast.error(`Environment test failed: ${error.message}`);
+        }
+      } else {
+        addDebugLog('✅ Environment variables properly configured');
+        toast.success('Environment variables are properly configured');
+      }
+    } catch (error) {
+      addDebugLog(`❌ Environment test failed: ${error.message}`);
+      toast.error(`Environment test failed: ${error.message}`);
+    }
+  };
 
   const testRAGFunction = async () => {
     setIsTestingRAG(true);
@@ -132,16 +244,23 @@ export const RAGDebugTest = () => {
     }
   };
 
+  const clearResults = () => {
+    setTestResult(null);
+    setDbTestResult(null);
+    setDebugLogs([]);
+    toast.info('Test results cleared');
+  };
+
   const getStatusColor = (success: boolean) => success ? 'text-green-600' : 'text-red-600';
   const getStatusIcon = (success: boolean) => success ? CheckCircle : AlertCircle;
 
   return (
-    <div className="space-y-6 p-6 max-w-4xl">
+    <div className="space-y-6 p-6 max-w-6xl">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Database className="h-5 w-5" />
-            RAG Context Debug Test
+            Enhanced RAG Context Debug Test Suite
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -153,6 +272,64 @@ export const RAGDebugTest = () => {
               placeholder="Enter a UX analysis prompt to test RAG context building..."
               rows={3}
             />
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Button 
+              onClick={populateTestData}
+              disabled={isPopulating}
+              variant="outline"
+              size="sm"
+            >
+              {isPopulating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Populating...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Populate Test Data
+                </>
+              )}
+            </Button>
+            
+            <Button 
+              onClick={testDatabaseAccess}
+              disabled={isTestingDB}
+              variant="outline"
+              size="sm"
+            >
+              {isTestingDB ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Testing DB...
+                </>
+              ) : (
+                <>
+                  <Database className="w-4 h-4 mr-2" />
+                  Test Database
+                </>
+              )}
+            </Button>
+            
+            <Button 
+              onClick={testEnvironmentVars}
+              variant="outline"
+              size="sm"
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Test Environment
+            </Button>
+            
+            <Button 
+              onClick={clearResults}
+              variant="outline"
+              size="sm"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Clear Results
+            </Button>
           </div>
 
           <Button 
@@ -175,6 +352,45 @@ export const RAGDebugTest = () => {
         </CardContent>
       </Card>
 
+      {dbTestResult && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5" />
+              Database Test Result
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm space-y-2">
+              <div className="flex justify-between">
+                <span>Status:</span>
+                <span className={dbTestResult.success ? 'text-green-600' : 'text-red-600'}>
+                  {dbTestResult.success ? 'SUCCESS' : 'FAILED'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Entries Found:</span>
+                <span>{dbTestResult.count}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Time:</span>
+                <span>{new Date(dbTestResult.timestamp).toLocaleTimeString()}</span>
+              </div>
+              {dbTestResult.error && (
+                <div className="text-red-600 text-xs bg-red-50 p-2 rounded">
+                  Error: {dbTestResult.error.message}
+                </div>
+              )}
+              {dbTestResult.data && dbTestResult.data.length > 0 && (
+                <div className="text-green-600 text-xs bg-green-50 p-2 rounded">
+                  Sample entries: {dbTestResult.data.slice(0, 3).map((e: any) => e.title).join(', ')}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {testResult && (
         <Card>
           <CardHeader>
@@ -184,7 +400,7 @@ export const RAGDebugTest = () => {
               ) : (
                 <AlertCircle className="h-5 w-5 text-red-600" />
               )}
-              Test Results
+              RAG Function Test Results
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -319,7 +535,7 @@ export const RAGDebugTest = () => {
               </TabsContent>
 
               <TabsContent value="debug" className="space-y-3">
-                <h4 className="font-medium">Debug Logs ({debugLogs.length})</h4>
+                <h4 class="font-medium">Debug Logs ({debugLogs.length})</h4>
                 <div className="bg-black text-green-400 p-4 rounded font-mono text-sm max-h-96 overflow-y-auto">
                   {debugLogs.map((log, index) => (
                     <div key={index} className="mb-1">{log}</div>
