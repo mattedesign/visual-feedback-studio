@@ -1,6 +1,22 @@
 
 import { AnalysisRequest } from './types.ts';
 
+interface RAGContext {
+  retrievedKnowledge: {
+    relevantPatterns: Array<{
+      id: string;
+      title: string;
+      content: string;
+      category: string;
+      source: string;
+    }>;
+    competitorInsights: any[];
+  };
+  enhancedPrompt: string;
+  researchCitations: string[];
+  industryContext: string;
+}
+
 export interface ValidatedRequest {
   analysisId: string;
   imagesToProcess: string[];
@@ -9,6 +25,11 @@ export interface ValidatedRequest {
   designType?: string;
   isComparative?: boolean;
   aiProvider?: 'openai' | 'claude';
+  model?: string;
+  testMode?: boolean;
+  ragEnabled?: boolean;
+  ragContext?: RAGContext;
+  researchCitations?: string[];
 }
 
 export async function validateAndParseRequest(req: Request): Promise<ValidatedRequest> {
@@ -22,7 +43,20 @@ export async function validateAndParseRequest(req: Request): Promise<ValidatedRe
     throw new Error('Invalid JSON in request body');
   }
 
-  const { imageUrl, imageUrls, analysisId, analysisPrompt, designType, isComparative, aiProvider } = requestBody;
+  const { 
+    imageUrl, 
+    imageUrls, 
+    analysisId, 
+    analysisPrompt, 
+    designType, 
+    isComparative, 
+    aiProvider,
+    model,
+    testMode,
+    ragEnabled,
+    ragContext,
+    researchCitations
+  } = requestBody;
 
   // Determine which images to process
   const imagesToProcess = imageUrls && imageUrls.length > 0 ? imageUrls : (imageUrl ? [imageUrl] : []);
@@ -36,7 +70,13 @@ export async function validateAndParseRequest(req: Request): Promise<ValidatedRe
     isMultiImage,
     designType,
     promptLength: analysisPrompt?.length || 0,
-    requestedProvider: aiProvider || 'auto'
+    requestedProvider: aiProvider || 'auto',
+    model: model || 'default',
+    testMode: testMode || false,
+    ragEnabled: ragEnabled || false,
+    ragKnowledgeCount: ragContext?.retrievedKnowledge.relevantPatterns.length || 0,
+    ragCitationsCount: researchCitations?.length || 0,
+    ragIndustryContext: ragContext?.industryContext || 'none'
   });
 
   // Validate required parameters
@@ -56,6 +96,11 @@ export async function validateAndParseRequest(req: Request): Promise<ValidatedRe
     analysisPrompt,
     designType,
     isComparative,
-    aiProvider
+    aiProvider,
+    model,
+    testMode,
+    ragEnabled,
+    ragContext,
+    researchCitations
   };
 }
