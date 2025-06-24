@@ -16,13 +16,23 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
   const [retryCount, setRetryCount] = useState(0);
   const maxRetries = 3;
 
-  const { handleAnalyze, hasResearchContext, researchSourcesCount } = useAIAnalysis({
+  // Updated to capture RAG state from useAIAnalysis
+  const { handleAnalyze, ragContext, isBuilding, hasResearchContext, researchSourcesCount } = useAIAnalysis({
     imageUrls: workflow.selectedImages,
     currentAnalysis: workflow.currentAnalysis,
     setIsAnalyzing: workflow.setIsAnalyzing,
     setAnnotations: workflow.setAiAnnotations,
     isComparative: workflow.selectedImages.length > 1
   });
+
+  // Update step text based on RAG status
+  useEffect(() => {
+    if (isBuilding) {
+      setCurrentStep('Building research context...');
+    } else if (ragContext && !isBuilding) {
+      setCurrentStep('Performing research-enhanced analysis...');
+    }
+  }, [isBuilding, ragContext]);
 
   useEffect(() => {
     const performAnalysis = async () => {
@@ -161,6 +171,32 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
                 </p>
               )}
             </div>
+
+            {/* Research Context Building Indicator */}
+            {isBuilding && (
+              <div className="mt-4 p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                <div className="flex items-center justify-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
+                  <span className="text-sm text-blue-300 font-medium">Building research context...</span>
+                </div>
+                <p className="text-xs text-blue-400 mt-1">Retrieving UX research insights for enhanced analysis</p>
+              </div>
+            )}
+
+            {/* Research Context Ready Indicator */}
+            {ragContext && !isBuilding && (
+              <div className="mt-4 p-3 bg-green-900/20 border border-green-500/30 rounded-lg">
+                <div className="flex items-center justify-center gap-2">
+                  <div className="text-green-400">✅</div>
+                  <span className="text-sm text-green-300 font-medium">
+                    Research context ready: {ragContext.retrievedKnowledge?.relevantPatterns?.length || researchSourcesCount} insights found
+                  </span>
+                </div>
+                <p className="text-xs text-green-400 mt-1">
+                  Analysis enhanced with {ragContext.industryContext || 'UX'} research
+                </p>
+              </div>
+            )}
 
             {workflow.currentAnalysis && (
               <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
