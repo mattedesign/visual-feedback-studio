@@ -47,6 +47,7 @@ export const UploadSection = ({ onImageUpload }: UploadSectionProps) => {
         <TabsContent value="website" className="mt-6">
           <WebsiteUploadTab 
             onUrlSubmit={handleUrlSubmit}
+            onImageUpload={onImageUpload}
             isProcessing={isProcessing}
           />
         </TabsContent>

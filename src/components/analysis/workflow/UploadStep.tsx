@@ -38,6 +38,11 @@ export const UploadStep = ({ workflow }: UploadStepProps) => {
     }
   };
 
+  const handleImageUpload = (imageUrl: string) => {
+    workflow.addUploadedFile(imageUrl);
+    refreshAnalysesAndSetCurrent();
+  };
+
   const onDrop = async (acceptedFiles: File[]) => {
     console.log('Files dropped:', acceptedFiles.length);
     
@@ -126,6 +131,7 @@ export const UploadStep = ({ workflow }: UploadStepProps) => {
             <TabsContent value="website" className="mt-6">
               <WebsiteUploadTab 
                 onUrlSubmit={handleUrlSubmit}
+                onImageUpload={handleImageUpload}
                 isProcessing={isProcessing}
               />
             </TabsContent>
