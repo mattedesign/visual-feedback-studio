@@ -1,10 +1,10 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sparkles, Upload, Eye, BarChart3 } from 'lucide-react';
+import { SimpleRAGTest } from '@/components/admin/SimpleRAGTest';
 
 const Index = () => {
   const [user, setUser] = useState(null);
@@ -130,6 +130,11 @@ const Index = () => {
             </CardContent>
           </Card>
         </div>
+      </div>
+      
+      {/* Add the RAG test component somewhere visible - you can move this wherever you want */}
+      <div className="container mx-auto px-6 py-8">
+        <SimpleRAGTest />
       </div>
     </div>
   );
