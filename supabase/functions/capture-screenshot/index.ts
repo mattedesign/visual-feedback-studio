@@ -10,8 +10,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Maximum image size in bytes (5MB)
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+// Maximum image size in bytes (3MB - reduced from 5MB)
+const MAX_IMAGE_SIZE = 3 * 1024 * 1024;
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -66,23 +66,49 @@ serve(async (req) => {
 
 async function processImageResponse(blob: Blob, format: string): Promise<Response> {
   try {
-    // Use streaming approach for large blobs to prevent stack overflow
+    console.log('Starting image processing, blob size:', blob.size);
+    
+    if (blob.size === 0) {
+      throw new Error('Empty image data received');
+    }
+    
+    // Convert blob to array buffer
     const arrayBuffer = await blob.arrayBuffer();
-    
-    // Process in chunks to avoid stack overflow
-    const chunkSize = 1024 * 1024; // 1MB chunks
     const uint8Array = new Uint8Array(arrayBuffer);
-    let base64 = '';
     
+    console.log('Array buffer created, size:', uint8Array.length);
+    
+    // Use a more efficient base64 encoding approach
+    let base64 = '';
+    const chunkSize = 8192; // Smaller chunks to prevent stack overflow
+    
+    // Process in small chunks to avoid stack overflow
     for (let i = 0; i < uint8Array.length; i += chunkSize) {
       const chunk = uint8Array.slice(i, i + chunkSize);
-      const chunkString = String.fromCharCode(...chunk);
+      
+      // Convert chunk to string safely
+      let chunkString = '';
+      for (let j = 0; j < chunk.length; j++) {
+        chunkString += String.fromCharCode(chunk[j]);
+      }
+      
+      // Encode chunk to base64
       base64 += btoa(chunkString);
+      
+      // Log progress for large images
+      if (i % (chunkSize * 10) === 0) {
+        console.log('Processing progress:', Math.round((i / uint8Array.length) * 100), '%');
+      }
     }
     
     const screenshotUrl = `data:image/${format};base64,${base64}`;
     
     console.log('Base64 conversion completed, final size:', screenshotUrl.length, 'characters');
+    
+    // Validate the result
+    if (screenshotUrl.length < 100) {
+      throw new Error('Generated base64 data appears to be invalid or too small');
+    }
     
     return new Response(
       JSON.stringify({ screenshotUrl }), 
@@ -92,6 +118,11 @@ async function processImageResponse(blob: Blob, format: string): Promise<Respons
     );
   } catch (conversionError) {
     console.error('Error during base64 conversion:', conversionError);
-    throw new Error('Failed to process screenshot image. The image may be too large.');
+    console.error('Conversion error details:', {
+      message: conversionError?.message,
+      name: conversionError?.name,
+      stack: conversionError?.stack
+    });
+    throw new Error('Failed to process screenshot image. The image may be too large or corrupted.');
   }
 }

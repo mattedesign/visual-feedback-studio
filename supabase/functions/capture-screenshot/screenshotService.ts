@@ -25,14 +25,14 @@ export const captureScreenshot = async (requestData: ScreenshotRequest): Promise
   screenshotApiUrl.searchParams.set('format', format);
   screenshotApiUrl.searchParams.set('cache', cache.toString());
 
-  // Use optimized settings for better performance and smaller file sizes
+  // Use more conservative settings to prevent large images
   const viewport = requestData.viewportWidth && requestData.viewportHeight 
     ? { width: requestData.viewportWidth, height: requestData.viewportHeight }
     : getRandomViewport();
   
-  // Limit viewport size to prevent overly large images
-  const maxWidth = 1200;
-  const maxHeight = 800;
+  // Further limit viewport size to prevent overly large images
+  const maxWidth = 1000; // Reduced from 1200
+  const maxHeight = 700; // Reduced from 800
   const optimizedViewport = {
     width: Math.min(viewport.width, maxWidth),
     height: Math.min(viewport.height, maxHeight)
@@ -46,17 +46,19 @@ export const captureScreenshot = async (requestData: ScreenshotRequest): Promise
   
   // Add quality optimization for smaller file sizes
   if (format === 'jpg' || format === 'jpeg') {
-    screenshotApiUrl.searchParams.set('image_quality', '85'); // Reduce quality for smaller size
+    screenshotApiUrl.searchParams.set('image_quality', '75'); // Further reduced quality
   }
   
-  // Optimize for web performance
+  // Optimize for web performance and smaller images
   screenshotApiUrl.searchParams.set('block_ads', 'true');
   screenshotApiUrl.searchParams.set('block_cookie_banners', 'true');
   screenshotApiUrl.searchParams.set('block_trackers', 'true');
+  screenshotApiUrl.searchParams.set('block_chats', 'true'); // Block chat widgets
+  screenshotApiUrl.searchParams.set('optimize_for_print', 'false'); // Optimize for web
   
   const delay = requestData.delay && requestData.delay > 0 
-    ? Math.min(requestData.delay <= 30 ? requestData.delay : Math.floor(requestData.delay / 1000), 30)
-    : 2; // Default 2 second delay for page loading
+    ? Math.min(requestData.delay <= 30 ? requestData.delay : Math.floor(requestData.delay / 1000), 15) // Reduced max delay
+    : 1; // Reduced default delay
   screenshotApiUrl.searchParams.set('delay', delay.toString());
 
   console.log('Making request to Screenshot One API with optimized parameters...');
@@ -64,12 +66,19 @@ export const captureScreenshot = async (requestData: ScreenshotRequest): Promise
   console.log('Delay:', delay);
   
   try {
+    // Add timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    
     const response = await fetch(screenshotApiUrl.toString(), {
       method: 'GET',
       headers: {
         'User-Agent': 'DesignAnalyzer/1.0'
-      }
+      },
+      signal: controller.signal
     });
+    
+    clearTimeout(timeoutId);
     
     console.log('Screenshot API response status:', response.status);
     console.log('Response headers:', Object.fromEntries(response.headers.entries()));
@@ -100,6 +109,11 @@ export const captureScreenshot = async (requestData: ScreenshotRequest): Promise
     return response;
   } catch (fetchError) {
     console.error('Network error during screenshot capture:', fetchError);
+    
+    if (fetchError.name === 'AbortError') {
+      throw new Error('Screenshot capture timed out: The website took too long to load');
+    }
+    
     if (fetchError instanceof TypeError && fetchError.message.includes('fetch')) {
       throw new Error('Network error: Unable to connect to screenshot service');
     }
