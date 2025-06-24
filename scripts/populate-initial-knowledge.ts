@@ -1,4 +1,3 @@
-
 import { vectorKnowledgeService } from '../src/services/knowledgeBase/vectorService';
 import { supabase } from '../src/integrations/supabase/client';
 import { KnowledgeEntry } from '../src/types/vectorDatabase';
@@ -311,30 +310,18 @@ async function populateInitialKnowledge(): Promise<PopulationResult> {
     errors: []
   };
 
-  // Ensure we have an OpenAI API key from environment
-  const openaiKey = process.env.OPENAI_API_KEY;
-  if (!openaiKey) {
-    console.error('❌ OPENAI_API_KEY environment variable is required');
-    console.log('Please set your OpenAI API key: export OPENAI_API_KEY=your_key_here');
-    process.exit(1);
-  }
-
-  // Initialize the vector service with OpenAI key
-  console.log('🔑 Configuring OpenAI API key...');
-  vectorKnowledgeService.setOpenAIKey(openaiKey);
-
   // Test database connection
   try {
     console.log('🔗 Testing database connection...');
     const { data, error } = await supabase.from('knowledge_entries').select('count').limit(1);
     if (error) {
       console.error('❌ Database connection failed:', error.message);
-      process.exit(1);
+      throw new Error(`Database connection failed: ${error.message}`);
     }
     console.log('✅ Database connection successful');
   } catch (error) {
     console.error('❌ Database connection error:', error);
-    process.exit(1);
+    throw new Error('Database connection failed');
   }
 
   console.log('📝 Adding knowledge entries...\n');
@@ -404,16 +391,16 @@ async function main() {
       console.log('You can now test the vector search functionality in your app.');
     } else {
       console.log('\n⚠️  No entries were added successfully. Please check the errors above.');
-      process.exit(1);
+      throw new Error('No entries were added successfully');
     }
     
   } catch (error) {
     console.error('💥 Script execution failed:', error);
-    process.exit(1);
+    throw error;
   }
 }
 
-// Execute the script
+// Execute the script only if run directly
 if (require.main === module) {
   main();
 }

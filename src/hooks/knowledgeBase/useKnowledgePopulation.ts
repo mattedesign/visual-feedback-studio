@@ -43,42 +43,10 @@ export const useKnowledgePopulation = () => {
     setVerificationResults(null);
 
     try {
-      // Check if OpenAI API key is available
-      const openaiKey = import.meta.env.VITE_OPENAI_API_KEY;
-      if (!openaiKey) {
-        toast.error('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY environment variable.');
-        throw new Error('OpenAI API key not configured');
-      }
-
       setProgress(prev => prev ? { ...prev, stage: 'populating' } : null);
       
-      // Simulate the population process with progress updates
-      let successCount = 0;
-      for (let i = 0; i < CORE_UX_KNOWLEDGE.length; i++) {
-        const entry = CORE_UX_KNOWLEDGE[i];
-        
-        setProgress({
-          currentEntry: i + 1,
-          totalEntries: CORE_UX_KNOWLEDGE.length,
-          currentTitle: entry.title,
-          stage: 'populating'
-        });
-
-        try {
-          // This would call the actual population function
-          // For now, we'll simulate the process
-          await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
-          successCount++;
-          
-          toast.success(`Added: ${entry.title}`, {
-            duration: 2000,
-          });
-        } catch (error) {
-          console.error(`Failed to add entry: ${entry.title}`, error);
-          toast.error(`Failed to add: ${entry.title}`);
-        }
-      }
-
+      const result = await populateInitialKnowledge();
+      
       // Run verification
       setProgress(prev => prev ? { ...prev, stage: 'verifying' } : null);
       
@@ -94,7 +62,7 @@ export const useKnowledgePopulation = () => {
 
       setProgress(prev => prev ? { ...prev, stage: 'completed' } : null);
       
-      toast.success(`Successfully populated knowledge base with ${successCount} entries!`, {
+      toast.success(`Successfully populated knowledge base with ${result.successfullyAdded} entries!`, {
         duration: 5000,
       });
 
@@ -105,7 +73,7 @@ export const useKnowledgePopulation = () => {
     } finally {
       setIsPopulating(false);
     }
-  }, [isPopulating]);
+  }, []);
 
   const clearResults = useCallback(() => {
     setProgress(null);
