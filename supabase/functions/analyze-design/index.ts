@@ -23,8 +23,12 @@ serve(async (req) => {
     console.log('Request URL:', req.url);
     console.log('Timestamp:', new Date().toISOString());
     
-    // Validate environment
+    // Validate environment with API key diagnostics
     const envConfig = validateEnvironment();
+    console.log('=== API Key Diagnostics ===');
+    console.log('Anthropic API key exists:', !!envConfig.anthropicApiKey);
+    console.log('API key length:', envConfig.anthropicApiKey?.length || 0);
+    console.log('API key format valid:', envConfig.anthropicApiKey?.startsWith('sk-ant-') || false);
     
     // Parse and validate request
     const validatedRequest = await validateAndParseRequest(req);
@@ -42,9 +46,12 @@ serve(async (req) => {
     });
     
     // Process images
+    console.log('=== Processing Images ===');
     const processedImages = await processImages(validatedRequest.imagesToProcess);
+    console.log('Images processed successfully:', processedImages.length);
     
     // Create enhanced prompt with RAG context
+    console.log('=== Creating Enhanced Prompt ===');
     const enhancedPrompt = createEnhancedPrompt(
       validatedRequest.analysisPrompt,
       validatedRequest.isComparative,
@@ -52,11 +59,17 @@ serve(async (req) => {
       validatedRequest.imagesToProcess,
       validatedRequest.ragContext
     );
+    console.log('Prompt length:', enhancedPrompt.length);
 
     // For comparative analysis, use the first image as primary
     const primaryImage = processedImages[0];
     
     // Perform AI analysis with model selection support
+    console.log('=== Starting AI Analysis ===');
+    console.log('Using provider:', validatedRequest.aiProvider);
+    console.log('Using model:', validatedRequest.model);
+    
+    const startTime = Date.now();
     const annotations = await performAIAnalysis(
       primaryImage.base64Image,
       primaryImage.mimeType,
@@ -64,14 +77,19 @@ serve(async (req) => {
       validatedRequest.aiProvider,
       validatedRequest.model
     );
+    const analysisTime = Date.now() - startTime;
+    console.log(`AI analysis completed in ${analysisTime}ms`);
+    console.log('Annotations received:', annotations.length);
 
     // Save annotations to database
+    console.log('=== Saving to Database ===');
     const savedAnnotations = await saveAnnotationsToDatabase(
       annotations,
       validatedRequest.analysisId,
       envConfig.supabaseUrl,
       envConfig.supabaseServiceKey
     );
+    console.log('Annotations saved successfully:', savedAnnotations.length);
 
     // Format response
     const responseData = formatAnalysisResponse(annotations);
@@ -104,7 +122,8 @@ serve(async (req) => {
       testMode: responseData.testMode,
       researchEnhanced: responseData.researchEnhanced,
       knowledgeSourcesUsed: responseData.knowledgeSourcesUsed,
-      ragCitationsCount: responseData.researchCitations?.length || 0
+      ragCitationsCount: responseData.researchCitations?.length || 0,
+      totalProcessingTime: `${analysisTime}ms`
     });
     
     return new Response(
@@ -113,6 +132,11 @@ serve(async (req) => {
     );
 
   } catch (error) {
+    console.error('=== Analysis Function Error ===');
+    console.error('Error timestamp:', new Date().toISOString());
+    console.error('Error type:', error.constructor.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     return handleError(error as Error);
   }
 });

@@ -44,14 +44,14 @@ export const useAnalysisExecution = ({
     isComparative: boolean,
     aiProvider?: AIProvider
   ) => {
-    console.log('=== RAG-Enhanced Analysis Started ===');
+    console.log('=== Analysis Started (Simplified Mode) ===');
     console.log('Analysis configuration:', { 
       imageCount: imagesToAnalyze.length,
       analysisId: currentAnalysis?.id,
       isComparative,
       userPromptLength: userAnalysisPrompt.length,
       aiProvider: aiProvider || 'auto',
-      ragEnabled: true
+      ragEnabled: false // Temporarily disabled for debugging
     });
     
     // Update analysis status
@@ -62,92 +62,57 @@ export const useAnalysisExecution = ({
       });
     }
 
-    // Build RAG Context First
-    setIsBuilding(true);
-    console.log('🔍 Building research context...');
+    // TEMPORARILY DISABLE RAG CONTEXT BUILDING
+    console.log('⚠️  RAG context temporarily disabled for API key debugging');
+    console.log('🚀 Executing simplified analysis...');
     
-    let ragContextData: RAGContext | null = null;
-    
-    try {
-      const { data: ragData, error: ragError } = await supabase.functions.invoke('build-rag-context', {
-        body: {
-          imageUrls: imagesToAnalyze,
-          userPrompt: userAnalysisPrompt,
-          analysisId: currentAnalysis?.id
-        }
-      });
-
-      if (!ragError && ragData) {
-        ragContextData = ragData;
-        setRagContext(ragData);
-        console.log('📚 Research context built:', {
-          knowledgeEntries: ragData.retrievedKnowledge.relevantPatterns.length,
-          citations: ragData.researchCitations.length,
-          industry: ragData.industryContext
-        });
-      } else {
-        console.warn('RAG context building failed, proceeding with standard analysis:', ragError);
-      }
-    } catch (error) {
-      console.warn('RAG context error:', error);
-    } finally {
-      setIsBuilding(false);
-    }
-
-    console.log('🚀 Executing analysis with research context...');
-    
-    // Call analyze-design with RAG context
+    // Call analyze-design WITHOUT RAG context for now
     const { data, error } = await supabase.functions.invoke('analyze-design', {
       body: {
         imageUrls: imagesToAnalyze,
         imageUrl: imagesToAnalyze[0],
         analysisId: currentAnalysis?.id,
-        analysisPrompt: ragContextData?.enhancedPrompt || userAnalysisPrompt,
+        analysisPrompt: userAnalysisPrompt, // Use original prompt without RAG enhancement
         designType: currentAnalysis?.design_type || 'web',
         isComparative,
         aiProvider,
-        // RAG enhancement fields
-        ragEnabled: !!ragContextData,
-        ragContext: ragContextData,
-        researchCitations: ragContextData?.researchCitations || []
+        // RAG enhancement fields disabled
+        ragEnabled: false,
+        ragContext: null,
+        researchCitations: []
       }
     });
 
     if (error) {
       console.error('=== Analysis Error ===');
       console.error('Error details:', error);
-      throw new Error(error.message || 'RAG-enhanced analysis failed');
+      throw new Error(error.message || 'Analysis failed');
     }
 
     console.log('=== Analysis Response ===');
     console.log('Response data:', data);
 
     if (data?.success && data?.annotations) {
-      console.log('✅ RAG-enhanced analysis successful!');
+      console.log('✅ Analysis successful!');
       
       const freshAnnotations = await getAnnotationsForAnalysis(currentAnalysis!.id);
       console.log('📋 Annotations loaded:', freshAnnotations.length);
       
       setAnnotations(freshAnnotations);
       
-      // Enhanced success message
-      const researchInfo = ragContextData 
-        ? ` with ${ragContextData.retrievedKnowledge.relevantPatterns.length} research insights`
-        : '';
-      
       const imageText = imagesToAnalyze.length > 1 ? 
         `${imagesToAnalyze.length} images` : 'image';
-      const analysisType = isComparative ? 'Enhanced comparative analysis' : 'Enhanced analysis';
+      const analysisType = isComparative ? 'Comparative analysis' : 'Analysis';
       const providerText = aiProvider ? ` using ${aiProvider.toUpperCase()}` : ' with smart provider selection';
       
-      toast.success(`${analysisType} complete${providerText}! Found ${data.totalAnnotations || freshAnnotations.length} comprehensive insights across ${imageText}${researchInfo}.`, {
+      toast.success(`${analysisType} complete${providerText}! Found ${data.totalAnnotations || freshAnnotations.length} insights across ${imageText}.`, {
         duration: 4000,
       });
       
-      console.log('=== RAG-Enhanced Analysis Completed Successfully ===');
+      console.log('=== Analysis Completed Successfully ===');
     } else {
       console.error('Invalid response structure:', data);
-      throw new Error('Invalid response from RAG-enhanced analysis');
+      throw new Error('Invalid response from analysis service');
     }
   }, [currentAnalysis, setAnnotations]);
 
