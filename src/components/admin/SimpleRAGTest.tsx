@@ -6,6 +6,31 @@ import { toast } from 'sonner';
 
 export const SimpleRAGTest = () => {
   const [isTestingRAG, setIsTestingRAG] = useState(false);
+  const [isPopulating, setIsPopulating] = useState(false);
+
+  const populateTestData = async () => {
+    setIsPopulating(true);
+    console.log('🔧 Populating test knowledge entries...');
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('populate-test-knowledge', {
+        body: {}
+      });
+
+      if (error) {
+        console.error('❌ Population failed:', error);
+        toast.error(`Failed to populate test data: ${error.message}`);
+      } else {
+        console.log('✅ Test data populated:', data);
+        toast.success(data.message || 'Test knowledge entries populated successfully!');
+      }
+    } catch (error) {
+      console.error('❌ Population failed with exception:', error);
+      toast.error(`Population failed: ${error.message}`);
+    } finally {
+      setIsPopulating(false);
+    }
+  };
 
   const testRAGFunction = async () => {
     setIsTestingRAG(true);
@@ -52,18 +77,30 @@ export const SimpleRAGTest = () => {
   };
 
   return (
-    <div className="p-4 border rounded-lg bg-slate-50">
+    <div className="p-4 border rounded-lg bg-slate-50 space-y-4">
       <h3 className="font-semibold mb-2">RAG Function Debug Test</h3>
       <p className="text-sm text-gray-600 mb-4">
-        Test the build-rag-context function to see why it returns empty arrays. Check the browser console for detailed logs.
+        First populate test knowledge entries, then test the RAG function. Check the browser console for detailed logs.
       </p>
-      <Button 
-        onClick={testRAGFunction}
-        disabled={isTestingRAG}
-        className="w-full"
-      >
-        {isTestingRAG ? 'Testing RAG Function...' : 'Test RAG Function'}
-      </Button>
+      
+      <div className="space-y-2">
+        <Button 
+          onClick={populateTestData}
+          disabled={isPopulating}
+          className="w-full"
+          variant="outline"
+        >
+          {isPopulating ? 'Populating Test Data...' : 'Populate Test Knowledge'}
+        </Button>
+        
+        <Button 
+          onClick={testRAGFunction}
+          disabled={isTestingRAG}
+          className="w-full"
+        >
+          {isTestingRAG ? 'Testing RAG Function...' : 'Test RAG Function'}
+        </Button>
+      </div>
     </div>
   );
 };

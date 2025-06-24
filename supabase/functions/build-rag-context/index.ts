@@ -69,8 +69,9 @@ serve(async (req) => {
         console.log(`✅ Generated embedding for "${term}" (${embedding.length} dimensions)`);
         
         // Search knowledge base using the match_knowledge RPC function
+        // FIXED: Pass embedding as array instead of string
         const { data: entries, error } = await supabaseClient.rpc('match_knowledge', {
-          query_embedding: `[${embedding.join(',')}]`,
+          query_embedding: embedding, // Pass as array, not string
           match_threshold: 0.5, // Lower threshold to get more results
           match_count: 5
         });
