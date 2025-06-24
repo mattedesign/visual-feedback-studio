@@ -535,7 +535,7 @@ export const RAGDebugTest = () => {
               </TabsContent>
 
               <TabsContent value="debug" className="space-y-3">
-                <h4 class="font-medium">Debug Logs ({debugLogs.length})</h4>
+                <h4 className="font-medium">Debug Logs ({debugLogs.length})</h4>
                 <div className="bg-black text-green-400 p-4 rounded font-mono text-sm max-h-96 overflow-y-auto">
                   {debugLogs.map((log, index) => (
                     <div key={index} className="mb-1">{log}</div>
