@@ -44,14 +44,14 @@ export const useAnalysisExecution = ({
     isComparative: boolean,
     aiProvider?: AIProvider
   ) => {
-    console.log('=== Analysis Started (Simplified Mode) ===');
+    console.log('=== Analysis Started (RAG-Enhanced Mode) ===');
     console.log('Analysis configuration:', { 
       imageCount: imagesToAnalyze.length,
       analysisId: currentAnalysis?.id,
       isComparative,
       userPromptLength: userAnalysisPrompt.length,
       aiProvider: aiProvider || 'auto',
-      ragEnabled: false // Temporarily disabled for debugging
+      ragEnabled: true
     });
     
     // Update analysis status
@@ -62,63 +62,110 @@ export const useAnalysisExecution = ({
       });
     }
 
-    // TEMPORARILY DISABLE RAG CONTEXT BUILDING
-    console.log('⚠️  RAG context temporarily disabled for API key debugging');
-    console.log('🚀 Executing simplified analysis...');
-    
-    // Call analyze-design WITHOUT RAG context for now
-    const { data, error } = await supabase.functions.invoke('analyze-design', {
-      body: {
-        imageUrls: imagesToAnalyze,
-        imageUrl: imagesToAnalyze[0],
-        analysisId: currentAnalysis?.id,
-        analysisPrompt: userAnalysisPrompt, // Use original prompt without RAG enhancement
-        designType: currentAnalysis?.design_type || 'web',
-        isComparative,
-        aiProvider,
-        // RAG enhancement fields disabled
-        ragEnabled: false,
-        ragContext: null,
-        researchCitations: []
-      }
-    });
-
-    if (error) {
-      console.error('=== Analysis Error ===');
-      console.error('Error details:', error);
-      throw new Error(error.message || 'Analysis failed');
-    }
-
-    console.log('=== Analysis Response ===');
-    console.log('Response data:', data);
-
-    if (data?.success && data?.annotations) {
-      console.log('✅ Analysis successful!');
+    try {
+      // Step 1: Build RAG context
+      console.log('🔍 Building RAG context for enhanced analysis...');
+      setIsBuilding(true);
       
-      const freshAnnotations = await getAnnotationsForAnalysis(currentAnalysis!.id);
-      console.log('📋 Annotations loaded:', freshAnnotations.length);
-      
-      setAnnotations(freshAnnotations);
-      
-      const imageText = imagesToAnalyze.length > 1 ? 
-        `${imagesToAnalyze.length} images` : 'image';
-      const analysisType = isComparative ? 'Comparative analysis' : 'Analysis';
-      const providerText = aiProvider ? ` using ${aiProvider.toUpperCase()}` : ' with smart provider selection';
-      
-      toast.success(`${analysisType} complete${providerText}! Found ${data.totalAnnotations || freshAnnotations.length} insights across ${imageText}.`, {
-        duration: 4000,
+      const { data: ragData, error: ragError } = await supabase.functions.invoke('build-rag-context', {
+        body: {
+          imageUrls: imagesToAnalyze,
+          userPrompt: userAnalysisPrompt,
+          imageAnnotations: [], // Add user annotations if available
+          analysisId: currentAnalysis?.id
+        }
       });
+
+      if (ragError) {
+        console.warn('RAG context building failed, proceeding without research enhancement:', ragError);
+        setRagContext(null);
+      } else if (ragData) {
+        console.log('✅ RAG context built successfully:', {
+          knowledgeEntries: ragData.retrievedKnowledge?.relevantPatterns?.length || 0,
+          citations: ragData.researchCitations?.length || 0,
+          industry: ragData.industryContext,
+          enhancedPromptLength: ragData.enhancedPrompt?.length || 0
+        });
+        setRagContext(ragData);
+      }
       
-      console.log('=== Analysis Completed Successfully ===');
-    } else {
-      console.error('Invalid response structure:', data);
-      throw new Error('Invalid response from analysis service');
+      setIsBuilding(false);
+
+      // Step 2: Execute analysis with RAG enhancement
+      console.log('🚀 Executing RAG-enhanced analysis...');
+      
+      const { data, error } = await supabase.functions.invoke('analyze-design', {
+        body: {
+          imageUrls: imagesToAnalyze,
+          imageUrl: imagesToAnalyze[0], // Keep for backward compatibility
+          analysisId: currentAnalysis?.id,
+          analysisPrompt: userAnalysisPrompt, // Original user prompt
+          designType: currentAnalysis?.design_type || 'web',
+          isComparative,
+          aiProvider,
+          // RAG enhancement fields
+          ragEnabled: true,
+          ragContext: ragData, // Pass the full RAG context
+          researchCitations: ragData?.researchCitations || []
+        }
+      });
+
+      if (error) {
+        console.error('=== Analysis Error ===');
+        console.error('Error details:', error);
+        throw new Error(error.message || 'Analysis failed');
+      }
+
+      console.log('=== Analysis Response ===');
+      console.log('Response data:', data);
+
+      if (data?.success && data?.annotations) {
+        console.log('✅ Analysis successful!');
+        
+        const freshAnnotations = await getAnnotationsForAnalysis(currentAnalysis!.id);
+        console.log('📋 Annotations loaded:', freshAnnotations.length);
+        
+        setAnnotations(freshAnnotations);
+        
+        const imageText = imagesToAnalyze.length > 1 ? 
+          `${imagesToAnalyze.length} images` : 'image';
+        const analysisType = isComparative ? 'Comparative analysis' : 'Analysis';
+        const providerText = aiProvider ? ` using ${aiProvider.toUpperCase()}` : '';
+        
+        // Enhanced success message with RAG info
+        const ragInfo = data.researchEnhanced 
+          ? ` Enhanced with ${data.knowledgeSourcesUsed || 0} research sources.`
+          : '';
+        
+        toast.success(`${analysisType} complete${providerText}! Found ${data.totalAnnotations || freshAnnotations.length} insights across ${imageText}.${ragInfo}`, {
+          duration: 4000,
+        });
+        
+        console.log('=== RAG-Enhanced Analysis Completed Successfully ===');
+        console.log('Research enhancement details:', {
+          researchEnhanced: data.researchEnhanced,
+          knowledgeSourcesUsed: data.knowledgeSourcesUsed,
+          citationsCount: data.researchCitations?.length || 0,
+          industryContext: data.industryContext
+        });
+      } else {
+        console.error('Invalid response structure:', data);
+        throw new Error('Invalid response from analysis service');
+      }
+    } catch (error) {
+      console.error('❌ Analysis execution failed:', error);
+      throw error;
+    } finally {
+      setIsBuilding(false);
+      setIsAnalyzing(false);
     }
-  }, [currentAnalysis, setAnnotations]);
+  }, [currentAnalysis, setAnnotations, setIsAnalyzing]);
 
   return {
     executeAnalysis,
     ragContext,
-    isBuilding
+    isBuilding,
+    hasResearchContext: ragContext !== null,
+    researchSourcesCount: ragContext?.retrievedKnowledge?.relevantPatterns?.length || 0
   };
 };

@@ -18,17 +18,13 @@ serve(async (req) => {
   }
 
   try {
-    console.log('=== Enhanced AI Analysis Edge Function Started ===');
+    console.log('=== RAG-Enhanced AI Analysis Edge Function Started ===');
     console.log('Request method:', req.method);
     console.log('Request URL:', req.url);
     console.log('Timestamp:', new Date().toISOString());
     
-    // Validate environment with API key diagnostics
+    // Validate environment
     const envConfig = validateEnvironment();
-    console.log('=== API Key Diagnostics ===');
-    console.log('Anthropic API key exists:', !!envConfig.anthropicApiKey);
-    console.log('API key length:', envConfig.anthropicApiKey?.length || 0);
-    console.log('API key format valid:', envConfig.anthropicApiKey?.startsWith('sk-ant-') || false);
     
     // Parse and validate request
     const validatedRequest = await validateAndParseRequest(req);
@@ -50,22 +46,28 @@ serve(async (req) => {
     const processedImages = await processImages(validatedRequest.imagesToProcess);
     console.log('Images processed successfully:', processedImages.length);
     
-    // Create enhanced prompt with RAG context
-    console.log('=== Creating Enhanced Prompt ===');
+    // Create enhanced prompt with RAG context - THIS IS THE KEY FIX
+    console.log('=== Creating RAG-Enhanced Prompt ===');
     const enhancedPrompt = createEnhancedPrompt(
       validatedRequest.analysisPrompt,
       validatedRequest.isComparative,
       validatedRequest.isMultiImage,
       validatedRequest.imagesToProcess,
-      validatedRequest.ragContext
+      validatedRequest.ragContext // This will use the research-enhanced prompt
     );
-    console.log('Prompt length:', enhancedPrompt.length);
+    
+    console.log('Enhanced prompt details:', {
+      originalPromptLength: validatedRequest.analysisPrompt?.length || 0,
+      enhancedPromptLength: enhancedPrompt.length,
+      hasRAGContext: !!validatedRequest.ragContext,
+      ragPromptLength: validatedRequest.ragContext?.enhancedPrompt?.length || 0
+    });
 
     // For comparative analysis, use the first image as primary
     const primaryImage = processedImages[0];
     
-    // Perform AI analysis with model selection support
-    console.log('=== Starting AI Analysis ===');
+    // Perform AI analysis with RAG-enhanced prompt
+    console.log('=== Starting RAG-Enhanced AI Analysis ===');
     console.log('Using provider:', validatedRequest.aiProvider);
     console.log('Using model:', validatedRequest.model);
     
@@ -73,12 +75,12 @@ serve(async (req) => {
     const annotations = await performAIAnalysis(
       primaryImage.base64Image,
       primaryImage.mimeType,
-      enhancedPrompt,
+      enhancedPrompt, // This now contains research citations and enhanced context
       validatedRequest.aiProvider,
       validatedRequest.model
     );
     const analysisTime = Date.now() - startTime;
-    console.log(`AI analysis completed in ${analysisTime}ms`);
+    console.log(`RAG-enhanced AI analysis completed in ${analysisTime}ms`);
     console.log('Annotations received:', annotations.length);
 
     // Save annotations to database
@@ -91,27 +93,28 @@ serve(async (req) => {
     );
     console.log('Annotations saved successfully:', savedAnnotations.length);
 
-    // Format response
+    // Format response with RAG metadata
     const responseData = formatAnalysisResponse(annotations);
     
-    // Add model information to response for testing purposes
+    // Add model information to response
     responseData.providerUsed = validatedRequest.aiProvider || 'auto-selected';
     responseData.modelUsed = validatedRequest.model || 'default';
     responseData.testMode = validatedRequest.testMode || false;
     
-    // Add RAG information to response
+    // Add RAG information to response - ENHANCED
     if (validatedRequest.ragEnabled && validatedRequest.ragContext) {
       responseData.researchEnhanced = true;
       responseData.knowledgeSourcesUsed = validatedRequest.ragContext.retrievedKnowledge.relevantPatterns.length;
       responseData.researchCitations = validatedRequest.researchCitations || [];
       responseData.industryContext = validatedRequest.ragContext.industryContext;
+      responseData.ragBuildTimestamp = validatedRequest.ragContext.buildTimestamp;
     } else {
       responseData.researchEnhanced = false;
       responseData.knowledgeSourcesUsed = 0;
       responseData.researchCitations = [];
     }
     
-    console.log('=== Analysis Completed Successfully ===');
+    console.log('=== RAG-Enhanced Analysis Completed Successfully ===');
     console.log('Final response:', {
       success: responseData.success,
       totalAnnotations: responseData.totalAnnotations,
@@ -132,7 +135,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('=== Analysis Function Error ===');
+    console.error('=== RAG-Enhanced Analysis Function Error ===');
     console.error('Error timestamp:', new Date().toISOString());
     console.error('Error type:', error.constructor.name);
     console.error('Error message:', error.message);

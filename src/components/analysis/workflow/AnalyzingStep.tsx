@@ -1,8 +1,7 @@
-
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
-import { useAIAnalysis } from '@/hooks/analysis/useAIAnalysis';
+import { useAnalysisExecution } from '@/hooks/analysis/useAnalysisExecution';
 import { RAGStatusIndicator } from '../RAGStatusIndicator';
 import { toast } from 'sonner';
 
@@ -16,13 +15,11 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
   const [retryCount, setRetryCount] = useState(0);
   const maxRetries = 3;
 
-  // Updated to capture RAG state from useAIAnalysis
-  const { handleAnalyze, ragContext, isBuilding, hasResearchContext, researchSourcesCount } = useAIAnalysis({
-    imageUrls: workflow.selectedImages,
+  // Use the fixed analysis execution hook
+  const { executeAnalysis, ragContext, isBuilding, hasResearchContext, researchSourcesCount } = useAnalysisExecution({
     currentAnalysis: workflow.currentAnalysis,
     setIsAnalyzing: workflow.setIsAnalyzing,
-    setAnnotations: workflow.setAiAnnotations,
-    isComparative: workflow.selectedImages.length > 1
+    setAnnotations: workflow.setAiAnnotations
   });
 
   // Update step text based on RAG status
@@ -36,7 +33,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
 
   useEffect(() => {
     const performAnalysis = async () => {
-      console.log('=== Starting Analysis Validation ===');
+      console.log('=== Starting RAG-Enhanced Analysis Validation ===');
       console.log('Selected images:', workflow.selectedImages.length);
       console.log('Current analysis:', workflow.currentAnalysis?.id);
       console.log('User annotations:', workflow.getTotalAnnotationsCount());
@@ -89,7 +86,12 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
         setCurrentStep('Sending to AI for analysis...');
         setAnalysisProgress(80);
 
-        await handleAnalyze(workflow.analysisContext, workflow.imageAnnotations);
+        // Use the fixed executeAnalysis method that properly handles RAG
+        await executeAnalysis(
+          workflow.selectedImages,
+          workflow.analysisContext || '',
+          workflow.selectedImages.length > 1
+        );
         
         setAnalysisProgress(100);
         setCurrentStep('Analysis complete!');
@@ -136,7 +138,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
     };
 
     performAnalysis();
-  }, [workflow, handleAnalyze, retryCount]);
+  }, [workflow, executeAnalysis, retryCount]);
 
   const totalAnnotations = workflow.getTotalAnnotationsCount();
   const isMultiImage = workflow.selectedImages.length > 1;
@@ -207,14 +209,14 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
             )}
 
             <div className="bg-slate-700 rounded-lg p-4">
-              <h4 className="font-medium mb-2">Enhanced Analysis Focus:</h4>
+              <h4 className="font-medium mb-2">Research-Enhanced Analysis Focus:</h4>
               <ul className="text-sm text-slate-300 space-y-1">
                 <li>• {totalAnnotations} specific areas you highlighted across {isMultiImage ? 'all images' : 'the image'}</li>
                 {workflow.analysisContext && <li>• Your general context and requirements</li>}
                 {isMultiImage && <li>• Comparative analysis between selected images</li>}
                 <li>• Research-backed UX and accessibility recommendations</li>
                 <li>• Evidence-based conversion optimization opportunities</li>
-                <li>• Citations from peer-reviewed UX studies</li>
+                <li>• Citations from peer-reviewed UX studies and industry standards</li>
               </ul>
             </div>
 
