@@ -59,12 +59,15 @@ class VectorKnowledgeService {
       // Generate embedding for the content
       const embedding = await this.generateEmbedding(entry.content);
 
+      // Convert embedding array to string format for database storage
+      const embeddingString = `[${embedding.join(',')}]`;
+
       // Insert into database
       const { data, error } = await supabase
         .from('knowledge_entries')
         .insert({
           ...entry,
-          embedding: embedding
+          embedding: embeddingString
         })
         .select()
         .single();
@@ -75,7 +78,7 @@ class VectorKnowledgeService {
       }
 
       console.log('✅ Knowledge entry added successfully:', data.id);
-      return data;
+      return data as KnowledgeEntry;
     } catch (error) {
       console.error('❌ Error adding knowledge entry:', error);
       throw error;
@@ -98,7 +101,7 @@ class VectorKnowledgeService {
         query_embedding: queryEmbedding,
         match_threshold: filters?.match_threshold || 0.5, // LOWERED THRESHOLD
         match_count: filters?.match_count || 10,
-        filter_category: filters?.category_filter || null
+        filter_category: filters?.category_filter || filters?.category || null
       });
 
       if (error) {
@@ -111,7 +114,14 @@ class VectorKnowledgeService {
         query: query.substring(0, 50) + '...'
       });
 
-      return data || [];
+      // Map database results to KnowledgeEntry type
+      const results = (data || []).map(item => ({
+        ...item,
+        source: item.source || '', // Provide default empty string
+        category: item.category as KnowledgeEntry['category'], // Type assertion for category
+      }));
+
+      return results;
     } catch (error) {
       console.error('❌ Error searching knowledge:', error);
       throw error;
@@ -128,12 +138,15 @@ class VectorKnowledgeService {
       // Generate embedding for the description
       const embedding = await this.generateEmbedding(pattern.description);
 
+      // Convert embedding array to string format for database storage
+      const embeddingString = `[${embedding.join(',')}]`;
+
       // Insert into database
       const { data, error } = await supabase
         .from('competitor_patterns')
         .insert({
           ...pattern,
-          embedding: embedding
+          embedding: embeddingString
         })
         .select()
         .single();
@@ -144,7 +157,7 @@ class VectorKnowledgeService {
       }
 
       console.log('✅ Competitor pattern added successfully:', data.id);
-      return data;
+      return data as CompetitorPattern;
     } catch (error) {
       console.error('❌ Error adding competitor pattern:', error);
       throw error;
@@ -167,8 +180,8 @@ class VectorKnowledgeService {
         query_embedding: queryEmbedding,
         match_threshold: filters?.match_threshold || 0.5, // LOWERED THRESHOLD
         match_count: filters?.match_count || 10,
-        filter_industry: filters?.industry_filter || null,
-        filter_pattern_type: filters?.pattern_type_filter || null
+        filter_industry: filters?.industry_filter || filters?.industry || null,
+        filter_pattern_type: filters?.pattern_type_filter || filters?.pattern_type || null
       });
 
       if (error) {
@@ -181,7 +194,17 @@ class VectorKnowledgeService {
         query: query.substring(0, 50) + '...'
       });
 
-      return data || [];
+      // Map database results to CompetitorPattern type, providing defaults for missing fields
+      const results = (data || []).map(item => ({
+        ...item,
+        // Provide defaults for legacy fields
+        domain: item.domain || '',
+        design_elements: item.design_elements || {},
+        performance_metrics: item.performance_metrics || {},
+        analysis_date: item.analysis_date || new Date().toISOString(),
+      }));
+
+      return results;
     } catch (error) {
       console.error('❌ Error searching patterns:', error);
       throw error;
