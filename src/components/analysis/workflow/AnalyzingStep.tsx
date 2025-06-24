@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { useAIAnalysis } from '@/hooks/analysis/useAIAnalysis';
+import { RAGStatusIndicator } from '../RAGStatusIndicator';
 import { toast } from 'sonner';
 
 interface AnalyzingStepProps {
@@ -15,7 +16,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
   const [retryCount, setRetryCount] = useState(0);
   const maxRetries = 3;
 
-  const { handleAnalyze } = useAIAnalysis({
+  const { handleAnalyze, hasResearchContext, researchSourcesCount } = useAIAnalysis({
     imageUrls: workflow.selectedImages,
     currentAnalysis: workflow.currentAnalysis,
     setIsAnalyzing: workflow.setIsAnalyzing,
@@ -44,7 +45,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
         return;
       }
 
-      console.log('=== Starting Analysis Process ===');
+      console.log('=== Starting RAG-Enhanced Analysis Process ===');
       console.log('Is comparative:', workflow.selectedImages.length > 1);
 
       try {
@@ -69,18 +70,21 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
         await Promise.all(imageValidationPromises);
         setAnalysisProgress(25);
 
-        setCurrentStep('Building analysis prompt...');
+        setCurrentStep('Building research context...');
         setAnalysisProgress(40);
 
-        setCurrentStep('Sending to AI for analysis...');
+        setCurrentStep('Enhancing analysis with UX research...');
         setAnalysisProgress(60);
+
+        setCurrentStep('Sending to AI for analysis...');
+        setAnalysisProgress(80);
 
         await handleAnalyze(workflow.analysisContext, workflow.imageAnnotations);
         
         setAnalysisProgress(100);
         setCurrentStep('Analysis complete!');
         
-        console.log('=== Analysis Completed Successfully ===');
+        console.log('=== RAG-Enhanced Analysis Completed Successfully ===');
         
         // Small delay to show completion before transitioning
         setTimeout(() => {
@@ -135,9 +139,19 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
             <div className="animate-spin w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
             
             <div>
-              <h3 className="text-2xl font-semibold mb-2">
+              <h3 className="text-2xl font-semibold mb-4">
                 {isMultiImage ? 'Analyzing Your Designs' : 'Analyzing Your Design'}
               </h3>
+              
+              {/* RAG Status Indicator */}
+              <div className="mb-4">
+                <RAGStatusIndicator 
+                  hasResearchContext={hasResearchContext}
+                  researchSourcesCount={researchSourcesCount}
+                  isAnalyzing={true}
+                />
+              </div>
+              
               <p className="text-slate-400 mb-2">
                 {currentStep}
               </p>
@@ -157,13 +171,14 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
             )}
 
             <div className="bg-slate-700 rounded-lg p-4">
-              <h4 className="font-medium mb-2">Analysis Focus:</h4>
+              <h4 className="font-medium mb-2">Enhanced Analysis Focus:</h4>
               <ul className="text-sm text-slate-300 space-y-1">
                 <li>• {totalAnnotations} specific areas you highlighted across {isMultiImage ? 'all images' : 'the image'}</li>
                 {workflow.analysisContext && <li>• Your general context and requirements</li>}
                 {isMultiImage && <li>• Comparative analysis between selected images</li>}
-                <li>• UX and accessibility best practices</li>
-                <li>• Conversion optimization opportunities</li>
+                <li>• Research-backed UX and accessibility recommendations</li>
+                <li>• Evidence-based conversion optimization opportunities</li>
+                <li>• Citations from peer-reviewed UX studies</li>
               </ul>
             </div>
 
