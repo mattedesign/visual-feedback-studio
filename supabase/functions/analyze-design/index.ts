@@ -1,5 +1,5 @@
 
-import { corsHandler } from './corsHandler.ts';
+import { corsHeaders, corsHandler } from './corsHandler.ts';
 import { requestValidator } from './requestValidator.ts';
 import { imageProcessingManager } from './imageProcessingManager.ts';
 import { analyzeWithAIProvider, determineOptimalProvider } from './aiProviderRouter.ts';
@@ -24,7 +24,13 @@ Deno.serve(async (req) => {
     const validationResult = await requestValidator.validate(req);
     if (!validationResult.isValid) {
       console.error('❌ Request validation failed:', validationResult.error);
-      return errorHandler.createErrorResponse(validationResult.error, 400);
+      return new Response(
+        JSON.stringify({ error: validationResult.error }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
     const requestData = validationResult.data;
@@ -39,7 +45,13 @@ Deno.serve(async (req) => {
 
     if (!imageProcessingResult.success) {
       console.error('❌ Image processing failed:', imageProcessingResult.error);
-      return errorHandler.createErrorResponse(imageProcessingResult.error, 400);
+      return new Response(
+        JSON.stringify({ error: imageProcessingResult.error }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
     console.log(`✅ Images processed: ${imageProcessingResult.processedImages.length}`);
@@ -70,7 +82,13 @@ Deno.serve(async (req) => {
         console.log(`✅ Found ${annotations.length} annotations for image`);
       } catch (error) {
         console.error('❌ AI analysis failed for image:', error);
-        return errorHandler.createErrorResponse(error.message, 500);
+        return new Response(
+          JSON.stringify({ error: error.message }),
+          { 
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
       }
     }
 
@@ -87,7 +105,13 @@ Deno.serve(async (req) => {
 
     if (!dbResult.success) {
       console.error('❌ Database save failed:', dbResult.error);
-      return errorHandler.createErrorResponse(dbResult.error, 500);
+      return new Response(
+        JSON.stringify({ error: dbResult.error }),
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
     console.log('✅ Results saved to database');
@@ -101,14 +125,25 @@ Deno.serve(async (req) => {
       ragEnhanced: false // Always false since RAG is disabled
     });
 
+    // Add CORS headers to successful response
+    const responseWithCors = new Response(response.body, {
+      status: response.status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+
     console.log('✅ Analysis completed successfully');
-    return response;
+    return responseWithCors;
 
   } catch (error) {
     console.error('❌ Unexpected error in analysis function:', error);
-    return errorHandler.createErrorResponse(
-      error instanceof Error ? error.message : 'Unknown error occurred',
-      500
+    return new Response(
+      JSON.stringify({ 
+        error: error instanceof Error ? error.message : 'Unknown error occurred' 
+      }),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
     );
   }
 });
