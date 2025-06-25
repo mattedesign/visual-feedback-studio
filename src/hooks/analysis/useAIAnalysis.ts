@@ -1,158 +1,113 @@
 
-import { useCallback, useMemo } from 'react';
-import { AnalysisWithFiles } from '@/services/analysisDataService';
+import { useState, useCallback } from 'react';
+import { directRAGAnalysisService } from '@/services/analysis/directRAGAnalysis';
 import { Annotation } from '@/types/analysis';
-import { usePromptBuilder } from './usePromptBuilder';
-import { useAnalysisExecution } from './useAnalysisExecution';
-import { useAnalysisValidation } from './useAnalysisValidation';
-import { useAnalysisConfiguration } from './useAnalysisConfiguration';
-import { useAnalysisErrorHandler } from './useAnalysisErrorHandler';
 import { toast } from 'sonner';
 
 interface UseAIAnalysisProps {
-  imageUrl?: string | null;
-  imageUrls?: string[];
-  currentAnalysis: AnalysisWithFiles | null;
-  setIsAnalyzing: (analyzing: boolean) => void;
+  imageUrls: string[];
+  currentAnalysis: any;
+  setIsAnalyzing: (isAnalyzing: boolean) => void;
   setAnnotations: (annotations: Annotation[]) => void;
   isComparative?: boolean;
 }
 
 export const useAIAnalysis = ({
-  imageUrl,
   imageUrls,
   currentAnalysis,
   setIsAnalyzing,
   setAnnotations,
-  isComparative = false,
+  isComparative = false
 }: UseAIAnalysisProps) => {
-  // 🔄 LOOP DETECTION: Track hook renders
-  console.log('🔄 HOOK RENDER:', new Date().toISOString(), {
-    hookName: 'useAIAnalysis',
-    renderCount: ++((window as any).useAIAnalysisRenderCount) || ((window as any).useAIAnalysisRenderCount = 1),
-    currentAnalysisId: currentAnalysis?.id,
-    imageUrl: imageUrl ? 'present' : 'null',
-    imageUrls: imageUrls?.length || 0
-  });
-
-  const { buildIntelligentPrompt } = usePromptBuilder();
-  
-  // Updated to capture state from useAnalysisExecution (RAG context removed)
-  const { executeAnalysis, isBuilding } = useAnalysisExecution({
-    currentAnalysis,
-    setIsAnalyzing,
-    setAnnotations,
-  });
-  
-  const { validateAnalysisInputs } = useAnalysisValidation();
-  const { prepareAnalysisConfiguration } = useAnalysisConfiguration({
-    imageUrl,
-    imageUrls,
-    currentAnalysis,
-    isComparative,
-  });
-  const { handleAnalysisError } = useAnalysisErrorHandler({
-    currentAnalysis,
-    setIsAnalyzing,
-  });
-
-  // Stable analysis ID for dependency tracking
-  const currentAnalysisId = useMemo(() => currentAnalysis?.id, [currentAnalysis?.id]);
+  const [isBuilding, setIsBuilding] = useState(false);
+  const [hasResearchContext, setHasResearchContext] = useState(false);
+  const [researchSourcesCount, setResearchSourcesCount] = useState(0);
 
   const handleAnalyze = useCallback(async (
-    customPrompt?: string, 
-    imageAnnotations?: Array<{
-      imageUrl: string; 
-      annotations: Array<{x: number; y: number; comment: string; id: string}>
-    }>
+    analysisContext?: string,
+    imageAnnotations?: any[]
   ) => {
-    // 🚨 LOOP DETECTION: Track analysis triggers
-    console.log('🚨 ANALYSIS TRIGGERED FROM:', new Error().stack);
-    console.log('🚨 ANALYSIS TRIGGER DETAILS:', {
-      timestamp: new Date().toISOString(),
-      triggerCount: ++((window as any).analysisTriggerCount) || ((window as any).analysisTriggerCount = 1),
-      customPrompt: customPrompt ? 'present' : 'null',
-      imageAnnotations: imageAnnotations?.length || 0,
-      currentAnalysisId: currentAnalysisId
-    });
+    if (!imageUrls || imageUrls.length === 0) {
+      toast.error('No images available for analysis');
+      return;
+    }
+
+    if (!currentAnalysis) {
+      toast.error('No analysis session found');
+      return;
+    }
+
+    // Get OpenAI API key from environment or prompt user
+    const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    if (!openaiApiKey) {
+      toast.error('OpenAI API key not configured. Please contact support.');
+      return;
+    }
 
     setIsAnalyzing(true);
-    
+    setIsBuilding(false);
+    setHasResearchContext(false);
+    setResearchSourcesCount(0);
+
     try {
-      // Validate inputs and get images to analyze
-      const { imagesToAnalyze } = validateAnalysisInputs(
-        imageUrl, 
-        imageUrls, 
-        currentAnalysis
-      );
-
-      // Prepare analysis configuration
-      const { finalIsComparative } = prepareAnalysisConfiguration(
-        customPrompt,
-        imageAnnotations
-      );
-
-      // Build intelligent prompt using hierarchy system (NO RAG)
-      let intelligentPrompt = buildIntelligentPrompt(customPrompt, imageAnnotations, imageUrls);
+      console.log('🚀 Starting Direct RAG Analysis');
       
-      console.log('=== STANDARD ANALYSIS START ===');
-      console.log('Standard prompt created:', {
-        promptLength: intelligentPrompt.length,
-        hasMainComment: !!(customPrompt && customPrompt.trim()),
-        hasUserAnnotations: !!(imageAnnotations && imageAnnotations.some(ia => ia.annotations.length > 0)),
-        isComparativeAnalysis: finalIsComparative,
-        ragDisabled: true
+      // Build analysis prompt
+      let analysisPrompt = 'Analyze this design for UX improvements';
+      
+      if (analysisContext) {
+        analysisPrompt = `${analysisContext}\n\nFocus on UX improvements, accessibility, and conversion optimization.`;
+      }
+
+      if (imageAnnotations && imageAnnotations.length > 0) {
+        const userFeedback = imageAnnotations
+          .map(ia => ia.annotations.map(ann => `"${ann.comment}"`).join(', '))
+          .filter(feedback => feedback.length > 0)
+          .join('; ');
+        
+        if (userFeedback) {
+          analysisPrompt += `\n\nUser has highlighted these specific areas: ${userFeedback}`;
+        }
+      }
+
+      if (isComparative && imageUrls.length > 1) {
+        analysisPrompt += '\n\nThis is a comparative analysis. Please compare the designs and provide insights on their differences and relative strengths.';
+      }
+
+      // Use the first image for now (direct RAG service currently supports single image)
+      const result = await directRAGAnalysisService.analyzeWithRAG({
+        imageUrl: imageUrls[0],
+        analysisPrompt,
+        openaiApiKey
       });
 
-      // RAG DISABLED - Execute standard analysis directly
-      console.log('=== ANALYSIS EXECUTION START ===');
-      console.log('Final analysis configuration:', {
-        promptType: 'standard',
-        promptLength: intelligentPrompt.length,
-        hasRAGContext: false,
-        researchSourceCount: 0,
-        isComparative: finalIsComparative,
-        ragDisabled: true
-      });
-      
-      // Execute the analysis with standard prompt (NO RAG)
-      await executeAnalysis(imagesToAnalyze, intelligentPrompt, finalIsComparative);
+      if (result.success) {
+        setAnnotations(result.annotations);
+        setHasResearchContext(result.researchEnhanced);
+        setResearchSourcesCount(result.knowledgeSourcesUsed);
 
-      console.log('✅ Standard analysis completed successfully');
-      console.log('📊 Analysis summary:', {
-        researchSourcesUsed: 0,
-        analysisType: finalIsComparative ? 'comparative' : 'single-image',
-        ragDisabled: true
-      });
+        if (result.researchEnhanced) {
+          toast.success(`Analysis complete! Enhanced with ${result.knowledgeSourcesUsed} research sources.`);
+        } else {
+          toast.success('Analysis complete!');
+        }
+      } else {
+        throw new Error(result.error || 'Analysis failed');
+      }
 
-      console.log('=== STANDARD ANALYSIS COMPLETE ===');
-      
     } catch (error) {
-      console.error('=== ANALYSIS FAILED ===');
-      console.error('Analysis error:', error);
-      
-      await handleAnalysisError(error);
+      console.error('Analysis failed:', error);
+      toast.error(`Analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw error;
+    } finally {
+      setIsAnalyzing(false);
     }
-  }, [
-    imageUrl,
-    imageUrls,
-    currentAnalysisId, // Use stable ID instead of full object
-    validateAnalysisInputs,
-    prepareAnalysisConfiguration,
-    buildIntelligentPrompt,
-    executeAnalysis,
-    handleAnalysisError,
-    setIsAnalyzing
-  ]);
+  }, [imageUrls, currentAnalysis, setIsAnalyzing, setAnnotations, isComparative]);
 
-  // Memoize return object to prevent unnecessary re-renders (RAG properties removed)
-  return useMemo(() => ({
+  return {
     handleAnalyze,
     isBuilding,
-    hasResearchContext: false, // Always false - RAG disabled
-    researchSourcesCount: 0,   // Always 0 - RAG disabled
-  }), [
-    handleAnalyze,
-    isBuilding
-  ]);
+    hasResearchContext,
+    researchSourcesCount
+  };
 };

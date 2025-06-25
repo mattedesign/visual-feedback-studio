@@ -14,10 +14,10 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState('Initializing analysis...');
   const [retryCount, setRetryCount] = useState(0);
-  const maxRetries = 1; // REDUCED TO 1 to prevent loops
+  const maxRetries = 1;
   const analysisStartedRef = useRef(false);
 
-  // RAG DISABLED - Updated to only get basic analysis state
+  // Direct RAG Analysis
   const { handleAnalyze, isBuilding, hasResearchContext, researchSourcesCount } = useAIAnalysis({
     imageUrls: workflow.selectedImages,
     currentAnalysis: workflow.currentAnalysis,
@@ -26,26 +26,23 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
     isComparative: workflow.selectedImages.length > 1
   });
 
-  // RAG DISABLED - No longer checking for RAG context building
   useEffect(() => {
-    setCurrentStep('Preparing for standard analysis...');
+    setCurrentStep('Preparing for direct RAG analysis...');
   }, []);
 
   // Memoized analysis execution function
   const performAnalysis = useCallback(async () => {
-    // Prevent multiple simultaneous analysis runs
     if (analysisStartedRef.current) {
       console.log('⚠️ Analysis already in progress, skipping duplicate call');
       return;
     }
 
-    console.log('=== Starting Standard Analysis (RAG DISABLED) ===');
+    console.log('=== Starting Direct RAG Analysis ===');
     console.log('Selected images:', workflow.selectedImages.length);
     console.log('Current analysis:', workflow.currentAnalysis?.id);
     console.log('User annotations:', workflow.getTotalAnnotationsCount());
     console.log('Analysis context:', workflow.analysisContext || 'None provided');
 
-    // Validation checks
     if (workflow.selectedImages.length === 0) {
       console.error('No images selected for analysis');
       toast.error('No images selected for analysis');
@@ -57,9 +54,6 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       toast.error('Analysis session not found. Please go back and upload your images again.');
       return;
     }
-
-    console.log('=== Starting Standard Analysis Process ===');
-    console.log('Is comparative:', workflow.selectedImages.length > 1);
 
     analysisStartedRef.current = true;
 
@@ -85,16 +79,22 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       await Promise.all(imageValidationPromises);
       setAnalysisProgress(25);
 
-      setCurrentStep('Sending to AI for analysis...');
+      setCurrentStep('Fetching research context...');
+      setAnalysisProgress(40);
+
+      setCurrentStep('Enhancing analysis with research...');
       setAnalysisProgress(60);
 
-      // RAG DISABLED - Direct analysis call
+      setCurrentStep('Generating AI insights...');
+      setAnalysisProgress(80);
+
+      // Direct RAG analysis call
       await handleAnalyze(workflow.analysisContext, workflow.imageAnnotations);
       
       setAnalysisProgress(100);
       setCurrentStep('Analysis complete!');
       
-      console.log('=== Standard Analysis Completed Successfully ===');
+      console.log('=== Direct RAG Analysis Completed Successfully ===');
       
       // Small delay to show completion before transitioning
       setTimeout(() => {
@@ -113,11 +113,9 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
         setCurrentStep(`Retrying analysis (${nextRetry}/${maxRetries})...`);
         setAnalysisProgress(0);
         
-        // Reset the analysis started flag for retry
         analysisStartedRef.current = false;
         
-        // Short delay for single retry: 2s
-        const delay = 2000;
+        const delay = 3000;
         setTimeout(() => {
           performAnalysis();
         }, delay);
@@ -131,7 +129,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
         workflow.setIsAnalyzing(false);
         
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        toast.error(`Analysis failed: ${errorMessage}. Please try again or contact support if the issue persists.`, {
+        toast.error(`Analysis failed: ${errorMessage}. Please check your API configuration or try again.`, {
           duration: 8000,
         });
       }
@@ -152,7 +150,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
     workflow.imageAnnotations
   ]);
 
-  // Stable effect that only runs once when component mounts
+  // Start analysis effect
   useEffect(() => {
     console.log('🚀 AnalyzingStep: Starting analysis effect', {
       timestamp: new Date().toISOString(),
@@ -161,16 +159,14 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       analysisStarted: analysisStartedRef.current
     });
 
-    // Only start analysis if we haven't started yet
     if (!analysisStartedRef.current) {
       performAnalysis();
     }
-  }, []); // Empty dependency array - only run once on mount
+  }, []);
 
   // Separate effect for retry logic
   useEffect(() => {
     if (retryCount > 0 && analysisStartedRef.current) {
-      // Reset for retry
       analysisStartedRef.current = false;
     }
   }, [retryCount]);
@@ -190,7 +186,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
                 {isMultiImage ? 'Analyzing Your Designs' : 'Analyzing Your Design'}
               </h3>
               
-              {/* RAG Status Indicator - Always shows disabled */}
+              {/* RAG Status Indicator */}
               <div className="mb-4">
                 <RAGStatusIndicator 
                   hasResearchContext={hasResearchContext}
@@ -218,13 +214,14 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
             )}
 
             <div className="bg-slate-700 rounded-lg p-4">
-              <h4 className="font-medium mb-2">Standard Analysis Focus:</h4>
+              <h4 className="font-medium mb-2">Direct RAG Analysis Focus:</h4>
               <ul className="text-sm text-slate-300 space-y-1">
                 <li>• {totalAnnotations} specific areas you highlighted across {isMultiImage ? 'all images' : 'the image'}</li>
                 {workflow.analysisContext && <li>• Your general context and requirements</li>}
                 {isMultiImage && <li>• Comparative analysis between selected images</li>}
-                <li>• UX and accessibility recommendations</li>
-                <li>• Conversion optimization opportunities</li>
+                <li>• Research-enhanced UX recommendations</li>
+                <li>• Knowledge base insights and best practices</li>
+                <li>• Accessibility and conversion optimization</li>
               </ul>
             </div>
 
