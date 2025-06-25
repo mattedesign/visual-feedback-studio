@@ -4,21 +4,7 @@ import { Check } from 'lucide-react';
 import { PricingBadge } from './PricingBadge';
 import { PricingFeatures } from './PricingFeatures';
 import { PricingButton } from './PricingButton';
-
-interface PricingPlan {
-  id: string;
-  name: string;
-  price: string;
-  period: string;
-  priceId: string;
-  badge: {
-    text: string;
-    variant: 'default' | 'secondary';
-    icon: React.ReactNode;
-  };
-  features: string[];
-  popular?: boolean;
-}
+import type { PricingPlan } from '@/config/pricingPlans';
 
 interface PricingCardProps {
   plan: PricingPlan;
