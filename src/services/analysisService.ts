@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Annotation } from '@/types/analysis';
+import { subscriptionService } from './subscriptionService';
 
 interface AnalyzeDesignRequest {
   imageUrls: string[];
@@ -23,6 +24,12 @@ interface AnalyzeDesignResponse {
 }
 
 export const createAnalysis = async () => {
+  // Check subscription limits before creating analysis
+  const canCreate = await subscriptionService.checkCanCreateAnalysis();
+  if (!canCreate) {
+    return null;
+  }
+
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     toast.error('Please sign in to upload files');
@@ -86,6 +93,14 @@ const analyzeDesign = async (request: AnalyzeDesignRequest): Promise<AnalyzeDesi
       knowledgeSourcesUsed: data.knowledgeSourcesUsed || 0,
       researchCitations: data.researchCitations?.length || 0
     });
+
+    // If analysis was successful, increment usage counter
+    if (data.success && data.annotations?.length > 0) {
+      const usageIncremented = await subscriptionService.incrementUsage();
+      if (!usageIncremented) {
+        console.warn('Failed to increment usage counter after successful analysis');
+      }
+    }
 
     return {
       success: data.success,

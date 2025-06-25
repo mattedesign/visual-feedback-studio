@@ -253,6 +253,51 @@ export type Database = {
           },
         ]
       }
+      user_subscriptions: {
+        Row: {
+          analyses_limit: number | null
+          analyses_used: number | null
+          created_at: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          plan_type: string | null
+          status: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          analyses_limit?: number | null
+          analyses_used?: number | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          plan_type?: string | null
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          analyses_limit?: number | null
+          analyses_used?: number | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          plan_type?: string | null
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -261,6 +306,10 @@ export type Database = {
       binary_quantize: {
         Args: { "": string } | { "": unknown }
         Returns: unknown
+      }
+      check_analysis_limit: {
+        Args: { p_user_id: string }
+        Returns: boolean
       }
       halfvec_avg: {
         Args: { "": number[] }
@@ -293,6 +342,14 @@ export type Database = {
       hnswhandler: {
         Args: { "": unknown }
         Returns: unknown
+      }
+      increment_analysis_usage: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
+      initialize_user_subscription: {
+        Args: { p_user_id: string }
+        Returns: string
       }
       ivfflat_bit_support: {
         Args: { "": unknown }
