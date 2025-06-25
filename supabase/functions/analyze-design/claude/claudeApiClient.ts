@@ -1,5 +1,4 @@
 
-
 export async function callClaudeApi(
   base64Image: string,
   mimeType: string,
@@ -8,22 +7,43 @@ export async function callClaudeApi(
   model: string
 ): Promise<any> {
   
-  // Clean and validate API key
-  const cleanApiKey = apiKey.trim().replace(/[\r\n\t]/g, '');
-  console.log('Claude API key validation:', {
-    exists: !!cleanApiKey,
-    length: cleanApiKey.length,
-    startsCorrectly: cleanApiKey.startsWith('sk-ant-'),
-    hasWhitespace: cleanApiKey !== apiKey
-  });
+  // Enhanced API key debugging
+  console.log('🔍 DETAILED CLAUDE API KEY DEBUG:');
+  console.log('=================================');
   
-  if (!cleanApiKey) {
+  if (!apiKey) {
+    console.error('❌ Claude API key is completely missing');
     throw new Error('Claude API key is empty or undefined');
   }
   
-  if (!cleanApiKey.startsWith('sk-ant-')) {
+  const originalLength = apiKey.length;
+  const cleanApiKey = apiKey.trim().replace(/[\r\n\t]/g, '');
+  const preview = cleanApiKey.substring(0, 15);
+  const hasWhitespace = apiKey !== cleanApiKey || /\s/.test(apiKey);
+  const hasSpecialChars = /[\r\n\t\f\v]/.test(apiKey);
+  const startsCorrectly = cleanApiKey.startsWith('sk-ant-');
+  
+  console.log(`   Original length: ${originalLength}`);
+  console.log(`   Clean length: ${cleanApiKey.length}`);
+  console.log(`   Preview: "${preview}..."`);
+  console.log(`   Starts with 'sk-ant-': ${startsCorrectly ? '✅' : '❌'}`);
+  console.log(`   Has whitespace: ${hasWhitespace ? '⚠️  YES' : '✅ NO'}`);
+  console.log(`   Has special chars: ${hasSpecialChars ? '⚠️  YES' : '✅ NO'}`);
+  
+  if (hasWhitespace) {
+    console.log(`   ⚠️  WHITESPACE DETECTED - this may cause authentication failure`);
+    console.log(`   Original vs Clean: "${apiKey.substring(0, 20)}..." vs "${cleanApiKey.substring(0, 20)}..."`);
+  }
+  
+  if (!startsCorrectly) {
+    console.error(`   ❌ INVALID FORMAT - key should start with 'sk-ant-' but starts with '${cleanApiKey.substring(0, 8)}'`);
     throw new Error('Invalid Claude API key format. Must start with "sk-ant-"');
   }
+  
+  // Test authorization header format
+  const authHeader = `Bearer ${cleanApiKey}`;
+  console.log(`   Authorization header: "Bearer ${preview}..."`);
+  console.log(`   Auth header length: ${authHeader.length}`);
   
   // Simplified request payload
   const requestPayload = {
@@ -50,12 +70,15 @@ export async function callClaudeApi(
     ]
   };
 
-  console.log(`Making request to ${model}`, {
-    imageSize: base64Image.length,
-    mimeType,
-    promptLength: systemPrompt.length,
-    authHeaderPreview: `Bearer ${cleanApiKey.substring(0, 15)}...`
-  });
+  console.log('🚀 Making Claude API request...');
+  console.log(`   Endpoint: https://api.anthropic.com/v1/messages`);
+  console.log(`   Method: POST`);
+  console.log(`   Content-Type: application/json`);
+  console.log(`   Authorization: Bearer ${preview}...`);
+  console.log(`   Anthropic-Version: 2023-06-01`);
+  console.log(`   Model: ${model}`);
+  console.log(`   Image size: ${base64Image.length} characters`);
+  console.log(`   Prompt length: ${systemPrompt.length} characters`);
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -67,18 +90,21 @@ export async function callClaudeApi(
     body: JSON.stringify(requestPayload)
   });
 
-  console.log(`API response: ${response.status} ${response.statusText}`);
+  console.log('📡 Claude API response received:');
+  console.log(`   Status: ${response.status} ${response.statusText}`);
+  console.log(`   Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()))}`);
 
   const responseText = await response.text();
-  console.log('Response size:', responseText.length);
+  console.log(`   Response size: ${responseText.length} characters`);
   
   if (!response.ok) {
-    console.error('API error response:', responseText.substring(0, 500));
-    console.error('Request headers used:', {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${cleanApiKey.substring(0, 15)}...`,
-      'anthropic-version': '2023-06-01'
-    });
+    console.error('❌ Claude API error details:');
+    console.error(`   Status: ${response.status} ${response.statusText}`);
+    console.error(`   Response body: ${responseText.substring(0, 500)}`);
+    console.error(`   Model used: ${model}`);
+    console.error(`   Auth header sent: Bearer ${preview}...`);
+    console.error(`   API key format valid: ${startsCorrectly}`);
+    console.error(`   API key clean: ${!hasWhitespace && !hasSpecialChars}`);
     
     let errorDetails;
     try {
@@ -87,9 +113,16 @@ export async function callClaudeApi(
       errorDetails = { message: responseText };
     }
     
-    // Simplified error categorization
+    // Enhanced error categorization with debugging
     if (response.status === 401) {
-      throw new Error(`Authentication failed: Invalid API key`);
+      console.error('🔑 AUTHENTICATION FAILURE ANALYSIS:');
+      console.error(`   API key exists: ${!!cleanApiKey}`);
+      console.error(`   API key length: ${cleanApiKey.length}`);
+      console.error(`   API key format: ${startsCorrectly ? 'VALID' : 'INVALID'}`);
+      console.error(`   API key preview: ${preview}...`);
+      console.error(`   Header format: Bearer ${preview}...`);
+      console.error(`   Error details: ${JSON.stringify(errorDetails)}`);
+      throw new Error(`Authentication failed: Invalid API key. Check your Claude API key configuration.`);
     }
     
     if (response.status === 400) {
@@ -116,7 +149,7 @@ export async function callClaudeApi(
   let aiResponse;
   try {
     aiResponse = JSON.parse(responseText);
-    console.log(`Successful response from ${model}`, {
+    console.log(`✅ Successful response from ${model}`, {
       contentLength: aiResponse.content?.[0]?.text?.length || 0
     });
   } catch (parseError) {
@@ -136,4 +169,3 @@ export async function callClaudeApi(
 
   return aiResponse;
 }
-

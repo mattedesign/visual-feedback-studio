@@ -6,6 +6,7 @@ import { analyzeWithAIProvider, determineOptimalProvider } from './aiProviderRou
 import { databaseManager } from './databaseManager.ts';
 import { responseFormatter } from './responseFormatter.ts';
 import { errorHandler } from './errorHandler.ts';
+import { environmentValidator, validateEnvironment } from './environmentValidator.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 
 console.log('🚀 Design Analysis Function Starting');
@@ -104,6 +105,46 @@ Deno.serve(async (req) => {
       return corsResponse;
     }
 
+    // Check if this is a test endpoint request
+    const url = new URL(req.url);
+    if (url.pathname.includes('/test') || url.searchParams.has('test')) {
+      console.log('🧪 TEST ENDPOINT - Performing API key validation only');
+      
+      try {
+        const envConfig = validateEnvironment();
+        
+        return new Response(JSON.stringify({
+          success: true,
+          message: 'API key validation test completed - check logs for details',
+          environment: {
+            supabaseConfigured: !!envConfig.supabaseUrl,
+            openaiConfigured: envConfig.hasOpenAIKey,
+            claudeConfigured: envConfig.hasClaudeKey,
+            openaiValidation: envConfig.openaiKeyValidation,
+            claudeValidation: envConfig.claudeKeyValidation
+          },
+          timestamp: new Date().toISOString()
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        console.error('❌ Test endpoint error:', error);
+        return new Response(JSON.stringify({ 
+          success: false,
+          error: error.message,
+          timestamp: new Date().toISOString()
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    // Validate environment before processing
+    console.log('🔧 Validating environment configuration...');
+    const envConfig = validateEnvironment();
+    console.log('✅ Environment validation completed');
+
     // Validate request
     const validationResult = await requestValidator.validate(req);
     if (!validationResult.isValid) {
@@ -186,7 +227,13 @@ Deno.serve(async (req) => {
       } catch (error) {
         console.error('❌ AI analysis failed for image:', error);
         return new Response(
-          JSON.stringify({ error: error.message }),
+          JSON.stringify({ 
+            error: error.message,
+            debugInfo: {
+              environment: envConfig,
+              timestamp: new Date().toISOString()
+            }
+          }),
           { 
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -244,7 +291,8 @@ Deno.serve(async (req) => {
     console.error('❌ Unexpected error in analysis function:', error);
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Unknown error occurred' 
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+        timestamp: new Date().toISOString()
       }),
       { 
         status: 500,
