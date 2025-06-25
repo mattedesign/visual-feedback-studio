@@ -58,7 +58,6 @@ async function addKnowledgeContext(prompt: string, supabase: any, enableRAG = fa
     
     // Generate embedding with detailed logging
     console.log('📡 Calling OpenAI Embeddings API...');
-    console.log('🎯 Query for embedding:', prompt.substring(0, 200));
     const embeddingStartTime = Date.now();
     
     const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
@@ -107,7 +106,6 @@ async function addKnowledgeContext(prompt: string, supabase: any, enableRAG = fa
     
     // Query knowledge base with detailed logging
     console.log('🔍 Querying knowledge base with semantic search...');
-    console.log('🎯 Searching for knowledge entries related to:', prompt.substring(0, 100));
     const dbQueryStartTime = Date.now();
     
     const { data: knowledge, error } = await supabase.rpc('match_knowledge', {
@@ -151,10 +149,6 @@ async function addKnowledgeContext(prompt: string, supabase: any, enableRAG = fa
       knowledge.forEach((k: any, index: number) => {
         console.log(`   ${index + 1}. "${k.title}" (${k.category}) - Similarity: ${k.similarity?.toFixed(3) || 'N/A'}`);
         console.log(`      Content preview: ${k.content.substring(0, 100)}...`);
-        console.log(`      🔍 Contains "Fitts": ${k.content.toLowerCase().includes('fitts')}`);
-        console.log(`      🔍 Contains "44px": ${k.content.toLowerCase().includes('44px')}`);
-        console.log(`      🔍 Contains "button": ${k.content.toLowerCase().includes('button')}`);
-        console.log(`      🔍 Contains "mobile": ${k.content.toLowerCase().includes('mobile')}`);
       });
       
       // Build comprehensive research context
@@ -184,8 +178,7 @@ ${k.content.substring(0, 400)}${k.content.length > 400 ? '...' : ''}
         averageEntryLength: Math.round(researchContext.length / knowledge.length),
         containsFittsLaw: researchContext.toLowerCase().includes('fitts'),
         containsButtonGuidelines: researchContext.toLowerCase().includes('button'),
-        containsMobileUsability: researchContext.toLowerCase().includes('mobile'),
-        contains44px: researchContext.toLowerCase().includes('44px')
+        containsMobileUsability: researchContext.toLowerCase().includes('mobile')
       });
       
       console.log('🔍 === RAG CONTEXT BUILDING COMPLETE ===');
@@ -303,59 +296,8 @@ Deno.serve(async (req) => {
       return corsResponse;
     }
 
-    const url = new URL(req.url);
-    
-    // NEW: Check if this is a RAG debug request
-    if (url.pathname.includes('/debug-rag') || url.searchParams.has('debug-rag')) {
-      console.log('🔍 RAG DEBUG ENDPOINT - Processing debug request');
-      
-      try {
-        const { query } = await req.json();
-        
-        if (!query) {
-          return new Response(JSON.stringify({
-            error: 'Query parameter is required for RAG debug'
-          }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
-
-        const envConfig = validateEnvironment();
-        
-        // Import and use the debug function
-        const { debugRAGRetrieval } = await import('./debugRAG.ts');
-        
-        const debugResult = await debugRAGRetrieval(
-          query,
-          Deno.env.get('SUPABASE_URL')!,
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-          Deno.env.get('OPENAI_API_KEY')!
-        );
-
-        return new Response(JSON.stringify({
-          success: true,
-          debug: debugResult,
-          message: `RAG debug completed for query: "${query}"`,
-          timestamp: new Date().toISOString()
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-        
-      } catch (error) {
-        console.error('❌ RAG Debug error:', error);
-        return new Response(JSON.stringify({ 
-          success: false,
-          error: error.message,
-          timestamp: new Date().toISOString()
-        }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-    }
-
     // Check if this is a test endpoint request
+    const url = new URL(req.url);
     if (url.pathname.includes('/test') || url.searchParams.has('test')) {
       console.log('🧪 TEST ENDPOINT - Performing API key validation only');
       
@@ -434,9 +376,6 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Check knowledge base status
-    await checkKnowledgeBase(supabase);
 
     // Determine AI provider configuration
     console.log('🤖 Determining AI provider...');
@@ -535,14 +474,6 @@ Deno.serve(async (req) => {
         console.log('   Contains "44px" or "48dp":', enhancedPrompt.includes('44px') || enhancedPrompt.includes('48dp'));
       }
     }
-
-    // Log the COMPLETE final prompt being sent to OpenAI
-    console.log('🎯 === COMPLETE FINAL PROMPT BEING SENT TO AI ===');
-    console.log('📄 FULL PROMPT START:');
-    console.log('---BEGIN PROMPT---');
-    console.log(enhancedPrompt);
-    console.log('---END PROMPT---');
-    console.log(`📏 Total prompt length: ${enhancedPrompt.length} characters`);
     
     for (const processedImage of imageProcessingResult.processedImages) {
       console.log(`🔍 Analyzing image with ${aiProviderConfig.provider}...`);
