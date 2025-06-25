@@ -120,84 +120,57 @@ export const PricingCards = () => {
   return (
     <div className="w-full max-w-5xl mx-auto p-6">
       <style>{`
-        :root {
-          --rg-gradient-angle: 96deg;
-          --rg-gradient-a: linear-gradient(var(--rg-gradient-angle, 96deg), #d1fbff 0%, #75cfff 29.13%, #978aff 70.56%);
-          --rg-gradient-a-75: linear-gradient(var(--rg-gradient-angle, 96deg), rgba(209, 251, 255, .75) 0%, rgba(117, 207, 255, .75) 29.13%, rgba(151, 138, 255, .75) 70.56%);
-          --rg-gradient-a-50: linear-gradient(var(--rg-gradient-angle, 96deg), rgba(209, 251, 255, .5) 0%, rgba(117, 207, 255, .5) 29.13%, rgba(151, 138, 255, .5) 70.56%);
-          --rg-gradient-a-25: linear-gradient(var(--rg-gradient-angle, 96deg), rgba(209, 251, 255, .25) 0%, rgba(117, 207, 255, .25) 29.13%, rgba(151, 138, 255, .25) 70.56%);
-          --rg-gradient-a-pressed: linear-gradient(var(--rg-gradient-angle, 96deg), rgba(209, 251, 255, .5) 0%, rgba(117, 207, 255, .75) 29.13%, #978aff 70.56%);
-        }
-
         .pricing-card {
           position: relative;
           background: white;
           border-radius: 16px;
           border: 2px solid #e2e8f0;
-          transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
         .pricing-card:hover {
-          transform: translateY(-8px);
-          border: 2px solid transparent;
-          background-image: linear-gradient(white, white), var(--rg-gradient-a);
-          background-origin: border-box;
-          background-clip: padding-box, border-box;
-          box-shadow: 
-            0 20px 25px -5px rgba(0, 0, 0, 0.1), 
-            0 10px 10px -5px rgba(0, 0, 0, 0.04),
-            0 0 0 1px rgba(209, 251, 255, 0.3);
+          border-color: transparent;
+          background: linear-gradient(white, white) padding-box,
+                     linear-gradient(135deg, #d1fbff, #75cfff, #978aff) border-box;
+          box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1),
+                     0 0 0 1px rgba(209, 251, 255, 0.3);
         }
 
-        .pricing-card:active {
-          background-image: linear-gradient(white, white), var(--rg-gradient-a-pressed);
+        .popular-card {
+          border-color: rgba(151, 138, 255, 0.3);
+          background: linear-gradient(white, white) padding-box,
+                     linear-gradient(135deg, rgba(209, 251, 255, 0.3), rgba(117, 207, 255, 0.3), rgba(151, 138, 255, 0.3)) border-box;
+        }
+
+        .popular-card:hover {
+          background: linear-gradient(white, white) padding-box,
+                     linear-gradient(135deg, #d1fbff, #75cfff, #978aff) border-box;
+          box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.15),
+                     0 0 0 1px rgba(209, 251, 255, 0.5);
         }
 
         .gradient-text {
-          background: var(--rg-gradient-a);
+          background: linear-gradient(135deg, #d1fbff, #75cfff, #978aff);
           background-clip: text;
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
-          background-size: 200% 200%;
-          animation: gradient-shift 3s ease infinite;
         }
 
         .gradient-badge {
-          background: var(--rg-gradient-a-25);
+          background: linear-gradient(135deg, rgba(209, 251, 255, 0.3), rgba(117, 207, 255, 0.3), rgba(151, 138, 255, 0.3));
           border: 1px solid rgba(209, 251, 255, 0.4);
         }
 
         .gradient-button {
-          background: var(--rg-gradient-a);
-          transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+          background: linear-gradient(135deg, #d1fbff, #75cfff, #978aff);
+          transition: all 0.3s ease;
         }
 
         .gradient-button:hover {
-          background: var(--rg-gradient-a-75);
+          opacity: 0.9;
           transform: translateY(-1px);
-          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
-
-        .gradient-button:active {
-          background: var(--rg-gradient-a-pressed);
-          transform: translateY(0);
-        }
-
-        @keyframes gradient-shift {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-
-        .popular-card {
-          border: 2px solid rgba(151, 138, 255, 0.3);
-          background-image: linear-gradient(white, white), var(--rg-gradient-a-25);
-          background-origin: border-box;
-          background-clip: padding-box, border-box;
-        }
-
-        .popular-card:hover {
-          background-image: linear-gradient(white, white), var(--rg-gradient-a);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
       `}</style>
 
