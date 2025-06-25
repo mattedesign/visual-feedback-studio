@@ -13,30 +13,11 @@ interface UseAnalysisExecutionProps {
   setAnnotations: (annotations: Annotation[]) => void;
 }
 
-interface RAGContext {
-  retrievedKnowledge: {
-    relevantPatterns: Array<{
-      id: string;
-      title: string;
-      content: string;
-      category: string;
-      source: string;
-    }>;
-    competitorInsights: any[];
-  };
-  enhancedPrompt: string;
-  researchCitations: string[];
-  industryContext: string;
-}
-
 export const useAnalysisExecution = ({
   currentAnalysis,
   setIsAnalyzing,
   setAnnotations,
 }: UseAnalysisExecutionProps) => {
-  
-  const [ragContext, setRagContext] = useState<RAGContext | null>(null);
-  const [isBuilding, setIsBuilding] = useState(false);
   
   const executeAnalysis = useCallback(async (
     imagesToAnalyze: string[],
@@ -44,14 +25,14 @@ export const useAnalysisExecution = ({
     isComparative: boolean,
     aiProvider?: AIProvider
   ) => {
-    console.log('=== Analysis Started (Simplified Mode) ===');
+    console.log('=== Analysis Started (RAG DISABLED) ===');
     console.log('Analysis configuration:', { 
       imageCount: imagesToAnalyze.length,
       analysisId: currentAnalysis?.id,
       isComparative,
       userPromptLength: userAnalysisPrompt.length,
       aiProvider: aiProvider || 'auto',
-      ragEnabled: false // Temporarily disabled for debugging
+      ragEnabled: false // PERMANENTLY DISABLED
     });
     
     // Update analysis status
@@ -62,21 +43,20 @@ export const useAnalysisExecution = ({
       });
     }
 
-    // TEMPORARILY DISABLE RAG CONTEXT BUILDING
-    console.log('⚠️  RAG context temporarily disabled for API key debugging');
-    console.log('🚀 Executing simplified analysis...');
+    console.log('⚠️ RAG system permanently disabled to prevent loops');
+    console.log('🚀 Executing standard analysis without RAG...');
     
-    // Call analyze-design WITHOUT RAG context for now
+    // Call analyze-design WITHOUT any RAG context
     const { data, error } = await supabase.functions.invoke('analyze-design', {
       body: {
         imageUrls: imagesToAnalyze,
         imageUrl: imagesToAnalyze[0],
         analysisId: currentAnalysis?.id,
-        analysisPrompt: userAnalysisPrompt, // Use original prompt without RAG enhancement
+        analysisPrompt: userAnalysisPrompt,
         designType: currentAnalysis?.design_type || 'web',
         isComparative,
         aiProvider,
-        // RAG enhancement fields disabled
+        // RAG completely disabled
         ragEnabled: false,
         ragContext: null,
         researchCitations: []
@@ -109,7 +89,7 @@ export const useAnalysisExecution = ({
         duration: 4000,
       });
       
-      console.log('=== Analysis Completed Successfully ===');
+      console.log('=== Analysis Completed Successfully (RAG DISABLED) ===');
     } else {
       console.error('Invalid response structure:', data);
       throw new Error('Invalid response from analysis service');
@@ -118,7 +98,7 @@ export const useAnalysisExecution = ({
 
   return {
     executeAnalysis,
-    ragContext,
-    isBuilding
+    ragContext: null, // Always null
+    isBuilding: false // Always false
   };
 };

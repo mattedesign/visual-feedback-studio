@@ -1,193 +1,105 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { handleCorsPreflightRequest, corsHeaders } from './corsHandler.ts';
-import { validateEnvironment } from './environmentValidator.ts';
-import { validateAndParseRequest } from './requestValidator.ts';
-import { processImages } from './imageProcessingManager.ts';
-import { createEnhancedPrompt } from './promptManager.ts';
-import { performAIAnalysis } from './aiAnalysisManager.ts';
-import { saveAnnotationsToDatabase } from './databaseManager.ts';
-import { formatAnalysisResponse } from './responseFormatter.ts';
-import { handleError } from './errorHandler.ts';
+import { corsHandler } from './corsHandler.ts';
+import { requestValidator } from './requestValidator.ts';
+import { imageProcessingManager } from './imageProcessingManager.ts';
+import { aiProviderRouter } from './aiProviderRouter.ts';
+import { databaseManager } from './databaseManager.ts';
+import { responseFormatter } from './responseFormatter.ts';
+import { errorHandler } from './errorHandler.ts';
+import { getRAGContext } from './aiAnalysisManager.ts'; // Fixed import - only import what exists
 
-// Add this RAG function after imports
-async function getRAGContext(userPrompt: string, supabase: any) {
+console.log('🚀 Design Analysis Function Starting');
+
+Deno.serve(async (req) => {
+  console.log(`📥 ${req.method} ${req.url}`);
+  
   try {
-    console.log('🔍 Building RAG context for prompt:', userPrompt.substring(0, 100));
-    
-    // Simple keyword extraction for UX terms
-    const uxKeywords = ['button', 'form', 'mobile', 'accessibility', 'contrast', 'layout', 'navigation', 'conversion', 'checkout', 'signup', 'ux', 'usability'];
-    const foundKeywords = uxKeywords.filter(keyword => 
-      userPrompt.toLowerCase().includes(keyword)
-    );
-    
-    // Default to general UX if no specific keywords found
-    const searchTerms = foundKeywords.length > 0 ? foundKeywords : ['ux', 'usability'];
-    console.log('🎯 Search terms:', searchTerms);
-    
-    // Simple database query - no complex embeddings
-    const { data: knowledge, error } = await supabase
-      .from('knowledge_entries')
-      .select('title, content, category')
-      .in('category', ['ux-patterns', 'accessibility', 'conversion'])
-      .limit(3);
-    
-    if (error) {
-      console.log('⚠️ Knowledge retrieval error:', error);
-      return null;
+    // Handle CORS preflight
+    const corsResponse = corsHandler.handle(req);
+    if (corsResponse) {
+      console.log('✅ CORS preflight handled');
+      return corsResponse;
     }
-    
-    if (!knowledge || knowledge.length === 0) {
-      console.log('⚠️ No knowledge entries found');
-      return null;
+
+    // Validate request
+    const validationResult = await requestValidator.validate(req);
+    if (!validationResult.isValid) {
+      console.error('❌ Request validation failed:', validationResult.error);
+      return errorHandler.createErrorResponse(validationResult.error, 400);
     }
-    
-    console.log('✅ Retrieved', knowledge.length, 'knowledge entries');
-    
-    // Build simple research context
-    const context = knowledge.map(k => 
-      `${k.title}: ${k.content.substring(0, 200)}...`
-    ).join('\n\n');
-    
-    return {
-      context,
-      knowledgeCount: knowledge.length,
-      categories: [...new Set(knowledge.map(k => k.category))]
-    };
-    
-  } catch (error) {
-    console.log('⚠️ RAG context failed, proceeding without:', error);
-    return null;
-  }
-}
 
-serve(async (req) => {
-  // Handle CORS preflight requests
-  const corsResponse = handleCorsPreflightRequest(req);
-  if (corsResponse) {
-    return corsResponse;
-  }
+    const requestData = validationResult.data;
+    console.log('✅ Request validated successfully');
 
-  try {
-    console.log('=== Enhanced AI Analysis Edge Function Started ===');
-    console.log('Request method:', req.method);
-    console.log('Request URL:', req.url);
-    console.log('Timestamp:', new Date().toISOString());
-    
-    // Validate environment with API key diagnostics
-    const envConfig = validateEnvironment();
-    console.log('=== API Key Diagnostics ===');
-    console.log('Anthropic API key exists:', !!envConfig.anthropicApiKey);
-    console.log('API key length:', envConfig.anthropicApiKey?.length || 0);
-    console.log('API key format valid:', envConfig.anthropicApiKey?.startsWith('sk-ant-') || false);
-    
-    // Parse and validate request
-    const validatedRequest = await validateAndParseRequest(req);
-    
-    console.log('Request configuration:', {
-      imageCount: validatedRequest.imagesToProcess.length,
-      aiProvider: validatedRequest.aiProvider,
-      model: validatedRequest.model,
-      testMode: validatedRequest.testMode,
-      isComparative: validatedRequest.isComparative,
-      ragEnabled: validatedRequest.ragEnabled || false,
-      ragKnowledgeCount: validatedRequest.ragContext?.retrievedKnowledge.relevantPatterns.length || 0,
-      ragCitationsCount: validatedRequest.researchCitations?.length || 0,
-      ragIndustryContext: validatedRequest.ragContext?.industryContext || 'none'
-    });
-    
     // Process images
-    console.log('=== Processing Images ===');
-    const processedImages = await processImages(validatedRequest.imagesToProcess);
-    console.log('Images processed successfully:', processedImages.length);
-    
-    // Create enhanced prompt with RAG context
-    console.log('=== Creating Enhanced Prompt ===');
-    const enhancedPrompt = createEnhancedPrompt(
-      validatedRequest.analysisPrompt,
-      validatedRequest.isComparative,
-      validatedRequest.isMultiImage,
-      validatedRequest.imagesToProcess,
-      validatedRequest.ragContext
+    console.log('🖼️ Processing images...');
+    const imageProcessingResult = await imageProcessingManager.processImages(
+      requestData.imageUrls || [requestData.imageUrl],
+      requestData.isComparative || false
     );
-    console.log('Prompt length:', enhancedPrompt.length);
 
-    // For comparative analysis, use the first image as primary
-    const primaryImage = processedImages[0];
-    
-    // Perform AI analysis with model selection support
-    console.log('=== Starting AI Analysis ===');
-    console.log('Using provider:', validatedRequest.aiProvider);
-    console.log('Using model:', validatedRequest.model);
-    
-    const startTime = Date.now();
-    const annotations = await performAIAnalysis(
-      primaryImage.base64Image,
-      primaryImage.mimeType,
-      enhancedPrompt,
-      validatedRequest.aiProvider,
-      validatedRequest.model
-    );
-    const analysisTime = Date.now() - startTime;
-    console.log(`AI analysis completed in ${analysisTime}ms`);
-    console.log('Annotations received:', annotations.length);
+    if (!imageProcessingResult.success) {
+      console.error('❌ Image processing failed:', imageProcessingResult.error);
+      return errorHandler.createErrorResponse(imageProcessingResult.error, 400);
+    }
 
-    // Save annotations to database
-    console.log('=== Saving to Database ===');
-    const savedAnnotations = await saveAnnotationsToDatabase(
-      annotations,
-      validatedRequest.analysisId,
-      envConfig.supabaseUrl,
-      envConfig.supabaseServiceKey
-    );
-    console.log('Annotations saved successfully:', savedAnnotations.length);
+    console.log(`✅ Images processed: ${imageProcessingResult.processedImages.length}`);
+
+    // RAG Context - DISABLED to prevent loops
+    console.log('⚠️ RAG Context temporarily disabled');
+    const ragContext = null; // Always null to prevent any loops
+
+    // Route to AI provider
+    console.log('🤖 Routing to AI provider...');
+    const aiResult = await aiProviderRouter.processAnalysis({
+      images: imageProcessingResult.processedImages,
+      prompt: requestData.analysisPrompt,
+      designType: requestData.designType,
+      isComparative: requestData.isComparative,
+      aiProvider: requestData.aiProvider,
+      ragContext: ragContext // Will be null
+    });
+
+    if (!aiResult.success) {
+      console.error('❌ AI analysis failed:', aiResult.error);
+      return errorHandler.createErrorResponse(aiResult.error, 500);
+    }
+
+    console.log('✅ AI analysis completed');
+
+    // Save to database
+    console.log('💾 Saving to database...');
+    const dbResult = await databaseManager.saveAnalysisResults({
+      analysisId: requestData.analysisId,
+      annotations: aiResult.annotations,
+      aiModelUsed: aiResult.modelUsed,
+      processingTime: aiResult.processingTime
+    });
+
+    if (!dbResult.success) {
+      console.error('❌ Database save failed:', dbResult.error);
+      return errorHandler.createErrorResponse(dbResult.error, 500);
+    }
+
+    console.log('✅ Results saved to database');
 
     // Format response
-    const responseData = formatAnalysisResponse(annotations);
-    
-    // Add model information to response for testing purposes
-    responseData.providerUsed = validatedRequest.aiProvider || 'auto-selected';
-    responseData.modelUsed = validatedRequest.model || 'default';
-    responseData.testMode = validatedRequest.testMode || false;
-    
-    // Add RAG information to response
-    if (validatedRequest.ragEnabled && validatedRequest.ragContext) {
-      responseData.researchEnhanced = true;
-      responseData.knowledgeSourcesUsed = validatedRequest.ragContext.retrievedKnowledge.relevantPatterns.length;
-      responseData.researchCitations = validatedRequest.researchCitations || [];
-      responseData.industryContext = validatedRequest.ragContext.industryContext;
-    } else {
-      responseData.researchEnhanced = false;
-      responseData.knowledgeSourcesUsed = 0;
-      responseData.researchCitations = [];
-    }
-    
-    console.log('=== Analysis Completed Successfully ===');
-    console.log('Final response:', {
-      success: responseData.success,
-      totalAnnotations: responseData.totalAnnotations,
-      totalSavedAnnotations: savedAnnotations.length,
-      isComparative: validatedRequest.isComparative || validatedRequest.isMultiImage,
-      providerUsed: responseData.providerUsed,
-      modelUsed: responseData.modelUsed,
-      testMode: responseData.testMode,
-      researchEnhanced: responseData.researchEnhanced,
-      knowledgeSourcesUsed: responseData.knowledgeSourcesUsed,
-      ragCitationsCount: responseData.researchCitations?.length || 0,
-      totalProcessingTime: `${analysisTime}ms`
+    const response = responseFormatter.formatSuccessResponse({
+      annotations: aiResult.annotations,
+      totalAnnotations: aiResult.annotations.length,
+      modelUsed: aiResult.modelUsed,
+      processingTime: aiResult.processingTime,
+      ragEnhanced: false // Always false since RAG is disabled
     });
-    
-    return new Response(
-      JSON.stringify(responseData),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+
+    console.log('✅ Analysis completed successfully');
+    return response;
 
   } catch (error) {
-    console.error('=== Analysis Function Error ===');
-    console.error('Error timestamp:', new Date().toISOString());
-    console.error('Error type:', error.constructor.name);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    return handleError(error as Error);
+    console.error('❌ Unexpected error in analysis function:', error);
+    return errorHandler.createErrorResponse(
+      error instanceof Error ? error.message : 'Unknown error occurred',
+      500
+    );
   }
 });
