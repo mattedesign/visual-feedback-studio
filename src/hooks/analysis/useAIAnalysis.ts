@@ -27,12 +27,23 @@ export const useAIAnalysis = ({
     analysisContext?: string,
     imageAnnotations?: any[]
   ) => {
+    console.log('🚀 useAIAnalysis.handleAnalyze - Starting analysis');
+    console.log('📊 Analysis parameters:', {
+      imageUrls: imageUrls?.length || 0,
+      currentAnalysis: currentAnalysis?.id || 'MISSING',
+      analysisContext: analysisContext ? 'PROVIDED' : 'NONE',
+      imageAnnotations: imageAnnotations?.length || 0,
+      isComparative
+    });
+
     if (!imageUrls || imageUrls.length === 0) {
+      console.error('❌ No images available for analysis');
       toast.error('No images available for analysis');
       return;
     }
 
     if (!currentAnalysis) {
+      console.error('❌ No analysis session found');
       toast.error('No analysis session found');
       return;
     }
@@ -40,9 +51,12 @@ export const useAIAnalysis = ({
     // Get OpenAI API key from environment or prompt user
     const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
     if (!openaiApiKey) {
+      console.error('❌ OpenAI API key not configured');
       toast.error('OpenAI API key not configured. Please contact support.');
       return;
     }
+
+    console.log('🔑 OpenAI API key:', openaiApiKey ? 'AVAILABLE' : 'MISSING');
 
     setIsAnalyzing(true);
     setIsBuilding(false);
@@ -74,15 +88,40 @@ export const useAIAnalysis = ({
         analysisPrompt += '\n\nThis is a comparative analysis. Please compare the designs and provide insights on their differences and relative strengths.';
       }
 
+      console.log('📝 Final analysis prompt:', analysisPrompt.substring(0, 200) + '...');
+
       // Use the first image for now (direct RAG service currently supports single image)
+      console.log('🖼️ Using image URL:', imageUrls[0]);
+      
       const result = await directRAGAnalysisService.analyzeWithRAG({
         imageUrl: imageUrls[0],
         analysisPrompt,
         openaiApiKey
       });
 
+      console.log('📋 Direct RAG service result:', {
+        success: result.success,
+        annotationsCount: result.annotations?.length || 0,
+        totalAnnotations: result.totalAnnotations,
+        researchEnhanced: result.researchEnhanced,
+        knowledgeSourcesUsed: result.knowledgeSourcesUsed,
+        error: result.error
+      });
+
       if (result.success) {
+        console.log('✅ Analysis successful, setting annotations:', result.annotations);
+        console.log('🎯 Annotations to set:', result.annotations.map(a => ({
+          id: a.id,
+          category: a.category,
+          severity: a.severity,
+          feedback: a.feedback?.substring(0, 50) + '...'
+        })));
+
+        // Set annotations with detailed logging
+        console.log('📍 About to call setAnnotations with:', result.annotations.length, 'annotations');
         setAnnotations(result.annotations);
+        console.log('✅ setAnnotations called successfully');
+        
         setHasResearchContext(result.researchEnhanced);
         setResearchSourcesCount(result.knowledgeSourcesUsed);
 
@@ -92,14 +131,20 @@ export const useAIAnalysis = ({
           toast.success('Analysis complete!');
         }
       } else {
+        console.error('❌ Analysis failed:', result.error);
         throw new Error(result.error || 'Analysis failed');
       }
 
     } catch (error) {
-      console.error('Analysis failed:', error);
+      console.error('❌ useAIAnalysis.handleAnalyze - Analysis failed:', error);
+      console.error('❌ Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace'
+      });
       toast.error(`Analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       throw error;
     } finally {
+      console.log('🔚 useAIAnalysis.handleAnalyze - Setting isAnalyzing to false');
       setIsAnalyzing(false);
     }
   }, [imageUrls, currentAnalysis, setIsAnalyzing, setAnnotations, isComparative]);

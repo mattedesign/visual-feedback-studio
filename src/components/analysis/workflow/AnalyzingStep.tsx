@@ -37,20 +37,23 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       return;
     }
 
-    console.log('=== Starting Direct RAG Analysis ===');
-    console.log('Selected images:', workflow.selectedImages.length);
-    console.log('Current analysis:', workflow.currentAnalysis?.id);
-    console.log('User annotations:', workflow.getTotalAnnotationsCount());
-    console.log('Analysis context:', workflow.analysisContext || 'None provided');
+    console.log('=== AnalyzingStep.performAnalysis - Starting ===');
+    console.log('📊 Workflow state:', {
+      selectedImages: workflow.selectedImages.length,
+      currentAnalysisId: workflow.currentAnalysis?.id,
+      userAnnotations: workflow.getTotalAnnotationsCount(),
+      analysisContext: workflow.analysisContext ? 'PROVIDED' : 'NONE',
+      aiAnnotationsCount: workflow.aiAnnotations?.length || 0
+    });
 
     if (workflow.selectedImages.length === 0) {
-      console.error('No images selected for analysis');
+      console.error('❌ No images selected for analysis');
       toast.error('No images selected for analysis');
       return;
     }
 
     if (!workflow.currentAnalysis) {
-      console.error('No current analysis found');
+      console.error('❌ No current analysis found');
       toast.error('Analysis session not found. Please go back and upload your images again.');
       return;
     }
@@ -64,14 +67,15 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       // Validate images are accessible
       const imageValidationPromises = workflow.selectedImages.map(async (imageUrl, index) => {
         try {
+          console.log(`🔍 Validating image ${index + 1}:`, imageUrl);
           const response = await fetch(imageUrl, { method: 'HEAD' });
           if (!response.ok) {
             throw new Error(`Image ${index + 1} not accessible: ${response.status}`);
           }
-          console.log(`Image ${index + 1} validated successfully`);
+          console.log(`✅ Image ${index + 1} validated successfully`);
           return true;
         } catch (error) {
-          console.error(`Image ${index + 1} validation failed:`, error);
+          console.error(`❌ Image ${index + 1} validation failed:`, error);
           throw error;
         }
       });
@@ -88,27 +92,33 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       setCurrentStep('Generating AI insights...');
       setAnalysisProgress(80);
 
+      console.log('🚀 About to call handleAnalyze');
+      
       // Direct RAG analysis call
       await handleAnalyze(workflow.analysisContext, workflow.imageAnnotations);
+      
+      console.log('✅ handleAnalyze completed, checking workflow.aiAnnotations');
+      console.log('📊 Current AI annotations count:', workflow.aiAnnotations?.length || 0);
       
       setAnalysisProgress(100);
       setCurrentStep('Analysis complete!');
       
-      console.log('=== Direct RAG Analysis Completed Successfully ===');
+      console.log('=== AnalyzingStep.performAnalysis - Completed Successfully ===');
       
       // Small delay to show completion before transitioning
       setTimeout(() => {
+        console.log('🎯 Transitioning to results step');
         workflow.goToStep('results');
       }, 1000);
 
     } catch (error) {
-      console.error('=== Analysis Failed ===');
-      console.error('Error details:', error);
-      console.error('Retry count:', retryCount);
+      console.error('=== AnalyzingStep.performAnalysis - Failed ===');
+      console.error('❌ Error details:', error);
+      console.error('🔄 Retry count:', retryCount);
       
       if (retryCount < maxRetries) {
         const nextRetry = retryCount + 1;
-        console.log(`Attempting retry ${nextRetry}/${maxRetries}`);
+        console.log(`🔄 Attempting retry ${nextRetry}/${maxRetries}`);
         setRetryCount(nextRetry);
         setCurrentStep(`Retrying analysis (${nextRetry}/${maxRetries})...`);
         setAnalysisProgress(0);
@@ -124,7 +134,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
           duration: delay - 500,
         });
       } else {
-        console.error('Max retries exceeded, giving up');
+        console.error('❌ Max retries exceeded, giving up');
         setCurrentStep('Analysis failed');
         workflow.setIsAnalyzing(false);
         
@@ -147,16 +157,18 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
     workflow.goToStep,
     workflow.setIsAnalyzing,
     workflow.getTotalAnnotationsCount,
-    workflow.imageAnnotations
+    workflow.imageAnnotations,
+    workflow.aiAnnotations?.length
   ]);
 
   // Start analysis effect
   useEffect(() => {
-    console.log('🚀 AnalyzingStep: Starting analysis effect', {
+    console.log('🚀 AnalyzingStep: useEffect - Starting analysis effect', {
       timestamp: new Date().toISOString(),
       hasImages: workflow.selectedImages.length > 0,
       hasAnalysis: !!workflow.currentAnalysis,
-      analysisStarted: analysisStartedRef.current
+      analysisStarted: analysisStartedRef.current,
+      currentAiAnnotations: workflow.aiAnnotations?.length || 0
     });
 
     if (!analysisStartedRef.current) {
@@ -170,6 +182,18 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       analysisStartedRef.current = false;
     }
   }, [retryCount]);
+
+  // Monitor ai annotations changes
+  useEffect(() => {
+    console.log('📊 AnalyzingStep: AI annotations changed:', {
+      count: workflow.aiAnnotations?.length || 0,
+      annotations: workflow.aiAnnotations?.map(a => ({
+        id: a.id,
+        category: a.category,
+        severity: a.severity
+      })) || []
+    });
+  }, [workflow.aiAnnotations]);
 
   const totalAnnotations = workflow.getTotalAnnotationsCount();
   const isMultiImage = workflow.selectedImages.length > 1;
@@ -234,6 +258,16 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
             
             <div className="text-sm text-slate-400">
               {analysisProgress}% complete
+            </div>
+
+            {/* Debug info */}
+            <div className="bg-slate-900/50 border border-slate-600 rounded-lg p-3 text-left">
+              <h5 className="text-sm font-medium text-slate-300 mb-2">Debug Info:</h5>
+              <div className="text-xs text-slate-400 space-y-1">
+                <div>Current AI Annotations: {workflow.aiAnnotations?.length || 0}</div>
+                <div>Analysis Started: {analysisStartedRef.current ? 'Yes' : 'No'}</div>
+                <div>Retry Count: {retryCount}</div>
+              </div>
             </div>
           </div>
         </CardContent>
