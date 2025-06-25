@@ -1,6 +1,4 @@
 
-import { stripeService } from '@/services/stripeService';
-
 export interface PricingPlan {
   id: string;
   name: string;
@@ -16,13 +14,21 @@ export interface PricingPlan {
   popular?: boolean;
 }
 
+// Centralized Stripe configuration
+const STRIPE_CONFIG = {
+  monthlyPriceId: "price_1RdxIAB0UJfBqFIHrJkzb238",
+  yearlyPriceId: "price_1RdxIfB0UJfBqFIHMGtudpgk",
+  monthlyAmount: 1999, // $19.99 in cents
+  yearlyAmount: 19900, // $199.00 in cents
+};
+
 export const pricingPlans: PricingPlan[] = [
   {
     id: 'monthly',
     name: 'Pro Monthly',
     price: '$19.99',
     period: 'per month',
-    priceId: stripeService.getPricingConfig().monthlyPriceId,
+    priceId: STRIPE_CONFIG.monthlyPriceId,
     badge: {
       text: 'Most Popular',
       variant: 'default',
@@ -41,7 +47,7 @@ export const pricingPlans: PricingPlan[] = [
     name: 'Pro Annual',
     price: '$199.99',
     period: 'per year',
-    priceId: stripeService.getPricingConfig().yearlyPriceId,
+    priceId: STRIPE_CONFIG.yearlyPriceId,
     badge: {
       text: 'Best Value',
       variant: 'secondary',
@@ -57,3 +63,5 @@ export const pricingPlans: PricingPlan[] = [
     ]
   }
 ];
+
+export const getStripeConfig = () => STRIPE_CONFIG;
