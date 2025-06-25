@@ -5,7 +5,7 @@ import { DirectRAGTestSimple } from '@/components/analysis/DirectRAGTestSimple';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { useAuth } from '@/hooks/useAuth';
-import { useAnalysis } from '@/hooks/useAnalysisHook';
+import { useAnalysis } from '@/hooks/useAnalysis';
 
 const Index = () => {
   const { user, loading, signOut } = useAuth();
