@@ -1,11 +1,12 @@
 
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
+import { getIcon } from '@/utils/iconMapping';
 
 interface PricingBadgeProps {
   text: string;
   variant: 'default' | 'secondary';
-  icon: React.ReactNode;
+  icon: string;
   popular?: boolean;
 }
 
@@ -18,7 +19,7 @@ export const PricingBadge = ({ text, variant, icon, popular }: PricingBadgeProps
         }`}
       >
         <span className="flex items-center gap-2">
-          {icon}
+          {getIcon(icon, "h-3 w-3")}
           {text}
         </span>
       </Badge>

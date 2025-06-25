@@ -1,5 +1,4 @@
 
-import { Check, Zap, Crown } from 'lucide-react';
 import { stripeService } from '@/services/stripeService';
 
 export interface PricingPlan {
@@ -11,7 +10,7 @@ export interface PricingPlan {
   badge: {
     text: string;
     variant: 'default' | 'secondary';
-    icon: React.ReactNode;
+    icon: string;
   };
   features: string[];
   popular?: boolean;
@@ -27,7 +26,7 @@ export const pricingPlans: PricingPlan[] = [
     badge: {
       text: 'Most Popular',
       variant: 'default',
-      icon: <Zap className="h-3 w-3" />
+      icon: 'zap'
     },
     features: [
       'Unlimited analyses',
@@ -46,7 +45,7 @@ export const pricingPlans: PricingPlan[] = [
     badge: {
       text: 'Best Value',
       variant: 'secondary',
-      icon: <Crown className="h-3 w-3" />
+      icon: 'crown'
     },
     features: [
       'Unlimited analyses',
