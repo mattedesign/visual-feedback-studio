@@ -436,6 +436,9 @@ Deno.serve(async (req) => {
       imageProcessingResult.processedImages.length
     );
     
+    // Add the requested console.log right before AI analysis
+    console.log("FINAL PROMPT SENT TO AI:", enhancedPrompt);
+    
     console.log('🎯 === FINAL PROMPT READY FOR AI ===');
     console.log('📏 Final Prompt Metrics:', {
       finalPromptLength: enhancedPrompt.length,
