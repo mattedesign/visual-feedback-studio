@@ -21,16 +21,22 @@ export default function Subscription() {
     );
   }
 
+  // Show pricing cards for freemium users or users without subscription
+  // Only show subscription status for paid subscribers (monthly/yearly)
+  const shouldShowPricingCards = !subscription || 
+    subscription.status !== 'active' || 
+    subscription.plan_type === 'freemium';
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto py-8">
-        {subscription && subscription.status === 'active' ? (
+        {shouldShowPricingCards ? (
+          <SubscriptionCheckout />
+        ) : (
           <div className="max-w-2xl mx-auto">
             <h1 className="text-3xl font-bold text-center mb-8">Your Subscription</h1>
             <SubscriptionStatus />
           </div>
-        ) : (
-          <SubscriptionCheckout />
         )}
       </div>
     </div>
