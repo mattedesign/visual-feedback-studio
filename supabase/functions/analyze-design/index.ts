@@ -10,6 +10,57 @@ import { saveAnnotationsToDatabase } from './databaseManager.ts';
 import { formatAnalysisResponse } from './responseFormatter.ts';
 import { handleError } from './errorHandler.ts';
 
+// Add this RAG function after imports
+async function getRAGContext(userPrompt: string, supabase: any) {
+  try {
+    console.log('🔍 Building RAG context for prompt:', userPrompt.substring(0, 100));
+    
+    // Simple keyword extraction for UX terms
+    const uxKeywords = ['button', 'form', 'mobile', 'accessibility', 'contrast', 'layout', 'navigation', 'conversion', 'checkout', 'signup', 'ux', 'usability'];
+    const foundKeywords = uxKeywords.filter(keyword => 
+      userPrompt.toLowerCase().includes(keyword)
+    );
+    
+    // Default to general UX if no specific keywords found
+    const searchTerms = foundKeywords.length > 0 ? foundKeywords : ['ux', 'usability'];
+    console.log('🎯 Search terms:', searchTerms);
+    
+    // Simple database query - no complex embeddings
+    const { data: knowledge, error } = await supabase
+      .from('knowledge_entries')
+      .select('title, content, category')
+      .in('category', ['ux-patterns', 'accessibility', 'conversion'])
+      .limit(3);
+    
+    if (error) {
+      console.log('⚠️ Knowledge retrieval error:', error);
+      return null;
+    }
+    
+    if (!knowledge || knowledge.length === 0) {
+      console.log('⚠️ No knowledge entries found');
+      return null;
+    }
+    
+    console.log('✅ Retrieved', knowledge.length, 'knowledge entries');
+    
+    // Build simple research context
+    const context = knowledge.map(k => 
+      `${k.title}: ${k.content.substring(0, 200)}...`
+    ).join('\n\n');
+    
+    return {
+      context,
+      knowledgeCount: knowledge.length,
+      categories: [...new Set(knowledge.map(k => k.category))]
+    };
+    
+  } catch (error) {
+    console.log('⚠️ RAG context failed, proceeding without:', error);
+    return null;
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   const corsResponse = handleCorsPreflightRequest(req);
