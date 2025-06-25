@@ -59,9 +59,101 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
   const currentImageAIAnnotations = getAnnotationsForImage(activeImageIndex);
   const currentImageUserAnnotations = getUserAnnotationsForImage(activeImageUrl);
 
-  // Extract business impact and insights from the last analysis response
-  const businessImpact = workflow.lastAnalysisResponse?.businessImpact;
-  const insights = workflow.lastAnalysisResponse?.insights;
+  // Generate business impact data from annotations
+  const generateBusinessImpact = () => {
+    const annotations = workflow.aiAnnotations;
+    if (!annotations.length) return null;
+
+    // Calculate quick wins (annotations with low effort and high impact)
+    const quickWins = annotations.filter(a => 
+      a.implementationEffort === 'low' && 
+      (a.businessImpact === 'high' || a.businessImpact === 'medium')
+    ).length;
+
+    // Count critical issues
+    const criticalIssues = annotations.filter(a => a.severity === 'critical').length;
+
+    // Calculate average ROI score based on severity and impact
+    const roiScores = annotations.map(a => {
+      let score = 5; // base score
+      if (a.severity === 'critical') score += 3;
+      else if (a.severity === 'suggested') score += 2;
+      else if (a.severity === 'enhancement') score += 1;
+      
+      if (a.businessImpact === 'high') score += 2;
+      else if (a.businessImpact === 'medium') score += 1;
+      
+      return Math.min(score, 10);
+    });
+    
+    const averageROI = roiScores.reduce((sum, score) => sum + score, 0) / roiScores.length;
+
+    // Estimate potential revenue based on annotation count and impact
+    const baseRevenue = annotations.length * 500; // Base $500 per issue
+    const impactMultiplier = annotations.filter(a => a.businessImpact === 'high').length * 2;
+    const totalRevenue = baseRevenue + (impactMultiplier * 1000);
+
+    // Create implementation roadmap
+    const immediate = annotations.filter(a => 
+      a.implementationEffort === 'low' && 
+      (a.severity === 'critical' || a.businessImpact === 'high')
+    );
+    
+    const shortTerm = annotations.filter(a => 
+      a.implementationEffort === 'medium' || 
+      (a.implementationEffort === 'low' && a.severity !== 'critical')
+    );
+    
+    const longTerm = annotations.filter(a => 
+      a.implementationEffort === 'high'
+    );
+
+    return {
+      totalPotentialRevenue: `$${totalRevenue.toLocaleString()}/month ($${(totalRevenue * 12).toLocaleString()}/year)`,
+      quickWinsAvailable: quickWins,
+      criticalIssuesCount: criticalIssues,
+      averageROIScore: Math.round(averageROI * 10) / 10,
+      implementationRoadmap: {
+        immediate,
+        shortTerm,
+        longTerm
+      }
+    };
+  };
+
+  // Generate insights from annotations
+  const generateInsights = () => {
+    const annotations = workflow.aiAnnotations;
+    if (!annotations.length) return null;
+
+    // Find highest impact annotation
+    const highestImpact = annotations.find(a => 
+      a.businessImpact === 'high' && a.severity === 'critical'
+    ) || annotations.find(a => a.businessImpact === 'high') || annotations[0];
+
+    // Find quickest win
+    const quickestWin = annotations.find(a => 
+      a.implementationEffort === 'low' && 
+      (a.businessImpact === 'high' || a.businessImpact === 'medium')
+    ) || annotations.find(a => a.implementationEffort === 'low') || annotations[0];
+
+    // Find top recommendation (critical + high impact)
+    const topRec = annotations.find(a => 
+      a.severity === 'critical' && a.businessImpact === 'high'
+    ) || annotations.find(a => a.severity === 'critical') || annotations[0];
+
+    return {
+      topRecommendation: `${topRec.category.toUpperCase()}: ${topRec.feedback.substring(0, 100)}...`,
+      quickestWin: `${quickestWin.implementationEffort} effort: ${quickestWin.feedback.substring(0, 80)}...`,
+      highestImpact: `${highestImpact.businessImpact} impact: ${highestImpact.feedback.substring(0, 80)}...`,
+      competitiveAdvantage: workflow.aiAnnotations.some(a => a.category === 'conversion') ? 
+        'Conversion optimization opportunities identified' : 'User experience improvements available',
+      researchEvidence: `${annotations.length} evidence-based recommendations generated`
+    };
+  };
+
+  const businessImpact = generateBusinessImpact();
+  const insights = generateInsights();
 
   return (
     <div className="max-w-7xl mx-auto">
