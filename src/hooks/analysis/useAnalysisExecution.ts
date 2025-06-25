@@ -1,4 +1,5 @@
 
+
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { AnalysisWithFiles, updateAnalysisStatus, updateAnalysisContext } from '@/services/analysisDataService';
@@ -18,6 +19,12 @@ export const useAnalysisExecution = ({
   setIsAnalyzing,
   setAnnotations,
 }: UseAnalysisExecutionProps) => {
+  // 🔄 LOOP DETECTION: Track hook renders
+  console.log('🔄 HOOK RENDER:', new Date().toISOString(), {
+    hookName: 'useAnalysisExecution',
+    renderCount: ++((window as any).useAnalysisExecutionRenderCount) || ((window as any).useAnalysisExecutionRenderCount = 1),
+    currentAnalysisId: currentAnalysis?.id
+  });
   
   const executeAnalysis = useCallback(async (
     imagesToAnalyze: string[],
@@ -25,6 +32,18 @@ export const useAnalysisExecution = ({
     isComparative: boolean,
     aiProvider?: AIProvider
   ) => {
+    // 🚨 LOOP DETECTION: Track execution calls
+    console.log('🚨 EXECUTE ANALYSIS CALLED:', {
+      timestamp: new Date().toISOString(),
+      executionCount: ++((window as any).executeAnalysisCount) || ((window as any).executeAnalysisCount = 1),
+      stackTrace: new Error().stack,
+      imagesToAnalyze: imagesToAnalyze.length,
+      promptLength: userAnalysisPrompt.length,
+      isComparative,
+      aiProvider,
+      currentAnalysisId: currentAnalysis?.id
+    });
+
     console.log('=== Analysis Started (RAG DISABLED) ===');
     console.log('Analysis configuration:', { 
       imageCount: imagesToAnalyze.length,

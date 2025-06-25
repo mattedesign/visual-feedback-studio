@@ -1,4 +1,5 @@
 
+
 import { useCallback } from 'react';
 import { AnalysisWithFiles } from '@/services/analysisDataService';
 import { Annotation } from '@/types/analysis';
@@ -27,6 +28,15 @@ export const useAIAnalysis = ({
   setAnnotations,
   isComparative = false,
 }: UseAIAnalysisProps) => {
+  // 🔄 LOOP DETECTION: Track hook renders
+  console.log('🔄 HOOK RENDER:', new Date().toISOString(), {
+    hookName: 'useAIAnalysis',
+    renderCount: ++((window as any).useAIAnalysisRenderCount) || ((window as any).useAIAnalysisRenderCount = 1),
+    currentAnalysisId: currentAnalysis?.id,
+    imageUrl: imageUrl ? 'present' : 'null',
+    imageUrls: imageUrls?.length || 0
+  });
+
   const { buildIntelligentPrompt } = usePromptBuilder();
   
   // Updated to capture RAG state from useAnalysisExecution
@@ -65,6 +75,16 @@ export const useAIAnalysis = ({
       annotations: Array<{x: number; y: number; comment: string; id: string}>
     }>
   ) => {
+    // 🚨 LOOP DETECTION: Track analysis triggers
+    console.log('🚨 ANALYSIS TRIGGERED FROM:', new Error().stack);
+    console.log('🚨 ANALYSIS TRIGGER DETAILS:', {
+      timestamp: new Date().toISOString(),
+      triggerCount: ++((window as any).analysisTriggerCount) || ((window as any).analysisTriggerCount = 1),
+      customPrompt: customPrompt ? 'present' : 'null',
+      imageAnnotations: imageAnnotations?.length || 0,
+      currentAnalysisId: currentAnalysis?.id
+    });
+
     setIsAnalyzing(true);
     
     try {

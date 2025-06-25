@@ -9,6 +9,12 @@ import { useAnalysisActions } from './analysis/useAnalysisActions';
 import { useUploadConfirmationActions } from './analysis/useUploadConfirmationActions';
 
 export const useAnalysis = () => {
+  // 🔄 LOOP DETECTION: Track hook renders
+  console.log('🔄 HOOK RENDER:', new Date().toISOString(), {
+    hookName: 'useAnalysis',
+    renderCount: ++((window as any).useAnalysisRenderCount) || ((window as any).useAnalysisRenderCount = 1)
+  });
+
   const state = useAnalysisState();
   
   const {
@@ -97,7 +103,10 @@ export const useAnalysis = () => {
 
   // Load user analyses on mount - run only once initially
   useEffect(() => {
-    console.log('Initial load effect running');
+    console.log('🔄 EFFECT RUNNING: Initial load effect', {
+      timestamp: new Date().toISOString(),
+      effectRunCount: ++((window as any).analysisEffectRunCount) || ((window as any).analysisEffectRunCount = 1)
+    });
     loadAnalyses();
   }, []); // Empty dependency array - only run once on mount
 
