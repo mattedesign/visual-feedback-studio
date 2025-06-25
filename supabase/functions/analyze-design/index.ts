@@ -436,20 +436,33 @@ Deno.serve(async (req) => {
       imageProcessingResult.processedImages.length
     );
     
-    // Enhanced console.log to show complete prompt structure
-    console.log("🎯 === COMPLETE PROMPT SENT TO OPENAI ===");
-    console.log("📏 Complete Prompt Length:", enhancedPrompt.length);
-    console.log("📋 === FULL PROMPT CONTENT START ===");
+    // ===== MAIN CONSOLE LOG FOR USER VISIBILITY =====
+    console.log("🎯🎯🎯 === COMPLETE ENHANCED PROMPT SENT TO OPENAI API === 🎯🎯🎯");
+    console.log("📏 Total Enhanced Prompt Length:", enhancedPrompt.length);
+    console.log("📝 RAG Status:", ragContext.researchEnhanced ? "ENABLED with research context" : "DISABLED");
+    console.log("📊 Research Sources Used:", ragContext.knowledgeSourcesUsed);
+    console.log("");
+    console.log("📋 === COMPLETE PROMPT CONTENT START ===");
     console.log(enhancedPrompt);
-    console.log("📋 === FULL PROMPT CONTENT END ===");
+    console.log("📋 === COMPLETE PROMPT CONTENT END ===");
+    console.log("");
     
-    // Additional debugging for Fitts' Law content
-    console.log("🔍 === FITTS' LAW DETECTION ===");
-    console.log("Contains 'Fitts':", enhancedPrompt.toLowerCase().includes('fitts'));
-    console.log("Contains '44px':", enhancedPrompt.includes('44px'));
-    console.log("Contains '48dp':", enhancedPrompt.includes('48dp'));
-    console.log("Contains 'touch target':", enhancedPrompt.toLowerCase().includes('touch target'));
-    console.log("Contains 'minimum':", enhancedPrompt.toLowerCase().includes('minimum'));
+    // Verification checks for RAG content
+    if (ragContext.researchEnhanced) {
+      console.log("✅ === RAG CONTENT VERIFICATION ===");
+      console.log("Contains 'RESEARCH-ENHANCED ANALYSIS':", enhancedPrompt.includes('RESEARCH-ENHANCED ANALYSIS'));
+      console.log("Contains 'Button Design Best Practices':", enhancedPrompt.includes('Button Design Best Practices'));
+      console.log("Contains 'Fitts' (case insensitive):", enhancedPrompt.toLowerCase().includes('fitts'));
+      console.log("Contains '44px' touch target:", enhancedPrompt.includes('44px'));
+      console.log("Contains '48dp' touch target:", enhancedPrompt.includes('48dp'));
+      console.log("Contains 'touch target' (case insensitive):", enhancedPrompt.toLowerCase().includes('touch target'));
+      console.log("Contains 'minimum' size (case insensitive):", enhancedPrompt.toLowerCase().includes('minimum'));
+      console.log("Contains original user prompt:", enhancedPrompt.includes(originalPrompt));
+      console.log("Research context length:", ragContext.enhancedPrompt.length);
+    } else {
+      console.log("⚠️ === NO RAG CONTENT FOUND ===");
+      console.log("This prompt contains only the original user input without research enhancement");
+    }
     
     console.log('🎯 === FINAL PROMPT READY FOR AI ===');
     console.log('📏 Final Prompt Metrics:', {
