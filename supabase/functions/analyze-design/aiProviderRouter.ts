@@ -1,5 +1,4 @@
 
-
 import { analyzeWithOpenAI } from './openaiClient.ts';
 import { analyzeWithClaude } from './claudeClient.ts';
 import { AnnotationData } from './types.ts';
@@ -58,16 +57,45 @@ async function callProvider(
 ): Promise<AnnotationData[]> {
   switch (provider) {
     case 'openai':
+      // EXPLICIT OPENAI API KEY DEBUGGING
+      console.log('🔍 EXPLICIT OPENAI API KEY DEBUGGING:');
+      console.log('=====================================');
+      
       const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-      console.log('OpenAI environment check:', {
+      
+      console.log(`1. Does OPENAI_API_KEY exist? ${openaiApiKey !== undefined ? 'YES' : 'NO'}`);
+      console.log(`2. Is it null? ${openaiApiKey === null ? 'YES' : 'NO'}`);
+      console.log(`3. Is it undefined? ${openaiApiKey === undefined ? 'YES' : 'NO'}`);
+      console.log(`4. Is it empty string? ${openaiApiKey === '' ? 'YES' : 'NO'}`);
+      console.log(`5. Type of value: ${typeof openaiApiKey}`);
+      
+      if (openaiApiKey) {
+        console.log(`6. Length: ${openaiApiKey.length} characters`);
+        console.log(`7. First 10 characters: "${openaiApiKey.substring(0, 10)}"`);
+        console.log(`8. Last 10 characters: "...${openaiApiKey.substring(openaiApiKey.length - 10)}"`);
+        console.log(`9. Contains whitespace? ${/\s/.test(openaiApiKey) ? 'YES' : 'NO'}`);
+        console.log(`10. Starts with 'sk-'? ${openaiApiKey.startsWith('sk-') ? 'YES' : 'NO'}`);
+        console.log(`11. JSON representation: ${JSON.stringify(openaiApiKey.substring(0, 20))}`);
+      } else {
+        console.log('6-11. Cannot analyze - key does not exist');
+      }
+      
+      console.log('OpenAI environment check summary:', {
         keyExists: !!openaiApiKey,
         keyLength: openaiApiKey?.length || 0,
-        keyPreview: openaiApiKey ? `${openaiApiKey.substring(0, 10)}...` : 'N/A'
+        keyPreview: openaiApiKey ? `${openaiApiKey.substring(0, 10)}...` : 'N/A',
+        keyType: typeof openaiApiKey,
+        isNull: openaiApiKey === null,
+        isUndefined: openaiApiKey === undefined,
+        isEmpty: openaiApiKey === ''
       });
       
       if (!openaiApiKey) {
+        console.error('❌ OpenAI API key not configured - throwing error');
         throw new Error('OpenAI API key not configured in environment variables');
       }
+      
+      console.log('✅ OpenAI API key validated, calling analyzeWithOpenAI...');
       return await analyzeWithOpenAI(base64Image, mimeType, prompt, openaiApiKey, model);
       
     case 'claude':
@@ -118,4 +146,3 @@ export function determineOptimalProvider(): AIProviderConfig {
   
   throw new Error('No AI provider API keys configured. Please set OPENAI_API_KEY or ANTHROPIC_API_KEY.');
 }
-
