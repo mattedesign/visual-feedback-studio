@@ -5,19 +5,32 @@ export function buildAnalysisPrompt(
   isComparative = false,
   imageCount = 1
 ): string {
-  console.log('🏗️ Building analysis prompt with RAG context:', {
+  console.log('🏗️ === PROMPT BUILDER DETAILED DEBUG ===');
+  console.log('📋 Prompt Builder Inputs:', {
     hasBasePrompt: !!basePrompt,
+    basePromptLength: basePrompt.length,
+    basePromptPreview: basePrompt.substring(0, 100) + '...',
     hasRAGContext: !!ragContext,
     ragContextLength: ragContext?.length || 0,
+    ragContextPreview: ragContext ? ragContext.substring(0, 200) + '...' : null,
     isComparative,
-    imageCount
+    imageCount,
+    timestamp: new Date().toISOString()
   });
 
   // Build the enhanced prompt with research context
   let enhancedPrompt = basePrompt;
   
   if (ragContext && ragContext.trim().length > 0) {
-    console.log('📚 Adding RAG research context to prompt');
+    console.log('✅ RAG CONTEXT DETECTED - Building research-enhanced prompt');
+    console.log('📚 RAG Context Details:', {
+      contextLength: ragContext.length,
+      contextPreview: ragContext.substring(0, 300),
+      contextContainsResearch: ragContext.includes('RESEARCH-ENHANCED'),
+      contextContainsCitations: ragContext.includes('Best Practices') || ragContext.includes('Guidelines'),
+      fullContextSample: ragContext.substring(0, 500) + (ragContext.length > 500 ? '...' : '')
+    });
+    
     enhancedPrompt = `${basePrompt}
 
 === RESEARCH-ENHANCED ANALYSIS ===
@@ -32,8 +45,24 @@ IMPORTANT: Use this research context to:
 - Support your feedback with research-backed insights
 
 `;
+    
+    console.log('🔬 Enhanced Prompt Built Successfully:', {
+      originalLength: basePrompt.length,
+      enhancedLength: enhancedPrompt.length,
+      addedLength: enhancedPrompt.length - basePrompt.length,
+      includesResearchSection: enhancedPrompt.includes('RESEARCH-ENHANCED ANALYSIS'),
+      includesRAGContext: enhancedPrompt.includes(ragContext),
+      ragContextPosition: enhancedPrompt.indexOf(ragContext)
+    });
   } else {
-    console.log('⚠️ No RAG context available, using standard prompt');
+    console.log('⚠️ NO RAG CONTEXT PROVIDED - Using standard prompt only');
+    console.log('🔍 RAG Context Debug:', {
+      ragContextExists: !!ragContext,
+      ragContextType: typeof ragContext,
+      ragContextLength: ragContext?.length || 0,
+      ragContextTrimmed: ragContext?.trim?.()?.length || 0,
+      ragContextValue: ragContext || 'null/undefined'
+    });
   }
 
   const jsonInstructions = `
@@ -66,33 +95,64 @@ Rules:
 When research context is available, ensure feedback includes specific citations and evidence-based recommendations.
 Provide 3-5 specific, actionable annotations based on your research-enhanced analysis.`;
 
+  let finalPrompt;
+  
   if (isComparative && imageCount > 1) {
-    const finalPrompt = `${enhancedPrompt}
+    finalPrompt = `${enhancedPrompt}
 
 This is a COMPARATIVE ANALYSIS of ${imageCount} designs. Compare the designs using research-backed criteria and identify differences, strengths, and improvement opportunities across all images.
 
 ${jsonInstructions}`;
     
-    console.log('✅ Built comparative analysis prompt:', {
+    console.log('📊 Built COMPARATIVE analysis prompt:', {
       totalLength: finalPrompt.length,
       hasResearchContext: !!ragContext,
-      imageCount
+      imageCount,
+      isComparative: true
     });
-    
-    return finalPrompt;
-  }
-
-  const finalPrompt = `${enhancedPrompt}
+  } else {
+    finalPrompt = `${enhancedPrompt}
 
 Analyze this design for UX improvements, accessibility issues, and conversion optimization opportunities using research-backed methodologies.
 
 ${jsonInstructions}`;
 
-  console.log('✅ Built standard analysis prompt:', {
+    console.log('📊 Built STANDARD analysis prompt:', {
+      totalLength: finalPrompt.length,
+      hasResearchContext: !!ragContext,
+      researchContextLength: ragContext?.length || 0,
+      isComparative: false
+    });
+  }
+
+  // CRITICAL: Log the final prompt sections for debugging
+  console.log('🎯 === FINAL PROMPT STRUCTURE ANALYSIS ===');
+  console.log('📏 Final Prompt Metrics:', {
     totalLength: finalPrompt.length,
-    hasResearchContext: !!ragContext,
-    researchContextLength: ragContext?.length || 0
+    basePromptLength: basePrompt.length,
+    ragContextIncluded: finalPrompt.includes('RESEARCH-ENHANCED ANALYSIS'),
+    researchSectionLength: ragContext ? ragContext.length : 0,
+    structureSections: {
+      hasBasePrompt: finalPrompt.includes(basePrompt),
+      hasResearchSection: finalPrompt.includes('RESEARCH-ENHANCED ANALYSIS'),
+      hasRAGContent: ragContext ? finalPrompt.includes(ragContext) : false,
+      hasJSONInstructions: finalPrompt.includes('CRITICAL: You MUST respond')
+    }
   });
 
+  // Log exact prompt sections for debugging
+  if (ragContext) {
+    console.log('🔍 RAG Context Verification in Final Prompt:');
+    console.log('   RAG Context Start Index:', finalPrompt.indexOf('RESEARCH-ENHANCED ANALYSIS'));
+    console.log('   RAG Content Start Index:', finalPrompt.indexOf(ragContext));
+    console.log('   Sample from Final Prompt (where RAG should be):');
+    const ragStart = finalPrompt.indexOf('RESEARCH-ENHANCED ANALYSIS');
+    if (ragStart !== -1) {
+      console.log('   ' + finalPrompt.substring(ragStart, ragStart + 500) + '...');
+    }
+  }
+
+  console.log('✅ === PROMPT BUILDER COMPLETE ===');
+  
   return finalPrompt;
 }

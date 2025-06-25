@@ -1,3 +1,4 @@
+
 import { corsHeaders, corsHandler } from './corsHandler.ts';
 import { requestValidator } from './requestValidator.ts';
 import { imageProcessingManager } from './imageProcessingManager.ts';
@@ -165,6 +166,19 @@ ${k.content.substring(0, 400)}${k.content.length > 400 ? '...' : ''}
         totalContextLength: researchContext.length,
         citationsCount: citations.length,
         averageSimilarity: (knowledge.reduce((sum: number, k: any) => sum + (k.similarity || 0), 0) / knowledge.length).toFixed(3)
+      });
+
+      // CRITICAL: Log the actual research context being returned
+      console.log('📋 === RESEARCH CONTEXT BEING RETURNED ===');
+      console.log('🔍 Research Context Preview (first 500 chars):');
+      console.log(researchContext.substring(0, 500) + (researchContext.length > 500 ? '...' : ''));
+      console.log('📏 Research Context Metrics:', {
+        fullLength: researchContext.length,
+        numberOfEntries: knowledge.length,
+        averageEntryLength: Math.round(researchContext.length / knowledge.length),
+        containsFittsLaw: researchContext.toLowerCase().includes('fitts'),
+        containsButtonGuidelines: researchContext.toLowerCase().includes('button'),
+        containsMobileUsability: researchContext.toLowerCase().includes('mobile')
       });
       
       console.log('🔍 === RAG CONTEXT BUILDING COMPLETE ===');
@@ -379,11 +393,14 @@ Deno.serve(async (req) => {
     const enableRAG = requestData.ragEnabled === true;
     const originalPrompt = requestData.analysisPrompt || 'Analyze this design for UX improvements';
     
-    console.log(`🔧 RAG Configuration:`, {
+    console.log(`🔧 === PROMPT INTEGRATION DEBUG START ===`);
+    console.log(`📋 Prompt Integration Configuration:`, {
       ragEnabled: enableRAG,
-      promptLength: originalPrompt.length,
+      originalPromptLength: originalPrompt.length,
+      originalPromptPreview: originalPrompt.substring(0, 200) + '...',
       imageCount: imageProcessingResult.processedImages.length,
-      isComparative: requestData.isComparative || false
+      isComparative: requestData.isComparative || false,
+      timestamp: new Date().toISOString()
     });
     
     const ragContext = await addKnowledgeContext(originalPrompt, supabase, enableRAG);
@@ -393,9 +410,25 @@ Deno.serve(async (req) => {
       researchCitations: ragContext.researchCitations
     };
     
-    console.log(`📚 RAG Context Results:`, ragResults);
+    console.log(`📚 === RAG CONTEXT RESULTS ===`, ragResults);
+    console.log(`🔍 RAG Context Details:`, {
+      contextLength: ragContext.enhancedPrompt.length,
+      contextPreview: ragContext.enhancedPrompt.substring(0, 300) + '...',
+      researchEnhanced: ragContext.researchEnhanced,
+      knowledgeSourcesUsed: ragContext.knowledgeSourcesUsed
+    });
     
     // Build the complete prompt with RAG context using the updated prompt builder
+    console.log(`🏗️ === CALLING BUILD ANALYSIS PROMPT ===`);
+    console.log(`📋 Prompt Builder Call Parameters:`, {
+      originalPrompt: originalPrompt.substring(0, 100) + '...',
+      ragContextAvailable: ragContext.researchEnhanced,
+      ragContextLength: ragContext.researchEnhanced ? ragContext.enhancedPrompt.length : 0,
+      ragContextPreview: ragContext.researchEnhanced ? ragContext.enhancedPrompt.substring(0, 200) + '...' : null,
+      isComparative: requestData.isComparative || false,
+      imageCount: imageProcessingResult.processedImages.length
+    });
+    
     const enhancedPrompt = buildAnalysisPrompt(
       originalPrompt,
       ragContext.researchEnhanced ? ragContext.enhancedPrompt : undefined,
@@ -403,11 +436,44 @@ Deno.serve(async (req) => {
       imageProcessingResult.processedImages.length
     );
     
-    console.log('🏗️ Prompt building completed:', {
+    console.log('🎯 === FINAL PROMPT READY FOR AI ===');
+    console.log('📏 Final Prompt Metrics:', {
       finalPromptLength: enhancedPrompt.length,
       ragEnhanced: ragContext.researchEnhanced,
-      knowledgeSources: ragContext.knowledgeSourcesUsed
+      knowledgeSources: ragContext.knowledgeSourcesUsed,
+      originalPromptLength: originalPrompt.length,
+      ragContextLength: ragContext.researchEnhanced ? ragContext.enhancedPrompt.length : 0,
+      addedByPromptBuilder: enhancedPrompt.length - originalPrompt.length - (ragContext.researchEnhanced ? ragContext.enhancedPrompt.length : 0)
     });
+
+    // CRITICAL: Log the exact prompt sections being sent to AI
+    console.log('🔍 === EXACT PROMPT BEING SENT TO OPENAI ===');
+    console.log('📄 Prompt Structure Check:');
+    console.log('   Contains original prompt:', enhancedPrompt.includes(originalPrompt));
+    console.log('   Contains research section:', enhancedPrompt.includes('RESEARCH-ENHANCED ANALYSIS'));
+    console.log('   Contains RAG context:', ragContext.researchEnhanced ? enhancedPrompt.includes(ragContext.enhancedPrompt) : false);
+    console.log('   Contains JSON instructions:', enhancedPrompt.includes('CRITICAL: You MUST respond'));
+    
+    // Log specific sections for debugging
+    console.log('📋 === PROMPT SECTIONS FOR DEBUGGING ===');
+    if (enhancedPrompt.includes('RESEARCH-ENHANCED ANALYSIS')) {
+      const researchStart = enhancedPrompt.indexOf('RESEARCH-ENHANCED ANALYSIS');
+      const researchEnd = enhancedPrompt.indexOf('IMPORTANT: Use this research context');
+      console.log('🔬 Research Section Found:');
+      console.log('   Start position:', researchStart);
+      console.log('   Research instructions end:', researchEnd);
+      console.log('   Sample of research section:');
+      console.log('   ' + enhancedPrompt.substring(researchStart, researchStart + 400) + '...');
+      
+      // Look for specific research content
+      if (ragContext.researchEnhanced) {
+        console.log('🎯 Looking for specific research content in final prompt:');
+        console.log('   Contains "Button Design":', enhancedPrompt.includes('Button Design'));
+        console.log('   Contains "Mobile Touch":', enhancedPrompt.includes('Mobile Touch'));
+        console.log('   Contains "Fitts":', enhancedPrompt.includes('Fitts'));
+        console.log('   Contains "44px" or "48dp":', enhancedPrompt.includes('44px') || enhancedPrompt.includes('48dp'));
+      }
+    }
     
     for (const processedImage of imageProcessingResult.processedImages) {
       console.log(`🔍 Analyzing image with ${aiProviderConfig.provider}...`);
