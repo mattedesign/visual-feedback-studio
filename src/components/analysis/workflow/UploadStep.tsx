@@ -27,8 +27,10 @@ export const UploadStep = ({ workflow }: UploadStepProps) => {
   };
 
   const handleImageUpload = (imageUrl: string) => {
-    // Handle the image upload using the workflow
-    workflow.handleImageSelection(imageUrl);
+    // Handle the image upload using the workflow's proceedFromUpload method
+    console.log('UploadStep: Image uploaded, proceeding with workflow:', imageUrl);
+    workflow.addUploadedFile(imageUrl);
+    workflow.proceedFromUpload([imageUrl]);
   };
 
   if (!canCreate) {
