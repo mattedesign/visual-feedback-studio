@@ -1,7 +1,7 @@
 import { analyzeWithAIProvider, determineOptimalProvider, AIProvider, AIProviderConfig } from './aiProviderRouter.ts';
 import { AnnotationData } from './types.ts';
 
-// RAG function for retrieving research context
+// Enhanced RAG function with comprehensive logging
 async function getRAGContext(userPrompt: string) {
   try {
     console.log('🔍 Building RAG context for:', userPrompt.substring(0, 100));
@@ -9,6 +9,13 @@ async function getRAGContext(userPrompt: string) {
     // Initialize Supabase client with service role
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    console.log('🔑 Environment check:', {
+      hasSupabaseUrl: !!supabaseUrl,
+      hasSupabaseKey: !!supabaseKey,
+      urlLength: supabaseUrl?.length || 0,
+      keyLength: supabaseKey?.length || 0
+    });
     
     if (!supabaseUrl || !supabaseKey) {
       console.log('⚠️ Missing Supabase credentials for RAG');
@@ -18,46 +25,89 @@ async function getRAGContext(userPrompt: string) {
     const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.39.3');
     const supabase = createClient(supabaseUrl, supabaseKey);
     
+    console.log('✅ Supabase client created successfully');
+    
     // Simple keyword extraction for UX terms
     const uxKeywords = ['button', 'form', 'mobile', 'accessibility', 'contrast', 'layout', 'navigation', 'conversion', 'checkout', 'signup', 'ux', 'usability'];
     const foundKeywords = uxKeywords.filter(keyword => 
       userPrompt.toLowerCase().includes(keyword)
     );
     
-    console.log('🎯 Found keywords:', foundKeywords);
+    console.log('🎯 Keyword analysis:', {
+      totalKeywords: uxKeywords.length,
+      foundKeywords: foundKeywords,
+      foundCount: foundKeywords.length
+    });
     
     // Simple database query - get relevant knowledge
+    console.log('🔍 Attempting database query...');
     const { data: knowledge, error } = await supabase
       .from('knowledge_entries')
       .select('title, content, category')
       .in('category', ['ux-patterns', 'accessibility', 'conversion'])
       .limit(3);
-    
+
+    console.log('📊 Database query results:', {
+      hasError: !!error,
+      errorMessage: error?.message || null,
+      errorDetails: error?.details || null,
+      dataLength: knowledge?.length || 0,
+      data: knowledge?.map(k => ({ 
+        title: k.title?.substring(0, 50) + '...', 
+        category: k.category,
+        contentLength: k.content?.length || 0
+      })) || []
+    });
+
     if (error) {
       console.log('⚠️ Knowledge retrieval error:', error);
       return null;
     }
     
     if (!knowledge || knowledge.length === 0) {
-      console.log('⚠️ No knowledge entries found');
+      console.log('⚠️ No knowledge entries found - checking table directly');
+      
+      // Try a simpler query to test table access
+      const { data: testData, error: testError } = await supabase
+        .from('knowledge_entries')
+        .select('id, title')
+        .limit(1);
+        
+      console.log('🔍 Table access test:', {
+        testError: testError?.message || null,
+        testDataLength: testData?.length || 0
+      });
+      
       return null;
     }
     
-    console.log('✅ Retrieved', knowledge.length, 'knowledge entries');
+    console.log('✅ Retrieved', knowledge.length, 'knowledge entries successfully');
     
     // Build research context
     const context = knowledge.map(k => 
       `${k.title}: ${k.content.substring(0, 150)}...`
     ).join('\n\n');
     
-    return {
+    const result = {
       context,
       knowledgeCount: knowledge.length,
       categories: [...new Set(knowledge.map(k => k.category))]
     };
     
+    console.log('🎉 RAG context built successfully:', {
+      contextLength: context.length,
+      knowledgeCount: result.knowledgeCount,
+      categories: result.categories
+    });
+    
+    return result;
+    
   } catch (error) {
-    console.log('⚠️ RAG context failed:', error);
+    console.log('⚠️ RAG context failed with error:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack?.substring(0, 200)
+    });
     return null;
   }
 }
@@ -73,8 +123,8 @@ export async function performAIAnalysis(
   console.log('Requested provider:', requestedProvider);
   console.log('Requested model:', requestedModel);
   
-  // *** RAG ENHANCEMENT ***
-  console.log('🔍 Starting RAG enhancement...');
+  // *** ENHANCED RAG INTEGRATION ***
+  console.log('🔍 Starting enhanced RAG process...');
   const ragContext = await getRAGContext(enhancedPrompt);
   
   // Enhance prompt with RAG context if available
@@ -87,12 +137,16 @@ ${ragContext.context}
 
 Use this research to inform your analysis. Include relevant citations and research-backed recommendations. Return the same JSON format as requested.`;
     
-    console.log('✅ RAG enhanced prompt with', ragContext.knowledgeCount, 'knowledge sources');
-    console.log('📚 Categories included:', ragContext.categories);
+    console.log('✅ RAG enhancement successful:', {
+      knowledgeCount: ragContext.knowledgeCount,
+      categories: ragContext.categories,
+      originalPromptLength: enhancedPrompt.length,
+      enhancedPromptLength: finalPrompt.length
+    });
   } else {
-    console.log('⚪ Using basic prompt (no RAG context available)');
+    console.log('⚪ No RAG context available - using standard analysis');
   }
-  // *** END RAG ENHANCEMENT ***
+  // *** END RAG INTEGRATION ***
   
   // Determine AI provider configuration
   let providerConfig: AIProviderConfig;
@@ -120,7 +174,7 @@ Use this research to inform your analysis. Include relevant citations and resear
     const aiPromise = analyzeWithAIProvider(
       base64Image, 
       mimeType, 
-      finalPrompt,  // *** CHANGED: Use finalPrompt instead of enhancedPrompt ***
+      finalPrompt,  // *** USING ENHANCED PROMPT ***
       providerConfig
     );
     
@@ -131,7 +185,8 @@ Use this research to inform your analysis. Include relevant citations and resear
       hasAnnotations: annotations.length > 0,
       usedProvider: providerConfig.provider,
       usedModel: providerConfig.model || 'default',
-      ragEnhanced: !!ragContext  // *** NEW: Track if RAG was used ***
+      ragEnhanced: !!ragContext,  // *** TRACKING RAG USAGE ***
+      promptUsed: ragContext ? 'enhanced' : 'standard'
     });
 
     return annotations;
