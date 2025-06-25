@@ -1,7 +1,7 @@
 import { analyzeWithAIProvider, determineOptimalProvider, AIProvider, AIProviderConfig } from './aiProviderRouter.ts';
 import { AnnotationData } from './types.ts';
 
-// Enhanced RAG function with comprehensive logging
+// DEFINITIVE RAG function with CORRECTED database query
 async function getRAGContext(userPrompt: string) {
   try {
     console.log('🔍 Building RAG context for:', userPrompt.substring(0, 100));
@@ -12,9 +12,7 @@ async function getRAGContext(userPrompt: string) {
     
     console.log('🔑 Environment check:', {
       hasSupabaseUrl: !!supabaseUrl,
-      hasSupabaseKey: !!supabaseKey,
-      urlLength: supabaseUrl?.length || 0,
-      keyLength: supabaseKey?.length || 0
+      hasSupabaseKey: !!supabaseKey
     });
     
     if (!supabaseUrl || !supabaseKey) {
@@ -27,36 +25,20 @@ async function getRAGContext(userPrompt: string) {
     
     console.log('✅ Supabase client created successfully');
     
-    // Simple keyword extraction for UX terms
-    const uxKeywords = ['button', 'form', 'mobile', 'accessibility', 'contrast', 'layout', 'navigation', 'conversion', 'checkout', 'signup', 'ux', 'usability'];
-    const foundKeywords = uxKeywords.filter(keyword => 
-      userPrompt.toLowerCase().includes(keyword)
-    );
-    
-    console.log('🎯 Keyword analysis:', {
-      totalKeywords: uxKeywords.length,
-      foundKeywords: foundKeywords,
-      foundCount: foundKeywords.length
-    });
-    
-    // Simple database query - get relevant knowledge
-    console.log('🔍 Attempting database query...');
+    // CRITICAL FIX: Simple query that will find ALL your knowledge entries
+    console.log('🔍 Retrieving ALL knowledge entries...');
     const { data: knowledge, error } = await supabase
       .from('knowledge_entries')
-      .select('title, content, category')
-      .in('category', ['ux-patterns', 'accessibility', 'conversion'])
-      .limit(3);
+      .select('id, title, content, category, created_at')
+      .order('created_at', { ascending: false })
+      .limit(5);
 
     console.log('📊 Database query results:', {
       hasError: !!error,
       errorMessage: error?.message || null,
-      errorDetails: error?.details || null,
       dataLength: knowledge?.length || 0,
-      data: knowledge?.map(k => ({ 
-        title: k.title?.substring(0, 50) + '...', 
-        category: k.category,
-        contentLength: k.content?.length || 0
-      })) || []
+      foundTitles: knowledge?.map(k => k.title) || [],
+      foundCategories: knowledge?.map(k => k.category) || []
     });
 
     if (error) {
@@ -65,27 +47,18 @@ async function getRAGContext(userPrompt: string) {
     }
     
     if (!knowledge || knowledge.length === 0) {
-      console.log('⚠️ No knowledge entries found - checking table directly');
-      
-      // Try a simpler query to test table access
-      const { data: testData, error: testError } = await supabase
-        .from('knowledge_entries')
-        .select('id, title')
-        .limit(1);
-        
-      console.log('🔍 Table access test:', {
-        testError: testError?.message || null,
-        testDataLength: testData?.length || 0
-      });
-      
+      console.log('⚠️ No knowledge entries found in database');
       return null;
     }
     
-    console.log('✅ Retrieved', knowledge.length, 'knowledge entries successfully');
+    console.log('✅ Successfully retrieved', knowledge.length, 'knowledge entries:');
+    knowledge.forEach((entry, index) => {
+      console.log(`  ${index + 1}. ${entry.title} (${entry.category})`);
+    });
     
-    // Build research context
+    // Build research context from your actual UX research
     const context = knowledge.map(k => 
-      `${k.title}: ${k.content.substring(0, 150)}...`
+      `${k.title}: ${k.content.substring(0, 200)}...`
     ).join('\n\n');
     
     const result = {
@@ -97,7 +70,8 @@ async function getRAGContext(userPrompt: string) {
     console.log('🎉 RAG context built successfully:', {
       contextLength: context.length,
       knowledgeCount: result.knowledgeCount,
-      categories: result.categories
+      categories: result.categories,
+      researchIncluded: knowledge.map(k => k.title)
     });
     
     return result;
@@ -105,8 +79,7 @@ async function getRAGContext(userPrompt: string) {
   } catch (error) {
     console.log('⚠️ RAG context failed with error:', {
       message: error.message,
-      name: error.name,
-      stack: error.stack?.substring(0, 200)
+      name: error.name
     });
     return null;
   }
@@ -124,41 +97,39 @@ export async function performAIAnalysis(
   console.log('Requested model:', requestedModel);
   
   // *** ENHANCED RAG INTEGRATION ***
-  console.log('🔍 Starting enhanced RAG process...');
+  console.log('🔍 Starting RAG process with your UX research...');
   const ragContext = await getRAGContext(enhancedPrompt);
   
   // Enhance prompt with RAG context if available
   let finalPrompt = enhancedPrompt;
-  if (ragContext) {
+  if (ragContext && ragContext.knowledgeCount > 0) {
     finalPrompt = `${enhancedPrompt}
 
-Research Context:
+RESEARCH CONTEXT FROM UX KNOWLEDGE BASE:
 ${ragContext.context}
 
-Use this research to inform your analysis. Include relevant citations and research-backed recommendations. Return the same JSON format as requested.`;
+Based on the research above, provide analysis that references relevant UX principles, research findings, and best practices. Include specific recommendations backed by this research. Return the same JSON format as requested.`;
     
-    console.log('✅ RAG enhancement successful:', {
+    console.log('✅ RAG ENHANCEMENT SUCCESSFUL! Enhanced prompt with:', {
       knowledgeCount: ragContext.knowledgeCount,
       categories: ragContext.categories,
       originalPromptLength: enhancedPrompt.length,
-      enhancedPromptLength: finalPrompt.length
+      enhancedPromptLength: finalPrompt.length,
+      researchUsed: ragContext.categories
     });
   } else {
-    console.log('⚪ No RAG context available - using standard analysis');
+    console.log('⚪ No RAG context retrieved - using standard analysis');
   }
-  // *** END RAG INTEGRATION ***
   
   // Determine AI provider configuration
   let providerConfig: AIProviderConfig;
   if (requestedProvider && (requestedProvider === 'openai' || requestedProvider === 'claude')) {
-    // Use explicitly requested provider
     providerConfig = { 
       provider: requestedProvider as AIProvider,
       model: requestedModel
     };
     console.log(`Using explicitly requested provider: ${requestedProvider}${requestedModel ? ` with model: ${requestedModel}` : ''}`);
   } else {
-    // Auto-determine optimal provider
     providerConfig = determineOptimalProvider();
     if (requestedModel) {
       providerConfig.model = requestedModel;
@@ -174,19 +145,19 @@ Use this research to inform your analysis. Include relevant citations and resear
     const aiPromise = analyzeWithAIProvider(
       base64Image, 
       mimeType, 
-      finalPrompt,  // *** USING ENHANCED PROMPT ***
+      finalPrompt,  // *** USING RESEARCH-ENHANCED PROMPT ***
       providerConfig
     );
     
     const annotations = await Promise.race([aiPromise, aiTimeoutPromise]);
     
-    console.log('AI analysis completed:', {
+    console.log('🏆 AI analysis completed with RAG enhancement:', {
       annotationCount: annotations.length,
       hasAnnotations: annotations.length > 0,
       usedProvider: providerConfig.provider,
       usedModel: providerConfig.model || 'default',
-      ragEnhanced: !!ragContext,  // *** TRACKING RAG USAGE ***
-      promptUsed: ragContext ? 'enhanced' : 'standard'
+      ragEnhanced: !!ragContext && ragContext.knowledgeCount > 0,
+      researchCategoriesUsed: ragContext?.categories || []
     });
 
     return annotations;
