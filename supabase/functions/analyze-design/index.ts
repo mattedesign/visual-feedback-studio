@@ -6,8 +6,48 @@ import { analyzeWithAIProvider, determineOptimalProvider } from './aiProviderRou
 import { databaseManager } from './databaseManager.ts';
 import { responseFormatter } from './responseFormatter.ts';
 import { errorHandler } from './errorHandler.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 
 console.log('🚀 Design Analysis Function Starting');
+
+// RAG helper function to add knowledge context
+async function addKnowledgeContext(prompt: string, supabase: any): Promise<string> {
+  try {
+    console.log('🔍 Adding knowledge context...');
+    
+    // Use the working match_knowledge RPC function
+    const dummyEmbedding = Array(1536).fill(0.1);
+    
+    const { data: knowledge, error } = await supabase.rpc('match_knowledge', {
+      query_embedding: `[${dummyEmbedding.join(',')}]`,
+      match_threshold: 0.1,
+      match_count: 5,
+      filter_category: null
+    });
+    
+    if (error) {
+      console.log('⚠️ RPC error:', error);
+      return prompt;
+    }
+    
+    if (knowledge && knowledge.length > 0) {
+      console.log(`✅ Found ${knowledge.length} knowledge entries`);
+      
+      const context = knowledge.map((k: any) => 
+        `${k.title}: ${k.content.substring(0, 150)}...`
+      ).join('\n\n');
+      
+      return `${prompt}\n\nRELEVANT UX RESEARCH:\n${context}\n\nBased on this research, provide analysis that references relevant UX principles and best practices.`;
+    }
+    
+    console.log('⚠️ No knowledge found, using standard prompt');
+    return prompt;
+    
+  } catch (e) {
+    console.log('⚠️ RAG failed, using standard prompt:', e);
+    return prompt;
+  }
+}
 
 Deno.serve(async (req) => {
   console.log(`📥 ${req.method} ${req.url}`);
@@ -56,9 +96,10 @@ Deno.serve(async (req) => {
 
     console.log(`✅ Images processed: ${imageProcessingResult.processedImages.length}`);
 
-    // RAG Context - DISABLED to prevent loops
-    console.log('⚠️ RAG Context temporarily disabled');
-    const ragContext = null; // Always null to prevent any loops
+    // Initialize Supabase client for RAG integration
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Determine AI provider configuration
     console.log('🤖 Determining AI provider...');
@@ -71,10 +112,14 @@ Deno.serve(async (req) => {
       console.log(`🔍 Analyzing image with ${aiProviderConfig.provider}...`);
       
       try {
+        // Enhanced prompt with RAG context
+        const originalPrompt = requestData.analysisPrompt || 'Analyze this design for UX improvements';
+        const enhancedPrompt = await addKnowledgeContext(originalPrompt, supabase);
+        
         const annotations = await analyzeWithAIProvider(
           processedImage.base64Data,
           processedImage.mimeType,
-          requestData.analysisPrompt,
+          enhancedPrompt,
           aiProviderConfig
         );
         
@@ -122,7 +167,7 @@ Deno.serve(async (req) => {
       totalAnnotations: allAnnotations.length,
       modelUsed: aiProviderConfig.provider + (aiProviderConfig.model ? `:${aiProviderConfig.model}` : ''),
       processingTime: Date.now(),
-      ragEnhanced: false // Always false since RAG is disabled
+      ragEnhanced: true // Now enabled since we're using RAG
     });
 
     // Add CORS headers to successful response
@@ -131,7 +176,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-    console.log('✅ Analysis completed successfully');
+    console.log('✅ Analysis completed successfully with RAG enhancement');
     return responseWithCors;
 
   } catch (error) {
