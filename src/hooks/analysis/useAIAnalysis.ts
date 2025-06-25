@@ -10,6 +10,7 @@ interface UseAIAnalysisProps {
   setIsAnalyzing: (isAnalyzing: boolean) => void;
   setAnnotations: (annotations: Annotation[]) => void;
   isComparative?: boolean;
+  enableRAG?: boolean; // Add this property to fix the TypeScript error
 }
 
 export const useAIAnalysis = ({
@@ -17,7 +18,8 @@ export const useAIAnalysis = ({
   currentAnalysis,
   setIsAnalyzing,
   setAnnotations,
-  isComparative = false
+  isComparative = false,
+  enableRAG = true // Default to true since we want RAG enabled by default
 }: UseAIAnalysisProps) => {
   const [isBuilding, setIsBuilding] = useState(false);
   const [hasResearchContext, setHasResearchContext] = useState(false);
@@ -33,7 +35,8 @@ export const useAIAnalysis = ({
       currentAnalysis: currentAnalysis?.id || 'MISSING',
       analysisContext: analysisContext ? 'PROVIDED' : 'NONE',
       imageAnnotations: imageAnnotations?.length || 0,
-      isComparative
+      isComparative,
+      enableRAG
     });
 
     if (!imageUrls || imageUrls.length === 0) {
@@ -136,7 +139,7 @@ export const useAIAnalysis = ({
       console.log('🔚 useAIAnalysis.handleAnalyze - Setting isAnalyzing to false');
       setIsAnalyzing(false);
     }
-  }, [imageUrls, currentAnalysis, setIsAnalyzing, setAnnotations, isComparative]);
+  }, [imageUrls, currentAnalysis, setIsAnalyzing, setAnnotations, isComparative, enableRAG]);
 
   return {
     handleAnalyze,
