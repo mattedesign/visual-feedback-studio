@@ -1,4 +1,3 @@
-
 import { corsHeaders, corsHandler } from './corsHandler.ts';
 import { requestValidator } from './requestValidator.ts';
 import { imageProcessingManager } from './imageProcessingManager.ts';
@@ -7,6 +6,7 @@ import { databaseManager } from './databaseManager.ts';
 import { responseFormatter } from './responseFormatter.ts';
 import { errorHandler } from './errorHandler.ts';
 import { environmentValidator, validateEnvironment } from './environmentValidator.ts';
+import { buildAnalysisPrompt } from './promptBuilder.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 
 console.log('🚀 Design Analysis Function Starting');
@@ -75,7 +75,7 @@ async function addKnowledgeContext(prompt: string, supabase: any, enableRAG = fa
     // Use the actual embedding to search for relevant knowledge
     const { data: knowledge, error } = await supabase.rpc('match_knowledge', {
       query_embedding: `[${embedding.join(',')}]`,
-      match_threshold: 0.3, // Lower threshold for better matches
+      match_threshold: 0.3,
       match_count: 5,
       filter_category: null
     });
@@ -106,21 +106,10 @@ async function addKnowledgeContext(prompt: string, supabase: any, enableRAG = fa
       
       const citations = knowledge.map((k: any) => k.title);
       
-      const enhancedPrompt = `${prompt}
-
-=== RELEVANT UX RESEARCH & BEST PRACTICES ===
-Based on our knowledge base, here are relevant insights for your analysis:
-
-${context}
-
-ANALYSIS INSTRUCTION: Use this research context to provide evidence-based recommendations. Reference specific UX principles and best practices from the context above when applicable. This will enhance the authority and quality of your analysis.
-
-===`;
-
-      console.log(`📚 Enhanced prompt created with ${knowledge.length} knowledge sources`);
+      console.log(`📚 Enhanced prompt will include ${knowledge.length} knowledge sources`);
       
       return {
-        enhancedPrompt,
+        enhancedPrompt: context, // Return context separately for prompt builder
         researchEnhanced: true,
         knowledgeSourcesUsed: knowledge.length,
         researchCitations: citations
@@ -301,12 +290,6 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Check knowledge base status if RAG is enabled
-    const enableRAG = requestData.ragEnabled === true;
-    if (enableRAG) {
-      await checkKnowledgeBase(supabase);
-    }
-
     // Determine AI provider configuration
     console.log('🤖 Determining AI provider...');
     const aiProviderConfig = determineOptimalProvider();
@@ -319,32 +302,43 @@ Deno.serve(async (req) => {
       researchCitations: [] as string[]
     };
     
+    // Get RAG context first
+    const enableRAG = requestData.ragEnabled === true;
+    const originalPrompt = requestData.analysisPrompt || 'Analyze this design for UX improvements';
+    
+    console.log(`🔧 RAG enabled: ${enableRAG}`);
+    
+    const ragContext = await addKnowledgeContext(originalPrompt, supabase, enableRAG);
+    ragResults = {
+      researchEnhanced: ragContext.researchEnhanced,
+      knowledgeSourcesUsed: ragContext.knowledgeSourcesUsed,
+      researchCitations: ragContext.researchCitations
+    };
+    
+    console.log(`📚 RAG Context Results:`, {
+      enhanced: ragContext.researchEnhanced,
+      sources: ragContext.knowledgeSourcesUsed,
+      citations: ragContext.researchCitations.length
+    });
+    
+    // Build the complete prompt with RAG context
+    const enhancedPrompt = buildAnalysisPrompt(
+      originalPrompt,
+      ragContext.researchEnhanced ? ragContext.enhancedPrompt : undefined,
+      requestData.isComparative || false,
+      imageProcessingResult.processedImages.length
+    );
+    
+    console.log('🏗️ Built enhanced prompt with JSON format instructions');
+    
     for (const processedImage of imageProcessingResult.processedImages) {
       console.log(`🔍 Analyzing image with ${aiProviderConfig.provider}...`);
       
       try {
-        // Enhanced prompt with RAG context (check for ragEnabled in request)
-        const originalPrompt = requestData.analysisPrompt || 'Analyze this design for UX improvements';
-        
-        console.log(`🔧 RAG enabled: ${enableRAG}`);
-        
-        const ragContext = await addKnowledgeContext(originalPrompt, supabase, enableRAG);
-        ragResults = {
-          researchEnhanced: ragContext.researchEnhanced,
-          knowledgeSourcesUsed: ragContext.knowledgeSourcesUsed,
-          researchCitations: ragContext.researchCitations
-        };
-        
-        console.log(`📚 RAG Context Results:`, {
-          enhanced: ragContext.researchEnhanced,
-          sources: ragContext.knowledgeSourcesUsed,
-          citations: ragContext.researchCitations.length
-        });
-        
         const annotations = await analyzeWithAIProvider(
           processedImage.base64Data,
           processedImage.mimeType,
-          ragContext.enhancedPrompt,
+          enhancedPrompt,
           aiProviderConfig
         );
         
@@ -377,7 +371,7 @@ Deno.serve(async (req) => {
       analysisId: requestData.analysisId,
       annotations: allAnnotations,
       aiModelUsed: aiProviderConfig.provider + (aiProviderConfig.model ? `:${aiProviderConfig.model}` : ''),
-      processingTime: Date.now() // Simple timestamp for now
+      processingTime: Date.now()
     });
 
     if (!dbResult.success) {
