@@ -11,15 +11,23 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 
 console.log('🚀 Design Analysis Function Starting');
 
-// Enhanced RAG helper function to add knowledge context
+// Enhanced RAG helper function with comprehensive logging and error handling
 async function addKnowledgeContext(prompt: string, supabase: any, enableRAG = false): Promise<{
   enhancedPrompt: string;
   researchEnhanced: boolean;
   knowledgeSourcesUsed: number;
   researchCitations: string[];
 }> {
+  console.log('🔍 === RAG CONTEXT BUILDING START ===');
+  console.log(`📋 RAG Configuration:`, {
+    enableRAG,
+    promptLength: prompt.length,
+    promptPreview: prompt.substring(0, 100) + '...',
+    timestamp: new Date().toISOString()
+  });
+
   if (!enableRAG) {
-    console.log('⚠️ RAG disabled, using standard prompt');
+    console.log('⚠️ RAG disabled by configuration, using standard prompt');
     return {
       enhancedPrompt: prompt,
       researchEnhanced: false,
@@ -29,13 +37,13 @@ async function addKnowledgeContext(prompt: string, supabase: any, enableRAG = fa
   }
 
   try {
-    console.log('🔍 Adding RAG knowledge context...');
-    console.log(`📝 Analysis prompt: "${prompt.substring(0, 100)}..."`);
+    console.log('🧠 Starting embedding generation process...');
     
-    // Generate embedding for the analysis prompt using OpenAI
+    // Check OpenAI API key availability
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openaiApiKey) {
-      console.log('⚠️ No OpenAI API key for embedding generation, skipping RAG');
+      console.log('❌ CRITICAL: No OpenAI API key found for embedding generation');
+      console.log('🔧 RAG requires OpenAI API key for semantic search');
       return {
         enhancedPrompt: prompt,
         researchEnhanced: false,
@@ -44,7 +52,13 @@ async function addKnowledgeContext(prompt: string, supabase: any, enableRAG = fa
       };
     }
     
-    console.log('🧠 Generating embedding for analysis prompt...');
+    console.log('✅ OpenAI API key available for embedding generation');
+    console.log(`🔑 API key preview: ${openaiApiKey.substring(0, 10)}...`);
+    
+    // Generate embedding with detailed logging
+    console.log('📡 Calling OpenAI Embeddings API...');
+    const embeddingStartTime = Date.now();
+    
     const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
       method: 'POST',
       headers: {
@@ -58,8 +72,21 @@ async function addKnowledgeContext(prompt: string, supabase: any, enableRAG = fa
       }),
     });
     
+    const embeddingDuration = Date.now() - embeddingStartTime;
+    console.log(`⏱️ Embedding API call completed in ${embeddingDuration}ms`);
+    console.log(`📊 Embedding API response status: ${embeddingResponse.status}`);
+    
     if (!embeddingResponse.ok) {
-      console.log('⚠️ Embedding generation failed:', embeddingResponse.status);
+      const errorText = await embeddingResponse.text();
+      console.log('❌ EMBEDDING API ERROR:', {
+        status: embeddingResponse.status,
+        statusText: embeddingResponse.statusText,
+        error: errorText.substring(0, 200),
+        apiKeyPreview: openaiApiKey.substring(0, 10) + '...'
+      });
+      
+      // Fallback handling
+      console.log('🔄 Falling back to standard analysis due to embedding failure');
       return {
         enhancedPrompt: prompt,
         researchEnhanced: false,
@@ -70,9 +97,16 @@ async function addKnowledgeContext(prompt: string, supabase: any, enableRAG = fa
     
     const embeddingData = await embeddingResponse.json();
     const embedding = embeddingData.data[0].embedding;
-    console.log(`✅ Generated embedding with ${embedding.length} dimensions`);
+    console.log(`✅ Generated embedding successfully:`, {
+      dimensions: embedding.length,
+      model: embeddingData.model || 'text-embedding-3-small',
+      usage: embeddingData.usage
+    });
     
-    // Use the actual embedding to search for relevant knowledge
+    // Query knowledge base with detailed logging
+    console.log('🔍 Querying knowledge base with semantic search...');
+    const dbQueryStartTime = Date.now();
+    
     const { data: knowledge, error } = await supabase.rpc('match_knowledge', {
       query_embedding: `[${embedding.join(',')}]`,
       match_threshold: 0.3,
@@ -80,8 +114,19 @@ async function addKnowledgeContext(prompt: string, supabase: any, enableRAG = fa
       filter_category: null
     });
     
+    const dbQueryDuration = Date.now() - dbQueryStartTime;
+    console.log(`⏱️ Database query completed in ${dbQueryDuration}ms`);
+    
     if (error) {
-      console.log('⚠️ RPC error:', error);
+      console.log('❌ DATABASE QUERY ERROR:', {
+        error: error.message,
+        code: error.code,
+        hint: error.hint,
+        details: error.details
+      });
+      
+      // Fallback handling
+      console.log('🔄 Falling back to standard analysis due to database error');
       return {
         enhancedPrompt: prompt,
         researchEnhanced: false,
@@ -90,33 +135,54 @@ async function addKnowledgeContext(prompt: string, supabase: any, enableRAG = fa
       };
     }
     
-    console.log(`🔍 Knowledge search results: ${knowledge?.length || 0} entries found`);
+    console.log(`📊 Knowledge base query results:`, {
+      entriesFound: knowledge?.length || 0,
+      queryThreshold: 0.3,
+      maxResults: 5
+    });
     
     if (knowledge && knowledge.length > 0) {
-      console.log(`✅ Found ${knowledge.length} relevant knowledge entries for RAG enhancement`);
+      console.log('✅ RAG KNOWLEDGE RETRIEVAL SUCCESSFUL');
+      console.log('📚 Retrieved knowledge entries:');
       
-      // Log the similarity scores for debugging
       knowledge.forEach((k: any, index: number) => {
-        console.log(`   ${index + 1}. "${k.title}" (similarity: ${k.similarity?.toFixed(3) || 'N/A'})`);
+        console.log(`   ${index + 1}. "${k.title}" (${k.category}) - Similarity: ${k.similarity?.toFixed(3) || 'N/A'}`);
+        console.log(`      Content preview: ${k.content.substring(0, 100)}...`);
       });
       
-      const context = knowledge.map((k: any) => 
-        `**${k.title}** (${k.category}): ${k.content.substring(0, 300)}...`
+      // Build comprehensive research context
+      const researchContext = knowledge.map((k: any, index: number) => 
+        `**${index + 1}. ${k.title}** (Category: ${k.category}, Relevance: ${k.similarity?.toFixed(2) || 'N/A'})
+${k.content.substring(0, 400)}${k.content.length > 400 ? '...' : ''}
+
+---`
       ).join('\n\n');
       
       const citations = knowledge.map((k: any) => k.title);
       
-      console.log(`📚 Enhanced prompt will include ${knowledge.length} knowledge sources`);
+      console.log('🎯 RAG CONTEXT BUILDING SUCCESS:', {
+        knowledgeEntries: knowledge.length,
+        totalContextLength: researchContext.length,
+        citationsCount: citations.length,
+        averageSimilarity: (knowledge.reduce((sum: number, k: any) => sum + (k.similarity || 0), 0) / knowledge.length).toFixed(3)
+      });
+      
+      console.log('🔍 === RAG CONTEXT BUILDING COMPLETE ===');
       
       return {
-        enhancedPrompt: context, // Return context separately for prompt builder
+        enhancedPrompt: researchContext,
         researchEnhanced: true,
         knowledgeSourcesUsed: knowledge.length,
         researchCitations: citations
       };
     }
     
-    console.log('⚠️ No relevant knowledge found, using standard prompt');
+    console.log('⚠️ No relevant knowledge found in database');
+    console.log('💡 This might indicate:');
+    console.log('   - Knowledge base is empty');
+    console.log('   - Query threshold too high (0.3)');
+    console.log('   - Semantic mismatch between query and knowledge');
+    
     return {
       enhancedPrompt: prompt,
       researchEnhanced: false,
@@ -124,8 +190,15 @@ async function addKnowledgeContext(prompt: string, supabase: any, enableRAG = fa
       researchCitations: []
     };
     
-  } catch (e) {
-    console.log('⚠️ RAG failed, using standard prompt:', e);
+  } catch (error) {
+    console.log('❌ RAG CONTEXT BUILDING FAILED:', {
+      error: error.message,
+      stack: error.stack?.substring(0, 500),
+      timestamp: new Date().toISOString()
+    });
+    
+    console.log('🔄 Implementing fallback to standard analysis');
+    
     return {
       enhancedPrompt: prompt,
       researchEnhanced: false,
@@ -302,11 +375,16 @@ Deno.serve(async (req) => {
       researchCitations: [] as string[]
     };
     
-    // Get RAG context first
+    // Enhanced RAG context building
     const enableRAG = requestData.ragEnabled === true;
     const originalPrompt = requestData.analysisPrompt || 'Analyze this design for UX improvements';
     
-    console.log(`🔧 RAG enabled: ${enableRAG}`);
+    console.log(`🔧 RAG Configuration:`, {
+      ragEnabled: enableRAG,
+      promptLength: originalPrompt.length,
+      imageCount: imageProcessingResult.processedImages.length,
+      isComparative: requestData.isComparative || false
+    });
     
     const ragContext = await addKnowledgeContext(originalPrompt, supabase, enableRAG);
     ragResults = {
@@ -315,13 +393,9 @@ Deno.serve(async (req) => {
       researchCitations: ragContext.researchCitations
     };
     
-    console.log(`📚 RAG Context Results:`, {
-      enhanced: ragContext.researchEnhanced,
-      sources: ragContext.knowledgeSourcesUsed,
-      citations: ragContext.researchCitations.length
-    });
+    console.log(`📚 RAG Context Results:`, ragResults);
     
-    // Build the complete prompt with RAG context
+    // Build the complete prompt with RAG context using the updated prompt builder
     const enhancedPrompt = buildAnalysisPrompt(
       originalPrompt,
       ragContext.researchEnhanced ? ragContext.enhancedPrompt : undefined,
@@ -329,7 +403,11 @@ Deno.serve(async (req) => {
       imageProcessingResult.processedImages.length
     );
     
-    console.log('🏗️ Built enhanced prompt with JSON format instructions');
+    console.log('🏗️ Prompt building completed:', {
+      finalPromptLength: enhancedPrompt.length,
+      ragEnhanced: ragContext.researchEnhanced,
+      knowledgeSources: ragContext.knowledgeSourcesUsed
+    });
     
     for (const processedImage of imageProcessingResult.processedImages) {
       console.log(`🔍 Analyzing image with ${aiProviderConfig.provider}...`);
@@ -351,6 +429,7 @@ Deno.serve(async (req) => {
             error: error.message,
             debugInfo: {
               environment: envConfig,
+              ragStatus: ragResults,
               timestamp: new Date().toISOString()
             }
           }),
@@ -363,7 +442,7 @@ Deno.serve(async (req) => {
     }
 
     console.log(`✅ AI analysis completed with ${allAnnotations.length} total annotations`);
-    console.log(`📚 RAG Results: Enhanced=${ragResults.researchEnhanced}, Sources=${ragResults.knowledgeSourcesUsed}`);
+    console.log(`📚 Final RAG Results:`, ragResults);
 
     // Save to database
     console.log('💾 Saving to database...');
