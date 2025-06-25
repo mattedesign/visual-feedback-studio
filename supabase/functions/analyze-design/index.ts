@@ -8,6 +8,8 @@ import { responseFormatter } from './responseFormatter.ts';
 import { errorHandler } from './errorHandler.ts';
 import { environmentValidator, validateEnvironment } from './environmentValidator.ts';
 import { buildAnalysisPrompt } from './promptBuilder.ts';
+import { buildEnhancedAnalysisPrompt } from './enhancedPromptBuilder.ts';
+import { buildCompetitiveIntelligence, checkCompetitivePatternsDatabase, CompetitiveIntelligence } from './competitiveIntelligence.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 
 console.log('🚀 Design Analysis Function Starting');
@@ -372,10 +374,14 @@ Deno.serve(async (req) => {
 
     console.log(`✅ Images processed: ${imageProcessingResult.processedImages.length}`);
 
-    // Initialize Supabase client for RAG integration
+    // Initialize Supabase client for RAG integration and competitive intelligence
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Check database status
+    await checkKnowledgeBase(supabase);
+    await checkCompetitivePatternsDatabase(supabase);
 
     // Determine AI provider configuration
     console.log('🤖 Determining AI provider...');
@@ -388,14 +394,22 @@ Deno.serve(async (req) => {
       knowledgeSourcesUsed: 0,
       researchCitations: [] as string[]
     };
+    let competitiveResults: CompetitiveIntelligence = {
+      relevantPatterns: [],
+      industryBenchmarks: [],
+      competitiveContext: '',
+      totalPatterns: 0
+    };
     
     // Enhanced RAG context building
     const enableRAG = requestData.ragEnabled === true;
+    const enableCompetitive = requestData.competitiveEnabled !== false; // Enable by default
     const originalPrompt = requestData.analysisPrompt || 'Analyze this design for UX improvements';
     
-    console.log(`🔧 === PROMPT INTEGRATION DEBUG START ===`);
-    console.log(`📋 Prompt Integration Configuration:`, {
+    console.log(`🔧 === ENHANCED ANALYSIS INTEGRATION START ===`);
+    console.log(`📋 Enhanced Analysis Configuration:`, {
       ragEnabled: enableRAG,
+      competitiveEnabled: enableCompetitive,
       originalPromptLength: originalPrompt.length,
       originalPromptPreview: originalPrompt.substring(0, 200) + '...',
       imageCount: imageProcessingResult.processedImages.length,
@@ -403,6 +417,7 @@ Deno.serve(async (req) => {
       timestamp: new Date().toISOString()
     });
     
+    // Build RAG context
     const ragContext = await addKnowledgeContext(originalPrompt, supabase, enableRAG);
     ragResults = {
       researchEnhanced: ragContext.researchEnhanced,
@@ -411,97 +426,74 @@ Deno.serve(async (req) => {
     };
     
     console.log(`📚 === RAG CONTEXT RESULTS ===`, ragResults);
-    console.log(`🔍 RAG Context Details:`, {
-      contextLength: ragContext.enhancedPrompt.length,
-      contextPreview: ragContext.enhancedPrompt.substring(0, 300) + '...',
-      researchEnhanced: ragContext.researchEnhanced,
-      knowledgeSourcesUsed: ragContext.knowledgeSourcesUsed
+    
+    // Build competitive intelligence context
+    competitiveResults = await buildCompetitiveIntelligence(originalPrompt, supabase, enableCompetitive);
+    
+    console.log(`🏢 === COMPETITIVE INTELLIGENCE RESULTS ===`, {
+      totalPatterns: competitiveResults.totalPatterns,
+      competitiveContextLength: competitiveResults.competitiveContext.length,
+      benchmarksCount: competitiveResults.industryBenchmarks.length,
+      hasRelevantPatterns: competitiveResults.relevantPatterns.length > 0
     });
     
-    // Build the complete prompt with RAG context using the updated prompt builder
-    console.log(`🏗️ === CALLING BUILD ANALYSIS PROMPT ===`);
-    console.log(`📋 Prompt Builder Call Parameters:`, {
-      originalPrompt: originalPrompt.substring(0, 100) + '...',
-      ragContextAvailable: ragContext.researchEnhanced,
-      ragContextLength: ragContext.researchEnhanced ? ragContext.enhancedPrompt.length : 0,
-      ragContextPreview: ragContext.researchEnhanced ? ragContext.enhancedPrompt.substring(0, 200) + '...' : null,
-      isComparative: requestData.isComparative || false,
-      imageCount: imageProcessingResult.processedImages.length
-    });
+    // Build the complete enhanced prompt with both RAG and competitive intelligence
+    console.log(`🏗️ === BUILDING ENHANCED PROMPT WITH COMPETITIVE INTELLIGENCE ===`);
     
-    const enhancedPrompt = buildAnalysisPrompt(
+    const enhancedPrompt = buildEnhancedAnalysisPrompt(
       originalPrompt,
       ragContext.researchEnhanced ? ragContext.enhancedPrompt : undefined,
+      competitiveResults.totalPatterns > 0 ? competitiveResults.competitiveContext : undefined,
       requestData.isComparative || false,
       imageProcessingResult.processedImages.length
     );
     
     // ===== MAIN CONSOLE LOG FOR USER VISIBILITY =====
-    console.log("🎯🎯🎯 === COMPLETE ENHANCED PROMPT SENT TO OPENAI API === 🎯🎯🎯");
+    console.log("🎯🎯🎯 === COMPLETE ENHANCED PROMPT WITH COMPETITIVE INTELLIGENCE === 🎯🎯🎯");
     console.log("📏 Total Enhanced Prompt Length:", enhancedPrompt.length);
     console.log("📝 RAG Status:", ragContext.researchEnhanced ? "ENABLED with research context" : "DISABLED");
+    console.log("🏢 Competitive Intelligence Status:", competitiveResults.totalPatterns > 0 ? "ENABLED with competitive context" : "DISABLED");
     console.log("📊 Research Sources Used:", ragContext.knowledgeSourcesUsed);
+    console.log("🏆 Competitive Patterns Used:", competitiveResults.totalPatterns);
     console.log("");
-    console.log("📋 === COMPLETE PROMPT CONTENT START ===");
+    console.log("📋 === COMPLETE ENHANCED PROMPT CONTENT START ===");
     console.log(enhancedPrompt);
-    console.log("📋 === COMPLETE PROMPT CONTENT END ===");
+    console.log("📋 === COMPLETE ENHANCED PROMPT CONTENT END ===");
     console.log("");
     
-    // Verification checks for RAG content
-    if (ragContext.researchEnhanced) {
-      console.log("✅ === RAG CONTENT VERIFICATION ===");
+    // Verification checks for enhanced content
+    if (ragContext.researchEnhanced || competitiveResults.totalPatterns > 0) {
+      console.log("✅ === ENHANCED CONTENT VERIFICATION ===");
       console.log("Contains 'RESEARCH-ENHANCED ANALYSIS':", enhancedPrompt.includes('RESEARCH-ENHANCED ANALYSIS'));
-      console.log("Contains 'Button Design Best Practices':", enhancedPrompt.includes('Button Design Best Practices'));
-      console.log("Contains 'Fitts' (case insensitive):", enhancedPrompt.toLowerCase().includes('fitts'));
-      console.log("Contains '44px' touch target:", enhancedPrompt.includes('44px'));
-      console.log("Contains '48dp' touch target:", enhancedPrompt.includes('48dp'));
-      console.log("Contains 'touch target' (case insensitive):", enhancedPrompt.toLowerCase().includes('touch target'));
-      console.log("Contains 'minimum' size (case insensitive):", enhancedPrompt.toLowerCase().includes('minimum'));
+      console.log("Contains 'COMPETITIVE INTELLIGENCE & BENCHMARKING':", enhancedPrompt.includes('COMPETITIVE INTELLIGENCE & BENCHMARKING'));
+      console.log("Contains research citations:", ragContext.researchEnhanced);
+      console.log("Contains competitive benchmarks:", competitiveResults.totalPatterns > 0);
       console.log("Contains original user prompt:", enhancedPrompt.includes(originalPrompt));
-      console.log("Research context length:", ragContext.enhancedPrompt.length);
+      
+      if (ragContext.researchEnhanced) {
+        console.log("Research context length:", ragContext.enhancedPrompt.length);
+        console.log("Contains 'Button Design Best Practices':", enhancedPrompt.includes('Button Design Best Practices'));
+      }
+      
+      if (competitiveResults.totalPatterns > 0) {
+        console.log("Competitive context length:", competitiveResults.competitiveContext.length);
+        console.log("Contains effectiveness scores:", enhancedPrompt.includes('Effectiveness Score'));
+        console.log("Industry benchmarks available:", competitiveResults.industryBenchmarks.length);
+      }
     } else {
-      console.log("⚠️ === NO RAG CONTENT FOUND ===");
-      console.log("This prompt contains only the original user input without research enhancement");
+      console.log("⚠️ === NO ENHANCED CONTENT FOUND ===");
+      console.log("This prompt contains only the original user input without research or competitive enhancement");
     }
     
-    console.log('🎯 === FINAL PROMPT READY FOR AI ===');
-    console.log('📏 Final Prompt Metrics:', {
+    console.log('🎯 === FINAL ENHANCED PROMPT READY FOR AI ===');
+    console.log('📏 Final Enhanced Prompt Metrics:', {
       finalPromptLength: enhancedPrompt.length,
       ragEnhanced: ragContext.researchEnhanced,
+      competitiveEnhanced: competitiveResults.totalPatterns > 0,
       knowledgeSources: ragContext.knowledgeSourcesUsed,
-      originalPromptLength: originalPrompt.length,
-      ragContextLength: ragContext.researchEnhanced ? ragContext.enhancedPrompt.length : 0,
-      addedByPromptBuilder: enhancedPrompt.length - originalPrompt.length - (ragContext.researchEnhanced ? ragContext.enhancedPrompt.length : 0)
+      competitivePatterns: competitiveResults.totalPatterns,
+      originalPromptLength: originalPrompt.length
     });
-
-    // CRITICAL: Log the exact prompt sections being sent to AI
-    console.log('🔍 === EXACT PROMPT BEING SENT TO OPENAI ===');
-    console.log('📄 Prompt Structure Check:');
-    console.log('   Contains original prompt:', enhancedPrompt.includes(originalPrompt));
-    console.log('   Contains research section:', enhancedPrompt.includes('RESEARCH-ENHANCED ANALYSIS'));
-    console.log('   Contains RAG context:', ragContext.researchEnhanced ? enhancedPrompt.includes(ragContext.enhancedPrompt) : false);
-    console.log('   Contains JSON instructions:', enhancedPrompt.includes('CRITICAL: You MUST respond'));
-    
-    // Log specific sections for debugging
-    console.log('📋 === PROMPT SECTIONS FOR DEBUGGING ===');
-    if (enhancedPrompt.includes('RESEARCH-ENHANCED ANALYSIS')) {
-      const researchStart = enhancedPrompt.indexOf('RESEARCH-ENHANCED ANALYSIS');
-      const researchEnd = enhancedPrompt.indexOf('IMPORTANT: Use this research context');
-      console.log('🔬 Research Section Found:');
-      console.log('   Start position:', researchStart);
-      console.log('   Research instructions end:', researchEnd);
-      console.log('   Sample of research section:');
-      console.log('   ' + enhancedPrompt.substring(researchStart, researchStart + 400) + '...');
-      
-      // Look for specific research content
-      if (ragContext.researchEnhanced) {
-        console.log('🎯 Looking for specific research content in final prompt:');
-        console.log('   Contains "Button Design":', enhancedPrompt.includes('Button Design'));
-        console.log('   Contains "Mobile Touch":', enhancedPrompt.includes('Mobile Touch'));
-        console.log('   Contains "Fitts":', enhancedPrompt.includes('Fitts'));
-        console.log('   Contains "44px" or "48dp":', enhancedPrompt.includes('44px') || enhancedPrompt.includes('48dp'));
-      }
-    }
     
     for (const processedImage of imageProcessingResult.processedImages) {
       console.log(`🔍 Analyzing image with ${aiProviderConfig.provider}...`);
@@ -524,6 +516,7 @@ Deno.serve(async (req) => {
             debugInfo: {
               environment: envConfig,
               ragStatus: ragResults,
+              competitiveStatus: competitiveResults,
               timestamp: new Date().toISOString()
             }
           }),
@@ -537,6 +530,10 @@ Deno.serve(async (req) => {
 
     console.log(`✅ AI analysis completed with ${allAnnotations.length} total annotations`);
     console.log(`📚 Final RAG Results:`, ragResults);
+    console.log(`🏢 Final Competitive Intelligence Results:`, {
+      totalPatterns: competitiveResults.totalPatterns,
+      benchmarksUsed: competitiveResults.industryBenchmarks.length
+    });
 
     // Save to database
     console.log('💾 Saving to database...');
@@ -560,7 +557,7 @@ Deno.serve(async (req) => {
 
     console.log('✅ Results saved to database');
 
-    // Format response with RAG information
+    // Format response with enhanced information
     const response = responseFormatter.formatSuccessResponse({
       annotations: allAnnotations,
       totalAnnotations: allAnnotations.length,
@@ -568,7 +565,10 @@ Deno.serve(async (req) => {
       processingTime: Date.now(),
       ragEnhanced: ragResults.researchEnhanced,
       knowledgeSourcesUsed: ragResults.knowledgeSourcesUsed,
-      researchCitations: ragResults.researchCitations
+      researchCitations: ragResults.researchCitations,
+      competitiveEnhanced: competitiveResults.totalPatterns > 0,
+      competitivePatternsUsed: competitiveResults.totalPatterns,
+      industryBenchmarks: competitiveResults.industryBenchmarks
     });
 
     // Add CORS headers to successful response
@@ -577,7 +577,12 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-    console.log('✅ Analysis completed successfully', ragResults.researchEnhanced ? 'with RAG enhancement' : 'without RAG');
+    const enhancementStatus = [
+      ragResults.researchEnhanced ? 'RAG enhancement' : null,
+      competitiveResults.totalPatterns > 0 ? 'competitive intelligence' : null
+    ].filter(Boolean).join(' and ') || 'standard analysis';
+
+    console.log(`✅ Analysis completed successfully with ${enhancementStatus}`);
     return responseWithCors;
 
   } catch (error) {

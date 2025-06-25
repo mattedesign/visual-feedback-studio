@@ -34,7 +34,7 @@ export function formatErrorResponse(error: Error): {
   };
 }
 
-// Enhanced response formatter that supports RAG fields
+// Enhanced response formatter that supports RAG and competitive intelligence fields
 export const responseFormatter = {
   formatSuccessResponse: (data: {
     annotations: AnnotationData[];
@@ -44,6 +44,9 @@ export const responseFormatter = {
     ragEnhanced?: boolean;
     knowledgeSourcesUsed?: number;
     researchCitations?: string[];
+    competitiveEnhanced?: boolean;
+    competitivePatternsUsed?: number;
+    industryBenchmarks?: string[];
   }) => {
     const processedAnnotations = data.annotations.map((ann, index) => ({
       id: `ai-${Date.now()}-${index}`,
@@ -65,7 +68,10 @@ export const responseFormatter = {
       processingTime: data.processingTime,
       ragEnhanced: data.ragEnhanced || false,
       knowledgeSourcesUsed: data.knowledgeSourcesUsed || 0,
-      researchCitations: data.researchCitations || []
+      researchCitations: data.researchCitations || [],
+      competitiveEnhanced: data.competitiveEnhanced || false,
+      competitivePatternsUsed: data.competitivePatternsUsed || 0,
+      industryBenchmarks: data.industryBenchmarks || []
     };
 
     return {
