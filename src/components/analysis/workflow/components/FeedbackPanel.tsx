@@ -6,6 +6,7 @@ import { CategorySummaries } from './CategorySummaries';
 import { PrioritySummary } from './PrioritySummary';
 import { DetailedAnnotationsList } from './DetailedAnnotationsList';
 import { DetailedFeedbackCard } from './DetailedFeedbackCard';
+import { BusinessImpactSummary } from './BusinessImpactSummary';
 
 interface FeedbackPanelProps {
   currentImageAIAnnotations: Annotation[];
@@ -21,6 +22,24 @@ interface FeedbackPanelProps {
   onAnnotationClick: (annotationId: string) => void;
   aiAnnotations: Annotation[];
   getSeverityColor: (severity: string) => string;
+  businessImpact?: {
+    totalPotentialRevenue: string;
+    quickWinsAvailable: number;
+    criticalIssuesCount: number;
+    averageROIScore: number;
+    implementationRoadmap: {
+      immediate: Annotation[];
+      shortTerm: Annotation[];
+      longTerm: Annotation[];
+    };
+  };
+  insights?: {
+    topRecommendation: string;
+    quickestWin: string;
+    highestImpact: string;
+    competitiveAdvantage?: string;
+    researchEvidence?: string;
+  };
 }
 
 export const FeedbackPanel = ({
@@ -32,9 +51,19 @@ export const FeedbackPanel = ({
   onAnnotationClick,
   aiAnnotations,
   getSeverityColor,
+  businessImpact,
+  insights,
 }: FeedbackPanelProps) => {
   return (
     <div className="space-y-6">
+      {/* Business Impact Summary (if available) */}
+      {businessImpact && (
+        <BusinessImpactSummary 
+          businessImpact={businessImpact}
+          insights={insights}
+        />
+      )}
+
       {/* Analysis Summary Section */}
       <div className="space-y-4">
         <h2 className="text-xl font-bold text-gray-900 border-b border-gray-200 pb-2">

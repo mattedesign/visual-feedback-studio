@@ -59,6 +59,10 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
   const currentImageAIAnnotations = getAnnotationsForImage(activeImageIndex);
   const currentImageUserAnnotations = getUserAnnotationsForImage(activeImageUrl);
 
+  // Extract business impact and insights from the last analysis response
+  const businessImpact = workflow.lastAnalysisResponse?.businessImpact;
+  const insights = workflow.lastAnalysisResponse?.insights;
+
   return (
     <div className="max-w-7xl mx-auto">
       <Card className="bg-white border-gray-300 shadow-lg">
@@ -67,9 +71,11 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
             {isMultiImage ? 'Comparative Analysis Results' : 'Analysis Results'}
           </CardTitle>
           <p className="text-gray-700 text-center text-lg leading-relaxed">
-            {isMultiImage 
-              ? `Analysis completed across ${workflow.selectedImages.length} images. Click annotations for detailed feedback.`
-              : 'Click on any annotation to see detailed feedback'
+            {businessImpact ? 
+              `Analysis completed with business impact quantification. Total revenue potential: ${businessImpact.totalPotentialRevenue}` :
+              isMultiImage 
+                ? `Analysis completed across ${workflow.selectedImages.length} images. Click annotations for detailed feedback.`
+                : 'Click on any annotation to see detailed feedback'
             }
           </p>
         </CardHeader>
@@ -118,6 +124,8 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
               onAnnotationClick={setActiveAnnotation}
               aiAnnotations={workflow.aiAnnotations}
               getSeverityColor={getSeverityColor}
+              businessImpact={businessImpact}
+              insights={insights}
             />
           </div>
 

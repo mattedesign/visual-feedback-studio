@@ -1,18 +1,19 @@
-
 import { corsHeaders, corsHandler } from './corsHandler.ts';
 import { requestValidator } from './requestValidator.ts';
 import { imageProcessingManager } from './imageProcessingManager.ts';
 import { analyzeWithAIProvider, determineOptimalProvider } from './aiProviderRouter.ts';
 import { databaseManager } from './databaseManager.ts';
 import { responseFormatter } from './responseFormatter.ts';
+import { enhancedResponseFormatter } from './enhancedResponseFormatter.ts';
 import { errorHandler } from './errorHandler.ts';
 import { environmentValidator, validateEnvironment } from './environmentValidator.ts';
 import { buildAnalysisPrompt } from './promptBuilder.ts';
 import { buildEnhancedAnalysisPrompt } from './enhancedPromptBuilder.ts';
 import { buildCompetitiveIntelligence, checkCompetitivePatternsDatabase, CompetitiveIntelligence } from './competitiveIntelligence.ts';
+import { EnhancedAnalysisIntegrator } from './enhancedAnalysisIntegrator.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 
-console.log('🚀 Design Analysis Function Starting');
+console.log('🚀 Design Analysis Function Starting with Enhanced Business Impact');
 
 // Enhanced RAG helper function with comprehensive logging and error handling
 async function addKnowledgeContext(prompt: string, supabase: any, enableRAG = false): Promise<{
@@ -404,12 +405,14 @@ Deno.serve(async (req) => {
     // Enhanced RAG context building
     const enableRAG = requestData.ragEnabled === true;
     const enableCompetitive = requestData.competitiveEnabled !== false; // Enable by default
+    const enableBusinessImpact = requestData.businessImpactEnabled !== false; // Enable by default
     const originalPrompt = requestData.analysisPrompt || 'Analyze this design for UX improvements';
     
-    console.log(`🔧 === ENHANCED ANALYSIS INTEGRATION START ===`);
+    console.log(`🔧 === ENHANCED ANALYSIS WITH BUSINESS IMPACT START ===`);
     console.log(`📋 Enhanced Analysis Configuration:`, {
       ragEnabled: enableRAG,
       competitiveEnabled: enableCompetitive,
+      businessImpactEnabled: enableBusinessImpact,
       originalPromptLength: originalPrompt.length,
       originalPromptPreview: originalPrompt.substring(0, 200) + '...',
       imageCount: imageProcessingResult.processedImages.length,
@@ -438,7 +441,7 @@ Deno.serve(async (req) => {
     });
     
     // Build the complete enhanced prompt with both RAG and competitive intelligence
-    console.log(`🏗️ === BUILDING ENHANCED PROMPT WITH COMPETITIVE INTELLIGENCE ===`);
+    console.log(`🏗️ === BUILDING ENHANCED PROMPT WITH BUSINESS IMPACT INTEGRATION ===`);
     
     const enhancedPrompt = buildEnhancedAnalysisPrompt(
       originalPrompt,
@@ -449,51 +452,14 @@ Deno.serve(async (req) => {
     );
     
     // ===== MAIN CONSOLE LOG FOR USER VISIBILITY =====
-    console.log("🎯🎯🎯 === COMPLETE ENHANCED PROMPT WITH COMPETITIVE INTELLIGENCE === 🎯🎯🎯");
+    console.log("🎯🎯🎯 === COMPLETE ENHANCED PROMPT WITH BUSINESS IMPACT === 🎯🎯🎯");
     console.log("📏 Total Enhanced Prompt Length:", enhancedPrompt.length);
     console.log("📝 RAG Status:", ragContext.researchEnhanced ? "ENABLED with research context" : "DISABLED");
     console.log("🏢 Competitive Intelligence Status:", competitiveResults.totalPatterns > 0 ? "ENABLED with competitive context" : "DISABLED");
+    console.log("💼 Business Impact Quantification Status:", enableBusinessImpact ? "ENABLED" : "DISABLED");
     console.log("📊 Research Sources Used:", ragContext.knowledgeSourcesUsed);
     console.log("🏆 Competitive Patterns Used:", competitiveResults.totalPatterns);
     console.log("");
-    console.log("📋 === COMPLETE ENHANCED PROMPT CONTENT START ===");
-    console.log(enhancedPrompt);
-    console.log("📋 === COMPLETE ENHANCED PROMPT CONTENT END ===");
-    console.log("");
-    
-    // Verification checks for enhanced content
-    if (ragContext.researchEnhanced || competitiveResults.totalPatterns > 0) {
-      console.log("✅ === ENHANCED CONTENT VERIFICATION ===");
-      console.log("Contains 'RESEARCH-ENHANCED ANALYSIS':", enhancedPrompt.includes('RESEARCH-ENHANCED ANALYSIS'));
-      console.log("Contains 'COMPETITIVE INTELLIGENCE & BENCHMARKING':", enhancedPrompt.includes('COMPETITIVE INTELLIGENCE & BENCHMARKING'));
-      console.log("Contains research citations:", ragContext.researchEnhanced);
-      console.log("Contains competitive benchmarks:", competitiveResults.totalPatterns > 0);
-      console.log("Contains original user prompt:", enhancedPrompt.includes(originalPrompt));
-      
-      if (ragContext.researchEnhanced) {
-        console.log("Research context length:", ragContext.enhancedPrompt.length);
-        console.log("Contains 'Button Design Best Practices':", enhancedPrompt.includes('Button Design Best Practices'));
-      }
-      
-      if (competitiveResults.totalPatterns > 0) {
-        console.log("Competitive context length:", competitiveResults.competitiveContext.length);
-        console.log("Contains effectiveness scores:", enhancedPrompt.includes('Effectiveness Score'));
-        console.log("Industry benchmarks available:", competitiveResults.industryBenchmarks.length);
-      }
-    } else {
-      console.log("⚠️ === NO ENHANCED CONTENT FOUND ===");
-      console.log("This prompt contains only the original user input without research or competitive enhancement");
-    }
-    
-    console.log('🎯 === FINAL ENHANCED PROMPT READY FOR AI ===');
-    console.log('📏 Final Enhanced Prompt Metrics:', {
-      finalPromptLength: enhancedPrompt.length,
-      ragEnhanced: ragContext.researchEnhanced,
-      competitiveEnhanced: competitiveResults.totalPatterns > 0,
-      knowledgeSources: ragContext.knowledgeSourcesUsed,
-      competitivePatterns: competitiveResults.totalPatterns,
-      originalPromptLength: originalPrompt.length
-    });
     
     for (const processedImage of imageProcessingResult.processedImages) {
       console.log(`🔍 Analyzing image with ${aiProviderConfig.provider}...`);
@@ -529,64 +495,137 @@ Deno.serve(async (req) => {
     }
 
     console.log(`✅ AI analysis completed with ${allAnnotations.length} total annotations`);
-    console.log(`📚 Final RAG Results:`, ragResults);
-    console.log(`🏢 Final Competitive Intelligence Results:`, {
-      totalPatterns: competitiveResults.totalPatterns,
-      benchmarksUsed: competitiveResults.industryBenchmarks.length
-    });
 
-    // Save to database
-    console.log('💾 Saving to database...');
-    const dbResult = await databaseManager.saveAnalysisResults({
-      analysisId: requestData.analysisId,
-      annotations: allAnnotations,
-      aiModelUsed: aiProviderConfig.provider + (aiProviderConfig.model ? `:${aiProviderConfig.model}` : ''),
-      processingTime: Date.now()
-    });
+    // NEW: Integrate business impact calculations
+    if (enableBusinessImpact) {
+      console.log('💼 === BUSINESS IMPACT INTEGRATION START ===');
+      
+      const enhancedResults = EnhancedAnalysisIntegrator.integrateBusinessImpact(
+        allAnnotations,
+        ragContext.researchEnhanced ? {
+          researchCitations: ragContext.researchCitations,
+          enhancedPrompt: ragContext.enhancedPrompt
+        } : undefined,
+        competitiveResults.totalPatterns > 0 ? competitiveResults : undefined
+      );
 
-    if (!dbResult.success) {
-      console.error('❌ Database save failed:', dbResult.error);
-      return new Response(
-        JSON.stringify({ error: dbResult.error }),
-        { 
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      console.log('💼 === BUSINESS IMPACT INTEGRATION COMPLETE ===');
+      console.log('📈 Business Impact Summary:', {
+        totalRevenue: enhancedResults.businessSummary.totalPotentialRevenue,
+        quickWins: enhancedResults.businessSummary.quickWinsCount,
+        criticalIssues: enhancedResults.businessSummary.criticalIssuesCount,
+        avgROI: enhancedResults.businessSummary.averageROIScore
+      });
+
+      // Save enhanced results to database
+      console.log('💾 Saving enhanced results to database...');
+      const dbResult = await databaseManager.saveAnalysisResults({
+        analysisId: requestData.analysisId,
+        annotations: enhancedResults.annotations,
+        aiModelUsed: aiProviderConfig.provider + (aiProviderConfig.model ? `:${aiProviderConfig.model}` : ''),
+        processingTime: Date.now()
+      });
+
+      if (!dbResult.success) {
+        console.error('❌ Database save failed:', dbResult.error);
+        return new Response(
+          JSON.stringify({ error: dbResult.error }),
+          { 
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      console.log('✅ Enhanced results saved to database');
+
+      // Format enhanced response
+      const response = enhancedResponseFormatter.formatEnhancedResponse(
+        enhancedResults,
+        {
+          modelUsed: aiProviderConfig.provider + (aiProviderConfig.model ? `:${aiProviderConfig.model}` : ''),
+          processingTime: Date.now(),
+          ragEnhanced: ragResults.researchEnhanced,
+          knowledgeSourcesUsed: ragResults.knowledgeSourcesUsed,
+          researchCitations: ragResults.researchCitations,
+          competitiveEnhanced: competitiveResults.totalPatterns > 0,
+          competitivePatternsUsed: competitiveResults.totalPatterns,
+          industryBenchmarks: competitiveResults.industryBenchmarks
         }
       );
+
+      // Add CORS headers to successful response
+      const responseWithCors = new Response(response.body, {
+        status: response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+
+      const enhancementStatus = [
+        ragResults.researchEnhanced ? 'RAG enhancement' : null,
+        competitiveResults.totalPatterns > 0 ? 'competitive intelligence' : null,
+        'business impact quantification'
+      ].filter(Boolean).join(', ');
+
+      console.log(`✅ Enhanced analysis completed successfully with ${enhancementStatus}`);
+      return responseWithCors;
+
+    } else {
+      // Fallback to standard response format for backward compatibility
+      console.log('📊 Using standard response format (business impact disabled)');
+      
+      // Save to database
+      console.log('💾 Saving to database...');
+      const dbResult = await databaseManager.saveAnalysisResults({
+        analysisId: requestData.analysisId,
+        annotations: allAnnotations,
+        aiModelUsed: aiProviderConfig.provider + (aiProviderConfig.model ? `:${aiProviderConfig.model}` : ''),
+        processingTime: Date.now()
+      });
+
+      if (!dbResult.success) {
+        console.error('❌ Database save failed:', dbResult.error);
+        return new Response(
+          JSON.stringify({ error: dbResult.error }),
+          { 
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      console.log('✅ Results saved to database');
+
+      // Format response with enhanced information
+      const response = responseFormatter.formatSuccessResponse({
+        annotations: allAnnotations,
+        totalAnnotations: allAnnotations.length,
+        modelUsed: aiProviderConfig.provider + (aiProviderConfig.model ? `:${aiProviderConfig.model}` : ''),
+        processingTime: Date.now(),
+        ragEnhanced: ragResults.researchEnhanced,
+        knowledgeSourcesUsed: ragResults.knowledgeSourcesUsed,
+        researchCitations: ragResults.researchCitations,
+        competitiveEnhanced: competitiveResults.totalPatterns > 0,
+        competitivePatternsUsed: competitiveResults.totalPatterns,
+        industryBenchmarks: competitiveResults.industryBenchmarks
+      });
+
+      // Add CORS headers to successful response
+      const responseWithCors = new Response(response.body, {
+        status: response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+
+      const enhancementStatus = [
+        ragResults.researchEnhanced ? 'RAG enhancement' : null,
+        competitiveResults.totalPatterns > 0 ? 'competitive intelligence' : null
+      ].filter(Boolean).join(' and ') || 'standard analysis';
+
+      console.log(`✅ Analysis completed successfully with ${enhancementStatus}`);
+      return responseWithCors;
     }
 
-    console.log('✅ Results saved to database');
-
-    // Format response with enhanced information
-    const response = responseFormatter.formatSuccessResponse({
-      annotations: allAnnotations,
-      totalAnnotations: allAnnotations.length,
-      modelUsed: aiProviderConfig.provider + (aiProviderConfig.model ? `:${aiProviderConfig.model}` : ''),
-      processingTime: Date.now(),
-      ragEnhanced: ragResults.researchEnhanced,
-      knowledgeSourcesUsed: ragResults.knowledgeSourcesUsed,
-      researchCitations: ragResults.researchCitations,
-      competitiveEnhanced: competitiveResults.totalPatterns > 0,
-      competitivePatternsUsed: competitiveResults.totalPatterns,
-      industryBenchmarks: competitiveResults.industryBenchmarks
-    });
-
-    // Add CORS headers to successful response
-    const responseWithCors = new Response(response.body, {
-      status: response.status,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
-
-    const enhancementStatus = [
-      ragResults.researchEnhanced ? 'RAG enhancement' : null,
-      competitiveResults.totalPatterns > 0 ? 'competitive intelligence' : null
-    ].filter(Boolean).join(' and ') || 'standard analysis';
-
-    console.log(`✅ Analysis completed successfully with ${enhancementStatus}`);
-    return responseWithCors;
-
   } catch (error) {
-    console.error('❌ Unexpected error in analysis function:', error);
+    console.error('❌ Unexpected error in enhanced analysis function:', error);
     return new Response(
       JSON.stringify({ 
         error: error instanceof Error ? error.message : 'Unknown error occurred',
