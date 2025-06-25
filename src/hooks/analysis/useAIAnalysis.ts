@@ -48,16 +48,6 @@ export const useAIAnalysis = ({
       return;
     }
 
-    // Get OpenAI API key from environment or prompt user
-    const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
-    if (!openaiApiKey) {
-      console.error('❌ OpenAI API key not configured');
-      toast.error('OpenAI API key not configured. Please contact support.');
-      return;
-    }
-
-    console.log('🔑 OpenAI API key:', openaiApiKey ? 'AVAILABLE' : 'MISSING');
-
     setIsAnalyzing(true);
     setIsBuilding(false);
     setHasResearchContext(false);
@@ -95,8 +85,7 @@ export const useAIAnalysis = ({
       
       const result = await directRAGAnalysisService.analyzeWithRAG({
         imageUrl: imageUrls[0],
-        analysisPrompt,
-        openaiApiKey
+        analysisPrompt
       });
 
       console.log('📋 Direct RAG service result:', {
