@@ -30,7 +30,7 @@ export const useAnalysisExecutionEnhanced = ({
       throw new Error('No analysis session found');
     }
 
-    console.log('🚀 Executing RAG-enhanced analysis with configuration:', {
+    console.log('🚀 Main Analysis Execution: Using same edge function as test:', {
       imageCount: imagesToAnalyze.length,
       isComparative,
       promptLength: enhancedPrompt.length,
@@ -45,23 +45,22 @@ export const useAnalysisExecutionEnhanced = ({
         analysisPrompt: enhancedPrompt,
         designType: currentAnalysis.design_type,
         isComparative,
-        // Enable RAG by default for enhanced analysis
-        ragEnhanced: true,
+        ragEnhanced: true, // Force enable RAG
         researchSourceCount: ragMetadata?.researchSourceCount || 0,
       };
 
-      console.log('📤 Sending RAG-enhanced analysis request:', {
+      console.log('📤 Main Analysis: Sending request to same edge function as test:', {
         analysisId: analysisRequest.analysisId,
         imageCount: analysisRequest.imageUrls.length,
         promptPreview: enhancedPrompt.substring(0, 200) + '...',
-        ragEnhanced: analysisRequest.ragEnhanced
+        ragEnabled: true
       });
 
-      // Use the actual analysis service with RAG enabled
+      // Use the standard analysis service which now calls the same edge function as the test
       const response = await analysisService.analyzeDesign(analysisRequest);
 
       if (response.success && response.annotations) {
-        console.log('✅ RAG-enhanced analysis completed successfully:', {
+        console.log('✅ Main Analysis: Completed successfully with RAG enhancement:', {
           annotationCount: response.annotations.length,
           categories: [...new Set(response.annotations.map(a => a.category))],
           researchEnhanced: response.researchEnhanced || false,
@@ -71,7 +70,7 @@ export const useAnalysisExecutionEnhanced = ({
         setAnnotations(response.annotations);
         
         const successMessage = response.researchEnhanced 
-          ? `Analysis complete! Found ${response.annotations.length} insights backed by ${response.knowledgeSourcesUsed} research sources.`
+          ? `Analysis complete! Enhanced with ${response.knowledgeSourcesUsed} research sources.`
           : `Analysis complete! Found ${response.annotations.length} design insights.`;
         
         toast.success(successMessage);
@@ -79,7 +78,7 @@ export const useAnalysisExecutionEnhanced = ({
         throw new Error(response.error || 'Analysis failed to return valid results');
       }
     } catch (error) {
-      console.error('❌ RAG-enhanced analysis execution failed:', error);
+      console.error('❌ Main Analysis: Execution failed:', error);
       throw error;
     } finally {
       setIsAnalyzing(false);

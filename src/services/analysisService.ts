@@ -50,27 +50,28 @@ export const createAnalysis = async () => {
 
 const analyzeDesign = async (request: AnalyzeDesignRequest): Promise<AnalyzeDesignResponse> => {
   try {
-    console.log('📡 Calling analyze-design function with request:', {
+    console.log('📡 Main Analysis: Calling analyze-design function with RAG enabled:', {
       analysisId: request.analysisId,
       imageCount: request.imageUrls.length,
       isComparative: request.isComparative,
-      ragEnhanced: request.ragEnhanced !== false // Enable RAG by default unless explicitly disabled
+      ragEnabled: true // Force enable RAG for main analysis
     });
 
+    // Use the same edge function call as the test - this is the working RAG implementation
     const { data, error } = await supabase.functions.invoke('analyze-design', {
       body: {
         imageUrls: request.imageUrls,
+        imageUrl: request.imageUrls[0], // Include both for compatibility
         analysisId: request.analysisId,
         analysisPrompt: request.analysisPrompt,
         designType: request.designType,
         isComparative: request.isComparative,
-        ragEnabled: request.ragEnhanced !== false, // Enable RAG by default
-        researchSourceCount: request.researchSourceCount
+        ragEnabled: true // This is the key - always enable RAG
       }
     });
 
     if (error) {
-      console.error('❌ Supabase function error:', error);
+      console.error('❌ Main Analysis: Edge function error:', error);
       throw new Error(`Analysis function failed: ${error.message}`);
     }
 
@@ -78,11 +79,12 @@ const analyzeDesign = async (request: AnalyzeDesignRequest): Promise<AnalyzeDesi
       throw new Error('No data returned from analysis function');
     }
 
-    console.log('✅ Analysis function completed:', {
+    console.log('✅ Main Analysis: Edge function completed successfully:', {
       success: data.success,
       annotationCount: data.annotations?.length || 0,
-      researchEnhanced: data.ragEnhanced || false,
-      knowledgeSourcesUsed: data.knowledgeSourcesUsed || 0
+      ragEnhanced: data.ragEnhanced || false,
+      knowledgeSourcesUsed: data.knowledgeSourcesUsed || 0,
+      researchCitations: data.researchCitations?.length || 0
     });
 
     return {
@@ -95,7 +97,7 @@ const analyzeDesign = async (request: AnalyzeDesignRequest): Promise<AnalyzeDesi
     };
 
   } catch (error) {
-    console.error('❌ Analysis service error:', error);
+    console.error('❌ Main Analysis: Service error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
