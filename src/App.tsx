@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Analysis from "./pages/Analysis";
 import Auth from "./pages/Auth";
 import VectorTest from "./pages/VectorTest";
+import Subscription from "./pages/Subscription";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => {
             <Route path="/analysis" element={<Analysis />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/vector-test" element={<VectorTest />} />
+            <Route path="/subscription" element={<Subscription />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
