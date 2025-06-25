@@ -1,5 +1,6 @@
 
 
+
 interface ProcessedImage {
   base64Data: string;
   mimeType: string;
@@ -37,6 +38,20 @@ class ImageProcessingManager {
     
     // If none of the above, assume it's already a valid URL
     return imageUrl;
+  }
+
+  private arrayBufferToBase64(buffer: ArrayBuffer): string {
+    const uint8Array = new Uint8Array(buffer);
+    let binaryString = '';
+    
+    // Process in chunks to avoid stack overflow
+    const chunkSize = 8192;
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.slice(i, i + chunkSize);
+      binaryString += String.fromCharCode.apply(null, Array.from(chunk));
+    }
+    
+    return btoa(binaryString);
   }
 
   async processImages(
@@ -80,15 +95,21 @@ class ImageProcessingManager {
           // Get the image as array buffer
           const arrayBuffer = await response.arrayBuffer();
           
-          // Convert to base64
-          const base64Data = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+          // Validate image size (max 50MB)
+          if (arrayBuffer.byteLength > 50 * 1024 * 1024) {
+            throw new Error(`Image too large: ${Math.round(arrayBuffer.byteLength / 1024)}KB (max 50MB allowed)`);
+          }
+          
+          // Convert to base64 using safe method
+          const base64Data = this.arrayBufferToBase64(arrayBuffer);
           
           // Get content type
           const mimeType = response.headers.get('content-type') || 'image/jpeg';
           
           console.log(`✅ Image ${i + 1} processed successfully:`, {
             mimeType,
-            sizeKB: Math.round(arrayBuffer.byteLength / 1024)
+            sizeKB: Math.round(arrayBuffer.byteLength / 1024),
+            base64Length: base64Data.length
           });
 
           processedImages.push({
@@ -124,4 +145,5 @@ class ImageProcessingManager {
 }
 
 export const imageProcessingManager = new ImageProcessingManager();
+
 
