@@ -436,8 +436,20 @@ Deno.serve(async (req) => {
       imageProcessingResult.processedImages.length
     );
     
-    // Add the requested console.log right before AI analysis
-    console.log("FINAL PROMPT SENT TO AI:", enhancedPrompt);
+    // Enhanced console.log to show complete prompt structure
+    console.log("🎯 === COMPLETE PROMPT SENT TO OPENAI ===");
+    console.log("📏 Complete Prompt Length:", enhancedPrompt.length);
+    console.log("📋 === FULL PROMPT CONTENT START ===");
+    console.log(enhancedPrompt);
+    console.log("📋 === FULL PROMPT CONTENT END ===");
+    
+    // Additional debugging for Fitts' Law content
+    console.log("🔍 === FITTS' LAW DETECTION ===");
+    console.log("Contains 'Fitts':", enhancedPrompt.toLowerCase().includes('fitts'));
+    console.log("Contains '44px':", enhancedPrompt.includes('44px'));
+    console.log("Contains '48dp':", enhancedPrompt.includes('48dp'));
+    console.log("Contains 'touch target':", enhancedPrompt.toLowerCase().includes('touch target'));
+    console.log("Contains 'minimum':", enhancedPrompt.toLowerCase().includes('minimum'));
     
     console.log('🎯 === FINAL PROMPT READY FOR AI ===');
     console.log('📏 Final Prompt Metrics:', {
