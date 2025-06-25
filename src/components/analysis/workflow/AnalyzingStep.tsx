@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { useAIAnalysis } from '@/hooks/analysis/useAIAnalysis';
@@ -15,6 +15,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
   const [currentStep, setCurrentStep] = useState('Initializing analysis...');
   const [retryCount, setRetryCount] = useState(0);
   const maxRetries = 3;
+  const analysisStartedRef = useRef(false);
 
   // Updated to capture RAG state from useAIAnalysis
   const { handleAnalyze, ragContext, isBuilding, hasResearchContext, researchSourcesCount } = useAIAnalysis({
@@ -34,109 +35,154 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
     }
   }, [isBuilding, ragContext]);
 
-  useEffect(() => {
-    const performAnalysis = async () => {
-      console.log('=== Starting Analysis Validation ===');
-      console.log('Selected images:', workflow.selectedImages.length);
-      console.log('Current analysis:', workflow.currentAnalysis?.id);
-      console.log('User annotations:', workflow.getTotalAnnotationsCount());
-      console.log('Analysis context:', workflow.analysisContext || 'None provided');
+  // Memoized analysis execution function
+  const performAnalysis = useCallback(async () => {
+    // Prevent multiple simultaneous analysis runs
+    if (analysisStartedRef.current) {
+      console.log('⚠️ Analysis already in progress, skipping duplicate call');
+      return;
+    }
 
-      // Validation checks
-      if (workflow.selectedImages.length === 0) {
-        console.error('No images selected for analysis');
-        toast.error('No images selected for analysis');
-        return;
-      }
+    console.log('=== Starting Analysis Validation ===');
+    console.log('Selected images:', workflow.selectedImages.length);
+    console.log('Current analysis:', workflow.currentAnalysis?.id);
+    console.log('User annotations:', workflow.getTotalAnnotationsCount());
+    console.log('Analysis context:', workflow.analysisContext || 'None provided');
 
-      if (!workflow.currentAnalysis) {
-        console.error('No current analysis found - this is the main issue');
-        toast.error('Analysis session not found. Please go back and upload your images again.');
-        return;
-      }
+    // Validation checks
+    if (workflow.selectedImages.length === 0) {
+      console.error('No images selected for analysis');
+      toast.error('No images selected for analysis');
+      return;
+    }
 
-      console.log('=== Starting RAG-Enhanced Analysis Process ===');
-      console.log('Is comparative:', workflow.selectedImages.length > 1);
+    if (!workflow.currentAnalysis) {
+      console.error('No current analysis found - this is the main issue');
+      toast.error('Analysis session not found. Please go back and upload your images again.');
+      return;
+    }
 
-      try {
-        setCurrentStep('Preparing images...');
-        setAnalysisProgress(10);
+    console.log('=== Starting RAG-Enhanced Analysis Process ===');
+    console.log('Is comparative:', workflow.selectedImages.length > 1);
 
-        // Validate images are accessible
-        const imageValidationPromises = workflow.selectedImages.map(async (imageUrl, index) => {
-          try {
-            const response = await fetch(imageUrl, { method: 'HEAD' });
-            if (!response.ok) {
-              throw new Error(`Image ${index + 1} not accessible: ${response.status}`);
-            }
-            console.log(`Image ${index + 1} validated successfully`);
-            return true;
-          } catch (error) {
-            console.error(`Image ${index + 1} validation failed:`, error);
-            throw error;
+    analysisStartedRef.current = true;
+
+    try {
+      setCurrentStep('Preparing images...');
+      setAnalysisProgress(10);
+
+      // Validate images are accessible
+      const imageValidationPromises = workflow.selectedImages.map(async (imageUrl, index) => {
+        try {
+          const response = await fetch(imageUrl, { method: 'HEAD' });
+          if (!response.ok) {
+            throw new Error(`Image ${index + 1} not accessible: ${response.status}`);
           }
-        });
-
-        await Promise.all(imageValidationPromises);
-        setAnalysisProgress(25);
-
-        setCurrentStep('Building research context...');
-        setAnalysisProgress(40);
-
-        setCurrentStep('Enhancing analysis with UX research...');
-        setAnalysisProgress(60);
-
-        setCurrentStep('Sending to AI for analysis...');
-        setAnalysisProgress(80);
-
-        await handleAnalyze(workflow.analysisContext, workflow.imageAnnotations);
-        
-        setAnalysisProgress(100);
-        setCurrentStep('Analysis complete!');
-        
-        console.log('=== RAG-Enhanced Analysis Completed Successfully ===');
-        
-        // Small delay to show completion before transitioning
-        setTimeout(() => {
-          workflow.goToStep('results');
-        }, 1000);
-
-      } catch (error) {
-        console.error('=== Analysis Failed ===');
-        console.error('Error details:', error);
-        console.error('Retry count:', retryCount);
-        
-        if (retryCount < maxRetries) {
-          const nextRetry = retryCount + 1;
-          console.log(`Attempting retry ${nextRetry}/${maxRetries}`);
-          setRetryCount(nextRetry);
-          setCurrentStep(`Retrying analysis (${nextRetry}/${maxRetries})...`);
-          setAnalysisProgress(0);
-          
-          // Exponential backoff: 2s, 4s, 8s
-          const delay = Math.pow(2, retryCount) * 2000;
-          setTimeout(() => {
-            performAnalysis();
-          }, delay);
-          
-          toast(`Analysis failed, retrying in ${delay/1000} seconds... (${nextRetry}/${maxRetries})`, {
-            duration: delay - 500,
-          });
-        } else {
-          console.error('Max retries exceeded, giving up');
-          setCurrentStep('Analysis failed after multiple attempts');
-          workflow.setIsAnalyzing(false);
-          
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-          toast.error(`Analysis failed: ${errorMessage}. Please try again or contact support if the issue persists.`, {
-            duration: 8000,
-          });
+          console.log(`Image ${index + 1} validated successfully`);
+          return true;
+        } catch (error) {
+          console.error(`Image ${index + 1} validation failed:`, error);
+          throw error;
         }
-      }
-    };
+      });
 
-    performAnalysis();
-  }, [workflow, handleAnalyze, retryCount]);
+      await Promise.all(imageValidationPromises);
+      setAnalysisProgress(25);
+
+      setCurrentStep('Building research context...');
+      setAnalysisProgress(40);
+
+      setCurrentStep('Enhancing analysis with UX research...');
+      setAnalysisProgress(60);
+
+      setCurrentStep('Sending to AI for analysis...');
+      setAnalysisProgress(80);
+
+      await handleAnalyze(workflow.analysisContext, workflow.imageAnnotations);
+      
+      setAnalysisProgress(100);
+      setCurrentStep('Analysis complete!');
+      
+      console.log('=== RAG-Enhanced Analysis Completed Successfully ===');
+      
+      // Small delay to show completion before transitioning
+      setTimeout(() => {
+        workflow.goToStep('results');
+      }, 1000);
+
+    } catch (error) {
+      console.error('=== Analysis Failed ===');
+      console.error('Error details:', error);
+      console.error('Retry count:', retryCount);
+      
+      if (retryCount < maxRetries) {
+        const nextRetry = retryCount + 1;
+        console.log(`Attempting retry ${nextRetry}/${maxRetries}`);
+        setRetryCount(nextRetry);
+        setCurrentStep(`Retrying analysis (${nextRetry}/${maxRetries})...`);
+        setAnalysisProgress(0);
+        
+        // Reset the analysis started flag for retry
+        analysisStartedRef.current = false;
+        
+        // Exponential backoff: 2s, 4s, 8s
+        const delay = Math.pow(2, retryCount) * 2000;
+        setTimeout(() => {
+          performAnalysis();
+        }, delay);
+        
+        toast(`Analysis failed, retrying in ${delay/1000} seconds... (${nextRetry}/${maxRetries})`, {
+          duration: delay - 500,
+        });
+      } else {
+        console.error('Max retries exceeded, giving up');
+        setCurrentStep('Analysis failed after multiple attempts');
+        workflow.setIsAnalyzing(false);
+        
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        toast.error(`Analysis failed: ${errorMessage}. Please try again or contact support if the issue persists.`, {
+          duration: 8000,
+        });
+      }
+    } finally {
+      if (retryCount >= maxRetries) {
+        analysisStartedRef.current = false;
+      }
+    }
+  }, [
+    workflow.selectedImages.length,
+    workflow.currentAnalysis?.id,
+    workflow.analysisContext,
+    handleAnalyze,
+    retryCount,
+    workflow.goToStep,
+    workflow.setIsAnalyzing,
+    workflow.getTotalAnnotationsCount,
+    workflow.imageAnnotations
+  ]);
+
+  // Stable effect that only runs once when component mounts or when critical dependencies change
+  useEffect(() => {
+    console.log('🚀 AnalyzingStep: Starting analysis effect', {
+      timestamp: new Date().toISOString(),
+      hasImages: workflow.selectedImages.length > 0,
+      hasAnalysis: !!workflow.currentAnalysis,
+      analysisStarted: analysisStartedRef.current
+    });
+
+    // Only start analysis if we haven't started yet
+    if (!analysisStartedRef.current) {
+      performAnalysis();
+    }
+  }, []); // Empty dependency array - only run once on mount
+
+  // Separate effect for retry logic
+  useEffect(() => {
+    if (retryCount > 0 && analysisStartedRef.current) {
+      // Reset for retry
+      analysisStartedRef.current = false;
+    }
+  }, [retryCount]);
 
   const totalAnnotations = workflow.getTotalAnnotationsCount();
   const isMultiImage = workflow.selectedImages.length > 1;

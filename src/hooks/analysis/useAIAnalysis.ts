@@ -1,6 +1,5 @@
 
-
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { AnalysisWithFiles } from '@/services/analysisDataService';
 import { Annotation } from '@/types/analysis';
 import { usePromptBuilder } from './usePromptBuilder';
@@ -68,6 +67,9 @@ export const useAIAnalysis = ({
     researchSourcesCount
   } = useRAGAnalysis();
 
+  // Stable analysis ID for dependency tracking
+  const currentAnalysisId = useMemo(() => currentAnalysis?.id, [currentAnalysis?.id]);
+
   const handleAnalyze = useCallback(async (
     customPrompt?: string, 
     imageAnnotations?: Array<{
@@ -82,7 +84,7 @@ export const useAIAnalysis = ({
       triggerCount: ++((window as any).analysisTriggerCount) || ((window as any).analysisTriggerCount = 1),
       customPrompt: customPrompt ? 'present' : 'null',
       imageAnnotations: imageAnnotations?.length || 0,
-      currentAnalysisId: currentAnalysis?.id
+      currentAnalysisId: currentAnalysisId
     });
 
     setIsAnalyzing(true);
@@ -113,7 +115,7 @@ export const useAIAnalysis = ({
       });
 
       // RAG Enhancement Phase
-      let ragContext = null;
+      let ragContextData = null;
       let enhancedPrompt = intelligentPrompt;
       let ragSuccessful = false;
 
@@ -131,41 +133,41 @@ export const useAIAnalysis = ({
         console.log('RAG Query:', analysisQuery);
 
         // Build RAG context with relevant UX knowledge
-        ragContext = await buildRAGContext(analysisQuery, {
+        ragContextData = await buildRAGContext(analysisQuery, {
           maxResults: 8,
           similarityThreshold: 0.7,
           categoryFilter: currentAnalysis?.design_type === 'mobile' ? 'mobile' : undefined
         });
 
         console.log('✅ RAG context built successfully:', {
-          totalEntries: ragContext.totalRelevantEntries,
-          categories: ragContext.categories,
-          searchQuery: ragContext.searchQuery
+          totalEntries: ragContextData.totalRelevantEntries,
+          categories: ragContextData.categories,
+          searchQuery: ragContextData.searchQuery
         });
 
         // Log retrieved knowledge for debugging
         console.log('📚 Retrieved Knowledge Entries:');
-        ragContext.relevantKnowledge.slice(0, 5).forEach((entry, index) => {
+        ragContextData.relevantKnowledge.slice(0, 5).forEach((entry, index) => {
           console.log(`${index + 1}. ${entry.title} (${(entry.similarity * 100).toFixed(1)}% match)`);
           console.log(`   Category: ${entry.category}`);
           console.log(`   Content preview: ${entry.content.substring(0, 100)}...`);
         });
 
         // Enhance the prompt with research context
-        if (ragContext.totalRelevantEntries > 0) {
+        if (ragContextData.totalRelevantEntries > 0) {
           const analysisType = finalIsComparative ? 'comprehensive' : 
                              currentAnalysis?.design_type === 'mobile' ? 'ux' : 'comprehensive';
           
-          enhancedPrompt = enhancePromptWithResearch(intelligentPrompt, ragContext, analysisType);
+          enhancedPrompt = enhancePromptWithResearch(intelligentPrompt, ragContextData, analysisType);
           ragSuccessful = true;
           
           console.log('🔧 Prompt enhanced with research context:', {
             originalLength: intelligentPrompt.length,
             enhancedLength: enhancedPrompt.length,
-            researchSources: ragContext.totalRelevantEntries
+            researchSources: ragContextData.totalRelevantEntries
           });
 
-          toast.success(`Analysis enhanced with ${ragContext.totalRelevantEntries} research sources`);
+          toast.success(`Analysis enhanced with ${ragContextData.totalRelevantEntries} research sources`);
         } else {
           console.log('⚠️ No relevant research found, proceeding with standard analysis');
           toast('No specific research found for this query, proceeding with standard analysis', {
@@ -191,8 +193,8 @@ export const useAIAnalysis = ({
       console.log('Final analysis configuration:', {
         promptType: ragSuccessful ? 'research-enhanced' : 'standard',
         promptLength: enhancedPrompt.length,
-        hasRAGContext: !!ragContext,
-        researchSourceCount: ragContext?.totalRelevantEntries || 0,
+        hasRAGContext: !!ragContextData,
+        researchSourceCount: ragContextData?.totalRelevantEntries || 0,
         isComparative: finalIsComparative
       });
       
@@ -201,11 +203,11 @@ export const useAIAnalysis = ({
 
       // If RAG was successful, we could potentially enhance the results further
       // For now, we'll rely on the enhanced prompt to generate better AI responses
-      if (ragSuccessful && ragContext) {
+      if (ragSuccessful && ragContextData) {
         console.log('✅ RAG-enhanced analysis completed successfully');
         console.log('📊 Analysis enhancement summary:', {
-          researchSourcesUsed: ragContext.totalRelevantEntries,
-          categoriesCovered: ragContext.categories.join(', '),
+          researchSourcesUsed: ragContextData.totalRelevantEntries,
+          categoriesCovered: ragContextData.categories.join(', '),
           analysisType: finalIsComparative ? 'comparative' : 'single-image'
         });
       }
@@ -222,18 +224,32 @@ export const useAIAnalysis = ({
       await handleAnalysisError(error);
     }
   }, [
-    imageUrl, 
-    imageUrls, 
-    currentAnalysis?.id
+    imageUrl,
+    imageUrls,
+    currentAnalysisId, // Use stable ID instead of full object
+    validateAnalysisInputs,
+    prepareAnalysisConfiguration,
+    buildIntelligentPrompt,
+    buildRAGContext,
+    enhancePromptWithResearch,
+    executeAnalysis,
+    clearRAGData,
+    handleAnalysisError,
+    setIsAnalyzing
   ]);
 
-  // Updated return statement to expose RAG state to components
-  return {
+  // Memoize return object to prevent unnecessary re-renders
+  return useMemo(() => ({
     handleAnalyze,
-    // Expose RAG-related state for UI components
-    ragContext,           // NEW: RAG context information
-    isBuilding,          // NEW: RAG building state
+    ragContext,
+    isBuilding,
     hasResearchContext,
     researchSourcesCount,
-  };
+  }), [
+    handleAnalyze,
+    ragContext,
+    isBuilding,
+    hasResearchContext,
+    researchSourcesCount
+  ]);
 };

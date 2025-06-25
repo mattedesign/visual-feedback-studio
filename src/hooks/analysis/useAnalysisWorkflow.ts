@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Annotation } from '@/types/analysis';
 import { AnalysisWithFiles } from '@/services/analysisDataService';
 
@@ -25,39 +25,49 @@ export const useAnalysisWorkflow = () => {
   const [aiAnnotations, setAiAnnotations] = useState<Annotation[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  // Legacy support for single image workflows
-  const selectedImageUrl = selectedImages.length > 0 ? selectedImages[0] : null;
-  const userAnnotations = imageAnnotations.length > 0 ? imageAnnotations[0]?.annotations || [] : [];
+  // Memoized computed values
+  const selectedImageUrl = useMemo(() => 
+    selectedImages.length > 0 ? selectedImages[0] : null,
+    [selectedImages]
+  );
 
-  const goToStep = (step: WorkflowStep) => {
+  const userAnnotations = useMemo(() => 
+    imageAnnotations.length > 0 ? imageAnnotations[0]?.annotations || [] : [],
+    [imageAnnotations]
+  );
+
+  const goToStep = useCallback((step: WorkflowStep) => {
     console.log('Workflow step change:', currentStep, '->', step);
     setCurrentStep(step);
-  };
+  }, [currentStep]);
 
-  const addUploadedFile = (url: string) => {
+  const addUploadedFile = useCallback((url: string) => {
     console.log('Adding uploaded file to workflow:', url);
     setUploadedFiles(prev => [...prev, url]);
-  };
+  }, []);
 
-  const selectImage = (url: string) => {
+  const selectImage = useCallback((url: string) => {
     console.log('Selecting single image:', url);
     setSelectedImages([url]);
-    if (!imageAnnotations.find(ia => ia.imageUrl === url)) {
-      setImageAnnotations([{ imageUrl: url, annotations: [] }]);
-    }
-  };
+    setImageAnnotations(prev => {
+      const existing = prev.find(ia => ia.imageUrl === url);
+      return existing ? prev : [{ imageUrl: url, annotations: [] }];
+    });
+  }, []);
 
-  const selectImages = (urls: string[]) => {
+  const selectImages = useCallback((urls: string[]) => {
     console.log('Selecting multiple images:', urls.length);
     setSelectedImages(urls);
-    const newImageAnnotations = urls.map(url => {
-      const existing = imageAnnotations.find(ia => ia.imageUrl === url);
-      return existing || { imageUrl: url, annotations: [] };
+    setImageAnnotations(prev => {
+      const newImageAnnotations = urls.map(url => {
+        const existing = prev.find(ia => ia.imageUrl === url);
+        return existing || { imageUrl: url, annotations: [] };
+      });
+      return newImageAnnotations;
     });
-    setImageAnnotations(newImageAnnotations);
-  };
+  }, []);
 
-  const addUserAnnotation = (imageUrl: string, annotation: { x: number; y: number; comment: string }) => {
+  const addUserAnnotation = useCallback((imageUrl: string, annotation: { x: number; y: number; comment: string }) => {
     const newAnnotation = {
       ...annotation,
       id: `user-${Date.now()}-${Math.random()}`
@@ -72,9 +82,9 @@ export const useAnalysisWorkflow = () => {
           : ia
       )
     );
-  };
+  }, []);
 
-  const removeUserAnnotation = (imageUrl: string, id: string) => {
+  const removeUserAnnotation = useCallback((imageUrl: string, id: string) => {
     console.log('Removing user annotation:', imageUrl, id);
     setImageAnnotations(prev =>
       prev.map(ia =>
@@ -83,9 +93,9 @@ export const useAnalysisWorkflow = () => {
           : ia
       )
     );
-  };
+  }, []);
 
-  const updateUserAnnotation = (imageUrl: string, id: string, comment: string) => {
+  const updateUserAnnotation = useCallback((imageUrl: string, id: string, comment: string) => {
     console.log('Updating user annotation:', imageUrl, id, comment);
     setImageAnnotations(prev =>
       prev.map(ia =>
@@ -99,19 +109,19 @@ export const useAnalysisWorkflow = () => {
           : ia
       )
     );
-  };
+  }, []);
 
-  const getTotalAnnotationsCount = () => {
+  const getTotalAnnotationsCount = useCallback(() => {
     return imageAnnotations.reduce((total, ia) => total + ia.annotations.length, 0);
-  };
+  }, [imageAnnotations]);
 
   // Safe setter for analysis context that preserves user input
-  const updateAnalysisContext = (value: string) => {
+  const updateAnalysisContext = useCallback((value: string) => {
     console.log('Updating user analysis context:', value.substring(0, 100) + '...');
     setAnalysisContext(value);
-  };
+  }, []);
 
-  const resetWorkflow = () => {
+  const resetWorkflow = useCallback(() => {
     console.log('Resetting workflow state');
     setCurrentStep('upload');
     setUploadedFiles([]);
@@ -121,10 +131,10 @@ export const useAnalysisWorkflow = () => {
     setCurrentAnalysis(null);
     setAiAnnotations([]);
     setIsAnalyzing(false);
-  };
+  }, []);
 
   // Smart workflow progression based on number of images
-  const proceedFromUpload = (imageUrls: string[]) => {
+  const proceedFromUpload = useCallback((imageUrls: string[]) => {
     console.log('Proceeding from upload with images:', imageUrls.length);
     console.log('Current analysis exists:', !!currentAnalysis);
     
@@ -137,29 +147,30 @@ export const useAnalysisWorkflow = () => {
       selectImages(imageUrls);
       goToStep('review');
     }
-  };
+  }, [currentAnalysis, selectImage, selectImages, goToStep]);
 
-  const proceedFromReview = () => {
+  const proceedFromReview = useCallback(() => {
     console.log('Proceeding from review to annotate');
     // Always go to annotate step from review
     // The AnalysisWorkflow component will determine which annotate component to use
     goToStep('annotate');
-  };
+  }, [goToStep]);
 
-  return {
+  // Memoize the return object to prevent unnecessary re-renders
+  return useMemo(() => ({
     currentStep,
     uploadedFiles,
     selectedImages,
-    selectedImageUrl, // Legacy support
+    selectedImageUrl,
     imageAnnotations,
-    userAnnotations, // Legacy support
+    userAnnotations,
     analysisContext,
     currentAnalysis,
     aiAnnotations,
     isAnalyzing,
     goToStep,
     addUploadedFile,
-    selectImage, // Legacy support
+    selectImage,
     selectImages,
     addUserAnnotation,
     removeUserAnnotation,
@@ -172,5 +183,28 @@ export const useAnalysisWorkflow = () => {
     resetWorkflow,
     proceedFromUpload,
     proceedFromReview,
-  };
+  }), [
+    currentStep,
+    uploadedFiles,
+    selectedImages,
+    selectedImageUrl,
+    imageAnnotations,
+    userAnnotations,
+    analysisContext,
+    currentAnalysis,
+    aiAnnotations,
+    isAnalyzing,
+    goToStep,
+    addUploadedFile,
+    selectImage,
+    selectImages,
+    addUserAnnotation,
+    removeUserAnnotation,
+    updateUserAnnotation,
+    getTotalAnnotationsCount,
+    updateAnalysisContext,
+    resetWorkflow,
+    proceedFromUpload,
+    proceedFromReview,
+  ]);
 };
