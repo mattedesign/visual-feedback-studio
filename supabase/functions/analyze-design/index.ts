@@ -30,13 +30,52 @@ async function addKnowledgeContext(prompt: string, supabase: any, enableRAG = fa
 
   try {
     console.log('🔍 Adding RAG knowledge context...');
+    console.log(`📝 Analysis prompt: "${prompt.substring(0, 100)}..."`);
     
-    // Use the working match_knowledge RPC function
-    const dummyEmbedding = Array(1536).fill(0.1);
+    // Generate embedding for the analysis prompt using OpenAI
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openaiApiKey) {
+      console.log('⚠️ No OpenAI API key for embedding generation, skipping RAG');
+      return {
+        enhancedPrompt: prompt,
+        researchEnhanced: false,
+        knowledgeSourcesUsed: 0,
+        researchCitations: []
+      };
+    }
     
+    console.log('🧠 Generating embedding for analysis prompt...');
+    const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'text-embedding-3-small',
+        input: prompt,
+        encoding_format: 'float'
+      }),
+    });
+    
+    if (!embeddingResponse.ok) {
+      console.log('⚠️ Embedding generation failed:', embeddingResponse.status);
+      return {
+        enhancedPrompt: prompt,
+        researchEnhanced: false,
+        knowledgeSourcesUsed: 0,
+        researchCitations: []
+      };
+    }
+    
+    const embeddingData = await embeddingResponse.json();
+    const embedding = embeddingData.data[0].embedding;
+    console.log(`✅ Generated embedding with ${embedding.length} dimensions`);
+    
+    // Use the actual embedding to search for relevant knowledge
     const { data: knowledge, error } = await supabase.rpc('match_knowledge', {
-      query_embedding: `[${dummyEmbedding.join(',')}]`,
-      match_threshold: 0.1,
+      query_embedding: `[${embedding.join(',')}]`,
+      match_threshold: 0.3, // Lower threshold for better matches
       match_count: 5,
       filter_category: null
     });
@@ -51,11 +90,18 @@ async function addKnowledgeContext(prompt: string, supabase: any, enableRAG = fa
       };
     }
     
+    console.log(`🔍 Knowledge search results: ${knowledge?.length || 0} entries found`);
+    
     if (knowledge && knowledge.length > 0) {
-      console.log(`✅ Found ${knowledge.length} knowledge entries for RAG enhancement`);
+      console.log(`✅ Found ${knowledge.length} relevant knowledge entries for RAG enhancement`);
+      
+      // Log the similarity scores for debugging
+      knowledge.forEach((k: any, index: number) => {
+        console.log(`   ${index + 1}. "${k.title}" (similarity: ${k.similarity?.toFixed(3) || 'N/A'})`);
+      });
       
       const context = knowledge.map((k: any) => 
-        `${k.title}: ${k.content.substring(0, 200)}...`
+        `**${k.title}** (${k.category}): ${k.content.substring(0, 300)}...`
       ).join('\n\n');
       
       const citations = knowledge.map((k: any) => k.title);
@@ -63,10 +109,16 @@ async function addKnowledgeContext(prompt: string, supabase: any, enableRAG = fa
       const enhancedPrompt = `${prompt}
 
 === RELEVANT UX RESEARCH & BEST PRACTICES ===
+Based on our knowledge base, here are relevant insights for your analysis:
+
 ${context}
 
-ANALYSIS INSTRUCTION: Based on this research context, provide analysis that references relevant UX principles and best practices. Include specific insights from the research when applicable to enhance the quality and authority of your recommendations.`;
+ANALYSIS INSTRUCTION: Use this research context to provide evidence-based recommendations. Reference specific UX principles and best practices from the context above when applicable. This will enhance the authority and quality of your analysis.
 
+===`;
+
+      console.log(`📚 Enhanced prompt created with ${knowledge.length} knowledge sources`);
+      
       return {
         enhancedPrompt,
         researchEnhanced: true,
@@ -75,7 +127,7 @@ ANALYSIS INSTRUCTION: Based on this research context, provide analysis that refe
       };
     }
     
-    console.log('⚠️ No knowledge found, using standard prompt');
+    console.log('⚠️ No relevant knowledge found, using standard prompt');
     return {
       enhancedPrompt: prompt,
       researchEnhanced: false,
@@ -91,6 +143,69 @@ ANALYSIS INSTRUCTION: Based on this research context, provide analysis that refe
       knowledgeSourcesUsed: 0,
       researchCitations: []
     };
+  }
+}
+
+// Function to check and report on knowledge base status
+async function checkKnowledgeBase(supabase: any): Promise<void> {
+  try {
+    console.log('📊 Checking knowledge base status...');
+    
+    // Count total knowledge entries
+    const { count: totalEntries, error: countError } = await supabase
+      .from('knowledge_entries')
+      .select('*', { count: 'exact', head: true });
+    
+    if (countError) {
+      console.log('❌ Error counting knowledge entries:', countError);
+      return;
+    }
+    
+    console.log(`📈 Total knowledge entries in database: ${totalEntries || 0}`);
+    
+    if (totalEntries === 0) {
+      console.log('⚠️ WARNING: No knowledge entries found in database!');
+      console.log('💡 Consider populating the knowledge base for RAG functionality');
+      return;
+    }
+    
+    // Get sample entries by category
+    const { data: sampleEntries, error: sampleError } = await supabase
+      .from('knowledge_entries')
+      .select('id, title, category, created_at')
+      .limit(10);
+    
+    if (sampleError) {
+      console.log('❌ Error fetching sample entries:', sampleError);
+      return;
+    }
+    
+    if (sampleEntries && sampleEntries.length > 0) {
+      console.log('📋 Sample knowledge entries:');
+      sampleEntries.forEach((entry: any, index: number) => {
+        console.log(`   ${index + 1}. [${entry.category}] ${entry.title}`);
+      });
+      
+      // Count by category
+      const { data: categoryStats, error: statsError } = await supabase
+        .from('knowledge_entries')
+        .select('category')
+        .then(({ data, error }) => {
+          if (error) return { data: null, error };
+          const stats = data?.reduce((acc: any, entry: any) => {
+            acc[entry.category] = (acc[entry.category] || 0) + 1;
+            return acc;
+          }, {});
+          return { data: stats, error: null };
+        });
+      
+      if (categoryStats) {
+        console.log('📊 Knowledge entries by category:', categoryStats);
+      }
+    }
+    
+  } catch (error) {
+    console.log('❌ Error checking knowledge base:', error);
   }
 }
 
@@ -186,6 +301,12 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Check knowledge base status if RAG is enabled
+    const enableRAG = requestData.ragEnabled === true;
+    if (enableRAG) {
+      await checkKnowledgeBase(supabase);
+    }
+
     // Determine AI provider configuration
     console.log('🤖 Determining AI provider...');
     const aiProviderConfig = determineOptimalProvider();
@@ -204,7 +325,6 @@ Deno.serve(async (req) => {
       try {
         // Enhanced prompt with RAG context (check for ragEnabled in request)
         const originalPrompt = requestData.analysisPrompt || 'Analyze this design for UX improvements';
-        const enableRAG = requestData.ragEnabled === true;
         
         console.log(`🔧 RAG enabled: ${enableRAG}`);
         
@@ -214,6 +334,12 @@ Deno.serve(async (req) => {
           knowledgeSourcesUsed: ragContext.knowledgeSourcesUsed,
           researchCitations: ragContext.researchCitations
         };
+        
+        console.log(`📚 RAG Context Results:`, {
+          enhanced: ragContext.researchEnhanced,
+          sources: ragContext.knowledgeSourcesUsed,
+          citations: ragContext.researchCitations.length
+        });
         
         const annotations = await analyzeWithAIProvider(
           processedImage.base64Data,
