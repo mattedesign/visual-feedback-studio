@@ -12,30 +12,28 @@ export const DirectRAGTestSimple = () => {
 
   const testDirectAnalysis = async () => {
     const testImageUrl = '/lovable-uploads/21223d81-f4f7-4209-8d6a-f2f8f703d1d1.png';
-    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-
-    if (!apiKey) {
-      toast.error('OpenAI API key not found in environment variables');
-      return;
-    }
 
     setIsAnalyzing(true);
     setAnnotations([]);
 
     try {
-      console.log('🚀 Testing Direct RAG Analysis');
+      console.log('🚀 Testing Direct RAG Analysis via Edge Function');
       
       const result = await directRAGAnalysisService.analyzeWithRAG({
         imageUrl: testImageUrl,
-        analysisPrompt: 'Analyze this design for UX improvements and accessibility issues',
-        openaiApiKey: apiKey
+        analysisPrompt: 'Analyze this design for UX improvements and accessibility issues'
       });
 
       console.log('📋 Test result:', result);
 
       if (result.success) {
         setAnnotations(result.annotations);
-        toast.success(`Analysis complete! Found ${result.annotations.length} insights.`);
+        
+        if (result.researchEnhanced) {
+          toast.success(`Analysis complete! Enhanced with ${result.knowledgeSourcesUsed} research sources. Found ${result.annotations.length} insights.`);
+        } else {
+          toast.success(`Analysis complete! Found ${result.annotations.length} insights. (No research enhancement available)`);
+        }
       } else {
         throw new Error(result.error || 'Analysis failed');
       }
@@ -52,15 +50,20 @@ export const DirectRAGTestSimple = () => {
     <div className="max-w-2xl mx-auto p-6">
       <Card>
         <CardHeader>
-          <CardTitle>Direct RAG Analysis Test</CardTitle>
+          <CardTitle>Direct RAG Analysis Test (via Edge Function)</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="text-sm text-gray-600 mb-4">
+            This test uses the secure analyze-design edge function with RAG enhancement.
+            No API key required in frontend!
+          </div>
+          
           <Button 
             onClick={testDirectAnalysis} 
             disabled={isAnalyzing}
             className="w-full"
           >
-            {isAnalyzing ? 'Analyzing...' : 'Test Direct RAG Analysis'}
+            {isAnalyzing ? 'Analyzing...' : 'Test Secure RAG Analysis'}
           </Button>
 
           {annotations.length > 0 && (
@@ -70,6 +73,11 @@ export const DirectRAGTestSimple = () => {
                 <div key={annotation.id} className="border rounded p-3 text-sm">
                   <div className="font-medium">{annotation.category} - {annotation.severity}</div>
                   <div className="text-gray-600">{annotation.feedback}</div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Position: ({annotation.x}%, {annotation.y}%) | 
+                    Effort: {annotation.implementationEffort} | 
+                    Impact: {annotation.businessImpact}
+                  </div>
                 </div>
               ))}
             </div>

@@ -6,14 +6,12 @@ import { toast } from 'sonner';
 
 interface UseDirectRAGAnalysisProps {
   imageUrl: string;
-  currentAnalysis: any;
   setIsAnalyzing: (isAnalyzing: boolean) => void;
   setAnnotations: (annotations: Annotation[]) => void;
 }
 
 export const useDirectRAGAnalysis = ({
   imageUrl,
-  currentAnalysis,
   setIsAnalyzing,
   setAnnotations
 }: UseDirectRAGAnalysisProps) => {
@@ -24,16 +22,10 @@ export const useDirectRAGAnalysis = ({
   } | null>(null);
 
   const analyzeWithDirectRAG = useCallback(async (
-    analysisPrompt: string,
-    openaiApiKey: string
+    analysisPrompt: string
   ) => {
     if (!imageUrl) {
       toast.error('No image available for analysis');
-      return;
-    }
-
-    if (!openaiApiKey) {
-      toast.error('OpenAI API key is required');
       return;
     }
 
@@ -42,12 +34,11 @@ export const useDirectRAGAnalysis = ({
     setRagResults(null);
 
     try {
-      console.log('🚀 Starting Direct RAG Analysis');
+      console.log('🚀 Starting Direct RAG Analysis via Edge Function');
       
       const result = await directRAGAnalysisService.analyzeWithRAG({
         imageUrl,
-        analysisPrompt: analysisPrompt || 'Analyze this design for UX improvements',
-        openaiApiKey
+        analysisPrompt: analysisPrompt || 'Analyze this design for UX improvements'
       });
 
       if (result.success) {
