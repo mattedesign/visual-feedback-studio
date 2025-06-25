@@ -30,11 +30,11 @@ export const useAnalysisExecutionEnhanced = ({
       throw new Error('No analysis session found');
     }
 
-    console.log('🚀 Executing analysis with configuration:', {
+    console.log('🚀 Executing RAG-enhanced analysis with configuration:', {
       imageCount: imagesToAnalyze.length,
       isComparative,
       promptLength: enhancedPrompt.length,
-      hasRAGEnhancement: ragMetadata?.hasRAGContext || false,
+      ragEnabled: true, // Always enable RAG
       researchSources: ragMetadata?.researchSourceCount || 0
     });
 
@@ -45,32 +45,33 @@ export const useAnalysisExecutionEnhanced = ({
         analysisPrompt: enhancedPrompt,
         designType: currentAnalysis.design_type,
         isComparative,
-        // Include RAG metadata for tracking
-        ragEnhanced: ragMetadata?.hasRAGContext || false,
+        // Enable RAG by default for enhanced analysis
+        ragEnhanced: true,
         researchSourceCount: ragMetadata?.researchSourceCount || 0,
       };
 
-      console.log('📤 Sending analysis request:', {
+      console.log('📤 Sending RAG-enhanced analysis request:', {
         analysisId: analysisRequest.analysisId,
         imageCount: analysisRequest.imageUrls.length,
         promptPreview: enhancedPrompt.substring(0, 200) + '...',
         ragEnhanced: analysisRequest.ragEnhanced
       });
 
-      // Use the actual analysis service
+      // Use the actual analysis service with RAG enabled
       const response = await analysisService.analyzeDesign(analysisRequest);
 
       if (response.success && response.annotations) {
-        console.log('✅ Analysis completed successfully:', {
+        console.log('✅ RAG-enhanced analysis completed successfully:', {
           annotationCount: response.annotations.length,
           categories: [...new Set(response.annotations.map(a => a.category))],
-          ragEnhanced: ragMetadata?.hasRAGContext || false
+          researchEnhanced: response.researchEnhanced || false,
+          knowledgeSourcesUsed: response.knowledgeSourcesUsed || 0
         });
 
         setAnnotations(response.annotations);
         
-        const successMessage = ragMetadata?.hasRAGContext 
-          ? `Analysis complete! Found ${response.annotations.length} insights backed by ${ragMetadata.researchSourceCount} research sources.`
+        const successMessage = response.researchEnhanced 
+          ? `Analysis complete! Found ${response.annotations.length} insights backed by ${response.knowledgeSourcesUsed} research sources.`
           : `Analysis complete! Found ${response.annotations.length} design insights.`;
         
         toast.success(successMessage);
@@ -78,7 +79,7 @@ export const useAnalysisExecutionEnhanced = ({
         throw new Error(response.error || 'Analysis failed to return valid results');
       }
     } catch (error) {
-      console.error('❌ Analysis execution failed:', error);
+      console.error('❌ RAG-enhanced analysis execution failed:', error);
       throw error;
     } finally {
       setIsAnalyzing(false);

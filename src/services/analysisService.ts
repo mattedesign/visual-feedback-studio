@@ -17,6 +17,9 @@ interface AnalyzeDesignResponse {
   success: boolean;
   annotations?: Annotation[];
   error?: string;
+  researchEnhanced?: boolean;
+  knowledgeSourcesUsed?: number;
+  researchCitations?: string[];
 }
 
 export const createAnalysis = async () => {
@@ -51,7 +54,7 @@ const analyzeDesign = async (request: AnalyzeDesignRequest): Promise<AnalyzeDesi
       analysisId: request.analysisId,
       imageCount: request.imageUrls.length,
       isComparative: request.isComparative,
-      ragEnhanced: request.ragEnhanced
+      ragEnhanced: request.ragEnhanced !== false // Enable RAG by default unless explicitly disabled
     });
 
     const { data, error } = await supabase.functions.invoke('analyze-design', {
@@ -61,7 +64,7 @@ const analyzeDesign = async (request: AnalyzeDesignRequest): Promise<AnalyzeDesi
         analysisPrompt: request.analysisPrompt,
         designType: request.designType,
         isComparative: request.isComparative,
-        ragEnhanced: request.ragEnhanced,
+        ragEnabled: request.ragEnhanced !== false, // Enable RAG by default
         researchSourceCount: request.researchSourceCount
       }
     });
@@ -77,13 +80,18 @@ const analyzeDesign = async (request: AnalyzeDesignRequest): Promise<AnalyzeDesi
 
     console.log('✅ Analysis function completed:', {
       success: data.success,
-      annotationCount: data.annotations?.length || 0
+      annotationCount: data.annotations?.length || 0,
+      researchEnhanced: data.ragEnhanced || false,
+      knowledgeSourcesUsed: data.knowledgeSourcesUsed || 0
     });
 
     return {
       success: data.success,
       annotations: data.annotations || [],
-      error: data.error
+      error: data.error,
+      researchEnhanced: data.ragEnhanced || false,
+      knowledgeSourcesUsed: data.knowledgeSourcesUsed || 0,
+      researchCitations: data.researchCitations || []
     };
 
   } catch (error) {
