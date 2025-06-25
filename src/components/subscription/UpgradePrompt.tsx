@@ -2,12 +2,23 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Crown, Check, Zap } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface UpgradePromptProps {
   onUpgrade?: () => void;
 }
 
 export const UpgradePrompt = ({ onUpgrade }: UpgradePromptProps) => {
+  const navigate = useNavigate();
+
+  const handleUpgrade = () => {
+    if (onUpgrade) {
+      onUpgrade();
+    } else {
+      navigate('/subscription');
+    }
+  };
+
   return (
     <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50">
       <CardHeader className="pb-4">
@@ -25,7 +36,7 @@ export const UpgradePrompt = ({ onUpgrade }: UpgradePromptProps) => {
           <div className="bg-white rounded-lg p-4 border">
             <h3 className="font-semibold flex items-center gap-2 mb-2">
               <Zap className="h-4 w-4 text-blue-500" />
-              Pro Plan - $29/month
+              Pro Plan - $19.99/month
             </h3>
             <ul className="space-y-1 text-sm text-gray-600">
               <li className="flex items-center gap-2">
@@ -66,7 +77,7 @@ export const UpgradePrompt = ({ onUpgrade }: UpgradePromptProps) => {
         </div>
         
         <Button 
-          onClick={onUpgrade}
+          onClick={handleUpgrade}
           className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
         >
           Upgrade Now

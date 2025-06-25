@@ -8,161 +8,36 @@ schemas = ["public", "graphql_public"]
 extra_search_path = ["public", "extensions"]
 max_rows = 1000
 
-[db]
-port = 54322
-
-[db.pooler]
-enabled = false
-port = 54329
-pool_mode = "transaction"
-default_pool_size = 20
-max_client_conn = 100
-
-[realtime]
-enabled = true
-port = 54323
-tenant_id = "realtime-dev"
-encryption_key = "supabase_realtime_dev"
-
-[studio]
-enabled = true
-port = 54324
-api_url = "http://127.0.0.1:54321"
-openai_api_key = "env(OPENAI_API_KEY)"
-
-[inbucket]
-enabled = true
-port = 54325
-sender_name = "Supabase"
-smtp_port = 54326
-pop3_port = 54327
-
-[storage]
-enabled = true
-port = 54328
-file_size_limit = "50MiB"
-image_transformation = { enabled = true }
-
 [auth]
 enabled = true
-port = 54329
-site_url = "http://localhost:5173"
-additional_redirect_urls = ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000", "http://127.0.0.1:3000"]
+port = 54320
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://lovable.app"]
 jwt_expiry = 3600
-enable_signup = true
-enable_email_confirmations = false
-enable_email_change_confirmations = false
-enable_phone_confirmations = false
-enable_phone_change_confirmations = false
+refresh_token_rotation_enabled = true
+secure_password_change_enabled = true
 enable_manual_linking = false
 
-[auth.email]
-enable_signup = true
-double_confirm_changes = true
-enable_confirmations = false
-secure_email_change_enabled = true
-enable_reauthentication = true
+[functions.create-stripe-customer]
+verify_jwt = true
 
-[auth.sms]
-enable_signup = true
-enable_confirmations = false
-secure_phone_change_enabled = true
-enable_reauthentication = true
+[functions.create-checkout-session]
+verify_jwt = true
 
-[auth.external.apple]
-enabled = false
-client_id = ""
-secret = ""
+[functions.get-customer-subscriptions]
+verify_jwt = true
 
-[auth.external.azure]
-enabled = false
-client_id = ""
-secret = ""
-url = ""
-
-[auth.external.bitbucket]
-enabled = false
-client_id = ""
-secret = ""
-
-[auth.external.discord]
-enabled = false
-client_id = ""
-secret = ""
-
-[auth.external.facebook]
-enabled = false
-client_id = ""
-secret = ""
-
-[auth.external.figma]
-enabled = false
-client_id = ""
-secret = ""
-
-[auth.external.github]
-enabled = false
-client_id = ""
-secret = ""
-
-[auth.external.gitlab]
-enabled = false
-client_id = ""
-secret = ""
-
-[auth.external.google]
-enabled = false
-client_id = ""
-secret = ""
-
-[auth.external.keycloak]
-enabled = false
-client_id = ""
-secret = ""
-url = ""
-
-[auth.external.linkedin]
-enabled = false
-client_id = ""
-secret = ""
-
-[auth.external.notion]
-enabled = false
-client_id = ""
-secret = ""
-
-[auth.external.twitch]
-enabled = false
-client_id = ""
-secret = ""
-
-[auth.external.twitter]
-enabled = false
-client_id = ""
-secret = ""
-
-[auth.external.slack]
-enabled = false
-client_id = ""
-secret = ""
-
-[auth.external.spotify]
-enabled = false
-client_id = ""
-secret = ""
-
-[auth.external.workos]
-enabled = false
-client_id = ""
-secret = ""
-
-[auth.external.zoom]
-enabled = false
-client_id = ""
-secret = ""
-
-[edge_functions.analyze-design]
-verify_jwt = false
+[functions.create-customer-portal]
+verify_jwt = true
 
 [functions.analyze-design]
+verify_jwt = true
+
+[functions.capture-screenshot]
 verify_jwt = false
+
+[functions.generate-embeddings]
+verify_jwt = true
+
+[functions.ingest-knowledge]
+verify_jwt = true
