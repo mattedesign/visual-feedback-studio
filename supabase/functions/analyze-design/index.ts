@@ -10,10 +10,25 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 
 console.log('🚀 Design Analysis Function Starting');
 
-// RAG helper function to add knowledge context
-async function addKnowledgeContext(prompt: string, supabase: any): Promise<string> {
+// Enhanced RAG helper function to add knowledge context
+async function addKnowledgeContext(prompt: string, supabase: any, enableRAG = false): Promise<{
+  enhancedPrompt: string;
+  researchEnhanced: boolean;
+  knowledgeSourcesUsed: number;
+  researchCitations: string[];
+}> {
+  if (!enableRAG) {
+    console.log('⚠️ RAG disabled, using standard prompt');
+    return {
+      enhancedPrompt: prompt,
+      researchEnhanced: false,
+      knowledgeSourcesUsed: 0,
+      researchCitations: []
+    };
+  }
+
   try {
-    console.log('🔍 Adding knowledge context...');
+    console.log('🔍 Adding RAG knowledge context...');
     
     // Use the working match_knowledge RPC function
     const dummyEmbedding = Array(1536).fill(0.1);
@@ -27,25 +42,54 @@ async function addKnowledgeContext(prompt: string, supabase: any): Promise<strin
     
     if (error) {
       console.log('⚠️ RPC error:', error);
-      return prompt;
+      return {
+        enhancedPrompt: prompt,
+        researchEnhanced: false,
+        knowledgeSourcesUsed: 0,
+        researchCitations: []
+      };
     }
     
     if (knowledge && knowledge.length > 0) {
-      console.log(`✅ Found ${knowledge.length} knowledge entries`);
+      console.log(`✅ Found ${knowledge.length} knowledge entries for RAG enhancement`);
       
       const context = knowledge.map((k: any) => 
-        `${k.title}: ${k.content.substring(0, 150)}...`
+        `${k.title}: ${k.content.substring(0, 200)}...`
       ).join('\n\n');
       
-      return `${prompt}\n\nRELEVANT UX RESEARCH:\n${context}\n\nBased on this research, provide analysis that references relevant UX principles and best practices.`;
+      const citations = knowledge.map((k: any) => k.title);
+      
+      const enhancedPrompt = `${prompt}
+
+=== RELEVANT UX RESEARCH & BEST PRACTICES ===
+${context}
+
+ANALYSIS INSTRUCTION: Based on this research context, provide analysis that references relevant UX principles and best practices. Include specific insights from the research when applicable to enhance the quality and authority of your recommendations.`;
+
+      return {
+        enhancedPrompt,
+        researchEnhanced: true,
+        knowledgeSourcesUsed: knowledge.length,
+        researchCitations: citations
+      };
     }
     
     console.log('⚠️ No knowledge found, using standard prompt');
-    return prompt;
+    return {
+      enhancedPrompt: prompt,
+      researchEnhanced: false,
+      knowledgeSourcesUsed: 0,
+      researchCitations: []
+    };
     
   } catch (e) {
     console.log('⚠️ RAG failed, using standard prompt:', e);
-    return prompt;
+    return {
+      enhancedPrompt: prompt,
+      researchEnhanced: false,
+      knowledgeSourcesUsed: 0,
+      researchCitations: []
+    };
   }
 }
 
@@ -107,19 +151,33 @@ Deno.serve(async (req) => {
     
     // Process each image with AI provider
     const allAnnotations = [];
+    let ragResults = {
+      researchEnhanced: false,
+      knowledgeSourcesUsed: 0,
+      researchCitations: [] as string[]
+    };
     
     for (const processedImage of imageProcessingResult.processedImages) {
       console.log(`🔍 Analyzing image with ${aiProviderConfig.provider}...`);
       
       try {
-        // Enhanced prompt with RAG context
+        // Enhanced prompt with RAG context (check for ragEnabled in request)
         const originalPrompt = requestData.analysisPrompt || 'Analyze this design for UX improvements';
-        const enhancedPrompt = await addKnowledgeContext(originalPrompt, supabase);
+        const enableRAG = requestData.ragEnabled === true;
+        
+        console.log(`🔧 RAG enabled: ${enableRAG}`);
+        
+        const ragContext = await addKnowledgeContext(originalPrompt, supabase, enableRAG);
+        ragResults = {
+          researchEnhanced: ragContext.researchEnhanced,
+          knowledgeSourcesUsed: ragContext.knowledgeSourcesUsed,
+          researchCitations: ragContext.researchCitations
+        };
         
         const annotations = await analyzeWithAIProvider(
           processedImage.base64Data,
           processedImage.mimeType,
-          enhancedPrompt,
+          ragContext.enhancedPrompt,
           aiProviderConfig
         );
         
@@ -138,6 +196,7 @@ Deno.serve(async (req) => {
     }
 
     console.log(`✅ AI analysis completed with ${allAnnotations.length} total annotations`);
+    console.log(`📚 RAG Results: Enhanced=${ragResults.researchEnhanced}, Sources=${ragResults.knowledgeSourcesUsed}`);
 
     // Save to database
     console.log('💾 Saving to database...');
@@ -161,13 +220,15 @@ Deno.serve(async (req) => {
 
     console.log('✅ Results saved to database');
 
-    // Format response
+    // Format response with RAG information
     const response = responseFormatter.formatSuccessResponse({
       annotations: allAnnotations,
       totalAnnotations: allAnnotations.length,
       modelUsed: aiProviderConfig.provider + (aiProviderConfig.model ? `:${aiProviderConfig.model}` : ''),
       processingTime: Date.now(),
-      ragEnhanced: true // Now enabled since we're using RAG
+      ragEnhanced: ragResults.researchEnhanced,
+      knowledgeSourcesUsed: ragResults.knowledgeSourcesUsed,
+      researchCitations: ragResults.researchCitations
     });
 
     // Add CORS headers to successful response
@@ -176,7 +237,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-    console.log('✅ Analysis completed successfully with RAG enhancement');
+    console.log('✅ Analysis completed successfully', ragResults.researchEnhanced ? 'with RAG enhancement' : 'without RAG');
     return responseWithCors;
 
   } catch (error) {

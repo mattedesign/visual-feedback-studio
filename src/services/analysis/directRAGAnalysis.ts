@@ -13,6 +13,7 @@ interface DirectRAGAnalysisResponse {
   totalAnnotations: number;
   researchEnhanced: boolean;
   knowledgeSourcesUsed: number;
+  researchCitations?: string[];
   error?: string;
 }
 
@@ -39,14 +40,14 @@ export class DirectRAGAnalysisService {
       // Generate a unique analysis ID
       const analysisId = `direct-rag-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
-      // Call the analyze-design edge function
-      console.log('🔧 Calling analyze-design edge function...');
+      // Call the analyze-design edge function with RAG enabled
+      console.log('🔧 Calling analyze-design edge function with RAG enabled...');
       const { data, error } = await supabase.functions.invoke('analyze-design', {
         body: {
           imageUrl: request.imageUrl,
           analysisId: analysisId,
           analysisPrompt: request.analysisPrompt || 'Analyze this design for UX improvements and accessibility issues',
-          ragEnabled: true
+          ragEnabled: true // Enable RAG functionality
         }
       });
 
@@ -58,7 +59,9 @@ export class DirectRAGAnalysisService {
       console.log('📦 Edge function response:', {
         success: data?.success,
         annotationsCount: data?.annotations?.length || 0,
-        ragEnhanced: data?.ragEnhanced
+        ragEnhanced: data?.ragEnhanced,
+        knowledgeSourcesUsed: data?.knowledgeSourcesUsed,
+        researchCitations: data?.researchCitations?.length || 0
       });
 
       if (!data || !data.success) {
@@ -82,7 +85,8 @@ export class DirectRAGAnalysisService {
         annotations,
         totalAnnotations: annotations.length,
         researchEnhanced: data.ragEnhanced || false,
-        knowledgeSourcesUsed: data.knowledgeSourcesUsed || 0
+        knowledgeSourcesUsed: data.knowledgeSourcesUsed || 0,
+        researchCitations: data.researchCitations || []
       };
 
       console.log('📋 Final service result:', {
@@ -90,7 +94,8 @@ export class DirectRAGAnalysisService {
         annotationsCount: result.annotations.length,
         totalAnnotations: result.totalAnnotations,
         researchEnhanced: result.researchEnhanced,
-        knowledgeSourcesUsed: result.knowledgeSourcesUsed
+        knowledgeSourcesUsed: result.knowledgeSourcesUsed,
+        researchCitationsCount: result.researchCitations.length
       });
       
       return result;
@@ -104,6 +109,7 @@ export class DirectRAGAnalysisService {
         totalAnnotations: 0,
         researchEnhanced: false,
         knowledgeSourcesUsed: 0,
+        researchCitations: [],
         error: error instanceof Error ? error.message : 'Unknown error occurred'
       };
     }

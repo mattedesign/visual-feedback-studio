@@ -1,4 +1,3 @@
-
 import { AnalysisRequest } from './types.ts';
 
 interface RAGContext {
@@ -30,6 +29,9 @@ export interface ValidatedRequest {
   ragEnabled?: boolean;
   ragContext?: RAGContext;
   researchCitations?: string[];
+  // Keep backward compatibility
+  imageUrl?: string;
+  imageUrls?: string[];
 }
 
 export async function validateAndParseRequest(req: Request): Promise<ValidatedRequest> {
@@ -101,6 +103,23 @@ export async function validateAndParseRequest(req: Request): Promise<ValidatedRe
     testMode,
     ragEnabled,
     ragContext,
-    researchCitations
+    researchCitations,
+    imageUrl,
+    imageUrls
   };
 }
+
+// Export a validator object for compatibility
+export const requestValidator = {
+  validate: async (req: Request) => {
+    try {
+      const data = await validateAndParseRequest(req);
+      return { isValid: true, data };
+    } catch (error) {
+      return { 
+        isValid: false, 
+        error: error instanceof Error ? error.message : 'Validation failed'
+      };
+    }
+  }
+};

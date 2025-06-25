@@ -11,24 +11,22 @@ import { Annotation } from '@/types/analysis';
 export const DirectRAGTest = () => {
   const [imageUrl, setImageUrl] = useState('');
   const [analysisPrompt, setAnalysisPrompt] = useState('Analyze this design for UX improvements');
-  const [openaiApiKey, setOpenaiApiKey] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
 
   const { analyzeWithDirectRAG, isRAGAnalyzing, ragResults } = useDirectRAGAnalysis({
     imageUrl,
-    currentAnalysis: null,
     setIsAnalyzing,
     setAnnotations
   });
 
   const handleAnalyze = async () => {
-    if (!imageUrl || !openaiApiKey) {
-      alert('Please provide both image URL and OpenAI API key');
+    if (!imageUrl) {
+      alert('Please provide image URL');
       return;
     }
 
-    await analyzeWithDirectRAG(analysisPrompt, openaiApiKey);
+    await analyzeWithDirectRAG(analysisPrompt);
   };
 
   return (
@@ -58,19 +56,9 @@ export const DirectRAGTest = () => {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">OpenAI API Key</label>
-            <Input
-              type="password"
-              value={openaiApiKey}
-              onChange={(e) => setOpenaiApiKey(e.target.value)}
-              placeholder="sk-..."
-            />
-          </div>
-
           <Button 
             onClick={handleAnalyze} 
-            disabled={isAnalyzing || !imageUrl || !openaiApiKey}
+            disabled={isAnalyzing || !imageUrl}
             className="w-full"
           >
             {isRAGAnalyzing ? (
