@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import { AnalysisWithFiles } from '@/services/analysisDataService';
 import { Annotation } from '@/types/analysis';
@@ -203,18 +204,7 @@ export const useAIAnalysis = ({
   }, [
     imageUrl, 
     imageUrls, 
-    currentAnalysis, 
-    setIsAnalyzing, 
-    setAnnotations, 
-    buildIntelligentPrompt, 
-    executeAnalysis, 
-    validateAnalysisInputs,
-    prepareAnalysisConfiguration,
-    handleAnalysisError,
-    buildRAGContext,
-    enhancePromptWithResearch,
-    formatAnalysisWithResearch,
-    clearRAGData
+    currentAnalysis?.id
   ]);
 
   // Updated return statement to expose RAG state to components
