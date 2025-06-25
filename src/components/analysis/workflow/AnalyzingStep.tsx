@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
-import { useAnalysisExecution } from '@/hooks/analysis/useAnalysisExecution';
+import { useAIAnalysis } from '@/hooks/analysis/useAIAnalysis';
 import { RAGStatusIndicator } from '../RAGStatusIndicator';
 import { toast } from 'sonner';
 
@@ -16,33 +16,27 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
   const [retryCount, setRetryCount] = useState(0);
   const maxRetries = 3;
 
-  // Use the fixed analysis execution hook
-  const { executeAnalysis, ragContext, isBuilding, hasResearchContext, researchSourcesCount } = useAnalysisExecution({
+  // Updated to capture RAG state from useAIAnalysis
+  const { handleAnalyze, ragContext, isBuilding, hasResearchContext, researchSourcesCount } = useAIAnalysis({
+    imageUrls: workflow.selectedImages,
     currentAnalysis: workflow.currentAnalysis,
     setIsAnalyzing: workflow.setIsAnalyzing,
-    setAnnotations: workflow.setAiAnnotations
+    setAnnotations: workflow.setAiAnnotations,
+    isComparative: workflow.selectedImages.length > 1
   });
 
-  // Enhanced debugging for RAG context
+  // Update step text based on RAG status
   useEffect(() => {
     if (isBuilding) {
-      console.log('🔍 RAG Context Building Started');
       setCurrentStep('Building research context...');
     } else if (ragContext && !isBuilding) {
-      console.log('✅ RAG Context Built Successfully:', {
-        knowledgeEntries: ragContext.retrievedKnowledge?.relevantPatterns?.length || 0,
-        competitorInsights: ragContext.retrievedKnowledge?.competitorInsights?.length || 0,
-        citations: ragContext.researchCitations?.length || 0,
-        industryContext: ragContext.industryContext,
-        enhancedPromptLength: ragContext.enhancedPrompt?.length || 0
-      });
-      setCurrentStep(`Research-enhanced analysis (${researchSourcesCount} sources found)...`);
+      setCurrentStep('Performing research-enhanced analysis...');
     }
-  }, [isBuilding, ragContext, researchSourcesCount]);
+  }, [isBuilding, ragContext]);
 
   useEffect(() => {
     const performAnalysis = async () => {
-      console.log('=== Starting RAG-Enhanced Analysis Validation ===');
+      console.log('=== Starting Analysis Validation ===');
       console.log('Selected images:', workflow.selectedImages.length);
       console.log('Current analysis:', workflow.currentAnalysis?.id);
       console.log('User annotations:', workflow.getTotalAnnotationsCount());
@@ -95,34 +89,12 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
         setCurrentStep('Sending to AI for analysis...');
         setAnalysisProgress(80);
 
-        // Use the fixed executeAnalysis method that properly handles RAG
-        await executeAnalysis(
-          workflow.selectedImages,
-          workflow.analysisContext || '',
-          workflow.selectedImages.length > 1
-        );
+        await handleAnalyze(workflow.analysisContext, workflow.imageAnnotations);
         
         setAnalysisProgress(100);
         setCurrentStep('Analysis complete!');
         
         console.log('=== RAG-Enhanced Analysis Completed Successfully ===');
-        
-        // Enhanced success logging
-        if (ragContext) {
-          console.log('🎯 RAG Enhancement Results:', {
-            researchSourcesUsed: researchSourcesCount,
-            citationsGenerated: ragContext.researchCitations?.length || 0,
-            industryContextDetected: ragContext.industryContext,
-            promptEnhanced: !!ragContext.enhancedPrompt,
-            knowledgeEntriesFound: ragContext.retrievedKnowledge?.relevantPatterns?.length || 0
-          });
-
-          if (researchSourcesCount > 0) {
-            toast.success(`Analysis enhanced with ${researchSourcesCount} research sources and ${ragContext.researchCitations?.length || 0} citations!`);
-          } else {
-            toast.warning('Analysis completed but no research sources found. Consider adding more knowledge to your database.');
-          }
-        }
         
         // Small delay to show completion before transitioning
         setTimeout(() => {
@@ -164,7 +136,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
     };
 
     performAnalysis();
-  }, [workflow, executeAnalysis, retryCount]);
+  }, [workflow, handleAnalyze, retryCount]);
 
   const totalAnnotations = workflow.getTotalAnnotationsCount();
   const isMultiImage = workflow.selectedImages.length > 1;
@@ -223,11 +195,6 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
                 <p className="text-xs text-green-400 mt-1">
                   Analysis enhanced with {ragContext.industryContext || 'UX'} research
                 </p>
-                {ragContext.researchCitations && ragContext.researchCitations.length > 0 && (
-                  <p className="text-xs text-green-300 mt-1">
-                    📚 {ragContext.researchCitations.length} research citations will be included
-                  </p>
-                )}
               </div>
             )}
 
@@ -240,14 +207,14 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
             )}
 
             <div className="bg-slate-700 rounded-lg p-4">
-              <h4 className="font-medium mb-2">Research-Enhanced Analysis Focus:</h4>
+              <h4 className="font-medium mb-2">Enhanced Analysis Focus:</h4>
               <ul className="text-sm text-slate-300 space-y-1">
                 <li>• {totalAnnotations} specific areas you highlighted across {isMultiImage ? 'all images' : 'the image'}</li>
                 {workflow.analysisContext && <li>• Your general context and requirements</li>}
                 {isMultiImage && <li>• Comparative analysis between selected images</li>}
                 <li>• Research-backed UX and accessibility recommendations</li>
                 <li>• Evidence-based conversion optimization opportunities</li>
-                <li>• Citations from peer-reviewed UX studies and industry standards</li>
+                <li>• Citations from peer-reviewed UX studies</li>
               </ul>
             </div>
 

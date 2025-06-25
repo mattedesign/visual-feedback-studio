@@ -26,26 +26,18 @@ const Auth = () => {
     }
   }, [session, user, navigate]);
 
-  const getRedirectUrl = () => {
-    // Use the current origin to construct the redirect URL
-    const origin = window.location.origin;
-    return `${origin}/analysis`;
-  };
-
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     
     setLoading(true);
 
     try {
-      const redirectUrl = getRedirectUrl();
-      
       if (isSignUp) {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: redirectUrl
+            emailRedirectTo: `${window.location.origin}/analysis`
           }
         });
 
@@ -53,7 +45,6 @@ const Auth = () => {
         
         if (data.session) {
           toast.success('Account created and signed in successfully!');
-          navigate('/analysis');
         } else if (data.user && !data.user.email_confirmed_at) {
           toast.success('Account created! Please check your email to confirm your account.');
         } else {
@@ -69,11 +60,8 @@ const Auth = () => {
         if (error) throw error;
         
         toast.success('Welcome back!');
-        navigate('/analysis');
       }
     } catch (error: any) {
-      console.error('Auth error:', error);
-      
       if (error.message.includes('Invalid login credentials')) {
         toast.error('Invalid email or password. Please check your credentials and try again.');
       } else if (error.message.includes('User already registered')) {
@@ -83,8 +71,6 @@ const Auth = () => {
         toast.error('Password should be at least 6 characters long.');
       } else if (error.message.includes('Email not confirmed')) {
         toast.error('Please check your email and click the confirmation link before signing in.');
-      } else if (error.message.includes('requested path is invalid')) {
-        toast.error('Authentication configuration error. Please try again or contact support.');
       } else {
         toast.error(error.message || 'An error occurred during authentication');
       }
@@ -102,12 +88,10 @@ const Auth = () => {
     setLoading(true);
     
     try {
-      const redirectUrl = getRedirectUrl();
-      
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: redirectUrl
+          emailRedirectTo: `${window.location.origin}/analysis`
         }
       });
 
@@ -115,7 +99,6 @@ const Auth = () => {
       
       toast.success('Check your email for the magic link!');
     } catch (error: any) {
-      console.error('Magic link error:', error);
       toast.error(error.message || 'Failed to send magic link');
     } finally {
       setLoading(false);

@@ -18,13 +18,17 @@ serve(async (req) => {
   }
 
   try {
-    console.log('=== RAG-Enhanced AI Analysis Edge Function Started ===');
+    console.log('=== Enhanced AI Analysis Edge Function Started ===');
     console.log('Request method:', req.method);
     console.log('Request URL:', req.url);
     console.log('Timestamp:', new Date().toISOString());
     
-    // Validate environment
+    // Validate environment with API key diagnostics
     const envConfig = validateEnvironment();
+    console.log('=== API Key Diagnostics ===');
+    console.log('Anthropic API key exists:', !!envConfig.anthropicApiKey);
+    console.log('API key length:', envConfig.anthropicApiKey?.length || 0);
+    console.log('API key format valid:', envConfig.anthropicApiKey?.startsWith('sk-ant-') || false);
     
     // Parse and validate request
     const validatedRequest = await validateAndParseRequest(req);
@@ -38,8 +42,7 @@ serve(async (req) => {
       ragEnabled: validatedRequest.ragEnabled || false,
       ragKnowledgeCount: validatedRequest.ragContext?.retrievedKnowledge.relevantPatterns.length || 0,
       ragCitationsCount: validatedRequest.researchCitations?.length || 0,
-      ragIndustryContext: validatedRequest.ragContext?.industryContext || 'none',
-      hasEnhancedPrompt: !!validatedRequest.ragContext?.enhancedPrompt
+      ragIndustryContext: validatedRequest.ragContext?.industryContext || 'none'
     });
     
     // Process images
@@ -47,38 +50,22 @@ serve(async (req) => {
     const processedImages = await processImages(validatedRequest.imagesToProcess);
     console.log('Images processed successfully:', processedImages.length);
     
-    // CRITICAL FIX: Determine the final prompt to use
-    let finalPrompt: string;
-    
-    if (validatedRequest.ragEnabled && validatedRequest.ragContext?.enhancedPrompt) {
-      // Use the RAG-enhanced prompt directly (contains research citations)
-      finalPrompt = validatedRequest.ragContext.enhancedPrompt;
-      console.log('✅ Using RAG-enhanced prompt with research citations');
-    } else {
-      // Fallback to standard prompt creation
-      finalPrompt = createEnhancedPrompt(
-        validatedRequest.analysisPrompt,
-        validatedRequest.isComparative,
-        validatedRequest.isMultiImage,
-        validatedRequest.imagesToProcess,
-        validatedRequest.ragContext
-      );
-      console.log('📊 Using standard enhanced prompt');
-    }
-    
-    console.log('Final prompt details:', {
-      promptLength: finalPrompt.length,
-      containsResearchCitations: finalPrompt.includes('Based on') || finalPrompt.includes('research shows') || finalPrompt.includes('Nielsen'),
-      containsWCAG: finalPrompt.includes('WCAG'),
-      containsHeuristics: finalPrompt.includes('heuristic'),
-      ragEnhanced: validatedRequest.ragEnabled && !!validatedRequest.ragContext?.enhancedPrompt
-    });
+    // Create enhanced prompt with RAG context
+    console.log('=== Creating Enhanced Prompt ===');
+    const enhancedPrompt = createEnhancedPrompt(
+      validatedRequest.analysisPrompt,
+      validatedRequest.isComparative,
+      validatedRequest.isMultiImage,
+      validatedRequest.imagesToProcess,
+      validatedRequest.ragContext
+    );
+    console.log('Prompt length:', enhancedPrompt.length);
 
     // For comparative analysis, use the first image as primary
     const primaryImage = processedImages[0];
     
-    // Perform AI analysis with the final prompt
-    console.log('=== Starting AI Analysis with Final Prompt ===');
+    // Perform AI analysis with model selection support
+    console.log('=== Starting AI Analysis ===');
     console.log('Using provider:', validatedRequest.aiProvider);
     console.log('Using model:', validatedRequest.model);
     
@@ -86,7 +73,7 @@ serve(async (req) => {
     const annotations = await performAIAnalysis(
       primaryImage.base64Image,
       primaryImage.mimeType,
-      finalPrompt, // This now contains research citations when available
+      enhancedPrompt,
       validatedRequest.aiProvider,
       validatedRequest.model
     );
@@ -104,10 +91,10 @@ serve(async (req) => {
     );
     console.log('Annotations saved successfully:', savedAnnotations.length);
 
-    // Format response with RAG metadata
+    // Format response
     const responseData = formatAnalysisResponse(annotations);
     
-    // Add model information to response
+    // Add model information to response for testing purposes
     responseData.providerUsed = validatedRequest.aiProvider || 'auto-selected';
     responseData.modelUsed = validatedRequest.model || 'default';
     responseData.testMode = validatedRequest.testMode || false;
@@ -118,16 +105,13 @@ serve(async (req) => {
       responseData.knowledgeSourcesUsed = validatedRequest.ragContext.retrievedKnowledge.relevantPatterns.length;
       responseData.researchCitations = validatedRequest.researchCitations || [];
       responseData.industryContext = validatedRequest.ragContext.industryContext;
-      responseData.ragBuildTimestamp = validatedRequest.ragContext.buildTimestamp;
-      responseData.usedEnhancedPrompt = !!validatedRequest.ragContext.enhancedPrompt;
     } else {
       responseData.researchEnhanced = false;
       responseData.knowledgeSourcesUsed = 0;
       responseData.researchCitations = [];
-      responseData.usedEnhancedPrompt = false;
     }
     
-    console.log('=== RAG-Enhanced Analysis Completed Successfully ===');
+    console.log('=== Analysis Completed Successfully ===');
     console.log('Final response:', {
       success: responseData.success,
       totalAnnotations: responseData.totalAnnotations,
@@ -139,7 +123,6 @@ serve(async (req) => {
       researchEnhanced: responseData.researchEnhanced,
       knowledgeSourcesUsed: responseData.knowledgeSourcesUsed,
       ragCitationsCount: responseData.researchCitations?.length || 0,
-      usedEnhancedPrompt: responseData.usedEnhancedPrompt,
       totalProcessingTime: `${analysisTime}ms`
     });
     
@@ -149,7 +132,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('=== RAG-Enhanced Analysis Function Error ===');
+    console.error('=== Analysis Function Error ===');
     console.error('Error timestamp:', new Date().toISOString());
     console.error('Error type:', error.constructor.name);
     console.error('Error message:', error.message);
