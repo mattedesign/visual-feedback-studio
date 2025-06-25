@@ -1,7 +1,4 @@
-import { analyzeWithAIProvider, determineOptimalProvider, AIProvider, AIProviderConfig } from './aiProviderRouter.ts';
-import { AnnotationData } from './types.ts';
-
-// DEFINITIVE RAG function with CORRECTED database query
+// DEFINITIVE RAG function with COMPREHENSIVE DIAGNOSTICS
 async function getRAGContext(userPrompt: string) {
   try {
     console.log('🔍 Building RAG context for:', userPrompt.substring(0, 100));
@@ -12,7 +9,10 @@ async function getRAGContext(userPrompt: string) {
     
     console.log('🔑 Environment check:', {
       hasSupabaseUrl: !!supabaseUrl,
-      hasSupabaseKey: !!supabaseKey
+      hasSupabaseKey: !!supabaseKey,
+      urlValue: supabaseUrl,
+      keyPrefix: supabaseKey?.substring(0, 20) + '...',
+      keyType: supabaseKey?.includes('service_role') ? 'SERVICE_ROLE' : 'OTHER_KEY_TYPE'
     });
     
     if (!supabaseUrl || !supabaseKey) {
@@ -25,29 +25,139 @@ async function getRAGContext(userPrompt: string) {
     
     console.log('✅ Supabase client created successfully');
     
-    // CRITICAL FIX: Simple query that will find ALL your knowledge entries
-    console.log('🔍 Retrieving ALL knowledge entries...');
+    // =================================
+    // COMPREHENSIVE DATABASE DIAGNOSTICS
+    // =================================
+    
+    console.log('🔍 === STARTING DATABASE DIAGNOSTICS ===');
+    
+    // Test 1: Basic connection test
+    console.log('🔍 Test 1: Basic connection...');
+    try {
+      const { data: connectionTest, error: connectionError } = await supabase
+        .from('knowledge_entries')
+        .select('count', { count: 'exact', head: true });
+      
+      console.log('📊 Connection test result:', { 
+        error: connectionError?.message || 'No error', 
+        count: connectionTest,
+        success: !connectionError 
+      });
+    } catch (e) {
+      console.error('❌ Connection test failed:', e);
+    }
+
+    // Test 2: Simple select test
+    console.log('🔍 Test 2: Simple select...');
+    try {
+      const { data: simpleTest, error: simpleError } = await supabase
+        .from('knowledge_entries')  
+        .select('id, title, category')
+        .limit(3);
+      
+      console.log('📋 Simple select test:', {
+        found: simpleTest?.length || 0,
+        error: simpleError?.message || 'No error',
+        sampleTitles: simpleTest?.map(d => d.title) || [],
+        sampleCategories: simpleTest?.map(d => d.category) || []
+      });
+    } catch (e) {
+      console.error('❌ Simple select test failed:', e);
+    }
+
+    // Test 3: Count all entries
+    console.log('🔍 Test 3: Count all entries...');
+    try {
+      const { count, error: countError } = await supabase
+        .from('knowledge_entries')
+        .select('*', { count: 'exact', head: true });
+      
+      console.log('🔢 Count test result:', {
+        totalEntries: count,
+        error: countError?.message || 'No error',
+        success: !countError
+      });
+    } catch (e) {
+      console.error('❌ Count test failed:', e);
+    }
+
+    // Test 4: RLS permission test with specific category
+    console.log('🔍 Test 4: RLS permission test...');
+    try {
+      const { data: rlsTest, error: rlsError } = await supabase
+        .from('knowledge_entries')
+        .select('id, title, category')
+        .eq('category', 'ux-patterns')
+        .limit(2);
+      
+      console.log('🔒 RLS test result:', {
+        found: rlsTest?.length || 0,
+        error: rlsError?.message || 'No error',
+        hasRlsBlock: rlsError?.message?.includes('policy') || rlsError?.message?.includes('security'),
+        sampleData: rlsTest || []
+      });
+    } catch (e) {
+      console.error('❌ RLS test failed:', e);
+    }
+
+    // Test 5: Alternative query approach
+    console.log('🔍 Test 5: Alternative query approach...');
+    try {
+      const { data: altTest, error: altError } = await supabase
+        .from('knowledge_entries')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(5);
+      
+      console.log('🔄 Alternative query result:', {
+        found: altTest?.length || 0,
+        error: altError?.message || 'No error',
+        entries: altTest?.map(entry => ({
+          id: entry.id,
+          title: entry.title,
+          category: entry.category
+        })) || []
+      });
+    } catch (e) {
+      console.error('❌ Alternative query failed:', e);
+    }
+
+    console.log('🔍 === DATABASE DIAGNOSTICS COMPLETE ===');
+    
+    // =================================
+    // MAIN RAG QUERY (ORIGINAL LOGIC)
+    // =================================
+    
+    console.log('🔍 Starting main RAG query...');
     const { data: knowledge, error } = await supabase
       .from('knowledge_entries')
       .select('id, title, content, category, created_at')
       .order('created_at', { ascending: false })
       .limit(5);
 
-    console.log('📊 Database query results:', {
+    console.log('📊 Main RAG query results:', {
       hasError: !!error,
       errorMessage: error?.message || null,
+      errorCode: error?.code || null,
+      errorHint: error?.hint || null,
       dataLength: knowledge?.length || 0,
       foundTitles: knowledge?.map(k => k.title) || [],
       foundCategories: knowledge?.map(k => k.category) || []
     });
 
     if (error) {
-      console.log('⚠️ Knowledge retrieval error:', error);
+      console.log('⚠️ Knowledge retrieval error details:', {
+        message: error.message,
+        code: error.code,
+        hint: error.hint,
+        details: error.details
+      });
       return null;
     }
     
     if (!knowledge || knowledge.length === 0) {
       console.log('⚠️ No knowledge entries found in database');
+      console.log('🚨 This means RAG is not working - falling back to standard analysis');
       return null;
     }
     
@@ -79,90 +189,9 @@ async function getRAGContext(userPrompt: string) {
   } catch (error) {
     console.log('⚠️ RAG context failed with error:', {
       message: error.message,
-      name: error.name
+      name: error.name,
+      stack: error.stack
     });
     return null;
-  }
-}
-
-export async function performAIAnalysis(
-  base64Image: string,
-  mimeType: string,
-  enhancedPrompt: string,
-  requestedProvider?: 'openai' | 'claude',
-  requestedModel?: string
-): Promise<AnnotationData[]> {
-  console.log('=== AI Provider Analysis Phase ===');
-  console.log('Requested provider:', requestedProvider);
-  console.log('Requested model:', requestedModel);
-  
-  // *** ENHANCED RAG INTEGRATION ***
-  console.log('🔍 Starting RAG process with your UX research...');
-  const ragContext = await getRAGContext(enhancedPrompt);
-  
-  // Enhance prompt with RAG context if available
-  let finalPrompt = enhancedPrompt;
-  if (ragContext && ragContext.knowledgeCount > 0) {
-    finalPrompt = `${enhancedPrompt}
-
-RESEARCH CONTEXT FROM UX KNOWLEDGE BASE:
-${ragContext.context}
-
-Based on the research above, provide analysis that references relevant UX principles, research findings, and best practices. Include specific recommendations backed by this research. Return the same JSON format as requested.`;
-    
-    console.log('✅ RAG ENHANCEMENT SUCCESSFUL! Enhanced prompt with:', {
-      knowledgeCount: ragContext.knowledgeCount,
-      categories: ragContext.categories,
-      originalPromptLength: enhancedPrompt.length,
-      enhancedPromptLength: finalPrompt.length,
-      researchUsed: ragContext.categories
-    });
-  } else {
-    console.log('⚪ No RAG context retrieved - using standard analysis');
-  }
-  
-  // Determine AI provider configuration
-  let providerConfig: AIProviderConfig;
-  if (requestedProvider && (requestedProvider === 'openai' || requestedProvider === 'claude')) {
-    providerConfig = { 
-      provider: requestedProvider as AIProvider,
-      model: requestedModel
-    };
-    console.log(`Using explicitly requested provider: ${requestedProvider}${requestedModel ? ` with model: ${requestedModel}` : ''}`);
-  } else {
-    providerConfig = determineOptimalProvider();
-    if (requestedModel) {
-      providerConfig.model = requestedModel;
-    }
-    console.log(`Auto-determined provider config:`, providerConfig);
-  }
-
-  try {
-    const aiTimeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('AI request timeout (120s)')), 120000);
-    });
-    
-    const aiPromise = analyzeWithAIProvider(
-      base64Image, 
-      mimeType, 
-      finalPrompt,  // *** USING RESEARCH-ENHANCED PROMPT ***
-      providerConfig
-    );
-    
-    const annotations = await Promise.race([aiPromise, aiTimeoutPromise]);
-    
-    console.log('🏆 AI analysis completed with RAG enhancement:', {
-      annotationCount: annotations.length,
-      hasAnnotations: annotations.length > 0,
-      usedProvider: providerConfig.provider,
-      usedModel: providerConfig.model || 'default',
-      ragEnhanced: !!ragContext && ragContext.knowledgeCount > 0,
-      researchCategoriesUsed: ragContext?.categories || []
-    });
-
-    return annotations;
-  } catch (aiError) {
-    console.error('AI analysis failed:', aiError);
-    throw new Error(`AI analysis failed: ${aiError.message}`);
   }
 }
