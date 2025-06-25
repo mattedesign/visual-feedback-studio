@@ -1,8 +1,9 @@
+
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { useAIAnalysis } from '@/hooks/analysis/useAIAnalysis';
-import { RAGStatusIndicator } from '../RAGStatusIndicator';
+import { RAGStatusIndicator } from '@/components/analysis/RAGStatusIndicator';
 import { toast } from 'sonner';
 
 interface AnalyzingStepProps {
