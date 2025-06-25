@@ -14,11 +14,11 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState('Initializing analysis...');
   const [retryCount, setRetryCount] = useState(0);
-  const maxRetries = 3;
+  const maxRetries = 1; // REDUCED TO 1 to prevent loops
   const analysisStartedRef = useRef(false);
 
-  // Updated to capture RAG state from useAIAnalysis
-  const { handleAnalyze, ragContext, isBuilding, hasResearchContext, researchSourcesCount } = useAIAnalysis({
+  // RAG DISABLED - Updated to only get basic analysis state
+  const { handleAnalyze, isBuilding, hasResearchContext, researchSourcesCount } = useAIAnalysis({
     imageUrls: workflow.selectedImages,
     currentAnalysis: workflow.currentAnalysis,
     setIsAnalyzing: workflow.setIsAnalyzing,
@@ -26,14 +26,10 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
     isComparative: workflow.selectedImages.length > 1
   });
 
-  // Update step text based on RAG status
+  // RAG DISABLED - No longer checking for RAG context building
   useEffect(() => {
-    if (isBuilding) {
-      setCurrentStep('Building research context...');
-    } else if (ragContext && !isBuilding) {
-      setCurrentStep('Performing research-enhanced analysis...');
-    }
-  }, [isBuilding, ragContext]);
+    setCurrentStep('Preparing for standard analysis...');
+  }, []);
 
   // Memoized analysis execution function
   const performAnalysis = useCallback(async () => {
@@ -43,7 +39,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       return;
     }
 
-    console.log('=== Starting Analysis Validation ===');
+    console.log('=== Starting Standard Analysis (RAG DISABLED) ===');
     console.log('Selected images:', workflow.selectedImages.length);
     console.log('Current analysis:', workflow.currentAnalysis?.id);
     console.log('User annotations:', workflow.getTotalAnnotationsCount());
@@ -57,12 +53,12 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
     }
 
     if (!workflow.currentAnalysis) {
-      console.error('No current analysis found - this is the main issue');
+      console.error('No current analysis found');
       toast.error('Analysis session not found. Please go back and upload your images again.');
       return;
     }
 
-    console.log('=== Starting RAG-Enhanced Analysis Process ===');
+    console.log('=== Starting Standard Analysis Process ===');
     console.log('Is comparative:', workflow.selectedImages.length > 1);
 
     analysisStartedRef.current = true;
@@ -89,21 +85,16 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       await Promise.all(imageValidationPromises);
       setAnalysisProgress(25);
 
-      setCurrentStep('Building research context...');
-      setAnalysisProgress(40);
-
-      setCurrentStep('Enhancing analysis with UX research...');
+      setCurrentStep('Sending to AI for analysis...');
       setAnalysisProgress(60);
 
-      setCurrentStep('Sending to AI for analysis...');
-      setAnalysisProgress(80);
-
+      // RAG DISABLED - Direct analysis call
       await handleAnalyze(workflow.analysisContext, workflow.imageAnnotations);
       
       setAnalysisProgress(100);
       setCurrentStep('Analysis complete!');
       
-      console.log('=== RAG-Enhanced Analysis Completed Successfully ===');
+      console.log('=== Standard Analysis Completed Successfully ===');
       
       // Small delay to show completion before transitioning
       setTimeout(() => {
@@ -125,8 +116,8 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
         // Reset the analysis started flag for retry
         analysisStartedRef.current = false;
         
-        // Exponential backoff: 2s, 4s, 8s
-        const delay = Math.pow(2, retryCount) * 2000;
+        // Short delay for single retry: 2s
+        const delay = 2000;
         setTimeout(() => {
           performAnalysis();
         }, delay);
@@ -136,7 +127,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
         });
       } else {
         console.error('Max retries exceeded, giving up');
-        setCurrentStep('Analysis failed after multiple attempts');
+        setCurrentStep('Analysis failed');
         workflow.setIsAnalyzing(false);
         
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -161,7 +152,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
     workflow.imageAnnotations
   ]);
 
-  // Stable effect that only runs once when component mounts or when critical dependencies change
+  // Stable effect that only runs once when component mounts
   useEffect(() => {
     console.log('🚀 AnalyzingStep: Starting analysis effect', {
       timestamp: new Date().toISOString(),
@@ -199,7 +190,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
                 {isMultiImage ? 'Analyzing Your Designs' : 'Analyzing Your Design'}
               </h3>
               
-              {/* RAG Status Indicator */}
+              {/* RAG Status Indicator - Always shows disabled */}
               <div className="mb-4">
                 <RAGStatusIndicator 
                   hasResearchContext={hasResearchContext}
@@ -218,32 +209,6 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
               )}
             </div>
 
-            {/* Research Context Building Indicator */}
-            {isBuilding && (
-              <div className="mt-4 p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg">
-                <div className="flex items-center justify-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
-                  <span className="text-sm text-blue-300 font-medium">Building research context...</span>
-                </div>
-                <p className="text-xs text-blue-400 mt-1">Retrieving UX research insights for enhanced analysis</p>
-              </div>
-            )}
-
-            {/* Research Context Ready Indicator */}
-            {ragContext && !isBuilding && (
-              <div className="mt-4 p-3 bg-green-900/20 border border-green-500/30 rounded-lg">
-                <div className="flex items-center justify-center gap-2">
-                  <div className="text-green-400">✅</div>
-                  <span className="text-sm text-green-300 font-medium">
-                    Research context ready: {ragContext.retrievedKnowledge?.relevantPatterns?.length || researchSourcesCount} insights found
-                  </span>
-                </div>
-                <p className="text-xs text-green-400 mt-1">
-                  Analysis enhanced with {ragContext.industryContext || 'UX'} research
-                </p>
-              </div>
-            )}
-
             {workflow.currentAnalysis && (
               <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
                 <p className="text-blue-300 text-sm">
@@ -253,14 +218,13 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
             )}
 
             <div className="bg-slate-700 rounded-lg p-4">
-              <h4 className="font-medium mb-2">Enhanced Analysis Focus:</h4>
+              <h4 className="font-medium mb-2">Standard Analysis Focus:</h4>
               <ul className="text-sm text-slate-300 space-y-1">
                 <li>• {totalAnnotations} specific areas you highlighted across {isMultiImage ? 'all images' : 'the image'}</li>
                 {workflow.analysisContext && <li>• Your general context and requirements</li>}
                 {isMultiImage && <li>• Comparative analysis between selected images</li>}
-                <li>• Research-backed UX and accessibility recommendations</li>
-                <li>• Evidence-based conversion optimization opportunities</li>
-                <li>• Citations from peer-reviewed UX studies</li>
+                <li>• UX and accessibility recommendations</li>
+                <li>• Conversion optimization opportunities</li>
               </ul>
             </div>
 
