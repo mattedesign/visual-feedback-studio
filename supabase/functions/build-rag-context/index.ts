@@ -533,75 +533,51 @@ function removeDuplicateEntries(entries: KnowledgeEntry[]): KnowledgeEntry[] {
     .slice(0, 20); // Limit to top 20 most relevant
 }
 
-// FIXED: Enhanced prompt building with clear JSON formatting instructions
+// UPDATED: More concise enhanced prompt building with essential JSON formatting
 function buildEnhancedAnalysisPrompt(userPrompt: string, knowledgeEntries: KnowledgeEntry[]): string {
-  let prompt = `You are an expert UX analyst providing comprehensive design feedback. Your responses must be in valid JSON format with meaningful, actionable feedback.\n\n`;
+  let prompt = `You are a UX expert providing design feedback in JSON format.\n\n`;
   
-  // CRITICAL JSON FORMATTING INSTRUCTIONS
-  prompt += `=== MANDATORY JSON RESPONSE FORMAT ===\n`;
-  prompt += `You MUST respond with a valid JSON array of annotation objects. Each annotation object MUST contain:\n`;
-  prompt += `{\n`;
-  prompt += `  "x": number (coordinate on image),\n`;
-  prompt += `  "y": number (coordinate on image),\n`;
-  prompt += `  "feedback": "Detailed, specific, actionable feedback text - NEVER empty or placeholder",\n`;
-  prompt += `  "severity": "high" | "medium" | "low",\n`;
-  prompt += `  "category": "ux" | "visual" | "accessibility" | "conversion" | "brand",\n`;
-  prompt += `  "implementationEffort": "low" | "medium" | "high",\n`;
-  prompt += `  "businessImpact": "low" | "medium" | "high"\n`;
-  prompt += `}\n\n`;
+  // CONCISE JSON FORMAT REQUIREMENTS
+  prompt += `REQUIRED JSON FORMAT:\n`;
+  prompt += `[{\n`;
+  prompt += `  "x": number, "y": number,\n`;
+  prompt += `  "feedback": "Specific, actionable feedback (min 30 chars)",\n`;
+  prompt += `  "severity": "high"|"medium"|"low",\n`;
+  prompt += `  "category": "ux"|"visual"|"accessibility"|"conversion"|"brand",\n`;
+  prompt += `  "implementationEffort": "low"|"medium"|"high",\n`;
+  prompt += `  "businessImpact": "low"|"medium"|"high"\n`;
+  prompt += `}]\n\n`;
   
-  // STRICT RULES FOR FEEDBACK CONTENT
-  prompt += `=== FEEDBACK CONTENT REQUIREMENTS ===\n`;
-  prompt += `The "feedback" field is MANDATORY and must contain:\n`;
-  prompt += `✅ GOOD: "The register button lacks sufficient color contrast (2.1:1) against the background, making it difficult for users with visual impairments to distinguish. Research shows contrast ratios below 4.5:1 significantly reduce conversion rates."\n`;
-  prompt += `❌ BAD: "Feedback not provided", "No feedback", "", "TBD", or any placeholder text\n`;
-  prompt += `❌ BAD: Generic advice without specific details about the issue\n`;
-  prompt += `✅ GOOD: Specific observations tied to UX principles and research\n`;
-  prompt += `✅ GOOD: Actionable recommendations with implementation guidance\n\n`;
+  // CRITICAL RULES (shortened)
+  prompt += `RULES:\n`;
+  prompt += `• Never use empty/placeholder feedback ("", "TBD", "No feedback")\n`;
+  prompt += `• Be specific and actionable in feedback\n`;
+  prompt += `• Reference research when applicable\n`;
+  prompt += `• Return valid JSON array only\n\n`;
   
   if (userPrompt.trim()) {
-    prompt += `PRIMARY ANALYSIS REQUEST:\n${userPrompt.trim()}\n\n`;
+    prompt += `REQUEST: ${userPrompt.trim()}\n\n`;
   }
   
   if (knowledgeEntries.length > 0) {
-    prompt += `=== RESEARCH-BACKED CONTEXT (${knowledgeEntries.length} sources) ===\n`;
-    prompt += `Base your analysis on these UX research insights:\n\n`;
+    prompt += `RESEARCH CONTEXT (${knowledgeEntries.length} sources):\n`;
     
-    // Group by category for better organization
-    const categorizedEntries = knowledgeEntries.reduce((acc, entry) => {
-      if (!acc[entry.category]) acc[entry.category] = [];
-      acc[entry.category].push(entry);
-      return acc;
-    }, {} as Record<string, KnowledgeEntry[]>);
+    // Limit to top 3 most relevant entries and shorten content
+    const topEntries = knowledgeEntries
+      .sort((a, b) => (b.similarity || 0) - (a.similarity || 0))
+      .slice(0, 3);
     
-    Object.entries(categorizedEntries).forEach(([category, entries]) => {
-      prompt += `**${category.toUpperCase()}** (${entries.length} sources):\n`;
-      entries.slice(0, 3).forEach((entry, i) => {
-        const similarityPercentage = ((entry.similarity || 0) * 100).toFixed(1);
-        prompt += `${i + 1}. ${entry.title} (${similarityPercentage}% relevance)\n`;
-        prompt += `   Research: ${entry.content.substring(0, 250)}...\n`;
-        prompt += `   Source: ${entry.source}\n\n`;
-      });
+    topEntries.forEach((entry, i) => {
+      const relevance = ((entry.similarity || 0) * 100).toFixed(0);
+      prompt += `${i + 1}. ${entry.title} (${relevance}% match)\n`;
+      // Shorten content to first 100 characters
+      prompt += `   ${entry.content.substring(0, 100)}...\n\n`;
     });
     
-    prompt += `=== RESEARCH INTEGRATION REQUIREMENTS ===\n`;
-    prompt += `• Reference specific research sources in your feedback\n`;
-    prompt += `• Connect recommendations to established UX principles\n`;
-    prompt += `• Cite relevance percentages when applicable\n`;
-    prompt += `• Prioritize insights from higher-relevance sources\n\n`;
+    prompt += `Apply these research insights in your feedback.\n\n`;
   }
   
-  // FINAL MANDATORY INSTRUCTIONS
-  prompt += `=== CRITICAL FINAL INSTRUCTIONS ===\n`;
-  prompt += `1. NEVER use placeholder text like "Feedback not provided" or "No feedback available"\n`;
-  prompt += `2. Each feedback field must contain specific, actionable insights (minimum 50 characters)\n`;
-  prompt += `3. Reference research sources when making recommendations\n`;
-  prompt += `4. Provide concrete coordinate positions (x, y) for each annotation\n`;
-  prompt += `5. Return ONLY the JSON array - no additional text or formatting\n`;
-  prompt += `6. Ensure all JSON is properly formatted and parseable\n`;
-  prompt += `7. Every annotation must pass validation: feedback exists, severity exists, category exists\n\n`;
-  
-  prompt += `RESPOND WITH VALID JSON ARRAY ONLY:\n`;
+  prompt += `Return JSON array with detailed, research-backed feedback:\n`;
   
   return prompt;
 }
