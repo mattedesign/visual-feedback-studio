@@ -1,4 +1,3 @@
-
 import { loadStripe } from '@stripe/stripe-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -43,7 +42,7 @@ export interface CreateCheckoutSessionParams {
 
 // Initialize Stripe client
 const getStripe = async () => {
-  const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+  const publishableKey = "pk_live_5lRaokhB0UJfRbf1HhcfxUHMYpa4dVIPDJ1WGAnUgULBKx6rsMbbIY2JIzMRgx3OqH7KokItSTfCizlzKFJ9IXCOKy00hWKp75Md";
   if (!publishableKey) {
     throw new Error('Stripe publishable key is not configured');
   }
@@ -256,10 +255,10 @@ export const stripeService = {
    */
   getPricingConfig() {
     return {
-      monthlyPriceId: import.meta.env.VITE_STRIPE_MONTHLY_PRICE_ID,
-      yearlyPriceId: import.meta.env.VITE_STRIPE_YEARLY_PRICE_ID,
-      monthlyAmount: 2900, // $29.00 in cents
-      yearlyAmount: 19900, // $199.00 in cents (31% savings)
+      monthlyPriceId: "price_1RdxIAB0UJfBqFIHrJkzb238",
+      yearlyPriceId: "price_1RdxIfB0UJfBqFIHMGtudpgk",
+      monthlyAmount: 1999, // $19.99 in cents
+      yearlyAmount: 19900, // $199.00 in cents
     };
   },
 
@@ -267,13 +266,11 @@ export const stripeService = {
    * Validate Stripe configuration
    */
   validateConfiguration(): { isValid: boolean; missingKeys: string[] } {
-    const requiredKeys = [
-      'VITE_STRIPE_PUBLISHABLE_KEY',
-      'VITE_STRIPE_MONTHLY_PRICE_ID',
-      'VITE_STRIPE_YEARLY_PRICE_ID'
-    ];
-
-    const missingKeys = requiredKeys.filter(key => !import.meta.env[key]);
+    const config = this.getPricingConfig();
+    const missingKeys: string[] = [];
+    
+    if (!config.monthlyPriceId) missingKeys.push('monthlyPriceId');
+    if (!config.yearlyPriceId) missingKeys.push('yearlyPriceId');
     
     return {
       isValid: missingKeys.length === 0,
