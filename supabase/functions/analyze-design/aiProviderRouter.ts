@@ -1,4 +1,5 @@
 
+
 import { analyzeWithOpenAI } from './openaiClient.ts';
 import { analyzeWithClaude } from './claudeClient.ts';
 import { AnnotationData } from './types.ts';
@@ -58,15 +59,27 @@ async function callProvider(
   switch (provider) {
     case 'openai':
       const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+      console.log('OpenAI environment check:', {
+        keyExists: !!openaiApiKey,
+        keyLength: openaiApiKey?.length || 0,
+        keyPreview: openaiApiKey ? `${openaiApiKey.substring(0, 10)}...` : 'N/A'
+      });
+      
       if (!openaiApiKey) {
-        throw new Error('OpenAI API key not configured');
+        throw new Error('OpenAI API key not configured in environment variables');
       }
       return await analyzeWithOpenAI(base64Image, mimeType, prompt, openaiApiKey, model);
       
     case 'claude':
       const claudeApiKey = Deno.env.get('ANTHROPIC_API_KEY');
+      console.log('Claude environment check:', {
+        keyExists: !!claudeApiKey,
+        keyLength: claudeApiKey?.length || 0,
+        keyPreview: claudeApiKey ? `${claudeApiKey.substring(0, 15)}...` : 'N/A'
+      });
+      
       if (!claudeApiKey) {
-        throw new Error('Claude API key not configured');
+        throw new Error('Claude API key not configured in environment variables');
       }
       return await analyzeWithClaude(base64Image, mimeType, prompt, claudeApiKey, model);
       
@@ -81,7 +94,9 @@ export function determineOptimalProvider(): AIProviderConfig {
   
   console.log('Available providers:', {
     openai: !!openaiKey,
-    claude: !!claudeKey
+    claude: !!claudeKey,
+    openaiKeyLength: openaiKey?.length || 0,
+    claudeKeyLength: claudeKey?.length || 0
   });
   
   // Default to OpenAI with Claude fallback if both are available
@@ -103,3 +118,4 @@ export function determineOptimalProvider(): AIProviderConfig {
   
   throw new Error('No AI provider API keys configured. Please set OPENAI_API_KEY or ANTHROPIC_API_KEY.');
 }
+

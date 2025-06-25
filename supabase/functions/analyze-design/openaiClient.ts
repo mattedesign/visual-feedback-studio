@@ -1,4 +1,5 @@
 
+
 export async function analyzeWithOpenAI(
   base64Image: string,
   mimeType: string,
@@ -7,6 +8,23 @@ export async function analyzeWithOpenAI(
   requestedModel?: string
 ) {
   console.log('=== OpenAI Client Started ===');
+  
+  // Clean and validate API key
+  const cleanApiKey = apiKey.trim().replace(/[\r\n\t]/g, '');
+  console.log('OpenAI API key validation:', {
+    exists: !!cleanApiKey,
+    length: cleanApiKey.length,
+    startsCorrectly: cleanApiKey.startsWith('sk-'),
+    hasWhitespace: cleanApiKey !== apiKey
+  });
+  
+  if (!cleanApiKey) {
+    throw new Error('OpenAI API key is empty or undefined');
+  }
+  
+  if (!cleanApiKey.startsWith('sk-')) {
+    throw new Error('Invalid OpenAI API key format. Must start with "sk-"');
+  }
   
   // Default to the flagship model if no specific model is requested
   const model = requestedModel || 'gpt-4.1-2025-04-14';
@@ -23,7 +41,7 @@ export async function analyzeWithOpenAI(
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${cleanApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -46,7 +64,7 @@ export async function analyzeWithOpenAI(
             ]
           }
         ],
-        max_tokens: model.includes('o3') || model.includes('o4') ? 8000 : 4000, // Higher limits for reasoning models
+        max_tokens: model.includes('o3') || model.includes('o4') ? 8000 : 4000,
         temperature: 0.3,
       }),
     });
@@ -58,8 +76,9 @@ export async function analyzeWithOpenAI(
       console.error('OpenAI API error response:', {
         status: response.status,
         statusText: response.statusText,
-        body: errorText,
-        model: model
+        body: errorText.substring(0, 500),
+        model: model,
+        authHeaderUsed: `Bearer ${cleanApiKey.substring(0, 10)}...`
       });
       
       let errorMessage = `OpenAI API error: ${response.status} ${response.statusText}`;
@@ -179,6 +198,12 @@ export async function analyzeWithOpenAI(
     console.error('=== OpenAI Client Error ===');
     console.error('Error details:', error);
     console.error('Model attempted:', model);
+    console.error('API key format check:', {
+      keyExists: !!cleanApiKey,
+      keyLength: cleanApiKey?.length || 0,
+      keyStart: cleanApiKey?.substring(0, 10) || 'N/A'
+    });
     throw error;
   }
 }
+

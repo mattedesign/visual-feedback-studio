@@ -1,4 +1,5 @@
 
+
 export async function callClaudeApi(
   base64Image: string,
   mimeType: string,
@@ -6,6 +7,23 @@ export async function callClaudeApi(
   apiKey: string,
   model: string
 ): Promise<any> {
+  
+  // Clean and validate API key
+  const cleanApiKey = apiKey.trim().replace(/[\r\n\t]/g, '');
+  console.log('Claude API key validation:', {
+    exists: !!cleanApiKey,
+    length: cleanApiKey.length,
+    startsCorrectly: cleanApiKey.startsWith('sk-ant-'),
+    hasWhitespace: cleanApiKey !== apiKey
+  });
+  
+  if (!cleanApiKey) {
+    throw new Error('Claude API key is empty or undefined');
+  }
+  
+  if (!cleanApiKey.startsWith('sk-ant-')) {
+    throw new Error('Invalid Claude API key format. Must start with "sk-ant-"');
+  }
   
   // Simplified request payload
   const requestPayload = {
@@ -35,14 +53,15 @@ export async function callClaudeApi(
   console.log(`Making request to ${model}`, {
     imageSize: base64Image.length,
     mimeType,
-    promptLength: systemPrompt.length
+    promptLength: systemPrompt.length,
+    authHeaderPreview: `Bearer ${cleanApiKey.substring(0, 15)}...`
   });
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
+      'Authorization': `Bearer ${cleanApiKey}`,
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify(requestPayload)
@@ -55,6 +74,11 @@ export async function callClaudeApi(
   
   if (!response.ok) {
     console.error('API error response:', responseText.substring(0, 500));
+    console.error('Request headers used:', {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${cleanApiKey.substring(0, 15)}...`,
+      'anthropic-version': '2023-06-01'
+    });
     
     let errorDetails;
     try {
@@ -112,3 +136,4 @@ export async function callClaudeApi(
 
   return aiResponse;
 }
+
