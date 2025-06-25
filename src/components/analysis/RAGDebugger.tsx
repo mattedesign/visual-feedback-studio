@@ -55,13 +55,10 @@ export const RAGDebugger: React.FC = () => {
       console.log('🔍 Starting RAG debug for query:', query);
       
       const { data, error: functionError } = await supabase.functions.invoke('analyze-design', {
-        body: { query },
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }, {
-        get: (url: string) => url.includes('debug-rag') ? url : url + '?debug-rag=true'
+        body: { 
+          query,
+          debugRAG: true
+        }
       });
 
       if (functionError) {
@@ -79,53 +76,6 @@ export const RAGDebugger: React.FC = () => {
 
     } catch (err) {
       console.error('❌ RAG debug error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-      setError(errorMessage);
-      toast.error(`Debug failed: ${errorMessage}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Alternative method using direct function call
-  const handleDebugRAGDirect = async () => {
-    if (!query.trim()) {
-      toast.error('Please enter a search query');
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-    setDebugResult(null);
-
-    try {
-      console.log('🔍 Starting direct RAG debug for query:', query);
-      
-      // Make direct HTTP call to the debug endpoint
-      const response = await fetch('/api/debug-rag', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ query })
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Debug request failed');
-      }
-
-      console.log('✅ Direct RAG debug completed:', data.debug);
-      setDebugResult(data.debug);
-      toast.success(`Found ${data.debug.knowledgeEntriesFound} knowledge entries`);
-
-    } catch (err) {
-      console.error('❌ Direct RAG debug error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
       toast.error(`Debug failed: ${errorMessage}`);
@@ -169,27 +119,6 @@ export const RAGDebugger: React.FC = () => {
                 <>
                   <Search className="mr-2 h-4 w-4" />
                   Debug RAG
-                </>
-              )}
-            </Button>
-          </div>
-
-          <div className="flex gap-2">
-            <Button 
-              onClick={handleDebugRAGDirect} 
-              disabled={isLoading}
-              variant="outline"
-              className="min-w-[140px]"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Debugging...
-                </>
-              ) : (
-                <>
-                  <Database className="mr-2 h-4 w-4" />
-                  Direct Debug
                 </>
               )}
             </Button>
@@ -334,3 +263,118 @@ export const RAGDebugger: React.FC = () => {
     </div>
   );
 };
+```
+
+Now I need to update the analyze-design edge function to handle the debug RAG request:
+
+<lov-write file_path="supabase/functions/analyze-design/index.ts">
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
+import { corsHandler } from './corsHandler.ts';
+import { environmentValidator } from './environmentValidator.ts';
+import { requestValidator } from './requestValidator.ts';
+import { debugRAGRetrieval } from './debugRAG.ts';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  console.log('🚀 Design Analysis Function Starting');
+  console.log(`📥 ${req.method} ${req.url}`);
+
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    console.log('✅ CORS preflight handled');
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    // Validate environment
+    console.log('🔧 Validating environment configuration...');
+    const envValidation = environmentValidator.validate();
+    if (!envValidation.isValid) {
+      console.error('❌ Environment validation failed:', envValidation.errors);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Environment configuration invalid', 
+          details: envValidation.errors 
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Parse and validate request
+    const validation = await requestValidator.validate(req);
+    if (!validation.isValid) {
+      console.error('❌ Request validation failed:', validation.error);
+      return new Response(
+        JSON.stringify({ success: false, error: validation.error }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    const { body } = validation;
+
+    // Check if this is a debug RAG request
+    if (body.debugRAG && body.query) {
+      console.log('🔍 Processing RAG debug request for query:', body.query);
+      
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!;
+
+      const debugResult = await debugRAGRetrieval(
+        body.query,
+        supabaseUrl,
+        supabaseServiceKey,
+        openaiApiKey
+      );
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          debug: debugResult 
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // Handle regular analysis requests here...
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        error: 'Regular analysis not implemented in this debug version' 
+      }),
+      { 
+        status: 400, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
+
+  } catch (error) {
+    console.error('❌ Function execution error:', error);
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        error: 'Internal server error',
+        details: error.message
+      }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
+  }
+});
+```
