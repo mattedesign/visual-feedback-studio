@@ -1,4 +1,5 @@
 
+
 interface ProcessedImage {
   base64Data: string;
   mimeType: string;
@@ -13,6 +14,31 @@ interface ImageProcessingResult {
 }
 
 class ImageProcessingManager {
+  private convertToFullUrl(imageUrl: string): string {
+    // If it's already a full URL, return as is
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return imageUrl;
+    }
+    
+    // If it's a relative URL starting with /lovable-uploads/, convert to full URL
+    if (imageUrl.startsWith('/lovable-uploads/')) {
+      // Use the current origin for lovable-uploads
+      return `https://e1dd9711-6db1-4967-b1cc-c8425b453c2a.lovableproject.com${imageUrl}`;
+    }
+    
+    // If it's a relative URL that might be a Supabase storage path
+    if (imageUrl.startsWith('/')) {
+      // Try to construct a full URL using the current request origin
+      const supabaseUrl = Deno.env.get('SUPABASE_URL');
+      if (supabaseUrl) {
+        return `${supabaseUrl}${imageUrl}`;
+      }
+    }
+    
+    // If none of the above, assume it's already a valid URL
+    return imageUrl;
+  }
+
   async processImages(
     imageUrls: string[],
     isComparative: boolean = false
@@ -37,12 +63,16 @@ class ImageProcessingManager {
     
     try {
       for (let i = 0; i < imageUrls.length; i++) {
-        const imageUrl = imageUrls[i];
-        console.log(`🔄 Processing image ${i + 1}/${imageUrls.length}: ${imageUrl.substring(0, 50)}...`);
+        const originalUrl = imageUrls[i];
+        const fullUrl = this.convertToFullUrl(originalUrl);
+        
+        console.log(`🔄 Processing image ${i + 1}/${imageUrls.length}:`);
+        console.log(`   Original URL: ${originalUrl.substring(0, 50)}...`);
+        console.log(`   Full URL: ${fullUrl.substring(0, 100)}...`);
         
         try {
           // Fetch the image
-          const response = await fetch(imageUrl);
+          const response = await fetch(fullUrl);
           if (!response.ok) {
             throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
           }
@@ -94,3 +124,4 @@ class ImageProcessingManager {
 }
 
 export const imageProcessingManager = new ImageProcessingManager();
+
