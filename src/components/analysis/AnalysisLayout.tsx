@@ -1,7 +1,9 @@
+
 import { DesignViewer } from '@/components/viewer/DesignViewer';
 import { FeedbackPanel } from '@/components/feedback/FeedbackPanel';
 import { Annotation } from '@/types/analysis';
 import { SubscriptionStatus } from '@/components/subscription/SubscriptionStatus';
+import { ReactNode } from 'react';
 
 interface AnalysisLayoutProps {
   imageUrl: string;
@@ -13,6 +15,7 @@ interface AnalysisLayoutProps {
   onAnnotationClick: (id: string) => void;
   onNewAnalysis: () => void;
   onDeleteAnnotation?: (id: string) => void;
+  children: ReactNode;
 }
 
 export const AnalysisLayout = ({ children }: AnalysisLayoutProps) => {

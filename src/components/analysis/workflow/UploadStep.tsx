@@ -26,6 +26,11 @@ export const UploadStep = ({ workflow }: UploadStepProps) => {
     alert('Upgrade functionality would be implemented here with Stripe integration');
   };
 
+  const handleImageUpload = (imageUrl: string) => {
+    // Handle the image upload using the workflow
+    workflow.handleImageSelection(imageUrl);
+  };
+
   if (!canCreate) {
     return (
       <div className="max-w-4xl mx-auto">
@@ -65,9 +70,7 @@ export const UploadStep = ({ workflow }: UploadStepProps) => {
         </CardHeader>
         <CardContent className="space-y-8">
           <UploadSection
-            onFilesUploaded={workflow.handleFilesUploaded}
-            analysisId={workflow.analysisId}
-            isLoading={workflow.isUploading}
+            onImageUpload={handleImageUpload}
           />
         </CardContent>
       </Card>

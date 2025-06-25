@@ -40,7 +40,23 @@ export const useSubscription = () => {
         throw error;
       }
 
-      setSubscription(data);
+      // Type-safe assignment with proper plan_type casting
+      if (data) {
+        const subscriptionData: Subscription = {
+          id: data.id,
+          plan_type: data.plan_type as 'freemium' | 'monthly' | 'yearly',
+          status: data.status as 'active' | 'canceled' | 'past_due' | 'trialing' | 'incomplete',
+          analyses_used: data.analyses_used,
+          analyses_limit: data.analyses_limit,
+          current_period_start: data.current_period_start,
+          current_period_end: data.current_period_end,
+          stripe_customer_id: data.stripe_customer_id,
+          stripe_subscription_id: data.stripe_subscription_id,
+        };
+        setSubscription(subscriptionData);
+      } else {
+        setSubscription(null);
+      }
     } catch (err) {
       console.error('Error fetching subscription:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch subscription');
