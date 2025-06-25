@@ -3,6 +3,7 @@ import React from 'react';
 import { VectorDatabaseTest } from '@/components/knowledgeBase/VectorDatabaseTest';
 import { DirectRAGTestSimple } from '@/components/analysis/DirectRAGTestSimple';
 import { DuplicateAnalyzer } from '@/components/knowledgeBase/DuplicateAnalyzer';
+import { RAGDebugger } from '@/components/analysis/RAGDebugger';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function VectorTest() {
@@ -16,12 +17,17 @@ export default function VectorTest() {
           </p>
         </div>
 
-        <Tabs defaultValue="rag-test" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue="rag-debugger" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="rag-debugger">RAG Debugger</TabsTrigger>
             <TabsTrigger value="rag-test">RAG Analysis Test</TabsTrigger>
             <TabsTrigger value="vector-test">Vector Database Test</TabsTrigger>
             <TabsTrigger value="duplicates">Duplicate Analysis</TabsTrigger>
           </TabsList>
+          
+          <TabsContent value="rag-debugger">
+            <RAGDebugger />
+          </TabsContent>
           
           <TabsContent value="rag-test">
             <DirectRAGTestSimple />

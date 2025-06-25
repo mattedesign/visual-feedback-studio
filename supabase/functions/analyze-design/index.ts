@@ -1,4 +1,3 @@
-
 import { corsHeaders, corsHandler } from './corsHandler.ts';
 import { requestValidator } from './requestValidator.ts';
 import { imageProcessingManager } from './imageProcessingManager.ts';
@@ -296,8 +295,59 @@ Deno.serve(async (req) => {
       return corsResponse;
     }
 
-    // Check if this is a test endpoint request
     const url = new URL(req.url);
+    
+    // NEW: Check if this is a RAG debug request
+    if (url.pathname.includes('/debug-rag') || url.searchParams.has('debug-rag')) {
+      console.log('🔍 RAG DEBUG ENDPOINT - Processing debug request');
+      
+      try {
+        const { query } = await req.json();
+        
+        if (!query) {
+          return new Response(JSON.stringify({
+            error: 'Query parameter is required for RAG debug'
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        const envConfig = validateEnvironment();
+        
+        // Import and use the debug function
+        const { debugRAGRetrieval } = await import('./debugRAG.ts');
+        
+        const debugResult = await debugRAGRetrieval(
+          query,
+          Deno.env.get('SUPABASE_URL')!,
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+          Deno.env.get('OPENAI_API_KEY')!
+        );
+
+        return new Response(JSON.stringify({
+          success: true,
+          debug: debugResult,
+          message: `RAG debug completed for query: "${query}"`,
+          timestamp: new Date().toISOString()
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+        
+      } catch (error) {
+        console.error('❌ RAG Debug error:', error);
+        return new Response(JSON.stringify({ 
+          success: false,
+          error: error.message,
+          timestamp: new Date().toISOString()
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    // Check if this is a test endpoint request
     if (url.pathname.includes('/test') || url.searchParams.has('test')) {
       console.log('🧪 TEST ENDPOINT - Performing API key validation only');
       
