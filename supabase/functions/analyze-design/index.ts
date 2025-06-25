@@ -1,3 +1,4 @@
+
 import { corsHeaders, corsHandler } from './corsHandler.ts';
 import { requestValidator } from './requestValidator.ts';
 import { imageProcessingManager } from './imageProcessingManager.ts';
@@ -57,6 +58,7 @@ async function addKnowledgeContext(prompt: string, supabase: any, enableRAG = fa
     
     // Generate embedding with detailed logging
     console.log('📡 Calling OpenAI Embeddings API...');
+    console.log('🎯 Query for embedding:', prompt.substring(0, 200));
     const embeddingStartTime = Date.now();
     
     const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
@@ -105,6 +107,7 @@ async function addKnowledgeContext(prompt: string, supabase: any, enableRAG = fa
     
     // Query knowledge base with detailed logging
     console.log('🔍 Querying knowledge base with semantic search...');
+    console.log('🎯 Searching for knowledge entries related to:', prompt.substring(0, 100));
     const dbQueryStartTime = Date.now();
     
     const { data: knowledge, error } = await supabase.rpc('match_knowledge', {
@@ -148,6 +151,10 @@ async function addKnowledgeContext(prompt: string, supabase: any, enableRAG = fa
       knowledge.forEach((k: any, index: number) => {
         console.log(`   ${index + 1}. "${k.title}" (${k.category}) - Similarity: ${k.similarity?.toFixed(3) || 'N/A'}`);
         console.log(`      Content preview: ${k.content.substring(0, 100)}...`);
+        console.log(`      🔍 Contains "Fitts": ${k.content.toLowerCase().includes('fitts')}`);
+        console.log(`      🔍 Contains "44px": ${k.content.toLowerCase().includes('44px')}`);
+        console.log(`      🔍 Contains "button": ${k.content.toLowerCase().includes('button')}`);
+        console.log(`      🔍 Contains "mobile": ${k.content.toLowerCase().includes('mobile')}`);
       });
       
       // Build comprehensive research context
@@ -177,7 +184,8 @@ ${k.content.substring(0, 400)}${k.content.length > 400 ? '...' : ''}
         averageEntryLength: Math.round(researchContext.length / knowledge.length),
         containsFittsLaw: researchContext.toLowerCase().includes('fitts'),
         containsButtonGuidelines: researchContext.toLowerCase().includes('button'),
-        containsMobileUsability: researchContext.toLowerCase().includes('mobile')
+        containsMobileUsability: researchContext.toLowerCase().includes('mobile'),
+        contains44px: researchContext.toLowerCase().includes('44px')
       });
       
       console.log('🔍 === RAG CONTEXT BUILDING COMPLETE ===');
@@ -427,6 +435,9 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Check knowledge base status
+    await checkKnowledgeBase(supabase);
+
     // Determine AI provider configuration
     console.log('🤖 Determining AI provider...');
     const aiProviderConfig = determineOptimalProvider();
@@ -524,6 +535,14 @@ Deno.serve(async (req) => {
         console.log('   Contains "44px" or "48dp":', enhancedPrompt.includes('44px') || enhancedPrompt.includes('48dp'));
       }
     }
+
+    // Log the COMPLETE final prompt being sent to OpenAI
+    console.log('🎯 === COMPLETE FINAL PROMPT BEING SENT TO AI ===');
+    console.log('📄 FULL PROMPT START:');
+    console.log('---BEGIN PROMPT---');
+    console.log(enhancedPrompt);
+    console.log('---END PROMPT---');
+    console.log(`📏 Total prompt length: ${enhancedPrompt.length} characters`);
     
     for (const processedImage of imageProcessingResult.processedImages) {
       console.log(`🔍 Analyzing image with ${aiProviderConfig.provider}...`);
