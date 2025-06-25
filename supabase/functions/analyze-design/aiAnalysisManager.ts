@@ -1,8 +1,7 @@
-
 import { analyzeWithAIProvider, determineOptimalProvider, AIProvider, AIProviderConfig } from './aiProviderRouter.ts';
 import { AnnotationData } from './types.ts';
 
-// Add this RAG function after imports
+// RAG function for retrieving research context
 async function getRAGContext(userPrompt: string) {
   try {
     console.log('🔍 Building RAG context for:', userPrompt.substring(0, 100));
@@ -74,6 +73,27 @@ export async function performAIAnalysis(
   console.log('Requested provider:', requestedProvider);
   console.log('Requested model:', requestedModel);
   
+  // *** RAG ENHANCEMENT ***
+  console.log('🔍 Starting RAG enhancement...');
+  const ragContext = await getRAGContext(enhancedPrompt);
+  
+  // Enhance prompt with RAG context if available
+  let finalPrompt = enhancedPrompt;
+  if (ragContext) {
+    finalPrompt = `${enhancedPrompt}
+
+Research Context:
+${ragContext.context}
+
+Use this research to inform your analysis. Include relevant citations and research-backed recommendations. Return the same JSON format as requested.`;
+    
+    console.log('✅ RAG enhanced prompt with', ragContext.knowledgeCount, 'knowledge sources');
+    console.log('📚 Categories included:', ragContext.categories);
+  } else {
+    console.log('⚪ Using basic prompt (no RAG context available)');
+  }
+  // *** END RAG ENHANCEMENT ***
+  
   // Determine AI provider configuration
   let providerConfig: AIProviderConfig;
   if (requestedProvider && (requestedProvider === 'openai' || requestedProvider === 'claude')) {
@@ -100,7 +120,7 @@ export async function performAIAnalysis(
     const aiPromise = analyzeWithAIProvider(
       base64Image, 
       mimeType, 
-      enhancedPrompt, 
+      finalPrompt,  // *** CHANGED: Use finalPrompt instead of enhancedPrompt ***
       providerConfig
     );
     
@@ -110,7 +130,8 @@ export async function performAIAnalysis(
       annotationCount: annotations.length,
       hasAnnotations: annotations.length > 0,
       usedProvider: providerConfig.provider,
-      usedModel: providerConfig.model || 'default'
+      usedModel: providerConfig.model || 'default',
+      ragEnhanced: !!ragContext  // *** NEW: Track if RAG was used ***
     });
 
     return annotations;
