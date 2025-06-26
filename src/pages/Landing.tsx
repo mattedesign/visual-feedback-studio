@@ -71,22 +71,22 @@ const Landing = () => {
   ];
 
   return (
-    <GradientLayout variant="purple" intensity="medium" speed="normal">
+    <GradientLayout variant="purple" intensity="medium" speed="normal" orbCount={4}>
       <div className="min-h-screen">
         {/* Hero Section */}
-        <section className="relative pt-20 pb-16 px-4">
+        <section className="relative pt-16 pb-12 px-4 sm:pt-20 sm:pb-16">
           <div className="max-w-6xl mx-auto text-center">
             <Badge className="mb-6 bg-purple-100 text-purple-800 hover:bg-purple-200">
               🚀 AI-Powered Design Analysis
             </Badge>
             
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600 bg-clip-text text-transparent leading-tight">
+            <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600 bg-clip-text text-transparent leading-tight">
               Transform Your Designs Into
               <br />
               Revenue Machines
             </h1>
             
-            <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-lg sm:text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
               Get instant AI-powered insights that identify exactly what's blocking your conversions. 
               Turn every design decision into a business advantage.
             </p>
@@ -95,30 +95,30 @@ const Landing = () => {
               <Button
                 onClick={handleGetStarted}
                 size="lg"
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 Start Free Analysis
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
               
               <Button
                 variant="outline"
                 size="lg"
                 onClick={() => navigate('/analysis')}
-                className="px-8 py-4 text-lg font-semibold border-2 hover:bg-white/50 backdrop-blur-sm"
+                className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold border-2 hover:bg-white/50 backdrop-blur-sm"
               >
                 See Demo
               </Button>
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-16">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 mt-12 sm:mt-16">
               {stats.map((stat, index) => (
                 <div key={index} className="text-center">
-                  <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                  <div className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                     {stat.value}
                   </div>
-                  <div className="text-gray-600 mt-2">{stat.label}</div>
+                  <div className="text-gray-600 mt-2 text-sm sm:text-base">{stat.label}</div>
                 </div>
               ))}
             </div>
@@ -126,21 +126,21 @@ const Landing = () => {
         </section>
 
         {/* Features Section */}
-        <section className="py-20 px-4">
+        <section className="py-16 sm:py-20 px-4">
           <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold mb-6">
+            <div className="text-center mb-12 sm:mb-16">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">
                 Why Top Companies Choose
                 <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent"> Figmant.ai</span>
               </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto">
                 Our AI doesn't just point out problems—it provides actionable solutions that drive real business results.
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-3 gap-6 sm:gap-8">
               {features.map((feature, index) => (
-                <Card key={index} className="bg-white/70 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <Card key={index} className="bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
                   <CardHeader>
                     <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center text-white mb-4">
                       {feature.icon}
@@ -157,20 +157,20 @@ const Landing = () => {
         </section>
 
         {/* Testimonials Section */}
-        <section className="py-20 px-4 bg-white/30 backdrop-blur-sm">
+        <section className="py-16 sm:py-20 px-4 bg-white/30 backdrop-blur-sm">
           <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold mb-6">
+            <div className="text-center mb-12 sm:mb-16">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">
                 Trusted by Design Leaders
               </h2>
-              <p className="text-xl text-gray-600">
+              <p className="text-lg sm:text-xl text-gray-600">
                 See what industry professionals are saying about Figmant.ai
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-3 gap-6 sm:gap-8">
               {testimonials.map((testimonial, index) => (
-                <Card key={index} className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+                <Card key={index} className="bg-white/90 backdrop-blur-sm border-0 shadow-lg">
                   <CardContent className="p-6">
                     <div className="flex mb-4">
                       {[...Array(testimonial.rating)].map((_, i) => (
@@ -190,27 +190,27 @@ const Landing = () => {
         </section>
 
         {/* Pricing Section */}
-        <section className="py-20 px-4">
+        <section className="py-16 sm:py-20 px-4">
           <PricingCards />
         </section>
 
         {/* CTA Section */}
-        <section className="py-20 px-4 text-center">
+        <section className="py-16 sm:py-20 px-4 text-center">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">
               Ready to Boost Your
               <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent"> Conversions?</span>
             </h2>
-            <p className="text-xl text-gray-600 mb-8">
+            <p className="text-lg sm:text-xl text-gray-600 mb-8">
               Join thousands of designers and product teams who are already using AI to create better, more effective designs.
             </p>
             <Button
               onClick={handleGetStarted}
               size="lg"
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-12 py-6 text-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 sm:px-12 py-4 sm:py-6 text-lg sm:text-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
             >
               Get Started for Free
-              <ArrowRight className="ml-3 h-6 w-6" />
+              <ArrowRight className="ml-3 h-5 w-5 sm:h-6 sm:w-6" />
             </Button>
           </div>
         </section>

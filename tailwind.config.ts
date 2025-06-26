@@ -73,179 +73,63 @@ export default {
 			},
 			keyframes: {
 				'accordion-down': {
-					from: {
-						height: '0'
-					},
-					to: {
-						height: 'var(--radix-accordion-content-height)'
-					}
+					from: { height: '0' },
+					to: { height: 'var(--radix-accordion-content-height)' }
 				},
 				'accordion-up': {
-					from: {
-						height: 'var(--radix-accordion-content-height)'
-					},
-					to: {
-						height: '0'
-					}
+					from: { height: 'var(--radix-accordion-content-height)' },
+					to: { height: '0' }
 				},
 				'fade-in': {
-					'0%': {
-						opacity: '0',
-						transform: 'translateY(10px)'
-					},
-					'100%': {
-						opacity: '1',
-						transform: 'translateY(0)'
-					}
+					'0%': { opacity: '0', transform: 'translateY(10px)' },
+					'100%': { opacity: '1', transform: 'translateY(0)' }
 				},
 				'float-slow': {
-					'0%, 100%': {
-						transform: 'translateX(0px) translateY(0px) scale(1)'
-					},
-					'25%': {
-						transform: 'translateX(20px) translateY(-15px) scale(1.05)'
-					},
-					'50%': {
-						transform: 'translateX(-10px) translateY(-25px) scale(0.95)'
-					},
-					'75%': {
-						transform: 'translateX(-25px) translateY(10px) scale(1.02)'
-					}
+					'0%, 100%': { transform: 'translateX(0px) translateY(0px) scale(1)' },
+					'25%': { transform: 'translateX(20px) translateY(-15px) scale(1.05)' },
+					'50%': { transform: 'translateX(-10px) translateY(-25px) scale(0.95)' },
+					'75%': { transform: 'translateX(-25px) translateY(10px) scale(1.02)' }
 				},
 				'float-normal': {
-					'0%, 100%': {
-						transform: 'translateX(0px) translateY(0px) scale(1)'
-					},
-					'25%': {
-						transform: 'translateX(25px) translateY(-20px) scale(1.08)'
-					},
-					'50%': {
-						transform: 'translateX(-15px) translateY(-30px) scale(0.92)'
-					},
-					'75%': {
-						transform: 'translateX(-30px) translateY(15px) scale(1.05)'
-					}
+					'0%, 100%': { transform: 'translateX(0px) translateY(0px) scale(1)' },
+					'25%': { transform: 'translateX(25px) translateY(-20px) scale(1.08)' },
+					'50%': { transform: 'translateX(-15px) translateY(-30px) scale(0.92)' },
+					'75%': { transform: 'translateX(-30px) translateY(15px) scale(1.05)' }
 				},
 				'float-fast': {
-					'0%, 100%': {
-						transform: 'translateX(0px) translateY(0px) scale(1)'
-					},
-					'25%': {
-						transform: 'translateX(30px) translateY(-25px) scale(1.1)'
-					},
-					'50%': {
-						transform: 'translateX(-20px) translateY(-35px) scale(0.9)'
-					},
-					'75%': {
-						transform: 'translateX(-35px) translateY(20px) scale(1.08)'
-					}
+					'0%, 100%': { transform: 'translateX(0px) translateY(0px) scale(1)' },
+					'25%': { transform: 'translateX(30px) translateY(-25px) scale(1.1)' },
+					'50%': { transform: 'translateX(-20px) translateY(-35px) scale(0.9)' },
+					'75%': { transform: 'translateX(-35px) translateY(20px) scale(1.08)' }
 				},
 				'float-1': {
-					'0%, 100%': {
-						transform: 'translateX(0px) translateY(0px) scale(1) rotate(0deg)'
-					},
-					'33%': {
-						transform: 'translateX(30px) translateY(-20px) scale(1.1) rotate(2deg)'
-					},
-					'66%': {
-						transform: 'translateX(-25px) translateY(15px) scale(0.9) rotate(-1deg)'
-					}
+					'0%, 100%': { transform: 'translateX(0px) translateY(0px) scale(1) rotate(0deg)' },
+					'33%': { transform: 'translateX(30px) translateY(-20px) scale(1.1) rotate(2deg)' },
+					'66%': { transform: 'translateX(-25px) translateY(15px) scale(0.9) rotate(-1deg)' }
 				},
 				'float-2': {
-					'0%, 100%': {
-						transform: 'translateX(0px) translateY(0px) scale(1) rotate(0deg)'
-					},
-					'40%': {
-						transform: 'translateX(-20px) translateY(-30px) scale(1.05) rotate(-2deg)'
-					},
-					'80%': {
-						transform: 'translateX(35px) translateY(10px) scale(0.95) rotate(1deg)'
-					}
+					'0%, 100%': { transform: 'translateX(0px) translateY(0px) scale(1) rotate(0deg)' },
+					'40%': { transform: 'translateX(-20px) translateY(-30px) scale(1.05) rotate(-2deg)' },
+					'80%': { transform: 'translateX(35px) translateY(10px) scale(0.95) rotate(1deg)' }
 				},
 				'float-3': {
-					'0%, 100%': {
-						transform: 'translateX(0px) translateY(0px) scale(1) rotate(0deg)'
-					},
-					'50%': {
-						transform: 'translateX(15px) translateY(-35px) scale(1.08) rotate(3deg)'
-					}
+					'0%, 100%': { transform: 'translateX(0px) translateY(0px) scale(1) rotate(0deg)' },
+					'50%': { transform: 'translateX(15px) translateY(-35px) scale(1.08) rotate(3deg)' }
 				},
 				'float-4': {
-					'0%, 100%': {
-						transform: 'translateX(0px) translateY(0px) scale(1) rotate(0deg)'
-					},
-					'30%': {
-						transform: 'translateX(-35px) translateY(-10px) scale(0.92) rotate(-3deg)'
-					},
-					'70%': {
-						transform: 'translateX(20px) translateY(25px) scale(1.12) rotate(2deg)'
-					}
+					'0%, 100%': { transform: 'translateX(0px) translateY(0px) scale(1) rotate(0deg)' },
+					'30%': { transform: 'translateX(-35px) translateY(-10px) scale(0.92) rotate(-3deg)' },
+					'70%': { transform: 'translateX(20px) translateY(25px) scale(1.12) rotate(2deg)' }
 				},
 				'float-5': {
-					'0%, 100%': {
-						transform: 'translateX(0px) translateY(0px) scale(1) rotate(0deg)'
-					},
-					'45%': {
-						transform: 'translateX(25px) translateY(-15px) scale(1.03) rotate(1deg)'
-					},
-					'90%': {
-						transform: 'translateX(-30px) translateY(30px) scale(0.97) rotate(-2deg)'
-					}
+					'0%, 100%': { transform: 'translateX(0px) translateY(0px) scale(1) rotate(0deg)' },
+					'45%': { transform: 'translateX(25px) translateY(-15px) scale(1.03) rotate(1deg)' },
+					'90%': { transform: 'translateX(-30px) translateY(30px) scale(0.97) rotate(-2deg)' }
 				},
 				'float-6': {
-					'0%, 100%': {
-						transform: 'translateX(0px) translateY(0px) scale(1) rotate(0deg)'
-					},
-					'35%': {
-						transform: 'translateX(-15px) translateY(-25px) scale(1.06) rotate(-1deg)'
-					},
-					'75%': {
-						transform: 'translateX(40px) translateY(5px) scale(0.94) rotate(2deg)'
-					}
-				},
-				'float-business': {
-					'0%, 100%': {
-						transform: 'translateX(0px) translateY(0px) scale(1) rotate(0deg)'
-					},
-					'25%': {
-						transform: 'translateX(30px) translateY(-20px) scale(1.05) rotate(1deg)'
-					},
-					'50%': {
-						transform: 'translateX(-15px) translateY(-30px) scale(0.95) rotate(-1deg)'
-					},
-					'75%': {
-						transform: 'translateX(-25px) translateY(15px) scale(1.02) rotate(2deg)'
-					}
-				},
-				'pulse-business': {
-					'0%, 100%': {
-						opacity: '0.7',
-						transform: 'scale(1)'
-					},
-					'50%': {
-						opacity: '1',
-						transform: 'scale(1.1)'
-					}
-				},
-				'slide-up-fade': {
-					'0%': {
-						opacity: '0',
-						transform: 'translateY(30px)'
-					},
-					'100%': {
-						opacity: '1',
-						transform: 'translateY(0)'
-					}
-				},
-				'scale-in': {
-					'0%': {
-						opacity: '0',
-						transform: 'scale(0.9)'
-					},
-					'100%': {
-						opacity: '1',
-						transform: 'scale(1)'
-					}
+					'0%, 100%': { transform: 'translateX(0px) translateY(0px) scale(1) rotate(0deg)' },
+					'35%': { transform: 'translateX(-15px) translateY(-25px) scale(1.06) rotate(-1deg)' },
+					'75%': { transform: 'translateX(40px) translateY(5px) scale(0.94) rotate(2deg)' }
 				}
 			},
 			animation: {
@@ -260,11 +144,7 @@ export default {
 				'float-3': 'float-3 16s ease-in-out infinite',
 				'float-4': 'float-4 24s ease-in-out infinite',
 				'float-5': 'float-5 19s ease-in-out infinite',
-				'float-6': 'float-6 21s ease-in-out infinite',
-				'float-business': 'float-business 20s ease-in-out infinite',
-				'pulse-business': 'pulse-business 3s ease-in-out infinite',
-				'slide-up-fade': 'slide-up-fade 0.8s ease-out forwards',
-				'scale-in': 'scale-in 0.5s ease-out forwards'
+				'float-6': 'float-6 21s ease-in-out infinite'
 			}
 		}
 	},

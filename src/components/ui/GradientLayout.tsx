@@ -22,7 +22,7 @@ export const GradientLayout: React.FC<GradientLayoutProps> = ({
   className = ''
 }) => {
   const containerClasses = mode === 'fullscreen' 
-    ? 'min-h-screen relative' 
+    ? 'min-h-screen relative overflow-hidden' 
     : 'relative overflow-hidden';
 
   return (
@@ -33,7 +33,7 @@ export const GradientLayout: React.FC<GradientLayoutProps> = ({
         speed={speed}
         orbCount={orbCount}
       />
-      <div className="relative z-10 animate-fade-in">
+      <div className="relative animate-fade-in" style={{ zIndex: 10 }}>
         {children}
       </div>
     </div>
