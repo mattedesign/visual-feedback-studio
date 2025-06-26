@@ -42,7 +42,7 @@ const Index = () => {
         return;
       }
 
-      // Step 2: Check subscription status
+      // Step 2: Check subscription status - FIXED LOGIC
       const canAnalyze = canCreateAnalysis();
       const needsSub = needsSubscription();
 
@@ -52,20 +52,26 @@ const Index = () => {
         userEmail: user.email
       });
 
+      // CORRECTED ROUTING LOGIC:
+      // If user can create analysis (active subscriber OR trial with remaining analyses)
       if (canAnalyze) {
         console.log('✅ User can create analysis, navigating to analysis page');
         navigate('/analysis');
-      } else if (needsSub) {
+      } 
+      // If user cannot create analysis AND needs subscription (trial expired or no subscription)
+      else if (needsSub) {
         console.log('❌ User needs subscription, showing upgrade modal');
         setShowUpgradeModal(true);
-      } else {
-        console.log('⚠️ Unexpected state, navigating to subscription page');
-        navigate('/subscription');
+      } 
+      // Fallback case - should rarely happen
+      else {
+        console.log('⚠️ Unexpected state, navigating to analysis page as fallback');
+        navigate('/analysis');
       }
     } catch (error) {
       console.error('Error checking subscription status:', error);
-      // Fallback to subscription page on error
-      navigate('/subscription');
+      // Fallback to analysis page on error - let Analysis page handle subscription checks
+      navigate('/analysis');
     } finally {
       setIsCheckingSubscription(false);
     }
@@ -79,6 +85,7 @@ const Index = () => {
       const canAnalyze = canCreateAnalysis();
       const needsSub = needsSubscription();
 
+      // CORRECTED ROUTING LOGIC (same as above)
       if (canAnalyze) {
         console.log('✅ User can create analysis, navigating to analysis page');
         navigate('/analysis');
