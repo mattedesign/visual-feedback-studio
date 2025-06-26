@@ -1,4 +1,5 @@
 
+@import './styles/amazon-design-system.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,7 +9,16 @@ body {
   padding: 0;
   background-color: #f8fafc;
   color: #1e293b;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
 }
 
 #root {
@@ -44,7 +54,7 @@ body {
   background-clip: text;
 }
 
-/* Smooth scrollbar styling */
+/* Smooth scrollbar styling for Amazon aesthetic */
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -83,6 +93,17 @@ body {
   .bg-white\/80 {
     background-color: rgba(255, 255, 255, 0.98);
   }
+  
+  .amazon-card {
+    border-width: 2px;
+    border-color: #000;
+  }
+  
+  .amazon-button-primary,
+  .amazon-button-secondary,
+  .amazon-button-accent {
+    border-width: 2px;
+  }
 }
 
 /* Mobile optimization */
@@ -91,5 +112,30 @@ body {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     background: rgba(255, 255, 255, 0.95);
+  }
+  
+  body {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+}
+
+/* Focus management for better accessibility */
+.amazon-card:focus-within {
+  box-shadow: 0 0 0 3px rgba(0, 113, 133, 0.1);
+}
+
+/* Print styles */
+@media print {
+  .amazon-card {
+    box-shadow: none;
+    border: 1px solid #ccc;
+  }
+  
+  .amazon-button-primary,
+  .amazon-button-secondary,
+  .amazon-button-accent {
+    background: white !important;
+    color: black !important;
+    border: 1px solid black !important;
   }
 }
