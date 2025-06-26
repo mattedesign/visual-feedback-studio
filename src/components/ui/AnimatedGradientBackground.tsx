@@ -4,6 +4,7 @@ import React from 'react';
 export type ColorVariant = 'purple' | 'blue' | 'orange' | 'green' | 'red' | 'pink' | 'peach';
 export type IntensityLevel = 'subtle' | 'medium' | 'bold';
 export type SpeedOption = 'slow' | 'normal' | 'fast';
+export type ShapeType = 'circle' | 'square' | 'diamond' | 'hexagon' | 'triangle' | 'oval';
 
 interface GradientOrbProps {
   variant: ColorVariant;
@@ -14,6 +15,7 @@ interface GradientOrbProps {
   initialX: number;
   initialY: number;
   index: number;
+  shape: ShapeType;
 }
 
 interface AnimatedGradientBackgroundProps {
@@ -76,6 +78,41 @@ const getSizeClasses = (size: 'small' | 'medium' | 'large') => {
   return sizeMap[size];
 };
 
+const getShapeClasses = (shape: ShapeType) => {
+  const shapeMap = {
+    circle: 'rounded-full',
+    square: 'rounded-2xl',
+    diamond: 'rounded-2xl rotate-45',
+    hexagon: 'rounded-3xl',
+    triangle: 'rounded-2xl',
+    oval: 'rounded-full'
+  };
+
+  return shapeMap[shape];
+};
+
+const getShapeStyles = (shape: ShapeType) => {
+  switch (shape) {
+    case 'triangle':
+      return {
+        clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)',
+        borderRadius: '0'
+      };
+    case 'hexagon':
+      return {
+        clipPath: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)',
+        borderRadius: '0'
+      };
+    case 'oval':
+      return {
+        borderRadius: '50%',
+        transform: 'scaleX(1.5)'
+      };
+    default:
+      return {};
+  }
+};
+
 const getAnimationClass = (speed: SpeedOption, index: number) => {
   const animations = ['animate-float-1', 'animate-float-2', 'animate-float-3', 'animate-float-4', 'animate-float-5', 'animate-float-6'];
   const speedClass = speed === 'slow' ? 'animate-float-slow' : speed === 'fast' ? 'animate-float-fast' : 'animate-float-normal';
@@ -92,10 +129,13 @@ const GradientOrb: React.FC<GradientOrbProps> = ({
   delay, 
   initialX, 
   initialY,
-  index
+  index,
+  shape
 }) => {
   const colorClasses = getColorClasses(variant, intensity);
   const sizeClasses = getSizeClasses(size);
+  const shapeClasses = getShapeClasses(shape);
+  const shapeStyles = getShapeStyles(shape);
   const animationClass = getAnimationClass(speed, index);
   
   const style = {
@@ -103,11 +143,12 @@ const GradientOrb: React.FC<GradientOrbProps> = ({
     left: `${initialX}%`,
     top: `${initialY}%`,
     transform: 'translate(-50%, -50%)',
+    ...shapeStyles
   };
 
   return (
     <div
-      className={`absolute rounded-full bg-gradient-to-br ${colorClasses} ${sizeClasses} blur-3xl ${animationClass} will-change-transform pointer-events-none`}
+      className={`absolute bg-gradient-to-br ${colorClasses} ${sizeClasses} ${shapeClasses} blur-3xl ${animationClass} will-change-transform pointer-events-none`}
       style={style}
     />
   );
@@ -122,11 +163,13 @@ export const AnimatedGradientBackground: React.FC<AnimatedGradientBackgroundProp
 }) => {
   // Using warm analogous colors with pinks and peach tones
   const colorVariants: ColorVariant[] = ['purple', 'pink', 'peach', 'blue', 'pink', 'peach'];
+  const shapeVariants: ShapeType[] = ['circle', 'square', 'diamond', 'hexagon', 'triangle', 'oval'];
   
   const orbs = React.useMemo(() => 
     Array.from({ length: orbCount }, (_, index) => {
       // Use warm color palette with pinks and peach for a softer visual flow
       const orbVariant = colorVariants[index % colorVariants.length];
+      const orbShape = shapeVariants[index % shapeVariants.length];
       
       return {
         id: index,
@@ -138,6 +181,7 @@ export const AnimatedGradientBackground: React.FC<AnimatedGradientBackgroundProp
         initialX: Math.random() * 80 + 10,
         initialY: Math.random() * 80 + 10,
         index,
+        shape: orbShape,
       };
     }), [orbCount, intensity, speed]
   );
@@ -156,6 +200,7 @@ export const AnimatedGradientBackground: React.FC<AnimatedGradientBackgroundProp
           initialX={orb.initialX}
           initialY={orb.initialY}
           index={orb.index}
+          shape={orb.shape}
         />
       ))}
     </div>
