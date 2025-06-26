@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
 interface Subscription {
   id: string;
-  plan_type: 'freemium' | 'monthly' | 'yearly';
+  plan_type: 'trial' | 'monthly' | 'yearly';
   status: 'active' | 'canceled' | 'past_due' | 'trialing' | 'incomplete';
   analyses_used: number;
   analyses_limit: number;
@@ -44,7 +43,7 @@ export const useSubscription = () => {
       if (data) {
         const subscriptionData: Subscription = {
           id: data.id,
-          plan_type: data.plan_type as 'freemium' | 'monthly' | 'yearly',
+          plan_type: data.plan_type as 'trial' | 'monthly' | 'yearly',
           status: data.status as 'active' | 'canceled' | 'past_due' | 'trialing' | 'incomplete',
           analyses_used: data.analyses_used,
           analyses_limit: data.analyses_limit,
@@ -103,19 +102,81 @@ export const useSubscription = () => {
     }
   };
 
-  const canCreateAnalysis = () => {
+  // Helper function: Check if user is an active subscriber (monthly/yearly with active status)
+  const isActiveSubscriber = (): boolean => {
     if (!subscription) return false;
-    return subscription.status === 'active' && subscription.analyses_used < subscription.analyses_limit;
+    return (subscription.plan_type === 'monthly' || subscription.plan_type === 'yearly') && 
+           subscription.status === 'active';
   };
 
-  const getRemainingAnalyses = () => {
+  // Helper function: Check if user is on trial
+  const isTrialUser = (): boolean => {
+    if (!subscription) return false;
+    return subscription.plan_type === 'trial';
+  };
+
+  // Helper function: Check if user needs a subscription
+  const needsSubscription = (): boolean => {
+    if (!subscription) return true;
+    
+    // If user is an active subscriber, they don't need a subscription
+    if (isActiveSubscriber()) return false;
+    
+    // If user is on trial and has remaining analyses, they don't need subscription yet
+    if (isTrialUser() && subscription.analyses_used < subscription.analyses_limit) {
+      return false;
+    }
+    
+    // Otherwise, they need a subscription
+    return true;
+  };
+
+  // Main function: Check if user can create analysis
+  const canCreateAnalysis = (): boolean => {
+    if (!subscription) return false;
+    
+    // Active subscribers (monthly/yearly with active status) get unlimited analyses
+    if (isActiveSubscriber()) {
+      return true;
+    }
+    
+    // Trial users can create analyses if they haven't exceeded their limit
+    if (isTrialUser() && subscription.status === 'active') {
+      return subscription.analyses_used < subscription.analyses_limit;
+    }
+    
+    // All other cases: cannot create analysis
+    return false;
+  };
+
+  const getRemainingAnalyses = (): number => {
     if (!subscription) return 0;
-    return Math.max(0, subscription.analyses_limit - subscription.analyses_used);
+    
+    // Active subscribers have unlimited analyses
+    if (isActiveSubscriber()) {
+      return 999; // Return a high number to indicate unlimited
+    }
+    
+    // Trial users have limited analyses
+    if (isTrialUser()) {
+      return Math.max(0, subscription.analyses_limit - subscription.analyses_used);
+    }
+    
+    return 0;
   };
 
-  const getUsagePercentage = () => {
-    if (!subscription || subscription.analyses_limit === 0) return 0;
-    return (subscription.analyses_used / subscription.analyses_limit) * 100;
+  const getUsagePercentage = (): number => {
+    if (!subscription) return 0;
+    
+    // Active subscribers don't have usage limitations
+    if (isActiveSubscriber()) return 0;
+    
+    // Trial users have usage limitations
+    if (isTrialUser() && subscription.analyses_limit > 0) {
+      return (subscription.analyses_used / subscription.analyses_limit) * 100;
+    }
+    
+    return 100; // If no valid subscription, consider it fully used
   };
 
   useEffect(() => {
@@ -131,6 +192,10 @@ export const useSubscription = () => {
     canCreateAnalysis,
     getRemainingAnalyses,
     getUsagePercentage,
-    refetch: fetchSubscription
+    refetch: fetchSubscription,
+    // New helper functions
+    isActiveSubscriber,
+    isTrialUser,
+    needsSubscription
   };
 };
