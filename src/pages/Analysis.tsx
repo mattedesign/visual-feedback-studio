@@ -1,5 +1,7 @@
 
+
 import { Header } from '@/components/layout/Header';
+import { AnalysisWorkflow } from '@/components/analysis/AnalysisWorkflow';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -44,34 +46,14 @@ const Analysis = () => {
     );
   }
 
-  // User is authenticated - show simple success message
+  // User is authenticated - show the analysis workflow (NO subscription checks)
   return (
     <div className="min-h-screen bg-slate-900 text-white">
       <Header user={user} onSignOut={handleSignOut} />
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-green-400 mb-4">
-            🎉 Analysis Page - You made it!
-          </h1>
-          <p className="text-xl text-slate-300 mb-6">
-            Welcome {user.email}! You successfully reached the analysis page.
-          </p>
-          <div className="bg-slate-800 p-6 rounded-lg max-w-2xl mx-auto">
-            <h2 className="text-lg font-semibold mb-2">Debug Info:</h2>
-            <p className="text-sm text-slate-400">
-              Check the console for subscription data details.
-            </p>
-            <p className="text-sm text-slate-400 mt-2">
-              User ID: {user.id}
-            </p>
-            <p className="text-sm text-slate-400">
-              Email: {user.email}
-            </p>
-          </div>
-        </div>
-      </div>
+      <AnalysisWorkflow />
     </div>
   );
 };
 
 export default Analysis;
+
