@@ -19,7 +19,14 @@ const Index = () => {
   };
 
   const handleGetStarted = () => {
-    // Check if user has credits and navigate accordingly
+    // Step 3a: Check if user is logged in first
+    if (!user) {
+      console.log('User not logged in, navigating to auth page');
+      navigate('/auth');
+      return;
+    }
+
+    // Step 3b: User is logged in, now check subscription status
     if (canCreateAnalysis()) {
       console.log('User has credits, navigating to analysis page');
       navigate('/analysis');
@@ -33,13 +40,12 @@ const Index = () => {
     return <LoadingSpinner />;
   }
 
-  if (!user) {
-    return <AuthGuard />;
-  }
+  // Remove the AuthGuard check - we want to show the home page to everyone
+  // The authentication check happens in handleGetStarted instead
 
   return (
     <div className="min-h-screen bg-slate-900 text-white">
-      <Header user={user} onSignOut={handleSignOut} />
+      {user && <Header user={user} onSignOut={handleSignOut} />}
       <main className="container mx-auto px-4 py-8">
         <div className="text-center space-y-8">
           <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
@@ -64,10 +70,12 @@ const Index = () => {
           </div>
         </div>
         
-        {/* Direct RAG Test Component */}
-        <div className="mt-12">
-          <DirectRAGTestSimple />
-        </div>
+        {/* Direct RAG Test Component - only show to logged in users */}
+        {user && (
+          <div className="mt-12">
+            <DirectRAGTestSimple />
+          </div>
+        )}
       </main>
     </div>
   );
