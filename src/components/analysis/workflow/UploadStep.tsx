@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
@@ -9,7 +8,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { createAnalysis } from '@/services/analysisService';
 import { getUserAnalyses } from '@/services/analysisDataService';
-import { toast } from 'sonner';
 
 interface UploadStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -47,7 +45,7 @@ export const UploadStep = ({ workflow }: UploadStepProps) => {
         const analysisId = await createAnalysis();
         
         if (!analysisId) {
-          toast.error('Failed to create analysis session');
+          console.error('Failed to create analysis session');
           return;
         }
 
@@ -59,7 +57,7 @@ export const UploadStep = ({ workflow }: UploadStepProps) => {
           console.log('Analysis session created successfully:', newAnalysis.id);
           workflow.setCurrentAnalysis(newAnalysis);
         } else {
-          toast.error('Failed to retrieve analysis session details');
+          console.error('Failed to retrieve analysis session details');
           return;
         }
       }
@@ -70,11 +68,11 @@ export const UploadStep = ({ workflow }: UploadStepProps) => {
       // Proceed with the workflow
       workflow.proceedFromUpload(imageUrls);
       
-      toast.success(`${imageUrls.length} image${imageUrls.length !== 1 ? 's' : ''} uploaded successfully!`);
+      console.log(`${imageUrls.length} image${imageUrls.length !== 1 ? 's' : ''} uploaded successfully - no toast notification`);
       
     } catch (error) {
       console.error('Error handling image upload:', error);
-      toast.error('Failed to create analysis session');
+      // Log error but don't show toast
     }
   };
 

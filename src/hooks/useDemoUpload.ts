@@ -1,6 +1,5 @@
 
 import { useState } from 'react';
-import { toast } from 'sonner';
 
 export const useDemoUpload = (onImageUpload: (imageUrl: string) => void) => {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -25,11 +24,11 @@ export const useDemoUpload = (onImageUpload: (imageUrl: string) => void) => {
       // For demo, we want to proceed immediately to analysis
       onImageUpload(demoImageUrl);
       
-      toast.success('Demo design loaded successfully!');
+      console.log('Demo design loaded successfully - no toast notification');
       
     } catch (error) {
       console.error('Error loading demo design:', error);
-      toast.error('Failed to load demo design');
+      // Log error but don't show toast
     } finally {
       setIsProcessing(false);
     }

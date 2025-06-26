@@ -1,6 +1,5 @@
 
 import { useState } from 'react';
-import { toast } from 'sonner';
 import { uploadFileToStorage } from '@/services/fileUploadService';
 
 export const useFileUpload = (onImageUpload: (imageUrl: string) => void) => {
@@ -15,12 +14,12 @@ export const useFileUpload = (onImageUpload: (imageUrl: string) => void) => {
       
       // Validate file
       if (!file.type.startsWith('image/')) {
-        toast.error('Please upload an image file');
+        console.error('Invalid file type - not an image');
         return;
       }
 
       if (file.size > 50 * 1024 * 1024) { // 50MB limit
-        toast.error('File size must be less than 50MB');
+        console.error('File size too large - exceeds 50MB limit');
         return;
       }
       
@@ -32,7 +31,7 @@ export const useFileUpload = (onImageUpload: (imageUrl: string) => void) => {
       // Upload file to storage
       const publicUrl = await uploadFileToStorage(file, tempAnalysisId);
       if (!publicUrl) {
-        toast.error('File upload failed');
+        console.error('File upload failed - no public URL returned');
         return;
       }
 
@@ -41,11 +40,11 @@ export const useFileUpload = (onImageUpload: (imageUrl: string) => void) => {
       // Call the callback with the uploaded file URL (adds to collection)
       onImageUpload(publicUrl);
       
-      toast.success(`${file.name} uploaded successfully!`);
+      console.log(`${file.name} uploaded successfully - no toast notification`);
       
     } catch (error) {
       console.error('Error during file upload process:', error);
-      toast.error('Failed to upload file');
+      // Log error but don't show toast - let the visual success indicator handle feedback
     }
     // No finally block setting isProcessing to false since we don't set it to true
   };
