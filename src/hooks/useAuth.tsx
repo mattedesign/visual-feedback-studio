@@ -38,7 +38,7 @@ export const useAuth = () => {
       }
     );
 
-    // Initialize session check with timeout fallback
+    // Initialize session check with improved timeout and retry logic
     const initialize = async () => {
       try {
         console.log('useAuth: Checking for existing session');
@@ -76,17 +76,17 @@ export const useAuth = () => {
       }
     };
 
-    // Set timeout fallback to prevent infinite loading
+    // Increased timeout from 5 seconds to 15 seconds and improved error message
     const timeoutId = setTimeout(() => {
       console.warn('useAuth: Timeout reached, forcing loading to false');
       if (mounted) {
         setAuthState(prev => ({
           ...prev,
           loading: false,
-          error: prev.error || 'Authentication timeout'
+          error: prev.error || 'Network timeout - please refresh the page'
         }));
       }
-    }, 5000); // 5 second timeout
+    }, 15000); // Increased to 15 seconds
 
     initialize();
 
@@ -115,12 +115,6 @@ export const useAuth = () => {
       throw err;
     }
   };
-
-  console.log('useAuth: Current state', { 
-    hasUser: !!authState.user, 
-    loading: authState.loading, 
-    error: authState.error 
-  });
 
   return { 
     ...authState,

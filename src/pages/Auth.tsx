@@ -22,12 +22,17 @@ const Auth = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (session && user) {
-      navigate('/analysis');
+      navigate('/app');
     }
   }, [session, user, navigate]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email || !password) {
+      toast.error('Please fill in all fields');
+      return;
+    }
     
     setLoading(true);
 
@@ -37,7 +42,7 @@ const Auth = () => {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/analysis`
+            emailRedirectTo: `${window.location.origin}/app`
           }
         });
 
@@ -45,6 +50,7 @@ const Auth = () => {
         
         if (data.session) {
           toast.success('Account created and signed in successfully!');
+          navigate('/app');
         } else if (data.user && !data.user.email_confirmed_at) {
           toast.success('Account created! Please check your email to confirm your account.');
         } else {
@@ -60,8 +66,11 @@ const Auth = () => {
         if (error) throw error;
         
         toast.success('Welcome back!');
+        navigate('/app');
       }
     } catch (error: any) {
+      console.error('Auth error:', error);
+      
       if (error.message.includes('Invalid login credentials')) {
         toast.error('Invalid email or password. Please check your credentials and try again.');
       } else if (error.message.includes('User already registered')) {
@@ -71,6 +80,8 @@ const Auth = () => {
         toast.error('Password should be at least 6 characters long.');
       } else if (error.message.includes('Email not confirmed')) {
         toast.error('Please check your email and click the confirmation link before signing in.');
+      } else if (error.message.includes('Network')) {
+        toast.error('Network error. Please check your connection and try again.');
       } else {
         toast.error(error.message || 'An error occurred during authentication');
       }
@@ -91,7 +102,7 @@ const Auth = () => {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/analysis`
+          emailRedirectTo: `${window.location.origin}/app`
         }
       });
 
@@ -99,6 +110,7 @@ const Auth = () => {
       
       toast.success('Check your email for the magic link!');
     } catch (error: any) {
+      console.error('Magic link error:', error);
       toast.error(error.message || 'Failed to send magic link');
     } finally {
       setLoading(false);
@@ -143,7 +155,7 @@ const Auth = () => {
             <div>
               <Input
                 type="password"
-                placeholder="Password"
+                placeholder="Password (min 6 characters)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -183,6 +195,16 @@ const Auth = () => {
                 ? 'Already have an account? Sign in' 
                 : "Don't have an account? Sign up"
               }
+            </button>
+          </div>
+          
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="text-slate-400 hover:text-slate-300 text-sm"
+            >
+              ← Back to Landing Page
             </button>
           </div>
         </CardContent>

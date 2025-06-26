@@ -1,15 +1,13 @@
 
-/* Force CSS to load and be visible */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Test CSS - make sure this loads */
 body {
   margin: 0;
   padding: 0;
-  background-color: #1e293b !important;
-  color: white !important;
+  background-color: #1e293b;
+  color: white;
   font-family: system-ui, sans-serif;
 }
 
@@ -17,17 +15,7 @@ body {
   min-height: 100vh;
 }
 
-/* Test element to verify CSS works */
-.test-css-working {
-  background: red !important;
-  border: 5px solid yellow !important;
-  padding: 20px !important;
-  margin: 20px !important;
-  font-size: 24px !important;
-  font-weight: bold !important;
-}
-
-/* Our actual styles */
+/* Enhanced styles for the application */
 .min-h-screen { min-height: 100vh; }
 .bg-slate-900 { background-color: #0f172a; }
 .text-white { color: white; }
