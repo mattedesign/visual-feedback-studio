@@ -20,7 +20,7 @@ import {
 
 const Landing = () => {
   const navigate = useNavigate();
-  const { user } = useAuth(); // Remove loading dependency
+  const { user } = useAuth();
 
   // Debug logging to verify component renders
   React.useEffect(() => {
@@ -34,6 +34,10 @@ const Landing = () => {
     } else {
       navigate('/auth');
     }
+  };
+
+  const handleSignUp = () => {
+    navigate('/auth');
   };
 
   const features = [
@@ -82,19 +86,13 @@ const Landing = () => {
     { value: "24/7", label: "AI Availability" }
   ];
 
-  // Always render immediately - no loading checks
   return (
-    <GradientLayout variant="purple" intensity="medium" speed="normal" orbCount={4}>
+    <GradientLayout variant="purple" intensity="medium" speed="normal" orbCount={6}>
       <div className="min-h-screen">
-        {/* Debug indicator - remove after confirming it works */}
-        <div className="fixed top-2 right-2 z-50 bg-green-500 text-white px-2 py-1 rounded text-xs">
-          Landing Loaded ✓
-        </div>
-
         {/* Hero Section */}
         <section className="relative pt-16 pb-12 px-4 sm:pt-20 sm:pb-16">
           <div className="max-w-6xl mx-auto text-center">
-            {/* Auth Status Indicator - show immediately based on current user state */}
+            {/* Auth Status Indicator */}
             <div className="mb-4">
               {user ? (
                 <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
@@ -131,10 +129,10 @@ const Landing = () => {
               <Button
                 variant="outline"
                 size="lg"
-                onClick={() => navigate('/analysis')}
+                onClick={handleSignUp}
                 className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold border-2 hover:bg-white/50 backdrop-blur-sm"
               >
-                See Demo
+                Sign Up Free
               </Button>
             </div>
 
