@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 export type ColorVariant = 'purple' | 'blue' | 'orange' | 'green' | 'red';
@@ -13,6 +12,7 @@ interface GradientOrbProps {
   delay: number;
   initialX: number;
   initialY: number;
+  index: number;
 }
 
 interface AnimatedGradientBackgroundProps {
@@ -85,7 +85,7 @@ const GradientOrb: React.FC<GradientOrbProps> = ({
   delay, 
   initialX, 
   initialY,
-  index = 0
+  index
 }) => {
   const colorClasses = getColorClasses(variant, intensity);
   const sizeClasses = getSizeClasses(size);
