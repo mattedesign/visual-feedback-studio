@@ -17,7 +17,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
   const maxRetries = 1;
   const analysisStartedRef = useRef(false);
 
-  // Direct RAG Analysis with enhanced configuration
+  // Direct RAG Analysis with enhanced configuration for multi-image support
   const { handleAnalyze, isBuilding, hasResearchContext, researchSourcesCount } = useAIAnalysis({
     imageUrls: workflow.selectedImages,
     currentAnalysis: workflow.currentAnalysis,
@@ -38,12 +38,13 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       return;
     }
 
-    console.log('=== Starting RAG-Enhanced Analysis ===');
+    console.log('=== Starting RAG-Enhanced Multi-Image Analysis ===');
     console.log('Selected images:', workflow.selectedImages.length);
     console.log('Current analysis:', workflow.currentAnalysis?.id);
     console.log('User annotations:', workflow.getTotalAnnotationsCount());
     console.log('Analysis context:', workflow.analysisContext || 'None provided');
     console.log('RAG enabled: TRUE');
+    console.log('Multi-image mode:', workflow.selectedImages.length > 1);
 
     // Validation checks
     if (workflow.selectedImages.length === 0) {
@@ -60,14 +61,14 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       return;
     }
 
-    console.log('✅ All validation checks passed - proceeding with analysis');
+    console.log('✅ All validation checks passed - proceeding with multi-image analysis');
     analysisStartedRef.current = true;
 
     try {
       setCurrentStep('Validating images...');
       setAnalysisProgress(10);
 
-      // Validate images are accessible
+      // Validate ALL images are accessible
       const imageValidationPromises = workflow.selectedImages.map(async (imageUrl, index) => {
         try {
           const response = await fetch(imageUrl, { method: 'HEAD' });
@@ -91,21 +92,28 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       setCurrentStep('Enhancing analysis with research...');
       setAnalysisProgress(60);
 
-      setCurrentStep('Generating RAG-enhanced insights...');
+      setCurrentStep(`Generating RAG-enhanced insights for ${workflow.selectedImages.length} image${workflow.selectedImages.length > 1 ? 's' : ''}...`);
       setAnalysisProgress(80);
 
-      // Enhanced prompt with RAG context
+      // Enhanced prompt with RAG context and explicit multi-image instructions
       const enhancedPrompt = `${workflow.analysisContext || 'Analyze this design for UX improvements and accessibility issues. Focus on color contrast, visual hierarchy, and user experience patterns.'}
 
-Please provide research-backed recommendations using UX best practices and design principles.`;
+IMPORTANT: ${workflow.selectedImages.length > 1 ? 
+  `You are analyzing ${workflow.selectedImages.length} different images. Please provide specific insights for EACH IMAGE individually. Make sure to generate annotations for all ${workflow.selectedImages.length} images, not just the first one. Each image should receive equal analysis attention with specific recommendations relevant to that particular design.` :
+  'You are analyzing a single image. Please provide comprehensive insights for this design.'
+}
 
-      // Direct RAG analysis call with explicit RAG enablement
+Please provide research-backed recommendations using UX best practices and design principles. Ensure annotations are distributed across all uploaded images based on their individual content and design elements.`;
+
+      // Direct RAG analysis call with explicit RAG enablement and multi-image support
+      console.log('Calling RAG analysis with enhanced multi-image prompt...');
       await handleAnalyze(enhancedPrompt, workflow.imageAnnotations);
       
       setAnalysisProgress(100);
-      setCurrentStep('RAG-enhanced analysis complete!');
+      setCurrentStep(`RAG-enhanced analysis complete for ${workflow.selectedImages.length} image${workflow.selectedImages.length > 1 ? 's' : ''}!`);
       
-      console.log('=== RAG-Enhanced Analysis Completed Successfully ===');
+      console.log('=== RAG-Enhanced Multi-Image Analysis Completed Successfully ===');
+      console.log('Generated annotations for images:', workflow.selectedImages.length);
       
       // Small delay to show completion before transitioning
       setTimeout(() => {
@@ -113,7 +121,7 @@ Please provide research-backed recommendations using UX best practices and desig
       }, 1000);
 
     } catch (error) {
-      console.error('=== RAG-Enhanced Analysis Failed ===');
+      console.error('=== RAG-Enhanced Multi-Image Analysis Failed ===');
       console.error('Error details:', error);
       console.error('Retry count:', retryCount);
       
@@ -163,12 +171,14 @@ Please provide research-backed recommendations using UX best practices and desig
 
   // Start analysis effect
   useEffect(() => {
-    console.log('🚀 AnalyzingStep: Starting RAG analysis effect', {
+    console.log('🚀 AnalyzingStep: Starting RAG multi-image analysis effect', {
       timestamp: new Date().toISOString(),
       hasImages: workflow.selectedImages.length > 0,
+      imageCount: workflow.selectedImages.length,
       hasAnalysis: !!workflow.currentAnalysis,
       analysisStarted: analysisStartedRef.current,
-      ragEnabled: true
+      ragEnabled: true,
+      isMultiImage: workflow.selectedImages.length > 1
     });
 
     if (!analysisStartedRef.current) {
@@ -195,7 +205,7 @@ Please provide research-backed recommendations using UX best practices and desig
             
             <div>
               <h3 className="text-2xl font-semibold mb-4">
-                {isMultiImage ? 'Analyzing Your Designs with RAG' : 'Analyzing Your Design with RAG'}
+                {isMultiImage ? `Analyzing Your ${workflow.selectedImages.length} Designs with RAG` : 'Analyzing Your Design with RAG'}
               </h3>
               
               {/* RAG Status Indicator - Always show as enabled */}
@@ -226,12 +236,13 @@ Please provide research-backed recommendations using UX best practices and desig
             )}
 
             <div className="bg-slate-700 rounded-lg p-4">
-              <h4 className="font-medium mb-2">RAG-Enhanced Analysis Focus:</h4>
+              <h4 className="font-medium mb-2">RAG-Enhanced Multi-Image Analysis Focus:</h4>
               <ul className="text-sm text-slate-300 space-y-1">
                 <li>• {totalAnnotations} specific areas you highlighted across {isMultiImage ? 'all images' : 'the image'}</li>
                 {workflow.analysisContext && <li>• Your general context and requirements</li>}
-                {isMultiImage && <li>• Comparative analysis between selected images</li>}
-                <li>• <strong>Research-enhanced UX recommendations</strong></li>
+                {isMultiImage && <li>• <strong>Individual analysis for each of the {workflow.selectedImages.length} images</strong></li>}
+                {isMultiImage && <li>• <strong>Comparative insights between all uploaded images</strong></li>}
+                <li>• <strong>Research-enhanced UX recommendations for each image</strong></li>
                 <li>• <strong>Knowledge base insights and best practices</strong></li>
                 <li>• <strong>Evidence-backed accessibility improvements</strong></li>
                 <li>• <strong>Data-driven conversion optimization</strong></li>

@@ -219,9 +219,10 @@ export const DetailedAnnotationsList = ({
                           </Badge>
                         )}
                       </div>
-                      <p className="text-base text-gray-800 leading-relaxed font-medium">
+                      {/* REMOVED TEXT TRUNCATION - Show full feedback */}
+                      <div className="text-base text-gray-800 leading-relaxed font-medium whitespace-pre-wrap">
                         {annotation.feedback}
-                      </p>
+                      </div>
                       <div className="flex gap-4 mt-3 text-sm text-gray-600 font-semibold">
                         <span>Effort: {annotation.implementationEffort}</span>
                         <span>Impact: {annotation.businessImpact}</span>

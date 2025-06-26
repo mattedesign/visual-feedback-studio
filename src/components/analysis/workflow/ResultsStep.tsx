@@ -59,7 +59,7 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
   const currentImageAIAnnotations = getAnnotationsForImage(activeImageIndex);
   const currentImageUserAnnotations = getUserAnnotationsForImage(activeImageUrl);
 
-  // Generate business impact data from annotations
+  // Generate business impact data from annotations - REMOVED TEXT TRUNCATION
   const generateBusinessImpact = () => {
     const annotations = workflow.aiAnnotations;
     if (!annotations.length) return null;
@@ -121,7 +121,7 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
     };
   };
 
-  // Generate insights from annotations
+  // Generate insights from annotations - REMOVED TEXT TRUNCATION
   const generateInsights = () => {
     const annotations = workflow.aiAnnotations;
     if (!annotations.length) return null;
@@ -143,9 +143,9 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
     ) || annotations.find(a => a.severity === 'critical') || annotations[0];
 
     return {
-      topRecommendation: `${topRec.category.toUpperCase()}: ${topRec.feedback.substring(0, 100)}...`,
-      quickestWin: `${quickestWin.implementationEffort} effort: ${quickestWin.feedback.substring(0, 80)}...`,
-      highestImpact: `${highestImpact.businessImpact} impact: ${highestImpact.feedback.substring(0, 80)}...`,
+      topRecommendation: `${topRec.category.toUpperCase()}: ${topRec.feedback}`,
+      quickestWin: `${quickestWin.implementationEffort} effort: ${quickestWin.feedback}`,
+      highestImpact: `${highestImpact.businessImpact} impact: ${highestImpact.feedback}`,
       competitiveAdvantage: workflow.aiAnnotations.some(a => a.category === 'conversion') ? 
         'Conversion optimization opportunities identified' : 'User experience improvements available',
       researchEvidence: `${annotations.length} evidence-based recommendations generated`

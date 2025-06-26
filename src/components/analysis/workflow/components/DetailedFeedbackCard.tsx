@@ -35,7 +35,10 @@ export const DetailedFeedbackCard = ({
             </Badge>
           )}
         </div>
-        <p className="text-base text-gray-800 leading-relaxed font-medium">{annotation.feedback}</p>
+        {/* REMOVED TEXT TRUNCATION - Show full feedback */}
+        <div className="text-base text-gray-800 leading-relaxed font-medium whitespace-pre-wrap">
+          {annotation.feedback}
+        </div>
         <div className="flex gap-6 text-sm text-gray-600 font-semibold">
           <span>Implementation: {annotation.implementationEffort}</span>
           <span>Business Impact: {annotation.businessImpact}</span>
