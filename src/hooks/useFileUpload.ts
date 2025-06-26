@@ -4,11 +4,12 @@ import { toast } from 'sonner';
 import { uploadFileToStorage } from '@/services/fileUploadService';
 
 export const useFileUpload = (onImageUpload: (imageUrl: string) => void) => {
+  // Remove processing state for individual uploads to prevent UI transitions
+  // Only show processing when truly needed (like initial setup)
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleFileUpload = async (file: File) => {
-    setIsProcessing(true);
-    
+    // Don't set processing state - we want immediate UI feedback without screens
     try {
       console.log('Starting file upload process for:', file.name, 'Size:', file.size, 'Type:', file.type);
       
@@ -37,7 +38,7 @@ export const useFileUpload = (onImageUpload: (imageUrl: string) => void) => {
 
       console.log('File upload completed successfully, URL:', publicUrl);
 
-      // Call the callback with the uploaded file URL (no longer auto-proceeds)
+      // Call the callback with the uploaded file URL (adds to collection)
       onImageUpload(publicUrl);
       
       toast.success(`${file.name} uploaded successfully!`);
@@ -45,13 +46,12 @@ export const useFileUpload = (onImageUpload: (imageUrl: string) => void) => {
     } catch (error) {
       console.error('Error during file upload process:', error);
       toast.error('Failed to upload file');
-    } finally {
-      setIsProcessing(false);
     }
+    // No finally block setting isProcessing to false since we don't set it to true
   };
 
   return {
-    isProcessing,
+    isProcessing, // This will always be false for collection uploads
     handleFileUpload,
   };
 };

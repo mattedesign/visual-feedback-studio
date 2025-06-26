@@ -61,6 +61,8 @@ export const UploadSection = ({ onImageUpload, onMultipleImagesReady }: UploadSe
     handleDemoUpload();
   };
 
+  // Only show processing state for operations that actually proceed immediately (like demo)
+  // File uploads to collection should not show processing state
   if (isProcessing) {
     return <ProcessingState />;
   }
@@ -83,7 +85,7 @@ export const UploadSection = ({ onImageUpload, onMultipleImagesReady }: UploadSe
           <FileUploadTab 
             onFileUpload={handleFileUpload}
             onDemoUpload={handleDemoClick}
-            isProcessing={isProcessing}
+            isProcessing={false} // Never show processing for file uploads to collection
             uploadedImages={uploadedImages}
             onRemoveImage={handleRemoveImage}
             onContinue={handleContinue}
