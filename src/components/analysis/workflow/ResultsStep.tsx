@@ -15,10 +15,12 @@ interface ResultsStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
 }
 
+type ViewMode = 'optimized' | 'detailed';
+
 export const ResultsStep = ({ workflow }: ResultsStepProps) => {
   const [activeAnnotation, setActiveAnnotation] = useState<string | null>(null);
   const [activeImageUrl, setActiveImageUrl] = useState(workflow.selectedImages[0] || '');
-  const [viewMode, setViewMode] = useState<'optimized' | 'detailed'>('optimized');
+  const [viewMode, setViewMode] = useState<ViewMode>('optimized');
 
   const getSeverityColor = (severity: string) =>  {
     switch (severity) {
