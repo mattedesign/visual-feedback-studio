@@ -20,6 +20,11 @@ export const useSubscription = () => {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
+  // Add useEffect to log when subscription changes
+  useEffect(() => {
+    console.log('useSubscription: Subscription state changed to:', subscription);
+  }, [subscription]);
+
   const fetchSubscription = async () => {
     if (!user) {
       console.log('useSubscription: No user found, setting loading to false');
@@ -73,6 +78,8 @@ export const useSubscription = () => {
         
         console.log('useSubscription: Processed subscription data:', subscriptionData);
         setSubscription(subscriptionData);
+        console.log('useSubscription: Setting subscription state to:', subscriptionData);
+        console.log('useSubscription: State should now be updated');
       } else {
         console.log('useSubscription: No subscription data returned');
         setSubscription(null);
