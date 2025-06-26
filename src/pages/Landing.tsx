@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,7 +19,7 @@ import {
 
 const Landing = () => {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user } = useAuth(); // Remove loading dependency
 
   const handleGetStarted = () => {
     if (user) {
@@ -76,27 +75,25 @@ const Landing = () => {
     { value: "24/7", label: "AI Availability" }
   ];
 
-  // Always render the landing page content - don't wait for auth state
+  // Always render immediately - no loading checks
   return (
     <GradientLayout variant="purple" intensity="medium" speed="normal" orbCount={4}>
       <div className="min-h-screen">
         {/* Hero Section */}
         <section className="relative pt-16 pb-12 px-4 sm:pt-20 sm:pb-16">
           <div className="max-w-6xl mx-auto text-center">
-            {/* Auth Status Indicator - only show if not loading */}
-            {!loading && (
-              <div className="mb-4">
-                {user ? (
-                  <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
-                    Welcome back, {user.email?.split('@')[0]}!
-                  </Badge>
-                ) : (
-                  <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">
-                    🚀 AI-Powered Design Analysis
-                  </Badge>
-                )}
-              </div>
-            )}
+            {/* Auth Status Indicator - show immediately based on current user state */}
+            <div className="mb-4">
+              {user ? (
+                <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
+                  Welcome back, {user.email?.split('@')[0]}!
+                </Badge>
+              ) : (
+                <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">
+                  🚀 AI-Powered Design Analysis
+                </Badge>
+              )}
+            </div>
             
             <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600 bg-clip-text text-transparent leading-tight">
               Transform Your Designs Into

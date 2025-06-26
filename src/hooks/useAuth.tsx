@@ -14,7 +14,7 @@ export const useAuth = () => {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     session: null,
-    loading: true,
+    loading: false, // Start with false to not block public pages
     error: null
   });
 
@@ -38,7 +38,7 @@ export const useAuth = () => {
       }
     );
 
-    // Initialize session check with immediate fallback for public pages
+    // Initialize session check - but don't block public pages
     const initialize = async () => {
       try {
         console.log('useAuth: Checking for existing session');
@@ -82,9 +82,9 @@ export const useAuth = () => {
       }
     };
 
-    // Much shorter timeout - don't block public pages
+    // Quick timeout as backup - but public pages don't depend on this
     const timeoutId = setTimeout(() => {
-      console.warn('useAuth: Timeout reached, allowing public access');
+      console.warn('useAuth: Timeout reached, ensuring public access');
       if (mounted) {
         setAuthState(prev => ({
           ...prev,
@@ -92,7 +92,7 @@ export const useAuth = () => {
           error: null
         }));
       }
-    }, 1000); // Reduced to 1 second
+    }, 500); // Very short timeout since we start with loading: false
 
     initialize();
 
