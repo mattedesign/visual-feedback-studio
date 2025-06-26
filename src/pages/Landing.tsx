@@ -1,9 +1,9 @@
 
 import React from 'react';
-import { ContextualGradientLayout } from '@/components/ui/ContextualGradientLayout';
+import { GradientLayout } from '@/components/ui/GradientLayout';
 import { ParticleSystem } from '@/components/ui/ParticleSystem';
 import { ModernHeader } from '@/components/ui/ModernHeader';
-import { ContextualHeroSection } from '@/components/sections/ContextualHeroSection';
+import { HeroSection } from '@/components/sections/HeroSection';
 import { FeaturesSection } from '@/components/sections/FeaturesSection';
 import { TestimonialsSection } from '@/components/sections/TestimonialsSection';
 import { CTASection } from '@/components/sections/CTASection';
@@ -12,11 +12,11 @@ import { PricingCards } from '@/components/subscription/PricingCards';
 const Landing = () => {
   // Debug logging to verify component renders
   React.useEffect(() => {
-    console.log('Contextual Landing component rendered');
+    console.log('Modern Landing component rendered');
   }, []);
 
   return (
-    <ContextualGradientLayout>
+    <GradientLayout variant="purple" intensity="subtle" speed="slow" orbCount={8}>
       <div className="relative min-h-screen overflow-hidden">
         {/* Particle System Background */}
         <ParticleSystem particleCount={30} />
@@ -24,8 +24,8 @@ const Landing = () => {
         {/* Modern Header */}
         <ModernHeader />
         
-        {/* Contextual Hero Section */}
-        <ContextualHeroSection />
+        {/* Hero Section */}
+        <HeroSection />
         
         {/* Features Section */}
         <FeaturesSection />
@@ -41,7 +41,7 @@ const Landing = () => {
         {/* CTA Section */}
         <CTASection />
       </div>
-    </ContextualGradientLayout>
+    </GradientLayout>
   );
 };
 
