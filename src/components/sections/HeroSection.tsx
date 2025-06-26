@@ -62,7 +62,6 @@ export const HeroSection: React.FC = () => {
               className="bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-500 bg-clip-text text-transparent"
             />
           </span>
-          <span className="block text-gray-900 mt-2">In Your Designs</span>
         </h1>
 
         {/* Subheading */}
