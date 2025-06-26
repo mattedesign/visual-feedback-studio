@@ -110,18 +110,25 @@ export const AnimatedGradientBackground: React.FC<AnimatedGradientBackgroundProp
   orbCount = 6,
   className = ''
 }) => {
+  const colorVariants: ColorVariant[] = ['purple', 'blue', 'orange', 'green', 'red'];
+  
   const orbs = React.useMemo(() => 
-    Array.from({ length: orbCount }, (_, index) => ({
-      id: index,
-      variant,
-      intensity,
-      speed,
-      size: (['small', 'medium', 'large'] as const)[index % 3],
-      delay: index * 0.8,
-      initialX: Math.random() * 80 + 10,
-      initialY: Math.random() * 80 + 10,
-      index,
-    })), [orbCount, variant, intensity, speed]
+    Array.from({ length: orbCount }, (_, index) => {
+      // Cycle through different color variants for variety
+      const orbVariant = colorVariants[index % colorVariants.length];
+      
+      return {
+        id: index,
+        variant: orbVariant,
+        intensity,
+        speed,
+        size: (['small', 'medium', 'large'] as const)[index % 3],
+        delay: index * 0.8,
+        initialX: Math.random() * 80 + 10,
+        initialY: Math.random() * 80 + 10,
+        index,
+      };
+    }), [orbCount, intensity, speed]
   );
 
   return (
