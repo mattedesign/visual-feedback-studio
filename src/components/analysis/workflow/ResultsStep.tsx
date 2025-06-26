@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { ComparativeAnalysisSummary } from '../ComparativeAnalysisSummary';
 import { ImageTabsViewer } from './components/ImageTabsViewer';
@@ -15,6 +16,11 @@ interface ResultsStepProps {
 export const ResultsStep = ({ workflow }: ResultsStepProps) => {
   const [activeAnnotation, setActiveAnnotation] = useState<string | null>(null);
   const [activeImageUrl, setActiveImageUrl] = useState(workflow.selectedImages[0] || '');
+
+  // Collapsible state
+  const [isCriticalExpanded, setIsCriticalExpanded] = useState(true);
+  const [isSuggestedExpanded, setIsSuggestedExpanded] = useState(false);
+  const [isEnhancementExpanded, setIsEnhancementExpanded] = useState(false);
 
   const getSeverityColor = (severity: string) =>  {
     switch (severity) {
@@ -80,6 +86,14 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
   const { critical, suggested, enhancement } = groupAnnotationsBySeverity(
     isMultiImage ? currentImageAIAnnotations : workflow.aiAnnotations
   );
+
+  // Smart defaults: if no critical issues, open suggested by default
+  useState(() => {
+    if (critical.length === 0 && suggested.length > 0) {
+      setIsCriticalExpanded(false);
+      setIsSuggestedExpanded(true);
+    }
+  });
 
   // Calculate summary stats
   const totalFindings = workflow.aiAnnotations.length;
@@ -183,60 +197,81 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
   const businessImpact = generateBusinessImpact();
   const insights = generateInsights();
 
-  // Render grouped annotations section
-  const renderGroupedAnnotations = (annotations: typeof workflow.aiAnnotations, title: string, severity: string, icon: string) => {
+  // Enhanced collapsible section renderer
+  const renderCollapsibleSection = (
+    annotations: typeof workflow.aiAnnotations, 
+    title: string, 
+    severity: string, 
+    icon: string,
+    isExpanded: boolean,
+    setExpanded: (expanded: boolean) => void
+  ) => {
     if (annotations.length === 0) return null;
 
     return (
-      <div className={`rounded-lg border-2 p-6 ${getSeverityBgColor(severity)}`}>
-        <div className="flex items-center gap-3 mb-4">
+      <div className={`rounded-lg border-2 ${getSeverityBgColor(severity)} transition-all duration-200`}>
+        <div 
+          className="flex items-center gap-3 p-6 cursor-pointer hover:bg-white/50 transition-colors duration-200"
+          onClick={() => setExpanded(!isExpanded)}
+        >
           <span className="text-2xl">{icon}</span>
-          <h3 className="text-xl font-bold text-gray-900">{title}</h3>
+          <h3 className="text-xl font-bold text-gray-900 flex-1">{title}</h3>
           <Badge className={`${getSeverityColor(severity)} font-semibold`}>
             {annotations.length} {annotations.length === 1 ? 'item' : 'items'}
           </Badge>
+          <div className="ml-2 transition-transform duration-200">
+            {isExpanded ? (
+              <ChevronUp className="w-6 h-6 text-gray-600" />
+            ) : (
+              <ChevronDown className="w-6 h-6 text-gray-600" />
+            )}
+          </div>
         </div>
         
-        <div className="space-y-4">
-          {annotations.map((annotation) => (
-            <div
-              key={annotation.id}
-              className={`bg-white border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 hover:shadow-md ${
-                activeAnnotation === annotation.id
-                  ? 'border-blue-500 shadow-lg'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
-              onClick={() => setActiveAnnotation(annotation.id)}
-            >
-              <div className="flex items-start gap-3">
-                <span className="text-xl flex-shrink-0 mt-1">
-                  {getCategoryIcon(annotation.category)}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Badge className={`text-sm font-semibold ${getSeverityColor(annotation.severity)}`}>
-                      {annotation.severity.toUpperCase()}
-                    </Badge>
-                    <span className="text-sm font-semibold capitalize text-gray-700">
-                      {annotation.category}
-                    </span>
-                    {isMultiImage && (
-                      <Badge variant="outline" className="text-sm font-semibold border-gray-400 text-gray-700">
-                        Image {(annotation.imageIndex ?? 0) + 1}
+        <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
+          isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+        }`}>
+          <div className="px-6 pb-6 space-y-4">
+            {annotations.map((annotation) => (
+              <div
+                key={annotation.id}
+                className={`bg-white border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                  activeAnnotation === annotation.id
+                    ? 'border-blue-500 shadow-lg'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+                onClick={() => setActiveAnnotation(annotation.id)}
+              >
+                <div className="flex items-start gap-3">
+                  <span className="text-xl flex-shrink-0 mt-1">
+                    {getCategoryIcon(annotation.category)}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Badge className={`text-sm font-semibold ${getSeverityColor(annotation.severity)}`}>
+                        {annotation.severity.toUpperCase()}
                       </Badge>
-                    )}
-                  </div>
-                  <p className="text-base text-gray-800 leading-relaxed font-medium mb-3">
-                    {annotation.feedback}
-                  </p>
-                  <div className="flex gap-4 text-sm text-gray-600 font-semibold">
-                    <span>Effort: <span className="capitalize">{annotation.implementationEffort}</span></span>
-                    <span>Impact: <span className="capitalize">{annotation.businessImpact}</span></span>
+                      <span className="text-sm font-semibold capitalize text-gray-700">
+                        {annotation.category}
+                      </span>
+                      {isMultiImage && (
+                        <Badge variant="outline" className="text-sm font-semibold border-gray-400 text-gray-700">
+                          Image {(annotation.imageIndex ?? 0) + 1}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-base text-gray-800 leading-relaxed font-medium mb-3">
+                      {annotation.feedback}
+                    </p>
+                    <div className="flex gap-4 text-sm text-gray-600 font-semibold">
+                      <span>Effort: <span className="capitalize">{annotation.implementationEffort}</span></span>
+                      <span>Impact: <span className="capitalize">{annotation.businessImpact}</span></span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -331,7 +366,7 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
             />
           </div>
 
-          {/* Grouped Findings Section */}
+          {/* Collapsible Grouped Findings Section */}
           <div className="space-y-6">
             <div className="border-t border-gray-200 pt-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
@@ -339,9 +374,32 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
               </h2>
               
               <div className="space-y-6">
-                {renderGroupedAnnotations(critical, 'Critical Issues', 'critical', '🚨')}
-                {renderGroupedAnnotations(suggested, 'Suggested Improvements', 'suggested', '⚠️')}
-                {renderGroupedAnnotations(enhancement, 'Enhancement Opportunities', 'enhancement', '💡')}
+                {renderCollapsibleSection(
+                  critical, 
+                  'Critical Issues', 
+                  'critical', 
+                  '🚨',
+                  isCriticalExpanded,
+                  setIsCriticalExpanded
+                )}
+                
+                {renderCollapsibleSection(
+                  suggested, 
+                  'Suggested Improvements', 
+                  'suggested', 
+                  '⚠️',
+                  isSuggestedExpanded,
+                  setIsSuggestedExpanded
+                )}
+                
+                {renderCollapsibleSection(
+                  enhancement, 
+                  'Enhancement Opportunities', 
+                  'enhancement', 
+                  '💡',
+                  isEnhancementExpanded,
+                  setIsEnhancementExpanded
+                )}
                 
                 {critical.length === 0 && suggested.length === 0 && enhancement.length === 0 && (
                   <div className="text-center py-12 text-gray-500">
