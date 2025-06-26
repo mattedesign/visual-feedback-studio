@@ -29,7 +29,61 @@
   }
 }
 
-/* Float Animation Variants */
+/* Magnetic Button Animation */
+@keyframes magnetic-hover {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  100% {
+    transform: translate(var(--mouse-x, 0px), var(--mouse-y, 0px)) scale(1.05);
+  }
+}
+
+/* Morphing Card Animation */
+@keyframes morph-background {
+  0% {
+    border-radius: 1rem;
+    transform: scale(1);
+  }
+  50% {
+    border-radius: 2rem;
+    transform: scale(1.02);
+  }
+  100% {
+    border-radius: 1rem;
+    transform: scale(1);
+  }
+}
+
+/* Typewriter Cursor Blink */
+@keyframes typewriter-blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
+/* Particle Animation */
+@keyframes particle-float {
+  0% {
+    transform: translateY(0px) translateX(0px);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100px) translateX(20px);
+    opacity: 0;
+  }
+}
+
+/* Enhanced Float Animation Variants */
 @keyframes float-slow {
   0%, 100% {
     transform: translateX(0px) translateY(0px) scale(1);
@@ -145,6 +199,31 @@
   }
 }
 
+/* Scale and Bounce Effects */
+@keyframes scale-bounce {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
 @layer utilities {
   .animate-float {
     animation: float 6s ease-in-out infinite;
@@ -156,6 +235,31 @@
 
   .animate-fade-in {
     animation: fade-in 0.6s ease-out;
+  }
+
+  .animate-magnetic-hover {
+    animation: magnetic-hover 0.3s ease-out;
+  }
+
+  .animate-morph-background {
+    animation: morph-background 3s ease-in-out infinite;
+  }
+
+  .animate-typewriter-blink {
+    animation: typewriter-blink 1s infinite;
+  }
+
+  .animate-particle-float {
+    animation: particle-float 4s linear infinite;
+  }
+
+  .animate-scale-bounce {
+    animation: scale-bounce 0.3s ease-out;
+  }
+
+  .animate-gradient-shift {
+    animation: gradient-shift 3s ease infinite;
+    background-size: 200% 200%;
   }
 
   /* Float Animation Classes */
@@ -195,11 +299,35 @@
     animation: float-6 21s ease-in-out infinite;
   }
 
+  /* Enhanced Hover Effects */
+  .hover-magnetic {
+    transition: transform 0.3s ease;
+  }
+
+  .hover-magnetic:hover {
+    transform: scale(1.05);
+  }
+
+  .hover-morph {
+    transition: all 0.3s ease;
+  }
+
+  .hover-morph:hover {
+    border-radius: 2rem;
+    transform: scale(1.02);
+  }
+
   /* Fallback for reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .animate-float,
     .animate-glow,
     .animate-fade-in,
+    .animate-magnetic-hover,
+    .animate-morph-background,
+    .animate-typewriter-blink,
+    .animate-particle-float,
+    .animate-scale-bounce,
+    .animate-gradient-shift,
     .animate-float-slow,
     .animate-float-normal,
     .animate-float-fast,
