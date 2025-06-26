@@ -25,6 +25,11 @@ export const GradientLayout: React.FC<GradientLayoutProps> = ({
     ? 'min-h-screen relative overflow-hidden' 
     : 'relative overflow-hidden';
 
+  // Debug logging to verify component is rendering
+  React.useEffect(() => {
+    console.log('GradientLayout rendered with:', { variant, intensity, speed, orbCount });
+  }, [variant, intensity, speed, orbCount]);
+
   return (
     <div className={`${containerClasses} ${className}`}>
       <AnimatedGradientBackground
@@ -33,7 +38,7 @@ export const GradientLayout: React.FC<GradientLayoutProps> = ({
         speed={speed}
         orbCount={orbCount}
       />
-      <div className="relative animate-fade-in" style={{ zIndex: 10 }}>
+      <div className="relative animate-fade-in" style={{ zIndex: 1 }}>
         {children}
       </div>
     </div>

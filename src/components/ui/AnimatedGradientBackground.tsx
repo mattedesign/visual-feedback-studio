@@ -125,7 +125,7 @@ export const AnimatedGradientBackground: React.FC<AnimatedGradientBackgroundProp
   );
 
   return (
-    <div className={`fixed inset-0 overflow-hidden pointer-events-none ${className}`} style={{ zIndex: 1 }}>
+    <div className={`fixed inset-0 overflow-hidden pointer-events-none ${className}`} style={{ zIndex: -1 }}>
       <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-slate-100" />
       {orbs.map((orb) => (
         <GradientOrb

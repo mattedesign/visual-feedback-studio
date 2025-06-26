@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,6 +21,12 @@ import {
 const Landing = () => {
   const navigate = useNavigate();
   const { user } = useAuth(); // Remove loading dependency
+
+  // Debug logging to verify component renders
+  React.useEffect(() => {
+    console.log('Landing component rendered');
+    console.log('User state:', { hasUser: !!user, userEmail: user?.email });
+  }, [user]);
 
   const handleGetStarted = () => {
     if (user) {
@@ -79,6 +86,11 @@ const Landing = () => {
   return (
     <GradientLayout variant="purple" intensity="medium" speed="normal" orbCount={4}>
       <div className="min-h-screen">
+        {/* Debug indicator - remove after confirming it works */}
+        <div className="fixed top-2 right-2 z-50 bg-green-500 text-white px-2 py-1 rounded text-xs">
+          Landing Loaded ✓
+        </div>
+
         {/* Hero Section */}
         <section className="relative pt-16 pb-12 px-4 sm:pt-20 sm:pb-16">
           <div className="max-w-6xl mx-auto text-center">
