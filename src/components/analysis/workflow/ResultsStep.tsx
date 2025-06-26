@@ -1,25 +1,20 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { ComparativeAnalysisSummary } from '../ComparativeAnalysisSummary';
 import { ImageTabsViewer } from './components/ImageTabsViewer';
 import { SingleImageViewer } from './components/SingleImageViewer';
 import { FeedbackPanel } from './components/FeedbackPanel';
 import { ResultsActions } from './components/ResultsActions';
-import { OptimizedResultsLayout } from '../results/OptimizedResultsLayout';
-import { LayoutGrid, List } from 'lucide-react';
 
 interface ResultsStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
 }
 
-type ViewMode = 'optimized' | 'detailed';
-
 export const ResultsStep = ({ workflow }: ResultsStepProps) => {
   const [activeAnnotation, setActiveAnnotation] = useState<string | null>(null);
   const [activeImageUrl, setActiveImageUrl] = useState(workflow.selectedImages[0] || '');
-  const [viewMode, setViewMode] = useState<ViewMode>('optimized');
 
   const getSeverityColor = (severity: string) =>  {
     switch (severity) {
@@ -160,74 +155,8 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
   const businessImpact = generateBusinessImpact();
   const insights = generateInsights();
 
-  // Optimized view with new layout
-  if (viewMode === 'optimized') {
-    return (
-      <div className="relative">
-        {/* View Toggle */}
-        <div className="fixed top-4 right-4 z-30">
-          <div className="flex bg-slate-800 rounded-lg p-1 border border-slate-700">
-            <Button
-              variant={viewMode === 'optimized' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('optimized')}
-              className="flex items-center gap-2"
-            >
-              <LayoutGrid className="w-4 h-4" />
-              Organized
-            </Button>
-            <Button
-              variant={viewMode === 'detailed' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('detailed')}
-              className="flex items-center gap-2"
-            >
-              <List className="w-4 h-4" />
-              Detailed
-            </Button>
-          </div>
-        </div>
-
-        <OptimizedResultsLayout
-          annotations={workflow.aiAnnotations}
-          businessImpact={businessImpact}
-          insights={insights}
-          onNewAnalysis={handleStartNew}
-          activeAnnotation={activeAnnotation}
-          onAnnotationClick={setActiveAnnotation}
-          getSeverityColor={getSeverityColor}
-        />
-      </div>
-    );
-  }
-
-  // Original detailed view (preserved for backward compatibility)
   return (
-    <div className="max-w-7xl mx-auto relative">
-      {/* View Toggle */}
-      <div className="fixed top-4 right-4 z-30">
-        <div className="flex bg-slate-800 rounded-lg p-1 border border-slate-700">
-          <Button
-            variant={viewMode === 'optimized' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setViewMode('optimized')}
-            className="flex items-center gap-2"
-          >
-            <LayoutGrid className="w-4 h-4" />
-            Organized
-          </Button>
-          <Button
-            variant={viewMode === 'detailed' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setViewMode('detailed')}
-            className="flex items-center gap-2"
-          >
-            <List className="w-4 h-4" />
-            Detailed
-          </Button>
-        </div>
-      </div>
-
+    <div className="max-w-7xl mx-auto">
       <Card className="bg-white border-gray-300 shadow-lg">
         <CardHeader className="pb-6">
           <CardTitle className="text-3xl text-center font-bold text-gray-900">
