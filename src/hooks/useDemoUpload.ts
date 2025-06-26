@@ -1,8 +1,6 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { createAnalysis } from '@/services/analysisService';
-import { saveUrlUpload } from '@/services/urlUploadService';
 
 export const useDemoUpload = (onImageUpload: (imageUrl: string) => void) => {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -11,22 +9,26 @@ export const useDemoUpload = (onImageUpload: (imageUrl: string) => void) => {
     setIsProcessing(true);
     
     try {
-      console.log('Loading demo design');
+      console.log('Using demo design image');
       
-      // Create analysis for demo
-      const analysisId = await createAnalysis();
-      if (!analysisId) {
-        setIsProcessing(false);
-        return;
+      // Use the demo image from public folder
+      const demoImageUrl = '/lovable-uploads/21223d81-f4f7-4209-8d6a-f2f8f703d1d1.png';
+      
+      // Verify the demo image exists
+      const response = await fetch(demoImageUrl, { method: 'HEAD' });
+      if (!response.ok) {
+        throw new Error('Demo image not accessible');
       }
-
-      // Save as a demo URL upload
-      await saveUrlUpload('https://images.unsplash.com/photo-1611224923853-80b023f02d71', 'url', analysisId);
       
-      onImageUpload('https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=800&h=600&fit=crop');
+      console.log('Demo image verified and ready');
+      
+      // Pass to callback - this will proceed immediately for demo
+      onImageUpload(demoImageUrl);
+      
       toast.success('Demo design loaded successfully!');
+      
     } catch (error) {
-      console.error('Error loading demo:', error);
+      console.error('Error loading demo design:', error);
       toast.error('Failed to load demo design');
     } finally {
       setIsProcessing(false);

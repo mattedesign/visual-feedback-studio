@@ -37,8 +37,10 @@ export const useFileUpload = (onImageUpload: (imageUrl: string) => void) => {
 
       console.log('File upload completed successfully, URL:', publicUrl);
 
-      // Call the callback with the uploaded file URL
+      // Call the callback with the uploaded file URL (no longer auto-proceeds)
       onImageUpload(publicUrl);
+      
+      toast.success(`${file.name} uploaded successfully!`);
       
     } catch (error) {
       console.error('Error during file upload process:', error);

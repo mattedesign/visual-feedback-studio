@@ -29,9 +29,17 @@ export const UploadStep = ({ workflow }: UploadStepProps) => {
     alert('Upgrade functionality would be implemented here with Stripe integration');
   };
 
-  const handleImageUpload = async (imageUrl: string) => {
-    console.log('UploadStep: Image uploaded, creating analysis session:', imageUrl);
-    
+  const handleSingleImageUpload = async (imageUrl: string) => {
+    console.log('UploadStep: Single image uploaded, creating analysis session:', imageUrl);
+    await createAnalysisAndProceed([imageUrl]);
+  };
+
+  const handleMultipleImagesReady = async (imageUrls: string[]) => {
+    console.log('UploadStep: Multiple images ready, creating analysis session:', imageUrls.length);
+    await createAnalysisAndProceed(imageUrls);
+  };
+
+  const createAnalysisAndProceed = async (imageUrls: string[]) => {
     try {
       // Create analysis session if one doesn't exist
       if (!workflow.currentAnalysis) {
@@ -56,13 +64,13 @@ export const UploadStep = ({ workflow }: UploadStepProps) => {
         }
       }
 
-      // Add the uploaded file to workflow
-      workflow.addUploadedFile(imageUrl);
+      // Add all uploaded files to workflow
+      imageUrls.forEach(url => workflow.addUploadedFile(url));
       
       // Proceed with the workflow
-      workflow.proceedFromUpload([imageUrl]);
+      workflow.proceedFromUpload(imageUrls);
       
-      toast.success('Image uploaded successfully!');
+      toast.success(`${imageUrls.length} image${imageUrls.length !== 1 ? 's' : ''} uploaded successfully!`);
       
     } catch (error) {
       console.error('Error handling image upload:', error);
@@ -95,7 +103,7 @@ export const UploadStep = ({ workflow }: UploadStepProps) => {
             Upload Your Design
           </CardTitle>
           <p className="text-gray-700 text-center text-lg leading-relaxed">
-            Upload images, share Figma links, or provide website URLs to get started with AI-powered design analysis
+            Upload up to 5 images, share Figma links, or provide website URLs to get started with AI-powered design analysis
           </p>
           
           {remaining <= 2 && remaining > 0 && (
@@ -118,7 +126,8 @@ export const UploadStep = ({ workflow }: UploadStepProps) => {
         </CardHeader>
         <CardContent className="space-y-8">
           <UploadSection
-            onImageUpload={handleImageUpload}
+            onImageUpload={handleSingleImageUpload}
+            onMultipleImagesReady={handleMultipleImagesReady}
           />
         </CardContent>
       </Card>
