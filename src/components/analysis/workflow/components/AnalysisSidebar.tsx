@@ -181,3 +181,34 @@ export const AnalysisSidebar = ({
     </div>
   );
 };
+
+// Development helper - remove before production
+const testContextIntelligence = (context: string) => {
+  console.log('🧪 Testing context:', context);
+  const detectedAreas = parseContextForDisplay(context);
+  console.log('🎯 Detected focus areas:', detectedAreas);
+  
+  // Validation results
+  const results = {
+    context,
+    detectedAreas,
+    hasEcommerce: detectedAreas.includes('E-commerce'),
+    hasAccessibility: detectedAreas.includes('Accessibility'),
+    hasMobile: detectedAreas.includes('Mobile UX'),
+    hasConversion: detectedAreas.includes('Conversion'),
+    hasUsability: detectedAreas.includes('Usability'),
+    hasVisualDesign: detectedAreas.includes('Visual Design')
+  };
+  
+  console.log('📊 Test results:', results);
+  return results;
+};
+
+// Test scenarios - uncomment to test context parsing in development
+// console.log('🧪 Running context intelligence tests...');
+// testContextIntelligence("Focus on checkout flow accessibility");
+// testContextIntelligence("Mobile responsiveness review");
+// testContextIntelligence("Conversion optimization analysis");
+// testContextIntelligence("General UX review");
+// console.log('✅ Context intelligence tests completed');
+
