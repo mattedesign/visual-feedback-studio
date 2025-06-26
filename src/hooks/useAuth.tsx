@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -14,48 +14,58 @@ export const useAuth = () => {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     session: null,
-    loading: false, // Start with false to not block public pages
+    loading: true, // Start with true to prevent premature access
     error: null
   });
 
+  const initializedRef = useRef(false);
+  const mountedRef = useRef(true);
+
   useEffect(() => {
-    console.log('useAuth: Setting up auth state listener');
-    let mounted = true;
+    // Prevent multiple initialization
+    if (initializedRef.current) {
+      return;
+    }
+    initializedRef.current = true;
 
-    // Set up auth state listener first
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('useAuth: Auth state changed', { event, hasSession: !!session });
-        if (!mounted) return;
-        
-        setAuthState(prev => ({
-          ...prev,
-          session,
-          user: session?.user ?? null,
-          loading: false,
-          error: null
-        }));
-      }
-    );
+    console.log('useAuth: Initializing auth state (single instance)');
+    
+    let authSubscription: any = null;
 
-    // Initialize session check - but don't block public pages
-    const initialize = async () => {
+    const initializeAuth = async () => {
       try {
+        // Set up auth state listener first
+        authSubscription = supabase.auth.onAuthStateChange(
+          async (event, session) => {
+            console.log('useAuth: Auth state changed', { event, hasSession: !!session });
+            
+            if (!mountedRef.current) return;
+            
+            setAuthState(prev => ({
+              ...prev,
+              session,
+              user: session?.user ?? null,
+              loading: false,
+              error: null
+            }));
+          }
+        );
+
+        // Then check for existing session
         console.log('useAuth: Checking for existing session');
         const { data: { session }, error } = await supabase.auth.getSession();
         
         console.log('useAuth: Session check result', { hasSession: !!session, error });
         
-        if (mounted) {
+        if (mountedRef.current) {
           if (error) {
             console.error('useAuth: Session error:', error);
-            // Don't treat session errors as blocking for public pages
             setAuthState(prev => ({
               ...prev,
               session: null,
               user: null,
               loading: false,
-              error: null // Clear error for public access
+              error: error.message
             }));
           } else {
             setAuthState(prev => ({
@@ -69,40 +79,28 @@ export const useAuth = () => {
         }
       } catch (err) {
         console.error('useAuth: Initialize error:', err);
-        if (mounted) {
-          // Don't block public pages with auth errors
+        if (mountedRef.current) {
           setAuthState(prev => ({
             ...prev,
             session: null,
             user: null,
             loading: false,
-            error: null
+            error: err instanceof Error ? err.message : 'Authentication error'
           }));
         }
       }
     };
 
-    // Quick timeout as backup - but public pages don't depend on this
-    const timeoutId = setTimeout(() => {
-      console.warn('useAuth: Timeout reached, ensuring public access');
-      if (mounted) {
-        setAuthState(prev => ({
-          ...prev,
-          loading: false,
-          error: null
-        }));
-      }
-    }, 500); // Very short timeout since we start with loading: false
-
-    initialize();
+    initializeAuth();
 
     return () => {
       console.log('useAuth: Cleaning up');
-      mounted = false;
-      clearTimeout(timeoutId);
-      subscription.unsubscribe();
+      mountedRef.current = false;
+      if (authSubscription?.data?.subscription) {
+        authSubscription.data.subscription.unsubscribe();
+      }
     };
-  }, []);
+  }, []); // Empty dependency array to run only once
 
   const signOut = async () => {
     try {
