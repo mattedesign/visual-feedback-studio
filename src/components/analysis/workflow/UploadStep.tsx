@@ -1,12 +1,10 @@
-
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { UploadSection } from '@/components/upload/UploadSection';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { createAnalysis } from '@/services/analysisService';
 import { getUserAnalyses } from '@/services/analysisDataService';
 
@@ -15,63 +13,7 @@ interface UploadStepProps {
 }
 
 export const UploadStep = ({ workflow }: UploadStepProps) => {
-  const { canCreateAnalysis, getRemainingAnalyses } = useSubscription();
-  const [creditCheckComplete, setCreditCheckComplete] = useState(false);
-  const [hasCredits, setHasCredits] = useState(true);
-  const navigate = useNavigate();
-  
-  // Perform credit check in background
-  useEffect(() => {
-    const checkCredits = async () => {
-      try {
-        const canCreate = canCreateAnalysis();
-        setHasCredits(canCreate);
-        
-        if (!canCreate) {
-          // Redirect to subscription page instead of showing inline upgrade prompt
-          console.log('User has no credits, redirecting to subscription page');
-          navigate('/subscription');
-          return;
-        }
-        
-        setCreditCheckComplete(true);
-      } catch (error) {
-        console.error('Error checking credits:', error);
-        setCreditCheckComplete(true);
-      }
-    };
-
-    checkCredits();
-  }, [canCreateAnalysis, navigate]);
-
-  // Show loading while credit check is in progress
-  if (!creditCheckComplete) {
-    return (
-      <div className="max-w-4xl mx-auto">
-        <Card className="bg-white border-gray-300 shadow-lg">
-          <CardContent className="p-8 text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p className="text-gray-600">Checking your account...</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // If user doesn't have credits, they should have been redirected already
-  // But this is a fallback in case navigation fails
-  if (!hasCredits) {
-    return (
-      <div className="max-w-4xl mx-auto">
-        <Card className="bg-white border-gray-300 shadow-lg">
-          <CardContent className="p-8 text-center">
-            <p className="text-gray-600 mb-4">Redirecting to subscription page...</p>
-            <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const { getRemainingAnalyses } = useSubscription();
 
   const remaining = getRemainingAnalyses();
 
