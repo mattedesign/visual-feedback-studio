@@ -76,17 +76,17 @@ export const useAuth = () => {
       }
     };
 
-    // Increased timeout from 5 seconds to 15 seconds and improved error message
+    // Reduced timeout from 15 seconds to 5 seconds to prevent blocking UI
     const timeoutId = setTimeout(() => {
       console.warn('useAuth: Timeout reached, forcing loading to false');
       if (mounted) {
         setAuthState(prev => ({
           ...prev,
           loading: false,
-          error: prev.error || 'Network timeout - please refresh the page'
+          error: null // Don't show error on timeout, just stop loading
         }));
       }
-    }, 15000); // Increased to 15 seconds
+    }, 5000); // Reduced to 5 seconds
 
     initialize();
 
