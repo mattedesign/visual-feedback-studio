@@ -42,18 +42,22 @@ export const AnimatedGradientBackground: React.FC<AnimatedGradientBackgroundProp
   const opacity = getIntensityOpacity(intensity);
 
   const gradientStyle = {
-    background: `linear-gradient(-45deg, 
+    background: `linear-gradient(45deg, 
       rgba(147, 51, 234, ${opacity}), 
-      rgba(236, 72, 153, ${opacity}), 
-      rgba(251, 146, 60, ${opacity}), 
-      rgba(45, 212, 191, ${opacity}), 
+      rgba(196, 151, 251, 0.4), 
       rgba(255, 255, 255, 0.9), 
-      rgba(147, 51, 234, ${opacity}), 
       rgba(236, 72, 153, ${opacity}), 
+      rgba(251, 182, 206, 0.4), 
+      rgba(255, 255, 255, 0.9), 
       rgba(251, 146, 60, ${opacity}), 
-      rgba(45, 212, 191, ${opacity})
+      rgba(254, 215, 170, 0.4), 
+      rgba(255, 255, 255, 0.9), 
+      rgba(45, 212, 191, ${opacity}), 
+      rgba(153, 246, 228, 0.4), 
+      rgba(255, 255, 255, 0.9), 
+      rgba(147, 51, 234, ${opacity})
     )`,
-    backgroundSize: '400% 400%',
+    backgroundSize: '1200% 100%',
     animation: `gradientShift ${animationDuration} ease infinite`
   };
 
