@@ -13,7 +13,7 @@ export const HeroSection: React.FC = () => {
 
   const handleGetStarted = () => {
     if (user) {
-      navigate('/dashboard');
+      navigate('/analysis');
     } else {
       navigate('/auth');
     }
@@ -81,7 +81,7 @@ export const HeroSection: React.FC = () => {
             className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-4 text-lg font-bold shadow-2xl border-0 h-14"
             magneticStrength={0.4}
           >
-            {user ? 'Go to Dashboard' : 'Analyze Design for Free'}
+            {user ? 'Start Analysis' : 'Analyze Design for Free'}
             <ArrowRight className="ml-3 h-6 w-6" />
           </MagneticButton>
           
