@@ -7,6 +7,12 @@ import { AuthGuard } from '@/components/auth/AuthGuard';
 import { useAuth } from '@/hooks/useAuth';
 
 const Analysis = () => {
+  // 🔄 LOOP DETECTION: Track component renders
+  console.log('🔄 COMPONENT RENDER:', new Date().toISOString(), {
+    componentName: 'Analysis',
+    renderCount: ++((window as any).analysisPageRenderCount) || ((window as any).analysisPageRenderCount = 1)
+  });
+
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -15,12 +21,10 @@ const Analysis = () => {
     navigate('/auth');
   };
 
-  // Show loading spinner while authentication is being determined
   if (loading) {
     return <LoadingSpinner />;
   }
 
-  // Show auth guard if user is not authenticated
   if (!user) {
     return <AuthGuard />;
   }

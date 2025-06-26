@@ -30,7 +30,6 @@ export const useSubscription = () => {
     try {
       setError(null);
       
-      // First try to get subscription from database
       const { data, error } = await supabase
         .from('user_subscriptions')
         .select('*')
@@ -41,32 +40,8 @@ export const useSubscription = () => {
         throw error;
       }
 
-      // If no subscription found, call check-subscription to initialize
-      if (!data) {
-        console.log('No subscription found, initializing...');
-        const { data: checkResult, error: checkError } = await supabase.functions.invoke('check-subscription');
-        
-        if (checkError) {
-          console.error('Error initializing subscription:', checkError);
-          throw checkError;
-        }
-
-        if (checkResult?.subscription) {
-          const subscriptionData: Subscription = {
-            id: checkResult.subscription.id,
-            plan_type: checkResult.subscription.plan_type as 'freemium' | 'monthly' | 'yearly',
-            status: checkResult.subscription.status as 'active' | 'canceled' | 'past_due' | 'trialing' | 'incomplete',
-            analyses_used: checkResult.subscription.analyses_used,
-            analyses_limit: checkResult.subscription.analyses_limit,
-            current_period_start: checkResult.subscription.current_period_start,
-            current_period_end: checkResult.subscription.current_period_end,
-            stripe_customer_id: checkResult.subscription.stripe_customer_id,
-            stripe_subscription_id: checkResult.subscription.stripe_subscription_id,
-          };
-          setSubscription(subscriptionData);
-        }
-      } else {
-        // Type-safe assignment with proper plan_type casting
+      // Type-safe assignment with proper plan_type casting
+      if (data) {
         const subscriptionData: Subscription = {
           id: data.id,
           plan_type: data.plan_type as 'freemium' | 'monthly' | 'yearly',
@@ -79,6 +54,8 @@ export const useSubscription = () => {
           stripe_subscription_id: data.stripe_subscription_id,
         };
         setSubscription(subscriptionData);
+      } else {
+        setSubscription(null);
       }
     } catch (err) {
       console.error('Error fetching subscription:', err);

@@ -1,7 +1,6 @@
 
 import { SubscriptionCheckout } from '@/components/subscription/SubscriptionCheckout';
 import { SubscriptionStatus } from '@/components/subscription/SubscriptionStatus';
-import { StripeDebugPanel } from '@/components/subscription/StripeDebugPanel';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
@@ -22,28 +21,16 @@ export default function Subscription() {
     );
   }
 
-  // Show pricing cards for freemium users or users without subscription
-  // Only show subscription status for paid subscribers (monthly/yearly)
-  const shouldShowPricingCards = !subscription || 
-    subscription.status !== 'active' || 
-    subscription.plan_type === 'freemium';
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto py-8">
-        {shouldShowPricingCards ? (
-          <>
-            <SubscriptionCheckout />
-            <div className="max-w-4xl mx-auto">
-              <StripeDebugPanel />
-            </div>
-          </>
-        ) : (
+        {subscription && subscription.status === 'active' ? (
           <div className="max-w-2xl mx-auto">
             <h1 className="text-3xl font-bold text-center mb-8">Your Subscription</h1>
             <SubscriptionStatus />
-            <StripeDebugPanel />
           </div>
+        ) : (
+          <SubscriptionCheckout />
         )}
       </div>
     </div>

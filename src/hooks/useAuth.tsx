@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -14,58 +14,39 @@ export const useAuth = () => {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     session: null,
-    loading: true, // Start with true to prevent premature access
+    loading: true,
     error: null
   });
 
-  const initializedRef = useRef(false);
-  const mountedRef = useRef(true);
-
   useEffect(() => {
-    // Prevent multiple initialization
-    if (initializedRef.current) {
-      return;
-    }
-    initializedRef.current = true;
+    let mounted = true;
 
-    console.log('useAuth: Initializing auth state (single instance)');
-    
-    let authSubscription: any = null;
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mounted) return;
+        
+        setAuthState(prev => ({
+          ...prev,
+          session,
+          user: session?.user ?? null,
+          loading: false,
+          error: null
+        }));
+      }
+    );
 
-    const initializeAuth = async () => {
+    // Initialize session check
+    const initialize = async () => {
       try {
-        // Set up auth state listener first
-        authSubscription = supabase.auth.onAuthStateChange(
-          async (event, session) => {
-            console.log('useAuth: Auth state changed', { event, hasSession: !!session });
-            
-            if (!mountedRef.current) return;
-            
-            setAuthState(prev => ({
-              ...prev,
-              session,
-              user: session?.user ?? null,
-              loading: false,
-              error: null
-            }));
-          }
-        );
-
-        // Then check for existing session
-        console.log('useAuth: Checking for existing session');
         const { data: { session }, error } = await supabase.auth.getSession();
         
-        console.log('useAuth: Session check result', { hasSession: !!session, error });
-        
-        if (mountedRef.current) {
+        if (mounted) {
           if (error) {
-            console.error('useAuth: Session error:', error);
             setAuthState(prev => ({
               ...prev,
-              session: null,
-              user: null,
-              loading: false,
-              error: error.message
+              error: error.message,
+              loading: false
             }));
           } else {
             setAuthState(prev => ({
@@ -78,44 +59,35 @@ export const useAuth = () => {
           }
         }
       } catch (err) {
-        console.error('useAuth: Initialize error:', err);
-        if (mountedRef.current) {
+        if (mounted) {
           setAuthState(prev => ({
             ...prev,
-            session: null,
-            user: null,
-            loading: false,
-            error: err instanceof Error ? err.message : 'Authentication error'
+            error: err instanceof Error ? err.message : 'Session check failed',
+            loading: false
           }));
         }
       }
     };
 
-    initializeAuth();
+    initialize();
 
     return () => {
-      console.log('useAuth: Cleaning up');
-      mountedRef.current = false;
-      if (authSubscription?.data?.subscription) {
-        authSubscription.data.subscription.unsubscribe();
-      }
+      mounted = false;
+      subscription.unsubscribe();
     };
-  }, []); // Empty dependency array to run only once
+  }, []);
 
   const signOut = async () => {
     try {
-      console.log('useAuth: Signing out');
       setAuthState(prev => ({ ...prev, error: null }));
       
       const { error } = await supabase.auth.signOut();
       
       if (error) {
-        console.error('useAuth: Sign out error:', error);
         setAuthState(prev => ({ ...prev, error: error.message }));
         throw error;
       }
     } catch (err) {
-      console.error('useAuth: Sign out exception:', err);
       throw err;
     }
   };

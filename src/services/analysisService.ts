@@ -99,8 +99,6 @@ const analyzeDesign = async (request: AnalyzeDesignRequest): Promise<AnalyzeDesi
       const usageIncremented = await subscriptionService.incrementUsage();
       if (!usageIncremented) {
         console.warn('Failed to increment usage counter after successful analysis');
-      } else {
-        console.log('✅ Usage counter incremented successfully');
       }
     }
 

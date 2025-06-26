@@ -9,10 +9,15 @@ import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { useAuth } from '@/hooks/useAuth';
 
 export const AnalysisWorkflow = () => {
+  // 🔄 LOOP DETECTION: Track component renders
+  console.log('🔄 COMPONENT RENDER:', new Date().toISOString(), {
+    componentName: 'AnalysisWorkflow',
+    renderCount: ++((window as any).analysisWorkflowRenderCount) || ((window as any).analysisWorkflowRenderCount = 1)
+  });
+
   const { user } = useAuth();
   const workflow = useAnalysisWorkflow();
 
-  // Don't render if no user (should be handled by parent component)
   if (!user) {
     return null;
   }

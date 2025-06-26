@@ -1,7 +1,6 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { ComparativeAnalysisSummary } from '../ComparativeAnalysisSummary';
 import { ImageTabsViewer } from './components/ImageTabsViewer';
@@ -17,26 +16,12 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
   const [activeAnnotation, setActiveAnnotation] = useState<string | null>(null);
   const [activeImageUrl, setActiveImageUrl] = useState(workflow.selectedImages[0] || '');
 
-  // Collapsible state
-  const [isCriticalExpanded, setIsCriticalExpanded] = useState(true);
-  const [isSuggestedExpanded, setIsSuggestedExpanded] = useState(false);
-  const [isEnhancementExpanded, setIsEnhancementExpanded] = useState(false);
-
   const getSeverityColor = (severity: string) =>  {
     switch (severity) {
       case 'critical': return 'bg-red-600 text-white border-red-500';
       case 'suggested': return 'bg-yellow-600 text-white border-yellow-500';
       case 'enhancement': return 'bg-blue-600 text-white border-blue-500';
       default: return 'bg-purple-600 text-white border-purple-500';
-    }
-  };
-
-  const getSeverityBgColor = (severity: string) => {
-    switch (severity) {
-      case 'critical': return 'bg-red-50 border-red-200';
-      case 'suggested': return 'bg-yellow-50 border-yellow-200';
-      case 'enhancement': return 'bg-blue-50 border-blue-200';
-      default: return 'bg-purple-50 border-purple-200';
     }
   };
 
@@ -73,33 +58,6 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
 
   const currentImageAIAnnotations = getAnnotationsForImage(activeImageIndex);
   const currentImageUserAnnotations = getUserAnnotationsForImage(activeImageUrl);
-
-  // Group annotations by severity for better organization
-  const groupAnnotationsBySeverity = (annotations: typeof workflow.aiAnnotations) => {
-    const critical = annotations.filter(a => a.severity === 'critical');
-    const suggested = annotations.filter(a => a.severity === 'suggested');
-    const enhancement = annotations.filter(a => a.severity === 'enhancement');
-    
-    return { critical, suggested, enhancement };
-  };
-
-  const { critical, suggested, enhancement } = groupAnnotationsBySeverity(
-    isMultiImage ? currentImageAIAnnotations : workflow.aiAnnotations
-  );
-
-  // Smart defaults: if no critical issues, open suggested by default
-  useState(() => {
-    if (critical.length === 0 && suggested.length > 0) {
-      setIsCriticalExpanded(false);
-      setIsSuggestedExpanded(true);
-    }
-  });
-
-  // Calculate summary stats
-  const totalFindings = workflow.aiAnnotations.length;
-  const criticalCount = workflow.aiAnnotations.filter(a => a.severity === 'critical').length;
-  const suggestedCount = workflow.aiAnnotations.filter(a => a.severity === 'suggested').length;
-  const enhancementCount = workflow.aiAnnotations.filter(a => a.severity === 'enhancement').length;
 
   // Generate business impact data from annotations
   const generateBusinessImpact = () => {
@@ -197,86 +155,6 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
   const businessImpact = generateBusinessImpact();
   const insights = generateInsights();
 
-  // Enhanced collapsible section renderer
-  const renderCollapsibleSection = (
-    annotations: typeof workflow.aiAnnotations, 
-    title: string, 
-    severity: string, 
-    icon: string,
-    isExpanded: boolean,
-    setExpanded: (expanded: boolean) => void
-  ) => {
-    if (annotations.length === 0) return null;
-
-    return (
-      <div className={`rounded-lg border-2 ${getSeverityBgColor(severity)} transition-all duration-200`}>
-        <div 
-          className="flex items-center gap-3 p-6 cursor-pointer hover:bg-white/50 transition-colors duration-200"
-          onClick={() => setExpanded(!isExpanded)}
-        >
-          <span className="text-2xl">{icon}</span>
-          <h3 className="text-xl font-bold text-gray-900 flex-1">{title}</h3>
-          <Badge className={`${getSeverityColor(severity)} font-semibold`}>
-            {annotations.length} {annotations.length === 1 ? 'item' : 'items'}
-          </Badge>
-          <div className="ml-2 transition-transform duration-200">
-            {isExpanded ? (
-              <ChevronUp className="w-6 h-6 text-gray-600" />
-            ) : (
-              <ChevronDown className="w-6 h-6 text-gray-600" />
-            )}
-          </div>
-        </div>
-        
-        <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
-          isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
-        }`}>
-          <div className="px-6 pb-6 space-y-4">
-            {annotations.map((annotation) => (
-              <div
-                key={annotation.id}
-                className={`bg-white border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 hover:shadow-md ${
-                  activeAnnotation === annotation.id
-                    ? 'border-blue-500 shadow-lg'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-                onClick={() => setActiveAnnotation(annotation.id)}
-              >
-                <div className="flex items-start gap-3">
-                  <span className="text-xl flex-shrink-0 mt-1">
-                    {getCategoryIcon(annotation.category)}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Badge className={`text-sm font-semibold ${getSeverityColor(annotation.severity)}`}>
-                        {annotation.severity.toUpperCase()}
-                      </Badge>
-                      <span className="text-sm font-semibold capitalize text-gray-700">
-                        {annotation.category}
-                      </span>
-                      {isMultiImage && (
-                        <Badge variant="outline" className="text-sm font-semibold border-gray-400 text-gray-700">
-                          Image {(annotation.imageIndex ?? 0) + 1}
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-base text-gray-800 leading-relaxed font-medium mb-3">
-                      {annotation.feedback}
-                    </p>
-                    <div className="flex gap-4 text-sm text-gray-600 font-semibold">
-                      <span>Effort: <span className="capitalize">{annotation.implementationEffort}</span></span>
-                      <span>Impact: <span className="capitalize">{annotation.businessImpact}</span></span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="max-w-7xl mx-auto">
       <Card className="bg-white border-gray-300 shadow-lg">
@@ -284,38 +162,15 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
           <CardTitle className="text-3xl text-center font-bold text-gray-900">
             {isMultiImage ? 'Comparative Analysis Results' : 'Analysis Results'}
           </CardTitle>
-          
-          {/* Summary Stats */}
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 mt-6">
-            <div className="text-center mb-4">
-              <h3 className="text-2xl font-bold text-gray-900">Analysis Summary</h3>
-              <p className="text-gray-700 text-lg">
-                {totalFindings} total findings discovered across your design
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white rounded-lg p-4 border-2 border-red-200 text-center">
-                <div className="text-3xl font-black text-red-600 mb-1">{criticalCount}</div>
-                <div className="text-sm font-semibold text-red-700">Critical Issues</div>
-                <div className="text-xs text-red-600 mt-1">Need immediate attention</div>
-              </div>
-              
-              <div className="bg-white rounded-lg p-4 border-2 border-yellow-200 text-center">
-                <div className="text-3xl font-black text-yellow-600 mb-1">{suggestedCount}</div>
-                <div className="text-sm font-semibold text-yellow-700">Suggested Improvements</div>
-                <div className="text-xs text-yellow-600 mt-1">Important enhancements</div>
-              </div>
-              
-              <div className="bg-white rounded-lg p-4 border-2 border-blue-200 text-center">
-                <div className="text-3xl font-black text-blue-600 mb-1">{enhancementCount}</div>
-                <div className="text-sm font-semibold text-blue-700">Enhancement Opportunities</div>
-                <div className="text-xs text-blue-600 mt-1">Optional optimizations</div>
-              </div>
-            </div>
-          </div>
+          <p className="text-gray-700 text-center text-lg leading-relaxed">
+            {businessImpact ? 
+              `Analysis completed with business impact quantification. Total revenue potential: ${businessImpact.totalPotentialRevenue}` :
+              isMultiImage 
+                ? `Analysis completed across ${workflow.selectedImages.length} images. Click annotations for detailed feedback.`
+                : 'Click on any annotation to see detailed feedback'
+            }
+          </p>
         </CardHeader>
-        
         <CardContent className="space-y-8">
           {/* Comparative Analysis Summary */}
           {isMultiImage && (
@@ -351,7 +206,7 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
               )}
             </div>
 
-            {/* Feedback panel - updated to use existing component */}
+            {/* Feedback panel */}
             <FeedbackPanel
               currentImageAIAnnotations={currentImageAIAnnotations}
               currentImageUserAnnotations={currentImageUserAnnotations}
@@ -364,50 +219,6 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
               businessImpact={businessImpact}
               insights={insights}
             />
-          </div>
-
-          {/* Collapsible Grouped Findings Section */}
-          <div className="space-y-6">
-            <div className="border-t border-gray-200 pt-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
-                {isMultiImage ? `Detailed Findings - Image ${activeImageIndex + 1}` : 'Detailed Findings'}
-              </h2>
-              
-              <div className="space-y-6">
-                {renderCollapsibleSection(
-                  critical, 
-                  'Critical Issues', 
-                  'critical', 
-                  '🚨',
-                  isCriticalExpanded,
-                  setIsCriticalExpanded
-                )}
-                
-                {renderCollapsibleSection(
-                  suggested, 
-                  'Suggested Improvements', 
-                  'suggested', 
-                  '⚠️',
-                  isSuggestedExpanded,
-                  setIsSuggestedExpanded
-                )}
-                
-                {renderCollapsibleSection(
-                  enhancement, 
-                  'Enhancement Opportunities', 
-                  'enhancement', 
-                  '💡',
-                  isEnhancementExpanded,
-                  setIsEnhancementExpanded
-                )}
-                
-                {critical.length === 0 && suggested.length === 0 && enhancement.length === 0 && (
-                  <div className="text-center py-12 text-gray-500">
-                    <p className="text-lg">No findings for this section.</p>
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
 
           <ResultsActions onStartNew={handleStartNew} />
