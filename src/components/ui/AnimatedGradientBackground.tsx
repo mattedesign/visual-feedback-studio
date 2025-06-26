@@ -1,7 +1,7 @@
 
 import React from 'react';
 
-export type ColorVariant = 'purple' | 'blue' | 'orange' | 'green' | 'red';
+export type ColorVariant = 'purple' | 'blue' | 'orange' | 'green' | 'red' | 'pink' | 'peach';
 export type IntensityLevel = 'subtle' | 'medium' | 'bold';
 export type SpeedOption = 'slow' | 'normal' | 'fast';
 
@@ -50,6 +50,16 @@ const getColorClasses = (variant: ColorVariant, intensity: IntensityLevel) => {
       subtle: 'from-red-300/30 via-red-400/20 to-red-500/15',
       medium: 'from-red-400/50 via-red-500/35 to-red-600/25',
       bold: 'from-red-500/70 via-red-600/55 to-red-700/40'
+    },
+    pink: {
+      subtle: 'from-pink-300/30 via-pink-400/20 to-pink-500/15',
+      medium: 'from-pink-400/50 via-pink-500/35 to-pink-600/25',
+      bold: 'from-pink-500/70 via-pink-600/55 to-pink-700/40'
+    },
+    peach: {
+      subtle: 'from-orange-200/30 via-pink-300/20 to-orange-300/15',
+      medium: 'from-orange-300/50 via-pink-400/35 to-orange-400/25',
+      bold: 'from-orange-400/70 via-pink-500/55 to-orange-500/40'
     }
   };
 
@@ -110,12 +120,12 @@ export const AnimatedGradientBackground: React.FC<AnimatedGradientBackgroundProp
   orbCount = 6,
   className = ''
 }) => {
-  // Using analogous colors that flow harmoniously together
-  const colorVariants: ColorVariant[] = ['purple', 'blue', 'purple', 'blue', 'purple', 'blue'];
+  // Using warm analogous colors with pinks and peach tones
+  const colorVariants: ColorVariant[] = ['purple', 'pink', 'peach', 'blue', 'pink', 'peach'];
   
   const orbs = React.useMemo(() => 
     Array.from({ length: orbCount }, (_, index) => {
-      // Use analogous color palette for harmonic visual flow
+      // Use warm color palette with pinks and peach for a softer visual flow
       const orbVariant = colorVariants[index % colorVariants.length];
       
       return {
