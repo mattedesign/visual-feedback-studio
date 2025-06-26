@@ -1,7 +1,6 @@
 import { loadStripe } from '@stripe/stripe-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { getStripeConfig } from '@/config/pricingPlans';
 
 // TypeScript interfaces
 export interface StripeCustomer {
@@ -71,7 +70,7 @@ export const stripeService = {
 
       if (error) {
         console.error('Error creating Stripe customer:', error);
-        toast.error(`Failed to create customer account: ${error.message}`);
+        toast.error('Failed to create customer account');
         return null;
       }
 
@@ -109,7 +108,7 @@ export const stripeService = {
 
       if (error) {
         console.error('Error creating checkout session:', error);
-        toast.error(`Failed to create payment session: ${error.message}`);
+        toast.error('Failed to create payment session');
         return null;
       }
 
@@ -255,7 +254,12 @@ export const stripeService = {
    * Get pricing configuration
    */
   getPricingConfig() {
-    return getStripeConfig();
+    return {
+      monthlyPriceId: "price_1RdxIAB0UJfBqFIHrJkzb238",
+      yearlyPriceId: "price_1RdxIfB0UJfBqFIHMGtudpgk",
+      monthlyAmount: 1999, // $19.99 in cents
+      yearlyAmount: 19900, // $199.00 in cents
+    };
   },
 
   /**

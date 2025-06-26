@@ -1,47 +1,37 @@
-import { Toaster } from "@/components/ui/sonner";
+
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import AmazonLanding from "./pages/AmazonLanding";
-import AmazonAuth from "./pages/AmazonAuth";
-import AmazonAnalysis from "./pages/AmazonAnalysis";
-import UXConsultant from "./pages/UXConsultant";
 import Index from "./pages/Index";
 import Analysis from "./pages/Analysis";
-import Subscription from "./pages/Subscription";
+import Auth from "./pages/Auth";
 import VectorTest from "./pages/VectorTest";
+import Subscription from "./pages/Subscription";
 import NotFound from "./pages/NotFound";
-
-// Import Amazon design system
-import "./styles/amazon-design-system.css";
 
 const queryClient = new QueryClient();
 
-function App() {
+const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
+        <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* New Amazon-inspired pages */}
-            <Route path="/" element={<AmazonLanding />} />
-            <Route path="/auth" element={<AmazonAuth />} />
-            <Route path="/analysis" element={<AmazonAnalysis />} />
-            <Route path="/consultant" element={<UXConsultant />} />
-            
-            {/* Keep existing pages for backward compatibility */}
-            <Route path="/landing" element={<AmazonLanding />} />
-            <Route path="/dashboard" element={<Index />} />
-            <Route path="/old-analysis" element={<Analysis />} />
-            <Route path="/subscription" element={<Subscription />} />
+            <Route path="/" element={<Index />} />
+            <Route path="/analysis" element={<Analysis />} />
+            <Route path="/auth" element={<Auth />} />
             <Route path="/vector-test" element={<VectorTest />} />
+            <Route path="/subscription" element={<Subscription />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
   );
-}
+};
 
 export default App;

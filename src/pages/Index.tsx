@@ -1,138 +1,131 @@
 
 import { useNavigate } from 'react-router-dom';
+import { Header } from '@/components/layout/Header';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { AuthGuard } from '@/components/auth/AuthGuard';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
-import { useEffect } from 'react';
-import { LoadingSpinner } from '@/components/common/LoadingSpinner';
-import { AmazonCard, AmazonCardContent } from '@/components/ui/AmazonCard';
-import { AmazonButton } from '@/components/ui/AmazonButton';
+import { Zap, Crown, Plus, Settings } from 'lucide-react';
 
 const Index = () => {
-  const { user, loading, signOut, error } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const { subscription, loading: subscriptionLoading } = useSubscription();
   const navigate = useNavigate();
 
-  // Debug logging
-  useEffect(() => {
-    console.log('Index component mounted');
-    console.log('Auth state:', { 
-      hasUser: !!user, 
-      userEmail: user?.email,
-      loading,
-      error,
-      subscriptionLoading
-    });
-  }, [user, loading, error, subscriptionLoading]);
-
   const handleSignOut = async () => {
-    console.log('Sign out initiated');
-    try {
-      await signOut();
-      navigate('/');
-    } catch (err) {
-      console.error('Sign out failed:', err);
-    }
+    await signOut();
+    navigate('/auth');
   };
 
-  const handleRetry = () => {
-    window.location.reload();
-  };
-
-  // Show loading state
   if (loading || subscriptionLoading) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <LoadingSpinner />
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
-  // Show auth error state with retry option
-  if (error) {
-    console.log('Auth error state:', error);
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-        <AmazonCard className="max-w-md w-full text-center">
-          <AmazonCardContent>
-            <div className="text-6xl mb-4">⚠️</div>
-            <h2 className="text-2xl font-bold mb-4 text-red-600">Authentication Error</h2>
-            <p className="text-lg mb-6 text-gray-700">{error}</p>
-            <div className="space-y-3">
-              <AmazonButton 
-                onClick={handleRetry}
-                className="w-full"
-              >
-                Retry
-              </AmazonButton>
-              <AmazonButton 
-                onClick={() => navigate('/auth')} 
-                variant="secondary"
-                className="w-full"
-              >
-                Go to Login
-              </AmazonButton>
-            </div>
-          </AmazonCardContent>
-        </AmazonCard>
-      </div>
-    );
-  }
-
-  // Show not authenticated state
   if (!user) {
-    console.log('No user found, redirecting to home');
-    navigate('/');
-    return null;
+    return <AuthGuard />;
   }
 
-  console.log('User authenticated, rendering main dashboard');
+  const handleStartAnalysis = () => {
+    navigate('/analysis');
+  };
 
-  // Show success state for authenticated users
+  const handleManageSubscription = () => {
+    navigate('/subscription');
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-      <AmazonCard className="max-w-2xl w-full">
-        <AmazonCardContent className="text-center">
-          <div className="text-6xl mb-6">🎉</div>
-          <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
-            Welcome to Figmant.ai
-          </h1>
-          
-          <div className="text-left bg-slate-50 p-6 rounded-lg mb-6">
-            <h3 className="text-lg font-semibold mb-3 text-gray-800">User Info:</h3>
-            <div className="space-y-2 text-gray-700">
-              <div>📧 Email: {user.email}</div>
-              <div>🆔 ID: {user.id}</div>
-              <div>📅 Created: {new Date(user.created_at).toLocaleDateString()}</div>
-            </div>
+    <div className="min-h-screen bg-slate-900 text-white">
+      <Header user={user} onSignOut={handleSignOut} />
+      
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold mb-4">Welcome to DesignAI</h1>
+            <p className="text-xl text-slate-300">
+              AI-powered design analysis and feedback
+            </p>
           </div>
 
-          {subscription && (
-            <div className="text-left bg-slate-50 p-6 rounded-lg mb-6">
-              <h3 className="text-lg font-semibold mb-3 text-gray-800">Subscription Info:</h3>
-              <div className="space-y-2 text-gray-700">
-                <div>📋 Plan: {subscription.plan_type}</div>
-                <div>📊 Analyses: {subscription.analyses_used} / {subscription.analyses_limit}</div>
-              </div>
-            </div>
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
+            <Card className="bg-slate-800 border-slate-700">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Plus className="h-5 w-5" />
+                  Start New Analysis
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-slate-300 mb-4">
+                  Upload your designs and get AI-powered insights and recommendations.
+                </p>
+                <Button onClick={handleStartAnalysis} className="w-full">
+                  Create Analysis
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-slate-800 border-slate-700">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  Manage Subscription
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {subscription ? (
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      {subscription.plan_type === 'freemium' ? (
+                        <Zap className="h-4 w-4" />
+                      ) : (
+                        <Crown className="h-4 w-4" />
+                      )}
+                      <span className="capitalize font-medium">
+                        {subscription.plan_type} Plan
+                      </span>
+                    </div>
+                    <p className="text-slate-300 mb-4">
+                      {subscription.analyses_used} / {subscription.analyses_limit} analyses used
+                    </p>
+                    <Button onClick={handleManageSubscription} variant="outline" className="w-full">
+                      {subscription.plan_type === 'freemium' ? 'Upgrade Plan' : 'Manage Subscription'}
+                    </Button>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-slate-300 mb-4">
+                      Manage your subscription and billing settings.
+                    </p>
+                    <Button onClick={handleManageSubscription} variant="outline" className="w-full">
+                      View Subscription
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {subscription && subscription.plan_type === 'freemium' && (
+            <Card className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 border-purple-500/50">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Upgrade to Pro</h3>
+                    <p className="text-slate-300">
+                      Get unlimited analyses and advanced features
+                    </p>
+                  </div>
+                  <Button onClick={handleManageSubscription} className="bg-purple-600 hover:bg-purple-700">
+                    Upgrade Now
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           )}
-
-          <div className="flex flex-col sm:flex-row gap-4">
-            <AmazonButton 
-              onClick={() => navigate('/analysis')} 
-              className="flex-1"
-            >
-              Start Analysis
-            </AmazonButton>
-            <AmazonButton 
-              onClick={handleSignOut} 
-              variant="secondary"
-              className="flex-1"
-            >
-              Sign Out
-            </AmazonButton>
-          </div>
-        </AmazonCardContent>
-      </AmazonCard>
+        </div>
+      </div>
     </div>
   );
 };
