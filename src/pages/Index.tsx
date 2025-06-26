@@ -1,3 +1,4 @@
+
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
@@ -59,7 +60,6 @@ const Index = () => {
   return (
     <GradientLayout variant="purple" intensity="medium" speed="normal">
       <div className="min-h-screen bg-slate-900/80 text-white backdrop-blur-sm">
-        {console.log('Rendering Header component')}
         <Header user={user} onSignOut={handleSignOut} />
         
         <div className="container mx-auto px-4 py-8">
@@ -68,19 +68,16 @@ const Index = () => {
             <EnhancedStyleTester />
             
             {/* Hero Section with Gradient Title */}
-            {console.log('Rendering hero section with gradient title')}
             <div className="text-center mb-12 animate-fade-in">
               <h1 className="text-6xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent animate-glow">
                 Design Analysis Tool
               </h1>
-              {console.log('Gradient title rendered')}
               
               <p className="text-xl text-slate-200 mb-8 max-w-2xl mx-auto">
                 Upload your designs and get AI-powered feedback on UX, accessibility, and conversion optimization
               </p>
               
               {/* Main CTA Button */}
-              {console.log('Rendering main CTA button')}
               <Button 
                 onClick={handleStartAnalysis} 
                 className="enhanced-button-primary text-lg px-8 py-4 mb-8 animate-pulse"
@@ -92,7 +89,6 @@ const Index = () => {
             </div>
 
             {/* Dashboard Cards */}
-            {console.log('Rendering dashboard cards')}
             <div className="grid md:grid-cols-2 gap-6 mb-12">
               <Card className="bg-slate-800/70 border-slate-700 backdrop-blur-sm hover-lift">
                 <CardHeader>
@@ -172,7 +168,6 @@ const Index = () => {
             )}
 
             {/* RAG Test Component */}
-            {console.log('Rendering DirectRAGTestSimple component')}
             <div className="mt-12">
               <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
                 <CardHeader>
