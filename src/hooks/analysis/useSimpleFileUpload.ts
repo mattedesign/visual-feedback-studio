@@ -1,6 +1,5 @@
 
 import { useState } from 'react';
-import { toast } from 'sonner';
 import { createAnalysis } from '@/services/analysisService';
 import { uploadFileToStorage } from '@/services/fileUploadService';
 
@@ -15,19 +14,19 @@ export const useSimpleFileUpload = () => {
       
       // Validate file
       if (!file.type.startsWith('image/')) {
-        toast.error('Please upload an image file');
+        console.error('Invalid file type - not an image');
         return null;
       }
 
       if (file.size > 50 * 1024 * 1024) { // 50MB limit
-        toast.error('File size must be less than 50MB');
+        console.error('File size too large');
         return null;
       }
       
       // Create analysis first
       const analysisId = await createAnalysis();
       if (!analysisId) {
-        toast.error('Failed to create analysis record');
+        console.error('Failed to create analysis record');
         return null;
       }
 
@@ -36,18 +35,16 @@ export const useSimpleFileUpload = () => {
       // Upload file to storage
       const publicUrl = await uploadFileToStorage(file, analysisId);
       if (!publicUrl) {
-        toast.error('File upload failed');
+        console.error('File upload failed');
         return null;
       }
 
       console.log('File upload completed successfully, URL:', publicUrl);
-      toast.success('File uploaded successfully!');
       
       return publicUrl;
       
     } catch (error) {
       console.error('Error during file upload process:', error);
-      toast.error('Failed to upload file');
       return null;
     } finally {
       setIsUploading(false);

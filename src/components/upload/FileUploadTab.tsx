@@ -1,7 +1,7 @@
 
-import { useCallback, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, Image, X } from 'lucide-react';
+import { Upload, Image, X, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -23,6 +23,7 @@ export const FileUploadTab = ({
   onContinue 
 }: FileUploadTabProps) => {
   const [isDragActive, setIsDragActive] = useState(false);
+  const [recentlyUploaded, setRecentlyUploaded] = useState<Set<string>>(new Set());
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     // Process each file individually
@@ -30,6 +31,27 @@ export const FileUploadTab = ({
       onFileUpload(file);
     });
   }, [onFileUpload]);
+
+  // Track when new images are added to show success indicator
+  const handleImageSuccess = (imageUrl: string) => {
+    setRecentlyUploaded(prev => new Set([...prev, imageUrl]));
+    // Remove the success indicator after 3 seconds
+    setTimeout(() => {
+      setRecentlyUploaded(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(imageUrl);
+        return newSet;
+      });
+    }, 3000);
+  };
+
+  // Watch for new images and trigger success indicator
+  React.useEffect(() => {
+    const latestImage = uploadedImages[uploadedImages.length - 1];
+    if (latestImage && !recentlyUploaded.has(latestImage)) {
+      handleImageSuccess(latestImage);
+    }
+  }, [uploadedImages, recentlyUploaded]);
 
   const { getRootProps, getInputProps } = useDropzone({
     onDrop,
@@ -75,7 +97,7 @@ export const FileUploadTab = ({
           </div>
         )}
 
-        {/* Image Previews */}
+        {/* Image Previews with Success Indicators */}
         {uploadedImages.length > 0 && (
           <div className="mb-6">
             <h4 className="text-lg font-semibold mb-4 text-slate-200">
@@ -84,16 +106,26 @@ export const FileUploadTab = ({
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {uploadedImages.map((imageUrl, index) => (
                 <div key={imageUrl} className="relative group">
-                  <div className="aspect-square rounded-lg overflow-hidden bg-slate-700 border border-slate-600">
+                  <div className="aspect-square rounded-lg overflow-hidden bg-slate-700 border border-slate-600 relative">
                     <img
                       src={imageUrl}
                       alt={`Upload ${index + 1}`}
                       className="w-full h-full object-cover"
                     />
+                    
+                    {/* Success Indicator */}
+                    {recentlyUploaded.has(imageUrl) && (
+                      <div className="absolute inset-0 bg-green-500/20 border-2 border-green-500 rounded-lg flex items-center justify-center animate-fade-in">
+                        <div className="bg-green-500 text-white rounded-full p-2 shadow-lg">
+                          <CheckCircle2 className="w-6 h-6" />
+                        </div>
+                      </div>
+                    )}
                   </div>
+                  
                   <button
                     onClick={() => onRemoveImage(imageUrl)}
-                    className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
                     disabled={isProcessing}
                   >
                     <X className="w-4 h-4" />
