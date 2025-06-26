@@ -107,7 +107,7 @@ const GradientOrb: React.FC<GradientOrbProps> = ({
 
   return (
     <div
-      className={`absolute rounded-full bg-gradient-to-br ${colorClasses} ${sizeClasses} blur-xl ${animationClass} will-change-transform pointer-events-none`}
+      className={`absolute rounded-full bg-gradient-to-br ${colorClasses} ${sizeClasses} blur-3xl ${animationClass} will-change-transform pointer-events-none`}
       style={style}
     />
   );
