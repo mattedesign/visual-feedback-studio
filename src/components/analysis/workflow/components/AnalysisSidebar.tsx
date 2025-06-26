@@ -1,7 +1,6 @@
-
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Eye, X } from 'lucide-react';
+import { Eye, X, Sparkles } from 'lucide-react';
 
 interface Annotation {
   id: string;
@@ -37,6 +36,21 @@ export const AnalysisSidebar = ({
   const handleContextChange = (value: string) => {
     console.log('AnalysisSidebar: User context changed:', value.substring(0, 50) + '...');
     onAnalysisContextChange(value);
+  };
+
+  // Context suggestion chips
+  const contextSuggestions = [
+    'UX & Usability',
+    'Accessibility Review', 
+    'Conversion Focus',
+    'Mobile Experience',
+    'Visual Design'
+  ];
+
+  const handleSuggestionClick = (suggestion: string) => {
+    const currentText = userContext.trim();
+    const newText = currentText ? `${currentText}, ${suggestion}` : suggestion;
+    handleContextChange(newText);
   };
 
   return (
@@ -93,7 +107,7 @@ export const AnalysisSidebar = ({
         </div>
       </div>
 
-      {/* User analysis context input */}
+      {/* User analysis context input with enhanced suggestions */}
       <div>
         <label className="block text-sm font-medium mb-2">
           {isComparative ? 'Comparative Analysis Context' : 'General Analysis Context'}
@@ -111,6 +125,29 @@ export const AnalysisSidebar = ({
         />
         <div className="text-xs text-slate-400 mt-1">
           This context will guide the AI analysis and help provide more relevant insights.
+        </div>
+        
+        {/* Context suggestion chips */}
+        <div className="mt-3 space-y-2">
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <Sparkles className="w-3 h-3" />
+            <span>Quick context suggestions:</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {contextSuggestions.map((suggestion) => (
+              <button
+                key={suggestion}
+                onClick={() => handleSuggestionClick(suggestion)}
+                className="px-2 py-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-full transition-colors"
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1 text-xs text-slate-500">
+            <Sparkles className="w-3 h-3" />
+            <span>AI will use this for targeted research</span>
+          </div>
         </div>
       </div>
     </div>
