@@ -44,7 +44,13 @@ const Analysis = () => {
   const canAnalyze = canCreateAnalysis();
   const needsSub = needsSubscription();
 
-  // If user needs subscription, show upgrade modal
+  console.log('📊 Analysis page subscription check:', {
+    canAnalyze,
+    needsSub,
+    userEmail: user.email
+  });
+
+  // If user needs subscription and cannot analyze, show upgrade modal
   if (needsSub && !canAnalyze) {
     return (
       <div className="min-h-screen bg-slate-900 text-white">
@@ -56,7 +62,7 @@ const Analysis = () => {
           </p>
           <button
             onClick={() => setShowUpgradeModal(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg text-lg"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg text-lg transition-colors"
           >
             View Plans
           </button>

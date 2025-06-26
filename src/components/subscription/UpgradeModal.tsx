@@ -31,11 +31,15 @@ export const UpgradeModal = ({ isOpen, onClose }: UpgradeModalProps) => {
     setLoading(priceId);
     
     try {
+      console.log('🚀 Starting subscription process:', { priceId, planName, userEmail: user.email });
+      
       // Create or get Stripe customer
       const customer = await stripeService.createStripeCustomer(user.email!, user.id);
       if (!customer) {
         throw new Error('Failed to create customer');
       }
+
+      console.log('✅ Stripe customer ready:', customer.id);
 
       // Create checkout session
       const session = await stripeService.createCheckoutSession({
@@ -53,10 +57,14 @@ export const UpgradeModal = ({ isOpen, onClose }: UpgradeModalProps) => {
         throw new Error('Failed to create checkout session');
       }
 
+      console.log('✅ Checkout session created:', session.id);
+
       // Open Stripe Checkout in new tab
       window.open(session.url, '_blank');
+      
+      toast.success('Opening Stripe checkout...');
     } catch (error) {
-      console.error('Subscription error:', error);
+      console.error('❌ Subscription error:', error);
       toast.error('Failed to start subscription process');
     } finally {
       setLoading(null);
@@ -70,7 +78,7 @@ export const UpgradeModal = ({ isOpen, onClose }: UpgradeModalProps) => {
       <DialogContent className="max-w-4xl bg-slate-800 border-slate-700 text-white">
         <DialogHeader>
           <DialogTitle className="text-2xl text-center mb-2">
-            {trialUser ? "You've Used All Free Analyses" : "Get Unlimited Analyses"}
+            {trialUser ? "You've Used All 3 Free Analyses" : "Get Unlimited Analyses"}
           </DialogTitle>
           <Button
             variant="ghost"
@@ -101,7 +109,7 @@ export const UpgradeModal = ({ isOpen, onClose }: UpgradeModalProps) => {
                   <h3 className="text-xl font-semibold">Pro Monthly</h3>
                 </div>
                 <div className="text-3xl font-bold mb-1">
-                  ${(config.monthlyAmount / 100).toFixed(2)}
+                  $19.99
                   <span className="text-base font-normal text-slate-400">/month</span>
                 </div>
               </div>
@@ -119,10 +127,14 @@ export const UpgradeModal = ({ isOpen, onClose }: UpgradeModalProps) => {
                   <Check className="h-4 w-4 text-green-400" />
                   <span className="text-slate-200">Priority support</span>
                 </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-400" />
+                  <span className="text-slate-200">Export reports</span>
+                </li>
               </ul>
               
               <Button 
-                className="w-full bg-blue-600 hover:bg-blue-700"
+                className="w-full bg-blue-600 hover:bg-blue-700 transition-colors"
                 onClick={() => handleSubscribe(config.monthlyPriceId, 'Pro Monthly')}
                 disabled={!!loading}
               >
@@ -146,11 +158,11 @@ export const UpgradeModal = ({ isOpen, onClose }: UpgradeModalProps) => {
                   <h3 className="text-xl font-semibold">Enterprise Yearly</h3>
                 </div>
                 <div className="text-3xl font-bold mb-1">
-                  ${(config.yearlyAmount / 100).toFixed(2)}
+                  $199.00
                   <span className="text-base font-normal text-slate-400">/year</span>
                 </div>
                 <p className="text-sm text-green-400 font-medium">
-                  Save 31% compared to monthly
+                  Save $40 compared to monthly
                 </p>
               </div>
               
@@ -165,12 +177,16 @@ export const UpgradeModal = ({ isOpen, onClose }: UpgradeModalProps) => {
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-green-400" />
-                  <span className="text-slate-200">Advanced analytics</span>
+                  <span className="text-slate-200">Advanced analytics dashboard</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-400" />
+                  <span className="text-slate-200">Priority email support</span>
                 </li>
               </ul>
               
               <Button 
-                className="w-full bg-purple-600 hover:bg-purple-700"
+                className="w-full bg-purple-600 hover:bg-purple-700 transition-colors"
                 onClick={() => handleSubscribe(config.yearlyPriceId, 'Enterprise Yearly')}
                 disabled={!!loading}
               >
@@ -184,7 +200,7 @@ export const UpgradeModal = ({ isOpen, onClose }: UpgradeModalProps) => {
         </div>
 
         <div className="text-center mt-6 text-sm text-slate-400">
-          <p>30-day money-back guarantee • Cancel anytime</p>
+          <p>30-day money-back guarantee • Cancel anytime • Secure payment with Stripe</p>
         </div>
       </DialogContent>
     </Dialog>
