@@ -5,7 +5,35 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, BookOpen, TrendingUp, AlertCircle } from 'lucide-react';
-import { EnhancedAnalysisResult, ResearchBackedRecommendation } from '@/services/analysis/ragService';
+
+// Local type definitions since ragService was removed
+interface ResearchSource {
+  title: string;
+  keyInsight: string;
+  source: string;
+  relevanceScore: number;
+}
+
+interface ResearchBackedRecommendation {
+  category: string;
+  priority: string;
+  recommendation: string;
+  reasoning: string;
+  supportingResearch: ResearchSource[];
+  implementationGuidance: string;
+}
+
+interface ResearchSummary {
+  totalSourcesCited: number;
+  primaryCategories: string[];
+  confidenceScore: number;
+}
+
+interface EnhancedAnalysisResult {
+  researchSummary: ResearchSummary;
+  methodology: string;
+  recommendations: ResearchBackedRecommendation[];
+}
 
 interface ResearchBackedRecommendationsProps {
   analysisResult: EnhancedAnalysisResult;
