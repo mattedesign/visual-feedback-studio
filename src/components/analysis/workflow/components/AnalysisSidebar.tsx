@@ -1,6 +1,8 @@
+
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Eye, X, Sparkles } from 'lucide-react';
+import { ContextIntelligenceDisplay } from './ContextIntelligenceDisplay';
 
 interface Annotation {
   id: string;
@@ -20,6 +22,22 @@ interface AnalysisSidebarProps {
   onDeleteAnnotation: (id: string) => void;
 }
 
+const parseContextForDisplay = (context: string): string[] => {
+  if (!context) return [];
+  
+  const focusAreas = [];
+  const lower = context.toLowerCase();
+  
+  if (/checkout|cart|purchase|ecommerce|e-commerce|order|product/.test(lower)) focusAreas.push('E-commerce');
+  if (/mobile|responsive|touch|tablet|phone|ios|android|device/.test(lower)) focusAreas.push('Mobile UX');
+  if (/accessibility|contrast|wcag|ada|screen reader|keyboard|disability/.test(lower)) focusAreas.push('Accessibility');
+  if (/conversion|cta|revenue|optimize|funnel|landing|signup/.test(lower)) focusAreas.push('Conversion');
+  if (/usability|navigation|flow|journey|interaction|ux/.test(lower)) focusAreas.push('Usability');
+  if (/visual|design|color|typography|layout|brand|aesthetic/.test(lower)) focusAreas.push('Visual Design');
+  
+  return focusAreas;
+};
+
 export const AnalysisSidebar = ({
   selectedImagesCount,
   totalAnnotations,
@@ -32,6 +50,7 @@ export const AnalysisSidebar = ({
 }: AnalysisSidebarProps) => {
   // Ensure we're working with clean user input
   const userContext = typeof analysisContext === 'string' ? analysisContext : '';
+  const detectedFocusAreas = parseContextForDisplay(userContext);
   
   const handleContextChange = (value: string) => {
     console.log('AnalysisSidebar: User context changed:', value.substring(0, 50) + '...');
@@ -55,6 +74,15 @@ export const AnalysisSidebar = ({
 
   return (
     <div className="space-y-4">
+      {/* Context Intelligence Display */}
+      {(userContext || detectedFocusAreas.length > 0) && (
+        <ContextIntelligenceDisplay
+          analysisContext={userContext}
+          focusAreas={detectedFocusAreas}
+          researchSourcesCount={detectedFocusAreas.length > 0 ? 5 : undefined}
+        />
+      )}
+
       <div>
         <h3 className="text-lg font-medium mb-3">
           Analysis Summary

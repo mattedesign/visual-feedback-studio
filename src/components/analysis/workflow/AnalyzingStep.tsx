@@ -1,6 +1,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { useAIAnalysis } from '@/hooks/analysis/useAIAnalysis';
 import { RAGStatusIndicator } from '../RAGStatusIndicator';
@@ -10,10 +11,27 @@ interface AnalyzingStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
 }
 
+const parseContextForDisplay = (context: string): string[] => {
+  if (!context) return ['Comprehensive UX'];
+  
+  const focusAreas = [];
+  const lower = context.toLowerCase();
+  
+  if (/checkout|cart|purchase|ecommerce|e-commerce|order|product/.test(lower)) focusAreas.push('E-commerce');
+  if (/mobile|responsive|touch|tablet|phone|ios|android|device/.test(lower)) focusAreas.push('Mobile UX');
+  if (/accessibility|contrast|wcag|ada|screen reader|keyboard|disability/.test(lower)) focusAreas.push('Accessibility');
+  if (/conversion|cta|revenue|optimize|funnel|landing|signup/.test(lower)) focusAreas.push('Conversion');
+  if (/usability|navigation|flow|journey|interaction|ux/.test(lower)) focusAreas.push('Usability');
+  if (/visual|design|color|typography|layout|brand|aesthetic/.test(lower)) focusAreas.push('Visual Design');
+  
+  return focusAreas.length > 0 ? focusAreas : ['Comprehensive UX'];
+};
+
 export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState('Initializing analysis...');
   const [retryCount, setRetryCount] = useState(0);
+  const [detectedFocusAreas, setDetectedFocusAreas] = useState<string[]>([]);
   const maxRetries = 1;
   const analysisStartedRef = useRef(false);
 
@@ -27,8 +45,11 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
   });
 
   useEffect(() => {
-    setCurrentStep('Preparing for direct RAG analysis...');
-  }, []);
+    // Parse context and set focus areas
+    const focusAreas = parseContextForDisplay(workflow.analysisContext);
+    setDetectedFocusAreas(focusAreas);
+    setCurrentStep(`Analyzing your context: ${focusAreas.join(', ')}...`);
+  }, [workflow.analysisContext]);
 
   // Memoized analysis execution function
   const performAnalysis = useCallback(async () => {
@@ -43,7 +64,8 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       currentAnalysisId: workflow.currentAnalysis?.id,
       userAnnotations: workflow.getTotalAnnotationsCount(),
       analysisContext: workflow.analysisContext ? 'PROVIDED' : 'NONE',
-      aiAnnotationsCount: workflow.aiAnnotations?.length || 0
+      aiAnnotationsCount: workflow.aiAnnotations?.length || 0,
+      detectedFocusAreas
     });
 
     if (workflow.selectedImages.length === 0) {
@@ -83,13 +105,13 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       await Promise.all(imageValidationPromises);
       setAnalysisProgress(25);
 
-      setCurrentStep('Fetching research context...');
+      setCurrentStep(`Retrieving relevant UX research for ${detectedFocusAreas.join(', ')}...`);
       setAnalysisProgress(40);
 
-      setCurrentStep('Enhancing analysis with research...');
+      setCurrentStep(`Building targeted analysis based on ${detectedFocusAreas.join(' & ')} priorities...`);
       setAnalysisProgress(60);
 
-      setCurrentStep('Generating AI insights...');
+      setCurrentStep(`Generating context-aware insights for ${workflow.selectedImages.length} image${workflow.selectedImages.length > 1 ? 's' : ''}...`);
       setAnalysisProgress(80);
 
       console.log('🚀 About to call handleAnalyze');
@@ -101,7 +123,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       console.log('📊 Current AI annotations count:', workflow.aiAnnotations?.length || 0);
       
       setAnalysisProgress(100);
-      setCurrentStep('Analysis complete!');
+      setCurrentStep(`Context-aware analysis complete for ${detectedFocusAreas.join(' & ')}!`);
       
       console.log('=== AnalyzingStep.performAnalysis - Completed Successfully ===');
       
@@ -120,7 +142,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
         const nextRetry = retryCount + 1;
         console.log(`🔄 Attempting retry ${nextRetry}/${maxRetries}`);
         setRetryCount(nextRetry);
-        setCurrentStep(`Retrying analysis (${nextRetry}/${maxRetries})...`);
+        setCurrentStep(`Retrying context-aware analysis (${nextRetry}/${maxRetries})...`);
         setAnalysisProgress(0);
         
         analysisStartedRef.current = false;
@@ -158,7 +180,8 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
     workflow.setIsAnalyzing,
     workflow.getTotalAnnotationsCount,
     workflow.imageAnnotations,
-    workflow.aiAnnotations?.length
+    workflow.aiAnnotations?.length,
+    detectedFocusAreas
   ]);
 
   // Start analysis effect
@@ -210,6 +233,21 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
                 {isMultiImage ? 'Analyzing Your Designs' : 'Analyzing Your Design'}
               </h3>
               
+              {/* Context Intelligence Display */}
+              {workflow.analysisContext && (
+                <div className="mb-4 p-4 bg-slate-700/50 rounded-lg">
+                  <h4 className="text-sm font-medium text-slate-300 mb-2">Your Analysis Context:</h4>
+                  <p className="text-sm text-slate-200 italic mb-3">"{workflow.analysisContext}"</p>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {detectedFocusAreas.map((area) => (
+                      <Badge key={area} variant="secondary" className="bg-blue-600/80 text-white">
+                        {area}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
               {/* RAG Status Indicator */}
               <div className="mb-4">
                 <RAGStatusIndicator 
@@ -238,14 +276,15 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
             )}
 
             <div className="bg-slate-700 rounded-lg p-4">
-              <h4 className="font-medium mb-2">Direct RAG Analysis Focus:</h4>
+              <h4 className="font-medium mb-2">Context-Aware Analysis Focus:</h4>
               <ul className="text-sm text-slate-300 space-y-1">
                 <li>• {totalAnnotations} specific areas you highlighted across {isMultiImage ? 'all images' : 'the image'}</li>
-                {workflow.analysisContext && <li>• Your general context and requirements</li>}
+                {workflow.analysisContext && <li>• Your context priorities: {detectedFocusAreas.join(', ')}</li>}
                 {isMultiImage && <li>• Comparative analysis between selected images</li>}
                 <li>• Research-enhanced UX recommendations</li>
-                <li>• Knowledge base insights and best practices</li>
-                <li>• Accessibility and conversion optimization</li>
+                <li>• Knowledge base insights targeting {detectedFocusAreas.join(' & ')}</li>
+                <li>• Evidence-backed {detectedFocusAreas.includes('Accessibility') ? 'accessibility' : 'usability'} improvements</li>
+                {researchSourcesCount && <li>• Analysis enhanced with {researchSourcesCount} research insights</li>}
               </ul>
             </div>
 
@@ -267,6 +306,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
                 <div>Current AI Annotations: {workflow.aiAnnotations?.length || 0}</div>
                 <div>Analysis Started: {analysisStartedRef.current ? 'Yes' : 'No'}</div>
                 <div>Retry Count: {retryCount}</div>
+                <div>Focus Areas: {detectedFocusAreas.join(', ')}</div>
               </div>
             </div>
           </div>

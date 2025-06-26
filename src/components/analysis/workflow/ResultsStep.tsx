@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { ComparativeAnalysisSummary } from '../ComparativeAnalysisSummary';
 import { ImageTabsViewer } from './components/ImageTabsViewer';
@@ -11,6 +12,22 @@ import { ResultsActions } from './components/ResultsActions';
 interface ResultsStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
 }
+
+const parseContextForDisplay = (context: string): string[] => {
+  if (!context) return ['Comprehensive UX'];
+  
+  const focusAreas = [];
+  const lower = context.toLowerCase();
+  
+  if (/checkout|cart|purchase|ecommerce|e-commerce|order|product/.test(lower)) focusAreas.push('E-commerce');
+  if (/mobile|responsive|touch|tablet|phone|ios|android|device/.test(lower)) focusAreas.push('Mobile UX');
+  if (/accessibility|contrast|wcag|ada|screen reader|keyboard|disability/.test(lower)) focusAreas.push('Accessibility');
+  if (/conversion|cta|revenue|optimize|funnel|landing|signup/.test(lower)) focusAreas.push('Conversion');
+  if (/usability|navigation|flow|journey|interaction|ux/.test(lower)) focusAreas.push('Usability');
+  if (/visual|design|color|typography|layout|brand|aesthetic/.test(lower)) focusAreas.push('Visual Design');
+  
+  return focusAreas.length > 0 ? focusAreas : ['Comprehensive UX'];
+};
 
 export const ResultsStep = ({ workflow }: ResultsStepProps) => {
   const [activeAnnotation, setActiveAnnotation] = useState<string | null>(null);
@@ -42,6 +59,7 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
 
   const isMultiImage = workflow.selectedImages.length > 1;
   const activeImageIndex = workflow.selectedImages.indexOf(activeImageUrl);
+  const detectedFocusAreas = parseContextForDisplay(workflow.analysisContext);
 
   // Filter AI annotations for the current image
   const getAnnotationsForImage = (imageIndex: number) => {
@@ -59,7 +77,10 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
   const currentImageAIAnnotations = getAnnotationsForImage(activeImageIndex);
   const currentImageUserAnnotations = getUserAnnotationsForImage(activeImageUrl);
 
-  // Generate business impact data from annotations - REMOVED TEXT TRUNCATION
+  // Count research-backed insights (annotations with businessImpact)
+  const researchBackedCount = workflow.aiAnnotations.filter(a => a.businessImpact).length;
+
+  // Generate business impact data from annotations
   const generateBusinessImpact = () => {
     const annotations = workflow.aiAnnotations;
     if (!annotations.length) return null;
@@ -121,7 +142,7 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
     };
   };
 
-  // Generate insights from annotations - REMOVED TEXT TRUNCATION
+  // Generate insights from annotations
   const generateInsights = () => {
     const annotations = workflow.aiAnnotations;
     if (!annotations.length) return null;
@@ -162,14 +183,47 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
           <CardTitle className="text-3xl text-center font-bold text-gray-900">
             {isMultiImage ? 'Comparative Analysis Results' : 'Analysis Results'}
           </CardTitle>
-          <p className="text-gray-700 text-center text-lg leading-relaxed">
-            {businessImpact ? 
-              `Analysis completed with business impact quantification. Total revenue potential: ${businessImpact.totalPotentialRevenue}` :
-              isMultiImage 
-                ? `Analysis completed across ${workflow.selectedImages.length} images. Click annotations for detailed feedback.`
-                : 'Click on any annotation to see detailed feedback'
-            }
-          </p>
+          
+          {/* Context-Aware Results Header */}
+          <div className="text-center space-y-3">
+            {workflow.analysisContext && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-blue-900 mb-2">Your Analysis Context:</h4>
+                <p className="text-blue-800 italic mb-3">"{workflow.analysisContext}"</p>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {detectedFocusAreas.map((area) => (
+                    <Badge key={area} variant="secondary" className="bg-blue-600 text-white">
+                      {area}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            <div className="flex items-center justify-center space-x-4 text-sm text-gray-600">
+              {researchBackedCount > 0 && (
+                <div className="flex items-center space-x-1">
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                    📚 {researchBackedCount} Research Insights
+                  </Badge>
+                </div>
+              )}
+              {businessImpact && (
+                <div className="flex items-center space-x-1">
+                  <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                    💰 {businessImpact.totalPotentialRevenue}
+                  </Badge>
+                </div>
+              )}
+            </div>
+            
+            <p className="text-gray-700 text-lg leading-relaxed">
+              {isMultiImage 
+                ? `Context-aware analysis completed across ${workflow.selectedImages.length} images targeting ${detectedFocusAreas.join(' & ')}.`
+                : `Analysis focused on ${detectedFocusAreas.join(' & ')} with research-backed recommendations.`
+              }
+            </p>
+          </div>
         </CardHeader>
         <CardContent className="space-y-8">
           {/* Comparative Analysis Summary */}
