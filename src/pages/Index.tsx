@@ -4,11 +4,14 @@ import { DirectRAGTestSimple } from '@/components/analysis/DirectRAGTestSimple';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useEffect } from 'react';
 
 const Index = () => {
   const { user, loading, signOut } = useAuth();
+  const { canCreateAnalysis, loading: subscriptionLoading } = useSubscription();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -16,10 +19,17 @@ const Index = () => {
   };
 
   const handleGetStarted = () => {
-    navigate('/auth');
+    // Check if user has credits and navigate accordingly
+    if (canCreateAnalysis()) {
+      console.log('User has credits, navigating to analysis page');
+      navigate('/analysis');
+    } else {
+      console.log('User has no credits, navigating to subscription page');
+      navigate('/subscription');
+    }
   };
 
-  if (loading) {
+  if (loading || subscriptionLoading) {
     return <LoadingSpinner />;
   }
 
