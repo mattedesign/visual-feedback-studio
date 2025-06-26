@@ -1,86 +1,21 @@
 
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useSubscription } from '@/hooks/useSubscription';
-import { UpgradeModal } from '@/components/subscription/UpgradeModal';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [checkingSubscription, setCheckingSubscription] = useState(false);
-  const navigate = useNavigate();
   
   const { user, session, error: authError } = useAuth();
-  const { 
-    canCreateAnalysis, 
-    isActiveSubscriber, 
-    isTrialUser, 
-    needsSubscription,
-    loading: subscriptionLoading,
-    refetch: refetchSubscription 
-  } = useSubscription();
-
-  // Handle subscription check after successful authentication
-  useEffect(() => {
-    const handlePostAuthSubscriptionCheck = async () => {
-      if (session && user && !subscriptionLoading) {
-        console.log('🔍 Starting post-auth subscription check for:', user.email);
-        setCheckingSubscription(true);
-        
-        try {
-          // Refresh subscription data
-          await refetchSubscription();
-          
-          // Small delay to ensure subscription state is updated
-          setTimeout(() => {
-            const canAnalyze = canCreateAnalysis();
-            const needsSub = needsSubscription();
-            
-            console.log('📊 Subscription check results:', {
-              canAnalyze,
-              needsSub,
-              isActive: isActiveSubscriber(),
-              isTrial: isTrialUser(),
-              userEmail: user.email
-            });
-
-            if (canAnalyze) {
-              console.log('✅ User can create analysis, redirecting to /analysis');
-              toast.success('Welcome! Redirecting to analysis...');
-              navigate('/analysis');
-            } else if (needsSub) {
-              console.log('❌ User needs subscription, showing upgrade modal');
-              toast.info('Please upgrade to continue analyzing designs');
-              setShowUpgradeModal(true);
-            }
-            
-            setCheckingSubscription(false);
-          }, 1000);
-          
-        } catch (error) {
-          console.error('Error checking subscription:', error);
-          setCheckingSubscription(false);
-          toast.error('Error checking subscription status');
-        }
-      }
-    };
-
-    // Only run if we have a session and user, and not already checking
-    if (session && user && !checkingSubscription) {
-      handlePostAuthSubscriptionCheck();
-    }
-  }, [session, user, subscriptionLoading, canCreateAnalysis, needsSubscription, isActiveSubscriber, isTrialUser, navigate, refetchSubscription, checkingSubscription]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,7 +36,6 @@ const Auth = () => {
         
         if (data.session) {
           toast.success('Account created and signed in successfully!');
-          // Subscription check will be handled by useEffect
         } else if (data.user && !data.user.email_confirmed_at) {
           toast.success('Account created! Please check your email to confirm your account.');
         } else {
@@ -116,8 +50,7 @@ const Auth = () => {
 
         if (error) throw error;
         
-        toast.success('Welcome back!');
-        // Subscription check will be handled by useEffect
+        toast.success('Welcome back! You can now go to Analysis.');
       }
     } catch (error: any) {
       if (error.message.includes('Invalid login credentials')) {
@@ -163,20 +96,9 @@ const Auth = () => {
     }
   };
 
-  // Show loading state during subscription check
-  if (checkingSubscription || (session && user && subscriptionLoading)) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md bg-slate-800 border-slate-700">
-          <CardContent className="p-8 text-center">
-            <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <h3 className="text-lg font-semibold text-white mb-2">Checking Your Subscription</h3>
-            <p className="text-slate-400">Please wait while we verify your account status...</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const handleGoToAnalysis = () => {
+    window.location.href = '/analysis';
+  };
 
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
@@ -200,6 +122,22 @@ const Auth = () => {
                 {authError}
               </AlertDescription>
             </Alert>
+          )}
+
+          {/* Show Go to Analysis button if user is logged in */}
+          {user && session && (
+            <div className="mb-6 p-4 bg-green-900/20 rounded-lg border border-green-700">
+              <p className="text-green-400 text-sm mb-3">
+                ✅ You are logged in as: {user.email}
+              </p>
+              <Button
+                onClick={handleGoToAnalysis}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                <ArrowRight className="w-4 h-4 mr-2" />
+                Go to Analysis
+              </Button>
+            </div>
           )}
           
           <form onSubmit={handleAuth} className="space-y-4">
@@ -260,12 +198,6 @@ const Auth = () => {
           </div>
         </CardContent>
       </Card>
-
-      {/* Upgrade Modal - shown when user needs subscription */}
-      <UpgradeModal 
-        isOpen={showUpgradeModal} 
-        onClose={() => setShowUpgradeModal(false)} 
-      />
     </div>
   );
 };
