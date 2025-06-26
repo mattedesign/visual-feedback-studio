@@ -53,29 +53,34 @@ export const uploadFileToStorage = async (file: File, analysisId: string) => {
       return null;
     }
 
-    // Save file metadata to database
-    const { data: fileRecord, error: dbError } = await supabase
-      .from('uploaded_files')
-      .insert({
-        analysis_id: analysisId,
-        user_id: user.id,
-        file_name: file.name,
-        file_type: file.type,
-        file_size: file.size,
-        storage_path: fileName,
-        upload_type: 'file',
-        public_url: urlData.publicUrl
-      })
-      .select()
-      .single();
+    // Only save file metadata if analysis ID is not temporary
+    if (!analysisId.startsWith('temp-')) {
+      const { data: fileRecord, error: dbError } = await supabase
+        .from('uploaded_files')
+        .insert({
+          analysis_id: analysisId,
+          user_id: user.id,
+          file_name: file.name,
+          file_type: file.type,
+          file_size: file.size,
+          storage_path: fileName,
+          upload_type: 'file',
+          public_url: urlData.publicUrl
+        })
+        .select()
+        .single();
 
-    if (dbError) {
-      console.error('Error saving file metadata:', dbError);
-      toast.error('Failed to save file information');
-      return null;
+      if (dbError) {
+        console.error('Error saving file metadata:', dbError);
+        toast.error('Failed to save file information');
+        return null;
+      }
+
+      console.log('File metadata saved:', fileRecord);
+    } else {
+      console.log('Skipping database record for temporary analysis ID');
     }
 
-    console.log('File metadata saved:', fileRecord);
     return urlData.publicUrl;
 
   } catch (error) {

@@ -1,7 +1,6 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { createAnalysis } from '@/services/analysisService';
 import { uploadFileToStorage } from '@/services/fileUploadService';
 
 export const useFileUpload = (onImageUpload: (imageUrl: string) => void) => {
@@ -24,17 +23,13 @@ export const useFileUpload = (onImageUpload: (imageUrl: string) => void) => {
         return;
       }
       
-      // Create analysis first
-      const analysisId = await createAnalysis();
-      if (!analysisId) {
-        toast.error('Failed to create analysis record');
-        return;
-      }
+      // Generate a temporary analysis ID for file storage
+      const tempAnalysisId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-      console.log('Created analysis with ID:', analysisId);
+      console.log('Using temporary analysis ID for file storage:', tempAnalysisId);
 
       // Upload file to storage
-      const publicUrl = await uploadFileToStorage(file, analysisId);
+      const publicUrl = await uploadFileToStorage(file, tempAnalysisId);
       if (!publicUrl) {
         toast.error('File upload failed');
         return;
@@ -44,7 +39,6 @@ export const useFileUpload = (onImageUpload: (imageUrl: string) => void) => {
 
       // Call the callback with the uploaded file URL
       onImageUpload(publicUrl);
-      toast.success('File uploaded successfully!');
       
     } catch (error) {
       console.error('Error during file upload process:', error);

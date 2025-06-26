@@ -7,6 +7,9 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { UpgradePrompt } from '@/components/subscription/UpgradePrompt';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { createAnalysis } from '@/services/analysisService';
+import { getUserAnalyses } from '@/services/analysisDataService';
+import { toast } from 'sonner';
 
 interface UploadStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -26,11 +29,45 @@ export const UploadStep = ({ workflow }: UploadStepProps) => {
     alert('Upgrade functionality would be implemented here with Stripe integration');
   };
 
-  const handleImageUpload = (imageUrl: string) => {
-    // Handle the image upload using the workflow's proceedFromUpload method
-    console.log('UploadStep: Image uploaded, proceeding with workflow:', imageUrl);
-    workflow.addUploadedFile(imageUrl);
-    workflow.proceedFromUpload([imageUrl]);
+  const handleImageUpload = async (imageUrl: string) => {
+    console.log('UploadStep: Image uploaded, creating analysis session:', imageUrl);
+    
+    try {
+      // Create analysis session if one doesn't exist
+      if (!workflow.currentAnalysis) {
+        console.log('Creating new analysis session...');
+        const analysisId = await createAnalysis();
+        
+        if (!analysisId) {
+          toast.error('Failed to create analysis session');
+          return;
+        }
+
+        // Fetch the created analysis to get full details
+        const userAnalyses = await getUserAnalyses();
+        const newAnalysis = userAnalyses.find(analysis => analysis.id === analysisId);
+        
+        if (newAnalysis) {
+          console.log('Analysis session created successfully:', newAnalysis.id);
+          workflow.setCurrentAnalysis(newAnalysis);
+        } else {
+          toast.error('Failed to retrieve analysis session details');
+          return;
+        }
+      }
+
+      // Add the uploaded file to workflow
+      workflow.addUploadedFile(imageUrl);
+      
+      // Proceed with the workflow
+      workflow.proceedFromUpload([imageUrl]);
+      
+      toast.success('Image uploaded successfully!');
+      
+    } catch (error) {
+      console.error('Error handling image upload:', error);
+      toast.error('Failed to create analysis session');
+    }
   };
 
   if (!canCreate) {
@@ -66,6 +103,15 @@ export const UploadStep = ({ workflow }: UploadStepProps) => {
               <AlertCircle className="h-4 w-4 text-orange-600" />
               <AlertDescription className="text-orange-700">
                 You have {remaining} analysis{remaining !== 1 ? 'es' : ''} remaining in your current plan.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {workflow.currentAnalysis && (
+            <Alert className="mt-4 border-blue-200 bg-blue-50">
+              <AlertCircle className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-700">
+                Analysis session ready: {workflow.currentAnalysis.id}
               </AlertDescription>
             </Alert>
           )}

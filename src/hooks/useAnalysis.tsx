@@ -45,18 +45,22 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
     console.log('Analysis context:', workflow.analysisContext || 'None provided');
     console.log('RAG enabled: TRUE');
 
+    // Validation checks
     if (workflow.selectedImages.length === 0) {
-      console.error('No images selected for analysis');
-      toast.error('No images selected for analysis');
+      console.error('❌ No images selected for analysis');
+      toast.error('No images selected for analysis. Please go back and upload your images.');
+      workflow.goToStep('upload');
       return;
     }
 
     if (!workflow.currentAnalysis) {
-      console.error('No current analysis found');
+      console.error('❌ No current analysis session found');
       toast.error('Analysis session not found. Please go back and upload your images again.');
+      workflow.goToStep('upload');
       return;
     }
 
+    console.log('✅ All validation checks passed - proceeding with analysis');
     analysisStartedRef.current = true;
 
     try {
@@ -216,7 +220,7 @@ Please provide research-backed recommendations using UX best practices and desig
             {workflow.currentAnalysis && (
               <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
                 <p className="text-blue-300 text-sm">
-                  Analysis ID: {workflow.currentAnalysis.id}
+                  Analysis Session: {workflow.currentAnalysis.id}
                 </p>
               </div>
             )}

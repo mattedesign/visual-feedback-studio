@@ -1,7 +1,6 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { createAnalysis } from '@/services/analysisService';
 import { saveUrlUpload } from '@/services/urlUploadService';
 import { captureWebsiteScreenshot, validateUrl } from '@/services/screenshotService';
 import { supabase } from '@/integrations/supabase/client';
@@ -47,20 +46,13 @@ export const useUrlUpload = (onImageUpload: (imageUrl: string) => void) => {
       }
       console.log('✓ URL validation passed');
       
-      // Step 3: Create analysis
-      console.log('Step 3: Creating analysis...');
-      const analysisId = await createAnalysis();
-      if (!analysisId) {
-        console.error('Failed to create analysis');
-        toast.error('Failed to create analysis record');
-        setIsProcessing(false);
-        return;
-      }
-      console.log('✓ Analysis created with ID:', analysisId);
+      // Step 3: Generate temporary analysis ID for URL storage
+      const tempAnalysisId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      console.log('✓ Using temporary analysis ID:', tempAnalysisId);
 
-      // Step 4: Save URL upload record
+      // Step 4: Save URL upload record (will be associated with real analysis later)
       console.log('Step 4: Saving URL upload record...');
-      const savedUrl = await saveUrlUpload(url, 'website', analysisId);
+      const savedUrl = await saveUrlUpload(url, 'website', tempAnalysisId);
       if (!savedUrl) {
         console.error('Failed to save URL upload record');
         toast.error('Failed to save URL information');
@@ -135,7 +127,7 @@ export const useUrlUpload = (onImageUpload: (imageUrl: string) => void) => {
         type: typeof error
       });
       
-      // Enhanced error messaging
+      // Enhanced error messaging  
       let errorMessage = 'Failed to process website URL';
       if (error instanceof Error) {
         if (error.message.includes('Authentication')) {
