@@ -1,0 +1,52 @@
+
+@layer utilities {
+  /* Hover Effects */
+  .hover-lift {
+    @apply transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl;
+  }
+
+  .hover-glow {
+    @apply transition-all duration-300;
+  }
+
+  .hover-glow:hover {
+    box-shadow: 0 0 30px rgba(147, 51, 234, 0.4);
+  }
+
+  /* Enhanced Focus Utilities */
+  .focus-enhanced {
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2;
+    @apply focus:border-blue-500;
+    @apply transition-all duration-150;
+  }
+
+  /* High Contrast Mode Support */
+  @media (prefers-contrast: high) {
+    .enhanced-input,
+    .enhanced-select,
+    .enhanced-textarea {
+      @apply border-4 border-slate-900 dark:border-slate-100;
+    }
+    
+    .enhanced-button-primary {
+      @apply border-4 border-blue-900;
+    }
+  }
+
+  /* Reduced Motion Support */
+  @media (prefers-reduced-motion: reduce) {
+    .enhanced-input,
+    .enhanced-select,
+    .enhanced-textarea,
+    .enhanced-button-primary,
+    .enhanced-button-secondary {
+      @apply transition-none;
+    }
+
+    .animate-float,
+    .animate-glow,
+    .animate-fade-in {
+      animation: none;
+    }
+  }
+}
