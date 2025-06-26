@@ -1,0 +1,24 @@
+
+/* Fallback for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-float,
+  .animate-glow,
+  .animate-fade-in,
+  .animate-magnetic-hover,
+  .animate-morph-background,
+  .animate-typewriter-blink,
+  .animate-particle-float,
+  .animate-scale-bounce,
+  .animate-gradient-shift,
+  .animate-float-slow,
+  .animate-float-normal,
+  .animate-float-fast,
+  .animate-float-1,
+  .animate-float-2,
+  .animate-float-3,
+  .animate-float-4,
+  .animate-float-5,
+  .animate-float-6 {
+    animation: none;
+  }
+}
