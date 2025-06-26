@@ -1,11 +1,12 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { UploadSection } from '@/components/upload/UploadSection';
 import { useSubscription } from '@/hooks/useSubscription';
-import { UpgradePrompt } from '@/components/subscription/UpgradePrompt';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import { createAnalysis } from '@/services/analysisService';
 import { getUserAnalyses } from '@/services/analysisDataService';
 
@@ -15,17 +16,64 @@ interface UploadStepProps {
 
 export const UploadStep = ({ workflow }: UploadStepProps) => {
   const { canCreateAnalysis, getRemainingAnalyses } = useSubscription();
-  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [creditCheckComplete, setCreditCheckComplete] = useState(false);
+  const [hasCredits, setHasCredits] = useState(true);
+  const navigate = useNavigate();
   
-  const remaining = getRemainingAnalyses();
-  const canCreate = canCreateAnalysis();
+  // Perform credit check in background
+  useEffect(() => {
+    const checkCredits = async () => {
+      try {
+        const canCreate = canCreateAnalysis();
+        setHasCredits(canCreate);
+        
+        if (!canCreate) {
+          // Redirect to subscription page instead of showing inline upgrade prompt
+          console.log('User has no credits, redirecting to subscription page');
+          navigate('/subscription');
+          return;
+        }
+        
+        setCreditCheckComplete(true);
+      } catch (error) {
+        console.error('Error checking credits:', error);
+        setCreditCheckComplete(true);
+      }
+    };
 
-  const handleUpgrade = () => {
-    // This would typically redirect to a billing/upgrade page
-    console.log('Redirect to upgrade page');
-    // For now, just show a placeholder message
-    alert('Upgrade functionality would be implemented here with Stripe integration');
-  };
+    checkCredits();
+  }, [canCreateAnalysis, navigate]);
+
+  // Show loading while credit check is in progress
+  if (!creditCheckComplete) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <Card className="bg-white border-gray-300 shadow-lg">
+          <CardContent className="p-8 text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-gray-600">Checking your account...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // If user doesn't have credits, they should have been redirected already
+  // But this is a fallback in case navigation fails
+  if (!hasCredits) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <Card className="bg-white border-gray-300 shadow-lg">
+          <CardContent className="p-8 text-center">
+            <p className="text-gray-600 mb-4">Redirecting to subscription page...</p>
+            <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const remaining = getRemainingAnalyses();
 
   const handleSingleImageUpload = async (imageUrl: string) => {
     console.log('UploadStep: Single image uploaded, creating analysis session and proceeding:', imageUrl);
@@ -75,23 +123,6 @@ export const UploadStep = ({ workflow }: UploadStepProps) => {
       // Log error but don't show toast
     }
   };
-
-  if (!canCreate) {
-    return (
-      <div className="max-w-4xl mx-auto">
-        <Card className="bg-white border-gray-300 shadow-lg">
-          <CardHeader className="pb-6">
-            <CardTitle className="text-3xl text-center font-bold text-gray-900">
-              Analysis Limit Reached
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <UpgradePrompt onUpgrade={handleUpgrade} />
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-4xl mx-auto">
