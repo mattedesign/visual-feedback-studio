@@ -65,7 +65,7 @@ export const ModernHeader: React.FC = () => {
               className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-3 font-semibold shadow-lg border-0"
               magneticStrength={0.3}
             >
-              {user ? 'Go to Analysis' : 'Start Free Analysis'}
+              {user ? 'Start Analysis' : 'Start Free Analysis'}
             </MagneticButton>
           </div>
 
@@ -101,7 +101,7 @@ export const ModernHeader: React.FC = () => {
                   className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-3 font-semibold shadow-lg border-0"
                   magneticStrength={0.3}
                 >
-                  {user ? 'Go to Analysis' : 'Start Free Analysis'}
+                  {user ? 'Start Analysis' : 'Start Free Analysis'}
                 </MagneticButton>
               </div>
             </nav>

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -11,7 +10,7 @@ export const CTASection: React.FC = () => {
 
   const handleGetStarted = () => {
     if (user) {
-      navigate('/dashboard');
+      navigate('/analysis');
     } else {
       navigate('/auth');
     }
@@ -67,7 +66,7 @@ export const CTASection: React.FC = () => {
             magneticStrength={0.5}
           >
             <Sparkles className="mr-3 h-6 w-6" />
-            {user ? 'Go to Dashboard' : 'Start Free Analysis Now'}
+            {user ? 'Start Analysis Now' : 'Start Free Analysis Now'}
             <ArrowRight className="ml-3 h-6 w-6" />
           </MagneticButton>
         </div>
