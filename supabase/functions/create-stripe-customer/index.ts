@@ -38,7 +38,7 @@ serve(async (req) => {
     if (userError) throw new Error(`Authentication error: ${userError.message}`);
     
     const user = userData.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
+    if (!user) throw new Error("User not authenticated");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
     const { email, userId, metadata } = await req.json();
@@ -46,19 +46,26 @@ serve(async (req) => {
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     
     // Check if customer already exists
-    const existingCustomers = await stripe.customers.list({ email, limit: 1 });
-    let customer;
-    
+    const existingCustomers = await stripe.customers.list({
+      email: email,
+      limit: 1
+    });
+
     if (existingCustomers.data.length > 0) {
-      customer = existingCustomers.data[0];
-      logStep("Existing customer found", { customerId: customer.id });
-    } else {
-      customer = await stripe.customers.create({
-        email,
-        metadata: metadata || { supabase_user_id: userId }
+      logStep("Customer already exists", { customerId: existingCustomers.data[0].id });
+      return new Response(JSON.stringify({ customer: existingCustomers.data[0] }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
       });
-      logStep("New customer created", { customerId: customer.id });
     }
+
+    // Create new customer
+    const customer = await stripe.customers.create({
+      email: email,
+      metadata: metadata || { supabase_user_id: userId }
+    });
+
+    logStep("Customer created successfully", { customerId: customer.id });
 
     return new Response(JSON.stringify({ customer }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

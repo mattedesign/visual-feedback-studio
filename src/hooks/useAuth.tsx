@@ -14,16 +14,18 @@ export const useAuth = () => {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     session: null,
-    loading: true,
+    loading: false, // Start with false to not block public pages
     error: null
   });
 
   useEffect(() => {
+    console.log('useAuth: Setting up auth state listener');
     let mounted = true;
 
-    // Set up auth state listener
+    // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('useAuth: Auth state changed', { event, hasSession: !!session });
         if (!mounted) return;
         
         setAuthState(prev => ({
@@ -36,17 +38,24 @@ export const useAuth = () => {
       }
     );
 
-    // Initialize session check
+    // Initialize session check - but don't block public pages
     const initialize = async () => {
       try {
+        console.log('useAuth: Checking for existing session');
         const { data: { session }, error } = await supabase.auth.getSession();
+        
+        console.log('useAuth: Session check result', { hasSession: !!session, error });
         
         if (mounted) {
           if (error) {
+            console.error('useAuth: Session error:', error);
+            // Don't treat session errors as blocking for public pages
             setAuthState(prev => ({
               ...prev,
-              error: error.message,
-              loading: false
+              session: null,
+              user: null,
+              loading: false,
+              error: null // Clear error for public access
             }));
           } else {
             setAuthState(prev => ({
@@ -59,35 +68,56 @@ export const useAuth = () => {
           }
         }
       } catch (err) {
+        console.error('useAuth: Initialize error:', err);
         if (mounted) {
+          // Don't block public pages with auth errors
           setAuthState(prev => ({
             ...prev,
-            error: err instanceof Error ? err.message : 'Session check failed',
-            loading: false
+            session: null,
+            user: null,
+            loading: false,
+            error: null
           }));
         }
       }
     };
 
+    // Quick timeout as backup - but public pages don't depend on this
+    const timeoutId = setTimeout(() => {
+      console.warn('useAuth: Timeout reached, ensuring public access');
+      if (mounted) {
+        setAuthState(prev => ({
+          ...prev,
+          loading: false,
+          error: null
+        }));
+      }
+    }, 500); // Very short timeout since we start with loading: false
+
     initialize();
 
     return () => {
+      console.log('useAuth: Cleaning up');
       mounted = false;
+      clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
   }, []);
 
   const signOut = async () => {
     try {
+      console.log('useAuth: Signing out');
       setAuthState(prev => ({ ...prev, error: null }));
       
       const { error } = await supabase.auth.signOut();
       
       if (error) {
+        console.error('useAuth: Sign out error:', error);
         setAuthState(prev => ({ ...prev, error: error.message }));
         throw error;
       }
     } catch (err) {
+      console.error('useAuth: Sign out exception:', err);
       throw err;
     }
   };

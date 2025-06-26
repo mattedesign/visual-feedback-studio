@@ -1,18 +1,12 @@
 
 export const LoadingSpinner = () => {
   return (
-    <div className="min-h-screen gradient-bedrock flex items-center justify-center">
-      <div className="text-center space-y-6">
-        <div className="relative">
-          <div className="animate-spin w-12 h-12 border-4 border-white/20 border-t-white rounded-full"></div>
-          <div className="absolute inset-0 animate-pulse">
-            <div className="w-12 h-12 border-4 border-transparent border-t-blue-400 rounded-full animate-spin" style={{ animationDelay: '0.5s' }}></div>
-          </div>
-        </div>
-        <div className="space-y-2">
-          <h3 className="text-white font-semibold text-lg">Loading Figmant.AI</h3>
-          <p className="text-white/70">Preparing your design intelligence platform...</p>
-        </div>
+    <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
+      <div className="text-center p-8 bg-slate-800 rounded-lg border border-slate-700">
+        <div className="text-2xl font-bold mb-4">🔄 Loading</div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-500 mx-auto mb-4"></div>
+        <div className="text-lg text-slate-300">Initializing your session...</div>
+        <div className="text-sm text-slate-400 mt-2">This may take a few moments</div>
       </div>
     </div>
   );
