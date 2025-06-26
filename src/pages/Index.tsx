@@ -7,41 +7,93 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { UpgradeModal } from '@/components/subscription/UpgradeModal';
 
 const Index = () => {
   const { user, loading, signOut } = useAuth();
-  const { canCreateAnalysis, loading: subscriptionLoading } = useSubscription();
+  const { canCreateAnalysis, loading: subscriptionLoading, needsSubscription } = useSubscription();
   const navigate = useNavigate();
+  const [isCheckingSubscription, setIsCheckingSubscription] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
   };
 
-  const handleGetStarted = () => {
-    // Step 3a: Check if user is logged in first
+  const handleGetStarted = async () => {
+    console.log('🚀 Start Analysis button clicked');
+    
+    // Step 1: Check if user is logged in first
     if (!user) {
       console.log('User not logged in, navigating to auth page');
       navigate('/auth');
       return;
     }
 
-    // Step 3b: User is logged in, now check subscription status
-    if (canCreateAnalysis()) {
-      console.log('User has credits, navigating to analysis page');
-      navigate('/analysis');
-    } else {
-      console.log('User has no credits, navigating to subscription page');
+    console.log('User is logged in, checking subscription status...');
+    setIsCheckingSubscription(true);
+
+    try {
+      // Wait for subscription loading to complete if still loading
+      if (subscriptionLoading) {
+        console.log('Waiting for subscription status...');
+        // The useEffect below will handle routing once loading completes
+        return;
+      }
+
+      // Step 2: Check subscription status
+      const canAnalyze = canCreateAnalysis();
+      const needsSub = needsSubscription();
+
+      console.log('Subscription check results:', {
+        canAnalyze,
+        needsSub,
+        userEmail: user.email
+      });
+
+      if (canAnalyze) {
+        console.log('✅ User can create analysis, navigating to analysis page');
+        navigate('/analysis');
+      } else if (needsSub) {
+        console.log('❌ User needs subscription, showing upgrade modal');
+        setShowUpgradeModal(true);
+      } else {
+        console.log('⚠️ Unexpected state, navigating to subscription page');
+        navigate('/subscription');
+      }
+    } catch (error) {
+      console.error('Error checking subscription status:', error);
+      // Fallback to subscription page on error
       navigate('/subscription');
+    } finally {
+      setIsCheckingSubscription(false);
     }
   };
+
+  // Handle subscription loading completion
+  useEffect(() => {
+    if (isCheckingSubscription && !subscriptionLoading && user) {
+      console.log('Subscription loading completed, rechecking status...');
+      
+      const canAnalyze = canCreateAnalysis();
+      const needsSub = needsSubscription();
+
+      if (canAnalyze) {
+        console.log('✅ User can create analysis, navigating to analysis page');
+        navigate('/analysis');
+        setIsCheckingSubscription(false);
+      } else if (needsSub) {
+        console.log('❌ User needs subscription, showing upgrade modal');
+        setShowUpgradeModal(true);
+        setIsCheckingSubscription(false);
+      }
+    }
+  }, [subscriptionLoading, isCheckingSubscription, user, canCreateAnalysis, needsSubscription, navigate]);
 
   if (loading || subscriptionLoading) {
     return <LoadingSpinner />;
   }
-
-  // Remove the AuthGuard check - we want to show the home page to everyone
-  // The authentication check happens in handleGetStarted instead
 
   return (
     <div className="min-h-screen bg-slate-900 text-white">
@@ -63,10 +115,17 @@ const Index = () => {
             
             <Button 
               onClick={handleGetStarted}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg"
+              disabled={isCheckingSubscription}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg disabled:opacity-50"
             >
-              Start Analyzing Now
+              {isCheckingSubscription ? 'Checking subscription...' : 'Start Analyzing Now'}
             </Button>
+            
+            {isCheckingSubscription && (
+              <p className="text-sm text-slate-400 mt-2">
+                Please wait while we verify your subscription status...
+              </p>
+            )}
           </div>
         </div>
         
@@ -77,6 +136,12 @@ const Index = () => {
           </div>
         )}
       </main>
+      
+      {/* Upgrade Modal */}
+      <UpgradeModal 
+        isOpen={showUpgradeModal} 
+        onClose={() => setShowUpgradeModal(false)} 
+      />
     </div>
   );
 };
