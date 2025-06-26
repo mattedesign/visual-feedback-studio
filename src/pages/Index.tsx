@@ -4,6 +4,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useEffect } from 'react';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { GradientLayout } from '@/components/ui/GradientLayout';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 
 const Index = () => {
   const { user, loading, signOut, error } = useAuth();
@@ -26,7 +29,7 @@ const Index = () => {
     console.log('Sign out initiated');
     try {
       await signOut();
-      navigate('/auth');
+      navigate('/');
     } catch (err) {
       console.error('Sign out failed:', err);
     }
@@ -38,94 +41,104 @@ const Index = () => {
 
   // Show loading state
   if (loading || subscriptionLoading) {
-    return <LoadingSpinner />;
+    return (
+      <GradientLayout variant="purple" intensity="medium">
+        <LoadingSpinner />
+      </GradientLayout>
+    );
   }
 
   // Show auth error state with retry option
   if (error) {
     console.log('Auth error state:', error);
     return (
-      <div className="min-h-screen bg-orange-500 text-white flex items-center justify-center">
-        <div className="text-center p-8 bg-orange-600 rounded-lg max-w-md">
-          <div className="text-2xl font-bold mb-4">⚠️ Authentication Error</div>
-          <div className="text-lg mb-4">{error}</div>
-          <div className="space-y-3">
-            <button 
-              onClick={handleRetry}
-              className="bg-white text-orange-600 px-4 py-2 rounded font-bold mr-2"
-            >
-              Retry
-            </button>
-            <button 
-              onClick={() => navigate('/auth')} 
-              className="bg-orange-700 text-white px-4 py-2 rounded font-bold"
-            >
-              Go to Login
-            </button>
-          </div>
+      <GradientLayout variant="red" intensity="medium">
+        <div className="min-h-screen flex items-center justify-center px-4">
+          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl max-w-md w-full">
+            <CardContent className="p-8 text-center">
+              <div className="text-2xl font-bold mb-4 text-red-600">⚠️ Authentication Error</div>
+              <div className="text-lg mb-6 text-gray-700">{error}</div>
+              <div className="space-y-3">
+                <Button 
+                  onClick={handleRetry}
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                >
+                  Retry
+                </Button>
+                <Button 
+                  onClick={() => navigate('/auth')} 
+                  variant="outline"
+                  className="w-full"
+                >
+                  Go to Login
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </div>
+      </GradientLayout>
     );
   }
 
   // Show not authenticated state
   if (!user) {
-    console.log('No user found, showing not authenticated state');
-    return (
-      <div className="min-h-screen bg-blue-500 text-white flex items-center justify-center">
-        <div className="text-center p-8 bg-blue-600 rounded-lg">
-          <div className="text-2xl font-bold mb-4">🔐 Please Sign In</div>
-          <div className="text-lg mb-4">You need to be signed in to access the app</div>
-          <button 
-            onClick={() => navigate('/auth')} 
-            className="bg-white text-blue-600 px-6 py-3 rounded font-bold text-lg"
-          >
-            Go to Login Page
-          </button>
-        </div>
-      </div>
-    );
+    console.log('No user found, redirecting to home');
+    navigate('/');
+    return null;
   }
 
-  console.log('User authenticated, rendering main homepage');
+  console.log('User authenticated, rendering main dashboard');
 
   // Show success state for authenticated users
   return (
-    <div className="min-h-screen bg-green-500 text-white flex items-center justify-center">
-      <div className="text-center p-8 bg-green-600 rounded-lg max-w-2xl">
-        <div className="text-3xl font-bold mb-6">🎉 Welcome to Figmant.ai</div>
-        
-        <div className="text-left bg-green-700 p-4 rounded mb-6">
-          <div className="text-lg font-semibold mb-2">User Info:</div>
-          <div>📧 Email: {user.email}</div>
-          <div>🆔 ID: {user.id}</div>
-          <div>📅 Created: {new Date(user.created_at).toLocaleDateString()}</div>
-        </div>
+    <GradientLayout variant="green" intensity="medium">
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl max-w-2xl w-full">
+          <CardContent className="p-8">
+            <div className="text-center">
+              <div className="text-3xl font-bold mb-6 bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+                🎉 Welcome to Figmant.ai
+              </div>
+              
+              <div className="text-left bg-slate-50 p-6 rounded-lg mb-6">
+                <div className="text-lg font-semibold mb-3 text-gray-800">User Info:</div>
+                <div className="space-y-2 text-gray-700">
+                  <div>📧 Email: {user.email}</div>
+                  <div>🆔 ID: {user.id}</div>
+                  <div>📅 Created: {new Date(user.created_at).toLocaleDateString()}</div>
+                </div>
+              </div>
 
-        {subscription && (
-          <div className="text-left bg-green-700 p-4 rounded mb-6">
-            <div className="text-lg font-semibold mb-2">Subscription Info:</div>
-            <div>📋 Plan: {subscription.plan_type}</div>
-            <div>📊 Analyses: {subscription.analyses_used} / {subscription.analyses_limit}</div>
-          </div>
-        )}
+              {subscription && (
+                <div className="text-left bg-slate-50 p-6 rounded-lg mb-6">
+                  <div className="text-lg font-semibold mb-3 text-gray-800">Subscription Info:</div>
+                  <div className="space-y-2 text-gray-700">
+                    <div>📋 Plan: {subscription.plan_type}</div>
+                    <div>📊 Analyses: {subscription.analyses_used} / {subscription.analyses_limit}</div>
+                  </div>
+                </div>
+              )}
 
-        <div className="space-y-4">
-          <button 
-            onClick={() => navigate('/analysis')} 
-            className="bg-white text-green-600 px-6 py-3 rounded font-bold text-lg mr-4"
-          >
-            Start Analysis
-          </button>
-          <button 
-            onClick={handleSignOut} 
-            className="bg-red-500 text-white px-6 py-3 rounded font-bold text-lg"
-          >
-            Sign Out
-          </button>
-        </div>
+              <div className="space-y-4">
+                <Button 
+                  onClick={() => navigate('/analysis')} 
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  Start Analysis
+                </Button>
+                <Button 
+                  onClick={handleSignOut} 
+                  variant="outline"
+                  className="ml-4 px-6 py-3 text-lg font-semibold"
+                >
+                  Sign Out
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-    </div>
+    </GradientLayout>
   );
 };
 

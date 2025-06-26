@@ -21,7 +21,7 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Landing />} />
-            <Route path="/app" element={<Index />} />
+            <Route path="/dashboard" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/analysis" element={<Analysis />} />
             <Route path="/subscription" element={<Subscription />} />

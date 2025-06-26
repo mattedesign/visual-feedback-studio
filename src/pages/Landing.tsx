@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -19,9 +20,14 @@ import {
 
 const Landing = () => {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
 
   const handleGetStarted = () => {
-    navigate('/auth');
+    if (user) {
+      navigate('/dashboard');
+    } else {
+      navigate('/auth');
+    }
   };
 
   const features = [
@@ -76,9 +82,20 @@ const Landing = () => {
         {/* Hero Section */}
         <section className="relative pt-16 pb-12 px-4 sm:pt-20 sm:pb-16">
           <div className="max-w-6xl mx-auto text-center">
-            <Badge className="mb-6 bg-purple-100 text-purple-800 hover:bg-purple-200">
-              🚀 AI-Powered Design Analysis
-            </Badge>
+            {/* Auth Status Indicator */}
+            {!loading && (
+              <div className="mb-4">
+                {user ? (
+                  <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
+                    Welcome back, {user.email?.split('@')[0]}!
+                  </Badge>
+                ) : (
+                  <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">
+                    🚀 AI-Powered Design Analysis
+                  </Badge>
+                )}
+              </div>
+            )}
             
             <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600 bg-clip-text text-transparent leading-tight">
               Transform Your Designs Into
@@ -97,7 +114,7 @@ const Landing = () => {
                 size="lg"
                 className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
               >
-                Start Free Analysis
+                {user ? 'Go to Dashboard' : 'Start Free Analysis'}
                 <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
               
@@ -209,7 +226,7 @@ const Landing = () => {
               size="lg"
               className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 sm:px-12 py-4 sm:py-6 text-lg sm:text-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
             >
-              Get Started for Free
+              {user ? 'Go to Dashboard' : 'Get Started for Free'}
               <ArrowRight className="ml-3 h-5 w-5 sm:h-6 sm:w-6" />
             </Button>
           </div>
