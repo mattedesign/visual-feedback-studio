@@ -22,14 +22,14 @@ export const useSubscription = () => {
 
   const fetchSubscription = async () => {
     if (!user) {
-      console.log('🔍 useSubscription: No user found, setting loading to false');
+      console.log('useSubscription: No user found, setting loading to false');
       setLoading(false);
       return;
     }
 
     try {
-      console.log('🔍 useSubscription: Fetching subscription for user:', user.id, user.email);
       setError(null);
+      console.log('useSubscription: Fetching subscription for user:', user.id);
       
       const { data, error } = await supabase
         .from('user_subscriptions')
@@ -37,14 +37,27 @@ export const useSubscription = () => {
         .eq('user_id', user.id)
         .single();
 
-      console.log('🔍 useSubscription: Raw database response:', { data, error });
+      console.log('useSubscription: Raw database response:', { data, error });
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
-        console.error('🔍 useSubscription: Database error:', error);
+      if (error && error.code === 'PGRST116') {
+        // No subscription found - initialize trial for new user
+        console.log('useSubscription: No subscription found, initializing trial');
+        const { data: newSub, error: initError } = await supabase
+          .rpc('initialize_user_subscription', { p_user_id: user.id });
+        
+        if (!initError) {
+          // Refetch after initialization
+          await fetchSubscription();
+          return;
+        } else {
+          console.error('useSubscription: Error initializing subscription:', initError);
+        }
+      }
+
+      if (error && error.code !== 'PGRST116') {
         throw error;
       }
 
-      // Type-safe assignment with proper plan_type casting
       if (data) {
         const subscriptionData: Subscription = {
           id: data.id,
@@ -58,26 +71,101 @@ export const useSubscription = () => {
           stripe_subscription_id: data.stripe_subscription_id,
         };
         
-        console.log('🔍 useSubscription: Processed subscription data:', {
-          plan_type: subscriptionData.plan_type,
-          status: subscriptionData.status,
-          analyses_used: subscriptionData.analyses_used,
-          analyses_limit: subscriptionData.analyses_limit,
-          raw_plan_type: data.plan_type,
-          raw_status: data.status
-        });
-        
+        console.log('useSubscription: Processed subscription data:', subscriptionData);
         setSubscription(subscriptionData);
       } else {
-        console.log('🔍 useSubscription: No subscription found in database');
+        console.log('useSubscription: No subscription data returned');
         setSubscription(null);
       }
     } catch (err) {
-      console.error('🔍 useSubscription: Error fetching subscription:', err);
+      console.error('useSubscription: Error fetching subscription:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch subscription');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Check if user is an active subscriber (monthly/yearly with active status)
+  const isActiveSubscriber = () => {
+    if (!subscription) {
+      console.log('useSubscription.isActiveSubscriber: No subscription object');
+      return false;
+    }
+    
+    const isActive = (subscription.plan_type === 'yearly' || subscription.plan_type === 'monthly') && 
+                     subscription.status === 'active';
+    
+    console.log('useSubscription.isActiveSubscriber:', {
+      plan_type: subscription.plan_type,
+      status: subscription.status,
+      isActive
+    });
+    
+    return isActive;
+  };
+
+  // Check if user is on trial
+  const isTrialUser = () => {
+    if (!subscription) return false;
+    return subscription.plan_type === 'trial';
+  };
+
+  // Check if user needs subscription (trial expired or no subscription)
+  const needsSubscription = () => {
+    if (!subscription) {
+      console.log('useSubscription.needsSubscription: No subscription, needs subscription');
+      return true;
+    }
+    
+    if (isActiveSubscriber()) {
+      console.log('useSubscription.needsSubscription: Active subscriber, no subscription needed');
+      return false;
+    }
+    
+    if (isTrialUser()) {
+      const needsSub = subscription.analyses_used >= subscription.analyses_limit;
+      console.log('useSubscription.needsSubscription: Trial user check:', {
+        analyses_used: subscription.analyses_used,
+        analyses_limit: subscription.analyses_limit,
+        needsSubscription: needsSub
+      });
+      return needsSub;
+    }
+    
+    console.log('useSubscription.needsSubscription: Default case, needs subscription');
+    return true;
+  };
+
+  // Main function to check if user can create analysis
+  const canCreateAnalysis = () => {
+    if (!subscription) {
+      console.log('useSubscription.canCreateAnalysis: No subscription object found');
+      return false;
+    }
+    
+    console.log('useSubscription.canCreateAnalysis: Checking with subscription:', {
+      plan_type: subscription.plan_type,
+      status: subscription.status,
+      analyses_used: subscription.analyses_used,
+      analyses_limit: subscription.analyses_limit
+    });
+    
+    // Active yearly or monthly subscribers can always create analyses
+    if ((subscription.plan_type === 'yearly' || subscription.plan_type === 'monthly') && 
+        subscription.status === 'active') {
+      console.log('useSubscription.canCreateAnalysis: Active subscriber, returning true');
+      return true;
+    }
+    
+    // Trial users can create if they have analyses left
+    if (subscription.plan_type === 'trial' && 
+        subscription.analyses_used < subscription.analyses_limit) {
+      console.log('useSubscription.canCreateAnalysis: Trial user with analyses remaining, returning true');
+      return true;
+    }
+    
+    console.log('useSubscription.canCreateAnalysis: No valid subscription found, returning false');
+    return false;
   };
 
   const checkAnalysisLimit = async (): Promise<boolean> => {
@@ -118,111 +206,13 @@ export const useSubscription = () => {
     }
   };
 
-  // Helper function: Check if user is an active subscriber (monthly/yearly with active status)
-  const isActiveSubscriber = (): boolean => {
-    console.log('🔍 useSubscription.isActiveSubscriber: Checking with subscription:', subscription);
-    
-    if (!subscription) {
-      console.log('🔍 useSubscription.isActiveSubscriber: No subscription, returning false');
-      return false;
-    }
-    
-    const isYearlyOrMonthly = subscription.plan_type === 'monthly' || subscription.plan_type === 'yearly';
-    const isActive = subscription.status === 'active';
-    const result = isYearlyOrMonthly && isActive;
-    
-    console.log('🔍 useSubscription.isActiveSubscriber:', {
-      plan_type: subscription.plan_type,
-      status: subscription.status,
-      isYearlyOrMonthly,
-      isActive,
-      result
-    });
-    
-    return result;
-  };
-
-  // Helper function: Check if user is on trial
-  const isTrialUser = (): boolean => {
-    console.log('🔍 useSubscription.isTrialUser: Checking with subscription:', subscription);
-    
-    if (!subscription) {
-      console.log('🔍 useSubscription.isTrialUser: No subscription, returning false');
-      return false;
-    }
-    
-    const result = subscription.plan_type === 'trial';
-    console.log('🔍 useSubscription.isTrialUser:', { plan_type: subscription.plan_type, result });
-    
-    return result;
-  };
-
-  // Helper function: Check if user needs a subscription
-  const needsSubscription = (): boolean => {
-    console.log('🔍 useSubscription.needsSubscription: Checking with subscription:', subscription);
-    
-    if (!subscription) {
-      console.log('🔍 useSubscription.needsSubscription: No subscription, returning true');
-      return true;
-    }
-    
-    // If user is an active subscriber, they don't need a subscription
-    if (isActiveSubscriber()) {
-      console.log('🔍 useSubscription.needsSubscription: User is active subscriber, returning false');
-      return false;
-    }
-    
-    // If user is on trial and has remaining analyses, they don't need subscription yet
-    if (isTrialUser() && subscription.analyses_used < subscription.analyses_limit) {
-      console.log('🔍 useSubscription.needsSubscription: User is on trial with remaining analyses, returning false');
-      return false;
-    }
-    
-    // Otherwise, they need a subscription
-    console.log('🔍 useSubscription.needsSubscription: User needs subscription, returning true');
-    return true;
-  };
-
-  // Main function: Check if user can create analysis
-  const canCreateAnalysis = (): boolean => {
-    console.log('🔍 useSubscription.canCreateAnalysis: Checking with subscription:', subscription);
-    
-    if (!subscription) {
-      console.log('🔍 useSubscription.canCreateAnalysis: No subscription, returning false');
-      return false;
-    }
-    
-    // Active subscribers (monthly/yearly with active status) get unlimited analyses
-    if (isActiveSubscriber()) {
-      console.log('🔍 useSubscription.canCreateAnalysis: User is active subscriber, returning true');
-      return true;
-    }
-    
-    // Trial users can create analyses if they haven't exceeded their limit
-    if (isTrialUser() && subscription.status === 'active') {
-      const canAnalyze = subscription.analyses_used < subscription.analyses_limit;
-      console.log('🔍 useSubscription.canCreateAnalysis: Trial user check:', {
-        analyses_used: subscription.analyses_used,
-        analyses_limit: subscription.analyses_limit,
-        canAnalyze
-      });
-      return canAnalyze;
-    }
-    
-    // All other cases: cannot create analysis
-    console.log('🔍 useSubscription.canCreateAnalysis: Other case, returning false');
-    return false;
-  };
-
-  const getRemainingAnalyses = (): number => {
+  const getRemainingAnalyses = () => {
     if (!subscription) return 0;
     
-    // Active subscribers have unlimited analyses
-    if (isActiveSubscriber()) {
-      return 999; // Return a high number to indicate unlimited
-    }
+    // Active subscribers have unlimited
+    if (isActiveSubscriber()) return 999999;
     
-    // Trial users have limited analyses
+    // Trial users have limited
     if (isTrialUser()) {
       return Math.max(0, subscription.analyses_limit - subscription.analyses_used);
     }
@@ -230,18 +220,18 @@ export const useSubscription = () => {
     return 0;
   };
 
-  const getUsagePercentage = (): number => {
+  const getUsagePercentage = () => {
     if (!subscription) return 0;
     
-    // Active subscribers don't have usage limitations
+    // Active subscribers show 0% (unlimited)
     if (isActiveSubscriber()) return 0;
     
-    // Trial users have usage limitations
+    // Trial users show actual percentage
     if (isTrialUser() && subscription.analyses_limit > 0) {
       return (subscription.analyses_used / subscription.analyses_limit) * 100;
     }
     
-    return 100; // If no valid subscription, consider it fully used
+    return 100; // No subscription = 100% used
   };
 
   useEffect(() => {
@@ -255,12 +245,11 @@ export const useSubscription = () => {
     checkAnalysisLimit,
     incrementAnalysisUsage,
     canCreateAnalysis,
-    getRemainingAnalyses,
-    getUsagePercentage,
-    refetch: fetchSubscription,
-    // New helper functions
     isActiveSubscriber,
     isTrialUser,
-    needsSubscription
+    needsSubscription,
+    getRemainingAnalyses,
+    getUsagePercentage,
+    refetch: fetchSubscription
   };
 };
