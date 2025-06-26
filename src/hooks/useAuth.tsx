@@ -38,7 +38,7 @@ export const useAuth = () => {
       }
     );
 
-    // Initialize session check with improved timeout and retry logic
+    // Initialize session check with immediate fallback for public pages
     const initialize = async () => {
       try {
         console.log('useAuth: Checking for existing session');
@@ -49,10 +49,13 @@ export const useAuth = () => {
         if (mounted) {
           if (error) {
             console.error('useAuth: Session error:', error);
+            // Don't treat session errors as blocking for public pages
             setAuthState(prev => ({
               ...prev,
-              error: error.message,
-              loading: false
+              session: null,
+              user: null,
+              loading: false,
+              error: null // Clear error for public access
             }));
           } else {
             setAuthState(prev => ({
@@ -67,26 +70,29 @@ export const useAuth = () => {
       } catch (err) {
         console.error('useAuth: Initialize error:', err);
         if (mounted) {
+          // Don't block public pages with auth errors
           setAuthState(prev => ({
             ...prev,
-            error: err instanceof Error ? err.message : 'Session check failed',
-            loading: false
+            session: null,
+            user: null,
+            loading: false,
+            error: null
           }));
         }
       }
     };
 
-    // Reduced timeout from 15 seconds to 5 seconds to prevent blocking UI
+    // Much shorter timeout - don't block public pages
     const timeoutId = setTimeout(() => {
-      console.warn('useAuth: Timeout reached, forcing loading to false');
+      console.warn('useAuth: Timeout reached, allowing public access');
       if (mounted) {
         setAuthState(prev => ({
           ...prev,
           loading: false,
-          error: null // Don't show error on timeout, just stop loading
+          error: null
         }));
       }
-    }, 5000); // Reduced to 5 seconds
+    }, 1000); // Reduced to 1 second
 
     initialize();
 

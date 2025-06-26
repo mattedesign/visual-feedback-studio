@@ -76,13 +76,14 @@ const Landing = () => {
     { value: "24/7", label: "AI Availability" }
   ];
 
+  // Always render the landing page content - don't wait for auth state
   return (
     <GradientLayout variant="purple" intensity="medium" speed="normal" orbCount={4}>
       <div className="min-h-screen">
         {/* Hero Section */}
         <section className="relative pt-16 pb-12 px-4 sm:pt-20 sm:pb-16">
           <div className="max-w-6xl mx-auto text-center">
-            {/* Auth Status Indicator */}
+            {/* Auth Status Indicator - only show if not loading */}
             {!loading && (
               <div className="mb-4">
                 {user ? (
