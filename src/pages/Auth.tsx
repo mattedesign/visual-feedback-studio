@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { AlertTriangle, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -15,7 +16,7 @@ const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   
-  const { user, session, error: authError } = useAuth();
+  const { user, session, loading: authLoading, error: authError } = useAuth();
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,17 +101,25 @@ const Auth = () => {
     window.location.href = '/analysis';
   };
 
+  // Show loading spinner while checking auth state
+  if (authLoading) {
+    return <LoadingSpinner />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-slate-800 border-slate-700">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl text-white">
-            {isSignUp ? 'Create Account' : 'Welcome Back'}
+            {user && session ? 'Already Logged In' : (isSignUp ? 'Create Account' : 'Welcome Back')}
           </CardTitle>
           <CardDescription className="text-slate-400">
-            {isSignUp 
-              ? 'Sign up to start analyzing your designs' 
-              : 'Sign in to your account'
+            {user && session 
+              ? 'You are already signed in to your account' 
+              : (isSignUp 
+                ? 'Sign up to start analyzing your designs' 
+                : 'Sign in to your account'
+              )
             }
           </CardDescription>
         </CardHeader>
@@ -124,78 +133,87 @@ const Auth = () => {
             </Alert>
           )}
 
-          {/* Show Go to Analysis button if user is logged in */}
-          {user && session && (
-            <div className="mb-6 p-4 bg-green-900/20 rounded-lg border border-green-700">
-              <p className="text-green-400 text-sm mb-3">
-                ✅ You are logged in as: {user.email}
-              </p>
+          {/* Show logged-in state if user exists */}
+          {user && session ? (
+            <div className="space-y-4">
+              <div className="p-4 bg-green-900/20 rounded-lg border border-green-700">
+                <p className="text-green-400 text-sm mb-1">
+                  ✅ You are logged in as:
+                </p>
+                <p className="text-green-300 font-medium">
+                  {user.email}
+                </p>
+              </div>
               <Button
                 onClick={handleGoToAnalysis}
                 className="w-full bg-blue-600 hover:bg-blue-700"
+                size="lg"
               >
                 <ArrowRight className="w-4 h-4 mr-2" />
                 Go to Analysis
               </Button>
             </div>
+          ) : (
+            /* Show login/signup form for non-authenticated users */
+            <>
+              <form onSubmit={handleAuth} className="space-y-4">
+                <div>
+                  <Input
+                    type="email"
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+                  />
+                </div>
+                <div>
+                  <Input
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {loading ? 'Loading...' : (isSignUp ? 'Sign Up' : 'Sign In')}
+                </Button>
+              </form>
+              
+              {!isSignUp && (
+                <div className="mt-4">
+                  <Button
+                    onClick={handleMagicLink}
+                    disabled={loading}
+                    variant="outline"
+                    className="w-full border-slate-600 text-slate-300 hover:bg-slate-700"
+                  >
+                    Send Magic Link
+                  </Button>
+                </div>
+              )}
+              
+              <div className="mt-4 text-center">
+                <button
+                  type="button"
+                  onClick={() => setIsSignUp(!isSignUp)}
+                  className="text-blue-400 hover:text-blue-300 underline"
+                >
+                  {isSignUp 
+                    ? 'Already have an account? Sign in' 
+                    : "Don't have an account? Sign up"
+                  }
+                </button>
+              </div>
+            </>
           )}
-          
-          <form onSubmit={handleAuth} className="space-y-4">
-            <div>
-              <Input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
-              />
-            </div>
-            <div>
-              <Input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
-              />
-            </div>
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
-            >
-              {loading ? 'Loading...' : (isSignUp ? 'Sign Up' : 'Sign In')}
-            </Button>
-          </form>
-          
-          {!isSignUp && (
-            <div className="mt-4">
-              <Button
-                onClick={handleMagicLink}
-                disabled={loading}
-                variant="outline"
-                className="w-full border-slate-600 text-slate-300 hover:bg-slate-700"
-              >
-                Send Magic Link
-              </Button>
-            </div>
-          )}
-          
-          <div className="mt-4 text-center">
-            <button
-              type="button"
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-blue-400 hover:text-blue-300 underline"
-            >
-              {isSignUp 
-                ? 'Already have an account? Sign in' 
-                : "Don't have an account? Sign up"
-              }
-            </button>
-          </div>
         </CardContent>
       </Card>
     </div>
