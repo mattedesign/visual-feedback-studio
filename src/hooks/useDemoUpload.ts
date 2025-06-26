@@ -9,7 +9,7 @@ export const useDemoUpload = (onImageUpload: (imageUrl: string) => void) => {
     setIsProcessing(true);
     
     try {
-      console.log('Using demo design image');
+      console.log('Using demo design image - this will proceed immediately');
       
       // Use the demo image from public folder
       const demoImageUrl = '/lovable-uploads/21223d81-f4f7-4209-8d6a-f2f8f703d1d1.png';
@@ -20,9 +20,9 @@ export const useDemoUpload = (onImageUpload: (imageUrl: string) => void) => {
         throw new Error('Demo image not accessible');
       }
       
-      console.log('Demo image verified and ready');
+      console.log('Demo image verified and ready - proceeding to analysis');
       
-      // Pass to callback - this will proceed immediately for demo
+      // For demo, we want to proceed immediately to analysis
       onImageUpload(demoImageUrl);
       
       toast.success('Demo design loaded successfully!');

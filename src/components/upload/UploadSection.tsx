@@ -15,24 +15,29 @@ interface UploadSectionProps {
 export const UploadSection = ({ onImageUpload, onMultipleImagesReady }: UploadSectionProps) => {
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   
+  // Modified callback to only add to collection, not proceed immediately
+  const handleImageAddedToCollection = (imageUrl: string) => {
+    console.log('Adding image to collection (no workflow trigger):', imageUrl);
+    setUploadedImages(prev => {
+      const newImages = [...prev, imageUrl];
+      console.log('Collection now has', newImages.length, 'images');
+      return newImages;
+    });
+  };
+
   const {
     isProcessing,
     handleFileUpload,
     handleUrlSubmit,
     handleDemoUpload,
-  } = useUploadLogic((imageUrl: string) => {
-    // Add image to collection instead of immediately forwarding
-    setUploadedImages(prev => {
-      const newImages = [...prev, imageUrl];
-      return newImages;
-    });
-  });
+  } = useUploadLogic(handleImageAddedToCollection);
 
   const handleRemoveImage = (imageUrlToRemove: string) => {
     setUploadedImages(prev => prev.filter(url => url !== imageUrlToRemove));
   };
 
   const handleContinue = () => {
+    console.log('User clicked Continue with', uploadedImages.length, 'images');
     if (uploadedImages.length > 0) {
       if (onMultipleImagesReady) {
         onMultipleImagesReady(uploadedImages);
@@ -44,12 +49,14 @@ export const UploadSection = ({ onImageUpload, onMultipleImagesReady }: UploadSe
   };
 
   const handleWebsiteUpload = (imageUrl: string) => {
+    console.log('Website image uploaded, proceeding immediately:', imageUrl);
     // For website uploads, we can continue immediately or add to collection
     // For now, let's treat it like a single upload that proceeds immediately
     onImageUpload(imageUrl);
   };
 
   const handleDemoClick = () => {
+    console.log('Demo button clicked, proceeding immediately');
     // Demo should proceed immediately
     handleDemoUpload();
   };

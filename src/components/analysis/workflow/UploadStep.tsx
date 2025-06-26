@@ -30,12 +30,12 @@ export const UploadStep = ({ workflow }: UploadStepProps) => {
   };
 
   const handleSingleImageUpload = async (imageUrl: string) => {
-    console.log('UploadStep: Single image uploaded, creating analysis session:', imageUrl);
+    console.log('UploadStep: Single image uploaded, creating analysis session and proceeding:', imageUrl);
     await createAnalysisAndProceed([imageUrl]);
   };
 
   const handleMultipleImagesReady = async (imageUrls: string[]) => {
-    console.log('UploadStep: Multiple images ready, creating analysis session:', imageUrls.length);
+    console.log('UploadStep: Multiple images ready, creating analysis session and proceeding:', imageUrls.length);
     await createAnalysisAndProceed(imageUrls);
   };
 
