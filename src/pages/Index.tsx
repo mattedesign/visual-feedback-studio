@@ -1,190 +1,130 @@
 
 import { useNavigate } from 'react-router-dom';
-import { Header } from '@/components/layout/Header';
-import { LoadingSpinner } from '@/components/common/LoadingSpinner';
-import { AuthGuard } from '@/components/auth/AuthGuard';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { GradientLayout } from '@/components/ui/GradientLayout';
-import { DirectRAGTestSimple } from '@/components/analysis/DirectRAGTestSimple';
-import { StyleDebugger } from '@/components/common/StyleDebugger';
-import { EnhancedStyleTester } from '@/components/common/EnhancedStyleTester';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
-import { Zap, Crown, Plus, Settings } from 'lucide-react';
+import { useEffect } from 'react';
 
 const Index = () => {
-  console.log('Index component rendering - Homepage started');
+  console.log('🚀 Index component rendering - START');
   
-  const { user, loading, signOut } = useAuth();
+  const { user, loading, signOut, error } = useAuth();
   const { subscription, loading: subscriptionLoading } = useSubscription();
   const navigate = useNavigate();
 
-  console.log('Auth state:', { 
-    hasUser: !!user, 
-    loading, 
-    userEmail: user?.email,
-    subscriptionLoading 
-  });
+  // Debug logging
+  useEffect(() => {
+    console.log('🎯 Index component mounted');
+    console.log('📊 Auth state:', { 
+      hasUser: !!user, 
+      userEmail: user?.email,
+      loading,
+      error,
+      subscriptionLoading
+    });
+  }, [user, loading, error, subscriptionLoading]);
 
   const handleSignOut = async () => {
-    console.log('Sign out initiated');
-    await signOut();
-    navigate('/auth');
+    console.log('🔐 Sign out initiated');
+    try {
+      await signOut();
+      navigate('/auth');
+    } catch (err) {
+      console.error('❌ Sign out failed:', err);
+    }
   };
 
+  // Show loading state with bright red background
   if (loading || subscriptionLoading) {
-    console.log('Still loading auth/subscription data');
-    return <LoadingSpinner />;
-  }
-
-  if (!user) {
-    console.log('No user found, showing AuthGuard');
-    return <AuthGuard />;
-  }
-
-  console.log('User authenticated, rendering main homepage');
-
-  const handleStartAnalysis = () => {
-    console.log('Start Analysis button clicked');
-    navigate('/analysis');
-  };
-
-  const handleManageSubscription = () => {
-    console.log('Manage Subscription button clicked');
-    navigate('/subscription');
-  };
-
-  console.log('Rendering homepage with gradient background and styling');
-
-  return (
-    <GradientLayout variant="purple" intensity="medium" speed="normal">
-      <div className="min-h-screen bg-slate-900/80 text-white backdrop-blur-sm">
-        <Header user={user} onSignOut={handleSignOut} />
-        
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-4xl mx-auto">
-            {/* Add Enhanced Style Tester for debugging */}
-            <EnhancedStyleTester />
-            
-            {/* Hero Section with Gradient Title */}
-            <div className="text-center mb-12 animate-fade-in">
-              <h1 className="text-6xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent animate-glow">
-                Design Analysis Tool
-              </h1>
-              
-              <p className="text-xl text-slate-200 mb-8 max-w-2xl mx-auto">
-                Upload your designs and get AI-powered feedback on UX, accessibility, and conversion optimization
-              </p>
-              
-              {/* Main CTA Button */}
-              <Button 
-                onClick={handleStartAnalysis} 
-                className="enhanced-button-primary text-lg px-8 py-4 mb-8 animate-pulse"
-                size="lg"
-              >
-                <Plus className="mr-2 h-5 w-5" />
-                Start Analyzing Now
-              </Button>
-            </div>
-
-            {/* Dashboard Cards */}
-            <div className="grid md:grid-cols-2 gap-6 mb-12">
-              <Card className="bg-slate-800/70 border-slate-700 backdrop-blur-sm hover-lift">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Plus className="h-5 w-5" />
-                    New Analysis
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-slate-300 mb-4">
-                    Upload your designs and get AI-powered insights and recommendations.
-                  </p>
-                  <Button onClick={handleStartAnalysis} className="enhanced-button-primary w-full">
-                    Create Analysis
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-slate-800/70 border-slate-700 backdrop-blur-sm hover-lift">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Settings className="h-5 w-5" />
-                    Subscription
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {subscription ? (
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        {subscription.plan_type === 'freemium' ? (
-                          <Zap className="h-4 w-4" />
-                        ) : (
-                          <Crown className="h-4 w-4" />
-                        )}
-                        <span className="capitalize font-medium">
-                          {subscription.plan_type} Plan
-                        </span>
-                      </div>
-                      <p className="text-slate-300 mb-4">
-                        {subscription.analyses_used} / {subscription.analyses_limit} analyses used
-                      </p>
-                      <Button onClick={handleManageSubscription} variant="outline" className="enhanced-button-secondary w-full">
-                        {subscription.plan_type === 'freemium' ? 'Upgrade Plan' : 'Manage Subscription'}
-                      </Button>
-                    </div>
-                  ) : (
-                    <div>
-                      <p className="text-slate-300 mb-4">
-                        Manage your subscription and billing settings.
-                      </p>
-                      <Button onClick={handleManageSubscription} variant="outline" className="enhanced-button-secondary w-full">
-                        View Subscription
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Upgrade Prompt for Freemium Users */}
-            {subscription && subscription.plan_type === 'freemium' && (
-              <Card className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 border-purple-500/50 backdrop-blur-sm mb-12 hover-glow">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold mb-2">Upgrade to Pro</h3>
-                      <p className="text-slate-300">
-                        Get unlimited analyses and advanced features
-                      </p>
-                    </div>
-                    <Button onClick={handleManageSubscription} className="enhanced-button-primary bg-purple-600 hover:bg-purple-700">
-                      Upgrade Now
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* RAG Test Component */}
-            <div className="mt-12">
-              <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-center">AI Analysis Testing</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <DirectRAGTestSimple />
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+    console.log('⏳ Still loading auth/subscription data');
+    return (
+      <div className="min-h-screen bg-red-500 text-white flex items-center justify-center">
+        <div className="text-center p-8 bg-red-600 rounded-lg">
+          <div className="text-2xl font-bold mb-4">🔄 LOADING STATE</div>
+          <div className="text-lg mb-2">Auth Loading: {loading ? 'YES' : 'NO'}</div>
+          <div className="text-lg mb-2">Subscription Loading: {subscriptionLoading ? 'YES' : 'NO'}</div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
         </div>
-        
-        {/* Add Style Debugger for visual confirmation */}
-        <StyleDebugger />
       </div>
-    </GradientLayout>
+    );
+  }
+
+  // Show auth error state with bright orange background
+  if (error) {
+    console.log('❌ Auth error state:', error);
+    return (
+      <div className="min-h-screen bg-orange-500 text-white flex items-center justify-center">
+        <div className="text-center p-8 bg-orange-600 rounded-lg max-w-md">
+          <div className="text-2xl font-bold mb-4">⚠️ AUTH ERROR</div>
+          <div className="text-lg mb-4">{error}</div>
+          <button 
+            onClick={() => navigate('/auth')} 
+            className="bg-white text-orange-600 px-4 py-2 rounded font-bold"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show not authenticated state with bright blue background
+  if (!user) {
+    console.log('🔒 No user found, showing not authenticated state');
+    return (
+      <div className="min-h-screen bg-blue-500 text-white flex items-center justify-center">
+        <div className="text-center p-8 bg-blue-600 rounded-lg">
+          <div className="text-2xl font-bold mb-4">🔐 NOT LOGGED IN</div>
+          <div className="text-lg mb-4">Redirecting to authentication...</div>
+          <button 
+            onClick={() => navigate('/auth')} 
+            className="bg-white text-blue-600 px-6 py-3 rounded font-bold text-lg"
+          >
+            Go to Login Page
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  console.log('✅ User authenticated, rendering main homepage');
+
+  // Show success state with bright green background
+  return (
+    <div className="min-h-screen bg-green-500 text-white flex items-center justify-center">
+      <div className="text-center p-8 bg-green-600 rounded-lg max-w-2xl">
+        <div className="text-3xl font-bold mb-6">🎉 SUCCESS! Homepage Loaded</div>
+        
+        <div className="text-left bg-green-700 p-4 rounded mb-6">
+          <div className="text-lg font-semibold mb-2">User Info:</div>
+          <div>📧 Email: {user.email}</div>
+          <div>🆔 ID: {user.id}</div>
+          <div>📅 Created: {new Date(user.created_at).toLocaleDateString()}</div>
+        </div>
+
+        {subscription && (
+          <div className="text-left bg-green-700 p-4 rounded mb-6">
+            <div className="text-lg font-semibold mb-2">Subscription Info:</div>
+            <div>📋 Plan: {subscription.plan_type}</div>
+            <div>📊 Analyses: {subscription.analyses_used} / {subscription.analyses_limit}</div>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          <button 
+            onClick={() => navigate('/analysis')} 
+            className="bg-white text-green-600 px-6 py-3 rounded font-bold text-lg mr-4"
+          >
+            Go to Analysis
+          </button>
+          <button 
+            onClick={handleSignOut} 
+            className="bg-red-500 text-white px-6 py-3 rounded font-bold text-lg"
+          >
+            Sign Out
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 
