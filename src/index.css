@@ -3,6 +3,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import custom animations */
+@import './styles/animations.css';
+
 body {
   margin: 0;
   padding: 0;
@@ -27,3 +30,26 @@ body {
 .to-purple-400 { --tw-gradient-to: #c084fc; }
 .bg-clip-text { background-clip: text; }
 .text-transparent { color: transparent; }
+
+/* Ensure animations work with fallbacks */
+.animate-fade-in {
+  animation: fade-in 0.6s ease-out forwards;
+}
+
+/* Fallback styling for gradient backgrounds */
+.gradient-background-fallback {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Ensure proper backdrop blur support */
+.backdrop-blur-sm {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* Fallback for when backdrop-filter is not supported */
+@supports not (backdrop-filter: blur(4px)) {
+  .backdrop-blur-sm {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}

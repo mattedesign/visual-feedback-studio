@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 export type ColorVariant = 'purple' | 'blue' | 'orange' | 'green' | 'red';
@@ -123,9 +124,12 @@ export const AnimatedGradientBackground: React.FC<AnimatedGradientBackgroundProp
     index,
   }));
 
+  // Static fallback background
+  const fallbackBg = `bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900`;
+
   return (
     <div className={`fixed inset-0 overflow-hidden pointer-events-none ${className}`}>
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900" />
+      <div className={`absolute inset-0 ${fallbackBg}`} />
       {orbs.map((orb) => (
         <GradientOrb
           key={orb.id}
