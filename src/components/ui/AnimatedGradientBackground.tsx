@@ -72,7 +72,9 @@ const getAnimationClass = (speed: SpeedOption, index: number) => {
     fast: 'animate-float-fast'
   };
 
-  return `${speedMap[speed]} animate-float-${index + 1}`;
+  // Use numbered float animations for variety, cycling through 1-6
+  const floatNumber = (index % 6) + 1;
+  return `${speedMap[speed]} animate-float-${floatNumber}`;
 };
 
 const GradientOrb: React.FC<GradientOrbProps> = ({ 
@@ -82,10 +84,12 @@ const GradientOrb: React.FC<GradientOrbProps> = ({
   size, 
   delay, 
   initialX, 
-  initialY 
+  initialY,
+  index = 0
 }) => {
   const colorClasses = getColorClasses(variant, intensity);
   const sizeClasses = getSizeClasses(size);
+  const animationClass = getAnimationClass(speed, index);
   const animationStyle = {
     animationDelay: `${delay}s`,
     left: `${initialX}%`,
@@ -94,7 +98,7 @@ const GradientOrb: React.FC<GradientOrbProps> = ({
 
   return (
     <div
-      className={`absolute rounded-full bg-gradient-radial ${colorClasses} ${sizeClasses} blur-xl animate-float-${speed} opacity-70`}
+      className={`absolute rounded-full bg-gradient-to-br ${colorClasses} ${sizeClasses} blur-xl ${animationClass} opacity-70`}
       style={animationStyle}
     />
   );
@@ -116,6 +120,7 @@ export const AnimatedGradientBackground: React.FC<AnimatedGradientBackgroundProp
     delay: index * 0.5,
     initialX: Math.random() * 80 + 10,
     initialY: Math.random() * 80 + 10,
+    index,
   }));
 
   return (
@@ -131,6 +136,7 @@ export const AnimatedGradientBackground: React.FC<AnimatedGradientBackgroundProp
           delay={orb.delay}
           initialX={orb.initialX}
           initialY={orb.initialY}
+          index={orb.index}
         />
       ))}
     </div>
