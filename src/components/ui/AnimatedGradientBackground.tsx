@@ -110,11 +110,12 @@ export const AnimatedGradientBackground: React.FC<AnimatedGradientBackgroundProp
   orbCount = 6,
   className = ''
 }) => {
-  const colorVariants: ColorVariant[] = ['purple', 'blue', 'orange', 'green', 'red'];
+  // Using analogous colors that flow harmoniously together
+  const colorVariants: ColorVariant[] = ['purple', 'blue', 'purple', 'blue', 'purple', 'blue'];
   
   const orbs = React.useMemo(() => 
     Array.from({ length: orbCount }, (_, index) => {
-      // Cycle through different color variants for variety
+      // Use analogous color palette for harmonic visual flow
       const orbVariant = colorVariants[index % colorVariants.length];
       
       return {
