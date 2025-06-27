@@ -35,6 +35,24 @@ export const ImageTabsViewer = ({
       <TabsList className="grid w-full mb-6 h-12" style={{ gridTemplateColumns: `repeat(${images.length}, 1fr)` }}>
         {images.map((imageUrl, index) => {
           const imageAnnotations = getAnnotationsForImage(index);
+          
+          // 🔍 DEBUG: Enhanced annotation logging for ImageTabsViewer
+          console.log('🔍 ImageTabsViewer - Annotation Debug for Tab:', {
+            imageIndex: index,
+            imageUrl: imageUrl,
+            requestedImageIndex: index,
+            annotationsForThisImage: imageAnnotations.length,
+            annotationDetails: imageAnnotations.map(ann => ({
+              id: ann.id,
+              imageIndex: ann.imageIndex,
+              x: ann.x,
+              y: ann.y,
+              category: ann.category,
+              severity: ann.severity,
+              feedback: ann.feedback.substring(0, 50) + '...'
+            }))
+          });
+          
           return (
             <TabsTrigger key={imageUrl} value={imageUrl} className="relative text-base font-semibold py-3">
               Image {index + 1}
@@ -74,28 +92,42 @@ export const ImageTabsViewer = ({
             ))}
 
             {/* AI annotations for this specific image */}
-            {getAnnotationsForImage(imageIndex).map((annotation) => (
-              <div
-                key={annotation.id}
-                className={`absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-200 ${
-                  activeAnnotation === annotation.id ? 'scale-110 z-20' : 'z-10 hover:scale-105'
-                }`}
-                style={{
-                  left: `${annotation.x}%`,
-                  top: `${annotation.y}%`,
-                }}
-                onClick={() => onAnnotationClick(annotation.id)}
-              >
-                <div className={`w-12 h-12 rounded-full border-4 border-white flex items-center justify-center text-white font-bold text-lg shadow-xl ${
-                  annotation.severity === 'critical' ? 'bg-red-600' :
-                  annotation.severity === 'suggested' ? 'bg-yellow-600' :
-                  annotation.severity === 'enhancement' ? 'bg-blue-600' :
-                  'bg-purple-600'
-                } ${activeAnnotation === annotation.id ? 'ring-4 ring-gray-400' : ''}`}>
-                  <span className="text-base">{getCategoryIcon(annotation.category)}</span>
+            {getAnnotationsForImage(imageIndex).map((annotation) => {
+              // 🔍 DEBUG: Log each annotation being rendered
+              console.log('🔍 ImageTabsViewer - Rendering AI Annotation:', {
+                annotationId: annotation.id,
+                expectedImageIndex: imageIndex,
+                actualImageIndex: annotation.imageIndex,
+                x: annotation.x,
+                y: annotation.y,
+                category: annotation.category,
+                severity: annotation.severity,
+                isCorrectImage: (annotation.imageIndex ?? 0) === imageIndex
+              });
+              
+              return (
+                <div
+                  key={annotation.id}
+                  className={`absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-200 ${
+                    activeAnnotation === annotation.id ? 'scale-110 z-20' : 'z-10 hover:scale-105'
+                  }`}
+                  style={{
+                    left: `${annotation.x}%`,
+                    top: `${annotation.y}%`,
+                  }}
+                  onClick={() => onAnnotationClick(annotation.id)}
+                >
+                  <div className={`w-12 h-12 rounded-full border-4 border-white flex items-center justify-center text-white font-bold text-lg shadow-xl ${
+                    annotation.severity === 'critical' ? 'bg-red-600' :
+                    annotation.severity === 'suggested' ? 'bg-yellow-600' :
+                    annotation.severity === 'enhancement' ? 'bg-blue-600' :
+                    'bg-purple-600'
+                  } ${activeAnnotation === annotation.id ? 'ring-4 ring-gray-400' : ''}`}>
+                    <span className="text-base">{getCategoryIcon(annotation.category)}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </TabsContent>
       ))}

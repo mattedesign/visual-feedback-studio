@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -64,19 +65,76 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
 
   // Filter AI annotations for the current image
   const getAnnotationsForImage = (imageIndex: number) => {
-    return workflow.aiAnnotations.filter(annotation => 
+    const filteredAnnotations = workflow.aiAnnotations.filter(annotation => 
       (annotation.imageIndex ?? 0) === imageIndex
     );
+    
+    // 🔍 DEBUG: Enhanced annotation distribution logging for ResultsStep
+    console.log('🔍 ResultsStep - Annotation Distribution Debug:', {
+      requestedImageIndex: imageIndex,
+      totalAnnotations: workflow.aiAnnotations.length,
+      annotationsForThisImage: filteredAnnotations.length,
+      allImageIndexes: workflow.aiAnnotations.map(a => ({
+        id: a.id,
+        imageIndex: a.imageIndex,
+        category: a.category,
+        severity: a.severity
+      })),
+      annotationsByImage: workflow.aiAnnotations.reduce((acc, ann) => {
+        const idx = ann.imageIndex ?? 0;
+        acc[idx] = (acc[idx] || 0) + 1;
+        return acc;
+      }, {} as Record<number, number>),
+      imageIndexDistribution: {
+        undefined: workflow.aiAnnotations.filter(a => a.imageIndex === undefined).length,
+        null: workflow.aiAnnotations.filter(a => a.imageIndex === null).length,
+        zero: workflow.aiAnnotations.filter(a => a.imageIndex === 0).length,
+        one: workflow.aiAnnotations.filter(a => a.imageIndex === 1).length,
+        two: workflow.aiAnnotations.filter(a => a.imageIndex === 2).length,
+        three: workflow.aiAnnotations.filter(a => a.imageIndex === 3).length
+      },
+      currentActiveImageIndex: imageIndex,
+      isMultiImageAnalysis: isMultiImage,
+      totalImagesCount: workflow.selectedImages.length
+    });
+    
+    return filteredAnnotations;
   };
 
   // Filter user annotations for the current image
   const getUserAnnotationsForImage = (imageUrl: string) => {
-    return workflow.userAnnotations[imageUrl] || [];
+    const userAnnotations = workflow.userAnnotations[imageUrl] || [];
+    
+    // 🔍 DEBUG: Log user annotations for debugging
+    console.log('🔍 ResultsStep - User Annotations Debug:', {
+      imageUrl: imageUrl,
+      userAnnotationsCount: userAnnotations.length,
+      userAnnotationIds: userAnnotations.map(a => a.id)
+    });
+    
+    return userAnnotations;
   };
 
   // Get annotations for the currently active image
   const currentImageAIAnnotations = getAnnotationsForImage(activeImageIndex >= 0 ? activeImageIndex : 0);
   const currentImageUserAnnotations = getUserAnnotationsForImage(activeImageUrl);
+
+  // 🔍 DEBUG: Log overall component state
+  console.log('🔍 ResultsStep - Component State Debug:', {
+    activeImageUrl: activeImageUrl,
+    activeImageIndex: activeImageIndex,
+    isMultiImage: isMultiImage,
+    totalImagesCount: workflow.selectedImages.length,
+    selectedImages: workflow.selectedImages,
+    currentImageAIAnnotationsCount: currentImageAIAnnotations.length,
+    currentImageUserAnnotationsCount: currentImageUserAnnotations.length,
+    totalAIAnnotations: workflow.aiAnnotations.length,
+    overallAnnotationDistribution: workflow.aiAnnotations.reduce((acc, ann) => {
+      const idx = ann.imageIndex ?? 0;
+      acc[`Image_${idx}`] = (acc[`Image_${idx}`] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>)
+  });
 
   // Extract business impact and insights
   const businessImpact = workflow.aiAnnotations.length > 0 ? {
