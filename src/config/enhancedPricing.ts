@@ -1,4 +1,3 @@
-
 export interface CreditPackage {
   id: string;
   name: string;
@@ -150,7 +149,7 @@ export const ENHANCED_PRICING_CONFIG = {
     } as AnalysisCost
   },
 
-  // New upgrade pack options
+  // New upgrade pack options with Stripe Price IDs
   upgrade_packs: {
     style_variety: {
       id: 'style_variety_pack',
@@ -159,8 +158,9 @@ export const ENHANCED_PRICING_CONFIG = {
       generates: 3, // Professional, minimal, bold
       description: 'See 3 additional style approaches for comparison',
       value_proposition: 'Compare different design directions before making final decisions',
-      popular: true
-    } as UpgradePack,
+      popular: true,
+      stripe_price_id: 'price_1RehvWB0UJfBqFIHgbpYCfPc' // Your actual Stripe price ID
+    } as UpgradePack & { stripe_price_id: string },
 
     responsive_design: {
       id: 'responsive_design_pack', 
@@ -169,8 +169,9 @@ export const ENHANCED_PRICING_CONFIG = {
       generates: 3, // Mobile, tablet, desktop
       description: 'See how your design works across all devices',
       value_proposition: 'Ensure perfect user experience on mobile, tablet, and desktop',
-      technical: true
-    } as UpgradePack,
+      technical: true,
+      stripe_price_id: 'price_1RehvWB0UJfBqFIHbVisazQp' // Your actual Stripe price ID
+    } as UpgradePack & { stripe_price_id: string },
 
     ab_test_variants: {
       id: 'ab_test_variants',
@@ -179,8 +180,9 @@ export const ENHANCED_PRICING_CONFIG = {
       generates: 2, // Two statistically different versions
       description: 'Generate 2 distinct versions for conversion testing',
       value_proposition: 'Get proven-different designs for statistical testing',
-      business_focused: true
-    } as UpgradePack,
+      business_focused: true,
+      stripe_price_id: 'price_1RehvWB0UJfBqFIHSi8pYtMT' // Your actual Stripe price ID
+    } as UpgradePack & { stripe_price_id: string },
 
     accessibility_focus: {
       id: 'accessibility_focus',
@@ -189,8 +191,9 @@ export const ENHANCED_PRICING_CONFIG = {
       generates: 2, // WCAG compliant + high contrast versions
       description: 'WCAG 2.1 compliant versions with accessibility improvements',
       value_proposition: 'Ensure legal compliance and expand market reach',
-      technical: true
-    } as UpgradePack
+      technical: true,
+      stripe_price_id: 'price_1RehvWB0UJfBqFIHAccessibility' // Your actual Stripe price ID
+    } as UpgradePack & { stripe_price_id: string }
   }
 };
 

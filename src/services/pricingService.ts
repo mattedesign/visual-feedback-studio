@@ -1,4 +1,3 @@
-
 import { 
   ENHANCED_PRICING_CONFIG, 
   COST_PROJECTIONS,
@@ -79,6 +78,7 @@ export class PricingService {
 
   /**
    * Calculate dynamic pricing based on user loyalty and usage
+   * Now includes Stripe Price ID information
    */
   static calculateDynamicPricing(
     upgradePackId: string, 
@@ -88,6 +88,7 @@ export class PricingService {
     discount: number;
     finalPrice: number;
     reason: string;
+    stripePrice?: string;
   } {
     
     const upgradePack = ENHANCED_PRICING_CONFIG.upgrade_packs[upgradePackId];
@@ -120,12 +121,30 @@ export class PricingService {
 
     const finalPrice = Math.max(1, Math.round(basePrice * (1 - discount)));
 
-    return {
+    const result: any = {
       basePrice,
       discount,
       finalPrice,
       reason
     };
+
+    // Add Stripe Price ID if available
+    if ('stripe_price_id' in upgradePack) {
+      result.stripePrice = upgradePack.stripe_price_id;
+    }
+
+    return result;
+  }
+
+  /**
+   * Get Stripe Price ID for an upgrade pack
+   */
+  static getStripePriceId(upgradePackId: string): string | null {
+    const upgradePack = ENHANCED_PRICING_CONFIG.upgrade_packs[upgradePackId];
+    if (upgradePack && 'stripe_price_id' in upgradePack) {
+      return upgradePack.stripe_price_id;
+    }
+    return null;
   }
 
   /**

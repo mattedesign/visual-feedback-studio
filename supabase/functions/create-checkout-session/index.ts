@@ -41,7 +41,11 @@ serve(async (req) => {
     if (!user) throw new Error("User not authenticated");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { customerId, priceId, successUrl, cancelUrl, metadata } = await req.json();
+    const requestBody = await req.json();
+    const { priceId, customerId, successUrl, cancelUrl, metadata } = requestBody;
+    
+    if (!priceId) throw new Error("Price ID is required");
+    logStep("Request validated", { priceId, customerId });
     
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     
@@ -49,14 +53,18 @@ serve(async (req) => {
       customer: customerId,
       line_items: [
         {
-          price: priceId,
+          price: priceId, // Using Stripe Price ID directly
           quantity: 1,
         },
       ],
-      mode: "subscription",
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      metadata: metadata || {},
+      mode: "payment", // One-time payment for upgrade packs
+      success_url: successUrl || `${req.headers.get("origin")}/analysis?upgrade_success=true`,
+      cancel_url: cancelUrl || `${req.headers.get("origin")}/analysis`,
+      metadata: {
+        ...metadata,
+        user_id: user.id,
+        upgrade_purchase: 'true'
+      },
     });
 
     logStep("Checkout session created", { sessionId: session.id, url: session.url });

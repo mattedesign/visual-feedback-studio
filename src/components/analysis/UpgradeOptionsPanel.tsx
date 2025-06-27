@@ -1,9 +1,13 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, ChevronDown, ChevronRight, CreditCard, TrendingUp } from 'lucide-react';
+import { ENHANCED_PRICING_CONFIG } from '@/config/enhancedPricing';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { stripeService } from '@/services/stripeService';
+import { toast } from 'sonner';
 
 interface UpgradeOption {
   id: string;
@@ -46,16 +50,67 @@ export const UpgradeOptionsPanel: React.FC<UpgradeOptionsPanelProps> = ({
 }) => {
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [expandedOption, setExpandedOption] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const handlePurchase = async (optionId: string) => {
+    if (!user) {
+      toast.error('Please sign in to purchase upgrades');
+      return;
+    }
+
     setPurchasing(optionId);
     try {
-      await onPurchaseUpgrade(optionId);
-      if (onGenerateUpgrade) {
-        await onGenerateUpgrade(optionId);
+      // Get the upgrade pack configuration with Price ID
+      const upgradePack = ENHANCED_PRICING_CONFIG.upgrade_packs[optionId];
+      if (!upgradePack || !('stripe_price_id' in upgradePack)) {
+        throw new Error('Upgrade configuration not found');
       }
+
+      console.log('🚀 Starting upgrade purchase:', { 
+        optionId, 
+        priceId: upgradePack.stripe_price_id,
+        userEmail: user.email 
+      });
+      
+      // Create or get Stripe customer
+      const customer = await stripeService.createStripeCustomer(user.email!, user.id);
+      if (!customer) {
+        throw new Error('Failed to create customer');
+      }
+
+      console.log('✅ Stripe customer ready:', customer.id);
+
+      // Create checkout session using Price ID
+      const session = await stripeService.createCheckoutSession({
+        customerId: customer.id,
+        priceId: upgradePack.stripe_price_id,
+        successUrl: `${window.location.origin}/analysis?upgrade_success=true&upgrade_id=${optionId}`,
+        cancelUrl: `${window.location.origin}/analysis`,
+        metadata: {
+          upgrade_type: optionId,
+          upgrade_name: upgradePack.name,
+          credits: upgradePack.credits.toString(),
+          user_id: user.id
+        }
+      });
+
+      if (!session?.url) {
+        throw new Error('Failed to create checkout session');
+      }
+
+      console.log('✅ Checkout session created:', session.id);
+
+      // Open Stripe Checkout in new tab
+      window.open(session.url, '_blank');
+      
+      toast.success('Opening Stripe checkout...');
+      
+      // Call the original purchase handler for any additional logic
+      await onPurchaseUpgrade(optionId);
+      
     } catch (error) {
-      console.error('Purchase failed:', error);
+      console.error('❌ Upgrade purchase error:', error);
+      toast.error('Failed to start upgrade purchase process');
     } finally {
       setPurchasing(null);
     }
@@ -142,6 +197,10 @@ export const UpgradeOptionsPanel: React.FC<UpgradeOptionsPanelProps> = ({
               const canAfford = userCredits >= option.credits;
               const isExpanded = expandedOption === option.id;
               const isPurchasing = purchasing === option.id;
+              
+              // Get the upgrade pack config for Price ID
+              const upgradePack = ENHANCED_PRICING_CONFIG.upgrade_packs[option.id];
+              const hasPriceId = upgradePack && 'stripe_price_id' in upgradePack;
 
               return (
                 <Card 
@@ -207,7 +266,7 @@ export const UpgradeOptionsPanel: React.FC<UpgradeOptionsPanelProps> = ({
                     <div className="mt-4">
                       <Button
                         onClick={() => handlePurchase(option.id)}
-                        disabled={isPurchasing || !canAfford || isGenerating}
+                        disabled={isPurchasing || !canAfford || isGenerating || !hasPriceId}
                         className={`w-full ${
                           !canAfford 
                             ? 'bg-red-600/20 text-red-400 border-red-600/50' 
@@ -219,10 +278,12 @@ export const UpgradeOptionsPanel: React.FC<UpgradeOptionsPanelProps> = ({
                         {isPurchasing ? (
                           <>
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Generating...
+                            Processing...
                           </>
                         ) : !canAfford ? (
                           'Need more credits'
+                        ) : !hasPriceId ? (
+                          'Coming Soon'
                         ) : (
                           `Get ${option.name}`
                         )}
