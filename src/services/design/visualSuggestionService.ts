@@ -1,10 +1,10 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { smartStyleSelector, DesignContext } from './smartStyleSelector';
-import { TunerSettings } from '@/types/promptTuner';
 
 interface VisualSuggestion {
   id: string;
-  type: 'before_after' | 'style_variant' | 'accessibility_fix' | 'smart_before_after' | 'custom_tuned';
+  type: 'before_after' | 'style_variant' | 'accessibility_fix' | 'smart_before_after';
   description: string;
   imageUrl: string;
   originalIssue: string;
@@ -15,7 +15,6 @@ interface VisualSuggestion {
   reasoning?: string;
   upgradeOptions?: UpgradeOption[];
   generatedAt?: string;
-  customVariation?: VisualSuggestion;
 }
 
 interface UpgradeOption {
@@ -194,8 +193,7 @@ class VisualSuggestionService {
     return styleDescriptions[style] || `Smart enhanced design for: ${truncatedInsight}`;
   }
 
-  // Make this method public so it can be called from VisualSuggestions
-  async callDALLEViaEdgeFunction(prompt: string): Promise<string> {
+  private async callDALLEViaEdgeFunction(prompt: string): Promise<string> {
     try {
       console.log('🎨 Enhanced DALL-E prompt:', prompt.substring(0, 200) + '...');
       
@@ -282,166 +280,6 @@ class VisualSuggestionService {
       // Fallback: return empty array rather than breaking the analysis
       return [];
     }
-  }
-
-  // Add after the existing generateVisualSuggestions method
-  async generateCustomVisual(
-    enhancedPrompt: string, 
-    settings: TunerSettings, 
-    originalSuggestionId: string
-  ): Promise<VisualSuggestion> {
-    try {
-      console.log('🎛️ Generating custom visual with enhanced prompt');
-      console.log('📊 Tuner settings:', settings);
-      
-      // Generate the custom image using DALL-E
-      const imageUrl = await this.callDALLEViaEdgeFunction(enhancedPrompt);
-      
-      // Create a custom visual suggestion
-      const customSuggestion: VisualSuggestion = {
-        id: `custom_${originalSuggestionId}_${Date.now()}`,
-        type: 'custom_tuned',
-        title: this.generateCustomTitle(settings),
-        description: this.generateCustomDescription(settings),
-        imageUrl,
-        context: `Custom visual generated with user preferences: Layout ${settings.layoutDensity}%, Tone ${settings.visualTone}%, Colors ${settings.colorEmphasis}%, Fidelity ${settings.fidelity}%`,
-        reasoning: 'Generated using Prompt Tuner with custom user preferences',
-        confidence: 'high',
-        tags: this.generateCustomTags(settings),
-        upgradeOptions: [], // Custom visuals don't need upgrade options
-        timestamp: new Date()
-      };
-      
-      console.log('✅ Custom visual generated successfully');
-      return customSuggestion;
-      
-    } catch (error) {
-      console.error('❌ Custom visual generation failed:', error);
-      throw new Error(`Failed to generate custom visual: ${error.message}`);
-    }
-  }
-
-  private generateCustomTitle(settings: TunerSettings): string {
-    const density = settings.layoutDensity > 66 ? 'Dense' : settings.layoutDensity < 34 ? 'Minimal' : 'Balanced';
-    const tone = settings.visualTone > 66 ? 'Professional' : settings.visualTone < 34 ? 'Playful' : 'Modern';
-    return `${tone} ${density} Design`;
-  }
-
-  private generateCustomDescription(settings: TunerSettings): string {
-    const layouts = ['sparse', 'balanced', 'dense'];
-    const tones = ['playful', 'modern', 'professional'];
-    const colors = ['neutral', 'moderate', 'vibrant'];
-    const fidelities = ['wireframe', 'mid-fidelity', 'high-fidelity'];
-    
-    const layoutType = layouts[Math.floor(settings.layoutDensity / 34)];
-    const toneType = tones[Math.floor(settings.visualTone / 34)];
-    const colorType = colors[Math.floor(settings.colorEmphasis / 34)];
-    const fidelityType = fidelities[Math.floor(settings.fidelity / 34)];
-    
-    return `Custom ${fidelityType} mockup with ${layoutType} layout, ${toneType} tone, and ${colorType} color scheme.`;
-  }
-
-  private generateCustomTags(settings: TunerSettings): string[] {
-    const tags = ['custom'];
-    
-    if (settings.layoutDensity > 66) tags.push('dense-layout');
-    if (settings.layoutDensity < 34) tags.push('minimal-layout');
-    if (settings.visualTone > 66) tags.push('professional');
-    if (settings.visualTone < 34) tags.push('playful');
-    if (settings.colorEmphasis > 66) tags.push('colorful');
-    if (settings.colorEmphasis < 34) tags.push('neutral');
-    if (settings.fidelity > 66) tags.push('high-fidelity');
-    if (settings.fidelity < 34) tags.push('wireframe');
-    
-    return tags;
-  }
-
-  // NEW METHODS FOR GENERATING VARIANTS
-
-  async generateSingleStyleVariant(params: {
-    insight: string;
-    context: string;
-    style: string;
-    type: string;
-  }): Promise<any> {
-    const prompt = this.buildStyleSpecificPrompt(params.insight, params.context, params.style);
-    const imageUrl = await this.callDALLEViaEdgeFunction(prompt);
-    
-    return {
-      id: crypto.randomUUID(),
-      type: params.type,
-      style: params.style,
-      imageUrl,
-      description: `${params.style} style variant addressing: ${params.insight}`,
-      timestamp: new Date()
-    };
-  }
-
-  async generateResponsiveVariant(params: {
-    insight: string;
-    context: string;
-    device: string;
-    type: string;
-  }): Promise<any> {
-    const prompt = this.buildResponsivePrompt(params.insight, params.context, params.device);
-    const imageUrl = await this.callDALLEViaEdgeFunction(prompt);
-    
-    return {
-      id: crypto.randomUUID(),
-      type: params.type,
-      device: params.device,
-      imageUrl,
-      description: `${params.device} optimized design addressing: ${params.insight}`,
-      timestamp: new Date()
-    };
-  }
-
-  async generateABVariant(params: {
-    insight: string;
-    context: string;
-    variant: string;
-    type: string;
-  }): Promise<any> {
-    const prompt = this.buildABTestPrompt(params.insight, params.context, params.variant);
-    const imageUrl = await this.callDALLEViaEdgeFunction(prompt);
-    
-    return {
-      id: crypto.randomUUID(),
-      type: params.type,
-      variant: params.variant,
-      imageUrl,
-      description: `A/B test ${params.variant} addressing: ${params.insight}`,
-      timestamp: new Date()
-    };
-  }
-
-  private buildStyleSpecificPrompt(insight: string, context: string, style: string): string {
-    const stylePrompts = {
-      'professional': 'Corporate, clean design with professional color scheme and formal typography',
-      'bold': 'High-contrast, vibrant design with strong visual impact and bold typography',
-      'playful': 'Friendly, approachable design with rounded elements and engaging colors'
-    };
-    
-    return `Create a UI mockup with ${stylePrompts[style]} that addresses: ${insight}. Context: ${context}. Professional UI design, realistic interface.`;
-  }
-
-  private buildResponsivePrompt(insight: string, context: string, device: string): string {
-    const devicePrompts = {
-      'mobile': 'Mobile-first design optimized for touch interaction, vertical layout, thumb-friendly navigation',
-      'tablet': 'Tablet-optimized design with medium-sized touch targets and landscape-friendly layout',
-      'desktop': 'Desktop design with precise cursor interactions, horizontal navigation, detailed information'
-    };
-    
-    return `Create a ${device} UI mockup that addresses: ${insight}. ${devicePrompts[device]}. Context: ${context}. Professional interface design.`;
-  }
-
-  private buildABTestPrompt(insight: string, context: string, variant: string): string {
-    const variants = {
-      'variant_a': 'Version A with emphasized call-to-action and minimal visual distractions',
-      'variant_b': 'Version B with detailed information hierarchy and multiple conversion paths'
-    };
-    
-    return `Create UI mockup ${variants[variant]} that addresses: ${insight}. Context: ${context}. Focus on conversion optimization and user testing.`;
   }
 }
 
