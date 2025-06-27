@@ -15,15 +15,100 @@ interface SuggestionRequest {
   userContext: string;
   focusAreas: string[];
   designType: 'mobile' | 'desktop' | 'responsive';
+  originalImageUrl?: string; // NEW: Reference to original image
+  imageDescription?: string; // NEW: Description of what's in the image
 }
 
 class VisualSuggestionService {
+  
+  // NEW: Analyze the context to understand what kind of interface this is
+  private analyzeImageContext(context: string, insights: string[]): {
+    interfaceType: string;
+    keyElements: string[];
+    styleDescription: string;
+  } {
+    const contextLower = context.toLowerCase();
+    const allText = (context + ' ' + insights.join(' ')).toLowerCase();
+    
+    // Determine interface type
+    let interfaceType = 'web application';
+    if (allText.includes('dashboard')) interfaceType = 'dashboard interface';
+    if (allText.includes('mobile') || allText.includes('app')) interfaceType = 'mobile application';
+    if (allText.includes('landing') || allText.includes('marketing')) interfaceType = 'landing page';
+    if (allText.includes('ecommerce') || allText.includes('shop')) interfaceType = 'ecommerce interface';
+    if (allText.includes('form') || allText.includes('signup')) interfaceType = 'form interface';
+    
+    // Extract key elements mentioned
+    const keyElements = [];
+    if (allText.includes('button')) keyElements.push('buttons');
+    if (allText.includes('card')) keyElements.push('cards');
+    if (allText.includes('navigation') || allText.includes('nav')) keyElements.push('navigation');
+    if (allText.includes('sidebar')) keyElements.push('sidebar');
+    if (allText.includes('table') || allText.includes('data')) keyElements.push('data tables');
+    if (allText.includes('chart') || allText.includes('graph')) keyElements.push('charts');
+    if (allText.includes('form') || allText.includes('input')) keyElements.push('form fields');
+    if (allText.includes('header')) keyElements.push('header');
+    if (allText.includes('menu')) keyElements.push('menu');
+    
+    // Determine style approach
+    let styleDescription = 'clean, modern design';
+    if (allText.includes('teacher') || allText.includes('education')) styleDescription = 'educational, user-friendly design';
+    if (allText.includes('professional') || allText.includes('enterprise')) styleDescription = 'professional, corporate design';
+    if (allText.includes('minimal')) styleDescription = 'minimal, clean design';
+    if (allText.includes('colorful') || allText.includes('vibrant')) styleDescription = 'vibrant, engaging design';
+    
+    return { interfaceType, keyElements, styleDescription };
+  }
+
+  private buildEnhancedPrompt(
+    insight: string, 
+    context: string, 
+    type: string,
+    imageAnalysis: { interfaceType: string; keyElements: string[]; styleDescription: string; }
+  ): string {
+    const { interfaceType, keyElements, styleDescription } = imageAnalysis;
+    
+    // Build specific element references
+    const elementReferences = keyElements.length > 0 
+      ? `featuring ${keyElements.join(', ')}` 
+      : '';
+    
+    const basePrompt = `High-quality ${interfaceType} mockup with ${styleDescription} ${elementReferences}`;
+    
+    switch (type) {
+      case 'before_after':
+        return `${basePrompt}, showing the IMPROVED version that addresses: "${insight}". 
+                Context: ${context}. 
+                Focus on maintaining the same layout structure while making specific improvements to ${keyElements.join(' and ')}.
+                Show the solution with better UX, enhanced visual hierarchy, and improved usability.
+                Professional UI/UX design, realistic interface, modern styling.`;
+                
+      case 'style_variant': 
+        return `${basePrompt}, redesigned with enhanced ${styleDescription} approach to solve: "${insight}".
+                Context: ${context}.
+                Keep the same general layout but apply better visual design, improved spacing, enhanced typography, and modern UI patterns.
+                Show specific design improvements while maintaining usability.
+                Professional interface design, clean mockup style.`;
+                
+      case 'accessibility_fix':
+        return `${basePrompt}, redesigned for WCAG compliance and accessibility to address: "${insight}".
+                Context: ${context}.
+                Show the same interface with improved contrast ratios, clearer labels, better button sizing, enhanced keyboard navigation indicators.
+                Focus on accessibility improvements: high contrast colors, readable text, clear visual hierarchy, accessible form elements.
+                Professional accessible design, meets WCAG AA standards.`;
+                
+      default:
+        return `${basePrompt} addressing: "${insight}" in context: ${context}`;
+    }
+  }
+
   private async generateSuggestion(
     insight: string, 
     context: string, 
-    type: 'before_after' | 'style_variant' | 'accessibility_fix'
+    type: 'before_after' | 'style_variant' | 'accessibility_fix',
+    imageAnalysis: { interfaceType: string; keyElements: string[]; styleDescription: string; }
   ): Promise<VisualSuggestion> {
-    const prompt = this.buildPromptForType(insight, context, type);
+    const prompt = this.buildEnhancedPrompt(insight, context, type, imageAnalysis);
     const imageUrl = await this.callDALLEViaEdgeFunction(prompt);
     
     return {
@@ -37,38 +122,22 @@ class VisualSuggestionService {
     };
   }
 
-  private buildPromptForType(insight: string, context: string, type: string): string {
-    const baseStyle = "Professional UI mockup, clean interface design, modern web application";
-    
-    switch (type) {
-      case 'before_after':
-        return `${baseStyle} showing IMPROVED version of: ${insight}. ${context} context. Show the solution, not the problem.`;
-      case 'style_variant':
-        return `${baseStyle} with ${context} style applied to address: ${insight}. Show specific design improvements.`;
-      case 'accessibility_fix':
-        return `${baseStyle} demonstrating WCAG-compliant solution for: ${insight}. High contrast, clear labels, accessible design.`;
-      default:
-        return `${baseStyle} addressing: ${insight} in ${context} context.`;
-    }
-  }
-
   private getImprovementDescription(insight: string, type: 'before_after' | 'style_variant' | 'accessibility_fix'): string {
     switch (type) {
       case 'before_after':
-        return `Improved solution for: ${insight}`;
+        return `Enhanced UX solution: ${insight.substring(0, 100)}${insight.length > 100 ? '...' : ''}`;
       case 'style_variant':
-        return `Style variant addressing: ${insight}`;
+        return `Visual redesign: ${insight.substring(0, 100)}${insight.length > 100 ? '...' : ''}`;
       case 'accessibility_fix':
-        return `Accessibility improvement for: ${insight}`;
+        return `Accessibility improvement: ${insight.substring(0, 100)}${insight.length > 100 ? '...' : ''}`;
       default:
-        return `Enhancement for: ${insight}`;
+        return `Enhancement: ${insight.substring(0, 100)}${insight.length > 100 ? '...' : ''}`;
     }
   }
 
-  // NEW: Use your working edge function instead of direct API call
   private async callDALLEViaEdgeFunction(prompt: string): Promise<string> {
     try {
-      console.log('🎨 Calling DALL-E via edge function with prompt:', prompt.substring(0, 100) + '...');
+      console.log('🎨 Enhanced DALL-E prompt:', prompt.substring(0, 200) + '...');
       
       const { data, error } = await supabase.functions.invoke('generate-dalle-image', {
         body: { prompt }
@@ -84,7 +153,7 @@ class VisualSuggestionService {
         throw new Error('No image URL returned from DALL-E service');
       }
 
-      console.log('✅ DALL-E generation successful');
+      console.log('✅ Enhanced DALL-E generation successful');
       return data.imageUrl;
       
     } catch (error) {
@@ -95,38 +164,34 @@ class VisualSuggestionService {
 
   async generateVisualSuggestions(request: SuggestionRequest): Promise<VisualSuggestion[]> {
     const suggestions: VisualSuggestion[] = [];
-    const topInsights = request.analysisInsights.slice(0, 3); // Limit to top 3
+    const topInsights = request.analysisInsights.slice(0, 3);
 
-    console.log('🚀 Starting visual suggestions generation for insights:', topInsights);
+    console.log('🚀 Starting ENHANCED visual suggestions generation');
+    
+    // NEW: Analyze the image context for better prompts
+    const imageAnalysis = this.analyzeImageContext(request.userContext, topInsights);
+    console.log('🔍 Image analysis:', imageAnalysis);
 
     for (const insight of topInsights) {
       try {
-        // Generate before/after for each insight
-        console.log(`🎨 Generating before/after for: ${insight.substring(0, 50)}...`);
-        const beforeAfter = await this.generateSuggestion(insight, request.userContext, 'before_after');
+        // Generate contextual before/after for each insight
+        console.log(`🎨 Generating contextual improvement for: ${insight.substring(0, 50)}...`);
+        const beforeAfter = await this.generateSuggestion(insight, request.userContext, 'before_after', imageAnalysis);
         suggestions.push(beforeAfter);
 
-        // Generate style variant if context suggests style changes
-        if (request.userContext.toLowerCase().match(/premium|professional|modern|playful|elegant|minimal/)) {
-          console.log(`🎨 Generating style variant for: ${insight.substring(0, 50)}...`);
-          const styleVariant = await this.generateSuggestion(insight, request.userContext, 'style_variant');
-          suggestions.push(styleVariant);
-        }
-
-        // Generate accessibility fix if accessibility is mentioned
-        if (insight.toLowerCase().match(/contrast|accessibility|wcag|readable|screen.reader|keyboard/)) {
-          console.log(`♿ Generating accessibility fix for: ${insight.substring(0, 50)}...`);
-          const accessibilityFix = await this.generateSuggestion(insight, request.userContext, 'accessibility_fix');
+        // Generate accessibility fix if accessibility issues mentioned
+        if (insight.toLowerCase().match(/contrast|accessibility|wcag|readable|screen.reader|keyboard|color/)) {
+          console.log(`♿ Generating accessibility improvement for: ${insight.substring(0, 50)}...`);
+          const accessibilityFix = await this.generateSuggestion(insight, request.userContext, 'accessibility_fix', imageAnalysis);
           suggestions.push(accessibilityFix);
         }
 
       } catch (error) {
-        console.error(`❌ Failed to generate suggestion for insight: ${insight}`, error);
-        // Continue with other insights even if one fails
+        console.error(`❌ Failed to generate enhanced suggestion for insight: ${insight}`, error);
       }
     }
 
-    console.log(`✅ Generated ${suggestions.length} visual suggestions successfully`);
+    console.log(`✅ Generated ${suggestions.length} ENHANCED visual suggestions`);
     return suggestions;
   }
 }
