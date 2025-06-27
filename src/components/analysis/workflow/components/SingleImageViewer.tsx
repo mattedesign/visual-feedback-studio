@@ -1,5 +1,4 @@
 
-import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Annotation } from '@/types/analysis';
 
@@ -25,9 +24,6 @@ export const SingleImageViewer = ({
   activeAnnotation,
   getCategoryIcon,
 }: SingleImageViewerProps) => {
-  const [hoveredAnnotation, setHoveredAnnotation] = useState<string | null>(null);
-  const [clickedAnnotation, setClickedAnnotation] = useState<string | null>(null);
-
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'critical': return 'bg-red-600';
@@ -35,16 +31,6 @@ export const SingleImageViewer = ({
       case 'enhancement': return 'bg-blue-600';
       default: return 'bg-purple-600';
     }
-  };
-
-  const handleAnnotationClick = (annotationId: string) => {
-    setClickedAnnotation(annotationId);
-    onAnnotationClick(annotationId);
-    
-    // Clear the clicked indicator after 2 seconds
-    setTimeout(() => {
-      setClickedAnnotation(null);
-    }, 2000);
   };
 
   return (
@@ -82,31 +68,11 @@ export const SingleImageViewer = ({
             left: `${annotation.x}%`,
             top: `${annotation.y}%`,
           }}
-          onMouseEnter={() => setHoveredAnnotation(annotation.id)}
-          onMouseLeave={() => setHoveredAnnotation(null)}
-          onClick={() => handleAnnotationClick(annotation.id)}
+          onClick={() => onAnnotationClick(annotation.id)}
         >
           <div className={`w-12 h-12 rounded-full border-4 border-white flex items-center justify-center text-white font-bold text-lg shadow-xl ${getSeverityColor(annotation.severity)} ${activeAnnotation === annotation.id ? 'ring-4 ring-gray-400' : ''}`}>
             <span className="text-base">{getCategoryIcon(annotation.category)}</span>
           </div>
-
-          {/* Hover Indicator */}
-          {hoveredAnnotation === annotation.id && (
-            <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 z-30 animate-fade-in">
-              <Badge className="bg-blue-600 text-white border-blue-500 text-sm px-3 py-1">
-                📍 From Image 1
-              </Badge>
-            </div>
-          )}
-
-          {/* Click Indicator */}
-          {clickedAnnotation === annotation.id && (
-            <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 z-30 animate-fade-in">
-              <Badge className="bg-green-600 text-white border-green-500 text-sm px-3 py-1">
-                Viewing insight from Image 1
-              </Badge>
-            </div>
-          )}
           
           {/* Content overlay when clicked */}
           {activeAnnotation === annotation.id && (

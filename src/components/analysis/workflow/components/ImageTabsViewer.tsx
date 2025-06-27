@@ -1,5 +1,4 @@
 
-import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Annotation } from '@/types/analysis';
@@ -30,19 +29,6 @@ export const ImageTabsViewer = ({
   activeAnnotation,
   getCategoryIcon,
 }: ImageTabsViewerProps) => {
-  const [hoveredAnnotation, setHoveredAnnotation] = useState<string | null>(null);
-  const [clickedAnnotation, setClickedAnnotation] = useState<string | null>(null);
-
-  const handleAnnotationClick = (annotationId: string, imageIndex: number) => {
-    setClickedAnnotation(annotationId);
-    onAnnotationClick(annotationId);
-    
-    // Clear the clicked indicator after 2 seconds
-    setTimeout(() => {
-      setClickedAnnotation(null);
-    }, 2000);
-  };
-
   return (
     <div className="relative">
       <Tabs value={activeImageUrl} onValueChange={onImageChange}>
@@ -129,9 +115,7 @@ export const ImageTabsViewer = ({
                       left: `${annotation.x}%`,
                       top: `${annotation.y}%`,
                     }}
-                    onMouseEnter={() => setHoveredAnnotation(annotation.id)}
-                    onMouseLeave={() => setHoveredAnnotation(null)}
-                    onClick={() => handleAnnotationClick(annotation.id, imageIndex)}
+                    onClick={() => onAnnotationClick(annotation.id)}
                   >
                     <div className={`w-12 h-12 rounded-full border-4 border-white flex items-center justify-center text-white font-bold text-lg shadow-xl ${
                       annotation.severity === 'critical' ? 'bg-red-600' :
@@ -141,24 +125,6 @@ export const ImageTabsViewer = ({
                     } ${activeAnnotation === annotation.id ? 'ring-4 ring-gray-400' : ''}`}>
                       <span className="text-base">{getCategoryIcon(annotation.category)}</span>
                     </div>
-
-                    {/* Hover Indicator */}
-                    {hoveredAnnotation === annotation.id && (
-                      <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 z-30 animate-fade-in">
-                        <Badge className="bg-blue-600 text-white border-blue-500 text-sm px-3 py-1">
-                          📍 From Image {imageIndex + 1}
-                        </Badge>
-                      </div>
-                    )}
-
-                    {/* Click Indicator */}
-                    {clickedAnnotation === annotation.id && (
-                      <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 z-30 animate-fade-in">
-                        <Badge className="bg-green-600 text-white border-green-500 text-sm px-3 py-1">
-                          Viewing insight from Image {imageIndex + 1}
-                        </Badge>
-                      </div>
-                    )}
                   </div>
                 );
               })}
