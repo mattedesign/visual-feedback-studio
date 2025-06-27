@@ -1,3 +1,4 @@
+import { supabase } from '@/lib/supabase';
 
 interface VisualSuggestion {
   id: string;
@@ -23,7 +24,7 @@ class VisualSuggestionService {
     type: 'before_after' | 'style_variant' | 'accessibility_fix'
   ): Promise<VisualSuggestion> {
     const prompt = this.buildPromptForType(insight, context, type);
-    const imageUrl = await this.callDALLE(prompt);
+    const imageUrl = await this.callDALLEViaEdgeFunction(prompt);
     
     return {
       id: crypto.randomUUID(),
@@ -64,48 +65,68 @@ class VisualSuggestionService {
     }
   }
 
-  private async callDALLE(prompt: string): Promise<string> {
-    const response = await fetch('https://api.openai.com/v1/images/generations', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY_DALLE}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'dall-e-3',
-        prompt,
-        n: 1,
-        size: '1024x1024',
-        quality: 'standard'
-      })
-    });
+  // NEW: Use your working edge function instead of direct API call
+  private async callDALLEViaEdgeFunction(prompt: string): Promise<string> {
+    try {
+      console.log('🎨 Calling DALL-E via edge function with prompt:', prompt.substring(0, 100) + '...');
+      
+      const { data, error } = await supabase.functions.invoke('generate-dalle-image', {
+        body: { prompt }
+      });
 
-    const data = await response.json();
-    return data.data[0].url;
+      if (error) {
+        console.error('❌ Edge function error:', error);
+        throw new Error(`DALL-E generation failed: ${error.message}`);
+      }
+
+      if (!data?.imageUrl) {
+        console.error('❌ No image URL in response:', data);
+        throw new Error('No image URL returned from DALL-E service');
+      }
+
+      console.log('✅ DALL-E generation successful');
+      return data.imageUrl;
+      
+    } catch (error) {
+      console.error('❌ Error calling DALL-E edge function:', error);
+      throw new Error(`Failed to generate visual suggestion: ${error.message}`);
+    }
   }
 
   async generateVisualSuggestions(request: SuggestionRequest): Promise<VisualSuggestion[]> {
     const suggestions: VisualSuggestion[] = [];
     const topInsights = request.analysisInsights.slice(0, 3); // Limit to top 3
 
+    console.log('🚀 Starting visual suggestions generation for insights:', topInsights);
+
     for (const insight of topInsights) {
-      // Generate before/after for each insight
-      const beforeAfter = await this.generateSuggestion(insight, request.userContext, 'before_after');
-      suggestions.push(beforeAfter);
+      try {
+        // Generate before/after for each insight
+        console.log(`🎨 Generating before/after for: ${insight.substring(0, 50)}...`);
+        const beforeAfter = await this.generateSuggestion(insight, request.userContext, 'before_after');
+        suggestions.push(beforeAfter);
 
-      // Generate style variant if context suggests style changes
-      if (request.userContext.toLowerCase().includes('premium|professional|modern|playful')) {
-        const styleVariant = await this.generateSuggestion(insight, request.userContext, 'style_variant');
-        suggestions.push(styleVariant);
-      }
+        // Generate style variant if context suggests style changes
+        if (request.userContext.toLowerCase().match(/premium|professional|modern|playful|elegant|minimal/)) {
+          console.log(`🎨 Generating style variant for: ${insight.substring(0, 50)}...`);
+          const styleVariant = await this.generateSuggestion(insight, request.userContext, 'style_variant');
+          suggestions.push(styleVariant);
+        }
 
-      // Generate accessibility fix if accessibility is mentioned
-      if (insight.toLowerCase().includes('contrast|accessibility|wcag|readable')) {
-        const accessibilityFix = await this.generateSuggestion(insight, request.userContext, 'accessibility_fix');
-        suggestions.push(accessibilityFix);
+        // Generate accessibility fix if accessibility is mentioned
+        if (insight.toLowerCase().match(/contrast|accessibility|wcag|readable|screen.reader|keyboard/)) {
+          console.log(`♿ Generating accessibility fix for: ${insight.substring(0, 50)}...`);
+          const accessibilityFix = await this.generateSuggestion(insight, request.userContext, 'accessibility_fix');
+          suggestions.push(accessibilityFix);
+        }
+
+      } catch (error) {
+        console.error(`❌ Failed to generate suggestion for insight: ${insight}`, error);
+        // Continue with other insights even if one fails
       }
     }
 
+    console.log(`✅ Generated ${suggestions.length} visual suggestions successfully`);
     return suggestions;
   }
 }
