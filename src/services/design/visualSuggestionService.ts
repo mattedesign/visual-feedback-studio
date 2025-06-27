@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { smartStyleSelector, DesignContext } from './smartStyleSelector';
 
@@ -280,6 +279,94 @@ class VisualSuggestionService {
       // Fallback: return empty array rather than breaking the analysis
       return [];
     }
+  }
+
+  // NEW METHODS FOR GENERATING VARIANTS
+
+  async generateSingleStyleVariant(params: {
+    insight: string;
+    context: string;
+    style: string;
+    type: string;
+  }): Promise<any> {
+    const prompt = this.buildStyleSpecificPrompt(params.insight, params.context, params.style);
+    const imageUrl = await this.callDALLEViaEdgeFunction(prompt);
+    
+    return {
+      id: crypto.randomUUID(),
+      type: params.type,
+      style: params.style,
+      imageUrl,
+      description: `${params.style} style variant addressing: ${params.insight}`,
+      timestamp: new Date()
+    };
+  }
+
+  async generateResponsiveVariant(params: {
+    insight: string;
+    context: string;
+    device: string;
+    type: string;
+  }): Promise<any> {
+    const prompt = this.buildResponsivePrompt(params.insight, params.context, params.device);
+    const imageUrl = await this.callDALLEViaEdgeFunction(prompt);
+    
+    return {
+      id: crypto.randomUUID(),
+      type: params.type,
+      device: params.device,
+      imageUrl,
+      description: `${params.device} optimized design addressing: ${params.insight}`,
+      timestamp: new Date()
+    };
+  }
+
+  async generateABVariant(params: {
+    insight: string;
+    context: string;
+    variant: string;
+    type: string;
+  }): Promise<any> {
+    const prompt = this.buildABTestPrompt(params.insight, params.context, params.variant);
+    const imageUrl = await this.callDALLEViaEdgeFunction(prompt);
+    
+    return {
+      id: crypto.randomUUID(),
+      type: params.type,
+      variant: params.variant,
+      imageUrl,
+      description: `A/B test ${params.variant} addressing: ${params.insight}`,
+      timestamp: new Date()
+    };
+  }
+
+  private buildStyleSpecificPrompt(insight: string, context: string, style: string): string {
+    const stylePrompts = {
+      'professional': 'Corporate, clean design with professional color scheme and formal typography',
+      'bold': 'High-contrast, vibrant design with strong visual impact and bold typography',
+      'playful': 'Friendly, approachable design with rounded elements and engaging colors'
+    };
+    
+    return `Create a UI mockup with ${stylePrompts[style]} that addresses: ${insight}. Context: ${context}. Professional UI design, realistic interface.`;
+  }
+
+  private buildResponsivePrompt(insight: string, context: string, device: string): string {
+    const devicePrompts = {
+      'mobile': 'Mobile-first design optimized for touch interaction, vertical layout, thumb-friendly navigation',
+      'tablet': 'Tablet-optimized design with medium-sized touch targets and landscape-friendly layout',
+      'desktop': 'Desktop design with precise cursor interactions, horizontal navigation, detailed information'
+    };
+    
+    return `Create a ${device} UI mockup that addresses: ${insight}. ${devicePrompts[device]}. Context: ${context}. Professional interface design.`;
+  }
+
+  private buildABTestPrompt(insight: string, context: string, variant: string): string {
+    const variants = {
+      'variant_a': 'Version A with emphasized call-to-action and minimal visual distractions',
+      'variant_b': 'Version B with detailed information hierarchy and multiple conversion paths'
+    };
+    
+    return `Create UI mockup ${variants[variant]} that addresses: ${insight}. Context: ${context}. Focus on conversion optimization and user testing.`;
   }
 }
 
