@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Loader2, Download, Maximize2, Sparkles, TrendingUp } from 'lucide-react';
+import { UpgradeOptionsPanel } from './UpgradeOptionsPanel';
 
 interface UpgradeOption {
   id: string;
@@ -45,6 +45,8 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
   const [suggestions, setSuggestions] = useState<VisualSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
+  const [userCredits, setUserCredits] = useState(15); // Mock user credits
+  const [purchasingUpgrade, setPurchasingUpgrade] = useState(false);
 
   const generateSuggestions = async () => {
     setLoading(true);
@@ -66,6 +68,32 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
       console.error('Visual suggestions error:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpgradePurchase = async (optionId: string) => {
+    setPurchasingUpgrade(true);
+    try {
+      // Mock upgrade purchase logic
+      console.log('Purchasing upgrade:', optionId);
+      
+      // Simulate credit deduction based on upgrade option
+      const option = suggestions.flatMap(s => s.upgradeOptions || []).find(o => o.id === optionId);
+      if (option && userCredits >= option.credits) {
+        setUserCredits(prev => prev - option.credits);
+        
+        // Here you would typically call an API to:
+        // 1. Process the credit transaction
+        // 2. Generate the additional visual content
+        // 3. Update the suggestion with new content
+        
+        console.log(`Successfully purchased ${option.name} for ${option.credits} credits`);
+      }
+    } catch (error) {
+      console.error('Upgrade purchase failed:', error);
+      setError('Failed to purchase upgrade. Please try again.');
+    } finally {
+      setPurchasingUpgrade(false);
     }
   };
 
@@ -137,86 +165,93 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
         {suggestions.length > 0 && (
           <div className="space-y-6">
             {suggestions.map((suggestion) => (
-              <Card key={suggestion.id} className="bg-slate-700 border-slate-600">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Badge variant="outline" className="text-xs">
-                        {getTypeIcon(suggestion.type)} {getTypeName(suggestion.type)}
-                      </Badge>
-                      {suggestion.style && (
-                        <Badge className={`text-xs ${getStyleBadgeColor(suggestion.style)}`}>
-                          {suggestion.style.toUpperCase()}
+              <div key={suggestion.id}>
+                <Card className="bg-slate-700 border-slate-600">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Badge variant="outline" className="text-xs">
+                          {getTypeIcon(suggestion.type)} {getTypeName(suggestion.type)}
                         </Badge>
-                      )}
-                      {suggestion.confidence && (
-                        <Badge variant="outline" className="text-xs text-green-400">
-                          {Math.round(suggestion.confidence * 100)}% Confidence
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  {suggestion.reasoning && (
-                    <div className="mt-2 p-2 bg-slate-600 rounded text-xs text-slate-300">
-                      <strong>💡 Why this style:</strong> {suggestion.reasoning}
-                    </div>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {/* Main visual */}
-                    <div>
-                      <div className="aspect-square mb-3">
-                        <img 
-                          src={suggestion.imageUrl} 
-                          alt={suggestion.description}
-                          className="w-full h-full object-cover rounded border border-slate-600"
-                        />
-                      </div>
-                      <p className="text-sm text-slate-300 mb-2">{suggestion.description}</p>
-                      <p className="text-xs text-slate-400 mb-3">{suggestion.improvement}</p>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline" className="flex-1">
-                          <Download className="w-3 h-3 mr-1" />
-                          Download
-                        </Button>
-                        <Button size="sm" variant="outline">
-                          <Maximize2 className="w-3 h-3" />
-                        </Button>
+                        {suggestion.style && (
+                          <Badge className={`text-xs ${getStyleBadgeColor(suggestion.style)}`}>
+                            {suggestion.style.toUpperCase()}
+                          </Badge>
+                        )}
+                        {suggestion.confidence && (
+                          <Badge variant="outline" className="text-xs text-green-400">
+                            {Math.round(suggestion.confidence * 100)}% Confidence
+                          </Badge>
+                        )}
                       </div>
                     </div>
-
-                    {/* Upgrade options */}
-                    {suggestion.upgradeOptions && suggestion.upgradeOptions.length > 0 && (
-                      <div className="space-y-3">
-                        <h4 className="text-sm font-semibold text-white flex items-center gap-2">
-                          <TrendingUp className="w-4 h-4" />
-                          Upgrade Options
-                        </h4>
-                        {suggestion.upgradeOptions.map((option) => (
-                          <Card key={option.id} className="bg-slate-600 border-slate-500 p-3">
-                            <div className="flex items-start justify-between mb-2">
-                              <div>
-                                <h5 className="text-sm font-medium text-white">{option.name}</h5>
-                                <p className="text-xs text-slate-300 mt-1">{option.description}</p>
-                              </div>
-                              <Badge className="bg-yellow-600 text-yellow-100 text-xs">
-                                {option.credits} credits
-                              </Badge>
-                            </div>
-                            <p className="text-xs text-slate-400 mb-2">
-                              <strong>Value:</strong> {option.value_proposition}
-                            </p>
-                            <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700">
-                              Generate ({option.credits} credits)
-                            </Button>
-                          </Card>
-                        ))}
+                    {suggestion.reasoning && (
+                      <div className="mt-2 p-2 bg-slate-600 rounded text-xs text-slate-300">
+                        <strong>💡 Why this style:</strong> {suggestion.reasoning}
                       </div>
                     )}
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {/* Main visual */}
+                      <div>
+                        <div className="aspect-square mb-3">
+                          <img 
+                            src={suggestion.imageUrl} 
+                            alt={suggestion.description}
+                            className="w-full h-full object-cover rounded border border-slate-600"
+                          />
+                        </div>
+                        <p className="text-sm text-slate-300 mb-2">{suggestion.description}</p>
+                        <p className="text-xs text-slate-400 mb-3">{suggestion.improvement}</p>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" className="flex-1">
+                            <Download className="w-3 h-3 mr-1" />
+                            Download
+                          </Button>
+                          <Button size="sm" variant="outline">
+                            <Maximize2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Upgrade options preview */}
+                      {suggestion.upgradeOptions && suggestion.upgradeOptions.length > 0 && (
+                        <div className="space-y-3">
+                          <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                            <TrendingUp className="w-4 h-4" />
+                            Available Upgrades
+                          </h4>
+                          {suggestion.upgradeOptions.slice(0, 2).map((option) => (
+                            <Card key={option.id} className="bg-slate-600 border-slate-500 p-3">
+                              <div className="flex items-start justify-between mb-2">
+                                <div>
+                                  <h5 className="text-sm font-medium text-white">{option.name}</h5>
+                                  <p className="text-xs text-slate-300 mt-1 line-clamp-2">{option.description}</p>
+                                </div>
+                                <Badge className="bg-yellow-600 text-yellow-100 text-xs ml-2">
+                                  {option.credits} credits
+                                </Badge>
+                              </div>
+                            </Card>
+                          ))}
+                          <p className="text-xs text-slate-400 text-center">
+                            See full upgrade options below ↓
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Integrated Upgrade Options Panel */}
+                <UpgradeOptionsPanel
+                  suggestion={suggestion}
+                  onPurchaseUpgrade={handleUpgradePurchase}
+                  userCredits={userCredits}
+                  isGenerating={purchasingUpgrade}
+                />
+              </div>
             ))}
           </div>
         )}
