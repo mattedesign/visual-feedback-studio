@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Loader2, Download, Maximize2, Sparkles, TrendingUp } from 'lucide-react';
 import { UpgradeOptionsPanel } from './UpgradeOptionsPanel';
+import { stripeService } from '@/services/stripeService';
 
 interface UpgradeOption {
   id: string;
@@ -71,27 +72,70 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
     }
   };
 
+  // Add helper function to map upgrade IDs to Stripe price IDs
+  const getStripePriceId = (upgradeOptionId: string): string => {
+    // Map upgrade IDs to actual Stripe price IDs from your enhanced pricing config
+    const priceMappings: Record<string, string> = {
+      'style_variety_pack': 'price_1RehvWB0UJfBqFIHgbpYCfPc',
+      'responsive_design_pack': 'price_1RehvWB0UJfBqFIHbVisazQp', 
+      'ab_test_variants': 'price_1RehvWB0UJfBqFIHSi8pYtMT',
+      'accessibility_focus': 'price_1RehvWB0UJfBqFIHAccessibility'
+    };
+    
+    const priceId = priceMappings[upgradeOptionId];
+    if (!priceId) {
+      throw new Error(`No price ID configured for upgrade: ${upgradeOptionId}`);
+    }
+    
+    return priceId;
+  };
+
+  // Replace mock handleUpgradePurchase with real Stripe integration
   const handleUpgradePurchase = async (optionId: string) => {
     setPurchasingUpgrade(true);
     try {
-      // Mock upgrade purchase logic
-      console.log('Purchasing upgrade:', optionId);
+      console.log('Starting upgrade purchase:', optionId);
       
-      // Simulate credit deduction based on upgrade option
+      // Find the upgrade option details
       const option = suggestions.flatMap(s => s.upgradeOptions || []).find(o => o.id === optionId);
-      if (option && userCredits >= option.credits) {
-        setUserCredits(prev => prev - option.credits);
-        
-        // Here you would typically call an API to:
-        // 1. Process the credit transaction
-        // 2. Generate the additional visual content
-        // 3. Update the suggestion with new content
-        
-        console.log(`Successfully purchased ${option.name} for ${option.credits} credits`);
+      if (!option) {
+        throw new Error('Upgrade option not found');
       }
+
+      // Get the Stripe Price ID for this upgrade
+      const priceId = getStripePriceId(optionId);
+      console.log('Using Stripe Price ID:', priceId);
+
+      // Create Stripe checkout session using existing service
+      const checkoutSession = await stripeService.createCheckoutSession({
+        customerId: '', // This will be handled by the service to create/get customer
+        priceId: priceId,
+        successUrl: `${window.location.origin}/analysis?upgrade_success=true&session_id={CHECKOUT_SESSION_ID}&upgrade=${optionId}`,
+        cancelUrl: window.location.href,
+        metadata: {
+          upgrade_type: optionId,
+          upgrade_name: option.name,
+          credits: option.credits.toString(),
+          analysis_context: JSON.stringify({
+            insights: analysisInsights.slice(0, 2), // Limit to avoid metadata size issues
+            userContext: typeof userContext === 'string' ? userContext.slice(0, 100) : JSON.stringify(userContext).slice(0, 100),
+            designType
+          })
+        }
+      });
+
+      if (checkoutSession?.url) {
+        console.log('Redirecting to Stripe checkout:', checkoutSession.url);
+        // Open Stripe checkout in new tab
+        window.open(checkoutSession.url, '_blank');
+      } else {
+        throw new Error('Failed to create checkout session - no URL returned');
+      }
+      
     } catch (error) {
       console.error('Upgrade purchase failed:', error);
-      setError('Failed to purchase upgrade. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setError(`Failed to start upgrade purchase: ${errorMessage}. Please try again.`);
     } finally {
       setPurchasingUpgrade(false);
     }
