@@ -70,14 +70,13 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
   };
 
   // Filter user annotations for the current image
-  const getUserAnnotationsForImage = (imageIndex: number) => {
-    const imageUrl = workflow.selectedImages[imageIndex];
+  const getUserAnnotationsForImage = (imageUrl: string) => {
     return workflow.userAnnotations[imageUrl] || [];
   };
 
   // Get annotations for the currently active image
   const currentImageAIAnnotations = getAnnotationsForImage(activeImageIndex >= 0 ? activeImageIndex : 0);
-  const currentImageUserAnnotations = getUserAnnotationsForImage(activeImageIndex >= 0 ? activeImageIndex : 0);
+  const currentImageUserAnnotations = getUserAnnotationsForImage(activeImageUrl);
 
   // Extract business impact and insights
   const businessImpact = workflow.aiAnnotations.length > 0 ? {
@@ -141,7 +140,7 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
                   activeImageUrl={activeImageUrl}
                   onImageChange={setActiveImageUrl}
                   getAnnotationsForImage={getAnnotationsForImage}
-                  getUserAnnotationsForImage={getUserAnnotationsForImage}
+                  getUserAnnotationsForImage={(imageUrl: string) => workflow.userAnnotations[imageUrl] || []}
                   onAnnotationClick={setActiveAnnotation}
                   activeAnnotation={activeAnnotation}
                   getCategoryIcon={getCategoryIcon}
@@ -149,7 +148,7 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
               ) : (
                 <SingleImageViewer
                   imageUrl={workflow.selectedImages[0]}
-                  userAnnotations={workflow.userAnnotations}
+                  userAnnotations={workflow.userAnnotations[workflow.selectedImages[0]] || []}
                   aiAnnotations={workflow.aiAnnotations}
                   onAnnotationClick={setActiveAnnotation}
                   activeAnnotation={activeAnnotation}
