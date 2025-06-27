@@ -19,6 +19,9 @@ export function buildEnhancedAnalysisPrompt(
     timestamp: new Date().toISOString()
   });
 
+  // Add console.log for imageCount as requested
+  console.log('📊 Image Count in buildEnhancedAnalysisPrompt:', imageCount);
+
   console.log('🖼️ Multi-Image Detection:', {
     imageCount,
     isMultiImage: imageCount > 1,
@@ -70,6 +73,22 @@ COMPETITIVE ANALYSIS INSTRUCTIONS:
 `;
   }
 
+  // Add multi-image analysis instructions when imageCount > 1
+  let multiImageInstructions = '';
+  if (imageCount > 1) {
+    multiImageInstructions = `
+
+MULTI-IMAGE ANALYSIS: You are analyzing ${imageCount} different images. Each annotation MUST specify the correct imageIndex (0 to ${imageCount - 1}) to indicate which image the annotation belongs to.
+
+Image 1 = imageIndex: 0
+Image 2 = imageIndex: 1
+${imageCount > 2 ? 'Image 3 = imageIndex: 2' : ''}
+${imageCount > 3 ? 'Image 4 = imageIndex: 3' : ''}
+${imageCount > 4 ? `Image ${imageCount} = imageIndex: ${imageCount - 1}` : ''}
+
+Ensure annotations are distributed across ALL images based on their individual content and design elements.`;
+  }
+
   const jsonInstructions = `
 
 CRITICAL: You MUST respond with a valid JSON array of annotation objects only. Do not include any markdown, explanations, or other text.
@@ -98,7 +117,7 @@ Required JSON format:
     "feedback": "Research and competitively-informed feedback with specific citations and benchmarks",
     "implementationEffort": "medium",
     "businessImpact": "high",
-    "imageIndex": ${imageCount > 1 ? 'REQUIRED_FIELD_0_to_' + (imageCount - 1) : '0'} // CRITICAL: Must be 0 to ${imageCount - 1} for multi-image
+    "imageIndex": ${imageCount > 1 ? `REQUIRED - specify 0 to ${imageCount - 1} based on which image` : '0 for single image'}
   }
 ]
 
@@ -109,11 +128,11 @@ Rules:
 - feedback: Enhanced explanation citing research AND competitive benchmarks (2-3 sentences)
 - implementationEffort: "low", "medium", or "high"
 - businessImpact: "low", "medium", or "high"
-- imageIndex: ${imageCount > 1 ? `REQUIRED - specify 0 to ${imageCount - 1} based on which specific image this annotation applies to` : '0 for single image'}
+- imageIndex: ${imageCount > 1 ? `REQUIRED - specify 0 to ${imageCount - 1} based on which image` : '0 for single image'}
 
 ${imageCount > 1 ? `
 MULTI-IMAGE ANALYSIS REQUIREMENTS:
-- Provide 2-3 annotations per image, ensuring each image receives individual attention
+- For multi-image analysis, provide 2-3 annotations per image, ensuring each image receives individual attention
 - Each annotation must have the correct imageIndex (0, 1, 2, etc.)
 - Analyze each image's unique design elements, don't just copy annotations across images
 - Consider how different images work together in the overall user experience
@@ -128,7 +147,7 @@ When research and competitive context are available, ensure feedback includes:
   let finalPrompt;
   
   if (isComparative && imageCount > 1) {
-    finalPrompt = `${enhancedPrompt}
+    finalPrompt = `${enhancedPrompt}${multiImageInstructions}
 
 This is a COMPARATIVE ANALYSIS of ${imageCount} designs. Compare the designs using research-backed criteria AND competitive benchmarks to identify differences, strengths, and improvement opportunities across all images.
 
@@ -151,7 +170,7 @@ ${jsonInstructions}`;
       multiImageInstructionsIncluded: true
     });
   } else if (imageCount > 1) {
-    finalPrompt = `${enhancedPrompt}
+    finalPrompt = `${enhancedPrompt}${multiImageInstructions}
 
 MULTI-IMAGE ANALYSIS: You are analyzing ${imageCount} different design images. Analyze each design individually and provide specific insights for each image using research-backed methodologies AND competitive intelligence.
 
