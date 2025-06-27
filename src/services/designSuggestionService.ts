@@ -95,25 +95,10 @@ class DesignSuggestionService {
     suggestion: DesignSuggestion
   ): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('design_suggestions')
-        .insert({
-          analysis_id: analysisId,
-          suggestion_id: suggestion.id,
-          image_url: suggestion.imageUrl,
-          prompt: suggestion.prompt,
-          category: suggestion.category,
-          description: suggestion.description,
-          implementation_notes: suggestion.implementationNotes,
-          metadata: suggestion.metadata
-        });
-
-      if (error) {
-        console.error('Failed to save design suggestion:', error);
-        return false;
-      }
-
-      return true;
+      // For now, return false since the table doesn't exist yet
+      // This will be implemented once the database table is created
+      console.log('Design suggestion save attempted but table not available yet');
+      return false;
     } catch (error) {
       console.error('Error saving design suggestion:', error);
       return false;
@@ -122,26 +107,10 @@ class DesignSuggestionService {
 
   async getDesignSuggestionsForAnalysis(analysisId: string): Promise<DesignSuggestion[]> {
     try {
-      const { data, error } = await supabase
-        .from('design_suggestions')
-        .select('*')
-        .eq('analysis_id', analysisId)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Failed to fetch design suggestions:', error);
-        return [];
-      }
-
-      return data?.map(item => ({
-        id: item.suggestion_id,
-        imageUrl: item.image_url,
-        prompt: item.prompt,
-        category: item.category,
-        description: item.description,
-        implementationNotes: item.implementation_notes,
-        metadata: item.metadata
-      })) || [];
+      // For now, return empty array since the table doesn't exist yet
+      // This will be implemented once the database table is created
+      console.log('Design suggestion fetch attempted but table not available yet');
+      return [];
     } catch (error) {
       console.error('Error fetching design suggestions:', error);
       return [];

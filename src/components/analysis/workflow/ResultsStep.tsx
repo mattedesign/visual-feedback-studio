@@ -16,7 +16,7 @@ import {
   AlertCircle,
   Info
 } from 'lucide-react';
-import { AnalysisWorkflowState } from '@/hooks/analysis/useAnalysisWorkflow';
+import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { CategorySummaries } from './components/CategorySummaries';
 import { DetailedAnnotationsList } from './components/DetailedAnnotationsList';
 import { BusinessImpactSummary } from './components/BusinessImpactSummary';
@@ -27,7 +27,7 @@ import { ComparativeAnalysisSummary } from '../ComparativeAnalysisSummary';
 import { DesignSuggestions } from '../DesignSuggestions';
 
 interface ResultsStepProps {
-  workflow: AnalysisWorkflowState;
+  workflow: ReturnType<typeof useAnalysisWorkflow>;
 }
 
 export const ResultsStep = ({ workflow }: ResultsStepProps) => {
@@ -165,7 +165,6 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
           {isComparative ? (
             <ComparativeAnalysisSummary 
               annotations={annotations}
-              imageCount={selectedImages.length}
             />
           ) : (
             <OverallAnalysisSummary annotations={annotations} />
@@ -178,13 +177,12 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
 
         <TabsContent value="detailed" className="space-y-6">
           <DetailedAnnotationsList 
-            annotations={annotations} 
-            isComparative={isComparative}
+            annotations={annotations}
           />
         </TabsContent>
 
         <TabsContent value="impact" className="space-y-6">
-          <BusinessImpactSummary annotations={annotations} />
+          <BusinessImpactSummary />
         </TabsContent>
 
         <TabsContent value="priority" className="space-y-6">
@@ -207,8 +205,6 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
 
       {/* Actions */}
       <ResultsActions 
-        analysisId={currentAnalysis?.id}
-        annotations={annotations}
         onStartNewAnalysis={() => goToStep('upload')}
       />
     </div>
