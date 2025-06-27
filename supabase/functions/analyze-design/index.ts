@@ -355,8 +355,8 @@ Deno.serve(async (req) => {
     const requestData = validationResult.data;
     console.log('✅ Request validated successfully');
 
-    // Calculate imageCount from request data
-    const imageCount = requestData.imageUrls?.length || (requestData.imageUrl ? 1 : 0);
+    // Calculate imageCount from validated request data
+    const imageCount = requestData.imagesToProcess.length;
     
     // Add validation that imageCount > 0
     if (imageCount === 0) {
@@ -370,20 +370,20 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Log analysis configuration
+    // Log analysis configuration with calculated imageCount
     console.log('🎯 Analysis Request Details:', {
       imageCount,
       isMultiImage: imageCount > 1,
       isComparative: requestData.isComparative || false,
-      hasImageUrls: !!requestData.imageUrls,
-      hasSingleImageUrl: !!requestData.imageUrl,
-      analysisId: requestData.analysisId
+      ragEnabled: requestData.ragEnabled || false,
+      analysisId: requestData.analysisId,
+      imagesToProcess: requestData.imagesToProcess.length
     });
 
     // Process images
     console.log('🖼️ Processing images...');
     const imageProcessingResult = await imageProcessingManager.processImages(
-      requestData.imageUrls || [requestData.imageUrl],
+      requestData.imagesToProcess,
       requestData.isComparative || false
     );
 
@@ -475,6 +475,7 @@ Deno.serve(async (req) => {
       isComparative: requestData.isComparative || false
     });
     
+    // UPDATED: Pass imageCount as the 5th parameter to buildEnhancedAnalysisPrompt
     const enhancedPrompt = buildEnhancedAnalysisPrompt(
       originalPrompt,
       ragContext.researchEnhanced ? ragContext.enhancedPrompt : undefined,
