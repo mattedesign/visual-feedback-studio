@@ -9,6 +9,24 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const buildUIPrompt = (userPrompt: string): string => {
+  return `Create a detailed UI mockup for: ${userPrompt}
+
+REQUIREMENTS:
+- Generate an actual interface mockup, not a conceptual design
+- Show realistic UI elements: buttons, forms, navigation bars, content areas
+- Use modern flat design principles with clean typography
+- Include proper spacing, hierarchy, and visual organization
+- Display actual interface components that users would interact with
+- Use a professional color scheme with good contrast ratios
+- Show realistic content placeholders and UI text
+- Create a desktop or mobile interface layout as appropriate
+- Include navigation elements, CTAs, and interactive components
+- Make it look like a real application screenshot or wireframe
+
+STYLE: Clean, modern, minimalist UI design with proper UX principles. Flat design aesthetic with subtle shadows and contemporary typography. Professional appearance suitable for a real product.`;
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -33,7 +51,9 @@ serve(async (req) => {
       throw new Error('Valid prompt is required');
     }
 
-    console.log('Generating image with prompt:', prompt);
+    console.log('Generating UI mockup with prompt:', prompt);
+
+    const enhancedPrompt = buildUIPrompt(prompt);
 
     const response = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
@@ -43,10 +63,11 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'dall-e-3',
-        prompt: `Professional UI/UX design: ${prompt}. Clean, modern, accessible design.`,
+        prompt: enhancedPrompt,
         n: 1,
         size: '1024x1024',
-        quality: 'standard'
+        quality: 'hd',
+        style: 'natural'
       })
     });
 
