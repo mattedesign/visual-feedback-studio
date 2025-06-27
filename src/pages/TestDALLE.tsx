@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 const TestDALLE = () => {
   const [issue, setIssue] = useState('');
@@ -15,24 +16,31 @@ const TestDALLE = () => {
     setImageUrl('');
 
     try {
-      const response = await fetch('/api/test-dalle', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ issue })
+      console.log('Calling test-dalle edge function...');
+      
+      const { data, error: functionError } = await supabase.functions.invoke('test-dalle', {
+        body: { issue: issue.trim() }
       });
 
-      const data = await response.json();
-      
-      if (data.success) {
+      if (functionError) {
+        console.error('Function error:', functionError);
+        setError(`Function error: ${functionError.message}`);
+        return;
+      }
+
+      if (data?.success) {
+        console.log('Image generated successfully:', data.imageUrl);
         setImageUrl(data.imageUrl);
       } else {
-        setError(data.error || 'Unknown error');
+        console.error('Generation failed:', data);
+        setError(data?.error || 'Unknown error occurred');
       }
     } catch (err: any) {
-      setError('Network error: ' + err.message);
+      console.error('Network error:', err);
+      setError(`Network error: ${err.message}`);
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   return (
