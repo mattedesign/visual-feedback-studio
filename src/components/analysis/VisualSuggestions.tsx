@@ -27,17 +27,20 @@ interface CustomVariation {
 
 interface VisualSuggestion {
   id: string;
-  type: 'before_after' | 'style_variant' | 'accessibility_fix' | 'smart_before_after';
+  type: 'before_after' | 'style_variant' | 'accessibility_fix' | 'smart_before_after' | 'custom_tuned';
   description: string;
   imageUrl: string;
-  originalIssue: string;
-  improvement: string;
+  originalIssue?: string;
+  improvement?: string;
   timestamp: Date;
-  confidence?: number;
+  confidence?: number | string;
   style?: string;
   reasoning?: string;
   upgradeOptions?: UpgradeOption[];
   generatedAt?: string;
+  title?: string;
+  context?: string;
+  tags?: string[];
   customVariation?: CustomVariation;
 }
 
@@ -196,6 +199,7 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
       case 'before_after': return '🔄';
       case 'style_variant': return '🎨';
       case 'accessibility_fix': return '♿';
+      case 'custom_tuned': return '🎛️';
       default: return '💡';
     }
   };
@@ -206,6 +210,7 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
       case 'before_after': return 'Before/After';
       case 'style_variant': return 'Style Variant';
       case 'accessibility_fix': return 'Accessibility Fix';
+      case 'custom_tuned': return 'Custom Design';
       default: return 'Suggestion';
     }
   };
@@ -273,7 +278,10 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
                         )}
                         {suggestion.confidence && (
                           <Badge variant="outline" className="text-xs text-green-400">
-                            {Math.round(suggestion.confidence * 100)}% Confidence
+                            {typeof suggestion.confidence === 'number' 
+                              ? Math.round(suggestion.confidence * 100) + '% Confidence'
+                              : suggestion.confidence
+                            }
                           </Badge>
                         )}
                       </div>
@@ -296,7 +304,9 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
                           />
                         </div>
                         <p className="text-sm text-slate-300 mb-2">{suggestion.description}</p>
-                        <p className="text-xs text-slate-400 mb-3">{suggestion.improvement}</p>
+                        {suggestion.improvement && (
+                          <p className="text-xs text-slate-400 mb-3">{suggestion.improvement}</p>
+                        )}
                         <div className="flex gap-2">
                           <Button size="sm" variant="outline" className="flex-1">
                             <Download className="w-3 h-3 mr-1" />
