@@ -1,13 +1,29 @@
+
 import { supabase } from '@/integrations/supabase/client';
+import { smartStyleSelector, DesignContext } from './smartStyleSelector';
 
 interface VisualSuggestion {
   id: string;
-  type: 'before_after' | 'style_variant' | 'accessibility_fix';
+  type: 'before_after' | 'style_variant' | 'accessibility_fix' | 'smart_before_after';
   description: string;
   imageUrl: string;
   originalIssue: string;
   improvement: string;
   timestamp: Date;
+  confidence?: number;
+  style?: string;
+  reasoning?: string;
+  upgradeOptions?: UpgradeOption[];
+  generatedAt?: string;
+}
+
+interface UpgradeOption {
+  id: string;
+  name: string;
+  credits: number;
+  description: string;
+  styles: string[];
+  value_proposition: string;
 }
 
 interface SuggestionRequest {
@@ -15,13 +31,13 @@ interface SuggestionRequest {
   userContext: string;
   focusAreas: string[];
   designType: 'mobile' | 'desktop' | 'responsive';
-  originalImageUrl?: string; // NEW: Reference to original image
-  imageDescription?: string; // NEW: Description of what's in the image
+  originalImageUrl?: string;
+  imageDescription?: string;
 }
 
 class VisualSuggestionService {
   
-  // NEW: Analyze the context to understand what kind of interface this is
+  // Enhanced image context analysis
   private analyzeImageContext(context: string, insights: string[]): {
     interfaceType: string;
     keyElements: string[];
@@ -60,79 +76,121 @@ class VisualSuggestionService {
     return { interfaceType, keyElements, styleDescription };
   }
 
-  private buildEnhancedPrompt(
-    insight: string, 
-    context: string, 
-    type: string,
-    imageAnalysis: { interfaceType: string; keyElements: string[]; styleDescription: string; }
-  ): string {
-    const { interfaceType, keyElements, styleDescription } = imageAnalysis;
-    
-    // Build specific element references
-    const elementReferences = keyElements.length > 0 
-      ? `featuring ${keyElements.join(', ')}` 
-      : '';
-    
-    const basePrompt = `High-quality ${interfaceType} mockup with ${styleDescription} ${elementReferences}`;
-    
-    switch (type) {
-      case 'before_after':
-        return `${basePrompt}, showing the IMPROVED version that addresses: "${insight}". 
-                Context: ${context}. 
-                Focus on maintaining the same layout structure while making specific improvements to ${keyElements.join(' and ')}.
-                Show the solution with better UX, enhanced visual hierarchy, and improved usability.
-                Professional UI/UX design, realistic interface, modern styling.`;
-                
-      case 'style_variant': 
-        return `${basePrompt}, redesigned with enhanced ${styleDescription} approach to solve: "${insight}".
-                Context: ${context}.
-                Keep the same general layout but apply better visual design, improved spacing, enhanced typography, and modern UI patterns.
-                Show specific design improvements while maintaining usability.
-                Professional interface design, clean mockup style.`;
-                
-      case 'accessibility_fix':
-        return `${basePrompt}, redesigned for WCAG compliance and accessibility to address: "${insight}".
-                Context: ${context}.
-                Show the same interface with improved contrast ratios, clearer labels, better button sizing, enhanced keyboard navigation indicators.
-                Focus on accessibility improvements: high contrast colors, readable text, clear visual hierarchy, accessible form elements.
-                Professional accessible design, meets WCAG AA standards.`;
-                
-      default:
-        return `${basePrompt} addressing: "${insight}" in context: ${context}`;
-    }
-  }
-
-  private async generateSuggestion(
-    insight: string, 
-    context: string, 
-    type: 'before_after' | 'style_variant' | 'accessibility_fix',
-    imageAnalysis: { interfaceType: string; keyElements: string[]; styleDescription: string; }
-  ): Promise<VisualSuggestion> {
-    const prompt = this.buildEnhancedPrompt(insight, context, type, imageAnalysis);
-    const imageUrl = await this.callDALLEViaEdgeFunction(prompt);
-    
-    return {
-      id: crypto.randomUUID(),
-      type,
-      description: insight,
-      imageUrl,
-      originalIssue: insight,
-      improvement: this.getImprovementDescription(insight, type),
-      timestamp: new Date()
+  private extractDesignContext(userContext: any): DesignContext {
+    // Extract context from user input, form data, or analysis
+    const context: DesignContext = {
+      industry: userContext.industry || this.detectIndustryFromContext(userContext),
+      deviceType: userContext.device_type || userContext.deviceType || 'desktop',
+      primaryIssue: userContext.primary_concern || userContext.primaryConcern || '',
+      userType: userContext.user_type || userContext.userType || 'general',
+      pageType: userContext.page_type || userContext.pageType || 'landing',
+      businessGoal: userContext.business_goal || userContext.businessGoal || 'conversion'
     };
+    
+    console.log('📋 Extracted design context:', context);
+    return context;
   }
 
-  private getImprovementDescription(insight: string, type: 'before_after' | 'style_variant' | 'accessibility_fix'): string {
-    switch (type) {
-      case 'before_after':
-        return `Enhanced UX solution: ${insight.substring(0, 100)}${insight.length > 100 ? '...' : ''}`;
-      case 'style_variant':
-        return `Visual redesign: ${insight.substring(0, 100)}${insight.length > 100 ? '...' : ''}`;
-      case 'accessibility_fix':
-        return `Accessibility improvement: ${insight.substring(0, 100)}${insight.length > 100 ? '...' : ''}`;
-      default:
-        return `Enhancement: ${insight.substring(0, 100)}${insight.length > 100 ? '...' : ''}`;
+  private detectIndustryFromContext(userContext: any): string | undefined {
+    // Convert user context to searchable string
+    const contextStr = JSON.stringify(userContext).toLowerCase();
+    
+    const industryKeywords = {
+      'finance': ['bank', 'financial', 'investment', 'loan', 'credit', 'trading', 'fintech'],
+      'healthcare': ['medical', 'health', 'doctor', 'patient', 'clinic', 'hospital', 'pharmacy'],
+      'ecommerce': ['shop', 'store', 'product', 'cart', 'checkout', 'buy', 'retail', 'marketplace'],
+      'saas': ['software', 'platform', 'dashboard', 'analytics', 'subscription', 'saas'],
+      'education': ['learn', 'course', 'student', 'university', 'school', 'education', 'training'],
+      'gaming': ['game', 'gaming', 'player', 'level', 'score', 'tournament'],
+      'tech': ['technology', 'developer', 'api', 'integration', 'technical'],
+      'startup': ['startup', 'launch', 'mvp', 'growth', 'founder']
+    };
+
+    for (const [industry, keywords] of Object.entries(industryKeywords)) {
+      if (keywords.some(keyword => contextStr.includes(keyword))) {
+        console.log(`🏭 Detected industry: ${industry} (found keywords: ${keywords.filter(k => contextStr.includes(k)).join(', ')})`);
+        return industry;
+      }
     }
+    
+    console.log('🏭 No specific industry detected, using default');
+    return undefined;
+  }
+
+  private buildContextualPrompt(insight: string, userContext: any, designContext: DesignContext): string {
+    // Build a contextual prompt based on the insight and context
+    const basePrompt = `Create a UI mockup that addresses this UX issue: ${insight}`;
+    
+    let contextualPrompt = basePrompt;
+    
+    if (designContext.pageType) {
+      contextualPrompt += ` for a ${designContext.pageType} page`;
+    }
+    
+    if (designContext.industry) {
+      contextualPrompt += ` in the ${designContext.industry} industry`;
+    }
+    
+    if (designContext.businessGoal) {
+      contextualPrompt += ` optimized for ${designContext.businessGoal}`;
+    }
+    
+    // Add specific UI improvement direction
+    contextualPrompt += `. Show a clear before/after comparison or improved version that solves the identified problem.`;
+    
+    return contextualPrompt;
+  }
+
+  private buildUpgradeOptions(alternatives: string[], context: DesignContext): UpgradeOption[] {
+    const upgradeOptions: UpgradeOption[] = [
+      {
+        id: 'style_variety_pack',
+        name: 'Style Variety Pack',
+        credits: 2,
+        description: `See ${alternatives.length} additional style approaches: ${alternatives.join(', ')}`,
+        styles: alternatives,
+        value_proposition: 'Compare different design directions before making final decisions'
+      }
+    ];
+
+    // Add device-specific upgrade if not already mobile-focused
+    if (context.deviceType !== 'mobile') {
+      upgradeOptions.push({
+        id: 'responsive_design_pack',
+        name: 'Responsive Design Pack', 
+        credits: 2,
+        description: 'See how this design works across mobile, tablet, and desktop',
+        styles: ['mobile_optimized', 'tablet_optimized', 'desktop_optimized'],
+        value_proposition: 'Ensure your design works perfectly across all devices'
+      });
+    }
+
+    // Add A/B testing upgrade for conversion-focused contexts
+    if (context.businessGoal === 'conversion' || context.pageType === 'landing') {
+      upgradeOptions.push({
+        id: 'ab_test_variants',
+        name: 'A/B Test Variants',
+        credits: 3,
+        description: 'Generate 2 statistically different versions for split testing',
+        styles: ['conversion_variant_a', 'conversion_variant_b'],
+        value_proposition: 'Get proven-different designs for conversion optimization testing'
+      });
+    }
+
+    return upgradeOptions;
+  }
+
+  private generateSmartDescription(style: string, insight: string): string {
+    const truncatedInsight = insight.substring(0, 80) + (insight.length > 80 ? '...' : '');
+    
+    const styleDescriptions = {
+      'professional': `Professional redesign addressing: ${truncatedInsight}`,
+      'minimal': `Clean, simplified approach for: ${truncatedInsight}`,
+      'bold': `High-impact design targeting: ${truncatedInsight}`,
+      'playful': `Engaging, user-friendly solution for: ${truncatedInsight}`
+    };
+    
+    return styleDescriptions[style] || `Smart enhanced design for: ${truncatedInsight}`;
   }
 
   private async callDALLEViaEdgeFunction(prompt: string): Promise<string> {
@@ -162,37 +220,66 @@ class VisualSuggestionService {
     }
   }
 
+  // Enhanced generateVisualSuggestions method with Smart Style Selector integration
   async generateVisualSuggestions(request: SuggestionRequest): Promise<VisualSuggestion[]> {
-    const suggestions: VisualSuggestion[] = [];
-    const topInsights = request.analysisInsights.slice(0, 3);
-
-    console.log('🚀 Starting ENHANCED visual suggestions generation');
+    console.log('🚀 Starting ENHANCED smart visual generation');
     
-    // NEW: Analyze the image context for better prompts
-    const imageAnalysis = this.analyzeImageContext(request.userContext, topInsights);
-    console.log('🔍 Image analysis:', imageAnalysis);
-
-    for (const insight of topInsights) {
-      try {
-        // Generate contextual before/after for each insight
-        console.log(`🎨 Generating contextual improvement for: ${insight.substring(0, 50)}...`);
-        const beforeAfter = await this.generateSuggestion(insight, request.userContext, 'before_after', imageAnalysis);
-        suggestions.push(beforeAfter);
-
-        // Generate accessibility fix if accessibility issues mentioned
-        if (insight.toLowerCase().match(/contrast|accessibility|wcag|readable|screen.reader|keyboard|color/)) {
-          console.log(`♿ Generating accessibility improvement for: ${insight.substring(0, 50)}...`);
-          const accessibilityFix = await this.generateSuggestion(insight, request.userContext, 'accessibility_fix', imageAnalysis);
-          suggestions.push(accessibilityFix);
-        }
-
-      } catch (error) {
-        console.error(`❌ Failed to generate enhanced suggestion for insight: ${insight}`, error);
-      }
+    // Extract design context from user input
+    const designContext = this.extractDesignContext(request.userContext);
+    console.log('🔍 Design context extracted:', designContext);
+    
+    // Get smart style recommendation using SmartStyleSelector
+    const styleRecommendation = smartStyleSelector.selectOptimalStyle(
+      request.analysisInsights,
+      request.userContext,
+      designContext
+    );
+    
+    console.log('🧠 Smart style selected:', styleRecommendation);
+    
+    try {
+      // Use the top insight for the primary visual
+      const primaryInsight = request.analysisInsights[0];
+      
+      // Build enhanced prompt with smart style
+      const basePrompt = this.buildContextualPrompt(primaryInsight, request.userContext, designContext);
+      const enhancedPrompt = smartStyleSelector.buildEnhancedPrompt(
+        basePrompt, 
+        styleRecommendation.style,
+        designContext
+      );
+      
+      console.log(`🎨 Generating smart ${styleRecommendation.style} visual for: ${primaryInsight.substring(0, 50)}...`);
+      
+      // Generate single high-quality visual
+      const imageUrl = await this.callDALLEViaEdgeFunction(enhancedPrompt);
+      
+      // Build upgrade options
+      const upgradeOptions = this.buildUpgradeOptions(styleRecommendation.alternatives, designContext);
+      
+      const smartSuggestion: VisualSuggestion = {
+        id: `smart_visual_${Date.now()}`,
+        type: 'smart_before_after',
+        imageUrl,
+        description: this.generateSmartDescription(styleRecommendation.style, primaryInsight),
+        originalIssue: primaryInsight,
+        improvement: `Smart ${styleRecommendation.style} redesign with ${styleRecommendation.confidence * 100}% confidence`,
+        timestamp: new Date(),
+        confidence: styleRecommendation.confidence,
+        style: styleRecommendation.style,
+        reasoning: styleRecommendation.reasoning,
+        upgradeOptions,
+        generatedAt: new Date().toISOString()
+      };
+      
+      console.log(`✅ Generated 1 SMART visual suggestion with ${upgradeOptions.length} upgrade options`);
+      return [smartSuggestion];
+      
+    } catch (error) {
+      console.error(`❌ Failed to generate smart visual suggestion:`, error);
+      // Fallback: return empty array rather than breaking the analysis
+      return [];
     }
-
-    console.log(`✅ Generated ${suggestions.length} ENHANCED visual suggestions`);
-    return suggestions;
   }
 }
 

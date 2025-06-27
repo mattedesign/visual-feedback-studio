@@ -3,16 +3,30 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Download, Maximize2 } from 'lucide-react';
+import { Loader2, Download, Maximize2, Sparkles, TrendingUp } from 'lucide-react';
+
+interface UpgradeOption {
+  id: string;
+  name: string;
+  credits: number;
+  description: string;
+  styles: string[];
+  value_proposition: string;
+}
 
 interface VisualSuggestion {
   id: string;
-  type: 'before_after' | 'style_variant' | 'accessibility_fix';
+  type: 'before_after' | 'style_variant' | 'accessibility_fix' | 'smart_before_after';
   description: string;
   imageUrl: string;
   originalIssue: string;
   improvement: string;
   timestamp: Date;
+  confidence?: number;
+  style?: string;
+  reasoning?: string;
+  upgradeOptions?: UpgradeOption[];
+  generatedAt?: string;
 }
 
 interface VisualSuggestionsProps {
@@ -57,6 +71,7 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
 
   const getTypeIcon = (type: string) => {
     switch (type) {
+      case 'smart_before_after': return '🧠';
       case 'before_after': return '🔄';
       case 'style_variant': return '🎨';
       case 'accessibility_fix': return '♿';
@@ -66,6 +81,7 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
 
   const getTypeName = (type: string) => {
     switch (type) {
+      case 'smart_before_after': return 'Smart Redesign';
       case 'before_after': return 'Before/After';
       case 'style_variant': return 'Style Variant';
       case 'accessibility_fix': return 'Accessibility Fix';
@@ -73,11 +89,24 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
     }
   };
 
+  const getStyleBadgeColor = (style: string) => {
+    switch (style) {
+      case 'professional': return 'bg-blue-600 text-white';
+      case 'minimal': return 'bg-gray-600 text-white';
+      case 'bold': return 'bg-red-600 text-white';
+      case 'playful': return 'bg-green-600 text-white';
+      default: return 'bg-purple-600 text-white';
+    }
+  };
+
   return (
     <Card className="bg-slate-800 border-slate-700">
       <CardHeader>
         <CardTitle className="flex items-center justify-between text-white">
-          <span>🎨 Visual Design Suggestions</span>
+          <span className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5" />
+            🎨 Smart Visual Design Suggestions
+          </span>
           <Button 
             onClick={generateSuggestions}
             disabled={loading}
@@ -90,7 +119,10 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
                 Generating...
               </>
             ) : (
-              'Generate Suggestions'
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                Generate Smart Suggestions
+              </>
             )}
           </Button>
         </CardTitle>
@@ -103,34 +135,85 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
         )}
 
         {suggestions.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="space-y-6">
             {suggestions.map((suggestion) => (
               <Card key={suggestion.id} className="bg-slate-700 border-slate-600">
-                <CardHeader className="pb-2">
+                <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <Badge variant="outline" className="text-xs">
-                      {getTypeIcon(suggestion.type)} {getTypeName(suggestion.type)}
-                    </Badge>
+                    <div className="flex items-center gap-3">
+                      <Badge variant="outline" className="text-xs">
+                        {getTypeIcon(suggestion.type)} {getTypeName(suggestion.type)}
+                      </Badge>
+                      {suggestion.style && (
+                        <Badge className={`text-xs ${getStyleBadgeColor(suggestion.style)}`}>
+                          {suggestion.style.toUpperCase()}
+                        </Badge>
+                      )}
+                      {suggestion.confidence && (
+                        <Badge variant="outline" className="text-xs text-green-400">
+                          {Math.round(suggestion.confidence * 100)}% Confidence
+                        </Badge>
+                      )}
+                    </div>
                   </div>
+                  {suggestion.reasoning && (
+                    <div className="mt-2 p-2 bg-slate-600 rounded text-xs text-slate-300">
+                      <strong>💡 Why this style:</strong> {suggestion.reasoning}
+                    </div>
+                  )}
                 </CardHeader>
                 <CardContent>
-                  <div className="aspect-square mb-3">
-                    <img 
-                      src={suggestion.imageUrl} 
-                      alt={suggestion.description}
-                      className="w-full h-full object-cover rounded border border-slate-600"
-                    />
-                  </div>
-                  <p className="text-sm text-slate-300 mb-2">{suggestion.description}</p>
-                  <p className="text-xs text-slate-400 mb-3">{suggestion.improvement}</p>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" className="flex-1">
-                      <Download className="w-3 h-3 mr-1" />
-                      Download
-                    </Button>
-                    <Button size="sm" variant="outline">
-                      <Maximize2 className="w-3 h-3" />
-                    </Button>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {/* Main visual */}
+                    <div>
+                      <div className="aspect-square mb-3">
+                        <img 
+                          src={suggestion.imageUrl} 
+                          alt={suggestion.description}
+                          className="w-full h-full object-cover rounded border border-slate-600"
+                        />
+                      </div>
+                      <p className="text-sm text-slate-300 mb-2">{suggestion.description}</p>
+                      <p className="text-xs text-slate-400 mb-3">{suggestion.improvement}</p>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" className="flex-1">
+                          <Download className="w-3 h-3 mr-1" />
+                          Download
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <Maximize2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Upgrade options */}
+                    {suggestion.upgradeOptions && suggestion.upgradeOptions.length > 0 && (
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4" />
+                          Upgrade Options
+                        </h4>
+                        {suggestion.upgradeOptions.map((option) => (
+                          <Card key={option.id} className="bg-slate-600 border-slate-500 p-3">
+                            <div className="flex items-start justify-between mb-2">
+                              <div>
+                                <h5 className="text-sm font-medium text-white">{option.name}</h5>
+                                <p className="text-xs text-slate-300 mt-1">{option.description}</p>
+                              </div>
+                              <Badge className="bg-yellow-600 text-yellow-100 text-xs">
+                                {option.credits} credits
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-slate-400 mb-2">
+                              <strong>Value:</strong> {option.value_proposition}
+                            </p>
+                            <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700">
+                              Generate ({option.credits} credits)
+                            </Button>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -140,9 +223,21 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
 
         {suggestions.length === 0 && !loading && !error && (
           <div className="text-center py-8">
-            <p className="text-slate-400 mb-4">Generate visual suggestions to see design improvements</p>
-            <p className="text-xs text-slate-500">
-              Based on your analysis insights: {analysisInsights.slice(0, 3).join(', ')}
+            <div className="mb-4">
+              <Sparkles className="w-12 h-12 text-slate-400 mx-auto mb-2" />
+              <p className="text-slate-400 mb-4">Generate smart visual suggestions with AI-selected optimal styles</p>
+            </div>
+            <div className="bg-slate-700 rounded-lg p-4 text-left">
+              <h4 className="text-white font-medium mb-2">🧠 Smart Visual Generation Features:</h4>
+              <ul className="text-xs text-slate-300 space-y-1">
+                <li>• AI selects optimal design style based on your context</li>
+                <li>• Industry-specific recommendations</li>
+                <li>• Upgrade options for additional styles</li>
+                <li>• 75% cost reduction vs traditional approach</li>
+              </ul>
+            </div>
+            <p className="text-xs text-slate-500 mt-4">
+              Context: {analysisInsights.slice(0, 2).join(', ')}
             </p>
           </div>
         )}
