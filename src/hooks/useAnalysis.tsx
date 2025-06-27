@@ -38,16 +38,23 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       return;
     }
 
+    // Calculate imageCount for multi-image analysis
+    const imageCount = workflow.selectedImages.length;
+    
     console.log('=== Starting RAG-Enhanced Multi-Image Analysis ===');
-    console.log('Selected images:', workflow.selectedImages.length);
+    console.log('📊 Multi-Image Analysis Configuration:', {
+      imageCount: imageCount,
+      isMultiImage: imageCount > 1,
+      selectedImages: workflow.selectedImages,
+      requiresImageIndexDistribution: imageCount > 1
+    });
     console.log('Current analysis:', workflow.currentAnalysis?.id);
     console.log('User annotations:', workflow.getTotalAnnotationsCount());
     console.log('Analysis context:', workflow.analysisContext || 'None provided');
     console.log('RAG enabled: TRUE');
-    console.log('Multi-image mode:', workflow.selectedImages.length > 1);
 
     // Validation checks
-    if (workflow.selectedImages.length === 0) {
+    if (imageCount === 0) {
       console.error('❌ No images selected for analysis');
       toast.error('No images selected for analysis. Please go back and upload your images.');
       workflow.goToStep('upload');
@@ -92,28 +99,46 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       setCurrentStep('Enhancing analysis with research...');
       setAnalysisProgress(60);
 
-      setCurrentStep(`Generating RAG-enhanced insights for ${workflow.selectedImages.length} image${workflow.selectedImages.length > 1 ? 's' : ''}...`);
+      setCurrentStep(`Generating RAG-enhanced insights for ${imageCount} image${imageCount > 1 ? 's' : ''}...`);
       setAnalysisProgress(80);
 
-      // Enhanced prompt with RAG context and explicit multi-image instructions
+      // Enhanced prompt with explicit multi-image instructions and imageIndex guidance
       const enhancedPrompt = `${workflow.analysisContext || 'Analyze this design for UX improvements and accessibility issues. Focus on color contrast, visual hierarchy, and user experience patterns.'}
 
-IMPORTANT: ${workflow.selectedImages.length > 1 ? 
-  `You are analyzing ${workflow.selectedImages.length} different images. Please provide specific insights for EACH IMAGE individually. Make sure to generate annotations for all ${workflow.selectedImages.length} images, not just the first one. Each image should receive equal analysis attention with specific recommendations relevant to that particular design.` :
+IMPORTANT: ${imageCount > 1 ? 
+  `You are analyzing ${imageCount} different images. Please provide specific insights for EACH IMAGE individually. 
+
+For each annotation, you MUST specify the correct imageIndex:
+- Annotations for the first image should have "imageIndex": 0
+- Annotations for the second image should have "imageIndex": 1${imageCount > 2 ? `
+- Annotations for the third image should have "imageIndex": 2` : ''}${imageCount > 3 ? `
+- Annotations for the fourth image should have "imageIndex": 3` : ''}${imageCount > 4 ? `
+- And so on for all ${imageCount} images...` : ''}
+
+Make sure to generate annotations for all ${imageCount} images, not just the first one. Each image should receive equal analysis attention with specific recommendations relevant to that particular design. Distribute your annotations across all images based on their individual content and design elements.` :
   'You are analyzing a single image. Please provide comprehensive insights for this design.'
 }
 
 Please provide research-backed recommendations using UX best practices and design principles. Ensure annotations are distributed across all uploaded images based on their individual content and design elements.`;
 
-      // Direct RAG analysis call with explicit RAG enablement and multi-image support
-      console.log('Calling RAG analysis with enhanced multi-image prompt...');
+      console.log('🎯 Enhanced Prompt Configuration:', {
+        imageCount: imageCount,
+        isMultiImage: imageCount > 1,
+        promptLength: enhancedPrompt.length,
+        includesImageIndexInstructions: imageCount > 1,
+        userAnnotationsCount: workflow.getTotalAnnotationsCount()
+      });
+
+      // Direct RAG analysis call with enhanced multi-image prompt
+      console.log('Calling RAG analysis with enhanced multi-image prompt and imageIndex instructions...');
       await handleAnalyze(enhancedPrompt, workflow.imageAnnotations);
       
       setAnalysisProgress(100);
-      setCurrentStep(`RAG-enhanced analysis complete for ${workflow.selectedImages.length} image${workflow.selectedImages.length > 1 ? 's' : ''}!`);
+      setCurrentStep(`RAG-enhanced analysis complete for ${imageCount} image${imageCount > 1 ? 's' : ''}!`);
       
       console.log('=== RAG-Enhanced Multi-Image Analysis Completed Successfully ===');
-      console.log('Generated annotations for images:', workflow.selectedImages.length);
+      console.log('Generated annotations for images:', imageCount);
+      console.log('ImageIndex distribution enforced:', imageCount > 1);
       
       // Small delay to show completion before transitioning
       setTimeout(() => {
@@ -171,14 +196,17 @@ Please provide research-backed recommendations using UX best practices and desig
 
   // Start analysis effect
   useEffect(() => {
+    const imageCount = workflow.selectedImages.length;
+    
     console.log('🚀 AnalyzingStep: Starting RAG multi-image analysis effect', {
       timestamp: new Date().toISOString(),
-      hasImages: workflow.selectedImages.length > 0,
-      imageCount: workflow.selectedImages.length,
+      hasImages: imageCount > 0,
+      imageCount: imageCount,
       hasAnalysis: !!workflow.currentAnalysis,
       analysisStarted: analysisStartedRef.current,
       ragEnabled: true,
-      isMultiImage: workflow.selectedImages.length > 1
+      isMultiImage: imageCount > 1,
+      requiresImageIndexAssignment: imageCount > 1
     });
 
     if (!analysisStartedRef.current) {
@@ -194,7 +222,8 @@ Please provide research-backed recommendations using UX best practices and desig
   }, [retryCount]);
 
   const totalAnnotations = workflow.getTotalAnnotationsCount();
-  const isMultiImage = workflow.selectedImages.length > 1;
+  const imageCount = workflow.selectedImages.length;
+  const isMultiImage = imageCount > 1;
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -205,7 +234,7 @@ Please provide research-backed recommendations using UX best practices and desig
             
             <div>
               <h3 className="text-2xl font-semibold mb-4">
-                {isMultiImage ? `Analyzing Your ${workflow.selectedImages.length} Designs with RAG` : 'Analyzing Your Design with RAG'}
+                {isMultiImage ? `Analyzing Your ${imageCount} Designs with RAG` : 'Analyzing Your Design with RAG'}
               </h3>
               
               {/* RAG Status Indicator - Always show as enabled */}
@@ -240,7 +269,8 @@ Please provide research-backed recommendations using UX best practices and desig
               <ul className="text-sm text-slate-300 space-y-1">
                 <li>• {totalAnnotations} specific areas you highlighted across {isMultiImage ? 'all images' : 'the image'}</li>
                 {workflow.analysisContext && <li>• Your general context and requirements</li>}
-                {isMultiImage && <li>• <strong>Individual analysis for each of the {workflow.selectedImages.length} images</strong></li>}
+                {isMultiImage && <li>• <strong>Individual analysis for each of the {imageCount} images</strong></li>}
+                {isMultiImage && <li>• <strong>Proper imageIndex assignment for all annotations</strong></li>}
                 {isMultiImage && <li>• <strong>Comparative insights between all uploaded images</strong></li>}
                 <li>• <strong>Research-enhanced UX recommendations for each image</strong></li>
                 <li>• <strong>Knowledge base insights and best practices</strong></li>
