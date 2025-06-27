@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -5,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Download, Maximize2, Sparkles, TrendingUp } from 'lucide-react';
 import { UpgradeOptionsPanel } from './UpgradeOptionsPanel';
 import { stripeService } from '@/services/stripeService';
+import PromptTuner from '../PromptTuner';
+import { TunerSettings } from '../../types/promptTuner';
 
 interface UpgradeOption {
   id: string;
@@ -13,6 +16,13 @@ interface UpgradeOption {
   description: string;
   styles: string[];
   value_proposition: string;
+}
+
+interface CustomVariation {
+  id: string;
+  imageUrl: string;
+  settings: TunerSettings;
+  timestamp: Date;
 }
 
 interface VisualSuggestion {
@@ -28,6 +38,7 @@ interface VisualSuggestion {
   reasoning?: string;
   upgradeOptions?: UpgradeOption[];
   generatedAt?: string;
+  customVariation?: CustomVariation;
 }
 
 interface VisualSuggestionsProps {
@@ -48,6 +59,8 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
   const [error, setError] = useState<string>('');
   const [userCredits, setUserCredits] = useState(15); // Mock user credits
   const [purchasingUpgrade, setPurchasingUpgrade] = useState(false);
+  const [showPromptTuner, setShowPromptTuner] = useState<string | null>(null);
+  const [isCustomGenerating, setIsCustomGenerating] = useState(false);
 
   const generateSuggestions = async () => {
     setLoading(true);
@@ -69,6 +82,42 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
       console.error('Visual suggestions error:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCustomGeneration = async (enhancedPrompt: string, settings: TunerSettings, suggestionId: string) => {
+    setIsCustomGenerating(true);
+    try {
+      console.log('🎛️ Generating custom visual with settings:', settings);
+      
+      // Use the existing visual suggestion service with enhanced prompt
+      const { visualSuggestionService } = await import('@/services/design/visualSuggestionService');
+      
+      // Create a custom visual using the enhanced prompt
+      const imageUrl = await visualSuggestionService.callDALLEViaEdgeFunction(enhancedPrompt);
+      
+      const customVariation: CustomVariation = {
+        id: `custom_${Date.now()}`,
+        imageUrl,
+        settings,
+        timestamp: new Date()
+      };
+      
+      // Update the suggestions array with the new custom visual
+      setSuggestions(prev => prev.map(suggestion => 
+        suggestion.id === suggestionId 
+          ? { ...suggestion, customVariation }
+          : suggestion
+      ));
+      
+      // Close the prompt tuner
+      setShowPromptTuner(null);
+      
+    } catch (error) {
+      console.error('❌ Custom generation failed:', error);
+      setError(`Failed to generate custom visual: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsCustomGenerating(false);
     }
   };
 
@@ -257,6 +306,28 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
                             <Maximize2 className="w-3 h-3" />
                           </Button>
                         </div>
+
+                        {/* Customize Visual button */}
+                        <div className="mt-4 flex gap-2">
+                          <button
+                            onClick={() => setShowPromptTuner(suggestion.id)}
+                            className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors text-sm"
+                          >
+                            <span>🎛️</span>
+                            Customize Visual
+                          </button>
+                          
+                          {/* Show custom variation if it exists */}
+                          {suggestion.customVariation && (
+                            <button
+                              onClick={() => window.open(suggestion.customVariation.imageUrl, '_blank')}
+                              className="flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-600 text-white rounded-lg transition-colors text-sm"
+                            >
+                              <span>✨</span>
+                              View Custom
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       {/* Upgrade options preview */}
@@ -285,6 +356,43 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
                         </div>
                       )}
                     </div>
+
+                    {/* Prompt Tuner Panel */}
+                    {showPromptTuner === suggestion.id && (
+                      <div className="mt-6">
+                        <PromptTuner
+                          basePrompt={suggestion.description || 'Enhanced UI design mockup'}
+                          onGenerate={(enhancedPrompt, settings) => 
+                            handleCustomGeneration(enhancedPrompt, settings, suggestion.id)
+                          }
+                          isGenerating={isCustomGenerating}
+                          onClose={() => setShowPromptTuner(null)}
+                        />
+                      </div>
+                    )}
+
+                    {/* Custom Variation Display */}
+                    {suggestion.customVariation && (
+                      <div className="mt-6 p-4 bg-slate-600 rounded-lg border border-green-500">
+                        <h4 className="text-white font-medium mb-3 flex items-center gap-2">
+                          <span>✨</span>
+                          Custom Variation
+                        </h4>
+                        <div className="aspect-square mb-3">
+                          <img 
+                            src={suggestion.customVariation.imageUrl} 
+                            alt="Custom variation"
+                            className="w-full h-full object-cover rounded border border-slate-500"
+                          />
+                        </div>
+                        <div className="text-xs text-slate-300 space-y-1">
+                          <p>Layout Density: {suggestion.customVariation.settings.layoutDensity}%</p>
+                          <p>Visual Tone: {suggestion.customVariation.settings.visualTone}%</p>
+                          <p>Color Emphasis: {suggestion.customVariation.settings.colorEmphasis}%</p>
+                          <p>Fidelity: {suggestion.customVariation.settings.fidelity}%</p>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 

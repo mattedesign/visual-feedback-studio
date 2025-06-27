@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { smartStyleSelector, DesignContext } from './smartStyleSelector';
 
@@ -192,7 +193,8 @@ class VisualSuggestionService {
     return styleDescriptions[style] || `Smart enhanced design for: ${truncatedInsight}`;
   }
 
-  private async callDALLEViaEdgeFunction(prompt: string): Promise<string> {
+  // Make this method public so it can be called from VisualSuggestions
+  async callDALLEViaEdgeFunction(prompt: string): Promise<string> {
     try {
       console.log('🎨 Enhanced DALL-E prompt:', prompt.substring(0, 200) + '...');
       
