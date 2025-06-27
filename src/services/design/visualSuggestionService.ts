@@ -7,17 +7,15 @@ interface VisualSuggestion {
   type: 'before_after' | 'style_variant' | 'accessibility_fix' | 'smart_before_after' | 'custom_tuned';
   description: string;
   imageUrl: string;
-  originalIssue?: string;
-  improvement?: string;
+  originalIssue: string;
+  improvement: string;
   timestamp: Date;
-  confidence?: number | string;
+  confidence?: number;
   style?: string;
   reasoning?: string;
   upgradeOptions?: UpgradeOption[];
   generatedAt?: string;
-  title?: string;
-  context?: string;
-  tags?: string[];
+  customVariation?: VisualSuggestion;
 }
 
 interface UpgradeOption {

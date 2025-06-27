@@ -20,7 +20,7 @@ interface UpgradeOption {
 
 interface VisualSuggestion {
   id: string;
-  type: 'before_after' | 'style_variant' | 'accessibility_fix' | 'smart_before_after';
+  type: 'before_after' | 'style_variant' | 'accessibility_fix' | 'smart_before_after' | 'custom_tuned';
   description: string;
   imageUrl: string;
   originalIssue: string;
@@ -31,6 +31,7 @@ interface VisualSuggestion {
   reasoning?: string;
   upgradeOptions?: UpgradeOption[];
   generatedAt?: string;
+  customVariation?: VisualSuggestion;
 }
 
 interface UpgradeOptionsPanelProps {

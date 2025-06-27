@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -30,18 +29,15 @@ interface VisualSuggestion {
   type: 'before_after' | 'style_variant' | 'accessibility_fix' | 'smart_before_after' | 'custom_tuned';
   description: string;
   imageUrl: string;
-  originalIssue?: string;
-  improvement?: string;
+  originalIssue: string;
+  improvement: string;
   timestamp: Date;
-  confidence?: number | string;
+  confidence?: number;
   style?: string;
   reasoning?: string;
   upgradeOptions?: UpgradeOption[];
   generatedAt?: string;
-  title?: string;
-  context?: string;
-  tags?: string[];
-  customVariation?: CustomVariation;
+  customVariation?: VisualSuggestion;
 }
 
 interface VisualSuggestionsProps {
