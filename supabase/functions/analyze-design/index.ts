@@ -13,7 +13,7 @@ import { buildCompetitiveIntelligence, checkCompetitivePatternsDatabase, Competi
 import { EnhancedAnalysisIntegrator } from './enhancedAnalysisIntegrator.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 
-console.log('🚀 Design Analysis Function Starting with Enhanced Business Impact');
+console.log('🚀 Design Analysis Function Starting with Enhanced Business Impact - Multi-Image Fix v2');
 
 // Enhanced RAG helper function with comprehensive logging and error handling
 async function addKnowledgeContext(prompt: string, supabase: any, enableRAG = false): Promise<{
