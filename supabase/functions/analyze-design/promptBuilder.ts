@@ -1,3 +1,4 @@
+
 export const buildAnalysisPrompt = (
   basePrompt: string, 
   ragContext?: string, 
@@ -38,12 +39,15 @@ CRITICAL: You MUST respond with a valid JSON array of annotation objects only. D
 ${imageCount > 1 ? `
 MULTI-IMAGE ANALYSIS: You are analyzing ${imageCount} different images. Each annotation MUST specify the correct imageIndex (0 to ${imageCount - 1}) to indicate which image the annotation belongs to.
 
+CRITICAL IMAGE INDEX ASSIGNMENT:
 - Image 1 = imageIndex: 0
 - Image 2 = imageIndex: 1
 - Image 3 = imageIndex: 2
-- etc.
+- Image ${imageCount} = imageIndex: ${imageCount - 1}
 
-Ensure annotations are distributed across ALL images based on their individual content and design elements.
+DISTRIBUTION REQUIREMENT: Ensure annotations are distributed across ALL images based on their individual content and design elements. Each image should receive 2-3 specific annotations analyzing its unique design aspects.
+
+DO NOT assign all annotations to imageIndex: 0. You must analyze each image individually and assign the correct imageIndex.
 ` : ''}
 
 Required JSON format:
@@ -56,7 +60,7 @@ Required JSON format:
     "feedback": "Research-backed feedback with specific citations and best practices",
     "implementationEffort": "medium",
     "businessImpact": "high",
-    "imageIndex": ${imageCount > 1 ? '0' : '0'} // CRITICAL: Must be 0 to ${imageCount - 1} for multi-image
+    "imageIndex": ${imageCount > 1 ? 'REQUIRED_FIELD_0_to_' + (imageCount - 1) : '0'} // CRITICAL: Must be 0 to ${imageCount - 1} for multi-image
   }
 ]
 
@@ -67,10 +71,14 @@ Rules:
 - feedback: Research-enhanced explanation citing best practices (2-3 sentences)
 - implementationEffort: "low", "medium", or "high"
 - businessImpact: "low", "medium", or "high"
-- imageIndex: ${imageCount > 1 ? `REQUIRED - specify 0 to ${imageCount - 1} based on which image` : '0 for single image'}
+- imageIndex: ${imageCount > 1 ? `REQUIRED - specify 0 to ${imageCount - 1} based on which specific image this annotation applies to` : '0 for single image'}
 
 ${imageCount > 1 ? `
-For multi-image analysis, provide 2-3 annotations per image, ensuring each image receives individual attention and analysis.
+MULTI-IMAGE ANALYSIS REQUIREMENTS:
+- Provide 2-3 annotations per image, ensuring each image receives individual attention
+- Each annotation must have the correct imageIndex (0, 1, 2, etc.)
+- Analyze each image's unique design elements, don't just copy annotations across images
+- Consider how different images work together in the overall user experience
 ` : 'Provide 3-5 specific, actionable annotations for the single image.'}
 
 When research context is available, ensure feedback includes specific citations and evidence-based recommendations.`;
@@ -82,11 +90,13 @@ When research context is available, ensure feedback includes specific citations 
 
 This is a COMPARATIVE ANALYSIS of ${imageCount} designs. Compare the designs using research-backed criteria and identify differences, strengths, and improvement opportunities across all images.
 
-For each annotation, specify the correct imageIndex:
+CRITICAL MULTI-IMAGE INSTRUCTION: You are analyzing ${imageCount} different design images. Each annotation must specify the correct imageIndex to indicate which specific image it belongs to:
 - Annotations for the first image should have "imageIndex": 0
 - Annotations for the second image should have "imageIndex": 1
 - Annotations for the third image should have "imageIndex": 2
-- And so on...
+- Continue this pattern for all ${imageCount} images
+
+DISTRIBUTION REQUIREMENT: Ensure annotations are distributed across ALL ${imageCount} images. Each image should receive 2-3 specific annotations analyzing its unique design aspects. Do NOT assign all annotations to imageIndex: 0.
 
 ${jsonInstructions}`;
     
@@ -94,14 +104,21 @@ ${jsonInstructions}`;
       totalLength: finalPrompt.length,
       hasResearchContext: !!ragContext,
       imageCount,
-      isComparative: true
+      isComparative: true,
+      multiImageInstructionsIncluded: true
     });
   } else if (imageCount > 1) {
     finalPrompt = `${enhancedPrompt}
 
-This is a MULTI-IMAGE ANALYSIS of ${imageCount} designs. Analyze each design individually and provide specific insights for each image.
+MULTI-IMAGE ANALYSIS: You are analyzing ${imageCount} different design images. Analyze each design individually and provide specific insights for each image.
 
-CRITICAL: Each annotation must specify the correct imageIndex (0 to ${imageCount - 1}) to indicate which image it belongs to.
+CRITICAL IMAGEINDEX ASSIGNMENT: Each annotation must specify the correct imageIndex (0 to ${imageCount - 1}) to indicate which specific image it belongs to:
+- Image 1 analysis → "imageIndex": 0
+- Image 2 analysis → "imageIndex": 1  
+- Image 3 analysis → "imageIndex": 2
+- Continue for all ${imageCount} images
+
+DISTRIBUTION REQUIREMENT: Ensure annotations are distributed across ALL ${imageCount} images based on their individual content and design elements. Each image should receive 2-3 specific annotations. Do NOT assign all annotations to the first image (imageIndex: 0).
 
 ${jsonInstructions}`;
 
@@ -109,7 +126,8 @@ ${jsonInstructions}`;
       totalLength: finalPrompt.length,
       hasResearchContext: !!ragContext,
       imageCount,
-      isComparative: false
+      isComparative: false,
+      multiImageInstructionsIncluded: true
     });
   } else {
     finalPrompt = `${enhancedPrompt}
@@ -122,7 +140,8 @@ ${jsonInstructions}`;
       totalLength: finalPrompt.length,
       hasResearchContext: !!ragContext,
       researchContextLength: ragContext?.length || 0,
-      isComparative: false
+      isComparative: false,
+      imageCount: 1
     });
   }
 
@@ -134,11 +153,14 @@ ${jsonInstructions}`;
     researchSectionLength: ragContext ? ragContext.length : 0,
     multiImageInstructions: finalPrompt.includes('MULTI-IMAGE ANALYSIS'),
     imageIndexInstructions: finalPrompt.includes('imageIndex'),
+    imageCount: imageCount,
+    distributionRequirement: finalPrompt.includes('DISTRIBUTION REQUIREMENT'),
     structureSections: {
       hasBasePrompt: finalPrompt.includes(basePrompt),
       hasResearchSection: finalPrompt.includes('RESEARCH-ENHANCED ANALYSIS'),
       hasRAGContent: ragContext ? finalPrompt.includes(ragContext) : false,
-      hasImageIndexGuidance: finalPrompt.includes('imageIndex')
+      hasImageIndexGuidance: finalPrompt.includes('imageIndex'),
+      hasMultiImageLogic: imageCount > 1
     }
   });
 
