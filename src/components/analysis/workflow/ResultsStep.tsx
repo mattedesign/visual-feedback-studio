@@ -162,8 +162,22 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
       <Card className="bg-slate-800 border-slate-700 text-white">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-2xl">Analysis Results</CardTitle>
+            <div className="flex items-center gap-4">
+              <CardTitle className="text-2xl">Analysis Results</CardTitle>
+              {/* Professional Analysis Scope Badge */}
+              {isMultiImage && (
+                <Badge className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-500 px-4 py-2 text-sm font-bold shadow-lg">
+                  📊 Analysis across {workflow.selectedImages.length} images
+                </Badge>
+              )}
+            </div>
             <div className="flex gap-2">
+              {/* Multi-Image Insights Badge */}
+              {isMultiImage && (
+                <Badge className="bg-gradient-to-r from-purple-600 to-violet-600 text-white border-purple-500 px-3 py-1 text-xs font-semibold shadow-md">
+                  🔍 Multi-image insights
+                </Badge>
+              )}
               {detectedFocusAreas.map((area, index) => (
                 <Badge key={index} variant="secondary" className="text-xs">
                   {area}
@@ -172,12 +186,20 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
             </div>
           </div>
           <div className="text-slate-300">
-            <p>
-              {isMultiImage 
-                ? `Context-aware analysis completed across ${workflow.selectedImages.length} images targeting ${detectedFocusAreas.join(' & ')}.`
-                : `Analysis focused on ${detectedFocusAreas.join(' & ')} with research-backed recommendations.`
-              }
-            </p>
+            <div className="flex items-center gap-4">
+              <p>
+                {isMultiImage 
+                  ? `Context-aware analysis completed across ${workflow.selectedImages.length} images targeting ${detectedFocusAreas.join(' & ')}.`
+                  : `Analysis focused on ${detectedFocusAreas.join(' & ')} with research-backed recommendations.`
+                }
+              </p>
+              {/* Cross-Image Comparison Badge */}
+              {isMultiImage && (
+                <Badge className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-emerald-500 px-3 py-1 text-xs font-semibold shadow-md ml-auto">
+                  📈 Cross-image comparison
+                </Badge>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-8">
