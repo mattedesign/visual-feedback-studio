@@ -35,38 +35,33 @@ Based on the above research context and UX best practices, ${basePrompt}`;
     });
   }
 
-  // Add multi-image analysis instructions when imageCount > 1
-  let multiImageInstructions = '';
-  if (imageCount > 1) {
-    multiImageInstructions = `
-
-MULTI-IMAGE ANALYSIS: You are analyzing ${imageCount} different images. Each annotation MUST specify the correct imageIndex (0 to ${imageCount - 1}) to indicate which image the annotation belongs to.
-
-Image 1 = imageIndex: 0
-Image 2 = imageIndex: 1
-${imageCount > 2 ? 'Image 3 = imageIndex: 2' : ''}
-${imageCount > 3 ? 'Image 4 = imageIndex: 3' : ''}
-${imageCount > 4 ? `Image ${imageCount} = imageIndex: ${imageCount - 1}` : ''}
-
-Ensure annotations are distributed across ALL images based on their individual content and design elements.`;
-  }
-
   const jsonInstructions = `
 
 CRITICAL: You MUST respond with a valid JSON array of annotation objects only. Do not include any markdown, explanations, or other text.
 
 ${imageCount > 1 ? `
-MULTI-IMAGE ANALYSIS: You are analyzing ${imageCount} different images. Each annotation MUST specify the correct imageIndex (0 to ${imageCount - 1}) to indicate which image the annotation belongs to.
+🚨 MULTI-IMAGE ANALYSIS CRITICAL INSTRUCTIONS 🚨
 
-CRITICAL IMAGE INDEX ASSIGNMENT:
+YOU ARE ANALYZING ${imageCount} DIFFERENT IMAGES. Each annotation MUST specify the correct imageIndex (0 to ${imageCount - 1}) to indicate which image the annotation belongs to.
+
+MANDATORY IMAGE INDEX ASSIGNMENT:
 - Image 1 = imageIndex: 0
 - Image 2 = imageIndex: 1
-- Image 3 = imageIndex: 2
-- Image ${imageCount} = imageIndex: ${imageCount - 1}
+${imageCount > 2 ? '- Image 3 = imageIndex: 2' : ''}
+${imageCount > 3 ? '- Image 4 = imageIndex: 3' : ''}
+${imageCount > 4 ? `- Image ${imageCount} = imageIndex: ${imageCount - 1}` : ''}
 
-DISTRIBUTION REQUIREMENT: Ensure annotations are distributed across ALL images based on their individual content and design elements. Each image should receive 2-3 specific annotations analyzing its unique design aspects.
+🚨 CRITICAL DISTRIBUTION REQUIREMENT 🚨
+- You MUST distribute annotations across ALL ${imageCount} images
+- Each image should receive 2-3 specific annotations analyzing its unique design aspects
+- DO NOT assign all annotations to imageIndex: 0
+- Each imageIndex (0, 1, 2, etc.) must be used for multiple annotations
+- Analyze each image individually and assign the correct imageIndex based on which specific image you are analyzing
 
-DO NOT assign all annotations to imageIndex: 0. You must analyze each image individually and assign the correct imageIndex.
+VERIFICATION CHECKLIST:
+✓ Are annotations distributed across imageIndex 0, 1, ${imageCount > 2 ? '2' : '1'}${imageCount > 3 ? ', 3' : ''}?
+✓ Does each image receive 2-3 annotations?
+✓ Are imageIndex values correct for each specific image?
 ` : ''}
 
 Required JSON format:
@@ -79,7 +74,7 @@ Required JSON format:
     "feedback": "Research-backed feedback with specific citations and best practices",
     "implementationEffort": "medium",
     "businessImpact": "high",
-    "imageIndex": ${imageCount > 1 ? `REQUIRED - specify 0 to ${imageCount - 1} based on which image` : '0 for single image'}
+    "imageIndex": ${imageCount > 1 ? `REQUIRED - specify 0 to ${imageCount - 1} based on which image this annotation analyzes` : '0 for single image'}
   }
 ]
 
@@ -90,14 +85,15 @@ Rules:
 - feedback: Research-enhanced explanation citing best practices (2-3 sentences)
 - implementationEffort: "low", "medium", or "high"
 - businessImpact: "low", "medium", or "high"
-- imageIndex: ${imageCount > 1 ? `REQUIRED - specify 0 to ${imageCount - 1} based on which image` : '0 for single image'}
+- imageIndex: ${imageCount > 1 ? `REQUIRED - specify 0 to ${imageCount - 1} based on which image this annotation analyzes` : '0 for single image'}
 
 ${imageCount > 1 ? `
-MULTI-IMAGE ANALYSIS REQUIREMENTS:
-- For multi-image analysis, provide 2-3 annotations per image, ensuring each image receives individual attention
+🚨 FINAL MULTI-IMAGE REQUIREMENTS 🚨
+- Provide 2-3 annotations per image, ensuring each image receives individual attention
 - Each annotation must have the correct imageIndex (0, 1, 2, etc.)
 - Analyze each image's unique design elements, don't just copy annotations across images
 - Consider how different images work together in the overall user experience
+- VERIFY: Does each imageIndex (0, 1, 2) have multiple annotations assigned to it?
 ` : 'Provide 3-5 specific, actionable annotations for the single image.'}
 
 When research context is available, ensure feedback includes specific citations and evidence-based recommendations.`;
@@ -105,17 +101,19 @@ When research context is available, ensure feedback includes specific citations 
   let finalPrompt;
   
   if (isComparative && imageCount > 1) {
-    finalPrompt = `${enhancedPrompt}${multiImageInstructions}
+    finalPrompt = `${enhancedPrompt}
 
 This is a COMPARATIVE ANALYSIS of ${imageCount} designs. Compare the designs using research-backed criteria and identify differences, strengths, and improvement opportunities across all images.
 
-CRITICAL MULTI-IMAGE INSTRUCTION: You are analyzing ${imageCount} different design images. Each annotation must specify the correct imageIndex to indicate which specific image it belongs to:
+🚨 CRITICAL MULTI-IMAGE INSTRUCTION 🚨
+You are analyzing ${imageCount} different design images. Each annotation must specify the correct imageIndex to indicate which specific image it belongs to:
 - Annotations for the first image should have "imageIndex": 0
 - Annotations for the second image should have "imageIndex": 1
 - Annotations for the third image should have "imageIndex": 2
 - Continue this pattern for all ${imageCount} images
 
-DISTRIBUTION REQUIREMENT: Ensure annotations are distributed across ALL ${imageCount} images. Each image should receive 2-3 specific annotations analyzing its unique design aspects. Do NOT assign all annotations to imageIndex: 0.
+🚨 DISTRIBUTION REQUIREMENT 🚨
+Ensure annotations are distributed across ALL ${imageCount} images. Each image should receive 2-3 specific annotations analyzing its unique design aspects. DO NOT assign all annotations to imageIndex: 0.
 
 ${jsonInstructions}`;
     
@@ -127,9 +125,10 @@ ${jsonInstructions}`;
       multiImageInstructionsIncluded: true
     });
   } else if (imageCount > 1) {
-    finalPrompt = `${enhancedPrompt}${multiImageInstructions}
+    finalPrompt = `${enhancedPrompt}
 
-MULTI-IMAGE ANALYSIS: You are analyzing ${imageCount} different design images. Analyze each design individually and provide specific insights for each image.
+🚨 MULTI-IMAGE ANALYSIS CRITICAL INSTRUCTIONS 🚨
+You are analyzing ${imageCount} different design images. Analyze each design individually and provide specific insights for each image.
 
 CRITICAL IMAGEINDEX ASSIGNMENT: Each annotation must specify the correct imageIndex (0 to ${imageCount - 1}) to indicate which specific image it belongs to:
 - Image 1 analysis → "imageIndex": 0
@@ -137,7 +136,8 @@ CRITICAL IMAGEINDEX ASSIGNMENT: Each annotation must specify the correct imageIn
 - Image 3 analysis → "imageIndex": 2
 - Continue for all ${imageCount} images
 
-DISTRIBUTION REQUIREMENT: Ensure annotations are distributed across ALL ${imageCount} images based on their individual content and design elements. Each image should receive 2-3 specific annotations. Do NOT assign all annotations to the first image (imageIndex: 0).
+🚨 DISTRIBUTION REQUIREMENT 🚨
+Ensure annotations are distributed across ALL ${imageCount} images based on their individual content and design elements. Each image should receive 2-3 specific annotations. DO NOT assign all annotations to the first image (imageIndex: 0).
 
 ${jsonInstructions}`;
 

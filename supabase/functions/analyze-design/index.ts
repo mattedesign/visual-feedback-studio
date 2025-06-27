@@ -13,7 +13,7 @@ import { buildCompetitiveIntelligence, checkCompetitivePatternsDatabase, Competi
 import { EnhancedAnalysisIntegrator } from './enhancedAnalysisIntegrator.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 
-console.log('🚀 Design Analysis Function Starting with Enhanced Business Impact - Multi-Image Fix v2');
+console.log('🚀 Design Analysis Function Starting with Enhanced Business Impact - Multi-Image Fix v3 - URGENT MULTI-IMAGE REPAIR');
 
 // Enhanced RAG helper function with comprehensive logging and error handling
 async function addKnowledgeContext(prompt: string, supabase: any, enableRAG = false): Promise<{
@@ -355,8 +355,17 @@ Deno.serve(async (req) => {
     const requestData = validationResult.data;
     console.log('✅ Request validated successfully');
 
-    // Calculate imageCount from validated request data
+    // 🚨 CRITICAL: Calculate imageCount from validated request data
     const imageCount = requestData.imagesToProcess.length;
+    
+    console.log('🚨🚨🚨 URGENT MULTI-IMAGE DEBUG - Image Count Calculation:', {
+      imageCount: imageCount,
+      imagesToProcessLength: requestData.imagesToProcess.length,
+      isMultiImage: imageCount > 1,
+      requiresDistribution: imageCount > 1,
+      criticalFix: 'ENSURING PROPER IMAGE COUNT PROPAGATION',
+      timestamp: new Date().toISOString()
+    });
     
     // Add validation that imageCount > 0
     if (imageCount === 0) {
@@ -465,37 +474,39 @@ Deno.serve(async (req) => {
       hasRelevantPatterns: competitiveResults.relevantPatterns.length > 0
     });
     
-    // Build the complete enhanced prompt with both RAG and competitive intelligence
-    console.log(`🏗️ === BUILDING ENHANCED PROMPT WITH BUSINESS IMPACT INTEGRATION ===`);
-    console.log('📊 Prompt Builder Parameters:', {
+    // 🚨 CRITICAL: Build the complete enhanced prompt with CORRECT imageCount parameter
+    console.log(`🏗️ === BUILDING ENHANCED PROMPT WITH CRITICAL IMAGE COUNT FIX ===`);
+    console.log('🚨 URGENT: Prompt Builder Parameters with CORRECT imageCount:', {
       originalPromptLength: originalPrompt.length,
       ragContextLength: ragContext.researchEnhanced ? ragContext.enhancedPrompt.length : 0,
       competitiveContextLength: competitiveResults.totalPatterns > 0 ? competitiveResults.competitiveContext.length : 0,
       imageCount: imageCount,
-      isComparative: requestData.isComparative || false
+      isComparative: requestData.isComparative || false,
+      criticalFix: 'PASSING CORRECT imageCount TO PROMPT BUILDER'
     });
     
-    // UPDATED: Pass imageCount as the 5th parameter to buildEnhancedAnalysisPrompt
+    // 🚨🚨🚨 CRITICAL FIX: Pass imageCount as the 5th parameter to buildEnhancedAnalysisPrompt
     const enhancedPrompt = buildEnhancedAnalysisPrompt(
       originalPrompt,
       ragContext.researchEnhanced ? ragContext.enhancedPrompt : undefined,
       competitiveResults.totalPatterns > 0 ? competitiveResults.competitiveContext : undefined,
       requestData.isComparative || false,
-      imageCount
+      imageCount // 🚨 CRITICAL: This is the fix - passing correct imageCount
     );
     
     // ===== MAIN CONSOLE LOG FOR USER VISIBILITY =====
-    console.log("🎯🎯🎯 === COMPLETE ENHANCED PROMPT WITH BUSINESS IMPACT === 🎯🎯🎯");
+    console.log("🎯🎯🎯 === COMPLETE ENHANCED PROMPT WITH URGENT MULTI-IMAGE FIX === 🎯🎯🎯");
     console.log("📏 Total Enhanced Prompt Length:", enhancedPrompt.length);
     console.log("📝 RAG Status:", ragContext.researchEnhanced ? "ENABLED with research context" : "DISABLED");
     console.log("🏢 Competitive Intelligence Status:", competitiveResults.totalPatterns > 0 ? "ENABLED with competitive context" : "DISABLED");
     console.log("💼 Business Impact Quantification Status:", enableBusinessImpact ? "ENABLED" : "DISABLED");
     console.log("📊 Research Sources Used:", ragContext.knowledgeSourcesUsed);
     console.log("🏆 Competitive Patterns Used:", competitiveResults.totalPatterns);
-    console.log("🖼️ Multi-Image Analysis:", {
+    console.log("🚨🚨🚨 URGENT MULTI-IMAGE FIX:", {
       imageCount: imageCount,
       isMultiImage: imageCount > 1,
-      distributionRequired: imageCount > 1
+      distributionRequired: imageCount > 1,
+      criticalFix: 'IMAGE COUNT PROPERLY PASSED TO PROMPT BUILDER'
     });
     console.log("");
     
