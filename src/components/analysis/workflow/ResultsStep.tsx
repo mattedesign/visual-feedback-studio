@@ -1,283 +1,216 @@
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
-import { ComparativeAnalysisSummary } from '../ComparativeAnalysisSummary';
-import { ImageTabsViewer } from './components/ImageTabsViewer';
-import { SingleImageViewer } from './components/SingleImageViewer';
-import { FeedbackPanel } from './components/FeedbackPanel';
+import { Separator } from '@/components/ui/separator';
+import { 
+  RotateCcw, 
+  Download, 
+  Share2, 
+  FileText, 
+  BarChart3,
+  Palette,
+  CheckCircle,
+  AlertCircle,
+  Info
+} from 'lucide-react';
+import { AnalysisWorkflowState } from '@/hooks/analysis/useAnalysisWorkflow';
+import { CategorySummaries } from './components/CategorySummaries';
+import { DetailedAnnotationsList } from './components/DetailedAnnotationsList';
+import { BusinessImpactSummary } from './components/BusinessImpactSummary';
+import { PrioritySummary } from './components/PrioritySummary';
 import { ResultsActions } from './components/ResultsActions';
+import { OverallAnalysisSummary } from './components/OverallAnalysisSummary';
+import { ComparativeAnalysisSummary } from '../ComparativeAnalysisSummary';
+import { DesignSuggestions } from '../DesignSuggestions';
 
 interface ResultsStepProps {
-  workflow: ReturnType<typeof useAnalysisWorkflow>;
+  workflow: AnalysisWorkflowState;
 }
 
-const parseContextForDisplay = (context: string): string[] => {
-  if (!context) return ['Comprehensive UX'];
-  
-  const focusAreas = [];
-  const lower = context.toLowerCase();
-  
-  if (/checkout|cart|purchase|ecommerce|e-commerce|order|product/.test(lower)) focusAreas.push('E-commerce');
-  if (/mobile|responsive|touch|tablet|phone|ios|android|device/.test(lower)) focusAreas.push('Mobile UX');
-  if (/accessibility|contrast|wcag|ada|screen reader|keyboard|disability/.test(lower)) focusAreas.push('Accessibility');
-  if (/conversion|cta|revenue|optimize|funnel|landing|signup/.test(lower)) focusAreas.push('Conversion');
-  if (/usability|navigation|flow|journey|interaction|ux/.test(lower)) focusAreas.push('Usability');
-  if (/visual|design|color|typography|layout|brand|aesthetic/.test(lower)) focusAreas.push('Visual Design');
-  
-  return focusAreas.length > 0 ? focusAreas : ['Comprehensive UX'];
-};
-
 export const ResultsStep = ({ workflow }: ResultsStepProps) => {
-  const [activeAnnotation, setActiveAnnotation] = useState<string | null>(null);
-  const [activeImageUrl, setActiveImageUrl] = useState(workflow.selectedImages[0] || '');
+  const [activeTab, setActiveTab] = useState('overview');
+  
+  const {
+    annotations,
+    currentAnalysis,
+    selectedImages,
+    isAnalyzing,
+    goToStep
+  } = workflow;
 
-  const getSeverityColor = (severity: string) =>  {
-    switch (severity) {
-      case 'critical': return 'bg-red-600 text-white border-red-500';
-      case 'suggested': return 'bg-yellow-600 text-white border-yellow-500';
-      case 'enhancement': return 'bg-blue-600 text-white border-blue-500';
-      default: return 'bg-purple-600 text-white border-purple-500';
-    }
-  };
-
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'ux': return '👤';
-      case 'visual': return '🎨';
-      case 'accessibility': return '♿';
-      case 'conversion': return '📈';
-      case 'brand': return '🏷️';
-      default: return '💡';
-    }
-  };
-
-  const handleStartNew = () => {
-    workflow.resetWorkflow();
-  };
-
-  const isMultiImage = workflow.selectedImages.length > 1;
-  const activeImageIndex = workflow.selectedImages.indexOf(activeImageUrl);
-  const detectedFocusAreas = parseContextForDisplay(workflow.analysisContext);
-
-  // Filter AI annotations for the current image
-  const getAnnotationsForImage = (imageIndex: number) => {
-    return workflow.aiAnnotations.filter(annotation => 
-      (annotation.imageIndex ?? 0) === imageIndex
+  if (isAnalyzing) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-slate-400">Analysis in progress...</p>
+        </div>
+      </div>
     );
-  };
+  }
 
-  // Get user annotations for the current image
-  const getUserAnnotationsForImage = (imageUrl: string) => {
-    const imageAnnotation = workflow.imageAnnotations.find(ia => ia.imageUrl === imageUrl);
-    return imageAnnotation?.annotations || [];
-  };
-
-  const currentImageAIAnnotations = getAnnotationsForImage(activeImageIndex);
-  const currentImageUserAnnotations = getUserAnnotationsForImage(activeImageUrl);
-
-  // Count research-backed insights (annotations with businessImpact)
-  const researchBackedCount = workflow.aiAnnotations.filter(a => a.businessImpact).length;
-
-  // Generate business impact data from annotations
-  const generateBusinessImpact = () => {
-    const annotations = workflow.aiAnnotations;
-    if (!annotations.length) return null;
-
-    // Calculate quick wins (annotations with low effort and high impact)
-    const quickWins = annotations.filter(a => 
-      a.implementationEffort === 'low' && 
-      (a.businessImpact === 'high' || a.businessImpact === 'medium')
-    ).length;
-
-    // Count critical issues
-    const criticalIssues = annotations.filter(a => a.severity === 'critical').length;
-
-    // Calculate average ROI score based on severity and impact
-    const roiScores = annotations.map(a => {
-      let score = 5; // base score
-      if (a.severity === 'critical') score += 3;
-      else if (a.severity === 'suggested') score += 2;
-      else if (a.severity === 'enhancement') score += 1;
-      
-      if (a.businessImpact === 'high') score += 2;
-      else if (a.businessImpact === 'medium') score += 1;
-      
-      return Math.min(score, 10);
-    });
-    
-    const averageROI = roiScores.reduce((sum, score) => sum + score, 0) / roiScores.length;
-
-    // Estimate potential revenue based on annotation count and impact
-    const baseRevenue = annotations.length * 500; // Base $500 per issue
-    const impactMultiplier = annotations.filter(a => a.businessImpact === 'high').length * 2;
-    const totalRevenue = baseRevenue + (impactMultiplier * 1000);
-
-    // Create implementation roadmap
-    const immediate = annotations.filter(a => 
-      a.implementationEffort === 'low' && 
-      (a.severity === 'critical' || a.businessImpact === 'high')
-    );
-    
-    const shortTerm = annotations.filter(a => 
-      a.implementationEffort === 'medium' || 
-      (a.implementationEffort === 'low' && a.severity !== 'critical')
-    );
-    
-    const longTerm = annotations.filter(a => 
-      a.implementationEffort === 'high'
-    );
-
-    return {
-      totalPotentialRevenue: `$${totalRevenue.toLocaleString()}/month ($${(totalRevenue * 12).toLocaleString()}/year)`,
-      quickWinsAvailable: quickWins,
-      criticalIssuesCount: criticalIssues,
-      averageROIScore: Math.round(averageROI * 10) / 10,
-      implementationRoadmap: {
-        immediate,
-        shortTerm,
-        longTerm
-      }
-    };
-  };
-
-  // Generate insights from annotations
-  const generateInsights = () => {
-    const annotations = workflow.aiAnnotations;
-    if (!annotations.length) return null;
-
-    // Find highest impact annotation
-    const highestImpact = annotations.find(a => 
-      a.businessImpact === 'high' && a.severity === 'critical'
-    ) || annotations.find(a => a.businessImpact === 'high') || annotations[0];
-
-    // Find quickest win
-    const quickestWin = annotations.find(a => 
-      a.implementationEffort === 'low' && 
-      (a.businessImpact === 'high' || a.businessImpact === 'medium')
-    ) || annotations.find(a => a.implementationEffort === 'low') || annotations[0];
-
-    // Find top recommendation (critical + high impact)
-    const topRec = annotations.find(a => 
-      a.severity === 'critical' && a.businessImpact === 'high'
-    ) || annotations.find(a => a.severity === 'critical') || annotations[0];
-
-    return {
-      topRecommendation: `${topRec.category.toUpperCase()}: ${topRec.feedback}`,
-      quickestWin: `${quickestWin.implementationEffort} effort: ${quickestWin.feedback}`,
-      highestImpact: `${highestImpact.businessImpact} impact: ${highestImpact.feedback}`,
-      competitiveAdvantage: workflow.aiAnnotations.some(a => a.category === 'conversion') ? 
-        'Conversion optimization opportunities identified' : 'User experience improvements available',
-      researchEvidence: `${annotations.length} evidence-based recommendations generated`
-    };
-  };
-
-  const businessImpact = generateBusinessImpact();
-  const insights = generateInsights();
-
-  return (
-    <div className="max-w-7xl mx-auto">
-      <Card className="bg-white border-gray-300 shadow-lg">
-        <CardHeader className="pb-6">
-          <CardTitle className="text-3xl text-center font-bold text-gray-900">
-            {isMultiImage ? 'Comparative Analysis Results' : 'Analysis Results'}
-          </CardTitle>
-          
-          {/* Context-Aware Results Header */}
-          <div className="text-center space-y-3">
-            {workflow.analysisContext && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-blue-900 mb-2">Your Analysis Context:</h4>
-                <p className="text-blue-800 italic mb-3">"{workflow.analysisContext}"</p>
-                <div className="flex flex-wrap gap-2 justify-center">
-                  {detectedFocusAreas.map((area) => (
-                    <Badge key={area} variant="secondary" className="bg-blue-600 text-white">
-                      {area}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            <div className="flex items-center justify-center space-x-4 text-sm text-gray-600">
-              {researchBackedCount > 0 && (
-                <div className="flex items-center space-x-1">
-                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                    📚 {researchBackedCount} Research Insights
-                  </Badge>
-                </div>
-              )}
-              {businessImpact && (
-                <div className="flex items-center space-x-1">
-                  <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
-                    💰 {businessImpact.totalPotentialRevenue}
-                  </Badge>
-                </div>
-              )}
-            </div>
-            
-            <p className="text-gray-700 text-lg leading-relaxed">
-              {isMultiImage 
-                ? `Context-aware analysis completed across ${workflow.selectedImages.length} images targeting ${detectedFocusAreas.join(' & ')}.`
-                : `Analysis focused on ${detectedFocusAreas.join(' & ')} with research-backed recommendations.`
-              }
-            </p>
+  if (!annotations.length) {
+    return (
+      <Card className="bg-slate-800/50 border-slate-700">
+        <CardContent className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <AlertCircle className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-slate-200 mb-2">No Analysis Results</h3>
+            <p className="text-slate-400 mb-6">No annotations were generated from the analysis.</p>
+            <Button onClick={() => goToStep('annotate')} variant="outline">
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Try Again
+            </Button>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-8">
-          {/* Comparative Analysis Summary */}
-          {isMultiImage && (
-            <ComparativeAnalysisSummary 
-              annotations={workflow.aiAnnotations}
-              imageUrls={workflow.selectedImages}
-            />
-          )}
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Image viewer */}
-            <div className="lg:col-span-2">
-              {isMultiImage ? (
-                <ImageTabsViewer
-                  images={workflow.selectedImages}
-                  activeImageUrl={activeImageUrl}
-                  onImageChange={setActiveImageUrl}
-                  getAnnotationsForImage={getAnnotationsForImage}
-                  getUserAnnotationsForImage={getUserAnnotationsForImage}
-                  onAnnotationClick={setActiveAnnotation}
-                  activeAnnotation={activeAnnotation}
-                  getCategoryIcon={getCategoryIcon}
-                />
-              ) : (
-                <SingleImageViewer
-                  imageUrl={workflow.selectedImages[0]}
-                  userAnnotations={workflow.userAnnotations}
-                  aiAnnotations={workflow.aiAnnotations}
-                  onAnnotationClick={setActiveAnnotation}
-                  activeAnnotation={activeAnnotation}
-                  getCategoryIcon={getCategoryIcon}
-                />
-              )}
-            </div>
-
-            {/* Feedback panel */}
-            <FeedbackPanel
-              currentImageAIAnnotations={currentImageAIAnnotations}
-              currentImageUserAnnotations={currentImageUserAnnotations}
-              activeImageIndex={activeImageIndex}
-              isMultiImage={isMultiImage}
-              activeAnnotation={activeAnnotation}
-              onAnnotationClick={setActiveAnnotation}
-              aiAnnotations={workflow.aiAnnotations}
-              getSeverityColor={getSeverityColor}
-              businessImpact={businessImpact}
-              insights={insights}
-            />
-          </div>
-
-          <ResultsActions onStartNew={handleStartNew} />
         </CardContent>
       </Card>
+    );
+  }
+
+  const isComparative = selectedImages.length > 1;
+  const criticalCount = annotations.filter(a => a.severity === 'critical').length;
+  const suggestedCount = annotations.filter(a => a.severity === 'suggested').length;
+  const enhancementCount = annotations.filter(a => a.severity === 'enhancement').length;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-200 flex items-center gap-2">
+            <CheckCircle className="w-6 h-6 text-green-500" />
+            Analysis Complete
+          </h1>
+          <p className="text-slate-400 mt-1">
+            {isComparative 
+              ? `Comparative analysis of ${selectedImages.length} designs completed`
+              : 'Design analysis completed successfully'
+            }
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="bg-red-900/20 text-red-400 border-red-800">
+            {criticalCount} Critical
+          </Badge>
+          <Badge variant="outline" className="bg-yellow-900/20 text-yellow-400 border-yellow-800">
+            {suggestedCount} Suggested
+          </Badge>
+          <Badge variant="outline" className="bg-blue-900/20 text-blue-400 border-blue-800">
+            {enhancementCount} Enhancement
+          </Badge>
+        </div>
+      </div>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="bg-slate-800/50 border-slate-700">
+          <CardContent className="flex items-center justify-between p-4">
+            <div>
+              <p className="text-sm text-slate-400">Total Issues</p>
+              <p className="text-2xl font-bold text-slate-200">{annotations.length}</p>
+            </div>
+            <FileText className="w-8 h-8 text-blue-500" />
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-slate-800/50 border-slate-700">
+          <CardContent className="flex items-center justify-between p-4">
+            <div>
+              <p className="text-sm text-slate-400">Critical</p>
+              <p className="text-2xl font-bold text-red-400">{criticalCount}</p>
+            </div>
+            <AlertCircle className="w-8 h-8 text-red-500" />
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-slate-800/50 border-slate-700">
+          <CardContent className="flex items-center justify-between p-4">
+            <div>
+              <p className="text-sm text-slate-400">Design Type</p>
+              <p className="text-lg font-medium text-slate-200 capitalize">
+                {currentAnalysis?.design_type || 'Web'}
+              </p>
+            </div>
+            <BarChart3 className="w-8 h-8 text-green-500" />
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-slate-800/50 border-slate-700">
+          <CardContent className="flex items-center justify-between p-4">
+            <div>
+              <p className="text-sm text-slate-400">Images</p>
+              <p className="text-2xl font-bold text-purple-400">{selectedImages.length}</p>
+            </div>
+            <Palette className="w-8 h-8 text-purple-500" />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Content Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-6 bg-slate-800">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="categories">Categories</TabsTrigger>
+          <TabsTrigger value="detailed">Detailed</TabsTrigger>
+          <TabsTrigger value="impact">Impact</TabsTrigger>
+          <TabsTrigger value="priority">Priority</TabsTrigger>
+          <TabsTrigger value="suggestions">AI Suggestions</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-6">
+          {isComparative ? (
+            <ComparativeAnalysisSummary 
+              annotations={annotations}
+              imageCount={selectedImages.length}
+            />
+          ) : (
+            <OverallAnalysisSummary annotations={annotations} />
+          )}
+        </TabsContent>
+
+        <TabsContent value="categories" className="space-y-6">
+          <CategorySummaries annotations={annotations} />
+        </TabsContent>
+
+        <TabsContent value="detailed" className="space-y-6">
+          <DetailedAnnotationsList 
+            annotations={annotations} 
+            isComparative={isComparative}
+          />
+        </TabsContent>
+
+        <TabsContent value="impact" className="space-y-6">
+          <BusinessImpactSummary annotations={annotations} />
+        </TabsContent>
+
+        <TabsContent value="priority" className="space-y-6">
+          <PrioritySummary annotations={annotations} />
+        </TabsContent>
+
+        <TabsContent value="suggestions" className="space-y-6">
+          <DesignSuggestions
+            annotations={annotations}
+            analysisId={currentAnalysis?.id || ''}
+            designType={currentAnalysis?.design_type || 'web'}
+            targetAudience={currentAnalysis?.target_audience}
+            brandGuidelines={currentAnalysis?.brand_guidelines}
+            businessGoals={currentAnalysis?.business_goals}
+          />
+        </TabsContent>
+      </Tabs>
+
+      <Separator className="bg-slate-700" />
+
+      {/* Actions */}
+      <ResultsActions 
+        analysisId={currentAnalysis?.id}
+        annotations={annotations}
+        onStartNewAnalysis={() => goToStep('upload')}
+      />
     </div>
   );
 };
