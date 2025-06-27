@@ -110,7 +110,7 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
       const checkoutSession = await stripeService.createCheckoutSession({
         customerId: '', // This will be handled by the service to create/get customer
         priceId: priceId,
-        successUrl: `${window.location.origin}/analysis?upgrade_success=true&session_id={CHECKOUT_SESSION_ID}&upgrade=${optionId}`,
+        successUrl: `${window.location.origin}/upgrade-success?session_id={CHECKOUT_SESSION_ID}&upgrade=${optionId}`,
         cancelUrl: window.location.href,
         metadata: {
           upgrade_type: optionId,
