@@ -355,6 +355,31 @@ Deno.serve(async (req) => {
     const requestData = validationResult.data;
     console.log('✅ Request validated successfully');
 
+    // Calculate imageCount from request data
+    const imageCount = requestData.imageUrls?.length || (requestData.imageUrl ? 1 : 0);
+    
+    // Add validation that imageCount > 0
+    if (imageCount === 0) {
+      console.error('❌ No images provided for analysis');
+      return new Response(
+        JSON.stringify({ error: 'At least one image is required for analysis' }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // Log analysis configuration
+    console.log('🎯 Analysis Request Details:', {
+      imageCount,
+      isMultiImage: imageCount > 1,
+      isComparative: requestData.isComparative || false,
+      hasImageUrls: !!requestData.imageUrls,
+      hasSingleImageUrl: !!requestData.imageUrl,
+      analysisId: requestData.analysisId
+    });
+
     // Process images
     console.log('🖼️ Processing images...');
     const imageProcessingResult = await imageProcessingManager.processImages(
@@ -415,7 +440,7 @@ Deno.serve(async (req) => {
       businessImpactEnabled: enableBusinessImpact,
       originalPromptLength: originalPrompt.length,
       originalPromptPreview: originalPrompt.substring(0, 200) + '...',
-      imageCount: imageProcessingResult.processedImages.length,
+      imageCount: imageCount,
       isComparative: requestData.isComparative || false,
       timestamp: new Date().toISOString()
     });
@@ -442,13 +467,20 @@ Deno.serve(async (req) => {
     
     // Build the complete enhanced prompt with both RAG and competitive intelligence
     console.log(`🏗️ === BUILDING ENHANCED PROMPT WITH BUSINESS IMPACT INTEGRATION ===`);
+    console.log('📊 Prompt Builder Parameters:', {
+      originalPromptLength: originalPrompt.length,
+      ragContextLength: ragContext.researchEnhanced ? ragContext.enhancedPrompt.length : 0,
+      competitiveContextLength: competitiveResults.totalPatterns > 0 ? competitiveResults.competitiveContext.length : 0,
+      imageCount: imageCount,
+      isComparative: requestData.isComparative || false
+    });
     
     const enhancedPrompt = buildEnhancedAnalysisPrompt(
       originalPrompt,
       ragContext.researchEnhanced ? ragContext.enhancedPrompt : undefined,
       competitiveResults.totalPatterns > 0 ? competitiveResults.competitiveContext : undefined,
       requestData.isComparative || false,
-      imageProcessingResult.processedImages.length
+      imageCount
     );
     
     // ===== MAIN CONSOLE LOG FOR USER VISIBILITY =====
@@ -459,6 +491,11 @@ Deno.serve(async (req) => {
     console.log("💼 Business Impact Quantification Status:", enableBusinessImpact ? "ENABLED" : "DISABLED");
     console.log("📊 Research Sources Used:", ragContext.knowledgeSourcesUsed);
     console.log("🏆 Competitive Patterns Used:", competitiveResults.totalPatterns);
+    console.log("🖼️ Multi-Image Analysis:", {
+      imageCount: imageCount,
+      isMultiImage: imageCount > 1,
+      distributionRequired: imageCount > 1
+    });
     console.log("");
     
     for (const processedImage of imageProcessingResult.processedImages) {
@@ -483,6 +520,7 @@ Deno.serve(async (req) => {
               environment: envConfig,
               ragStatus: ragResults,
               competitiveStatus: competitiveResults,
+              imageCount: imageCount,
               timestamp: new Date().toISOString()
             }
           }),
