@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +7,7 @@ import { ImageTabsViewer } from './components/ImageTabsViewer';
 import { SingleImageViewer } from './components/SingleImageViewer';
 import { FeedbackPanel } from './components/FeedbackPanel';
 import { ResultsActions } from './components/ResultsActions';
+import { ImageIndicator } from './components/ImageIndicator';
 import { VisualSuggestions } from '../VisualSuggestions';
 import { CodeSolutions } from '../CodeSolutions';
 
@@ -181,6 +181,13 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
           </div>
         </CardHeader>
         <CardContent className="space-y-8">
+          {/* Image Indicator - New visual indicator */}
+          <ImageIndicator 
+            currentImageIndex={activeImageIndex >= 0 ? activeImageIndex : 0}
+            totalImages={workflow.selectedImages.length}
+            isMultiImage={isMultiImage}
+          />
+
           {/* Comparative Analysis Summary */}
           {isMultiImage && (
             <ComparativeAnalysisSummary 
