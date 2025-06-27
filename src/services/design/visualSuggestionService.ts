@@ -1,20 +1,23 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { smartStyleSelector, DesignContext } from './smartStyleSelector';
+import { TunerSettings } from '@/types/promptTuner';
 
 interface VisualSuggestion {
   id: string;
-  type: 'before_after' | 'style_variant' | 'accessibility_fix' | 'smart_before_after';
+  type: 'before_after' | 'style_variant' | 'accessibility_fix' | 'smart_before_after' | 'custom_tuned';
   description: string;
   imageUrl: string;
-  originalIssue: string;
-  improvement: string;
+  originalIssue?: string;
+  improvement?: string;
   timestamp: Date;
-  confidence?: number;
+  confidence?: number | string;
   style?: string;
   reasoning?: string;
   upgradeOptions?: UpgradeOption[];
   generatedAt?: string;
+  title?: string;
+  context?: string;
+  tags?: string[];
 }
 
 interface UpgradeOption {
@@ -281,6 +284,78 @@ class VisualSuggestionService {
       // Fallback: return empty array rather than breaking the analysis
       return [];
     }
+  }
+
+  // Add after the existing generateVisualSuggestions method
+  async generateCustomVisual(
+    enhancedPrompt: string, 
+    settings: TunerSettings, 
+    originalSuggestionId: string
+  ): Promise<VisualSuggestion> {
+    try {
+      console.log('🎛️ Generating custom visual with enhanced prompt');
+      console.log('📊 Tuner settings:', settings);
+      
+      // Generate the custom image using DALL-E
+      const imageUrl = await this.callDALLEViaEdgeFunction(enhancedPrompt);
+      
+      // Create a custom visual suggestion
+      const customSuggestion: VisualSuggestion = {
+        id: `custom_${originalSuggestionId}_${Date.now()}`,
+        type: 'custom_tuned',
+        title: this.generateCustomTitle(settings),
+        description: this.generateCustomDescription(settings),
+        imageUrl,
+        context: `Custom visual generated with user preferences: Layout ${settings.layoutDensity}%, Tone ${settings.visualTone}%, Colors ${settings.colorEmphasis}%, Fidelity ${settings.fidelity}%`,
+        reasoning: 'Generated using Prompt Tuner with custom user preferences',
+        confidence: 'high',
+        tags: this.generateCustomTags(settings),
+        upgradeOptions: [], // Custom visuals don't need upgrade options
+        timestamp: new Date()
+      };
+      
+      console.log('✅ Custom visual generated successfully');
+      return customSuggestion;
+      
+    } catch (error) {
+      console.error('❌ Custom visual generation failed:', error);
+      throw new Error(`Failed to generate custom visual: ${error.message}`);
+    }
+  }
+
+  private generateCustomTitle(settings: TunerSettings): string {
+    const density = settings.layoutDensity > 66 ? 'Dense' : settings.layoutDensity < 34 ? 'Minimal' : 'Balanced';
+    const tone = settings.visualTone > 66 ? 'Professional' : settings.visualTone < 34 ? 'Playful' : 'Modern';
+    return `${tone} ${density} Design`;
+  }
+
+  private generateCustomDescription(settings: TunerSettings): string {
+    const layouts = ['sparse', 'balanced', 'dense'];
+    const tones = ['playful', 'modern', 'professional'];
+    const colors = ['neutral', 'moderate', 'vibrant'];
+    const fidelities = ['wireframe', 'mid-fidelity', 'high-fidelity'];
+    
+    const layoutType = layouts[Math.floor(settings.layoutDensity / 34)];
+    const toneType = tones[Math.floor(settings.visualTone / 34)];
+    const colorType = colors[Math.floor(settings.colorEmphasis / 34)];
+    const fidelityType = fidelities[Math.floor(settings.fidelity / 34)];
+    
+    return `Custom ${fidelityType} mockup with ${layoutType} layout, ${toneType} tone, and ${colorType} color scheme.`;
+  }
+
+  private generateCustomTags(settings: TunerSettings): string[] {
+    const tags = ['custom'];
+    
+    if (settings.layoutDensity > 66) tags.push('dense-layout');
+    if (settings.layoutDensity < 34) tags.push('minimal-layout');
+    if (settings.visualTone > 66) tags.push('professional');
+    if (settings.visualTone < 34) tags.push('playful');
+    if (settings.colorEmphasis > 66) tags.push('colorful');
+    if (settings.colorEmphasis < 34) tags.push('neutral');
+    if (settings.fidelity > 66) tags.push('high-fidelity');
+    if (settings.fidelity < 34) tags.push('wireframe');
+    
+    return tags;
   }
 
   // NEW METHODS FOR GENERATING VARIANTS
