@@ -19,6 +19,13 @@ export function buildEnhancedAnalysisPrompt(
     timestamp: new Date().toISOString()
   });
 
+  console.log('🖼️ Multi-Image Detection:', {
+    imageCount,
+    isMultiImage: imageCount > 1,
+    requiresImageIndexGuidance: imageCount > 1,
+    analysisType: isComparative ? 'comparative' : 'standard'
+  });
+
   // Build the comprehensive enhanced prompt
   let enhancedPrompt = basePrompt;
   
@@ -67,6 +74,20 @@ COMPETITIVE ANALYSIS INSTRUCTIONS:
 
 CRITICAL: You MUST respond with a valid JSON array of annotation objects only. Do not include any markdown, explanations, or other text.
 
+${imageCount > 1 ? `
+MULTI-IMAGE ANALYSIS: You are analyzing ${imageCount} different images. Each annotation MUST specify the correct imageIndex (0 to ${imageCount - 1}) to indicate which image the annotation belongs to.
+
+CRITICAL IMAGE INDEX ASSIGNMENT:
+- Image 1 = imageIndex: 0
+- Image 2 = imageIndex: 1
+- Image 3 = imageIndex: 2
+- Image ${imageCount} = imageIndex: ${imageCount - 1}
+
+DISTRIBUTION REQUIREMENT: Ensure annotations are distributed across ALL images based on their individual content and design elements. Each image should receive 2-3 specific annotations analyzing its unique design aspects.
+
+DO NOT assign all annotations to imageIndex: 0. You must analyze each image individually and assign the correct imageIndex.
+` : ''}
+
 Required JSON format:
 [
   {
@@ -77,7 +98,7 @@ Required JSON format:
     "feedback": "Research and competitively-informed feedback with specific citations and benchmarks",
     "implementationEffort": "medium",
     "businessImpact": "high",
-    "imageIndex": 0
+    "imageIndex": ${imageCount > 1 ? 'REQUIRED_FIELD_0_to_' + (imageCount - 1) : '0'} // CRITICAL: Must be 0 to ${imageCount - 1} for multi-image
   }
 ]
 
@@ -88,15 +109,21 @@ Rules:
 - feedback: Enhanced explanation citing research AND competitive benchmarks (2-3 sentences)
 - implementationEffort: "low", "medium", or "high"
 - businessImpact: "low", "medium", or "high"
-- imageIndex: 0 for single image, 0-n for multiple images
+- imageIndex: ${imageCount > 1 ? `REQUIRED - specify 0 to ${imageCount - 1} based on which specific image this annotation applies to` : '0 for single image'}
+
+${imageCount > 1 ? `
+MULTI-IMAGE ANALYSIS REQUIREMENTS:
+- Provide 2-3 annotations per image, ensuring each image receives individual attention
+- Each annotation must have the correct imageIndex (0, 1, 2, etc.)
+- Analyze each image's unique design elements, don't just copy annotations across images
+- Consider how different images work together in the overall user experience
+` : 'Provide 3-5 specific, actionable annotations for the single image.'}
 
 When research and competitive context are available, ensure feedback includes:
 - Specific research citations and best practices
 - Competitive benchmarks and industry leader examples
 - Performance metrics and effectiveness scores where available
-- Differentiation opportunities vs. competitors
-
-Provide 3-5 specific, actionable annotations based on your research-enhanced and competitively-informed analysis.`;
+- Differentiation opportunities vs. competitors`;
 
   let finalPrompt;
   
@@ -105,6 +132,14 @@ Provide 3-5 specific, actionable annotations based on your research-enhanced and
 
 This is a COMPARATIVE ANALYSIS of ${imageCount} designs. Compare the designs using research-backed criteria AND competitive benchmarks to identify differences, strengths, and improvement opportunities across all images.
 
+CRITICAL MULTI-IMAGE INSTRUCTION: You are analyzing ${imageCount} different design images. Each annotation must specify the correct imageIndex to indicate which specific image it belongs to:
+- Annotations for the first image should have "imageIndex": 0
+- Annotations for the second image should have "imageIndex": 1
+- Annotations for the third image should have "imageIndex": 2
+- Continue this pattern for all ${imageCount} images
+
+DISTRIBUTION REQUIREMENT: Ensure annotations are distributed across ALL ${imageCount} images. Each image should receive 2-3 specific annotations with competitive benchmarks analyzing its unique design aspects. Do NOT assign all annotations to imageIndex: 0.
+
 ${jsonInstructions}`;
     
     console.log('📊 Built COMPARATIVE analysis prompt with competitive intelligence:', {
@@ -112,7 +147,31 @@ ${jsonInstructions}`;
       hasResearchContext: !!ragContext,
       hasCompetitiveContext: !!competitiveContext,
       imageCount,
-      isComparative: true
+      isComparative: true,
+      multiImageInstructionsIncluded: true
+    });
+  } else if (imageCount > 1) {
+    finalPrompt = `${enhancedPrompt}
+
+MULTI-IMAGE ANALYSIS: You are analyzing ${imageCount} different design images. Analyze each design individually and provide specific insights for each image using research-backed methodologies AND competitive intelligence.
+
+CRITICAL IMAGEINDEX ASSIGNMENT: Each annotation must specify the correct imageIndex (0 to ${imageCount - 1}) to indicate which specific image it belongs to:
+- Image 1 analysis → "imageIndex": 0
+- Image 2 analysis → "imageIndex": 1  
+- Image 3 analysis → "imageIndex": 2
+- Continue for all ${imageCount} images
+
+DISTRIBUTION REQUIREMENT: Ensure annotations are distributed across ALL ${imageCount} images based on their individual content and design elements. Each image should receive 2-3 specific annotations with competitive benchmarks. Do NOT assign all annotations to the first image (imageIndex: 0).
+
+${jsonInstructions}`;
+
+    console.log('📊 Built MULTI-IMAGE analysis prompt with competitive intelligence:', {
+      totalLength: finalPrompt.length,
+      hasResearchContext: !!ragContext,
+      hasCompetitiveContext: !!competitiveContext,
+      imageCount,
+      isComparative: false,
+      multiImageInstructionsIncluded: true
     });
   } else {
     finalPrompt = `${enhancedPrompt}
@@ -140,11 +199,17 @@ ${jsonInstructions}`;
     competitiveContextIncluded: finalPrompt.includes('COMPETITIVE INTELLIGENCE & BENCHMARKING'),
     researchSectionLength: ragContext ? ragContext.length : 0,
     competitiveSectionLength: competitiveContext ? competitiveContext.length : 0,
+    multiImageInstructions: finalPrompt.includes('MULTI-IMAGE ANALYSIS'),
+    imageIndexInstructions: finalPrompt.includes('imageIndex'),
+    imageCount: imageCount,
+    distributionRequirement: finalPrompt.includes('DISTRIBUTION REQUIREMENT'),
     structureSections: {
       hasBasePrompt: finalPrompt.includes(basePrompt),
       hasResearchSection: finalPrompt.includes('RESEARCH-ENHANCED ANALYSIS'),
       hasCompetitiveSection: finalPrompt.includes('COMPETITIVE INTELLIGENCE & BENCHMARKING'),
-      hasJSONInstructions: finalPrompt.includes('CRITICAL: You MUST respond')
+      hasJSONInstructions: finalPrompt.includes('CRITICAL: You MUST respond'),
+      hasImageIndexGuidance: finalPrompt.includes('imageIndex'),
+      hasMultiImageLogic: imageCount > 1
     }
   });
 
