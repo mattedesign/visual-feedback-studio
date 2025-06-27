@@ -1,62 +1,28 @@
-
-export function buildAnalysisPrompt(
-  basePrompt: string,
-  ragContext?: string,
-  isComparative = false,
-  imageCount = 1
-): string {
-  console.log('🏗️ === PROMPT BUILDER DETAILED DEBUG ===');
-  console.log('📋 Prompt Builder Inputs:', {
-    hasBasePrompt: !!basePrompt,
+export const buildAnalysisPrompt = (
+  basePrompt: string, 
+  ragContext?: string, 
+  isComparative: boolean = false, 
+  imageCount: number = 1
+): string => {
+  console.log('🎯 Building analysis prompt:', {
     basePromptLength: basePrompt.length,
-    basePromptPreview: basePrompt.substring(0, 100) + '...',
     hasRAGContext: !!ragContext,
-    ragContextLength: ragContext?.length || 0,
-    ragContextPreview: ragContext ? ragContext.substring(0, 200) + '...' : null,
     isComparative,
-    imageCount,
-    timestamp: new Date().toISOString()
+    imageCount
   });
 
-  // Build the enhanced prompt with research context
   let enhancedPrompt = basePrompt;
-  
-  if (ragContext && ragContext.trim().length > 0) {
-    console.log('✅ RAG CONTEXT DETECTED - Building research-enhanced prompt');
-    console.log('📚 RAG Context Details:', {
-      contextLength: ragContext.length,
-      contextPreview: ragContext.substring(0, 300),
-      contextContainsResearch: ragContext.includes('RESEARCH-ENHANCED'),
-      contextContainsCitations: ragContext.includes('Best Practices') || ragContext.includes('Guidelines'),
-      fullContextSample: ragContext.substring(0, 500) + (ragContext.length > 500 ? '...' : '')
-    });
-    
-    enhancedPrompt = `${basePrompt}
 
-=== RESEARCH-ENHANCED ANALYSIS ===
-Based on UX research, design best practices, and proven methodologies, provide evidence-backed recommendations using the following knowledge base:
+  if (ragContext && ragContext.trim()) {
+    enhancedPrompt = `RESEARCH-ENHANCED ANALYSIS:
 
 ${ragContext}
 
-IMPORTANT: Use this research context to:
-- Cite specific best practices and methodologies
-- Provide evidence-based recommendations
-- Reference proven design patterns and principles
-- Support your feedback with research-backed insights
-
-`;
+Based on the above research context and UX best practices, ${basePrompt}`;
     
-    console.log('🔬 Enhanced Prompt Built Successfully:', {
-      originalLength: basePrompt.length,
-      enhancedLength: enhancedPrompt.length,
-      addedLength: enhancedPrompt.length - basePrompt.length,
-      includesResearchSection: enhancedPrompt.includes('RESEARCH-ENHANCED ANALYSIS'),
-      includesRAGContext: enhancedPrompt.includes(ragContext),
-      ragContextPosition: enhancedPrompt.indexOf(ragContext)
-    });
+    console.log('✅ Enhanced prompt with RAG context');
   } else {
-    console.log('⚠️ NO RAG CONTEXT PROVIDED - Using standard prompt only');
-    console.log('🔍 RAG Context Debug:', {
+    console.log('⚠️ No RAG context provided:', {
       ragContextExists: !!ragContext,
       ragContextType: typeof ragContext,
       ragContextLength: ragContext?.length || 0,
@@ -69,6 +35,17 @@ IMPORTANT: Use this research context to:
 
 CRITICAL: You MUST respond with a valid JSON array of annotation objects only. Do not include any markdown, explanations, or other text.
 
+${imageCount > 1 ? `
+MULTI-IMAGE ANALYSIS: You are analyzing ${imageCount} different images. Each annotation MUST specify the correct imageIndex (0 to ${imageCount - 1}) to indicate which image the annotation belongs to.
+
+- Image 1 = imageIndex: 0
+- Image 2 = imageIndex: 1
+- Image 3 = imageIndex: 2
+- etc.
+
+Ensure annotations are distributed across ALL images based on their individual content and design elements.
+` : ''}
+
 Required JSON format:
 [
   {
@@ -79,7 +56,7 @@ Required JSON format:
     "feedback": "Research-backed feedback with specific citations and best practices",
     "implementationEffort": "medium",
     "businessImpact": "high",
-    "imageIndex": 0
+    "imageIndex": ${imageCount > 1 ? '0' : '0'} // CRITICAL: Must be 0 to ${imageCount - 1} for multi-image
   }
 ]
 
@@ -90,10 +67,13 @@ Rules:
 - feedback: Research-enhanced explanation citing best practices (2-3 sentences)
 - implementationEffort: "low", "medium", or "high"
 - businessImpact: "low", "medium", or "high"
-- imageIndex: 0 for single image, 0-n for multiple images
+- imageIndex: ${imageCount > 1 ? `REQUIRED - specify 0 to ${imageCount - 1} based on which image` : '0 for single image'}
 
-When research context is available, ensure feedback includes specific citations and evidence-based recommendations.
-Provide 3-5 specific, actionable annotations based on your research-enhanced analysis.`;
+${imageCount > 1 ? `
+For multi-image analysis, provide 2-3 annotations per image, ensuring each image receives individual attention and analysis.
+` : 'Provide 3-5 specific, actionable annotations for the single image.'}
+
+When research context is available, ensure feedback includes specific citations and evidence-based recommendations.`;
 
   let finalPrompt;
   
@@ -102,6 +82,12 @@ Provide 3-5 specific, actionable annotations based on your research-enhanced ana
 
 This is a COMPARATIVE ANALYSIS of ${imageCount} designs. Compare the designs using research-backed criteria and identify differences, strengths, and improvement opportunities across all images.
 
+For each annotation, specify the correct imageIndex:
+- Annotations for the first image should have "imageIndex": 0
+- Annotations for the second image should have "imageIndex": 1
+- Annotations for the third image should have "imageIndex": 2
+- And so on...
+
 ${jsonInstructions}`;
     
     console.log('📊 Built COMPARATIVE analysis prompt:', {
@@ -109,6 +95,21 @@ ${jsonInstructions}`;
       hasResearchContext: !!ragContext,
       imageCount,
       isComparative: true
+    });
+  } else if (imageCount > 1) {
+    finalPrompt = `${enhancedPrompt}
+
+This is a MULTI-IMAGE ANALYSIS of ${imageCount} designs. Analyze each design individually and provide specific insights for each image.
+
+CRITICAL: Each annotation must specify the correct imageIndex (0 to ${imageCount - 1}) to indicate which image it belongs to.
+
+${jsonInstructions}`;
+
+    console.log('📊 Built MULTI-IMAGE analysis prompt:', {
+      totalLength: finalPrompt.length,
+      hasResearchContext: !!ragContext,
+      imageCount,
+      isComparative: false
     });
   } else {
     finalPrompt = `${enhancedPrompt}
@@ -125,34 +126,21 @@ ${jsonInstructions}`;
     });
   }
 
-  // CRITICAL: Log the final prompt sections for debugging
   console.log('🎯 === FINAL PROMPT STRUCTURE ANALYSIS ===');
   console.log('📏 Final Prompt Metrics:', {
     totalLength: finalPrompt.length,
     basePromptLength: basePrompt.length,
     ragContextIncluded: finalPrompt.includes('RESEARCH-ENHANCED ANALYSIS'),
     researchSectionLength: ragContext ? ragContext.length : 0,
+    multiImageInstructions: finalPrompt.includes('MULTI-IMAGE ANALYSIS'),
+    imageIndexInstructions: finalPrompt.includes('imageIndex'),
     structureSections: {
       hasBasePrompt: finalPrompt.includes(basePrompt),
       hasResearchSection: finalPrompt.includes('RESEARCH-ENHANCED ANALYSIS'),
       hasRAGContent: ragContext ? finalPrompt.includes(ragContext) : false,
-      hasJSONInstructions: finalPrompt.includes('CRITICAL: You MUST respond')
+      hasImageIndexGuidance: finalPrompt.includes('imageIndex')
     }
   });
 
-  // Log exact prompt sections for debugging
-  if (ragContext) {
-    console.log('🔍 RAG Context Verification in Final Prompt:');
-    console.log('   RAG Context Start Index:', finalPrompt.indexOf('RESEARCH-ENHANCED ANALYSIS'));
-    console.log('   RAG Content Start Index:', finalPrompt.indexOf(ragContext));
-    console.log('   Sample from Final Prompt (where RAG should be):');
-    const ragStart = finalPrompt.indexOf('RESEARCH-ENHANCED ANALYSIS');
-    if (ragStart !== -1) {
-      console.log('   ' + finalPrompt.substring(ragStart, ragStart + 500) + '...');
-    }
-  }
-
-  console.log('✅ === PROMPT BUILDER COMPLETE ===');
-  
   return finalPrompt;
-}
+};
