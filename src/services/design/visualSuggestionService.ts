@@ -1,6 +1,6 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { smartStyleSelector, DesignContext } from './smartStyleSelector';
+import { TunerSettings } from '@/types/promptTuner';
 
 interface VisualSuggestion {
   id: string;
@@ -15,6 +15,15 @@ interface VisualSuggestion {
   reasoning?: string;
   upgradeOptions?: UpgradeOption[];
   generatedAt?: string;
+  customVariation?: CustomVisualResult;
+}
+
+interface CustomVisualResult {
+  id: string;
+  imageUrl: string;
+  settings: TunerSettings;
+  prompt: string;
+  createdAt: Date;
 }
 
 interface UpgradeOption {
@@ -280,6 +289,72 @@ class VisualSuggestionService {
       // Fallback: return empty array rather than breaking the analysis
       return [];
     }
+  }
+
+  // New method for custom visual generation
+  async generateCustomVisual(
+    enhancedPrompt: string, 
+    settings: TunerSettings, 
+    suggestionId: string
+  ): Promise<CustomVisualResult> {
+    console.log('🎛️ Generating custom visual with tuner settings:', settings);
+    
+    try {
+      // Build enhanced prompt with tuner settings
+      const customPrompt = this.buildTunedPrompt(enhancedPrompt, settings);
+      
+      // Generate the custom visual
+      const imageUrl = await this.callDALLEViaEdgeFunction(customPrompt);
+      
+      const customResult: CustomVisualResult = {
+        id: `custom_${suggestionId}_${Date.now()}`,
+        imageUrl,
+        settings,
+        prompt: customPrompt,
+        createdAt: new Date()
+      };
+      
+      console.log('✅ Custom visual generated successfully');
+      return customResult;
+      
+    } catch (error) {
+      console.error('❌ Failed to generate custom visual:', error);
+      throw new Error(`Custom visual generation failed: ${error.message}`);
+    }
+  }
+
+  private buildTunedPrompt(basePrompt: string, settings: TunerSettings): string {
+    let tunedPrompt = basePrompt;
+    
+    // Apply layout density
+    if (settings.layoutDensity > 70) {
+      tunedPrompt += ' with dense, information-rich layout';
+    } else if (settings.layoutDensity < 30) {
+      tunedPrompt += ' with spacious, minimal layout';
+    }
+    
+    // Apply visual tone
+    if (settings.visualTone > 70) {
+      tunedPrompt += ', professional and corporate aesthetic';
+    } else if (settings.visualTone < 30) {
+      tunedPrompt += ', playful and creative aesthetic';
+    }
+    
+    // Apply color emphasis
+    if (settings.colorEmphasis > 70) {
+      tunedPrompt += ', vibrant and colorful design';
+    } else if (settings.colorEmphasis < 30) {
+      tunedPrompt += ', monochromatic and subtle colors';
+    }
+    
+    // Apply fidelity
+    if (settings.fidelity > 70) {
+      tunedPrompt += ', high-fidelity detailed mockup';
+    } else if (settings.fidelity < 30) {
+      tunedPrompt += ', low-fidelity wireframe style';
+    }
+    
+    return tunedPrompt;
   }
 }
 
