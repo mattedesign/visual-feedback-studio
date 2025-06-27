@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +7,7 @@ import { ImageTabsViewer } from './components/ImageTabsViewer';
 import { SingleImageViewer } from './components/SingleImageViewer';
 import { FeedbackPanel } from './components/FeedbackPanel';
 import { ResultsActions } from './components/ResultsActions';
+import { VisualSuggestions } from '../VisualSuggestions';
 
 interface ResultsStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -272,6 +272,16 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
               getSeverityColor={getSeverityColor}
               businessImpact={businessImpact}
               insights={insights}
+            />
+          </div>
+
+          {/* Visual Design Suggestions - NEW SECTION */}
+          <div className="mt-8">
+            <VisualSuggestions
+              analysisInsights={workflow.aiAnnotations.map(a => a.feedback).slice(0, 5)}
+              userContext={workflow.analysisContext || 'General UX improvement'}
+              focusAreas={detectedFocusAreas}
+              designType={isMultiImage ? 'responsive' : 'desktop'}
             />
           </div>
 
