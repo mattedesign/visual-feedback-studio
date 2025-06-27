@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -189,6 +188,18 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
             />
           )}
 
+          {/* Active Annotation Context Display */}
+          {activeAnnotation && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center gap-2 text-sm text-blue-700">
+                <span>📍 Viewing annotation on Image {activeImageIndex + 1}</span>
+                <Badge variant="outline" className="text-xs">
+                  {workflow.selectedImages.length > 1 ? `${activeImageIndex + 1} of ${workflow.selectedImages.length}` : 'Single Image'}
+                </Badge>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Image viewer */}
             <div className="lg:col-span-2">
@@ -215,19 +226,51 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
               )}
             </div>
 
-            {/* Feedback panel */}
-            <FeedbackPanel
-              currentImageAIAnnotations={currentImageAIAnnotations}
-              currentImageUserAnnotations={currentImageUserAnnotations}
-              activeImageIndex={activeImageIndex}
-              isMultiImage={isMultiImage}
-              activeAnnotation={activeAnnotation}
-              onAnnotationClick={setActiveAnnotation}
-              aiAnnotations={workflow.aiAnnotations}
-              getSeverityColor={getSeverityColor}
-              businessImpact={businessImpact}
-              insights={insights}
-            />
+            {/* Feedback panel with enhanced headers */}
+            <div className="space-y-6">
+              {/* Business Impact Summary (if available) */}
+              {businessImpact && (
+                <div className="bg-slate-700 border border-slate-600 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
+                    🎯 Key Insights 
+                    {isMultiImage && (
+                      <Badge variant="secondary" className="text-xs">
+                        Across {workflow.selectedImages.length} Images
+                      </Badge>
+                    )}
+                  </h3>
+                  
+                </div>
+              )}
+
+              {/* Image Distribution Info for Detailed Analysis */}
+              {isMultiImage && (
+                <div className="mb-4 grid grid-cols-3 gap-2">
+                  {workflow.selectedImages.map((_, index) => {
+                    const count = getAnnotationsForImage(index).length;
+                    return (
+                      <div key={index} className="text-center p-2 bg-slate-100 rounded">
+                        <div className="text-xs text-slate-600">Image {index + 1}</div>
+                        <div className="font-semibold text-slate-800">{count} insights</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <FeedbackPanel
+                currentImageAIAnnotations={currentImageAIAnnotations}
+                currentImageUserAnnotations={currentImageUserAnnotations}
+                activeImageIndex={activeImageIndex}
+                isMultiImage={isMultiImage}
+                activeAnnotation={activeAnnotation}
+                onAnnotationClick={setActiveAnnotation}
+                aiAnnotations={workflow.aiAnnotations}
+                getSeverityColor={getSeverityColor}
+                businessImpact={businessImpact}
+                insights={insights}
+              />
+            </div>
           </div>
 
           {/* Visual Design Suggestions */}
