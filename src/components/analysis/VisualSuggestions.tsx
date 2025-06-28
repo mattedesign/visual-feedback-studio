@@ -50,6 +50,11 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
   const [error, setError] = useState<string>('');
   const [userCredits, setUserCredits] = useState(15); // Mock user credits
   const [purchasingUpgrade, setPurchasingUpgrade] = useState(false);
+  
+  // New state management for Prompt Tuner
+  const [showPromptTuner, setShowPromptTuner] = useState<string | null>(null);
+  const [isCustomGenerating, setIsCustomGenerating] = useState(false);
+  const [customResults, setCustomResults] = useState<Record<string, CustomVisualResult>>({});
 
   const generateSuggestions = async () => {
     setLoading(true);
