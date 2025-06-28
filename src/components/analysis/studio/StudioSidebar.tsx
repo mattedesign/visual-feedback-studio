@@ -1,110 +1,98 @@
-
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { FileImage, Eye, PenTool, Zap, BarChart3, ChevronRight } from 'lucide-react';
+import { Files, Menu, MessageCircle } from 'lucide-react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 
 interface StudioSidebarProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
   collapsed: boolean;
+  setCollapsed: (collapsed: boolean) => void;
 }
 
-export const StudioSidebar = ({ workflow, collapsed }: StudioSidebarProps) => {
-  const steps = [
-    { key: 'upload', label: 'Upload', icon: FileImage },
-    { key: 'review', label: 'Review', icon: Eye },
-    { key: 'annotate', label: 'Annotate', icon: PenTool },
-    { key: 'analyzing', label: 'Analyzing', icon: Zap },
-    { key: 'results', label: 'Results', icon: BarChart3 },
-  ];
-
-  const currentStepIndex = steps.findIndex(step => step.key === workflow.currentStep);
-
-  if (collapsed) {
-    return (
-      <div className="w-16 bg-slate-800 border-r border-slate-700 flex flex-col items-center py-4 space-y-4">
-        {steps.map((step, index) => {
-          const Icon = step.icon;
-          const isActive = step.key === workflow.currentStep;
-          const isCompleted = index < currentStepIndex;
-          
-          return (
-            <Button
-              key={step.key}
-              variant={isActive ? "default" : "ghost"}
-              size="sm"
-              className={`w-10 h-10 p-2 ${
-                isCompleted ? 'bg-green-600 hover:bg-green-700' : 
-                isActive ? 'bg-blue-600 hover:bg-blue-700' : 
-                'hover:bg-slate-700'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-            </Button>
-          );
-        })}
-      </div>
-    );
-  }
+export const StudioSidebar = ({ workflow, collapsed, setCollapsed }: StudioSidebarProps) => {
+  const getFileAnnotations = (fileUrl: string) => {
+    const imageAnnotations = workflow.imageAnnotations.find(ia => ia.imageUrl === fileUrl);
+    return imageAnnotations?.annotations || [];
+  };
 
   return (
-    <div className="w-64 bg-slate-800 border-r border-slate-700 p-4">
-      <Card className="bg-slate-700/50 border-slate-600">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Analysis Workflow</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {steps.map((step, index) => {
-            const Icon = step.icon;
-            const isActive = step.key === workflow.currentStep;
-            const isCompleted = index < currentStepIndex;
-            
-            return (
-              <div
-                key={step.key}
-                className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${
-                  isActive ? 'bg-blue-600/20 border border-blue-500/30' :
-                  isCompleted ? 'bg-green-600/20 border border-green-500/30' :
-                  'bg-slate-600/20 border border-slate-500/30'
-                }`}
-              >
-                <Icon className={`w-5 h-5 ${
-                  isActive ? 'text-blue-400' :
-                  isCompleted ? 'text-green-400' :
-                  'text-slate-400'
-                }`} />
-                <span className={`flex-1 ${
-                  isActive ? 'text-blue-300 font-medium' :
-                  isCompleted ? 'text-green-300' :
-                  'text-slate-300'
-                }`}>
-                  {step.label}
-                </span>
-                {isActive && (
-                  <ChevronRight className="w-4 h-4 text-blue-400" />
-                )}
-              </div>
-            );
-          })}
-        </CardContent>
-      </Card>
+    <div className={`${collapsed ? 'w-16' : 'w-64'} bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-700 transition-all duration-300`}>
+      <div className="p-6">
+        <div className="flex items-center mb-8">
+          <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg flex items-center justify-center mr-3">
+            <Files className="w-5 h-5 text-white" />
+          </div>
+          {!collapsed && (
+            <span className="font-bold text-xl text-gray-900 dark:text-white">UXAnalyzer</span>
+          )}
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="ml-auto p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+          >
+            <Menu className="w-4 h-4 text-gray-500" />
+          </button>
+        </div>
 
-      {/* Analysis Info */}
-      {workflow.currentAnalysis && (
-        <Card className="bg-slate-700/50 border-slate-600 mt-4">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Current Analysis</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-slate-400 font-mono">
-              {workflow.currentAnalysis.id}
-            </p>
-            <p className="text-sm text-slate-300 mt-2">
-              {workflow.selectedImages.length} image{workflow.selectedImages.length !== 1 ? 's' : ''}
-            </p>
-          </CardContent>
-        </Card>
-      )}
+        {!collapsed && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                Files ({workflow.uploadedFiles.length})
+              </h4>
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                Step: {workflow.currentStep}
+              </span>
+            </div>
+            
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {workflow.uploadedFiles.map((file: string, index: number) => {
+                const isSelected = workflow.selectedImages.includes(file);
+                const annotations = getFileAnnotations(file);
+                
+                return (
+                  <div
+                    key={index}
+                    onClick={() => workflow.selectImage(file)}
+                    className={`p-3 rounded-lg border cursor-pointer transition-all duration-200 ${
+                      isSelected 
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-sm' 
+                        : 'border-gray-200 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500 hover:shadow-sm'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gray-100 dark:bg-slate-700 rounded-lg overflow-hidden">
+                        <img src={file} alt="Uploaded file" className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-gray-900 dark:text-white truncate">
+                          Design {index + 1}
+                        </p>
+                        <div className="flex items-center justify-between mt-1">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Image file</p>
+                        </div>
+                        {annotations.length > 0 && (
+                          <div className="flex items-center mt-1">
+                            <MessageCircle className="w-3 h-3 text-blue-500 mr-1" />
+                            <p className="text-xs text-blue-600 dark:text-blue-400">
+                              {annotations.length} annotations
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            {workflow.uploadedFiles.length === 0 && (
+              <div className="text-center py-6">
+                <Files className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">No files uploaded yet</p>
+                <p className="text-xs text-gray-400">Upload your first design to get started</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
