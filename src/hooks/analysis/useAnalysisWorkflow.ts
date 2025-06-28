@@ -19,6 +19,7 @@ export const useAnalysisWorkflow = () => {
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('upload');
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [activeImageUrl, setActiveImageUrl] = useState<string | null>(null);
   const [imageAnnotations, setImageAnnotations] = useState<ImageAnnotations[]>([]);
   const [analysisContext, setAnalysisContext] = useState<string>('');
   const [currentAnalysis, setCurrentAnalysis] = useState<AnalysisWithFiles | null>(null);
@@ -27,14 +28,16 @@ export const useAnalysisWorkflow = () => {
 
   // Memoized computed values
   const selectedImageUrl = useMemo(() => 
-    selectedImages.length > 0 ? selectedImages[0] : null,
-    [selectedImages]
+    activeImageUrl || (selectedImages.length > 0 ? selectedImages[0] : null),
+    [activeImageUrl, selectedImages]
   );
 
-  const userAnnotations = useMemo(() => 
-    imageAnnotations.length > 0 ? imageAnnotations[0]?.annotations || [] : [],
-    [imageAnnotations]
-  );
+  const userAnnotations = useMemo(() => {
+    const currentUrl = activeImageUrl || selectedImages[0];
+    if (!currentUrl) return [];
+    const imageAnnotation = imageAnnotations.find(ia => ia.imageUrl === currentUrl);
+    return imageAnnotation?.annotations || [];
+  }, [imageAnnotations, activeImageUrl, selectedImages]);
 
   const goToStep = useCallback((step: WorkflowStep) => {
     console.log('Workflow step change:', currentStep, '->', step);
@@ -49,21 +52,33 @@ export const useAnalysisWorkflow = () => {
   const selectImage = useCallback((url: string) => {
     console.log('Selecting single image:', url);
     setSelectedImages([url]);
+    setActiveImageUrl(url);
     setImageAnnotations(prev => {
       const existing = prev.find(ia => ia.imageUrl === url);
-      return existing ? prev : [{ imageUrl: url, annotations: [] }];
+      return existing ? prev : [...prev, { imageUrl: url, annotations: [] }];
     });
   }, []);
 
   const selectImages = useCallback((urls: string[]) => {
     console.log('Selecting multiple images:', urls.length);
     setSelectedImages(urls);
+    setActiveImageUrl(urls[0] || null);
     setImageAnnotations(prev => {
       const newImageAnnotations = urls.map(url => {
         const existing = prev.find(ia => ia.imageUrl === url);
         return existing || { imageUrl: url, annotations: [] };
       });
-      return newImageAnnotations;
+      return [...prev.filter(ia => !urls.includes(ia.imageUrl)), ...newImageAnnotations];
+    });
+  }, []);
+
+  const setActiveImage = useCallback((url: string) => {
+    console.log('Setting active image:', url);
+    setActiveImageUrl(url);
+    // Ensure we have an annotation entry for this image
+    setImageAnnotations(prev => {
+      const existing = prev.find(ia => ia.imageUrl === url);
+      return existing ? prev : [...prev, { imageUrl: url, annotations: [] }];
     });
   }, []);
 
@@ -126,6 +141,7 @@ export const useAnalysisWorkflow = () => {
     setCurrentStep('upload');
     setUploadedFiles([]);
     setSelectedImages([]);
+    setActiveImageUrl(null);
     setImageAnnotations([]);
     setAnalysisContext('');
     setCurrentAnalysis(null);
@@ -162,6 +178,7 @@ export const useAnalysisWorkflow = () => {
     uploadedFiles,
     selectedImages,
     selectedImageUrl,
+    activeImageUrl,
     imageAnnotations,
     userAnnotations,
     analysisContext,
@@ -172,6 +189,7 @@ export const useAnalysisWorkflow = () => {
     addUploadedFile,
     selectImage,
     selectImages,
+    setActiveImage,
     addUserAnnotation,
     removeUserAnnotation,
     updateUserAnnotation,
@@ -188,6 +206,7 @@ export const useAnalysisWorkflow = () => {
     uploadedFiles,
     selectedImages,
     selectedImageUrl,
+    activeImageUrl,
     imageAnnotations,
     userAnnotations,
     analysisContext,
@@ -198,6 +217,7 @@ export const useAnalysisWorkflow = () => {
     addUploadedFile,
     selectImage,
     selectImages,
+    setActiveImage,
     addUserAnnotation,
     removeUserAnnotation,
     updateUserAnnotation,

@@ -50,24 +50,32 @@ export const ResultsCanvasState = ({
     );
   }
 
-  // Show existing annotations with active highlighting
-  const imageUrl = workflow.selectedImages[0];
+  // Show the active/selected image with annotations
+  const currentImageUrl = workflow.activeImageUrl || workflow.selectedImages[0];
   const aiAnnotations = workflow.aiAnnotations;
+  const currentImageIndex = workflow.uploadedFiles.indexOf(currentImageUrl);
 
   return (
     <div className="space-y-4 p-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          Analysis Results
+          Analysis Results - Image {currentImageIndex + 1}
         </h3>
-        <Badge variant="secondary">
-          {aiAnnotations.length} insights found
-        </Badge>
+        <div className="flex items-center space-x-4">
+          <Badge variant="secondary">
+            {aiAnnotations.length} insights found
+          </Badge>
+          {workflow.uploadedFiles.length > 1 && (
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              {currentImageIndex + 1} of {workflow.uploadedFiles.length}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="relative inline-block max-w-full">
         <img
-          src={imageUrl}
+          src={currentImageUrl}
           alt="Analyzed design"
           className="max-w-full h-auto rounded-lg shadow-sm border border-gray-200 dark:border-slate-600"
           style={{ maxHeight: '70vh' }}
@@ -98,6 +106,14 @@ export const ResultsCanvasState = ({
           );
         })}
       </div>
+
+      {workflow.uploadedFiles.length > 1 && (
+        <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+          <p className="text-sm text-blue-700 dark:text-blue-300">
+            💡 Use the sidebar to view analysis results for other images
+          </p>
+        </div>
+      )}
 
       {/* Show feedback if available */}
       {selectedFeedback && (

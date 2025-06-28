@@ -1,3 +1,4 @@
+
 import { Files, Menu, MessageCircle } from 'lucide-react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 
@@ -11,6 +12,20 @@ export const StudioSidebar = ({ workflow, collapsed, setCollapsed }: StudioSideb
   const getFileAnnotations = (fileUrl: string) => {
     const imageAnnotations = workflow.imageAnnotations.find(ia => ia.imageUrl === fileUrl);
     return imageAnnotations?.annotations || [];
+  };
+
+  const handleImageClick = (imageUrl: string) => {
+    console.log('Clicking image in sidebar:', imageUrl);
+    if (workflow.currentStep === 'annotate' || workflow.currentStep === 'results') {
+      workflow.setActiveImage(imageUrl);
+    } else {
+      workflow.selectImage(imageUrl);
+    }
+  };
+
+  const isImageActive = (imageUrl: string) => {
+    return workflow.activeImageUrl === imageUrl || 
+           (workflow.activeImageUrl === null && workflow.selectedImages[0] === imageUrl);
   };
 
   return (
@@ -35,44 +50,48 @@ export const StudioSidebar = ({ workflow, collapsed, setCollapsed }: StudioSideb
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-                Files ({workflow.uploadedFiles.length})
+                Images ({workflow.uploadedFiles.length})
               </h4>
               <span className="text-xs text-gray-500 dark:text-gray-400">
                 Step: {workflow.currentStep}
               </span>
             </div>
             
-            <div className="space-y-2 max-h-64 overflow-y-auto">
+            <div className="space-y-2 max-h-96 overflow-y-auto">
               {workflow.uploadedFiles.map((file: string, index: number) => {
                 const isSelected = workflow.selectedImages.includes(file);
+                const isActive = isImageActive(file);
                 const annotations = getFileAnnotations(file);
                 
                 return (
                   <div
                     key={index}
-                    onClick={() => workflow.selectImage(file)}
+                    onClick={() => handleImageClick(file)}
                     className={`p-3 rounded-lg border cursor-pointer transition-all duration-200 ${
-                      isSelected 
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-sm' 
+                      isActive 
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md ring-2 ring-blue-200 dark:ring-blue-800' 
+                        : isSelected
+                        ? 'border-blue-300 bg-blue-25 dark:bg-blue-900/10 shadow-sm'
                         : 'border-gray-200 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500 hover:shadow-sm'
                     }`}
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gray-100 dark:bg-slate-700 rounded-lg overflow-hidden">
+                      <div className="w-12 h-12 bg-gray-100 dark:bg-slate-700 rounded-lg overflow-hidden flex-shrink-0">
                         <img src={file} alt="Uploaded file" className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium text-gray-900 dark:text-white truncate">
-                          Design {index + 1}
+                          Image {index + 1}
+                          {isActive && <span className="ml-1 text-blue-600 dark:text-blue-400">• Active</span>}
                         </p>
                         <div className="flex items-center justify-between mt-1">
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Image file</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Design file</p>
                         </div>
                         {annotations.length > 0 && (
-                          <div className="flex items-center mt-1">
+                          <div className="flex items-center mt-2">
                             <MessageCircle className="w-3 h-3 text-blue-500 mr-1" />
                             <p className="text-xs text-blue-600 dark:text-blue-400">
-                              {annotations.length} annotations
+                              {annotations.length} annotation{annotations.length !== 1 ? 's' : ''}
                             </p>
                           </div>
                         )}
@@ -88,6 +107,12 @@ export const StudioSidebar = ({ workflow, collapsed, setCollapsed }: StudioSideb
                 <Files className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">No files uploaded yet</p>
                 <p className="text-xs text-gray-400">Upload your first design to get started</p>
+              </div>
+            )}
+
+            {workflow.uploadedFiles.length > 1 && workflow.currentStep === 'annotate' && (
+              <div className="text-center py-2 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-slate-600">
+                Click any image to annotate it
               </div>
             )}
           </div>
