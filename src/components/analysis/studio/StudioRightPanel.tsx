@@ -1,114 +1,143 @@
-
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { BarChart3, X } from 'lucide-react';
 
 interface StudioRightPanelProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
+  selectedDevice: 'desktop' | 'tablet' | 'mobile';
   collapsed: boolean;
+  setCollapsed: (collapsed: boolean) => void;
 }
 
-export const StudioRightPanel = ({ workflow, collapsed }: StudioRightPanelProps) => {
-  if (collapsed) {
-    return <div className="w-0" />;
-  }
+export const StudioRightPanel = ({ workflow, selectedDevice, collapsed, setCollapsed }: StudioRightPanelProps) => {
+  const hasResults = workflow.currentStep === 'results' && workflow.aiAnnotations.length > 0;
+  
+  // Mock analysis results for demonstration
+  const mockAnalysisResults = {
+    overallScore: 87.2,
+    categories: {
+      usability: 89.2,
+      accessibility: 82.1,
+      performance: 91.8,
+      visualDesign: 87.5
+    }
+  };
 
   return (
-    <div className="w-80 bg-slate-800 border-l border-slate-700 p-4">
-      <Tabs defaultValue="properties" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-slate-700">
-          <TabsTrigger value="properties" className="text-xs">Properties</TabsTrigger>
-          <TabsTrigger value="annotations" className="text-xs">Annotations</TabsTrigger>
-          <TabsTrigger value="insights" className="text-xs">Insights</TabsTrigger>
-        </TabsList>
+    <div className="w-80 bg-white dark:bg-slate-900 border-l border-gray-200 dark:border-slate-700 flex flex-col">
+      {/* Panel Header */}
+      <div className="p-4 border-b border-gray-200 dark:border-slate-700">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Analysis Panel</h3>
+          <button
+            onClick={() => setCollapsed(true)}
+            className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+          >
+            <X className="w-4 h-4 text-gray-500" />
+          </button>
+        </div>
+      </div>
 
-        <TabsContent value="properties" className="space-y-4">
-          <Card className="bg-slate-700/50 border-slate-600">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Analysis Properties</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <label className="text-xs text-slate-400">Status</label>
-                <div className="mt-1">
-                  <Badge variant="secondary" className="bg-blue-600/20 text-blue-300">
-                    {workflow.currentStep}
-                  </Badge>
-                </div>
+      {/* Panel Content */}
+      <div className="flex-1 overflow-auto p-4">
+        {hasResults ? (
+          <div className="space-y-6">
+            {/* Overall Score */}
+            <div className="text-center">
+              <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                {mockAnalysisResults.overallScore}
               </div>
-              
-              <div>
-                <label className="text-xs text-slate-400">Images</label>
-                <p className="text-sm text-slate-300 mt-1">
-                  {workflow.selectedImages.length} selected
-                </p>
-              </div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">UX Score</div>
+            </div>
 
-              <div>
-                <label className="text-xs text-slate-400">Annotations</label>
-                <p className="text-sm text-slate-300 mt-1">
-                  {workflow.getTotalAnnotationsCount()} total
-                </p>
+            {/* Device Filter */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Device View</h4>
+              <div className="text-sm text-gray-600 dark:text-gray-400 capitalize">
+                Current: {selectedDevice}
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </div>
 
-        <TabsContent value="annotations" className="space-y-4">
-          <Card className="bg-slate-700/50 border-slate-600">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm">User Annotations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {workflow.getTotalAnnotationsCount() === 0 ? (
-                <p className="text-xs text-slate-400">No annotations yet</p>
-              ) : (
-                <div className="space-y-2">
-                  {workflow.imageAnnotations.map((imageAnnotation, imageIndex) => (
-                    <div key={imageIndex}>
-                      <p className="text-xs text-slate-400 mb-1">
-                        Image {imageIndex + 1}: {imageAnnotation.annotations.length} annotations
-                      </p>
+            {/* Categories */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Categories</h4>
+              <div className="space-y-3">
+                {Object.entries(mockAnalysisResults.categories).map(([category, score]) => (
+                  <div key={category} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-700 dark:text-gray-300 capitalize">
+                        {category.replace(/([A-Z])/g, ' $1').trim()}
+                      </span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">{score}</span>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="insights" className="space-y-4">
-          <Card className="bg-slate-700/50 border-slate-600">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm">AI Insights</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {workflow.aiAnnotations.length === 0 ? (
-                <p className="text-xs text-slate-400">Run analysis to get insights</p>
-              ) : (
-                <div className="space-y-2">
-                  <p className="text-sm text-slate-300">
-                    {workflow.aiAnnotations.length} AI recommendations
-                  </p>
-                  <div className="space-y-1">
-                    {['critical', 'suggested', 'enhancement'].map(severity => {
-                      const count = workflow.aiAnnotations.filter(a => a.severity === severity).length;
-                      if (count === 0) return null;
-                      return (
-                        <div key={severity} className="flex justify-between text-xs">
-                          <span className="text-slate-400 capitalize">{severity}:</span>
-                          <span className="text-slate-300">{count}</span>
-                        </div>
-                      );
-                    })}
+                    <Progress value={score} className="h-2" />
                   </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Insights Found */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-medium text-gray-900 dark:text-white">Insights Found</h4>
+                <Badge variant="secondary">{workflow.aiAnnotations.length}</Badge>
+              </div>
+              <div className="space-y-2">
+                {workflow.aiAnnotations.slice(0, 3).map((annotation: any, index: number) => (
+                  <div key={annotation.id} className="p-3 bg-gray-50 dark:bg-slate-800 rounded-lg">
+                    <div className="flex items-start space-x-2">
+                      <div className="w-4 h-4 bg-red-500 rounded-full mt-0.5"></div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          {annotation.title || `Issue ${annotation.id}`}
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                          {annotation.category || 'UX'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Export Options */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Export Options</h4>
+              <div className="flex space-x-2">
+                <button className="flex-1 py-2 px-3 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-slate-700">
+                  Report
+                </button>
+                <button className="flex-1 py-2 px-3 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-slate-700">
+                  Code
+                </button>
+              </div>
+            </div>
+
+            {/* Analysis Details */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Analysis Details</h4>
+              <div className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3">
+                <div className="text-sm text-gray-700 dark:text-gray-300">
+                  {workflow.selectedImages.length} image{workflow.selectedImages.length !== 1 ? 's' : ''} analyzed
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  {workflow.getTotalAnnotationsCount()} user annotations
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <div className="w-12 h-12 bg-gray-100 dark:bg-slate-800 rounded-lg flex items-center justify-center mx-auto mb-3">
+              <BarChart3 className="w-6 h-6 text-gray-400" />
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Analysis results will appear here</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
