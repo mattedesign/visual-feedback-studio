@@ -1,6 +1,6 @@
 
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
-import { useAIAnalysis } from '@/hooks/analysis/useAIAnalysisStudio';
+import { useAIAnalysis } from '@/hooks/analysis/useAIAnalysis';
 import { Button } from '@/components/ui/button';
 import { Zap, Monitor, Tablet, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
@@ -12,7 +12,7 @@ interface StudioToolbarProps {
 }
 
 export const StudioToolbar = ({ workflow, selectedDevice, setSelectedDevice }: StudioToolbarProps) => {
-  const { analyzeImages, isAnalyzing: aiAnalyzing } = useAIAnalysis();
+  const { analyzeImages, isAnalyzing } = useAIAnalysis();
 
   const deviceTypes = [
     { id: 'desktop' as const, name: 'Desktop', icon: Monitor },
@@ -50,7 +50,7 @@ export const StudioToolbar = ({ workflow, selectedDevice, setSelectedDevice }: S
         prompt: analysisPrompt
       });
 
-      // Call AI analysis
+      // Call AI analysis using the updated hook
       const result = await analyzeImages({
         imageUrls,
         userAnnotations,
@@ -61,7 +61,7 @@ export const StudioToolbar = ({ workflow, selectedDevice, setSelectedDevice }: S
       console.log('✅ AI Analysis Complete:', result);
 
       // Update workflow with results
-      if (result.annotations) {
+      if (result.annotations && result.annotations.length > 0) {
         workflow.setAiAnnotations(result.annotations);
       }
 
@@ -71,7 +71,6 @@ export const StudioToolbar = ({ workflow, selectedDevice, setSelectedDevice }: S
 
       // Move to results step
       workflow.goToStep('results');
-      toast.success('Analysis complete!');
 
     } catch (error) {
       console.error('❌ Analysis failed:', error);
@@ -86,7 +85,7 @@ export const StudioToolbar = ({ workflow, selectedDevice, setSelectedDevice }: S
   const canAnalyze = workflow.currentStep === 'annotate' && 
                    workflow.selectedImages.length > 0 && 
                    !workflow.isAnalyzing && 
-                   !aiAnalyzing;
+                   !isAnalyzing;
 
   return (
     <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-6 py-3">
@@ -147,7 +146,7 @@ export const StudioToolbar = ({ workflow, selectedDevice, setSelectedDevice }: S
           className="flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
           <Zap className="w-4 h-4 mr-2" />
-          {(workflow.isAnalyzing || aiAnalyzing) ? 'Analyzing...' : 'Analyze'}
+          {(workflow.isAnalyzing || isAnalyzing) ? 'Analyzing...' : 'Analyze'}
         </Button>
       </div>
     </div>
