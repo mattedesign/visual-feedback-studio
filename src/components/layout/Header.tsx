@@ -6,8 +6,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Home } from 'lucide-react';
 
 interface HeaderProps {
-  user: User;
-  onSignOut: () => void;
+  user?: User;
+  onSignOut?: () => void;
 }
 
 export const Header = ({ user, onSignOut }: HeaderProps) => {
@@ -42,24 +42,28 @@ export const Header = ({ user, onSignOut }: HeaderProps) => {
           </Button>
         </div>
         
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Avatar className="w-8 h-8">
-              <AvatarFallback className="bg-slate-600 text-white text-sm">
-                {user.email?.[0]?.toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <span className="text-slate-300 text-sm">{user.email}</span>
+        {user && (
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Avatar className="w-8 h-8">
+                <AvatarFallback className="bg-slate-600 text-white text-sm">
+                  {user.email?.[0]?.toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-slate-300 text-sm">{user.email}</span>
+            </div>
+            {onSignOut && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={onSignOut}
+                className="border-slate-600 text-slate-300 hover:bg-slate-700"
+              >
+                Sign Out
+              </Button>
+            )}
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={onSignOut}
-            className="border-slate-600 text-slate-300 hover:bg-slate-700"
-          >
-            Sign Out
-          </Button>
-        </div>
+        )}
       </div>
     </header>
   );
