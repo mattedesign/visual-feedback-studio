@@ -8,9 +8,10 @@ import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 
 interface StudioCanvasProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
+  selectedDevice: 'desktop' | 'tablet' | 'mobile';
 }
 
-export const StudioCanvas = ({ workflow }: StudioCanvasProps) => {
+export const StudioCanvas = ({ workflow, selectedDevice }: StudioCanvasProps) => {
   const renderCanvasState = () => {
     switch (workflow.currentStep) {
       case 'upload':
@@ -18,11 +19,11 @@ export const StudioCanvas = ({ workflow }: StudioCanvasProps) => {
       case 'review':
         return <ReviewCanvasState workflow={workflow} />;
       case 'annotate':
-        return <AnnotateCanvasState workflow={workflow} />;
+        return <AnnotateCanvasState workflow={workflow} selectedDevice={selectedDevice} />;
       case 'analyzing':
         return <AnalyzingCanvasState workflow={workflow} />;
       case 'results':
-        return <ResultsCanvasState workflow={workflow} />;
+        return <ResultsCanvasState workflow={workflow} selectedDevice={selectedDevice} />;
       default:
         return <UploadCanvasState workflow={workflow} />;
     }
