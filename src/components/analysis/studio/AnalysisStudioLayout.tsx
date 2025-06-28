@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { StudioSidebar } from './StudioSidebar';

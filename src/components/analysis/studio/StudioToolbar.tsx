@@ -1,5 +1,5 @@
 
-import { Monitor, Tablet, Smartphone, Play, ArrowLeft } from 'lucide-react';
+import { Monitor, Tablet, Smartphone, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 
@@ -10,15 +10,6 @@ interface StudioToolbarProps {
 }
 
 export const StudioToolbar = ({ workflow, selectedDevice, setSelectedDevice }: StudioToolbarProps) => {
-  const canRunAnalysis = workflow.selectedImages.length > 0;
-
-  const handleRunAnalysis = () => {
-    if (canRunAnalysis) {
-      console.log('🚀 StudioToolbar: Starting analysis workflow');
-      workflow.goToStep('analyzing');
-    }
-  };
-
   const handleGoBack = () => {
     if (workflow.currentStep === 'results') {
       workflow.goToStep('annotate');
@@ -94,19 +85,8 @@ export const StudioToolbar = ({ workflow, selectedDevice, setSelectedDevice }: S
         </Button>
       </div>
 
-      {/* Right Section - Run Analysis */}
-      <div className="flex items-center space-x-2">
-        {workflow.currentStep === 'annotate' && (
-          <Button
-            onClick={handleRunAnalysis}
-            disabled={!canRunAnalysis}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <Play className="w-4 h-4 mr-2" />
-            Run Analysis
-          </Button>
-        )}
-      </div>
+      {/* Right Section - Empty (analyze button removed) */}
+      <div></div>
     </div>
   );
 };

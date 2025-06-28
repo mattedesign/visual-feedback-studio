@@ -1,73 +1,143 @@
+
 import { useState } from 'react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
-import { Zap, Send, Clock } from 'lucide-react';
+import { useAIAnalysis } from '@/hooks/analysis/useAIAnalysis';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Sparkles, Zap } from 'lucide-react';
 
 interface StudioChatProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
 }
 
 export const StudioChat = ({ workflow }: StudioChatProps) => {
-  const [chatMessage, setChatMessage] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  const [contextInput, setContextInput] = useState('');
+  const { analyzeImages, isAnalyzing } = useAIAnalysis();
 
-  const handleSendMessage = () => {
-    if (chatMessage.trim()) {
-      console.log('Chat message sent:', chatMessage);
-      setChatMessage('');
-      setIsTyping(true);
-      
-      // Simulate AI response
-      setTimeout(() => {
-        setIsTyping(false);
-      }, 2000);
+  const contextSuggestions = [
+    'Focus on accessibility and WCAG compliance',
+    'Analyze for conversion optimization',
+    'Review mobile responsiveness',
+    'Check visual hierarchy and readability',
+    'Evaluate user experience flow',
+    'Assess brand consistency'
+  ];
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setContextInput(suggestion);
+  };
+
+  const handleAnalyze = async () => {
+    if (!contextInput.trim() || workflow.selectedImages.length === 0) return;
+
+    console.log('🚀 Starting analysis from StudioChat');
+
+    // Set the context in workflow
+    workflow.setAnalysisContext(contextInput);
+    
+    // Start analyzing step
+    workflow.goToStep('analyzing');
+
+    try {
+      // Prepare user annotations for analysis
+      const userAnnotations = workflow.imageAnnotations.flatMap(imageAnnotation => 
+        imageAnnotation.annotations.map((annotation: any) => ({
+          imageUrl: imageAnnotation.imageUrl,
+          x: annotation.x,
+          y: annotation.y,
+          comment: annotation.comment,
+          id: annotation.id
+        }))
+      );
+
+      // Call the AI analysis
+      const result = await analyzeImages({
+        imageUrls: workflow.selectedImages,
+        userAnnotations,
+        analysisPrompt: contextInput,
+        deviceType: 'desktop' // This should come from selectedDevice in the future
+      });
+
+      if (result.success && result.annotations) {
+        workflow.setAiAnnotations(result.annotations);
+        workflow.goToStep('results');
+      } else {
+        // If analysis failed, go back to annotate step
+        workflow.goToStep('annotate');
+      }
+    } catch (error) {
+      console.error('Analysis failed:', error);
+      workflow.goToStep('annotate');
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
+  const canAnalyze = workflow.selectedImages.length > 0 && 
+                   contextInput.trim().length > 0 && 
+                   !isAnalyzing;
+
+  // Only show on annotate step
+  if (workflow.currentStep !== 'annotate') {
+    return null;
+  }
 
   return (
     <div className="bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700 p-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="flex items-center space-x-3">
-          <button className="w-10 h-10 bg-gray-900 dark:bg-slate-700 rounded-lg flex items-center justify-center">
-            <Zap className="w-5 h-5 text-white" />
-          </button>
-          <div className="flex-1 flex items-center bg-gray-100 dark:bg-slate-800 rounded-lg px-4 py-3">
-            <input
-              type="text"
-              placeholder="Ask about your design analysis..."
-              value={chatMessage}
-              onChange={(e) => setChatMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              className="flex-1 bg-transparent text-sm text-gray-700 dark:text-gray-300 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none"
-            />
-            <button className="flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 mr-3">
-              <Clock className="w-4 h-4 mr-1" />
-              Claude Sonnet 4
-              <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            <button 
-              onClick={handleSendMessage}
-              disabled={!chatMessage.trim()}
-              className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Send className="w-4 h-4 text-white" />
-            </button>
+      <div className="max-w-4xl mx-auto space-y-4">
+        {/* Context Suggestions */}
+        <div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+            What would you like to analyze? Try one of these:
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {contextSuggestions.map((suggestion, index) => (
+              <Badge
+                key={index}
+                variant="outline"
+                className="cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800 text-xs"
+                onClick={() => handleSuggestionClick(suggestion)}
+              >
+                {suggestion}
+              </Badge>
+            ))}
           </div>
         </div>
-        
-        {isTyping && (
-          <div className="mt-2 text-center">
-            <span className="text-xs text-gray-500 dark:text-gray-400">AI is analyzing your question...</span>
+
+        {/* Analysis Context Input & Analyze Button */}
+        <div className="flex items-end space-x-3">
+          <div className="flex-1">
+            <Textarea
+              placeholder="Describe what you'd like to analyze about your design..."
+              value={contextInput}
+              onChange={(e) => setContextInput(e.target.value)}
+              className="min-h-[80px] bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400"
+              rows={3}
+            />
           </div>
-        )}
+          <Button
+            onClick={handleAnalyze}
+            disabled={!canAnalyze}
+            className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed h-[80px] px-6"
+          >
+            {isAnalyzing ? (
+              <>
+                <Zap className="w-5 h-5 mr-2 animate-pulse" />
+                Analyzing...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-5 h-5 mr-2" />
+                Analyze Design
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* Helper Text */}
+        <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+          The more specific you are, the better insights you'll get. 
+          {workflow.selectedImages.length === 0 && " Please upload and select images first."}
+        </p>
       </div>
     </div>
   );
