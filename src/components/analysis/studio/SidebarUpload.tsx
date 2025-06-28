@@ -20,9 +20,10 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
     console.log('Sidebar upload completed:', imageUrl);
     workflow.addUploadedFile(imageUrl);
     
-    // If this is the first image, select it immediately
+    // If this is the first image, select it immediately and go to annotate
     if (workflow.uploadedFiles.length === 0) {
       workflow.selectImage(imageUrl);
+      workflow.goToStep('annotate');
     }
     
     // If we're in annotate step, switch to the new image
@@ -33,10 +34,16 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
 
   const { isProcessing, handleFileUpload, handleUrlSubmit } = useUploadLogic(handleImageUpload);
 
-  const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMultipleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (files && files[0]) {
-      handleFileUpload(files[0]);
+    if (files) {
+      // Process multiple files
+      Array.from(files).forEach((file, index) => {
+        // Add a small delay between uploads to prevent race conditions
+        setTimeout(() => {
+          handleFileUpload(file);
+        }, index * 100);
+      });
     }
     // Reset input
     event.target.value = '';
@@ -65,8 +72,15 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
     setIsDragOver(false);
     
     const files = e.dataTransfer.files;
-    if (files && files[0] && files[0].type.startsWith('image/')) {
-      handleFileUpload(files[0]);
+    if (files) {
+      // Process multiple dropped files
+      Array.from(files).forEach((file, index) => {
+        if (file.type.startsWith('image/')) {
+          setTimeout(() => {
+            handleFileUpload(file);
+          }, index * 100);
+        }
+      });
     }
   };
 
@@ -77,7 +91,8 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
           <input
             type="file"
             accept="image/*"
-            onChange={handleFileInputChange}
+            multiple
+            onChange={handleMultipleFileInputChange}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             disabled={isProcessing}
           />
@@ -93,6 +108,8 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
       </div>
     );
   }
+
+  const canUploadMore = workflow.uploadedFiles.length < 5;
 
   return (
     <div className="p-4 border-b border-gray-200 dark:border-slate-600">
@@ -110,7 +127,7 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
         <div className="text-center">
           <Upload className="w-5 h-5 text-gray-400 mx-auto mb-1" />
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            Drop images here
+            Drop images here (up to 5)
           </p>
         </div>
       </div>
@@ -121,18 +138,19 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
           <input
             type="file"
             accept="image/*"
-            onChange={handleFileInputChange}
+            multiple
+            onChange={handleMultipleFileInputChange}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            disabled={isProcessing}
+            disabled={isProcessing || !canUploadMore}
           />
           <Button
             size="sm"
             variant="outline"
             className="w-full"
-            disabled={isProcessing}
+            disabled={isProcessing || !canUploadMore}
           >
             <Plus className="w-4 h-4 mr-2" />
-            {isProcessing ? 'Uploading...' : 'Add Image'}
+            {isProcessing ? 'Uploading...' : 'Upload Images'}
           </Button>
         </div>
 
@@ -142,7 +160,7 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
             variant="outline"
             className="w-full"
             onClick={() => setShowUrlInput(true)}
-            disabled={isProcessing}
+            disabled={isProcessing || !canUploadMore}
           >
             <Link className="w-4 h-4 mr-2" />
             Add from URL
@@ -178,7 +196,7 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
             <Button
               size="sm"
               onClick={handleUrlSubmitClick}
-              disabled={!urlValue.trim() || isProcessing}
+              disabled={!urlValue.trim() || isProcessing || !canUploadMore}
               className="w-full"
             >
               {isProcessing ? 'Adding...' : 'Add URL'}
@@ -186,6 +204,14 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
           </div>
         )}
       </div>
+
+      {/* Upload limit indicator */}
+      {workflow.uploadedFiles.length > 0 && (
+        <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
+          {workflow.uploadedFiles.length}/5 images uploaded
+          {!canUploadMore && " (limit reached)"}
+        </div>
+      )}
 
       {isProcessing && (
         <div className="mt-2 text-xs text-blue-600 dark:text-blue-400 text-center">

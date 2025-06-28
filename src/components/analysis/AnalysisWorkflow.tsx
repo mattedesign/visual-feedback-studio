@@ -1,5 +1,4 @@
 
-import { UploadStep } from './workflow/UploadStep';
 import { ReviewStep } from './workflow/ReviewStep';
 import { AnnotateStep } from './workflow/AnnotateStep';
 import { MultiImageAnnotateStep } from './workflow/MultiImageAnnotateStep';
@@ -7,6 +6,8 @@ import { AnalyzingStep } from './workflow/AnalyzingStep';
 import { ResultsStep } from './workflow/ResultsStep';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { useAuth } from '@/hooks/useAuth';
+import { AnalysisStudioLayout } from './studio/AnalysisStudioLayout';
+import { useState } from 'react';
 
 export const AnalysisWorkflow = () => {
   // 🔄 LOOP DETECTION: Track component renders
@@ -17,28 +18,44 @@ export const AnalysisWorkflow = () => {
 
   const { user } = useAuth();
   const workflow = useAnalysisWorkflow();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
 
   if (!user) {
     return null;
   }
 
+  // For upload and annotate steps, use the studio layout
+  if (workflow.currentStep === 'upload' || workflow.currentStep === 'annotate') {
+    return (
+      <AnalysisStudioLayout 
+        workflow={workflow}
+        sidebarCollapsed={sidebarCollapsed}
+        setSidebarCollapsed={setSidebarCollapsed}
+        rightPanelCollapsed={rightPanelCollapsed}
+        setRightPanelCollapsed={setRightPanelCollapsed}
+      />
+    );
+  }
+
   const renderCurrentStep = () => {
     switch (workflow.currentStep) {
-      case 'upload':
-        return <UploadStep workflow={workflow} />;
       case 'review':
         return <ReviewStep workflow={workflow} />;
-      case 'annotate':
-        // Use MultiImageAnnotateStep for multiple images, regular AnnotateStep for single image
-        return workflow.selectedImages.length > 1 
-          ? <MultiImageAnnotateStep workflow={workflow} />
-          : <AnnotateStep workflow={workflow} />;
       case 'analyzing':
         return <AnalyzingStep workflow={workflow} />;
       case 'results':
         return <ResultsStep workflow={workflow} />;
       default:
-        return <UploadStep workflow={workflow} />;
+        return (
+          <AnalysisStudioLayout 
+            workflow={workflow}
+            sidebarCollapsed={sidebarCollapsed}
+            setSidebarCollapsed={setSidebarCollapsed}
+            rightPanelCollapsed={rightPanelCollapsed}
+            setRightPanelCollapsed={setRightPanelCollapsed}
+          />
+        );
     }
   };
 

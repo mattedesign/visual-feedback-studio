@@ -1,12 +1,9 @@
-import { useState } from 'react';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
-import { UploadSection } from '@/components/upload/UploadSection';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
-import { createAnalysis } from '@/services/analysisService';
-import { getUserAnalyses } from '@/services/analysisDataService';
+import { AlertCircle, Upload, ArrowLeft } from 'lucide-react';
 
 interface UploadStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -14,67 +11,17 @@ interface UploadStepProps {
 
 export const UploadStep = ({ workflow }: UploadStepProps) => {
   const { getRemainingAnalyses } = useSubscription();
-
   const remaining = getRemainingAnalyses();
-
-  const handleSingleImageUpload = async (imageUrl: string) => {
-    console.log('UploadStep: Single image uploaded, creating analysis session and proceeding:', imageUrl);
-    await createAnalysisAndProceed([imageUrl]);
-  };
-
-  const handleMultipleImagesReady = async (imageUrls: string[]) => {
-    console.log('UploadStep: Multiple images ready, creating analysis session and proceeding:', imageUrls.length);
-    await createAnalysisAndProceed(imageUrls);
-  };
-
-  const createAnalysisAndProceed = async (imageUrls: string[]) => {
-    try {
-      // Create analysis session if one doesn't exist
-      if (!workflow.currentAnalysis) {
-        console.log('Creating new analysis session...');
-        const analysisId = await createAnalysis();
-        
-        if (!analysisId) {
-          console.error('Failed to create analysis session');
-          return;
-        }
-
-        // Fetch the created analysis to get full details
-        const userAnalyses = await getUserAnalyses();
-        const newAnalysis = userAnalyses.find(analysis => analysis.id === analysisId);
-        
-        if (newAnalysis) {
-          console.log('Analysis session created successfully:', newAnalysis.id);
-          workflow.setCurrentAnalysis(newAnalysis);
-        } else {
-          console.error('Failed to retrieve analysis session details');
-          return;
-        }
-      }
-
-      // Add all uploaded files to workflow
-      imageUrls.forEach(url => workflow.addUploadedFile(url));
-      
-      // Proceed with the workflow
-      workflow.proceedFromUpload(imageUrls);
-      
-      console.log(`${imageUrls.length} image${imageUrls.length !== 1 ? 's' : ''} uploaded successfully - no toast notification`);
-      
-    } catch (error) {
-      console.error('Error handling image upload:', error);
-      // Log error but don't show toast
-    }
-  };
 
   return (
     <div className="max-w-4xl mx-auto">
       <Card className="bg-white border-gray-300 shadow-lg">
         <CardHeader className="pb-6">
           <CardTitle className="text-3xl text-center font-bold text-gray-900">
-            Upload Your Design
+            Upload Your Design Images
           </CardTitle>
           <p className="text-gray-700 text-center text-lg leading-relaxed">
-            Upload up to 5 images, share Figma links, or provide website URLs to get started with AI-powered design analysis
+            Use the sidebar to upload 2-5 images for AI-powered design analysis
           </p>
           
           {remaining <= 2 && remaining > 0 && (
@@ -96,10 +43,20 @@ export const UploadStep = ({ workflow }: UploadStepProps) => {
           )}
         </CardHeader>
         <CardContent className="space-y-8">
-          <UploadSection
-            onImageUpload={handleSingleImageUpload}
-            onMultipleImagesReady={handleMultipleImagesReady}
-          />
+          <div className="text-center space-y-4">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
+              <Upload className="w-8 h-8 text-gray-500" />
+            </div>
+            
+            <div className="flex items-center justify-center space-x-2 text-gray-600">
+              <ArrowLeft className="w-4 h-4" />
+              <span>Use the upload area in the left sidebar to get started</span>
+            </div>
+            
+            <p className="text-sm text-gray-500">
+              Upload multiple images, add URLs, or drag and drop files to begin your analysis
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>

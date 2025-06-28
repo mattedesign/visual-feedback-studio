@@ -1,7 +1,8 @@
-
 import { useState, useMemo, useCallback } from 'react';
 import { Annotation } from '@/types/analysis';
 import { AnalysisWithFiles } from '@/services/analysisDataService';
+import { createAnalysis } from '@/services/analysisService';
+import { getUserAnalyses } from '@/services/analysisDataService';
 
 export type WorkflowStep = 'upload' | 'review' | 'annotate' | 'analyzing' | 'results';
 
@@ -44,10 +45,32 @@ export const useAnalysisWorkflow = () => {
     setCurrentStep(step);
   }, [currentStep]);
 
-  const addUploadedFile = useCallback((url: string) => {
+  const addUploadedFile = useCallback(async (url: string) => {
     console.log('Adding uploaded file to workflow:', url);
+    
+    // Create analysis session if one doesn't exist
+    if (!currentAnalysis) {
+      console.log('Creating new analysis session for upload...');
+      try {
+        const analysisId = await createAnalysis();
+        
+        if (analysisId) {
+          // Fetch the created analysis to get full details
+          const userAnalyses = await getUserAnalyses();
+          const newAnalysis = userAnalyses.find(analysis => analysis.id === analysisId);
+          
+          if (newAnalysis) {
+            console.log('Analysis session created successfully:', newAnalysis.id);
+            setCurrentAnalysis(newAnalysis);
+          }
+        }
+      } catch (error) {
+        console.error('Error creating analysis session:', error);
+      }
+    }
+    
     setUploadedFiles(prev => [...prev, url]);
-  }, []);
+  }, [currentAnalysis]);
 
   const selectImage = useCallback((url: string) => {
     console.log('Selecting single image:', url);
@@ -152,7 +175,6 @@ export const useAnalysisWorkflow = () => {
   // Smart workflow progression based on number of images
   const proceedFromUpload = useCallback((imageUrls: string[]) => {
     console.log('Proceeding from upload with images:', imageUrls.length);
-    console.log('Current analysis exists:', !!currentAnalysis);
     
     if (imageUrls.length === 1) {
       // Single image: Upload → Annotate (skip review)
@@ -163,7 +185,7 @@ export const useAnalysisWorkflow = () => {
       selectImages(imageUrls);
       goToStep('review');
     }
-  }, [currentAnalysis, selectImage, selectImages, goToStep]);
+  }, [selectImage, selectImages, goToStep]);
 
   const proceedFromReview = useCallback(() => {
     console.log('Proceeding from review to annotate');
