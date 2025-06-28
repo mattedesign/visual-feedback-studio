@@ -3,6 +3,7 @@ import { populateInitialKnowledge, CORE_UX_KNOWLEDGE } from '../../../scripts/po
 import { populateBatchTwoKnowledge, BATCH_TWO_KNOWLEDGE } from '../../../scripts/populate-batch-two-knowledge';
 import { populateBatchThreeKnowledge, BATCH_THREE_KNOWLEDGE } from '../../../scripts/populate-batch-three-knowledge';
 import { populateBatchFourKnowledge, BATCH_FOUR_KNOWLEDGE } from '../../../scripts/populate-batch-four-knowledge';
+import { populateBatchFiveKnowledge, BATCH_FIVE_KNOWLEDGE } from '../../../scripts/populate-batch-five-knowledge';
 import { getTotalKnowledgeCount, getCategoryBreakdown, getSampleEntries } from '../../../scripts/verify-knowledge';
 import { toast } from 'sonner';
 
@@ -230,6 +231,57 @@ export const useKnowledgePopulation = () => {
     }
   }, []);
 
+  const populateBatchFive = useCallback(async () => {
+    if (isPopulating) return;
+
+    setIsPopulating(true);
+    setProgress({
+      currentEntry: 0,
+      totalEntries: BATCH_FIVE_KNOWLEDGE.length,
+      currentTitle: '',
+      stage: 'preparing'
+    });
+    setVerificationResults(null);
+
+    try {
+      setProgress(prev => prev ? { ...prev, stage: 'populating' } : null);
+      
+      const result = await populateBatchFiveKnowledge();
+      
+      // Run verification
+      setProgress(prev => prev ? { ...prev, stage: 'verifying' } : null);
+      
+      const totalEntries = await getTotalKnowledgeCount();
+      const categoryBreakdown = await getCategoryBreakdown();
+      const sampleEntries = await getSampleEntries(5);
+
+      setVerificationResults({
+        totalEntries,
+        categoryBreakdown,
+        sampleEntries
+      });
+
+      setProgress(prev => prev ? { ...prev, stage: 'completed' } : null);
+      
+      toast.success(`Successfully added Batch 5 with ${result.successfullyAdded} specialized B2B industry entries! Knowledge base now has ${totalEntries} total entries - reaching 260+ comprehensive coverage across Manufacturing & Industrial UX, Agriculture & AgTech, Real Estate & PropTech, and Advanced Enterprise Patterns!`, {
+        duration: 10000,
+      });
+
+      if (result.errors > 0) {
+        toast.warning(`Added ${result.successfullyAdded} entries but encountered ${result.errors} errors. Check console for details.`, {
+          duration: 5000,
+        });
+      }
+
+    } catch (error) {
+      console.error('Batch 5 knowledge population failed:', error);
+      setProgress(prev => prev ? { ...prev, stage: 'error' } : null);
+      toast.error('Failed to populate Batch 5 knowledge base. Please check the console for details.');
+    } finally {
+      setIsPopulating(false);
+    }
+  }, []);
+
   const clearResults = useCallback(() => {
     setProgress(null);
     setVerificationResults(null);
@@ -243,10 +295,12 @@ export const useKnowledgePopulation = () => {
     populateBatchTwo,
     populateBatchThree,
     populateBatchFour,
+    populateBatchFive,
     clearResults,
     batchOneSize: CORE_UX_KNOWLEDGE.length,
     batchTwoSize: BATCH_TWO_KNOWLEDGE.length,
     batchThreeSize: BATCH_THREE_KNOWLEDGE.length,
-    batchFourSize: BATCH_FOUR_KNOWLEDGE.length
+    batchFourSize: BATCH_FOUR_KNOWLEDGE.length,
+    batchFiveSize: BATCH_FIVE_KNOWLEDGE.length
   };
 };
