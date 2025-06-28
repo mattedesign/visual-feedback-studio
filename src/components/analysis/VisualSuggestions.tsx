@@ -5,8 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Download, Maximize2, Sparkles, TrendingUp } from 'lucide-react';
 import { UpgradeOptionsPanel } from './UpgradeOptionsPanel';
 import { stripeService } from '@/services/stripeService';
-import PromptTuner from '../PromptTuner';
-import { TunerSettings } from '@/types/promptTuner';
 
 interface UpgradeOption {
   id: string;
@@ -30,15 +28,6 @@ interface VisualSuggestion {
   reasoning?: string;
   upgradeOptions?: UpgradeOption[];
   generatedAt?: string;
-  customVariation?: CustomVisualResult;
-}
-
-interface CustomVisualResult {
-  id: string;
-  imageUrl: string;
-  settings: TunerSettings;
-  prompt: string;
-  createdAt: Date;
 }
 
 interface VisualSuggestionsProps {
@@ -59,8 +48,6 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
   const [error, setError] = useState<string>('');
   const [userCredits, setUserCredits] = useState(15); // Mock user credits
   const [purchasingUpgrade, setPurchasingUpgrade] = useState(false);
-  const [showPromptTuner, setShowPromptTuner] = useState<string | null>(null);
-  const [isCustomGenerating, setIsCustomGenerating] = useState(false);
 
   const generateSuggestions = async () => {
     setLoading(true);
@@ -151,37 +138,6 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
       setError(`Failed to start upgrade purchase: ${errorMessage}. Please try again.`);
     } finally {
       setPurchasingUpgrade(false);
-    }
-  };
-
-  const handleCustomGeneration = async (enhancedPrompt: string, settings: TunerSettings, suggestionId: string) => {
-    setIsCustomGenerating(true);
-    try {
-      console.log('🎛️ Generating custom visual with settings:', settings);
-      
-      // Use the existing visual suggestion service with enhanced prompt
-      const { visualSuggestionService } = await import('@/services/design/visualSuggestionService');
-      const customSuggestion = await visualSuggestionService.generateCustomVisual(
-        enhancedPrompt, 
-        settings,
-        suggestionId
-      );
-      
-      // Update the suggestions array with the new custom visual
-      setSuggestions(prev => prev.map(suggestion => 
-        suggestion.id === suggestionId 
-          ? { ...suggestion, customVariation: customSuggestion }
-          : suggestion
-      ));
-      
-      // Close the prompt tuner
-      setShowPromptTuner(null);
-      
-    } catch (error) {
-      console.error('❌ Custom generation failed:', error);
-      setError('Failed to generate custom visual. Please try again.');
-    } finally {
-      setIsCustomGenerating(false);
     }
   };
 
@@ -292,9 +248,7 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
                         </div>
                         <p className="text-sm text-slate-300 mb-2">{suggestion.description}</p>
                         <p className="text-xs text-slate-400 mb-3">{suggestion.improvement}</p>
-                        
-                        {/* Action buttons */}
-                        <div className="flex gap-2 mb-3">
+                        <div className="flex gap-2">
                           <Button size="sm" variant="outline" className="flex-1">
                             <Download className="w-3 h-3 mr-1" />
                             Download
@@ -302,28 +256,6 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
                           <Button size="sm" variant="outline">
                             <Maximize2 className="w-3 h-3" />
                           </Button>
-                        </div>
-
-                        {/* Add Customize Visual button */}
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => setShowPromptTuner(suggestion.id)}
-                            className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors text-sm flex-1"
-                          >
-                            <span>🎛️</span>
-                            Customize Visual
-                          </button>
-                          
-                          {/* Show custom variation if it exists */}
-                          {suggestion.customVariation && (
-                            <button
-                              onClick={() => window.open(suggestion.customVariation.imageUrl, '_blank')}
-                              className="flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-600 text-white rounded-lg transition-colors text-sm"
-                            >
-                              <span>✨</span>
-                              View Custom
-                            </button>
-                          )}
                         </div>
                       </div>
 
@@ -355,20 +287,6 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
                     </div>
                   </CardContent>
                 </Card>
-
-                {/* Prompt Tuner Panel */}
-                {showPromptTuner === suggestion.id && (
-                  <div className="mt-6">
-                    <PromptTuner
-                      basePrompt={suggestion.description || 'Enhanced UI design mockup'}
-                      onGenerate={(enhancedPrompt, settings) => 
-                        handleCustomGeneration(enhancedPrompt, settings, suggestion.id)
-                      }
-                      isGenerating={isCustomGenerating}
-                      onClose={() => setShowPromptTuner(null)}
-                    />
-                  </div>
-                )}
 
                 {/* Integrated Upgrade Options Panel */}
                 <UpgradeOptionsPanel

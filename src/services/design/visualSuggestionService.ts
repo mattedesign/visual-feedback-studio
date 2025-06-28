@@ -1,10 +1,10 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { smartStyleSelector, DesignContext } from './smartStyleSelector';
-import { TunerSettings } from '@/types/promptTuner';
 
 interface VisualSuggestion {
   id: string;
-  type: 'before_after' | 'style_variant' | 'accessibility_fix' | 'smart_before_after' | 'custom_tuned';
+  type: 'before_after' | 'style_variant' | 'accessibility_fix' | 'smart_before_after';
   description: string;
   imageUrl: string;
   originalIssue: string;
@@ -15,15 +15,6 @@ interface VisualSuggestion {
   reasoning?: string;
   upgradeOptions?: UpgradeOption[];
   generatedAt?: string;
-  customVariation?: CustomVisualResult;
-}
-
-interface CustomVisualResult {
-  id: string;
-  imageUrl: string;
-  settings: TunerSettings;
-  prompt: string;
-  createdAt: Date;
 }
 
 interface UpgradeOption {
@@ -289,98 +280,6 @@ class VisualSuggestionService {
       // Fallback: return empty array rather than breaking the analysis
       return [];
     }
-  }
-
-  // New method for custom visual generation using Prompt Tuner
-  async generateCustomVisual(
-    enhancedPrompt: string, 
-    settings: TunerSettings, 
-    originalSuggestionId: string
-  ): Promise<VisualSuggestion> {
-    try {
-      console.log('🎛️ Generating custom visual with enhanced prompt');
-      console.log('📊 Tuner settings:', settings);
-      
-      // Generate the custom image using DALL-E
-      const imageUrl = await this.callDALLEViaEdgeFunction(enhancedPrompt);
-      
-      // Create a custom visual suggestion
-      const customSuggestion: VisualSuggestion = {
-        id: `custom_${originalSuggestionId}_${Date.now()}`,
-        type: 'custom_tuned',
-        description: this.generateCustomDescription(settings),
-        imageUrl,
-        originalIssue: 'User-customized visual preferences',
-        improvement: `Custom visual generated with user preferences: Layout ${settings.layoutDensity}%, Tone ${settings.visualTone}%, Colors ${settings.colorEmphasis}%, Fidelity ${settings.fidelity}%`,
-        timestamp: new Date(),
-        confidence: 0.95, // High confidence for custom generations
-        style: this.generateCustomStyleName(settings),
-        reasoning: 'Generated using Prompt Tuner with custom user preferences for optimal design alignment',
-        upgradeOptions: [], // Custom visuals don't need upgrade options
-        generatedAt: new Date().toISOString()
-      };
-      
-      console.log('✅ Custom visual generated successfully');
-      return customSuggestion;
-      
-    } catch (error) {
-      console.error('❌ Custom visual generation failed:', error);
-      throw new Error(`Failed to generate custom visual: ${error.message}`);
-    }
-  }
-
-  private generateCustomStyleName(settings: TunerSettings): string {
-    const density = settings.layoutDensity > 66 ? 'dense' : settings.layoutDensity < 34 ? 'minimal' : 'balanced';
-    const tone = settings.visualTone > 66 ? 'professional' : settings.visualTone < 34 ? 'playful' : 'modern';
-    return `${tone}_${density}`;
-  }
-
-  private generateCustomDescription(settings: TunerSettings): string {
-    const layouts = ['minimal', 'balanced', 'dense'];
-    const tones = ['playful', 'modern', 'professional'];
-    const colors = ['subtle', 'moderate', 'vibrant'];
-    const fidelities = ['wireframe', 'standard', 'high-detail'];
-    
-    const layoutType = layouts[Math.min(2, Math.floor(settings.layoutDensity / 34))];
-    const toneType = tones[Math.min(2, Math.floor(settings.visualTone / 34))];
-    const colorType = colors[Math.min(2, Math.floor(settings.colorEmphasis / 34))];
-    const fidelityType = fidelities[Math.min(2, Math.floor(settings.fidelity / 34))];
-    
-    return `Custom ${fidelityType} mockup with ${layoutType} layout, ${toneType} aesthetic, and ${colorType} color scheme - tailored to your specific preferences`;
-  }
-
-  private buildTunedPrompt(basePrompt: string, settings: TunerSettings): string {
-    let tunedPrompt = basePrompt;
-    
-    // Apply layout density
-    if (settings.layoutDensity > 70) {
-      tunedPrompt += ' with dense, information-rich layout';
-    } else if (settings.layoutDensity < 30) {
-      tunedPrompt += ' with spacious, minimal layout';
-    }
-    
-    // Apply visual tone
-    if (settings.visualTone > 70) {
-      tunedPrompt += ', professional and corporate aesthetic';
-    } else if (settings.visualTone < 30) {
-      tunedPrompt += ', playful and creative aesthetic';
-    }
-    
-    // Apply color emphasis
-    if (settings.colorEmphasis > 70) {
-      tunedPrompt += ', vibrant and colorful design';
-    } else if (settings.colorEmphasis < 30) {
-      tunedPrompt += ', monochromatic and subtle colors';
-    }
-    
-    // Apply fidelity
-    if (settings.fidelity > 70) {
-      tunedPrompt += ', high-fidelity detailed mockup';
-    } else if (settings.fidelity < 30) {
-      tunedPrompt += ', low-fidelity wireframe style';
-    }
-    
-    return tunedPrompt;
   }
 }
 
