@@ -66,6 +66,7 @@ export const useVectorKnowledge = () => {
     }
   }, []);
 
+  // Basic hierarchical search (without query parameter)
   const searchByHierarchy = useCallback(async (
     primaryCategory: string,
     secondaryCategory?: string,
@@ -74,7 +75,9 @@ export const useVectorKnowledge = () => {
   ) => {
     setIsLoading(true);
     try {
+      // Call enhanced version with empty query for basic hierarchy search
       const results = await vectorKnowledgeService.searchByHierarchy(
+        '', // empty query for basic hierarchy filtering
         primaryCategory,
         secondaryCategory,
         industryTags,
@@ -153,7 +156,7 @@ export const useVectorKnowledge = () => {
     }
   }, []);
 
-  // Enhanced Hierarchical Search
+  // Enhanced Hierarchical Search (with query parameter)
   const searchByHierarchyEnhanced = useCallback(async (
     query: string,
     primaryCategory?: string,
@@ -238,7 +241,7 @@ export const useVectorKnowledge = () => {
     }
   }, []);
 
-  // Search by Complexity - Fixed to handle string parameter properly
+  // Search by Complexity - Fixed to handle single string parameter
   const searchByComplexity = useCallback(async (
     query: string,
     userLevel: string,
