@@ -4,7 +4,7 @@ import { TunerSettings } from '@/types/promptTuner';
 
 interface VisualSuggestion {
   id: string;
-  type: 'before_after' | 'style_variant' | 'accessibility_fix' | 'smart_before_after';
+  type: 'before_after' | 'style_variant' | 'accessibility_fix' | 'smart_before_after' | 'custom_tuned';
   description: string;
   imageUrl: string;
   originalIssue: string;
@@ -291,36 +291,62 @@ class VisualSuggestionService {
     }
   }
 
-  // New method for custom visual generation
+  // New method for custom visual generation using Prompt Tuner
   async generateCustomVisual(
     enhancedPrompt: string, 
     settings: TunerSettings, 
-    suggestionId: string
-  ): Promise<CustomVisualResult> {
-    console.log('🎛️ Generating custom visual with tuner settings:', settings);
-    
+    originalSuggestionId: string
+  ): Promise<VisualSuggestion> {
     try {
-      // Build enhanced prompt with tuner settings
-      const customPrompt = this.buildTunedPrompt(enhancedPrompt, settings);
+      console.log('🎛️ Generating custom visual with enhanced prompt');
+      console.log('📊 Tuner settings:', settings);
       
-      // Generate the custom visual
-      const imageUrl = await this.callDALLEViaEdgeFunction(customPrompt);
+      // Generate the custom image using DALL-E
+      const imageUrl = await this.callDALLEViaEdgeFunction(enhancedPrompt);
       
-      const customResult: CustomVisualResult = {
-        id: `custom_${suggestionId}_${Date.now()}`,
+      // Create a custom visual suggestion
+      const customSuggestion: VisualSuggestion = {
+        id: `custom_${originalSuggestionId}_${Date.now()}`,
+        type: 'custom_tuned',
+        description: this.generateCustomDescription(settings),
         imageUrl,
-        settings,
-        prompt: customPrompt,
-        createdAt: new Date()
+        originalIssue: 'User-customized visual preferences',
+        improvement: `Custom visual generated with user preferences: Layout ${settings.layoutDensity}%, Tone ${settings.visualTone}%, Colors ${settings.colorEmphasis}%, Fidelity ${settings.fidelity}%`,
+        timestamp: new Date(),
+        confidence: 0.95, // High confidence for custom generations
+        style: this.generateCustomStyleName(settings),
+        reasoning: 'Generated using Prompt Tuner with custom user preferences for optimal design alignment',
+        upgradeOptions: [], // Custom visuals don't need upgrade options
+        generatedAt: new Date().toISOString()
       };
       
       console.log('✅ Custom visual generated successfully');
-      return customResult;
+      return customSuggestion;
       
     } catch (error) {
-      console.error('❌ Failed to generate custom visual:', error);
-      throw new Error(`Custom visual generation failed: ${error.message}`);
+      console.error('❌ Custom visual generation failed:', error);
+      throw new Error(`Failed to generate custom visual: ${error.message}`);
     }
+  }
+
+  private generateCustomStyleName(settings: TunerSettings): string {
+    const density = settings.layoutDensity > 66 ? 'dense' : settings.layoutDensity < 34 ? 'minimal' : 'balanced';
+    const tone = settings.visualTone > 66 ? 'professional' : settings.visualTone < 34 ? 'playful' : 'modern';
+    return `${tone}_${density}`;
+  }
+
+  private generateCustomDescription(settings: TunerSettings): string {
+    const layouts = ['minimal', 'balanced', 'dense'];
+    const tones = ['playful', 'modern', 'professional'];
+    const colors = ['subtle', 'moderate', 'vibrant'];
+    const fidelities = ['wireframe', 'standard', 'high-detail'];
+    
+    const layoutType = layouts[Math.min(2, Math.floor(settings.layoutDensity / 34))];
+    const toneType = tones[Math.min(2, Math.floor(settings.visualTone / 34))];
+    const colorType = colors[Math.min(2, Math.floor(settings.colorEmphasis / 34))];
+    const fidelityType = fidelities[Math.min(2, Math.floor(settings.fidelity / 34))];
+    
+    return `Custom ${fidelityType} mockup with ${layoutType} layout, ${toneType} aesthetic, and ${colorType} color scheme - tailored to your specific preferences`;
   }
 
   private buildTunedPrompt(basePrompt: string, settings: TunerSettings): string {
