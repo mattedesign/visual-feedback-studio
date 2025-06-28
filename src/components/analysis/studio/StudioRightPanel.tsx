@@ -1,3 +1,4 @@
+
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { Badge } from '@/components/ui/badge';
 import { BarChart3 } from 'lucide-react';
@@ -9,6 +10,26 @@ interface StudioRightPanelProps {
 
 export const StudioRightPanel = ({ workflow, selectedDevice }: StudioRightPanelProps) => {
   const hasResults = workflow.currentStep === 'results' && workflow.aiAnnotations.length > 0;
+
+  // Helper function to get severity color
+  const getSeverityColor = (severity?: string) => {
+    switch (severity) {
+      case 'critical': return 'bg-red-500';
+      case 'suggested': return 'bg-yellow-500';
+      case 'enhancement': return 'bg-blue-500';
+      default: return 'bg-purple-500';
+    }
+  };
+
+  // Helper function to get safe annotation title
+  const getAnnotationTitle = (annotation: any, index: number) => {
+    return annotation.title || annotation.feedback?.substring(0, 50) + '...' || `Issue ${annotation.id || index + 1}`;
+  };
+
+  // Helper function to get safe annotation category
+  const getAnnotationCategory = (annotation: any) => {
+    return annotation.category || 'UX';
+  };
 
   return (
     <div className="w-80 bg-white dark:bg-slate-900 border-l border-gray-200 dark:border-slate-700 flex flex-col">
@@ -42,16 +63,16 @@ export const StudioRightPanel = ({ workflow, selectedDevice }: StudioRightPanelP
                 <Badge variant="secondary">{workflow.aiAnnotations.length}</Badge>
               </div>
               <div className="space-y-2">
-                {workflow.aiAnnotations.slice(0, 3).map((annotation: any) => (
-                  <div key={annotation.id} className="p-3 bg-gray-50 dark:bg-slate-800 rounded-lg">
+                {workflow.aiAnnotations.slice(0, 3).map((annotation: any, index: number) => (
+                  <div key={annotation.id || `annotation-${index}`} className="p-3 bg-gray-50 dark:bg-slate-800 rounded-lg">
                     <div className="flex items-start space-x-2">
-                      <div className="w-4 h-4 bg-red-500 rounded-full mt-0.5"></div>
+                      <div className={`w-4 h-4 rounded-full mt-0.5 ${getSeverityColor(annotation.severity)}`}></div>
                       <div className="flex-1">
                         <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {annotation.title || `Issue ${annotation.id}`}
+                          {getAnnotationTitle(annotation, index)}
                         </p>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                          {annotation.category || 'UX'}
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 capitalize">
+                          {getAnnotationCategory(annotation)}
                         </p>
                       </div>
                     </div>
