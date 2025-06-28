@@ -103,18 +103,13 @@ export const ImageTabsViewer = ({
                     console.log(`🔍 ImageTabsViewer - AI Annotation ${annotationIndex + 1}:`, {
                       id: annotation.id,
                       feedback: annotation.feedback,
-                      description: annotation.description,
                       category: annotation.category,
                       severity: annotation.severity,
                       fullAnnotation: annotation
                     });
 
-                    // Try to get feedback content from multiple possible properties
-                    const feedbackContent = annotation.feedback || 
-                                           annotation.description || 
-                                           annotation.content || 
-                                           annotation.title || 
-                                           'No feedback available';
+                    // Use the feedback property which is the correct property in the Annotation type
+                    const feedbackContent = annotation.feedback || 'No feedback available';
 
                     return (
                       <div
