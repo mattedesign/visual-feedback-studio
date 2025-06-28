@@ -56,6 +56,40 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
   const [isCustomGenerating, setIsCustomGenerating] = useState(false);
   const [customResults, setCustomResults] = useState<Record<string, CustomVisualResult>>({});
 
+  const handleCustomGeneration = async (
+    enhancedPrompt: string, 
+    settings: TunerSettings, 
+    suggestionId: string
+  ) => {
+    setIsCustomGenerating(true);
+    try {
+      console.log('🎛️ Generating custom visual with settings:', settings);
+      
+      // Create custom result (for now with placeholder)
+      const customResult: CustomVisualResult = {
+        id: `custom_${suggestionId}_${Date.now()}`,
+        imageUrl: 'https://via.placeholder.com/400x300?text=Custom+Visual+Generated',
+        settings,
+        prompt: enhancedPrompt,
+        createdAt: new Date()
+      };
+
+      // Store the custom result
+      setCustomResults(prev => ({
+        ...prev,
+        [suggestionId]: customResult
+      }));
+      
+      setShowPromptTuner(null);
+      console.log('✅ Custom visual stored');
+      
+    } catch (error) {
+      console.error('❌ Custom generation failed:', error);
+    } finally {
+      setIsCustomGenerating(false);
+    }
+  };
+
   const generateSuggestions = async () => {
     setLoading(true);
     setError('');
