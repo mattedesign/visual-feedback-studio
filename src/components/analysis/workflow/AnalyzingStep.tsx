@@ -35,14 +35,8 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
   const maxRetries = 1;
   const analysisStartedRef = useRef(false);
 
-  // Direct RAG Analysis
-  const { handleAnalyze, isBuilding, hasResearchContext, researchSourcesCount } = useAIAnalysis({
-    imageUrls: workflow.selectedImages,
-    currentAnalysis: workflow.currentAnalysis,
-    setIsAnalyzing: workflow.setIsAnalyzing,
-    setAnnotations: workflow.setAiAnnotations,
-    isComparative: workflow.selectedImages.length > 1
-  });
+  // Use the standardized AI Analysis hook
+  const { analyzeImages, isAnalyzing, hasResearchContext, researchSourcesCount } = useAIAnalysis();
 
   useEffect(() => {
     // Parse context and set focus areas
@@ -114,24 +108,45 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       setCurrentStep(`Generating context-aware insights for ${workflow.selectedImages.length} image${workflow.selectedImages.length > 1 ? 's' : ''}...`);
       setAnalysisProgress(80);
 
-      console.log('🚀 About to call handleAnalyze');
+      console.log('🚀 About to call analyzeImages');
       
-      // Direct RAG analysis call
-      await handleAnalyze(workflow.analysisContext, workflow.imageAnnotations);
+      // Prepare user annotations
+      const userAnnotations = workflow.imageAnnotations.flatMap(imageAnnotation => 
+        imageAnnotation.annotations.map(annotation => ({
+          imageUrl: imageAnnotation.imageUrl,
+          x: annotation.x,
+          y: annotation.y,
+          comment: annotation.comment,
+          id: annotation.id
+        }))
+      );
+
+      // Call the analysis
+      const result = await analyzeImages({
+        imageUrls: workflow.selectedImages,
+        userAnnotations,
+        analysisPrompt: workflow.analysisContext || 'Analyze this design for UX improvements',
+        deviceType: 'desktop'
+      });
       
-      console.log('✅ handleAnalyze completed, checking workflow.aiAnnotations');
-      console.log('📊 Current AI annotations count:', workflow.aiAnnotations?.length || 0);
+      console.log('✅ analyzeImages completed, checking result');
+      console.log('📊 Analysis result:', result);
       
       setAnalysisProgress(100);
       setCurrentStep(`Context-aware analysis complete for ${detectedFocusAreas.join(' & ')}!`);
       
-      console.log('=== AnalyzingStep.performAnalysis - Completed Successfully ===');
-      
-      // Small delay to show completion before transitioning
-      setTimeout(() => {
-        console.log('🎯 Transitioning to results step');
-        workflow.goToStep('results');
-      }, 1000);
+      if (result.success && result.annotations) {
+        workflow.setAiAnnotations(result.annotations);
+        console.log('=== AnalyzingStep.performAnalysis - Completed Successfully ===');
+        
+        // Small delay to show completion before transitioning
+        setTimeout(() => {
+          console.log('🎯 Transitioning to results step');
+          workflow.goToStep('results');
+        }, 1000);
+      } else {
+        throw new Error('Analysis failed to return results');
+      }
 
     } catch (error) {
       console.error('=== AnalyzingStep.performAnalysis - Failed ===');
@@ -174,7 +189,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
     workflow.selectedImages.length,
     workflow.currentAnalysis?.id,
     workflow.analysisContext,
-    handleAnalyze,
+    analyzeImages,
     retryCount,
     workflow.goToStep,
     workflow.setIsAnalyzing,
@@ -292,22 +307,11 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
               <div 
                 className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-500 ease-out"
                 style={{ width: `${analysisProgress}%` }}
-              ></div>
+              />
             </div>
             
             <div className="text-sm text-slate-400">
               {analysisProgress}% complete
-            </div>
-
-            {/* Debug info */}
-            <div className="bg-slate-900/50 border border-slate-600 rounded-lg p-3 text-left">
-              <h5 className="text-sm font-medium text-slate-300 mb-2">Debug Info:</h5>
-              <div className="text-xs text-slate-400 space-y-1">
-                <div>Current AI Annotations: {workflow.aiAnnotations?.length || 0}</div>
-                <div>Analysis Started: {analysisStartedRef.current ? 'Yes' : 'No'}</div>
-                <div>Retry Count: {retryCount}</div>
-                <div>Focus Areas: {detectedFocusAreas.join(', ')}</div>
-              </div>
             </div>
           </div>
         </CardContent>

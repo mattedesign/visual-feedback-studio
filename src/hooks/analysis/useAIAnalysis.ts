@@ -27,6 +27,8 @@ interface AnalyzeImagesResult {
 export const useAIAnalysis = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasResearchContext, setHasResearchContext] = useState(true);
+  const [researchSourcesCount, setResearchSourcesCount] = useState(5);
 
   const analyzeImages = async (params: AnalyzeImagesParams): Promise<AnalyzeImagesResult> => {
     console.log('🚀 Starting AI Analysis with params:', params);
@@ -75,6 +77,10 @@ export const useAIAnalysis = () => {
         knowledgeSourcesUsed: data.knowledgeSourcesUsed || 0
       });
 
+      // Update research context state
+      setHasResearchContext(data.ragEnhanced || false);
+      setResearchSourcesCount(data.knowledgeSourcesUsed || 0);
+
       // Transform the response to match expected format
       const result: AnalyzeImagesResult = {
         annotations: data.annotations || [],
@@ -108,9 +114,38 @@ export const useAIAnalysis = () => {
     }
   };
 
+  // Legacy method for backward compatibility
+  const handleAnalyze = async (analysisPrompt: string, imageAnnotations: any[]) => {
+    // Convert legacy format to new format
+    const userAnnotations = imageAnnotations.flatMap(imageAnnotation => 
+      imageAnnotation.annotations.map((annotation: any) => ({
+        imageUrl: imageAnnotation.imageUrl,
+        x: annotation.x,
+        y: annotation.y,
+        comment: annotation.comment,
+        id: annotation.id
+      }))
+    );
+
+    const imageUrls = imageAnnotations.map(ia => ia.imageUrl);
+
+    const result = await analyzeImages({
+      imageUrls,
+      userAnnotations,
+      analysisPrompt,
+      deviceType: 'desktop'
+    });
+
+    return result;
+  };
+
   return {
     analyzeImages,
+    handleAnalyze,
     isAnalyzing,
-    error
+    isBuilding: isAnalyzing, // Alias for compatibility
+    error,
+    hasResearchContext,
+    researchSourcesCount
   };
 };
