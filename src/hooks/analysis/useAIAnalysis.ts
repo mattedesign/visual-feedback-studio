@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Annotation } from '@/types/analysis';
 import { toast } from 'sonner';
+import { analysisService } from '@/services/analysisService';
 
 interface AnalyzeImagesParams {
   imageUrls: string[];
@@ -37,6 +38,16 @@ export const useAIAnalysis = () => {
     setError(null);
 
     try {
+      // Create analysis record first
+      console.log('📝 Creating analysis record...');
+      const analysisId = await analysisService.createAnalysis();
+      
+      if (!analysisId) {
+        throw new Error('Failed to create analysis record');
+      }
+
+      console.log('✅ Analysis record created:', analysisId);
+
       // Build enhanced prompt with user annotations
       let enhancedPrompt = params.analysisPrompt;
       
@@ -51,11 +62,12 @@ export const useAIAnalysis = () => {
 
       console.log('📝 Enhanced prompt:', enhancedPrompt);
 
-      // Call the analyze-design edge function
+      // Call the analyze-design edge function with the analysisId
       const { data, error: analysisError } = await supabase.functions.invoke('analyze-design', {
         body: {
           imageUrls: params.imageUrls,
           imageUrl: params.imageUrls[0], // Include both for compatibility
+          analysisId: analysisId, // Now we have a valid analysisId
           analysisPrompt: enhancedPrompt,
           isComparative: params.imageUrls.length > 1,
           ragEnabled: true
