@@ -1,10 +1,28 @@
-
 export interface KnowledgeEntry {
   id: string;
   title: string;
   content: string;
   source: string;
-  category: 'ux' | 'visual' | 'accessibility' | 'conversion' | 'brand' | 'ecommerce-patterns' | 'ux-research' | 'ux-patterns' | 'saas-patterns' | 'fintech-patterns';
+  category: 'ux' | 'visual' | 'accessibility' | 'conversion' | 'brand' | 'ecommerce-patterns' | 'ux-research' | 'ux-patterns' | 'saas-patterns' | 'fintech-patterns' | 'mobile-ux';
+  
+  // New hierarchical categorization
+  primary_category?: 'patterns' | 'compliance' | 'research' | 'optimization' | 'design';
+  secondary_category?: string;
+  industry_tags?: string[];
+  complexity_level?: 'basic' | 'intermediate' | 'advanced';
+  use_cases?: string[];
+  related_patterns?: string[];
+  freshness_score?: number;
+  application_context?: {
+    domain?: string;
+    target_audience?: string;
+    implementation_difficulty?: 'easy' | 'medium' | 'hard';
+    last_validated?: string;
+    source_type?: string;
+    [key: string]: any;
+  };
+  
+  // Existing fields
   industry?: string;
   element_type?: string;
   metadata?: any;
@@ -46,7 +64,11 @@ export interface SimilaritySearchResult<T> {
 
 export interface SearchFilters {
   category?: string;
+  primary_category?: 'patterns' | 'compliance' | 'research' | 'optimization' | 'design';
+  secondary_category?: string;
   industry?: string;
+  industry_tags?: string[];
+  complexity_level?: 'basic' | 'intermediate' | 'advanced';
   pattern_type?: string;
   match_threshold?: number;
   match_count?: number;

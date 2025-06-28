@@ -12,6 +12,12 @@ export const useVectorKnowledge = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [searchResults, setSearchResults] = useState<Array<KnowledgeEntry & { similarity: number }>>([]);
   const [patternResults, setPatternResults] = useState<Array<CompetitorPattern & { similarity: number }>>([]);
+  const [knowledgeStats, setKnowledgeStats] = useState<{
+    totalEntries: number;
+    categoryBreakdown: Array<{ category: string; count: number }>;
+    complexityBreakdown: Array<{ level: string; count: number }>;
+    industryTagsBreakdown: Array<{ tag: string; count: number }>;
+  } | null>(null);
 
   const searchKnowledge = useCallback(async (query: string, filters?: SearchFilters) => {
     if (!query.trim()) {
@@ -23,7 +29,15 @@ export const useVectorKnowledge = () => {
     try {
       const results = await vectorKnowledgeService.searchKnowledge(query, filters);
       setSearchResults(results);
-      console.log(`Found ${results.length} knowledge entries matching "${query}"`);
+      console.log(`Found ${results.length} knowledge entries matching "${query}"`, {
+        filters,
+        topResults: results.slice(0, 3).map(r => ({
+          title: r.title,
+          similarity: r.similarity,
+          primary_category: r.primary_category,
+          complexity: r.complexity_level
+        }))
+      });
     } catch (error) {
       console.error('Error searching knowledge:', error);
       toast.error('Failed to search knowledge base');
@@ -53,11 +67,68 @@ export const useVectorKnowledge = () => {
     }
   }, []);
 
+  const searchByHierarchy = useCallback(async (
+    primaryCategory: string,
+    secondaryCategory?: string,
+    industryTags?: string[],
+    complexityLevel?: 'basic' | 'intermediate' | 'advanced'
+  ) => {
+    setIsLoading(true);
+    try {
+      const results = await vectorKnowledgeService.searchByHierarchy(
+        primaryCategory,
+        secondaryCategory,
+        industryTags,
+        complexityLevel
+      );
+      
+      // Convert to search results format (without similarity score)
+      const resultsWithSimilarity = results.map(result => ({
+        ...result,
+        similarity: 1.0 // Default high similarity for hierarchical search
+      }));
+      
+      setSearchResults(resultsWithSimilarity);
+      console.log(`Found ${results.length} entries by hierarchy:`, {
+        primaryCategory,
+        secondaryCategory,
+        industryTags,
+        complexityLevel
+      });
+    } catch (error) {
+      console.error('Error searching by hierarchy:', error);
+      toast.error('Failed to search by hierarchy');
+      setSearchResults([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const loadKnowledgeStats = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const stats = await vectorKnowledgeService.getKnowledgeStats();
+      setKnowledgeStats(stats);
+      console.log('Knowledge base statistics:', stats);
+    } catch (error) {
+      console.error('Error loading knowledge stats:', error);
+      toast.error('Failed to load knowledge statistics');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   const addKnowledgeEntry = useCallback(async (entry: Omit<KnowledgeEntry, 'id' | 'created_at' | 'updated_at'>) => {
     setIsLoading(true);
     try {
       const newEntry = await vectorKnowledgeService.addKnowledgeEntry(entry);
       toast.success('Knowledge entry added successfully');
+      console.log('Added knowledge entry:', {
+        id: newEntry.id,
+        title: newEntry.title,
+        primary_category: newEntry.primary_category,
+        complexity_level: newEntry.complexity_level
+      });
       return newEntry;
     } catch (error) {
       console.error('Error adding knowledge entry:', error);
@@ -87,8 +158,11 @@ export const useVectorKnowledge = () => {
     isLoading,
     searchResults,
     patternResults,
+    knowledgeStats,
     searchKnowledge,
     searchPatterns,
+    searchByHierarchy,
+    loadKnowledgeStats,
     addKnowledgeEntry,
     addCompetitorPattern,
     clearResults: () => {

@@ -151,7 +151,9 @@ export type Database = {
       }
       knowledge_entries: {
         Row: {
+          application_context: Json | null
           category: string
+          complexity_level: string | null
           content: string
           created_at: string
           element_type: string | null
@@ -159,14 +161,21 @@ export type Database = {
           freshness_score: number | null
           id: string
           industry: string | null
+          industry_tags: string[] | null
           metadata: Json | null
+          primary_category: string | null
+          related_patterns: string[] | null
+          secondary_category: string | null
           source: string | null
           tags: string[] | null
           title: string
           updated_at: string
+          use_cases: string[] | null
         }
         Insert: {
+          application_context?: Json | null
           category: string
+          complexity_level?: string | null
           content: string
           created_at?: string
           element_type?: string | null
@@ -174,14 +183,21 @@ export type Database = {
           freshness_score?: number | null
           id?: string
           industry?: string | null
+          industry_tags?: string[] | null
           metadata?: Json | null
+          primary_category?: string | null
+          related_patterns?: string[] | null
+          secondary_category?: string | null
           source?: string | null
           tags?: string[] | null
           title: string
           updated_at?: string
+          use_cases?: string[] | null
         }
         Update: {
+          application_context?: Json | null
           category?: string
+          complexity_level?: string | null
           content?: string
           created_at?: string
           element_type?: string | null
@@ -189,11 +205,16 @@ export type Database = {
           freshness_score?: number | null
           id?: string
           industry?: string | null
+          industry_tags?: string[] | null
           metadata?: Json | null
+          primary_category?: string | null
+          related_patterns?: string[] | null
+          secondary_category?: string | null
           source?: string | null
           tags?: string[] | null
           title?: string
           updated_at?: string
+          use_cases?: string[] | null
         }
         Relationships: []
       }
@@ -372,17 +393,35 @@ export type Database = {
         Returns: unknown
       }
       match_knowledge: {
-        Args: {
-          query_embedding: string
-          match_threshold?: number
-          match_count?: number
-          filter_category?: string
-        }
+        Args:
+          | {
+              query_embedding: string
+              match_threshold?: number
+              match_count?: number
+              filter_category?: string
+            }
+          | {
+              query_embedding: string
+              match_threshold?: number
+              match_count?: number
+              filter_category?: string
+              filter_primary_category?: string
+              filter_secondary_category?: string
+              filter_industry_tags?: string[]
+              filter_complexity_level?: string
+            }
         Returns: {
           id: string
           title: string
           content: string
           category: string
+          primary_category: string
+          secondary_category: string
+          industry_tags: string[]
+          complexity_level: string
+          use_cases: string[]
+          freshness_score: number
+          application_context: Json
           tags: string[]
           metadata: Json
           created_at: string
