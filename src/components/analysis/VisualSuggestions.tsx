@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Download, Maximize2, Sparkles, TrendingUp } from 'lucide-react';
 import { UpgradeOptionsPanel } from './UpgradeOptionsPanel';
 import { stripeService } from '@/services/stripeService';
+import PromptTuner from '../PromptTuner';
+import { TunerSettings, CustomVisualResult } from '../../types/promptTuner';
 
 interface UpgradeOption {
   id: string;
