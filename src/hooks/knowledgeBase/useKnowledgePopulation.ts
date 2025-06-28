@@ -6,6 +6,7 @@ import { populateBatchFourKnowledge, BATCH_FOUR_KNOWLEDGE } from '../../../scrip
 import { populateBatchFiveKnowledge, BATCH_FIVE_KNOWLEDGE } from '../../../scripts/populate-batch-five-knowledge';
 import { populateBatchSixKnowledge, BATCH_SIX_KNOWLEDGE } from '../../../scripts/populate-batch-six-knowledge';
 import { populateBatchSevenKnowledge, BATCH_SEVEN_KNOWLEDGE } from '../../../scripts/populate-batch-seven-knowledge';
+import { populateBatchEightKnowledge, BATCH_EIGHT_KNOWLEDGE } from '../../../scripts/populate-batch-eight-knowledge';
 import { getTotalKnowledgeCount, getCategoryBreakdown, getSampleEntries } from '../../../scripts/verify-knowledge';
 import { toast } from 'sonner';
 
@@ -386,6 +387,57 @@ export const useKnowledgePopulation = () => {
     }
   }, []);
 
+  const populateBatchEight = useCallback(async () => {
+    if (isPopulating) return;
+
+    setIsPopulating(true);
+    setProgress({
+      currentEntry: 0,
+      totalEntries: BATCH_EIGHT_KNOWLEDGE.length,
+      currentTitle: '',
+      stage: 'preparing'
+    });
+    setVerificationResults(null);
+
+    try {
+      setProgress(prev => prev ? { ...prev, stage: 'populating' } : null);
+      
+      const result = await populateBatchEightKnowledge();
+      
+      // Run verification
+      setProgress(prev => prev ? { ...prev, stage: 'verifying' } : null);
+      
+      const totalEntries = await getTotalKnowledgeCount();
+      const categoryBreakdown = await getCategoryBreakdown();
+      const sampleEntries = await getSampleEntries(5);
+
+      setVerificationResults({
+        totalEntries,
+        categoryBreakdown,
+        sampleEntries
+      });
+
+      setProgress(prev => prev ? { ...prev, stage: 'completed' } : null);
+      
+      toast.success(`Successfully added Batch 8 with ${result.successfullyAdded} emerging markets & global pattern entries! Knowledge base now has ${totalEntries} total entries - reaching 350+ comprehensive coverage across mobile-first banking, offline-first design, multilingual interfaces, cryptocurrency adoption, and global development platforms!`, {
+        duration: 16000,
+      });
+
+      if (result.errors > 0) {
+        toast.warning(`Added ${result.successfullyAdded} entries but encountered ${result.errors} errors. Check console for details.`, {
+          duration: 5000,
+        });
+      }
+
+    } catch (error) {
+      console.error('Batch 8 knowledge population failed:', error);
+      setProgress(prev => prev ? { ...prev, stage: 'error' } : null);
+      toast.error('Failed to populate Batch 8 knowledge base. Please check the console for details.');
+    } finally {
+      setIsPopulating(false);
+    }
+  }, []);
+
   const clearResults = useCallback(() => {
     setProgress(null);
     setVerificationResults(null);
@@ -402,6 +454,7 @@ export const useKnowledgePopulation = () => {
     populateBatchFive,
     populateBatchSix,
     populateBatchSeven,
+    populateBatchEight,
     clearResults,
     batchOneSize: CORE_UX_KNOWLEDGE.length,
     batchTwoSize: BATCH_TWO_KNOWLEDGE.length,
@@ -409,6 +462,7 @@ export const useKnowledgePopulation = () => {
     batchFourSize: BATCH_FOUR_KNOWLEDGE.length,
     batchFiveSize: BATCH_FIVE_KNOWLEDGE.length,
     batchSixSize: BATCH_SIX_KNOWLEDGE.length,
-    batchSevenSize: BATCH_SEVEN_KNOWLEDGE.length
+    batchSevenSize: BATCH_SEVEN_KNOWLEDGE.length,
+    batchEightSize: BATCH_EIGHT_KNOWLEDGE.length
   };
 };
