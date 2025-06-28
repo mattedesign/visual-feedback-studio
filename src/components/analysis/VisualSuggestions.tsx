@@ -65,27 +65,33 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
     setIsCustomGenerating(true);
     try {
       console.log('🎛️ Generating custom visual with settings:', settings);
+      console.log('📝 Enhanced prompt:', enhancedPrompt);
       
-      // Create custom result (for now with placeholder)
+      // Call your existing DALL-E service with the enhanced prompt
+      const { visualSuggestionService } = await import('@/services/design/visualSuggestionService');
+      
+      // Use the existing DALL-E generation method
+      const imageUrl = await visualSuggestionService.callDALLEViaEdgeFunction(enhancedPrompt);
+      
       const customResult: CustomVisualResult = {
         id: `custom_${suggestionId}_${Date.now()}`,
-        imageUrl: 'https://via.placeholder.com/400x300?text=Custom+Visual+Generated',
+        imageUrl, // Use the real DALL-E generated image
         settings,
         prompt: enhancedPrompt,
         createdAt: new Date()
       };
 
-      // Store the custom result
       setCustomResults(prev => ({
         ...prev,
         [suggestionId]: customResult
       }));
       
       setShowPromptTuner(null);
-      console.log('✅ Custom visual stored');
+      console.log('✅ Custom visual generated successfully');
       
     } catch (error) {
       console.error('❌ Custom generation failed:', error);
+      setError('Failed to generate custom visual. Please try again.');
     } finally {
       setIsCustomGenerating(false);
     }
