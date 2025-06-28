@@ -3,29 +3,22 @@ export interface KnowledgeEntry {
   title: string;
   content: string;
   source: string;
-  category: 'ux' | 'visual' | 'accessibility' | 'conversion' | 'brand' | 'ecommerce-patterns' | 'ux-research' | 'ux-patterns' | 'saas-patterns' | 'fintech-patterns' | 'mobile-ux';
+  category: string; // Made flexible instead of restricted enum
   
-  // New hierarchical categorization
-  primary_category?: 'patterns' | 'compliance' | 'research' | 'optimization' | 'design';
+  // New hierarchical categorization - now flexible
+  primary_category?: string; // Not restricted enum
   secondary_category?: string;
   industry_tags?: string[];
-  complexity_level?: 'basic' | 'intermediate' | 'advanced';
+  complexity_level?: string; // Not restricted enum
   use_cases?: string[];
   related_patterns?: string[];
   freshness_score?: number;
-  application_context?: {
-    domain?: string;
-    target_audience?: string;
-    implementation_difficulty?: 'easy' | 'medium' | 'hard';
-    last_validated?: string;
-    source_type?: string;
-    [key: string]: any;
-  };
+  application_context?: any; // More flexible than Record<string, any>
   
   // Existing fields
   industry?: string;
   element_type?: string;
-  metadata?: any;
+  metadata?: any; // More flexible
   similarity?: number;
   created_at?: string;
   updated_at?: string;
@@ -37,7 +30,7 @@ export interface CompetitorPattern {
   id: string;
   domain: string;
   industry: string;
-  pattern_type: 'layout' | 'navigation' | 'color' | 'typography' | 'interaction' | 'conversion' | 'form' | 'checkout';
+  pattern_type: string; // Not restricted enum - made flexible
   design_elements: any;
   performance_metrics: any;
   screenshot_url?: string;
@@ -64,11 +57,11 @@ export interface SimilaritySearchResult<T> {
 
 export interface SearchFilters {
   category?: string;
-  primary_category?: 'patterns' | 'compliance' | 'research' | 'optimization' | 'design';
+  primary_category?: string; // Not restricted
   secondary_category?: string;
   industry?: string;
   industry_tags?: string[];
-  complexity_level?: 'basic' | 'intermediate' | 'advanced';
+  complexity_level?: string; // Not restricted
   pattern_type?: string;
   match_threshold?: number;
   match_count?: number;

@@ -60,22 +60,22 @@ class VectorKnowledgeService {
         throw error;
       }
 
-      // Transform the results to match our interface
+      // Transform the results to match our interface with flexible types
       const transformedData = (data || []).map((item: any) => ({
         id: item.id,
         title: item.title,
         content: item.content,
         source: item.source || '',
-        category: item.category as KnowledgeEntry['category'],
-        primary_category: item.primary_category,
+        category: item.category as string, // Flexible string
+        primary_category: item.primary_category as string, // Flexible string
         secondary_category: item.secondary_category,
         industry_tags: item.industry_tags || [],
-        complexity_level: item.complexity_level,
+        complexity_level: item.complexity_level as string, // Flexible string
         use_cases: item.use_cases || [],
         freshness_score: item.freshness_score,
-        application_context: item.application_context || {},
+        application_context: item.application_context || {}, // Flexible any type
         tags: item.tags || [],
-        metadata: item.metadata || {},
+        metadata: item.metadata || {}, // Flexible any type
         created_at: item.created_at,
         updated_at: item.updated_at,
         similarity: item.similarity,
@@ -111,12 +111,12 @@ class VectorKnowledgeService {
         throw error;
       }
 
-      // Transform the results to match our interface
+      // Transform the results to match our interface with flexible types
       const transformedData = (data || []).map((item: any) => ({
         id: item.id,
         domain: item.domain || '',
         industry: item.industry,
-        pattern_type: item.pattern_type,
+        pattern_type: item.pattern_type as string, // Flexible string
         design_elements: item.design_elements || {},
         performance_metrics: item.performance_metrics || {},
         screenshot_url: item.screenshot_url,
@@ -251,7 +251,7 @@ class VectorKnowledgeService {
     primaryCategory: string,
     secondaryCategory?: string,
     industryTags?: string[],
-    complexityLevel?: 'basic' | 'intermediate' | 'advanced'
+    complexityLevel?: string
   ): Promise<KnowledgeEntry[]> {
     try {
       let query = supabase
@@ -278,13 +278,13 @@ class VectorKnowledgeService {
         throw error;
       }
 
-      // Transform the results to match our interface
+      // Transform the results to match our interface with flexible types
       const transformedData = (data || []).map((item: any) => ({
         id: item.id,
         title: item.title,
         content: item.content,
         source: item.source || '',
-        category: item.category as KnowledgeEntry['category'],
+        category: item.category as string, // Flexible string
         primary_category: item.primary_category,
         secondary_category: item.secondary_category,
         industry_tags: item.industry_tags || [],

@@ -15,20 +15,20 @@ export const VectorDatabaseTest = () => {
   const [newEntry, setNewEntry] = useState({
     title: '',
     content: '',
-    category: 'ux-patterns' as KnowledgeEntry['category'],
-    primary_category: 'patterns' as const,
+    category: 'ux-patterns',
+    primary_category: 'patterns',
     secondary_category: 'interaction-patterns',
     industry_tags: [] as string[],
-    complexity_level: 'intermediate' as const,
+    complexity_level: 'intermediate',
     use_cases: [] as string[],
     source: 'test',
     tags: [] as string[]
   });
 
   const [searchFilters, setSearchFilters] = useState({
-    primary_category: '' as '' | 'patterns' | 'compliance' | 'research' | 'optimization' | 'design',
+    primary_category: '',
     secondary_category: '',
-    complexity_level: '' as '' | 'basic' | 'intermediate' | 'advanced',
+    complexity_level: '',
     industry_tags: [] as string[]
   });
 
@@ -119,7 +119,7 @@ export const VectorDatabaseTest = () => {
               
               <Select 
                 value={newEntry.complexity_level} 
-                onValueChange={(value: 'basic' | 'intermediate' | 'advanced') => setNewEntry({ ...newEntry, complexity_level: value })}
+                onValueChange={(value: string) => setNewEntry({ ...newEntry, complexity_level: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Complexity Level" />
@@ -135,7 +135,7 @@ export const VectorDatabaseTest = () => {
             <div className="grid grid-cols-2 gap-4">
               <Select 
                 value={newEntry.primary_category} 
-                onValueChange={(value: 'patterns' | 'compliance' | 'research' | 'optimization' | 'design') => setNewEntry({ ...newEntry, primary_category: value })}
+                onValueChange={(value: string) => setNewEntry({ ...newEntry, primary_category: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Primary Category" />
@@ -208,7 +208,7 @@ export const VectorDatabaseTest = () => {
             <div className="grid grid-cols-2 gap-4">
               <Select 
                 value={searchFilters.primary_category} 
-                onValueChange={(value: '' | 'patterns' | 'compliance' | 'research' | 'optimization' | 'design') => setSearchFilters({ ...searchFilters, primary_category: value })}
+                onValueChange={(value: string) => setSearchFilters({ ...searchFilters, primary_category: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Filter by Primary Category" />
@@ -225,7 +225,7 @@ export const VectorDatabaseTest = () => {
 
               <Select 
                 value={searchFilters.complexity_level} 
-                onValueChange={(value: '' | 'basic' | 'intermediate' | 'advanced') => setSearchFilters({ ...searchFilters, complexity_level: value })}
+                onValueChange={(value: string) => setSearchFilters({ ...searchFilters, complexity_level: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Filter by Complexity" />

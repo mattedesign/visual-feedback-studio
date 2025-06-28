@@ -71,7 +71,7 @@ export const useVectorKnowledge = () => {
     primaryCategory: string,
     secondaryCategory?: string,
     industryTags?: string[],
-    complexityLevel?: 'basic' | 'intermediate' | 'advanced'
+    complexityLevel?: string
   ) => {
     setIsLoading(true);
     try {
