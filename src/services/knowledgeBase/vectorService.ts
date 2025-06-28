@@ -60,7 +60,31 @@ class VectorKnowledgeService {
         throw error;
       }
 
-      return data || [];
+      // Transform the results to match our interface
+      const transformedData = (data || []).map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        content: item.content,
+        source: item.source || '',
+        category: item.category as KnowledgeEntry['category'],
+        primary_category: item.primary_category,
+        secondary_category: item.secondary_category,
+        industry_tags: item.industry_tags || [],
+        complexity_level: item.complexity_level,
+        use_cases: item.use_cases || [],
+        freshness_score: item.freshness_score,
+        application_context: item.application_context || {},
+        tags: item.tags || [],
+        metadata: item.metadata || {},
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        similarity: item.similarity,
+        industry: item.industry,
+        element_type: item.element_type,
+        embedding: item.embedding
+      }));
+
+      return transformedData;
     } catch (error) {
       console.error('Error in searchKnowledge:', error);
       throw error;
@@ -87,7 +111,27 @@ class VectorKnowledgeService {
         throw error;
       }
 
-      return data || [];
+      // Transform the results to match our interface
+      const transformedData = (data || []).map((item: any) => ({
+        id: item.id,
+        domain: item.domain || '',
+        industry: item.industry,
+        pattern_type: item.pattern_type,
+        design_elements: item.design_elements || {},
+        performance_metrics: item.performance_metrics || {},
+        screenshot_url: item.screenshot_url,
+        analysis_date: item.analysis_date || new Date().toISOString(),
+        embedding: item.embedding,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        pattern_name: item.pattern_name,
+        description: item.description,
+        effectiveness_score: item.effectiveness_score,
+        examples: item.examples,
+        similarity: item.similarity
+      }));
+
+      return transformedData;
     } catch (error) {
       console.error('Error in searchPatterns:', error);
       throw error;
@@ -103,7 +147,21 @@ class VectorKnowledgeService {
       const { data, error } = await supabase
         .from('knowledge_entries')
         .insert([{
-          ...entry,
+          title: entry.title,
+          content: entry.content,
+          source: entry.source,
+          category: entry.category,
+          primary_category: entry.primary_category,
+          secondary_category: entry.secondary_category,
+          industry_tags: entry.industry_tags || [],
+          complexity_level: entry.complexity_level || 'intermediate',
+          use_cases: entry.use_cases || [],
+          application_context: entry.application_context || {},
+          tags: entry.tags || [],
+          metadata: entry.metadata || {},
+          industry: entry.industry,
+          element_type: entry.element_type,
+          freshness_score: entry.freshness_score || 1.0,
           embedding: `[${embedding.join(',')}]`
         }])
         .select()
@@ -114,7 +172,27 @@ class VectorKnowledgeService {
         throw error;
       }
 
-      return data;
+      return {
+        id: data.id,
+        title: data.title,
+        content: data.content,
+        source: data.source,
+        category: data.category,
+        primary_category: data.primary_category,
+        secondary_category: data.secondary_category,
+        industry_tags: data.industry_tags,
+        complexity_level: data.complexity_level,
+        use_cases: data.use_cases,
+        application_context: data.application_context,
+        tags: data.tags,
+        metadata: data.metadata,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        industry: data.industry,
+        element_type: data.element_type,
+        freshness_score: data.freshness_score,
+        embedding: data.embedding
+      };
     } catch (error) {
       console.error('Error in addKnowledgeEntry:', error);
       throw error;
@@ -123,13 +201,18 @@ class VectorKnowledgeService {
 
   async addCompetitorPattern(pattern: Omit<CompetitorPattern, 'id' | 'created_at' | 'updated_at'>): Promise<CompetitorPattern> {
     try {
-      const contentText = `${pattern.pattern_name} ${pattern.description}`;
+      const contentText = `${pattern.pattern_name || ''} ${pattern.description || ''}`;
       const embedding = await this.generateEmbedding(contentText);
       
       const { data, error } = await supabase
         .from('competitor_patterns')
         .insert([{
-          ...pattern,
+          pattern_name: pattern.pattern_name || 'Unnamed Pattern',
+          description: pattern.description || 'No description',
+          pattern_type: pattern.pattern_type,
+          industry: pattern.industry,
+          effectiveness_score: pattern.effectiveness_score || 0,
+          examples: pattern.examples || {},
           embedding: `[${embedding.join(',')}]`
         }])
         .select()
@@ -140,7 +223,23 @@ class VectorKnowledgeService {
         throw error;
       }
 
-      return data;
+      return {
+        id: data.id,
+        domain: pattern.domain,
+        industry: data.industry,
+        pattern_type: data.pattern_type,
+        design_elements: pattern.design_elements,
+        performance_metrics: pattern.performance_metrics,
+        screenshot_url: pattern.screenshot_url,
+        analysis_date: pattern.analysis_date,
+        embedding: data.embedding,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        pattern_name: data.pattern_name,
+        description: data.description,
+        effectiveness_score: data.effectiveness_score,
+        examples: data.examples
+      };
     } catch (error) {
       console.error('Error in addCompetitorPattern:', error);
       throw error;
@@ -179,7 +278,30 @@ class VectorKnowledgeService {
         throw error;
       }
 
-      return data || [];
+      // Transform the results to match our interface
+      const transformedData = (data || []).map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        content: item.content,
+        source: item.source || '',
+        category: item.category as KnowledgeEntry['category'],
+        primary_category: item.primary_category,
+        secondary_category: item.secondary_category,
+        industry_tags: item.industry_tags || [],
+        complexity_level: item.complexity_level,
+        use_cases: item.use_cases || [],
+        freshness_score: item.freshness_score,
+        application_context: item.application_context || {},
+        tags: item.tags || [],
+        metadata: item.metadata || {},
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        industry: item.industry,
+        element_type: item.element_type,
+        embedding: item.embedding
+      }));
+
+      return transformedData;
     } catch (error) {
       console.error('Error in searchByHierarchy:', error);
       throw error;
@@ -216,7 +338,7 @@ class VectorKnowledgeService {
 
       // Process category breakdown
       const categoryBreakdown = this.processBreakdown(categoryData, 'primary_category');
-      const complexityBreakdown = this.processBreakdown(complexityData, 'complexity_level');
+      const complexityBreakdown = this.processComplexityBreakdown(complexityData, 'complexity_level');
       
       // Process industry tags (flatten arrays)
       const allTags = industryData?.flatMap(item => item.industry_tags || []) || [];
@@ -250,6 +372,19 @@ class VectorKnowledgeService {
     });
     return Object.entries(counts)
       .map(([category, count]) => ({ category, count }))
+      .sort((a, b) => b.count - a.count);
+  }
+
+  private processComplexityBreakdown(data: any[], field: string): Array<{ level: string; count: number }> {
+    const counts: { [key: string]: number } = {};
+    data?.forEach(item => {
+      const value = item[field];
+      if (value) {
+        counts[value] = (counts[value] || 0) + 1;
+      }
+    });
+    return Object.entries(counts)
+      .map(([level, count]) => ({ level, count }))
       .sort((a, b) => b.count - a.count);
   }
 }
