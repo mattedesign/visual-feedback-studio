@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -326,6 +327,39 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
                         </div>
                       )}
                     </div>
+
+                    {/* Customize Button and Custom Results */}
+                    <div className="mt-4 flex gap-2">
+                      <button
+                        onClick={() => setShowPromptTuner(suggestion.id)}
+                        className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors text-sm"
+                      >
+                        <span>🎛️</span>
+                        Customize Visual
+                      </button>
+                      
+                      {customResults[suggestion.id] && (
+                        <button
+                          onClick={() => window.open(customResults[suggestion.id].imageUrl, '_blank')}
+                          className="flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-600 text-white rounded-lg transition-colors text-sm"
+                        >
+                          <span>✨</span>
+                          View Custom
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Prompt Tuner Panel */}
+                    {showPromptTuner === suggestion.id && (
+                      <PromptTuner
+                        basePrompt={`Create a UI mockup that addresses: ${suggestion.description}`}
+                        onGenerate={(enhancedPrompt, settings) => 
+                          handleCustomGeneration(enhancedPrompt, settings, suggestion.id)
+                        }
+                        isGenerating={isCustomGenerating}
+                        onClose={() => setShowPromptTuner(null)}
+                      />
+                    )}
                   </CardContent>
                 </Card>
 
