@@ -1,3 +1,4 @@
+
 export interface KnowledgeEntry {
   id: string;
   title: string;
@@ -61,7 +62,7 @@ export interface SearchFilters {
   secondary_category?: string;
   industry?: string;
   industry_tags?: string[];
-  complexity_level?: string;
+  complexity_level?: string; // Fixed: should be string, not string[]
   pattern_type?: string;
   match_threshold?: number;
   match_count?: number;

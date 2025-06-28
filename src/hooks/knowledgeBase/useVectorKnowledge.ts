@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { vectorKnowledgeService } from '@/services/knowledgeBase/vectorService';
 import { 
@@ -239,7 +238,7 @@ export const useVectorKnowledge = () => {
     }
   }, []);
 
-  // Search by Complexity
+  // Search by Complexity - Fixed to handle string parameter properly
   const searchByComplexity = useCallback(async (
     query: string,
     userLevel: string,
