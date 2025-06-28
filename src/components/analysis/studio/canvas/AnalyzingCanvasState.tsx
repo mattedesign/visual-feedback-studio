@@ -1,92 +1,141 @@
-import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
+
+import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Brain, Search, Zap } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
+import { Loader2, Brain, Search, Lightbulb } from 'lucide-react';
 
 interface AnalyzingCanvasStateProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
 }
 
 export const AnalyzingCanvasState = ({ workflow }: AnalyzingCanvasStateProps) => {
-  const analysisSteps = [
-    { label: 'Image Processing', icon: Search, status: 'complete' },
-    { label: 'UX Analysis', icon: Brain, status: 'active' },
-    { label: 'Generating Insights', icon: Zap, status: 'pending' },
-  ];
+  const [currentPhase, setCurrentPhase] = useState<'initializing' | 'rag' | 'analysis' | 'results'>('initializing');
+  const [phaseProgress, setPhaseProgress] = useState(0);
+
+  useEffect(() => {
+    // Simulate analysis phases
+    const phases = [
+      { name: 'initializing', duration: 1000, label: 'Initializing Analysis...' },
+      { name: 'rag', duration: 3000, label: 'Building Research Context...' },
+      { name: 'analysis', duration: 5000, label: 'Analyzing Design...' },
+      { name: 'results', duration: 1000, label: 'Preparing Results...' }
+    ];
+
+    let currentIndex = 0;
+    
+    const runPhase = () => {
+      if (currentIndex >= phases.length) return;
+      
+      const phase = phases[currentIndex];
+      setCurrentPhase(phase.name as any);
+      setPhaseProgress(0);
+      
+      // Animate progress for this phase
+      const progressInterval = setInterval(() => {
+        setPhaseProgress(prev => {
+          if (prev >= 100) {
+            clearInterval(progressInterval);
+            currentIndex++;
+            setTimeout(runPhase, 200); // Brief pause between phases
+            return 100;
+          }
+          return prev + (100 / (phase.duration / 100));
+        });
+      }, 100);
+    };
+
+    runPhase();
+  }, []);
+
+  const getPhaseInfo = () => {
+    switch (currentPhase) {
+      case 'initializing':
+        return {
+          icon: <Loader2 className="w-6 h-6 animate-spin" />,
+          title: 'Initializing Analysis',
+          description: 'Setting up analysis parameters and preparing images...',
+          color: 'from-blue-500 to-blue-600'
+        };
+      case 'rag':
+        return {
+          icon: <Search className="w-6 h-6" />,
+          title: 'Building Research Context',
+          description: 'Searching UX knowledge base for relevant patterns and best practices...',
+          color: 'from-purple-500 to-purple-600'
+        };
+      case 'analysis':
+        return {
+          icon: <Brain className="w-6 h-6" />,
+          title: 'Analyzing Design',
+          description: 'AI is examining your design using research-backed insights...',
+          color: 'from-pink-500 to-pink-600'
+        };
+      case 'results':
+        return {
+          icon: <Lightbulb className="w-6 h-6" />,
+          title: 'Preparing Results',
+          description: 'Finalizing analysis and generating recommendations...',
+          color: 'from-green-500 to-green-600'
+        };
+      default:
+        return {
+          icon: <Loader2 className="w-6 h-6 animate-spin" />,
+          title: 'Processing',
+          description: 'Please wait...',
+          color: 'from-gray-500 to-gray-600'
+        };
+    }
+  };
+
+  const phaseInfo = getPhaseInfo();
 
   return (
-    <div className="h-full flex items-center justify-center">
-      <Card className="w-full max-w-lg">
-        <CardContent className="pt-8 pb-8">
-          <div className="text-center space-y-6">
-            <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto">
-              <Loader2 className="w-10 h-10 text-white animate-spin" />
-            </div>
-            
-            <div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                Analyzing Your Design
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                Our AI is examining your {workflow.selectedImages.length > 1 ? `${workflow.selectedImages.length} designs` : 'design'} for UX improvements, accessibility issues, and optimization opportunities.
+    <div className="h-full flex items-center justify-center p-8">
+      <Card className="w-full max-w-lg bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
+        <CardContent className="p-8 text-center">
+          {/* Phase Icon */}
+          <div className={`w-16 h-16 rounded-full bg-gradient-to-r ${phaseInfo.color} flex items-center justify-center mx-auto mb-6 text-white`}>
+            {phaseInfo.icon}
+          </div>
+
+          {/* Phase Title */}
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            {phaseInfo.title}
+          </h3>
+
+          {/* Phase Description */}
+          <p className="text-gray-600 dark:text-gray-300 mb-6">
+            {phaseInfo.description}
+          </p>
+
+          {/* Progress Bar */}
+          <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2 mb-4">
+            <div 
+              className={`h-2 rounded-full bg-gradient-to-r ${phaseInfo.color} transition-all duration-300 ease-out`}
+              style={{ width: `${phaseProgress}%` }}
+            />
+          </div>
+
+          {/* Progress Percentage */}
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {Math.round(phaseProgress)}% complete
+          </p>
+
+          {/* Analysis Context */}
+          {workflow.analysisContext && (
+            <div className="mt-6 p-3 bg-gray-50 dark:bg-slate-700 rounded-lg">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                <span className="font-medium">Focus:</span> {workflow.analysisContext}
               </p>
             </div>
-            
-            {/* Analysis Steps */}
-            <div className="space-y-3">
-              {analysisSteps.map((step, index) => {
-                const Icon = step.icon;
-                return (
-                  <div key={index} className="flex items-center space-x-3 text-left">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      step.status === 'complete' ? 'bg-green-500' :
-                      step.status === 'active' ? 'bg-blue-500' :
-                      'bg-gray-300 dark:bg-slate-600'
-                    }`}>
-                      {step.status === 'active' ? (
-                        <Loader2 className="w-4 h-4 text-white animate-spin" />
-                      ) : (
-                        <Icon className="w-4 h-4 text-white" />
-                      )}
-                    </div>
-                    <span className={`text-sm ${
-                      step.status === 'complete' ? 'text-green-600 dark:text-green-400' :
-                      step.status === 'active' ? 'text-blue-600 dark:text-blue-400' :
-                      'text-gray-500 dark:text-gray-400'
-                    }`}>
-                      {step.label}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-            
-            {/* Progress Bar */}
-            <div className="space-y-2">
-              <div className="bg-gray-200 dark:bg-slate-600 rounded-full h-2 overflow-hidden">
-                <div 
-                  className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-1000"
-                  style={{ width: '75%' }}
-                />
-              </div>
-              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
-                <span>Processing images...</span>
-                <span>75%</span>
-              </div>
-            </div>
+          )}
 
-            {/* Additional Info */}
-            <div className="bg-blue-50 dark:bg-slate-800 rounded-lg p-4 text-left">
-              <h4 className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-2">What we're analyzing:</h4>
-              <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
-                <li>• User experience and navigation patterns</li>
-                <li>• Accessibility compliance (WCAG guidelines)</li>
-                <li>• Visual hierarchy and design consistency</li>
-                <li>• Conversion optimization opportunities</li>
-                {workflow.getTotalAnnotationsCount() > 0 && (
-                  <li>• Your {workflow.getTotalAnnotationsCount()} custom annotations</li>
-                )}
-              </ul>
-            </div>
+          {/* Image Count */}
+          <div className="mt-4">
+            <Badge variant="outline" className="text-gray-600 dark:text-gray-300">
+              Analyzing {workflow.selectedImages.length} image{workflow.selectedImages.length !== 1 ? 's' : ''}
+            </Badge>
           </div>
         </CardContent>
       </Card>
