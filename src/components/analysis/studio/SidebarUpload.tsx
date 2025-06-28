@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Upload, Plus, Link, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,8 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [urlValue, setUrlValue] = useState('');
   const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragAreaFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = (imageUrl: string) => {
     console.log('Sidebar upload completed:', imageUrl);
@@ -49,6 +51,22 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
     event.target.value = '';
   };
 
+  const handleDragAreaFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      // Process multiple files
+      Array.from(files).forEach((file, index) => {
+        if (file.type.startsWith('image/')) {
+          setTimeout(() => {
+            handleFileUpload(file);
+          }, index * 100);
+        }
+      });
+    }
+    // Reset input
+    event.target.value = '';
+  };
+
   const handleUrlSubmitClick = () => {
     if (urlValue.trim()) {
       handleUrlSubmit(urlValue.trim());
@@ -59,20 +77,36 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setIsDragOver(true);
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragOver(false);
+    e.stopPropagation();
+    // Only set drag over to false if we're leaving the drag area completely
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setIsDragOver(false);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragOver(false);
     
     const files = e.dataTransfer.files;
-    if (files) {
+    if (files && files.length > 0) {
       // Process multiple dropped files
       Array.from(files).forEach((file, index) => {
         if (file.type.startsWith('image/')) {
@@ -81,6 +115,12 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
           }, index * 100);
         }
       });
+    }
+  };
+
+  const handleDragAreaClick = () => {
+    if (!isProcessing && canUploadMore) {
+      dragAreaFileInputRef.current?.click();
     }
   };
 
@@ -113,21 +153,49 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
 
   return (
     <div className="p-4 border-b border-gray-200 dark:border-slate-600">
+      {/* Hidden file input for drag area */}
+      <input
+        ref={dragAreaFileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={handleDragAreaFileInputChange}
+        className="hidden"
+        disabled={isProcessing || !canUploadMore}
+      />
+
       {/* Drag and Drop Zone */}
       <div
-        className={`mb-3 p-3 border-2 border-dashed rounded-lg transition-colors ${
+        className={`mb-3 p-3 border-2 border-dashed rounded-lg transition-all cursor-pointer ${
           isDragOver
-            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-            : 'border-gray-300 dark:border-slate-600 hover:border-gray-400 dark:hover:border-slate-500'
+            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 scale-[1.02] shadow-lg'
+            : 'border-gray-300 dark:border-slate-600 hover:border-gray-400 dark:hover:border-slate-500 hover:bg-gray-50 dark:hover:bg-slate-800/50'
+        } ${
+          (!canUploadMore || isProcessing) 
+            ? 'opacity-50 cursor-not-allowed' 
+            : 'active:scale-[0.98]'
         }`}
         onDragOver={handleDragOver}
+        onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
+        onClick={handleDragAreaClick}
       >
         <div className="text-center">
-          <Upload className="w-5 h-5 text-gray-400 mx-auto mb-1" />
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Drop images here (up to 5)
+          <Upload className={`w-5 h-5 mx-auto mb-1 transition-colors ${
+            isDragOver 
+              ? 'text-blue-500' 
+              : 'text-gray-400'
+          }`} />
+          <p className={`text-xs transition-colors ${
+            isDragOver 
+              ? 'text-blue-600 dark:text-blue-400 font-medium' 
+              : 'text-gray-500 dark:text-gray-400'
+          }`}>
+            {isDragOver 
+              ? 'Drop images here!' 
+              : 'Drop images here or click to select (up to 5)'
+            }
           </p>
         </div>
       </div>
@@ -136,6 +204,7 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
       <div className="space-y-2">
         <div className="relative">
           <input
+            ref={fileInputRef}
             type="file"
             accept="image/*"
             multiple
