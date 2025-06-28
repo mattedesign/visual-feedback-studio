@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { vectorKnowledgeService } from '@/services/knowledgeBase/vectorService';
 import { 
@@ -159,7 +160,7 @@ export const useVectorKnowledge = () => {
     primaryCategory?: string,
     secondaryCategory?: string,
     industryTags?: string[],
-    complexityLevel?: 'basic' | 'intermediate' | 'advanced'
+    complexityLevel?: string
   ) => {
     setIsLoading(true);
     try {
@@ -241,7 +242,7 @@ export const useVectorKnowledge = () => {
   // Search by Complexity
   const searchByComplexity = useCallback(async (
     query: string,
-    userLevel: 'basic' | 'intermediate' | 'advanced',
+    userLevel: string,
     includeHigher = false
   ) => {
     setIsLoading(true);

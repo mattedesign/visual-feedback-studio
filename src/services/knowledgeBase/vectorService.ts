@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { KnowledgeEntry, CompetitorPattern, SearchFilters } from '@/types/vectorDatabase';
 
@@ -59,22 +60,22 @@ class VectorKnowledgeService {
         throw error;
       }
 
-      // Transform the results to match our interface with flexible types
+      // Transform the results to match our interface exactly
       const transformedData = (data || []).map((item: any) => ({
         id: item.id,
         title: item.title,
         content: item.content,
         source: item.source || '',
-        category: item.category as string, // Flexible string
-        primary_category: item.primary_category as string, // Flexible string
+        category: item.category,
+        primary_category: item.primary_category,
         secondary_category: item.secondary_category,
         industry_tags: item.industry_tags || [],
-        complexity_level: item.complexity_level as string, // Flexible string
+        complexity_level: item.complexity_level,
         use_cases: item.use_cases || [],
         freshness_score: item.freshness_score,
-        application_context: item.application_context || {}, // Flexible any type
+        application_context: item.application_context || {},
         tags: item.tags || [],
-        metadata: item.metadata || {}, // Flexible any type
+        metadata: item.metadata || {},
         created_at: item.created_at,
         updated_at: item.updated_at,
         similarity: item.similarity,
@@ -110,12 +111,12 @@ class VectorKnowledgeService {
         throw error;
       }
 
-      // Transform the results to match our interface with flexible types
+      // Transform the results to match our interface exactly
       const transformedData = (data || []).map((item: any) => ({
         id: item.id,
         domain: item.domain || '',
         industry: item.industry,
-        pattern_type: item.pattern_type as string, // Flexible string
+        pattern_type: item.pattern_type,
         design_elements: item.design_elements || {},
         performance_metrics: item.performance_metrics || {},
         screenshot_url: item.screenshot_url,
@@ -245,13 +246,13 @@ class VectorKnowledgeService {
     }
   }
 
-  // New method to search by hierarchical categories
+  // Search by hierarchical categories
   async searchByHierarchy(
     query: string,
     primaryCategory?: string,
     secondaryCategory?: string,
     industryTags?: string[],
-    complexityLevel?: 'basic' | 'intermediate' | 'advanced'
+    complexityLevel?: string
   ): Promise<KnowledgeEntry[]> {
     try {
       // Generate embedding for the query to combine semantic search with hierarchical filtering
@@ -416,10 +417,10 @@ class VectorKnowledgeService {
     }
   }
 
-  // Complexity-Filtered Search
+  // Complexity-Filtered Search - Fixed to accept flexible string parameter
   async searchByComplexity(
     query: string,
-    userLevel: 'basic' | 'intermediate' | 'advanced',
+    userLevel: string,
     includeHigher: boolean = false
   ): Promise<KnowledgeEntry[]> {
     try {
@@ -430,7 +431,7 @@ class VectorKnowledgeService {
       const userLevelIndex = complexityLevels.indexOf(userLevel);
       
       let allowedLevels: string[];
-      if (includeHigher) {
+      if (includeHigher && userLevelIndex >= 0) {
         // Include user level and higher
         allowedLevels = complexityLevels.slice(userLevelIndex);
       } else {
@@ -490,7 +491,7 @@ class VectorKnowledgeService {
     }
   }
 
-  // Category Statistics
+  // Category Statistics - Fixed to not expect parameters
   async getCategoryBreakdown(): Promise<{
     primaryCategories: Array<{category: string, count: number}>,
     secondaryCategories: Array<{category: string, count: number, primary: string}>,
@@ -567,7 +568,7 @@ class VectorKnowledgeService {
     }
   }
 
-  // New method to get knowledge statistics
+  // Get knowledge statistics
   async getKnowledgeStats(): Promise<{
     totalEntries: number;
     categoryBreakdown: Array<{ category: string; count: number }>;

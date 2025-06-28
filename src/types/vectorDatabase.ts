@@ -3,22 +3,22 @@ export interface KnowledgeEntry {
   title: string;
   content: string;
   source: string;
-  category: string; // Made flexible instead of restricted enum
+  category: string;
   
-  // New hierarchical categorization - now flexible
-  primary_category?: string; // Not restricted enum
+  // Database fields (snake_case) - matching exact schema
+  primary_category?: string;
   secondary_category?: string;
   industry_tags?: string[];
-  complexity_level?: string; // Not restricted enum
+  complexity_level?: string;
   use_cases?: string[];
   related_patterns?: string[];
   freshness_score?: number;
-  application_context?: any; // More flexible than Record<string, any>
+  application_context?: any;
   
   // Existing fields
   industry?: string;
   element_type?: string;
-  metadata?: any; // More flexible
+  metadata?: any;
   similarity?: number;
   created_at?: string;
   updated_at?: string;
@@ -30,7 +30,7 @@ export interface CompetitorPattern {
   id: string;
   domain: string;
   industry: string;
-  pattern_type: string; // Not restricted enum - made flexible
+  pattern_type: string;
   design_elements: any;
   performance_metrics: any;
   screenshot_url?: string;
@@ -57,11 +57,11 @@ export interface SimilaritySearchResult<T> {
 
 export interface SearchFilters {
   category?: string;
-  primary_category?: string; // Not restricted
+  primary_category?: string;
   secondary_category?: string;
   industry?: string;
   industry_tags?: string[];
-  complexity_level?: string; // Not restricted
+  complexity_level?: string;
   pattern_type?: string;
   match_threshold?: number;
   match_count?: number;
