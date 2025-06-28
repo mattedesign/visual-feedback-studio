@@ -1,286 +1,468 @@
-import { supabase } from '@/integrations/supabase/client';
-import { smartStyleSelector, DesignContext } from './smartStyleSelector';
 
-interface VisualSuggestion {
+import { supabase } from '@/integrations/supabase/client';
+
+export interface SuggestionRequest {
+  insight: string;
+  style: SuggestionStyle;
+  imageContext?: ImageAnalysisContext;
+  ragContext?: RAGContext;
+  userPreferences?: UserPreferences;
+}
+
+export interface ImageAnalysisContext {
+  layoutAnalysis: {
+    gridSystem: string;
+    hierarchy: string;
+    density: 'sparse' | 'balanced' | 'dense';
+    spacing: string;
+    alignment: string;
+  };
+  visualStyle: {
+    colorScheme: string[];
+    primaryColors: string;
+    typography: string;
+    tone: string;
+    brandPersonality: string;
+  };
+  components: {
+    buttons: string;
+    forms: string;
+    navigation: string;
+    contentBlocks: string;
+  };
+  context: {
+    audience: string;
+    industry: string;
+    device: string;
+    accessibility: string[];
+    businessGoals: string;
+  };
+}
+
+export interface RAGContext {
+  designPatterns: string[];
+  industryBestPractices: string[];
+  competitiveInsights: string[];
+  userResearchFindings: string[];
+}
+
+export interface UserPreferences {
+  layoutDensity: number;    // 0-100
+  visualTone: number;       // 0-100
+  colorEmphasis: number;    // 0-100
+  fidelity: number;         // 0-100
+}
+
+export type SuggestionStyle = 'professional' | 'minimal' | 'bold' | 'playful';
+
+export interface VisualSuggestion {
   id: string;
-  type: 'before_after' | 'style_variant' | 'accessibility_fix' | 'smart_before_after';
+  title: string;
   description: string;
   imageUrl: string;
-  originalIssue: string;
-  improvement: string;
-  timestamp: Date;
-  confidence?: number;
-  style?: string;
-  reasoning?: string;
-  upgradeOptions?: UpgradeOption[];
-  generatedAt?: string;
+  style: SuggestionStyle;
+  enhancedPrompt?: string;
+  confidence: number;
+  generationTime: number;
+  contextScore: number;
 }
 
-interface UpgradeOption {
-  id: string;
-  name: string;
-  credits: number;
-  description: string;
-  styles: string[];
-  value_proposition: string;
-}
-
-interface SuggestionRequest {
-  analysisInsights: string[];
-  userContext: string;
-  focusAreas: string[];
-  designType: 'mobile' | 'desktop' | 'responsive';
-  originalImageUrl?: string;
-  imageDescription?: string;
+export interface TunerSettings {
+  layoutDensity: number;
+  visualTone: number;
+  colorEmphasis: number;
+  fidelity: number;
 }
 
 class VisualSuggestionService {
   
-  // Enhanced image context analysis
-  private analyzeImageContext(context: string, insights: string[]): {
-    interfaceType: string;
-    keyElements: string[];
-    styleDescription: string;
-  } {
-    const contextLower = context.toLowerCase();
-    const allText = (context + ' ' + insights.join(' ')).toLowerCase();
-    
-    // Determine interface type
-    let interfaceType = 'web application';
-    if (allText.includes('dashboard')) interfaceType = 'dashboard interface';
-    if (allText.includes('mobile') || allText.includes('app')) interfaceType = 'mobile application';
-    if (allText.includes('landing') || allText.includes('marketing')) interfaceType = 'landing page';
-    if (allText.includes('ecommerce') || allText.includes('shop')) interfaceType = 'ecommerce interface';
-    if (allText.includes('form') || allText.includes('signup')) interfaceType = 'form interface';
-    
-    // Extract key elements mentioned
-    const keyElements = [];
-    if (allText.includes('button')) keyElements.push('buttons');
-    if (allText.includes('card')) keyElements.push('cards');
-    if (allText.includes('navigation') || allText.includes('nav')) keyElements.push('navigation');
-    if (allText.includes('sidebar')) keyElements.push('sidebar');
-    if (allText.includes('table') || allText.includes('data')) keyElements.push('data tables');
-    if (allText.includes('chart') || allText.includes('graph')) keyElements.push('charts');
-    if (allText.includes('form') || allText.includes('input')) keyElements.push('form fields');
-    if (allText.includes('header')) keyElements.push('header');
-    if (allText.includes('menu')) keyElements.push('menu');
-    
-    // Determine style approach
-    let styleDescription = 'clean, modern design';
-    if (allText.includes('teacher') || allText.includes('education')) styleDescription = 'educational, user-friendly design';
-    if (allText.includes('professional') || allText.includes('enterprise')) styleDescription = 'professional, corporate design';
-    if (allText.includes('minimal')) styleDescription = 'minimal, clean design';
-    if (allText.includes('colorful') || allText.includes('vibrant')) styleDescription = 'vibrant, engaging design';
-    
-    return { interfaceType, keyElements, styleDescription };
-  }
+  /**
+   * Enhanced DALL-E prompt builder that incorporates context, RAG insights, and user preferences
+   */
+  private buildContextEnhancedPrompt(
+    baseInsight: string,
+    style: SuggestionStyle,
+    imageContext?: ImageAnalysisContext,
+    ragContext?: RAGContext,
+    userPreferences?: UserPreferences
+  ): string {
+    console.log('🎨 Building context-enhanced DALL-E prompt...');
+    console.log('Context availability:', {
+      hasImageContext: !!imageContext,
+      hasRAGContext: !!ragContext,
+      hasUserPreferences: !!userPreferences,
+      style
+    });
 
-  private extractDesignContext(userContext: any): DesignContext {
-    // Extract context from user input, form data, or analysis
-    const context: DesignContext = {
-      industry: userContext.industry || this.detectIndustryFromContext(userContext),
-      deviceType: userContext.device_type || userContext.deviceType || 'desktop',
-      primaryIssue: userContext.primary_concern || userContext.primaryConcern || '',
-      userType: userContext.user_type || userContext.userType || 'general',
-      pageType: userContext.page_type || userContext.pageType || 'landing',
-      businessGoal: userContext.business_goal || userContext.businessGoal || 'conversion'
-    };
-    
-    console.log('📋 Extracted design context:', context);
-    return context;
-  }
-
-  private detectIndustryFromContext(userContext: any): string | undefined {
-    // Convert user context to searchable string
-    const contextStr = JSON.stringify(userContext).toLowerCase();
-    
-    const industryKeywords = {
-      'finance': ['bank', 'financial', 'investment', 'loan', 'credit', 'trading', 'fintech'],
-      'healthcare': ['medical', 'health', 'doctor', 'patient', 'clinic', 'hospital', 'pharmacy'],
-      'ecommerce': ['shop', 'store', 'product', 'cart', 'checkout', 'buy', 'retail', 'marketplace'],
-      'saas': ['software', 'platform', 'dashboard', 'analytics', 'subscription', 'saas'],
-      'education': ['learn', 'course', 'student', 'university', 'school', 'education', 'training'],
-      'gaming': ['game', 'gaming', 'player', 'level', 'score', 'tournament'],
-      'tech': ['technology', 'developer', 'api', 'integration', 'technical'],
-      'startup': ['startup', 'launch', 'mvp', 'growth', 'founder']
+    // Base style configurations
+    const styleConfigurations = {
+      professional: {
+        layout: "clean grid system with generous whitespace and structured alignment",
+        colors: "sophisticated color palette with high contrast ratios (4.5:1 minimum)",
+        typography: "readable sans-serif typography with clear visual hierarchy",
+        elements: "rounded corners (4-8px), subtle shadows, refined button styles",
+        tone: "polished, trustworthy, corporate-appropriate"
+      },
+      minimal: {
+        layout: "spacious layout with minimal visual noise and breathing room",
+        colors: "monochromatic or limited color palette with strategic accent use",
+        typography: "clean typography with generous line spacing and minimal font weights",
+        elements: "flat design, minimal borders, clean geometric shapes",
+        tone: "simple, elegant, uncluttered"
+      },
+      bold: {
+        layout: "dynamic layout with strong visual emphasis and confident spacing",
+        colors: "vibrant, high-contrast color combinations with bold accent colors",
+        typography: "strong font weights with impactful sizing and dramatic hierarchy",
+        elements: "prominent CTAs, bold geometric shapes, confident design language",
+        tone: "energetic, confident, attention-grabbing"
+      },
+      playful: {
+        layout: "friendly, approachable layout with visual interest and organic flow",
+        colors: "warm, engaging color palette with friendly combinations",
+        typography: "approachable typography with personality and varied weights",
+        elements: "rounded elements, friendly micro-interactions, approachable styling",
+        tone: "fun, approachable, human-centered"
+      }
     };
 
-    for (const [industry, keywords] of Object.entries(industryKeywords)) {
-      if (keywords.some(keyword => contextStr.includes(keyword))) {
-        console.log(`🏭 Detected industry: ${industry} (found keywords: ${keywords.filter(k => contextStr.includes(k)).join(', ')})`);
-        return industry;
+    const selectedConfig = styleConfigurations[style];
+
+    // Start building the enhanced prompt
+    let enhancedPrompt = `Create a high-fidelity UI mockup addressing this design insight: "${baseInsight}"
+
+CORE DESIGN REQUIREMENTS:
+- Style Direction: ${style.toUpperCase()} - ${selectedConfig.tone}
+- Layout Approach: ${selectedConfig.layout}
+- Visual Treatment: ${selectedConfig.colors}
+- Typography: ${selectedConfig.typography}
+- UI Elements: ${selectedConfig.elements}`;
+
+    // Add image context if available
+    if (imageContext) {
+      enhancedPrompt += `
+
+CONTEXT FROM UPLOADED DESIGN:
+- Current Layout: ${imageContext.layoutAnalysis.gridSystem} with ${imageContext.layoutAnalysis.density} content density
+- Visual Hierarchy: ${imageContext.layoutAnalysis.hierarchy}
+- Color Scheme: ${imageContext.visualStyle.primaryColors}
+- Typography Style: ${imageContext.visualStyle.typography}
+- Brand Personality: ${imageContext.visualStyle.brandPersonality}
+- Target Audience: ${imageContext.context.audience}
+- Industry Context: ${imageContext.context.industry}
+- Device Optimization: ${imageContext.context.device}`;
+
+      // Add component-specific context
+      if (imageContext.components.buttons) {
+        enhancedPrompt += `
+- Button Treatment: ${imageContext.components.buttons}`;
+      }
+      if (imageContext.components.forms) {
+        enhancedPrompt += `
+- Form Elements: ${imageContext.components.forms}`;
+      }
+      if (imageContext.components.navigation) {
+        enhancedPrompt += `
+- Navigation Style: ${imageContext.components.navigation}`;
       }
     }
-    
-    console.log('🏭 No specific industry detected, using default');
-    return undefined;
-  }
 
-  private buildContextualPrompt(insight: string, userContext: any, designContext: DesignContext): string {
-    // Build a contextual prompt based on the insight and context
-    const basePrompt = `Create a UI mockup that addresses this UX issue: ${insight}`;
-    
-    let contextualPrompt = basePrompt;
-    
-    if (designContext.pageType) {
-      contextualPrompt += ` for a ${designContext.pageType} page`;
-    }
-    
-    if (designContext.industry) {
-      contextualPrompt += ` in the ${designContext.industry} industry`;
-    }
-    
-    if (designContext.businessGoal) {
-      contextualPrompt += ` optimized for ${designContext.businessGoal}`;
-    }
-    
-    // Add specific UI improvement direction
-    contextualPrompt += `. Show a clear before/after comparison or improved version that solves the identified problem.`;
-    
-    return contextualPrompt;
-  }
+    // Add RAG context insights
+    if (ragContext && ragContext.designPatterns.length > 0) {
+      enhancedPrompt += `
 
-  private buildUpgradeOptions(alternatives: string[], context: DesignContext): UpgradeOption[] {
-    const upgradeOptions: UpgradeOption[] = [
-      {
-        id: 'style_variety_pack',
-        name: 'Style Variety Pack',
-        credits: 2,
-        description: `See ${alternatives.length} additional style approaches: ${alternatives.join(', ')}`,
-        styles: alternatives,
-        value_proposition: 'Compare different design directions before making final decisions'
+DESIGN PATTERN INSIGHTS:
+- Best Practices: ${ragContext.designPatterns.slice(0, 3).join('; ')}`;
+      
+      if (ragContext.industryBestPractices.length > 0) {
+        enhancedPrompt += `
+- Industry Standards: ${ragContext.industryBestPractices.slice(0, 2).join('; ')}`;
       }
-    ];
-
-    // Add device-specific upgrade if not already mobile-focused
-    if (context.deviceType !== 'mobile') {
-      upgradeOptions.push({
-        id: 'responsive_design_pack',
-        name: 'Responsive Design Pack', 
-        credits: 2,
-        description: 'See how this design works across mobile, tablet, and desktop',
-        styles: ['mobile_optimized', 'tablet_optimized', 'desktop_optimized'],
-        value_proposition: 'Ensure your design works perfectly across all devices'
-      });
+      
+      if (ragContext.competitiveInsights.length > 0) {
+        enhancedPrompt += `
+- Competitive Intelligence: ${ragContext.competitiveInsights.slice(0, 2).join('; ')}`;
+      }
     }
 
-    // Add A/B testing upgrade for conversion-focused contexts
-    if (context.businessGoal === 'conversion' || context.pageType === 'landing') {
-      upgradeOptions.push({
-        id: 'ab_test_variants',
-        name: 'A/B Test Variants',
-        credits: 3,
-        description: 'Generate 2 statistically different versions for split testing',
-        styles: ['conversion_variant_a', 'conversion_variant_b'],
-        value_proposition: 'Get proven-different designs for conversion optimization testing'
-      });
+    // Add user preference customizations
+    if (userPreferences) {
+      const densityLevel = userPreferences.layoutDensity < 33 ? 'sparse' : 
+                          userPreferences.layoutDensity < 67 ? 'balanced' : 'dense';
+      const toneLevel = userPreferences.visualTone < 33 ? 'playful' : 
+                       userPreferences.visualTone < 67 ? 'balanced' : 'professional';
+      const colorLevel = userPreferences.colorEmphasis < 33 ? 'subtle' : 
+                        userPreferences.colorEmphasis < 67 ? 'moderate' : 'vibrant';
+      const fidelityLevel = userPreferences.fidelity < 33 ? 'wireframe' : 
+                           userPreferences.fidelity < 67 ? 'prototype' : 'production';
+
+      enhancedPrompt += `
+
+USER CUSTOMIZATION PREFERENCES:
+- Layout Density: ${densityLevel} content arrangement
+- Tone Preference: ${toneLevel} visual approach  
+- Color Emphasis: ${colorLevel} color treatment
+- Design Fidelity: ${fidelityLevel}-ready mockup`;
     }
 
-    return upgradeOptions;
+    // Add technical specifications
+    enhancedPrompt += `
+
+TECHNICAL SPECIFICATIONS:
+- Aspect Ratio: 16:10 for desktop UI mockup
+- Resolution: High-definition, production-quality
+- Mockup Style: Realistic UI design (not wireframe unless specified)
+- Interactive States: Show hover and active states where relevant
+- Content: Use realistic, professional placeholder content
+- Accessibility: Follow WCAG 2.1 AA standards for contrast and usability`;
+
+    // Add output quality requirements
+    enhancedPrompt += `
+
+OUTPUT QUALITY REQUIREMENTS:
+- Visual Polish: Professional, pixel-perfect execution
+- Brand Consistency: Maintain cohesive design language throughout
+- User Experience: Intuitive navigation and clear information hierarchy
+- Modern Standards: Current UI/UX best practices and design trends
+- Responsive Considerations: Design that works across device sizes
+
+Create a polished, production-ready UI design that directly addresses the specific insight while incorporating all contextual requirements and maintaining excellent usability.`;
+
+    console.log('✅ Context-enhanced prompt built:', {
+      promptLength: enhancedPrompt.length,
+      hasImageContext: !!imageContext,
+      hasRAGContext: !!ragContext,
+      hasUserPreferences: !!userPreferences
+    });
+
+    return enhancedPrompt;
   }
 
-  private generateSmartDescription(style: string, insight: string): string {
-    const truncatedInsight = insight.substring(0, 80) + (insight.length > 80 ? '...' : '');
+  /**
+   * Enhanced suggestion generation with context integration
+   */
+  async generateVisualSuggestions(request: SuggestionRequest): Promise<VisualSuggestion[]> {
+    const startTime = Date.now();
+    console.log('🚀 Starting enhanced visual suggestion generation...');
+    console.log('Request details:', {
+      insight: request.insight.substring(0, 100) + '...',
+      style: request.style,
+      hasImageContext: !!request.imageContext,
+      hasRAGContext: !!request.ragContext
+    });
+
+    try {
+      // Build the context-enhanced prompt
+      const enhancedPrompt = this.buildContextEnhancedPrompt(
+        request.insight,
+        request.style,
+        request.imageContext,
+        request.ragContext,
+        request.userPreferences
+      );
+
+      // Generate the image using enhanced prompt
+      const imageUrl = await this.callDALLEViaEdgeFunction(enhancedPrompt);
+      
+      // Calculate metrics
+      const generationTime = Date.now() - startTime;
+      const contextScore = this.calculateContextScore(request);
+      
+      const suggestion: VisualSuggestion = {
+        id: `suggestion_${Date.now()}`,
+        title: this.generateSuggestionTitle(request.insight, request.style),
+        description: this.generateSuggestionDescription(request.insight, request.style),
+        imageUrl,
+        style: request.style,
+        enhancedPrompt,
+        confidence: Math.min(85 + contextScore * 10, 98), // Higher confidence with better context
+        generationTime,
+        contextScore
+      };
+
+      console.log('✅ Enhanced suggestion generated successfully:', {
+        confidence: suggestion.confidence,
+        contextScore: suggestion.contextScore,
+        generationTime: `${generationTime}ms`
+      });
+
+      return [suggestion];
+
+    } catch (error) {
+      console.error('❌ Enhanced suggestion generation failed:', error);
+      throw new Error(`Failed to generate context-enhanced visual suggestion: ${error.message}`);
+    }
+  }
+
+  /**
+   * Generate custom visual with user tuner settings
+   */
+  async generateCustomVisual(
+    basePrompt: string, 
+    settings: TunerSettings, 
+    context?: {
+      imageContext?: ImageAnalysisContext;
+      ragContext?: RAGContext;
+    }
+  ): Promise<VisualSuggestion> {
+    console.log('🎛️ Generating custom visual with tuner settings...');
+    console.log('Tuner settings:', settings);
+
+    try {
+      // Convert tuner settings to user preferences
+      const userPreferences: UserPreferences = {
+        layoutDensity: settings.layoutDensity,
+        visualTone: settings.visualTone,
+        colorEmphasis: settings.colorEmphasis,
+        fidelity: settings.fidelity
+      };
+
+      // Extract style from base prompt or default to professional
+      const style: SuggestionStyle = this.extractStyleFromPrompt(basePrompt) || 'professional';
+
+      // Build enhanced prompt with custom settings
+      const enhancedPrompt = this.buildContextEnhancedPrompt(
+        basePrompt,
+        style,
+        context?.imageContext,
+        context?.ragContext,
+        userPreferences
+      );
+
+      const imageUrl = await this.callDALLEViaEdgeFunction(enhancedPrompt);
+      
+      return {
+        id: `custom_${Date.now()}`,
+        title: 'Custom Visual Suggestion',
+        description: 'Generated with custom tuner settings',
+        imageUrl,
+        style,
+        enhancedPrompt,
+        confidence: 90, // High confidence for custom generations
+        generationTime: Date.now(),
+        contextScore: 0.8 // Good context score for custom requests
+      };
+
+    } catch (error) {
+      console.error('❌ Custom visual generation failed:', error);
+      throw new Error(`Failed to generate custom visual: ${error.message}`);
+    }
+  }
+
+  /**
+   * Calculate context quality score
+   */
+  private calculateContextScore(request: SuggestionRequest): number {
+    let score = 0.3; // Base score
+    
+    if (request.imageContext) {
+      score += 0.3; // +30% for image context
+      if (request.imageContext.context.audience) score += 0.1;
+      if (request.imageContext.context.industry) score += 0.1;
+    }
+    
+    if (request.ragContext) {
+      score += 0.2; // +20% for RAG context
+      if (request.ragContext.designPatterns.length > 0) score += 0.05;
+      if (request.ragContext.competitiveInsights.length > 0) score += 0.05;
+    }
+
+    if (request.userPreferences) {
+      score += 0.1; // +10% for user preferences
+    }
+
+    return Math.min(score, 1.0);
+  }
+
+  /**
+   * Extract style from prompt text
+   */
+  private extractStyleFromPrompt(prompt: string): SuggestionStyle | null {
+    const lowercasePrompt = prompt.toLowerCase();
+    
+    if (lowercasePrompt.includes('professional') || lowercasePrompt.includes('corporate')) {
+      return 'professional';
+    } else if (lowercasePrompt.includes('minimal') || lowercasePrompt.includes('clean')) {
+      return 'minimal';
+    } else if (lowercasePrompt.includes('bold') || lowercasePrompt.includes('vibrant')) {
+      return 'bold';
+    } else if (lowercasePrompt.includes('playful') || lowercasePrompt.includes('fun')) {
+      return 'playful';
+    }
+    
+    return null;
+  }
+
+  /**
+   * Generate contextual suggestion title
+   */
+  private generateSuggestionTitle(insight: string, style: SuggestionStyle): string {
+    const truncatedInsight = insight.length > 60 ? insight.substring(0, 60) + '...' : insight;
+    
+    const titleTemplates = {
+      'professional': `Professional Solution: ${truncatedInsight}`,
+      'minimal': `Clean Approach: ${truncatedInsight}`,
+      'bold': `Bold Design: ${truncatedInsight}`,
+      'playful': `Engaging Solution: ${truncatedInsight}`
+    };
+    
+    return titleTemplates[style] || `Enhanced Design: ${truncatedInsight}`;
+  }
+
+  /**
+   * Generate contextual suggestion description
+   */
+  private generateSuggestionDescription(insight: string, style: SuggestionStyle): string {
+    const truncatedInsight = insight.length > 80 ? insight.substring(0, 80) + '...' : insight;
     
     const styleDescriptions = {
-      'professional': `Professional redesign addressing: ${truncatedInsight}`,
-      'minimal': `Clean, simplified approach for: ${truncatedInsight}`,
-      'bold': `High-impact design targeting: ${truncatedInsight}`,
-      'playful': `Engaging, user-friendly solution for: ${truncatedInsight}`
+      'professional': `Professional redesign with enhanced context addressing: ${truncatedInsight}`,
+      'minimal': `Clean, simplified approach with focused context for: ${truncatedInsight}`,
+      'bold': `High-impact design with strategic context targeting: ${truncatedInsight}`,
+      'playful': `Engaging, user-friendly solution with contextual insights for: ${truncatedInsight}`
     };
     
-    return styleDescriptions[style] || `Smart enhanced design for: ${truncatedInsight}`;
+    return styleDescriptions[style] || `Context-enhanced design solution for: ${truncatedInsight}`;
   }
 
-  // Make this method public so it can be called from VisualSuggestions component
+  /**
+   * Call DALL-E via edge function with enhanced error handling
+   */
   async callDALLEViaEdgeFunction(prompt: string): Promise<string> {
     try {
-      console.log('🎨 Enhanced DALL-E prompt:', prompt.substring(0, 200) + '...');
+      console.log('🎨 Calling DALL-E with enhanced prompt...');
+      console.log('Prompt preview:', prompt.substring(0, 200) + '...');
+      console.log('Full prompt length:', prompt.length);
       
       const { data, error } = await supabase.functions.invoke('generate-dalle-image', {
-        body: { prompt }
+        body: { 
+          prompt,
+          quality: 'hd', // Request HD quality for better results
+          size: '1792x1024' // 16:10 aspect ratio
+        }
       });
 
       if (error) {
-        console.error('❌ Edge function error:', error);
+        console.error('❌ DALL-E edge function error:', error);
         throw new Error(`DALL-E generation failed: ${error.message}`);
       }
 
       if (!data?.imageUrl) {
-        console.error('❌ No image URL in response:', data);
+        console.error('❌ No image URL in DALL-E response:', data);
         throw new Error('No image URL returned from DALL-E service');
       }
 
       console.log('✅ Enhanced DALL-E generation successful');
+      console.log('Generated image URL:', data.imageUrl);
+      
       return data.imageUrl;
       
     } catch (error) {
-      console.error('❌ Error calling DALL-E edge function:', error);
-      throw new Error(`Failed to generate visual suggestion: ${error.message}`);
-    }
-  }
-
-  // Enhanced generateVisualSuggestions method with Smart Style Selector integration
-  async generateVisualSuggestions(request: SuggestionRequest): Promise<VisualSuggestion[]> {
-    console.log('🚀 Starting ENHANCED smart visual generation');
-    
-    // Extract design context from user input
-    const designContext = this.extractDesignContext(request.userContext);
-    console.log('🔍 Design context extracted:', designContext);
-    
-    // Get smart style recommendation using SmartStyleSelector
-    const styleRecommendation = smartStyleSelector.selectOptimalStyle(
-      request.analysisInsights,
-      request.userContext,
-      designContext
-    );
-    
-    console.log('🧠 Smart style selected:', styleRecommendation);
-    
-    try {
-      // Use the top insight for the primary visual
-      const primaryInsight = request.analysisInsights[0];
-      
-      // Build enhanced prompt with smart style
-      const basePrompt = this.buildContextualPrompt(primaryInsight, request.userContext, designContext);
-      const enhancedPrompt = smartStyleSelector.buildEnhancedPrompt(
-        basePrompt, 
-        styleRecommendation.style,
-        designContext
-      );
-      
-      console.log(`🎨 Generating smart ${styleRecommendation.style} visual for: ${primaryInsight.substring(0, 50)}...`);
-      
-      // Generate single high-quality visual
-      const imageUrl = await this.callDALLEViaEdgeFunction(enhancedPrompt);
-      
-      // Build upgrade options
-      const upgradeOptions = this.buildUpgradeOptions(styleRecommendation.alternatives, designContext);
-      
-      const smartSuggestion: VisualSuggestion = {
-        id: `smart_visual_${Date.now()}`,
-        type: 'smart_before_after',
-        imageUrl,
-        description: this.generateSmartDescription(styleRecommendation.style, primaryInsight),
-        originalIssue: primaryInsight,
-        improvement: `Smart ${styleRecommendation.style} redesign with ${styleRecommendation.confidence * 100}% confidence`,
-        timestamp: new Date(),
-        confidence: styleRecommendation.confidence,
-        style: styleRecommendation.style,
-        reasoning: styleRecommendation.reasoning,
-        upgradeOptions,
-        generatedAt: new Date().toISOString()
-      };
-      
-      console.log(`✅ Generated 1 SMART visual suggestion with ${upgradeOptions.length} upgrade options`);
-      return [smartSuggestion];
-      
-    } catch (error) {
-      console.error(`❌ Failed to generate smart visual suggestion:`, error);
-      // Fallback: return empty array rather than breaking the analysis
-      return [];
+      console.error('❌ Error calling enhanced DALL-E edge function:', error);
+      throw new Error(`Failed to generate enhanced visual suggestion: ${error.message}`);
     }
   }
 }
 
+// Export singleton instance
 export const visualSuggestionService = new VisualSuggestionService();
