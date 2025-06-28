@@ -1,52 +1,81 @@
 
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Annotation } from '@/types/analysis';
+
 interface CurrentImageSummaryProps {
-  currentImageAIAnnotations: any[];
-  currentImageUserAnnotations: any[];
+  currentImageAIAnnotations: Annotation[];
+  currentImageUserAnnotations: Array<{
+    x: number;
+    y: number;
+    comment: string;
+    id: string;
+  }>;
   isMultiImage: boolean;
 }
 
 export const CurrentImageSummary = ({
   currentImageAIAnnotations,
   currentImageUserAnnotations,
-  isMultiImage,
 }: CurrentImageSummaryProps) => {
-  if (!isMultiImage) return null;
+  const criticalCount = currentImageAIAnnotations.filter(a => a.severity === 'critical').length;
+  const suggestedCount = currentImageAIAnnotations.filter(a => a.severity === 'suggested').length;
+  const enhancementCount = currentImageAIAnnotations.filter(a => a.severity === 'enhancement').length;
+
+  const categoryBreakdown = currentImageAIAnnotations.reduce((acc, annotation) => {
+    acc[annotation.category] = (acc[annotation.category] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
   return (
-    <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-xl p-6 shadow-sm">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
-          <span className="text-xl text-white">🖼️</span>
+    <Card className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-700">
+      <CardHeader>
+        <CardTitle className="text-lg font-bold text-blue-900 dark:text-blue-100">
+          Current Image Analysis
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="text-center">
+            <div className="text-xl font-bold text-blue-900 dark:text-blue-100">
+              {currentImageAIAnnotations.length}
+            </div>
+            <div className="text-sm text-blue-700 dark:text-blue-300">AI Insights</div>
+          </div>
+          <div className="text-center">
+            <div className="text-xl font-bold text-red-600">{criticalCount}</div>
+            <div className="text-sm text-blue-700 dark:text-blue-300">Critical</div>
+          </div>
+          <div className="text-center">
+            <div className="text-xl font-bold text-yellow-600">{suggestedCount}</div>
+            <div className="text-sm text-blue-700 dark:text-blue-300">Suggested</div>
+          </div>
+          <div className="text-center">
+            <div className="text-xl font-bold text-blue-600">{enhancementCount}</div>
+            <div className="text-sm text-blue-700 dark:text-blue-300">Enhancement</div>
+          </div>
         </div>
-        <div>
-          <h4 className="text-xl font-bold text-gray-900">Current Image Summary</h4>
-          <p className="text-sm text-gray-600 font-medium">Analysis overview for the selected image</p>
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-gray-700 font-semibold">AI Insights</span>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-              <span className="text-2xl font-bold text-purple-700">{currentImageAIAnnotations.length}</span>
+
+        {Object.keys(categoryBreakdown).length > 0 && (
+          <div className="pt-4 border-t border-blue-200 dark:border-blue-700">
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(categoryBreakdown).map(([category, count]) => (
+                <Badge key={category} variant="outline" className="capitalize border-blue-300 text-blue-700 dark:text-blue-300">
+                  {category}: {count}
+                </Badge>
+              ))}
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-1">Professional recommendations</p>
-        </div>
-        
-        <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-gray-700 font-semibold">Your Comments</span>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              <span className="text-2xl font-bold text-green-700">{currentImageUserAnnotations.length}</span>
+        )}
+
+        {currentImageUserAnnotations.length > 0 && (
+          <div className="pt-4 border-t border-blue-200 dark:border-blue-700">
+            <div className="text-sm text-blue-700 dark:text-blue-300">
+              <strong>{currentImageUserAnnotations.length}</strong> user annotation{currentImageUserAnnotations.length !== 1 ? 's' : ''} on this image
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-1">Personal annotations</p>
-        </div>
-      </div>
-    </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
