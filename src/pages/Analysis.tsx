@@ -1,7 +1,6 @@
 
-
 import { Header } from '@/components/layout/Header';
-import { AnalysisWorkflow } from '@/components/analysis/AnalysisWorkflow';
+import { AnalysisStudio } from '@/components/analysis/AnalysisStudio';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -46,14 +45,13 @@ const Analysis = () => {
     );
   }
 
-  // User is authenticated - show the analysis workflow (NO subscription checks)
+  // User is authenticated - show the analysis studio (NO subscription checks)
   return (
     <div className="min-h-screen bg-slate-900 text-white">
       <Header user={user} onSignOut={handleSignOut} />
-      <AnalysisWorkflow />
+      <AnalysisStudio />
     </div>
   );
 };
 
 export default Analysis;
-
