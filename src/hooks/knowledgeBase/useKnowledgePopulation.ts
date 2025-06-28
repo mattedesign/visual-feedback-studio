@@ -7,6 +7,7 @@ import { populateBatchFiveKnowledge, BATCH_FIVE_KNOWLEDGE } from '../../../scrip
 import { populateBatchSixKnowledge, BATCH_SIX_KNOWLEDGE } from '../../../scripts/populate-batch-six-knowledge';
 import { populateBatchSevenKnowledge, BATCH_SEVEN_KNOWLEDGE } from '../../../scripts/populate-batch-seven-knowledge';
 import { populateBatchEightKnowledge, BATCH_EIGHT_KNOWLEDGE } from '../../../scripts/populate-batch-eight-knowledge';
+import { populateBatchNineKnowledge, BATCH_NINE_KNOWLEDGE } from '../../../scripts/populate-batch-nine-knowledge';
 import { getTotalKnowledgeCount, getCategoryBreakdown, getSampleEntries } from '../../../scripts/verify-knowledge';
 import { toast } from 'sonner';
 
@@ -438,6 +439,57 @@ export const useKnowledgePopulation = () => {
     }
   }, []);
 
+  const populateBatchNine = useCallback(async () => {
+    if (isPopulating) return;
+
+    setIsPopulating(true);
+    setProgress({
+      currentEntry: 0,
+      totalEntries: BATCH_NINE_KNOWLEDGE.length,
+      currentTitle: '',
+      stage: 'preparing'
+    });
+    setVerificationResults(null);
+
+    try {
+      setProgress(prev => prev ? { ...prev, stage: 'populating' } : null);
+      
+      const result = await populateBatchNineKnowledge();
+      
+      // Run verification
+      setProgress(prev => prev ? { ...prev, stage: 'verifying' } : null);
+      
+      const totalEntries = await getTotalKnowledgeCount();
+      const categoryBreakdown = await getCategoryBreakdown();
+      const sampleEntries = await getSampleEntries(5);
+
+      setVerificationResults({
+        totalEntries,
+        categoryBreakdown,
+        sampleEntries
+      });
+
+      setProgress(prev => prev ? { ...prev, stage: 'completed' } : null);
+      
+      toast.success(`🎉 KNOWLEDGE BASE COMPLETED! Successfully added final Batch 9 with ${result.successfullyAdded} advanced accessibility & inclusive design entries! Your comprehensive knowledge base now has ${totalEntries} total entries - achieving 350+ comprehensive coverage across core UX patterns, industry-specific insights, specialized sectors, service industries, emerging markets, and advanced accessibility & inclusive design!`, {
+        duration: 25000,
+      });
+
+      if (result.errors > 0) {
+        toast.warning(`Added ${result.successfullyAdded} entries but encountered ${result.errors} errors. Check console for details.`, {
+          duration: 5000,
+        });
+      }
+
+    } catch (error) {
+      console.error('Batch 9 knowledge population failed:', error);
+      setProgress(prev => prev ? { ...prev, stage: 'error' } : null);
+      toast.error('Failed to populate Batch 9 knowledge base. Please check the console for details.');
+    } finally {
+      setIsPopulating(false);
+    }
+  }, []);
+
   const clearResults = useCallback(() => {
     setProgress(null);
     setVerificationResults(null);
@@ -455,6 +507,7 @@ export const useKnowledgePopulation = () => {
     populateBatchSix,
     populateBatchSeven,
     populateBatchEight,
+    populateBatchNine,
     clearResults,
     batchOneSize: CORE_UX_KNOWLEDGE.length,
     batchTwoSize: BATCH_TWO_KNOWLEDGE.length,
@@ -463,6 +516,7 @@ export const useKnowledgePopulation = () => {
     batchFiveSize: BATCH_FIVE_KNOWLEDGE.length,
     batchSixSize: BATCH_SIX_KNOWLEDGE.length,
     batchSevenSize: BATCH_SEVEN_KNOWLEDGE.length,
-    batchEightSize: BATCH_EIGHT_KNOWLEDGE.length
+    batchEightSize: BATCH_EIGHT_KNOWLEDGE.length,
+    batchNineSize: BATCH_NINE_KNOWLEDGE.length
   };
 };
