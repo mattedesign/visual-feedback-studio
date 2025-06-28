@@ -4,6 +4,7 @@ import { populateBatchTwoKnowledge, BATCH_TWO_KNOWLEDGE } from '../../../scripts
 import { populateBatchThreeKnowledge, BATCH_THREE_KNOWLEDGE } from '../../../scripts/populate-batch-three-knowledge';
 import { populateBatchFourKnowledge, BATCH_FOUR_KNOWLEDGE } from '../../../scripts/populate-batch-four-knowledge';
 import { populateBatchFiveKnowledge, BATCH_FIVE_KNOWLEDGE } from '../../../scripts/populate-batch-five-knowledge';
+import { populateBatchSixKnowledge, BATCH_SIX_KNOWLEDGE } from '../../../scripts/populate-batch-six-knowledge';
 import { getTotalKnowledgeCount, getCategoryBreakdown, getSampleEntries } from '../../../scripts/verify-knowledge';
 import { toast } from 'sonner';
 
@@ -282,6 +283,57 @@ export const useKnowledgePopulation = () => {
     }
   }, []);
 
+  const populateBatchSix = useCallback(async () => {
+    if (isPopulating) return;
+
+    setIsPopulating(true);
+    setProgress({
+      currentEntry: 0,
+      totalEntries: BATCH_SIX_KNOWLEDGE.length,
+      currentTitle: '',
+      stage: 'preparing'
+    });
+    setVerificationResults(null);
+
+    try {
+      setProgress(prev => prev ? { ...prev, stage: 'populating' } : null);
+      
+      const result = await populateBatchSixKnowledge();
+      
+      // Run verification
+      setProgress(prev => prev ? { ...prev, stage: 'verifying' } : null);
+      
+      const totalEntries = await getTotalKnowledgeCount();
+      const categoryBreakdown = await getCategoryBreakdown();
+      const sampleEntries = await getSampleEntries(5);
+
+      setVerificationResults({
+        totalEntries,
+        categoryBreakdown,
+        sampleEntries
+      });
+
+      setProgress(prev => prev ? { ...prev, stage: 'completed' } : null);
+      
+      toast.success(`Successfully added Batch 6 with ${result.successfullyAdded} specialized service industry entries! Knowledge base now has ${totalEntries} total entries - reaching 340+ comprehensive coverage across Media & Publishing, Logistics & Supply Chain, Hospitality & Travel, Professional Services, and Specialized Technology platforms!`, {
+        duration: 12000,
+      });
+
+      if (result.errors > 0) {
+        toast.warning(`Added ${result.successfullyAdded} entries but encountered ${result.errors} errors. Check console for details.`, {
+          duration: 5000,
+        });
+      }
+
+    } catch (error) {
+      console.error('Batch 6 knowledge population failed:', error);
+      setProgress(prev => prev ? { ...prev, stage: 'error' } : null);
+      toast.error('Failed to populate Batch 6 knowledge base. Please check the console for details.');
+    } finally {
+      setIsPopulating(false);
+    }
+  }, []);
+
   const clearResults = useCallback(() => {
     setProgress(null);
     setVerificationResults(null);
@@ -296,11 +348,13 @@ export const useKnowledgePopulation = () => {
     populateBatchThree,
     populateBatchFour,
     populateBatchFive,
+    populateBatchSix,
     clearResults,
     batchOneSize: CORE_UX_KNOWLEDGE.length,
     batchTwoSize: BATCH_TWO_KNOWLEDGE.length,
     batchThreeSize: BATCH_THREE_KNOWLEDGE.length,
     batchFourSize: BATCH_FOUR_KNOWLEDGE.length,
-    batchFiveSize: BATCH_FIVE_KNOWLEDGE.length
+    batchFiveSize: BATCH_FIVE_KNOWLEDGE.length,
+    batchSixSize: BATCH_SIX_KNOWLEDGE.length
   };
 };
