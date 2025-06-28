@@ -89,6 +89,19 @@ export const useAIAnalysis = () => {
         knowledgeSourcesUsed: data.knowledgeSourcesUsed || 0
       });
 
+      // 🔍 DEBUG: Log the raw annotations we received
+      console.log('🔍 Raw annotations received from edge function:', data.annotations);
+      if (data.annotations && data.annotations.length > 0) {
+        console.log('🔍 First annotation details:', {
+          fullAnnotation: data.annotations[0],
+          feedback: data.annotations[0].feedback,
+          description: data.annotations[0].description,
+          content: data.annotations[0].content,
+          title: data.annotations[0].title,
+          allKeys: Object.keys(data.annotations[0])
+        });
+      }
+
       // Update research context state
       setHasResearchContext(data.ragEnhanced || false);
       setResearchSourcesCount(data.knowledgeSourcesUsed || 0);

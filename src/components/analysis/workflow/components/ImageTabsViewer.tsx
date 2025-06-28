@@ -98,47 +98,66 @@ export const ImageTabsViewer = ({
                   ))}
 
                   {/* AI annotations */}
-                  {aiAnnotations.map((annotation, annotationIndex) => (
-                    <div
-                      key={annotation.id || `ai-${annotationIndex}`}
-                      className={`absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-200 ${
-                        activeAnnotation === annotation.id ? 'scale-110 z-20' : 'z-10 hover:scale-105'
-                      }`}
-                      style={{
-                        left: `${annotation.x}%`,
-                        top: `${annotation.y}%`,
-                      }}
-                      onClick={() => onAnnotationClick(annotation.id)}
-                    >
-                      <div className={`w-12 h-12 rounded-full border-4 border-white flex items-center justify-center text-white font-bold text-lg shadow-xl ${getSeverityColor(annotation.severity)} ${
-                        activeAnnotation === annotation.id ? 'ring-4 ring-gray-400' : ''
-                      }`}>
-                        <span className="text-base">{getCategoryIcon(annotation.category)}</span>
-                      </div>
-                      
-                      {/* Content overlay when clicked */}
-                      {activeAnnotation === annotation.id && (
-                        <div className="absolute top-14 left-1/2 transform -translate-x-1/2 w-80 bg-white dark:bg-slate-800 border-2 border-gray-300 dark:border-slate-600 rounded-lg p-4 shadow-xl z-30">
-                          <div className="flex items-center gap-2 mb-3">
-                            <div className={`w-3 h-3 rounded-full ${getSeverityColor(annotation.severity)}`}></div>
-                            <span className="text-sm font-semibold capitalize text-gray-900 dark:text-white">
-                              {annotation.severity} • {annotation.category}
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed mb-3 whitespace-pre-wrap">
-                            {annotation.feedback || 'No feedback available'}
-                          </p>
-                          <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
-                            <span>Effort: {annotation.implementationEffort || 'Unknown'}</span>
-                            <span>Impact: {annotation.businessImpact || 'Unknown'}</span>
-                          </div>
-                          
-                          {/* Arrow pointing to annotation */}
-                          <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white dark:bg-slate-800 border-l-2 border-t-2 border-gray-300 dark:border-slate-600 rotate-45"></div>
+                  {aiAnnotations.map((annotation, annotationIndex) => {
+                    // 🔍 DEBUG: Log annotation data when rendering markers
+                    console.log(`🔍 ImageTabsViewer - AI Annotation ${annotationIndex + 1}:`, {
+                      id: annotation.id,
+                      feedback: annotation.feedback,
+                      description: annotation.description,
+                      category: annotation.category,
+                      severity: annotation.severity,
+                      fullAnnotation: annotation
+                    });
+
+                    // Try to get feedback content from multiple possible properties
+                    const feedbackContent = annotation.feedback || 
+                                           annotation.description || 
+                                           annotation.content || 
+                                           annotation.title || 
+                                           'No feedback available';
+
+                    return (
+                      <div
+                        key={annotation.id || `ai-${annotationIndex}`}
+                        className={`absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-200 ${
+                          activeAnnotation === annotation.id ? 'scale-110 z-20' : 'z-10 hover:scale-105'
+                        }`}
+                        style={{
+                          left: `${annotation.x}%`,
+                          top: `${annotation.y}%`,
+                        }}
+                        onClick={() => onAnnotationClick(annotation.id)}
+                      >
+                        <div className={`w-12 h-12 rounded-full border-4 border-white flex items-center justify-center text-white font-bold text-lg shadow-xl ${getSeverityColor(annotation.severity)} ${
+                          activeAnnotation === annotation.id ? 'ring-4 ring-gray-400' : ''
+                        }`}>
+                          <span className="text-base">{getCategoryIcon(annotation.category)}</span>
                         </div>
-                      )}
-                    </div>
-                  ))}
+                        
+                        {/* Content overlay when clicked */}
+                        {activeAnnotation === annotation.id && (
+                          <div className="absolute top-14 left-1/2 transform -translate-x-1/2 w-80 bg-white dark:bg-slate-800 border-2 border-gray-300 dark:border-slate-600 rounded-lg p-4 shadow-xl z-30">
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className={`w-3 h-3 rounded-full ${getSeverityColor(annotation.severity)}`}></div>
+                              <span className="text-sm font-semibold capitalize text-gray-900 dark:text-white">
+                                {annotation.severity} • {annotation.category}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed mb-3 whitespace-pre-wrap">
+                              {feedbackContent}
+                            </p>
+                            <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
+                              <span>Effort: {annotation.implementationEffort || 'Unknown'}</span>
+                              <span>Impact: {annotation.businessImpact || 'Unknown'}</span>
+                            </div>
+                            
+                            {/* Arrow pointing to annotation */}
+                            <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white dark:bg-slate-800 border-l-2 border-t-2 border-gray-300 dark:border-slate-600 rotate-45"></div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {/* Summary for this image */}
