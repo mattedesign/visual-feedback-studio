@@ -20,10 +20,10 @@ export const StudioToolbar = ({ workflow, selectedDevice, setSelectedDevice }: S
       workflow.goToStep('analyzing');
       // Simulate analysis completion after 3 seconds
       setTimeout(() => {
-        // Add mock AI annotations for demonstration with correct type structure
+        // Add mock AI annotations for demonstration with correct string IDs
         const mockAnnotations = [
           {
-            id: 1,
+            id: "1", // String ID instead of number
             x: 25,
             y: 35,
             severity: 'critical',
@@ -32,13 +32,12 @@ export const StudioToolbar = ({ workflow, selectedDevice, setSelectedDevice }: S
             recommendation: 'Add ARIA labels and keyboard navigation support',
             category: 'Accessibility',
             imageIndex: 0,
-            // Add required properties that might be missing
             feedback: 'Navigation accessibility needs improvement',
             implementationEffort: 'Medium',
             businessImpact: 'High'
           },
           {
-            id: 2,
+            id: "2", // String ID instead of number
             x: 60,
             y: 60,
             severity: 'medium',
@@ -47,7 +46,6 @@ export const StudioToolbar = ({ workflow, selectedDevice, setSelectedDevice }: S
             recommendation: 'Increase contrast ratio to meet WCAG AA standards',
             category: 'Accessibility',
             imageIndex: 0,
-            // Add required properties that might be missing
             feedback: 'Button contrast needs improvement',
             implementationEffort: 'Low',
             businessImpact: 'Medium'
