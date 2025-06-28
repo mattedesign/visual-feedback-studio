@@ -1,6 +1,7 @@
 
 import { useState, useCallback } from 'react';
 import { populateInitialKnowledge, CORE_UX_KNOWLEDGE } from '../../../scripts/populate-initial-knowledge';
+import { populateBatchTwoKnowledge, BATCH_TWO_KNOWLEDGE } from '../../../scripts/populate-batch-two-knowledge';
 import { getTotalKnowledgeCount, getCategoryBreakdown, getSampleEntries } from '../../../scripts/verify-knowledge';
 import { toast } from 'sonner';
 
@@ -75,6 +76,57 @@ export const useKnowledgePopulation = () => {
     }
   }, []);
 
+  const populateBatchTwo = useCallback(async () => {
+    if (isPopulating) return;
+
+    setIsPopulating(true);
+    setProgress({
+      currentEntry: 0,
+      totalEntries: BATCH_TWO_KNOWLEDGE.length,
+      currentTitle: '',
+      stage: 'preparing'
+    });
+    setVerificationResults(null);
+
+    try {
+      setProgress(prev => prev ? { ...prev, stage: 'populating' } : null);
+      
+      const result = await populateBatchTwoKnowledge();
+      
+      // Run verification
+      setProgress(prev => prev ? { ...prev, stage: 'verifying' } : null);
+      
+      const totalEntries = await getTotalKnowledgeCount();
+      const categoryBreakdown = await getCategoryBreakdown();
+      const sampleEntries = await getSampleEntries(5);
+
+      setVerificationResults({
+        totalEntries,
+        categoryBreakdown,
+        sampleEntries
+      });
+
+      setProgress(prev => prev ? { ...prev, stage: 'completed' } : null);
+      
+      toast.success(`Successfully added Batch 2 with ${result.successfullyAdded} entries! Total: ${totalEntries} entries.`, {
+        duration: 6000,
+      });
+
+      if (result.errors > 0) {
+        toast.warning(`Added ${result.successfullyAdded} entries but encountered ${result.errors} errors.`, {
+          duration: 5000,
+        });
+      }
+
+    } catch (error) {
+      console.error('Batch 2 knowledge population failed:', error);
+      setProgress(prev => prev ? { ...prev, stage: 'error' } : null);
+      toast.error('Failed to populate Batch 2. Please check the console for details.');
+    } finally {
+      setIsPopulating(false);
+    }
+  }, []);
+
   const clearResults = useCallback(() => {
     setProgress(null);
     setVerificationResults(null);
@@ -85,6 +137,9 @@ export const useKnowledgePopulation = () => {
     progress,
     verificationResults,
     populateKnowledgeBase,
-    clearResults
+    populateBatchTwo,
+    clearResults,
+    batchOneSize: CORE_UX_KNOWLEDGE.length,
+    batchTwoSize: BATCH_TWO_KNOWLEDGE.length
   };
 };
