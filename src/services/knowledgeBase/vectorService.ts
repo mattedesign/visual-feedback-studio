@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { KnowledgeEntry, CompetitorPattern, SearchFilters } from '@/types/vectorDatabase';
 
@@ -248,43 +247,37 @@ class VectorKnowledgeService {
 
   // New method to search by hierarchical categories
   async searchByHierarchy(
-    primaryCategory: string,
+    query: string,
+    primaryCategory?: string,
     secondaryCategory?: string,
     industryTags?: string[],
-    complexityLevel?: string
+    complexityLevel?: 'basic' | 'intermediate' | 'advanced'
   ): Promise<KnowledgeEntry[]> {
     try {
-      let query = supabase
-        .from('knowledge_entries')
-        .select('*')
-        .eq('primary_category', primaryCategory);
-
-      if (secondaryCategory) {
-        query = query.eq('secondary_category', secondaryCategory);
-      }
-
-      if (industryTags && industryTags.length > 0) {
-        query = query.overlaps('industry_tags', industryTags);
-      }
-
-      if (complexityLevel) {
-        query = query.eq('complexity_level', complexityLevel);
-      }
-
-      const { data, error } = await query.order('freshness_score', { ascending: false });
+      // Generate embedding for the query to combine semantic search with hierarchical filtering
+      const queryEmbedding = await this.generateEmbedding(query);
+      
+      const { data, error } = await supabase.rpc('match_knowledge', {
+        query_embedding: `[${queryEmbedding.join(',')}]`,
+        match_threshold: 0.5, // Lower threshold for hierarchical search
+        match_count: 20,
+        filter_primary_category: primaryCategory || null,
+        filter_secondary_category: secondaryCategory || null,
+        filter_industry_tags: industryTags || null,
+        filter_complexity_level: complexityLevel || null
+      });
 
       if (error) {
-        console.error('Error searching by hierarchy:', error);
+        console.error('Error in hierarchical search:', error);
         throw error;
       }
 
-      // Transform the results to match our interface with flexible types
-      const transformedData = (data || []).map((item: any) => ({
+      return (data || []).map((item: any) => ({
         id: item.id,
         title: item.title,
         content: item.content,
         source: item.source || '',
-        category: item.category as string, // Flexible string
+        category: item.category,
         primary_category: item.primary_category,
         secondary_category: item.secondary_category,
         industry_tags: item.industry_tags || [],
@@ -300,10 +293,276 @@ class VectorKnowledgeService {
         element_type: item.element_type,
         embedding: item.embedding
       }));
-
-      return transformedData;
     } catch (error) {
       console.error('Error in searchByHierarchy:', error);
+      throw error;
+    }
+  }
+
+  // Related Patterns Discovery
+  async findRelatedPatterns(
+    entryId: string,
+    maxResults: number = 5
+  ): Promise<KnowledgeEntry[]> {
+    try {
+      // First, get the source entry to understand its characteristics
+      const { data: sourceEntry, error: sourceError } = await supabase
+        .from('knowledge_entries')
+        .select('*')
+        .eq('id', entryId)
+        .single();
+
+      if (sourceError || !sourceEntry) {
+        console.error('Error fetching source entry:', sourceError);
+        throw new Error('Source entry not found');
+      }
+
+      // Use the source entry's content to find related patterns
+      const queryText = `${sourceEntry.title} ${sourceEntry.content}`;
+      const queryEmbedding = await this.generateEmbedding(queryText);
+
+      const { data, error } = await supabase.rpc('match_knowledge', {
+        query_embedding: `[${queryEmbedding.join(',')}]`,
+        match_threshold: 0.6,
+        match_count: maxResults + 1, // +1 to exclude the source entry
+        filter_primary_category: sourceEntry.primary_category || null,
+        filter_secondary_category: null,
+        filter_industry_tags: sourceEntry.industry_tags || null,
+        filter_complexity_level: null
+      });
+
+      if (error) {
+        console.error('Error finding related patterns:', error);
+        throw error;
+      }
+
+      // Filter out the source entry and transform results
+      const relatedEntries = (data || [])
+        .filter((item: any) => item.id !== entryId)
+        .slice(0, maxResults)
+        .map((item: any) => ({
+          id: item.id,
+          title: item.title,
+          content: item.content,
+          source: item.source || '',
+          category: item.category,
+          primary_category: item.primary_category,
+          secondary_category: item.secondary_category,
+          industry_tags: item.industry_tags || [],
+          complexity_level: item.complexity_level,
+          use_cases: item.use_cases || [],
+          freshness_score: item.freshness_score,
+          application_context: item.application_context || {},
+          tags: item.tags || [],
+          metadata: item.metadata || {},
+          created_at: item.created_at,
+          updated_at: item.updated_at,
+          industry: item.industry,
+          element_type: item.element_type,
+          embedding: item.embedding
+        }));
+
+      return relatedEntries;
+    } catch (error) {
+      console.error('Error in findRelatedPatterns:', error);
+      throw error;
+    }
+  }
+
+  // Industry-Specific Retrieval
+  async getIndustryPatterns(
+    industry: string,
+    limit: number = 10
+  ): Promise<KnowledgeEntry[]> {
+    try {
+      let query = supabase
+        .from('knowledge_entries')
+        .select('*')
+        .overlaps('industry_tags', [industry])
+        .order('freshness_score', { ascending: false })
+        .limit(limit);
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error getting industry patterns:', error);
+        throw error;
+      }
+
+      return (data || []).map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        content: item.content,
+        source: item.source || '',
+        category: item.category,
+        primary_category: item.primary_category,
+        secondary_category: item.secondary_category,
+        industry_tags: item.industry_tags || [],
+        complexity_level: item.complexity_level,
+        use_cases: item.use_cases || [],
+        freshness_score: item.freshness_score,
+        application_context: item.application_context || {},
+        tags: item.tags || [],
+        metadata: item.metadata || {},
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        industry: item.industry,
+        element_type: item.element_type,
+        embedding: item.embedding
+      }));
+    } catch (error) {
+      console.error('Error in getIndustryPatterns:', error);
+      throw error;
+    }
+  }
+
+  // Complexity-Filtered Search
+  async searchByComplexity(
+    query: string,
+    userLevel: 'basic' | 'intermediate' | 'advanced',
+    includeHigher: boolean = false
+  ): Promise<KnowledgeEntry[]> {
+    try {
+      const queryEmbedding = await this.generateEmbedding(query);
+      
+      // Define complexity hierarchy
+      const complexityLevels = ['basic', 'intermediate', 'advanced'];
+      const userLevelIndex = complexityLevels.indexOf(userLevel);
+      
+      let allowedLevels: string[];
+      if (includeHigher) {
+        // Include user level and higher
+        allowedLevels = complexityLevels.slice(userLevelIndex);
+      } else {
+        // Only user level
+        allowedLevels = [userLevel];
+      }
+
+      // Search with vector similarity first, then filter by complexity
+      const { data: allResults, error } = await supabase.rpc('match_knowledge', {
+        query_embedding: `[${queryEmbedding.join(',')}]`,
+        match_threshold: 0.7,
+        match_count: 50, // Get more results to filter by complexity
+        filter_category: null,
+        filter_primary_category: null,
+        filter_secondary_category: null,
+        filter_industry_tags: null,
+        filter_complexity_level: null
+      });
+
+      if (error) {
+        console.error('Error in complexity search:', error);
+        throw error;
+      }
+
+      // Filter results by allowed complexity levels
+      const filteredResults = (allResults || [])
+        .filter((item: any) => 
+          allowedLevels.includes(item.complexity_level) || 
+          (!item.complexity_level && userLevel === 'intermediate') // Default to intermediate
+        )
+        .slice(0, 10); // Limit final results
+
+      return filteredResults.map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        content: item.content,
+        source: item.source || '',
+        category: item.category,
+        primary_category: item.primary_category,
+        secondary_category: item.secondary_category,
+        industry_tags: item.industry_tags || [],
+        complexity_level: item.complexity_level,
+        use_cases: item.use_cases || [],
+        freshness_score: item.freshness_score,
+        application_context: item.application_context || {},
+        tags: item.tags || [],
+        metadata: item.metadata || {},
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        industry: item.industry,
+        element_type: item.element_type,
+        embedding: item.embedding
+      }));
+    } catch (error) {
+      console.error('Error in searchByComplexity:', error);
+      throw error;
+    }
+  }
+
+  // Category Statistics
+  async getCategoryBreakdown(): Promise<{
+    primaryCategories: Array<{category: string, count: number}>,
+    secondaryCategories: Array<{category: string, count: number, primary: string}>,
+    industryDistribution: Array<{industry: string, count: number}>
+  }> {
+    try {
+      // Get primary categories breakdown
+      const { data: primaryData } = await supabase
+        .from('knowledge_entries')
+        .select('primary_category');
+
+      // Get secondary categories with their primary categories
+      const { data: secondaryData } = await supabase
+        .from('knowledge_entries')
+        .select('primary_category, secondary_category')
+        .not('secondary_category', 'is', null);
+
+      // Get industry tags distribution
+      const { data: industryData } = await supabase
+        .from('knowledge_entries')
+        .select('industry_tags');
+
+      // Process primary categories
+      const primaryCounts: { [key: string]: number } = {};
+      primaryData?.forEach(item => {
+        if (item.primary_category) {
+          primaryCounts[item.primary_category] = (primaryCounts[item.primary_category] || 0) + 1;
+        }
+      });
+
+      const primaryCategories = Object.entries(primaryCounts)
+        .map(([category, count]) => ({ category, count }))
+        .sort((a, b) => b.count - a.count);
+
+      // Process secondary categories
+      const secondaryCounts: { [key: string]: { count: number, primary: string } } = {};
+      secondaryData?.forEach(item => {
+        if (item.secondary_category && item.primary_category) {
+          const key = item.secondary_category;
+          if (!secondaryCounts[key]) {
+            secondaryCounts[key] = { count: 0, primary: item.primary_category };
+          }
+          secondaryCounts[key].count++;
+        }
+      });
+
+      const secondaryCategories = Object.entries(secondaryCounts)
+        .map(([category, data]) => ({ 
+          category, 
+          count: data.count, 
+          primary: data.primary 
+        }))
+        .sort((a, b) => b.count - a.count);
+
+      // Process industry distribution
+      const allTags = industryData?.flatMap(item => item.industry_tags || []) || [];
+      const industryCounts: { [key: string]: number } = {};
+      allTags.forEach(tag => {
+        industryCounts[tag] = (industryCounts[tag] || 0) + 1;
+      });
+
+      const industryDistribution = Object.entries(industryCounts)
+        .map(([industry, count]) => ({ industry, count }))
+        .sort((a, b) => b.count - a.count);
+
+      return {
+        primaryCategories,
+        secondaryCategories,
+        industryDistribution
+      };
+    } catch (error) {
+      console.error('Error in getCategoryBreakdown:', error);
       throw error;
     }
   }

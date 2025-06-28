@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { vectorKnowledgeService } from '@/services/knowledgeBase/vectorService';
 import { 
@@ -154,6 +153,130 @@ export const useVectorKnowledge = () => {
     }
   }, []);
 
+  // Enhanced Hierarchical Search
+  const searchByHierarchyEnhanced = useCallback(async (
+    query: string,
+    primaryCategory?: string,
+    secondaryCategory?: string,
+    industryTags?: string[],
+    complexityLevel?: 'basic' | 'intermediate' | 'advanced'
+  ) => {
+    setIsLoading(true);
+    try {
+      const results = await vectorKnowledgeService.searchByHierarchy(
+        query,
+        primaryCategory,
+        secondaryCategory,
+        industryTags,
+        complexityLevel
+      );
+      
+      // Convert to search results format with default similarity
+      const resultsWithSimilarity = results.map(result => ({
+        ...result,
+        similarity: 1.0
+      }));
+      
+      setSearchResults(resultsWithSimilarity);
+      console.log(`Found ${results.length} entries by enhanced hierarchy search:`, {
+        query,
+        primaryCategory,
+        secondaryCategory,
+        industryTags,
+        complexityLevel
+      });
+    } catch (error) {
+      console.error('Error in enhanced hierarchy search:', error);
+      toast.error('Failed to search by hierarchy');
+      setSearchResults([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Find Related Patterns
+  const findRelatedPatterns = useCallback(async (entryId: string, maxResults = 5) => {
+    setIsLoading(true);
+    try {
+      const results = await vectorKnowledgeService.findRelatedPatterns(entryId, maxResults);
+      
+      const resultsWithSimilarity = results.map(result => ({
+        ...result,
+        similarity: 0.9 // High similarity for related patterns
+      }));
+      
+      setSearchResults(resultsWithSimilarity);
+      console.log(`Found ${results.length} related patterns for entry ${entryId}`);
+    } catch (error) {
+      console.error('Error finding related patterns:', error);
+      toast.error('Failed to find related patterns');
+      setSearchResults([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Get Industry Patterns
+  const getIndustryPatterns = useCallback(async (industry: string, limit = 10) => {
+    setIsLoading(true);
+    try {
+      const results = await vectorKnowledgeService.getIndustryPatterns(industry, limit);
+      
+      const resultsWithSimilarity = results.map(result => ({
+        ...result,
+        similarity: 0.85 // Good similarity for industry-specific results
+      }));
+      
+      setSearchResults(resultsWithSimilarity);
+      console.log(`Found ${results.length} patterns for industry: ${industry}`);
+    } catch (error) {
+      console.error('Error getting industry patterns:', error);
+      toast.error('Failed to get industry patterns');
+      setSearchResults([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Search by Complexity
+  const searchByComplexity = useCallback(async (
+    query: string,
+    userLevel: 'basic' | 'intermediate' | 'advanced',
+    includeHigher = false
+  ) => {
+    setIsLoading(true);
+    try {
+      const results = await vectorKnowledgeService.searchByComplexity(query, userLevel, includeHigher);
+      setSearchResults(results.map(r => ({ ...r, similarity: r.similarity || 0.8 })));
+      console.log(`Found ${results.length} results by complexity for level: ${userLevel}`, {
+        includeHigher
+      });
+    } catch (error) {
+      console.error('Error searching by complexity:', error);
+      toast.error('Failed to search by complexity level');
+      setSearchResults([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Get Category Breakdown
+  const getCategoryBreakdown = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const breakdown = await vectorKnowledgeService.getCategoryBreakdown();
+      console.log('Category breakdown:', breakdown);
+      toast.success('Category breakdown loaded successfully');
+      return breakdown;
+    } catch (error) {
+      console.error('Error getting category breakdown:', error);
+      toast.error('Failed to get category breakdown');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   return {
     isLoading,
     searchResults,
@@ -165,6 +288,12 @@ export const useVectorKnowledge = () => {
     loadKnowledgeStats,
     addKnowledgeEntry,
     addCompetitorPattern,
+    // Enhanced methods
+    searchByHierarchyEnhanced,
+    findRelatedPatterns,
+    getIndustryPatterns,
+    searchByComplexity,
+    getCategoryBreakdown,
     clearResults: () => {
       setSearchResults([]);
       setPatternResults([]);
