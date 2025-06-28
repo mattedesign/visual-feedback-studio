@@ -13,10 +13,83 @@ interface ContextIntelligence {
   targetedQueries: string[];
   analysisType: 'targeted' | 'comprehensive';
   queryWeights: Record<string, number>;
+  primaryCategories: string[];
+  secondaryCategories: string[];
+  industryTags: string[];
+  complexityLevel?: string;
+  useCases: string[];
 }
 
+interface HierarchicalContext {
+  primaryCategory: string;
+  secondaryCategory?: string;
+  industryTags: string[];
+  complexityLevel: string;
+  useCases: string[];
+  confidence: number;
+}
+
+interface EnhancedKnowledgeEntry {
+  id: string;
+  title: string;
+  content: string;
+  primary_category: string;
+  secondary_category: string;
+  industry_tags: string[];
+  complexity_level: string;
+  use_cases: string[];
+  freshness_score: number;
+  similarity: number;
+  relevanceScore: number;
+  contextMatch: string;
+  categoryPath: string;
+}
+
+const CATEGORY_MAPPINGS = {
+  // Visual Design Patterns
+  'button': { primary: 'patterns', secondary: 'visual-design', industry: ['web-apps', 'mobile-apps'] },
+  'form': { primary: 'patterns', secondary: 'interaction-design', industry: ['web-apps', 'saas'] },
+  'navigation': { primary: 'patterns', secondary: 'navigation-design', industry: ['web-apps', 'mobile-apps'] },
+  'modal': { primary: 'patterns', secondary: 'interaction-design', industry: ['web-apps', 'saas'] },
+  'card': { primary: 'patterns', secondary: 'visual-design', industry: ['web-apps', 'mobile-apps'] },
+  'menu': { primary: 'patterns', secondary: 'navigation-design', industry: ['web-apps', 'mobile-apps'] },
+  
+  // E-commerce Patterns
+  'checkout': { primary: 'patterns', secondary: 'conversion-design', industry: ['e-commerce'] },
+  'cart': { primary: 'patterns', secondary: 'conversion-design', industry: ['e-commerce'] },
+  'product': { primary: 'patterns', secondary: 'content-design', industry: ['e-commerce'] },
+  'payment': { primary: 'patterns', secondary: 'conversion-design', industry: ['e-commerce', 'fintech'] },
+  
+  // Accessibility & Compliance
+  'accessibility': { primary: 'compliance', secondary: 'accessibility-standards', industry: ['public-sector', 'healthcare'] },
+  'wcag': { primary: 'compliance', secondary: 'accessibility-standards', industry: ['public-sector', 'healthcare'] },
+  'contrast': { primary: 'compliance', secondary: 'accessibility-standards', industry: ['public-sector', 'healthcare'] },
+  
+  // Mobile & Responsive
+  'mobile': { primary: 'patterns', secondary: 'mobile-design', industry: ['mobile-apps', 'web-apps'] },
+  'responsive': { primary: 'patterns', secondary: 'responsive-design', industry: ['web-apps', 'mobile-apps'] },
+  'touch': { primary: 'patterns', secondary: 'mobile-design', industry: ['mobile-apps'] },
+  
+  // Conversion Optimization
+  'conversion': { primary: 'optimization', secondary: 'conversion-optimization', industry: ['e-commerce', 'saas'] },
+  'cta': { primary: 'patterns', secondary: 'conversion-design', industry: ['e-commerce', 'saas'] },
+  'landing': { primary: 'patterns', secondary: 'conversion-design', industry: ['marketing', 'saas'] },
+  'funnel': { primary: 'optimization', secondary: 'conversion-optimization', industry: ['e-commerce', 'saas'] },
+  
+  // Performance & Technical
+  'performance': { primary: 'optimization', secondary: 'performance-optimization', industry: ['web-apps', 'mobile-apps'] },
+  'loading': { primary: 'patterns', secondary: 'feedback-design', industry: ['web-apps', 'mobile-apps'] },
+  'error': { primary: 'patterns', secondary: 'feedback-design', industry: ['web-apps', 'saas'] }
+};
+
+const COMPLEXITY_HIERARCHY = {
+  'basic': 1,
+  'intermediate': 2,
+  'advanced': 3
+};
+
 function parseContextIntelligence(userPrompt?: string): ContextIntelligence {
-  console.log('🧠 === CONTEXT INTELLIGENCE PARSING ===');
+  console.log('🧠 === ENHANCED CONTEXT INTELLIGENCE PARSING ===');
   console.log('📝 User Prompt:', userPrompt?.substring(0, 200) + '...');
 
   if (!userPrompt || userPrompt.trim().length < 10) {
@@ -25,7 +98,11 @@ function parseContextIntelligence(userPrompt?: string): ContextIntelligence {
       focusAreas: ['general'],
       targetedQueries: ['UX best practices', 'design principles', 'user interface guidelines'],
       analysisType: 'comprehensive',
-      queryWeights: { general: 1.0 }
+      queryWeights: { general: 1.0 },
+      primaryCategories: [],
+      secondaryCategories: [],
+      industryTags: [],
+      useCases: []
     };
   }
 
@@ -33,121 +110,86 @@ function parseContextIntelligence(userPrompt?: string): ContextIntelligence {
   const focusAreas: string[] = [];
   const targetedQueries: string[] = [];
   const queryWeights: Record<string, number> = {};
+  const primaryCategories: string[] = [];
+  const secondaryCategories: string[] = [];
+  const industryTags: string[] = [];
+  const useCases: string[] = [];
+  let complexityLevel: string | undefined;
 
-  // E-commerce focus detection
-  if (prompt.match(/\b(checkout|cart|purchase|payment|buy|shop|ecommerce|e-commerce|order|product)\b/)) {
-    focusAreas.push('ecommerce');
-    targetedQueries.push(
-      'ecommerce checkout best practices',
-      'shopping cart optimization',
-      'payment form design',
-      'product page conversion'
-    );
-    queryWeights.ecommerce = 0.4;
-    console.log('🛒 E-commerce focus detected');
-  }
+  // Enhanced pattern matching with hierarchical categories
+  Object.entries(CATEGORY_MAPPINGS).forEach(([term, mapping]) => {
+    if (prompt.includes(term)) {
+      if (!primaryCategories.includes(mapping.primary)) {
+        primaryCategories.push(mapping.primary);
+      }
+      if (mapping.secondary && !secondaryCategories.includes(mapping.secondary)) {
+        secondaryCategories.push(mapping.secondary);
+      }
+      mapping.industry.forEach(ind => {
+        if (!industryTags.includes(ind)) {
+          industryTags.push(ind);
+        }
+      });
+      
+      focusAreas.push(term);
+      targetedQueries.push(`${mapping.primary} ${mapping.secondary} best practices`);
+      queryWeights[term] = 0.8;
+    }
+  });
 
-  // Mobile/responsive focus detection
-  if (prompt.match(/\b(mobile|responsive|touch|tablet|phone|ios|android|device|screen)\b/)) {
-    focusAreas.push('mobile');
-    targetedQueries.push(
-      'mobile UX design principles',
-      'responsive design patterns',
-      'touch interface guidelines',
-      'mobile navigation best practices'
-    );
-    queryWeights.mobile = 0.3;
-    console.log('📱 Mobile/responsive focus detected');
-  }
-
-  // Accessibility focus detection
-  if (prompt.match(/\b(accessibility|contrast|wcag|ada|screen reader|keyboard|disability|inclusive)\b/)) {
-    focusAreas.push('accessibility');
-    targetedQueries.push(
-      'web accessibility guidelines',
-      'WCAG compliance best practices',
-      'color contrast requirements',
-      'keyboard navigation patterns'
-    );
-    queryWeights.accessibility = 0.6;
-    console.log('♿ Accessibility focus detected');
-  }
-
-  // Conversion optimization focus detection
-  if (prompt.match(/\b(conversion|cta|revenue|optimize|funnel|landing|signup|subscribe|lead)\b/)) {
-    focusAreas.push('conversion');
-    targetedQueries.push(
-      'conversion rate optimization',
-      'call-to-action design',
-      'landing page best practices',
-      'user conversion patterns'
-    );
-    queryWeights.conversion = 0.5;
-    console.log('📈 Conversion focus detected');
-  }
-
-  // Visual design focus detection
-  if (prompt.match(/\b(visual|design|color|typography|layout|brand|aesthetic|style)\b/)) {
-    focusAreas.push('visual');
-    targetedQueries.push(
-      'visual design principles',
-      'typography best practices',
-      'color theory in UI design',
-      'layout design patterns'
-    );
-    queryWeights.visual = 0.3;
-    console.log('🎨 Visual design focus detected');
-  }
-
-  // UX/Usability focus detection
-  if (prompt.match(/\b(ux|usability|user experience|navigation|flow|journey|interaction)\b/)) {
-    focusAreas.push('ux');
-    targetedQueries.push(
-      'user experience design principles',
-      'navigation design patterns',
-      'user flow optimization',
-      'interaction design best practices'
-    );
-    queryWeights.ux = 0.4;
-    console.log('👤 UX/Usability focus detected');
-  }
-
-  // Determine analysis type and normalize weights
-  const analysisType = focusAreas.length > 0 ? 'targeted' : 'comprehensive';
-  
-  // Add comprehensive queries if no specific focus detected
-  if (focusAreas.length === 0) {
-    focusAreas.push('general');
-    targetedQueries.push(
-      'user interface design principles',
-      'web design best practices',
-      'UX design guidelines',
-      'digital product design standards'
-    );
-    queryWeights.general = 1.0;
-    console.log('🎯 No specific focus detected - using comprehensive analysis');
+  // Detect complexity level
+  if (prompt.match(/\b(simple|basic|beginner)\b/)) {
+    complexityLevel = 'basic';
+  } else if (prompt.match(/\b(advanced|complex|expert)\b/)) {
+    complexityLevel = 'advanced';
   } else {
-    // Normalize weights and add general queries
-    const totalWeight = Object.values(queryWeights).reduce((sum, weight) => sum + weight, 0);
-    const generalWeight = Math.max(0.2, 1.0 - totalWeight);
-    queryWeights.general = generalWeight;
-    
-    // Add some general queries for balanced results
-    targetedQueries.push('UX design principles', 'design best practices');
+    complexityLevel = 'intermediate';
   }
 
-  console.log('📊 Context Intelligence Results:', {
+  // Extract use cases from context
+  if (prompt.match(/\b(signup|registration|onboarding)\b/)) {
+    useCases.push('user-onboarding');
+  }
+  if (prompt.match(/\b(dashboard|analytics|reporting)\b/)) {
+    useCases.push('data-visualization');
+  }
+  if (prompt.match(/\b(search|filter|discovery)\b/)) {
+    useCases.push('content-discovery');
+  }
+  if (prompt.match(/\b(buy|purchase|order)\b/)) {
+    useCases.push('transaction-flow');
+  }
+
+  // Add general queries if no specific patterns detected
+  if (primaryCategories.length === 0) {
+    primaryCategories.push('patterns');
+    secondaryCategories.push('visual-design');
+    targetedQueries.push('UI design principles', 'user experience guidelines');
+    queryWeights.general = 0.6;
+  }
+
+  const analysisType = focusAreas.length > 2 ? 'targeted' : 'comprehensive';
+
+  console.log('📊 Enhanced Context Intelligence Results:', {
     focusAreas,
-    targetedQueriesCount: targetedQueries.length,
-    analysisType,
-    queryWeights
+    primaryCategories,
+    secondaryCategories,
+    industryTags,
+    complexityLevel,
+    useCases,
+    analysisType
   });
 
   return {
     focusAreas,
     targetedQueries,
     analysisType,
-    queryWeights
+    queryWeights,
+    primaryCategories,
+    secondaryCategories,
+    industryTags,
+    complexityLevel,
+    useCases
   };
 }
 
@@ -177,106 +219,361 @@ async function generateEmbedding(text: string, openaiKey: string): Promise<numbe
   }
 }
 
-async function retrieveContextualKnowledge(
+async function retrieveHierarchicalKnowledge(
   contextIntelligence: ContextIntelligence,
   supabase: any,
   openaiKey: string
-): Promise<{ relevantPatterns: any[], competitorInsights: any[] }> {
-  console.log('🔍 === CONTEXTUAL KNOWLEDGE RETRIEVAL ===');
+): Promise<{ relevantPatterns: EnhancedKnowledgeEntry[], competitorInsights: any[] }> {
+  console.log('🔍 === HIERARCHICAL KNOWLEDGE RETRIEVAL ===');
   
-  const allKnowledge: any[] = [];
-  const queryResults = new Map<string, any[]>();
+  const allResults = new Map<string, EnhancedKnowledgeEntry>();
+  const queryPromises: Promise<void>[] = [];
 
-  // Execute targeted queries based on context intelligence
-  for (const query of contextIntelligence.targetedQueries) {
-    try {
-      console.log(`🔎 Executing targeted query: "${query}"`);
-      
-      // Generate embedding for the query
-      const queryEmbedding = await generateEmbedding(query, openaiKey);
-      
-      // Search knowledge base with context-specific threshold
-      const matchThreshold = contextIntelligence.analysisType === 'targeted' ? 0.75 : 0.7;
-      const matchCount = contextIntelligence.analysisType === 'targeted' ? 8 : 5;
-      
-      const { data: knowledgeResults, error } = await supabase.rpc('match_knowledge', {
-        query_embedding: `[${queryEmbedding.join(',')}]`,
-        match_threshold: matchThreshold,
-        match_count: matchCount,
-        filter_category: null
-      });
-
-      if (error) {
-        console.error(`Error searching knowledge for query "${query}":`, error);
-        continue;
-      }
-
-      if (knowledgeResults && knowledgeResults.length > 0) {
-        console.log(`✅ Found ${knowledgeResults.length} results for query: "${query}"`);
-        queryResults.set(query, knowledgeResults);
-        allKnowledge.push(...knowledgeResults);
-      }
-    } catch (error) {
-      console.error(`Error processing query "${query}":`, error);
+  // 1. Hierarchical Category Queries
+  for (const primaryCategory of contextIntelligence.primaryCategories) {
+    for (const secondaryCategory of contextIntelligence.secondaryCategories) {
+      const queryPromise = executeHierarchicalQuery(
+        supabase,
+        openaiKey,
+        `${primaryCategory} ${secondaryCategory}`,
+        primaryCategory,
+        secondaryCategory,
+        contextIntelligence.industryTags,
+        contextIntelligence.complexityLevel,
+        allResults,
+        'hierarchical'
+      );
+      queryPromises.push(queryPromise);
     }
   }
 
-  // Apply context-based weighting and deduplication
-  const weightedKnowledge = new Map<string, any>();
-  
-  for (const [query, results] of queryResults) {
-    const queryWeight = getQueryWeight(query, contextIntelligence);
-    
-    for (const result of results) {
-      const existingEntry = weightedKnowledge.get(result.id);
-      const adjustedSimilarity = result.similarity * queryWeight;
-      
-      if (!existingEntry || adjustedSimilarity > existingEntry.similarity) {
-        weightedKnowledge.set(result.id, {
-          ...result,
-          similarity: adjustedSimilarity,
-          contextRelevance: queryWeight,
-          matchedQuery: query
-        });
-      }
-    }
+  // 2. Industry-Specific Queries
+  for (const industryTag of contextIntelligence.industryTags) {
+    const queryPromise = executeIndustryQuery(
+      supabase,
+      openaiKey,
+      `${industryTag} design patterns`,
+      industryTag,
+      contextIntelligence.complexityLevel,
+      allResults,
+      'industry'
+    );
+    queryPromises.push(queryPromise);
   }
 
-  // Sort by weighted similarity and take top results
-  const finalResults = Array.from(weightedKnowledge.values())
-    .sort((a, b) => b.similarity - a.similarity)
-    .slice(0, 12);
+  // 3. Use Case Queries
+  for (const useCase of contextIntelligence.useCases) {
+    const queryPromise = executeUseCaseQuery(
+      supabase,
+      openaiKey,
+      `${useCase} UX patterns`,
+      useCase,
+      allResults,
+      'use-case'
+    );
+    queryPromises.push(queryPromise);
+  }
 
-  console.log(`📚 Final contextual knowledge: ${finalResults.length} entries`);
-  console.log('🎯 Top context matches:', finalResults.slice(0, 3).map(r => ({
-    title: r.title?.substring(0, 50),
-    similarity: r.similarity,
-    query: r.matchedQuery
-  })));
+  // 4. Semantic Similarity Queries
+  for (const query of contextIntelligence.targetedQueries.slice(0, 3)) {
+    const queryPromise = executeSemanticQuery(
+      supabase,
+      openaiKey,
+      query,
+      allResults,
+      'semantic'
+    );
+    queryPromises.push(queryPromise);
+  }
+
+  // Execute all queries in parallel
+  await Promise.all(queryPromises);
+
+  // Apply weighted scoring and ranking
+  const rankedResults = rankAndScoreResults(allResults, contextIntelligence);
+
+  console.log(`📚 Hierarchical knowledge retrieval complete: ${rankedResults.length} entries`);
+  console.log('🎯 Top results by category:', 
+    rankedResults.slice(0, 5).map(r => ({
+      title: r.title.substring(0, 50),
+      category: r.categoryPath,
+      relevanceScore: r.relevanceScore,
+      similarity: r.similarity
+    }))
+  );
 
   return {
-    relevantPatterns: finalResults,
-    competitorInsights: [] // Keep existing structure
+    relevantPatterns: rankedResults.slice(0, 15),
+    competitorInsights: []
   };
 }
 
-function getQueryWeight(query: string, contextIntelligence: ContextIntelligence): number {
-  const queryLower = query.toLowerCase();
-  
-  // Match query to focus areas and apply weights
-  for (const [area, weight] of Object.entries(contextIntelligence.queryWeights)) {
-    if (queryLower.includes(area) || 
-        (area === 'ecommerce' && queryLower.match(/checkout|cart|payment/)) ||
-        (area === 'accessibility' && queryLower.match(/accessibility|wcag|contrast/)) ||
-        (area === 'mobile' && queryLower.match(/mobile|responsive|touch/)) ||
-        (area === 'conversion' && queryLower.match(/conversion|cta|landing/)) ||
-        (area === 'visual' && queryLower.match(/visual|design|color|typography/)) ||
-        (area === 'ux' && queryLower.match(/ux|usability|navigation|flow/))) {
-      return weight;
+async function executeHierarchicalQuery(
+  supabase: any,
+  openaiKey: string,
+  queryText: string,
+  primaryCategory: string,
+  secondaryCategory: string,
+  industryTags: string[],
+  complexityLevel: string | undefined,
+  results: Map<string, EnhancedKnowledgeEntry>,
+  queryType: string
+): Promise<void> {
+  try {
+    console.log(`🔎 Hierarchical query: ${queryText} [${primaryCategory}/${secondaryCategory}]`);
+    
+    const queryEmbedding = await generateEmbedding(queryText, openaiKey);
+    
+    const { data: knowledgeResults, error } = await supabase.rpc('match_knowledge', {
+      query_embedding: `[${queryEmbedding.join(',')}]`,
+      match_threshold: 0.7,
+      match_count: 8,
+      filter_primary_category: primaryCategory,
+      filter_secondary_category: secondaryCategory,
+      filter_industry_tags: industryTags.length > 0 ? industryTags : null,
+      filter_complexity_level: complexityLevel
+    });
+
+    if (error) {
+      console.error(`Error in hierarchical query "${queryText}":`, error);
+      return;
     }
+
+    if (knowledgeResults && knowledgeResults.length > 0) {
+      console.log(`✅ Found ${knowledgeResults.length} hierarchical results for: ${queryText}`);
+      
+      knowledgeResults.forEach((result: any) => {
+        const existingEntry = results.get(result.id);
+        const enhanced: EnhancedKnowledgeEntry = {
+          ...result,
+          relevanceScore: result.similarity,
+          contextMatch: queryText,
+          categoryPath: `${result.primary_category}/${result.secondary_category}`,
+          ...existingEntry
+        };
+        
+        // Boost score for exact hierarchical matches
+        if (result.primary_category === primaryCategory && 
+            result.secondary_category === secondaryCategory) {
+          enhanced.relevanceScore += 0.3;
+        }
+        
+        results.set(result.id, enhanced);
+      });
+    }
+  } catch (error) {
+    console.error(`Error in hierarchical query "${queryText}":`, error);
   }
+}
+
+async function executeIndustryQuery(
+  supabase: any,
+  openaiKey: string,
+  queryText: string,
+  industryTag: string,
+  complexityLevel: string | undefined,
+  results: Map<string, EnhancedKnowledgeEntry>,
+  queryType: string
+): Promise<void> {
+  try {
+    console.log(`🏢 Industry query: ${queryText} [${industryTag}]`);
+    
+    const queryEmbedding = await generateEmbedding(queryText, openaiKey);
+    
+    const { data: knowledgeResults, error } = await supabase.rpc('match_knowledge', {
+      query_embedding: `[${queryEmbedding.join(',')}]`,
+      match_threshold: 0.65,
+      match_count: 6,
+      filter_industry_tags: [industryTag],
+      filter_complexity_level: complexityLevel
+    });
+
+    if (error) {
+      console.error(`Error in industry query "${queryText}":`, error);
+      return;
+    }
+
+    if (knowledgeResults && knowledgeResults.length > 0) {
+      console.log(`✅ Found ${knowledgeResults.length} industry results for: ${industryTag}`);
+      
+      knowledgeResults.forEach((result: any) => {
+        const existingEntry = results.get(result.id);
+        const enhanced: EnhancedKnowledgeEntry = {
+          ...result,
+          relevanceScore: result.similarity + 0.2, // Industry boost
+          contextMatch: queryText,
+          categoryPath: `${result.primary_category}/${result.secondary_category}`,
+          ...existingEntry
+        };
+        
+        results.set(result.id, enhanced);
+      });
+    }
+  } catch (error) {
+    console.error(`Error in industry query "${queryText}":`, error);
+  }
+}
+
+async function executeUseCaseQuery(
+  supabase: any,
+  openaiKey: string,
+  queryText: string,
+  useCase: string,
+  results: Map<string, EnhancedKnowledgeEntry>,
+  queryType: string
+): Promise<void> {
+  try {
+    console.log(`🎯 Use case query: ${queryText} [${useCase}]`);
+    
+    const queryEmbedding = await generateEmbedding(queryText, openaiKey);
+    
+    const { data: knowledgeResults, error } = await supabase.rpc('match_knowledge', {
+      query_embedding: `[${queryEmbedding.join(',')}]`,
+      match_threshold: 0.6,
+      match_count: 5
+    });
+
+    if (error) {
+      console.error(`Error in use case query "${queryText}":`, error);
+      return;
+    }
+
+    if (knowledgeResults && knowledgeResults.length > 0) {
+      console.log(`✅ Found ${knowledgeResults.length} use case results for: ${useCase}`);
+      
+      knowledgeResults.forEach((result: any) => {
+        if (result.use_cases && result.use_cases.includes(useCase)) {
+          const existingEntry = results.get(result.id);
+          const enhanced: EnhancedKnowledgeEntry = {
+            ...result,
+            relevanceScore: result.similarity + 0.25, // Use case match boost
+            contextMatch: queryText,
+            categoryPath: `${result.primary_category}/${result.secondary_category}`,
+            ...existingEntry
+          };
+          
+          results.set(result.id, enhanced);
+        }
+      });
+    }
+  } catch (error) {
+    console.error(`Error in use case query "${queryText}":`, error);
+  }
+}
+
+async function executeSemanticQuery(
+  supabase: any,
+  openaiKey: string,
+  queryText: string,
+  results: Map<string, EnhancedKnowledgeEntry>,
+  queryType: string
+): Promise<void> {
+  try {
+    console.log(`🔤 Semantic query: ${queryText}`);
+    
+    const queryEmbedding = await generateEmbedding(queryText, openaiKey);
+    
+    const { data: knowledgeResults, error } = await supabase.rpc('match_knowledge', {
+      query_embedding: `[${queryEmbedding.join(',')}]`,
+      match_threshold: 0.75,
+      match_count: 6
+    });
+
+    if (error) {
+      console.error(`Error in semantic query "${queryText}":`, error);
+      return;
+    }
+
+    if (knowledgeResults && knowledgeResults.length > 0) {
+      console.log(`✅ Found ${knowledgeResults.length} semantic results for: ${queryText}`);
+      
+      knowledgeResults.forEach((result: any) => {
+        const existingEntry = results.get(result.id);
+        const enhanced: EnhancedKnowledgeEntry = {
+          ...result,
+          relevanceScore: result.similarity, // Base semantic score
+          contextMatch: queryText,
+          categoryPath: `${result.primary_category}/${result.secondary_category}`,
+          ...existingEntry
+        };
+        
+        results.set(result.id, enhanced);
+      });
+    }
+  } catch (error) {
+    console.error(`Error in semantic query "${queryText}":`, error);
+  }
+}
+
+function rankAndScoreResults(
+  results: Map<string, EnhancedKnowledgeEntry>,
+  contextIntelligence: ContextIntelligence
+): EnhancedKnowledgeEntry[] {
+  console.log('📊 === WEIGHTED SCORING & RANKING ===');
   
-  return contextIntelligence.queryWeights.general || 0.3;
+  const scoredResults = Array.from(results.values()).map(entry => {
+    let totalScore = entry.similarity; // Base semantic similarity
+    let bonusScore = 0;
+    
+    // Industry match bonus (+30%)
+    if (contextIntelligence.industryTags.some(tag => 
+      entry.industry_tags && entry.industry_tags.includes(tag))) {
+      bonusScore += 0.30;
+      console.log(`🏢 Industry match bonus for ${entry.title.substring(0, 30)}`);
+    }
+    
+    // Complexity level match bonus (+20%)
+    if (contextIntelligence.complexityLevel && 
+        entry.complexity_level === contextIntelligence.complexityLevel) {
+      bonusScore += 0.20;
+      console.log(`⚡ Complexity match bonus for ${entry.title.substring(0, 30)}`);
+    }
+    
+    // Use case overlap bonus (+25%)
+    if (contextIntelligence.useCases.length > 0 && entry.use_cases) {
+      const overlapCount = contextIntelligence.useCases.filter(uc => 
+        entry.use_cases.includes(uc)).length;
+      if (overlapCount > 0) {
+        bonusScore += 0.25 * (overlapCount / contextIntelligence.useCases.length);
+        console.log(`🎯 Use case overlap bonus for ${entry.title.substring(0, 30)}`);
+      }
+    }
+    
+    // Freshness score bonus (+15%)
+    if (entry.freshness_score && entry.freshness_score > 0.7) {
+      bonusScore += 0.15 * entry.freshness_score;
+    }
+    
+    // Category hierarchy bonus
+    if (contextIntelligence.primaryCategories.includes(entry.primary_category)) {
+      bonusScore += 0.10;
+      
+      if (contextIntelligence.secondaryCategories.includes(entry.secondary_category)) {
+        bonusScore += 0.15;
+      }
+    }
+    
+    entry.relevanceScore = Math.min(1.0, totalScore + bonusScore);
+    return entry;
+  });
+  
+  // Sort by relevance score, then by freshness, then by similarity
+  const rankedResults = scoredResults.sort((a, b) => {
+    if (Math.abs(a.relevanceScore - b.relevanceScore) < 0.05) {
+      if (Math.abs((a.freshness_score || 0) - (b.freshness_score || 0)) < 0.1) {
+        return b.similarity - a.similarity;
+      }
+      return (b.freshness_score || 0) - (a.freshness_score || 0);
+    }
+    return b.relevanceScore - a.relevanceScore;
+  });
+  
+  console.log('🏆 Top 5 ranked results:');
+  rankedResults.slice(0, 5).forEach((result, idx) => {
+    console.log(`${idx + 1}. ${result.title.substring(0, 40)} | Score: ${result.relevanceScore.toFixed(3)} | ${result.categoryPath}`);
+  });
+  
+  return rankedResults;
 }
 
 function buildEnhancedPrompt(
@@ -286,56 +583,82 @@ function buildEnhancedPrompt(
   imageUrls: string[],
   imageAnnotations: any[]
 ): string {
-  console.log('🛠️ === BUILDING CONTEXT-ENHANCED PROMPT ===');
+  console.log('🛠️ === BUILDING HIERARCHICAL CONTEXT-ENHANCED PROMPT ===');
   
-  let enhancedPrompt = `You are an expert UX analyst with access to a comprehensive knowledge base of design best practices, research findings, and industry standards.
+  let enhancedPrompt = `You are an expert UX analyst with access to a comprehensive, hierarchically-organized knowledge base of design best practices, research findings, and industry standards.
 
-=== CONTEXT-DRIVEN ANALYSIS CONFIGURATION ===
+=== HIERARCHICAL CONTEXT-DRIVEN ANALYSIS ===
 Analysis Type: ${contextIntelligence.analysisType}
-Focus Areas: ${contextIntelligence.focusAreas.join(', ')}
+Primary Categories: ${contextIntelligence.primaryCategories.join(', ')}
+Secondary Categories: ${contextIntelligence.secondaryCategories.join(', ')}
+Industry Context: ${contextIntelligence.industryTags.join(', ')}
+Complexity Level: ${contextIntelligence.complexityLevel || 'intermediate'}
+Use Cases: ${contextIntelligence.useCases.join(', ')}
+
 User Context: "${userPrompt}"
 
-Priority Research Areas:
-${contextIntelligence.focusAreas.map(area => `- ${area.toUpperCase()}: High priority analysis`).join('\n')}
-
-=== RESEARCH-BACKED KNOWLEDGE BASE ===
+=== HIERARCHICALLY-ORGANIZED KNOWLEDGE BASE ===
 `;
 
-  // Add contextual knowledge with priority indicators
   if (retrievedKnowledge.relevantPatterns.length > 0) {
-    enhancedPrompt += `\nRELEVANT DESIGN PATTERNS & BEST PRACTICES:\n`;
+    // Group by category hierarchy
+    const categoryGroups = retrievedKnowledge.relevantPatterns.reduce((acc: any, pattern: EnhancedKnowledgeEntry) => {
+      const categoryKey = pattern.categoryPath;
+      if (!acc[categoryKey]) acc[categoryKey] = [];
+      acc[categoryKey].push(pattern);
+      return acc;
+    }, {});
+
+    enhancedPrompt += `\nKNOWLEDGE ORGANIZED BY CATEGORY HIERARCHY:\n`;
     
-    retrievedKnowledge.relevantPatterns.forEach((pattern: any, index: number) => {
-      const priority = pattern.contextRelevance > 0.4 ? 'HIGH' : 'MEDIUM';
-      enhancedPrompt += `\n[${priority} PRIORITY] Pattern ${index + 1}:\n`;
-      enhancedPrompt += `Title: ${pattern.title}\n`;
-      enhancedPrompt += `Content: ${pattern.content}\n`;
-      enhancedPrompt += `Context Match: ${pattern.matchedQuery}\n`;
-      enhancedPrompt += `Relevance: ${(pattern.similarity * 100).toFixed(1)}%\n`;
+    Object.entries(categoryGroups).forEach(([categoryPath, patterns]: [string, any]) => {
+      enhancedPrompt += `\n### ${categoryPath.toUpperCase()} ###\n`;
+      
+      patterns.slice(0, 4).forEach((pattern: EnhancedKnowledgeEntry, index: number) => {
+        const priority = pattern.relevanceScore > 0.8 ? 'HIGH' : pattern.relevanceScore > 0.6 ? 'MEDIUM' : 'NORMAL';
+        enhancedPrompt += `\n[${priority} PRIORITY] Pattern ${index + 1}:\n`;
+        enhancedPrompt += `Title: ${pattern.title}\n`;
+        enhancedPrompt += `Content: ${pattern.content}\n`;
+        enhancedPrompt += `Industry Tags: ${pattern.industry_tags?.join(', ') || 'General'}\n`;
+        enhancedPrompt += `Complexity: ${pattern.complexity_level}\n`;
+        enhancedPrompt += `Use Cases: ${pattern.use_cases?.join(', ') || 'General'}\n`;
+        enhancedPrompt += `Relevance Score: ${(pattern.relevanceScore * 100).toFixed(1)}%\n`;
+        enhancedPrompt += `Context Match: ${pattern.contextMatch}\n`;
+      });
     });
   }
 
-  enhancedPrompt += `\n=== ANALYSIS INSTRUCTIONS ===
-Based on the provided context and research knowledge, analyze the ${imageUrls.length} image(s) with specific focus on:
+  enhancedPrompt += `\n=== HIERARCHICAL ANALYSIS INSTRUCTIONS ===
+Based on the hierarchically-organized knowledge above, analyze the ${imageUrls.length} image(s) with focus on:
 
-${contextIntelligence.focusAreas.map(area => {
-  switch(area) {
-    case 'ecommerce': return '• E-COMMERCE OPTIMIZATION: Checkout flow, cart design, product presentation, payment UX';
-    case 'accessibility': return '• ACCESSIBILITY COMPLIANCE: WCAG guidelines, color contrast, keyboard navigation, screen reader compatibility';
-    case 'mobile': return '• MOBILE EXPERIENCE: Responsive design, touch interactions, mobile-first patterns';
-    case 'conversion': return '• CONVERSION OPTIMIZATION: CTA placement, funnel design, user journey optimization';
-    case 'visual': return '• VISUAL DESIGN: Typography, color theory, layout principles, brand consistency';
-    case 'ux': return '• USER EXPERIENCE: Navigation patterns, information architecture, interaction design';
-    default: return '• GENERAL UX PRINCIPLES: Usability, user-centered design, best practices';
+CATEGORY-SPECIFIC ANALYSIS:
+${contextIntelligence.primaryCategories.map(category => {
+  switch(category) {
+    case 'patterns': return '• DESIGN PATTERNS: Visual components, interaction patterns, layout structures, navigation systems';
+    case 'compliance': return '• COMPLIANCE & STANDARDS: Accessibility guidelines, regulatory requirements, industry standards';
+    case 'optimization': return '• OPTIMIZATION: Performance, conversion rates, user engagement, technical efficiency';
+    case 'research': return '• RESEARCH INSIGHTS: User behavior studies, A/B test results, usability findings';
+    case 'design': return '• DESIGN PRINCIPLES: Visual hierarchy, typography, color theory, brand consistency';
+    default: return `• ${category.toUpperCase()}: Context-specific analysis`;
   }
 }).join('\n')}
 
+INDUSTRY-SPECIFIC CONSIDERATIONS:
+${contextIntelligence.industryTags.map(industry => 
+  `• ${industry.toUpperCase()}: Industry-specific patterns, regulations, and user expectations`
+).join('\n')}
+
+COMPLEXITY & USE CASE ALIGNMENT:
+• Target Complexity: ${contextIntelligence.complexityLevel || 'intermediate'}
+• Relevant Use Cases: ${contextIntelligence.useCases.join(', ') || 'General application'}
+
 ANALYSIS REQUIREMENTS:
-1. Reference the research knowledge provided above in your analysis
-2. Prioritize insights related to: ${contextIntelligence.focusAreas.join(', ')}
-3. Provide specific, actionable recommendations
-4. Include research-backed reasoning for each suggestion
-5. Consider the user's specific context: "${userPrompt}"
+1. Reference the hierarchically-organized knowledge above in your analysis
+2. Prioritize insights from HIGH PRIORITY patterns
+3. Consider cross-category relationships and dependencies
+4. Provide specific, actionable recommendations with category-based reasoning
+5. Include industry-specific and use-case-specific guidance
+6. Maintain complexity level appropriate for: ${contextIntelligence.complexityLevel || 'intermediate'}
 
 USER ANNOTATIONS PROVIDED:
 ${imageAnnotations.length > 0 ? 
@@ -343,11 +666,13 @@ ${imageAnnotations.length > 0 ?
   'No user annotations provided'
 }
 
-Provide analysis in JSON format with annotations containing x, y coordinates, category, severity, feedback, and businessImpact fields.`;
+Provide analysis in JSON format with annotations containing x, y coordinates, category, severity, feedback, and businessImpact fields. Reference the hierarchical knowledge categories in your feedback.`;
 
-  console.log('✅ Enhanced prompt built:', {
+  console.log('✅ Hierarchical enhanced prompt built:', {
     promptLength: enhancedPrompt.length,
-    focusAreas: contextIntelligence.focusAreas,
+    primaryCategories: contextIntelligence.primaryCategories,
+    secondaryCategories: contextIntelligence.secondaryCategories,
+    industryTags: contextIntelligence.industryTags,
     knowledgeEntries: retrievedKnowledge.relevantPatterns.length,
     analysisType: contextIntelligence.analysisType
   });
@@ -362,7 +687,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🚀 === RAG CONTEXT BUILDER STARTED ===');
+    console.log('🚀 === HIERARCHICAL RAG CONTEXT BUILDER STARTED ===');
     
     const { imageUrls, userPrompt, imageAnnotations, analysisId } = await req.json();
     
@@ -373,7 +698,7 @@ serve(async (req) => {
       analysisId: analysisId?.substring(0, 8) + '...'
     });
 
-    // Parse context intelligence from user prompt
+    // Parse enhanced context intelligence
     const contextIntelligence = parseContextIntelligence(userPrompt);
 
     // Initialize Supabase client
@@ -387,14 +712,14 @@ serve(async (req) => {
       throw new Error('OPENAI_API_KEY_RAG not configured');
     }
 
-    // Retrieve contextual knowledge
-    const retrievedKnowledge = await retrieveContextualKnowledge(
+    // Retrieve hierarchical knowledge
+    const retrievedKnowledge = await retrieveHierarchicalKnowledge(
       contextIntelligence,
       supabase,
       openaiKey
     );
 
-    // Build enhanced prompt with context intelligence
+    // Build hierarchical enhanced prompt
     const enhancedPrompt = buildEnhancedPrompt(
       contextIntelligence,
       retrievedKnowledge,
@@ -403,30 +728,35 @@ serve(async (req) => {
       imageAnnotations || []
     );
 
-    // Generate research citations
-    const researchCitations = retrievedKnowledge.relevantPatterns.map((pattern: any, index: number) => ({
+    // Generate enhanced research citations
+    const researchCitations = retrievedKnowledge.relevantPatterns.map((pattern: EnhancedKnowledgeEntry, index: number) => ({
       id: `citation-${index + 1}`,
       title: pattern.title,
       source: pattern.source || 'Knowledge Base',
-      relevanceScore: pattern.similarity,
-      contextMatch: pattern.matchedQuery,
+      category: pattern.categoryPath,
+      relevanceScore: pattern.relevanceScore,
+      contextMatch: pattern.contextMatch,
+      industryTags: pattern.industry_tags,
+      complexityLevel: pattern.complexity_level,
+      useCases: pattern.use_cases,
       excerpt: pattern.content?.substring(0, 200) + '...'
     }));
 
-    // Determine industry context from focus areas
-    const industryContext = contextIntelligence.focusAreas.includes('ecommerce') ? 'E-commerce' :
-                           contextIntelligence.focusAreas.includes('conversion') ? 'SaaS/Landing Pages' :
-                           contextIntelligence.focusAreas.includes('accessibility') ? 'Public/Government' :
-                           'General Web Application';
+    // Determine enhanced industry context
+    const industryContext = contextIntelligence.industryTags.length > 0 ? 
+      contextIntelligence.industryTags.join(' + ') :
+      'General Web Application';
 
-    console.log('✅ === RAG CONTEXT BUILDER COMPLETED ===');
+    console.log('✅ === HIERARCHICAL RAG CONTEXT BUILDER COMPLETED ===');
     console.log('📊 Final results:', {
       knowledgeEntries: retrievedKnowledge.relevantPatterns.length,
       citationsCount: researchCitations.length,
       industryContext,
-      contextIntelligence: {
-        analysisType: contextIntelligence.analysisType,
-        focusAreas: contextIntelligence.focusAreas
+      hierarchicalContext: {
+        primaryCategories: contextIntelligence.primaryCategories,
+        secondaryCategories: contextIntelligence.secondaryCategories,
+        industryTags: contextIntelligence.industryTags,
+        complexityLevel: contextIntelligence.complexityLevel
       }
     });
 
@@ -438,7 +768,14 @@ serve(async (req) => {
       contextIntelligence: {
         focusAreas: contextIntelligence.focusAreas,
         analysisType: contextIntelligence.analysisType,
-        targetedQueries: contextIntelligence.targetedQueries
+        targetedQueries: contextIntelligence.targetedQueries,
+        hierarchicalContext: {
+          primaryCategories: contextIntelligence.primaryCategories,
+          secondaryCategories: contextIntelligence.secondaryCategories,
+          industryTags: contextIntelligence.industryTags,
+          complexityLevel: contextIntelligence.complexityLevel,
+          useCases: contextIntelligence.useCases
+        }
       },
       buildTimestamp: new Date().toISOString()
     }), {
@@ -446,10 +783,10 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('❌ Error in build-rag-context:', error);
+    console.error('❌ Error in hierarchical build-rag-context:', error);
     return new Response(JSON.stringify({ 
       error: error.message,
-      details: 'Failed to build RAG context with user intelligence'
+      details: 'Failed to build hierarchical RAG context with enhanced intelligence'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
