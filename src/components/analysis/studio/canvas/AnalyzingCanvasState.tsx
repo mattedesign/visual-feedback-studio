@@ -3,50 +3,82 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
+import { useAIAnalysis } from '@/hooks/analysis/useAIAnalysis';
 import { Loader2, Brain, Search, Lightbulb } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface AnalyzingCanvasStateProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
 }
 
 export const AnalyzingCanvasState = ({ workflow }: AnalyzingCanvasStateProps) => {
-  const [currentPhase, setCurrentPhase] = useState<'initializing' | 'rag' | 'analysis' | 'results'>('initializing');
+  const [currentPhase, setCurrentPhase] = useState<'initializing' | 'rag' | 'analysis' | 'complete'>('initializing');
   const [phaseProgress, setPhaseProgress] = useState(0);
+  const { analyzeImages, isAnalyzing } = useAIAnalysis();
 
+  // Start analysis when component mounts
   useEffect(() => {
-    // Simulate analysis phases
-    const phases = [
-      { name: 'initializing', duration: 1000, label: 'Initializing Analysis...' },
-      { name: 'rag', duration: 3000, label: 'Building Research Context...' },
-      { name: 'analysis', duration: 5000, label: 'Analyzing Design...' },
-      { name: 'results', duration: 1000, label: 'Preparing Results...' }
-    ];
+    const runAnalysis = async () => {
+      try {
+        console.log('🚀 AnalyzingCanvasState: Starting real analysis');
+        
+        setCurrentPhase('initializing');
+        setPhaseProgress(0);
+        
+        // Simulate phase progression
+        setTimeout(() => {
+          setCurrentPhase('rag');
+          setPhaseProgress(25);
+        }, 1000);
+        
+        setTimeout(() => {
+          setCurrentPhase('analysis');
+          setPhaseProgress(50);
+        }, 3000);
 
-    let currentIndex = 0;
-    
-    const runPhase = () => {
-      if (currentIndex >= phases.length) return;
-      
-      const phase = phases[currentIndex];
-      setCurrentPhase(phase.name as any);
-      setPhaseProgress(0);
-      
-      // Animate progress for this phase
-      const progressInterval = setInterval(() => {
-        setPhaseProgress(prev => {
-          if (prev >= 100) {
-            clearInterval(progressInterval);
-            currentIndex++;
-            setTimeout(runPhase, 200); // Brief pause between phases
-            return 100;
-          }
-          return prev + (100 / (phase.duration / 100));
+        // Prepare user annotations in the expected format
+        const userAnnotations = workflow.imageAnnotations.flatMap(imageAnnotation => 
+          imageAnnotation.annotations.map(annotation => ({
+            imageUrl: imageAnnotation.imageUrl,
+            x: annotation.x,
+            y: annotation.y,
+            comment: annotation.comment,
+            id: annotation.id
+          }))
+        );
+
+        // Call the AI analysis
+        const result = await analyzeImages({
+          imageUrls: workflow.selectedImages,
+          userAnnotations,
+          analysisPrompt: workflow.analysisContext || 'Analyze this design for UX improvements',
+          deviceType: 'desktop'
         });
-      }, 100);
+        
+        setCurrentPhase('complete');
+        setPhaseProgress(100);
+        
+        if (result.success && result.annotations) {
+          workflow.setAiAnnotations(result.annotations);
+          console.log('✅ AnalyzingCanvasState: Analysis complete, moving to results');
+          
+          // Move to results after a brief delay
+          setTimeout(() => {
+            workflow.goToStep('results');
+          }, 1500);
+        } else {
+          throw new Error('Analysis failed to return results');
+        }
+        
+      } catch (error) {
+        console.error('❌ AnalyzingCanvasState: Analysis failed:', error);
+        toast.error('Analysis failed. Please try again.');
+        workflow.goToStep('annotate');
+      }
     };
 
-    runPhase();
-  }, []);
+    runAnalysis();
+  }, []); // Only run once when component mounts
 
   const getPhaseInfo = () => {
     switch (currentPhase) {
@@ -71,11 +103,11 @@ export const AnalyzingCanvasState = ({ workflow }: AnalyzingCanvasStateProps) =>
           description: 'AI is examining your design using research-backed insights...',
           color: 'from-pink-500 to-pink-600'
         };
-      case 'results':
+      case 'complete':
         return {
           icon: <Lightbulb className="w-6 h-6" />,
-          title: 'Preparing Results',
-          description: 'Finalizing analysis and generating recommendations...',
+          title: 'Analysis Complete',
+          description: 'Finalizing results and preparing recommendations...',
           color: 'from-green-500 to-green-600'
         };
       default:
@@ -118,7 +150,7 @@ export const AnalyzingCanvasState = ({ workflow }: AnalyzingCanvasStateProps) =>
           </div>
 
           {/* Progress Percentage */}
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
             {Math.round(phaseProgress)}% complete
           </p>
 

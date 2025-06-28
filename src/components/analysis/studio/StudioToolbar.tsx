@@ -1,81 +1,112 @@
-STEP 3: Update useAIAnalysis Hook - Ensure Proper Integration
-File Location: src/hooks/analysis/useAIAnalysis.ts
-Check if this file exists and has the right interface. If it doesn't exist or needs updates:
-tsx// CREATE OR UPDATE: src/hooks/analysis/useAIAnalysis.ts
 
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Annotation } from '@/types/analysis';
-import { AnalysisWithFiles } from '@/services/analysisDataService';
+import { Monitor, Tablet, Smartphone, Play, ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 
-interface AnalyzeImagesParams {
-  imageUrls: string[];
-  userAnnotations: Array<{
-    imageUrl: string;
-    x: number;
-    y: number;
-    comment: string;
-    id: string;
-  }>;
-  analysisPrompt: string;
-  deviceType?: 'desktop' | 'tablet' | 'mobile';
+interface StudioToolbarProps {
+  workflow: ReturnType<typeof useAnalysisWorkflow>;
+  selectedDevice: 'desktop' | 'tablet' | 'mobile';
+  setSelectedDevice: (device: 'desktop' | 'tablet' | 'mobile') => void;
 }
 
-interface AnalyzeImagesResult {
-  annotations: Annotation[];
-  analysis: AnalysisWithFiles;
-  ragContext?: any;
-}
+export const StudioToolbar = ({ workflow, selectedDevice, setSelectedDevice }: StudioToolbarProps) => {
+  const canRunAnalysis = workflow.selectedImages.length > 0;
 
-export const useAIAnalysis = () => {
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const analyzeImages = async (params: AnalyzeImagesParams): Promise<AnalyzeImagesResult> => {
-    setIsAnalyzing(true);
-    setError(null);
-
-    try {
-      console.log('🔍 Starting AI Analysis with params:', params);
-
-      // Call your existing analyze-design function
-      const { data, error: analysisError } = await supabase.functions.invoke('analyze-design', {
-        body: {
-          imageUrls: params.imageUrls,
-          userAnnotations: params.userAnnotations,
-          analysisPrompt: params.analysisPrompt,
-          deviceType: params.deviceType || 'desktop'
-        }
-      });
-
-      if (analysisError) {
-        throw new Error(analysisError.message || 'Analysis failed');
-      }
-
-      console.log('✅ AI Analysis Response:', data);
-
-      // Transform the response to match expected format
-      const result: AnalyzeImagesResult = {
-        annotations: data.annotations || [],
-        analysis: data.analysis || null,
-        ragContext: data.ragContext
-      };
-
-      return result;
-
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Analysis failed';
-      setError(errorMessage);
-      console.error('❌ AI Analysis Error:', err);
-      throw err;
-    } finally {
-      setIsAnalyzing(false);
+  const handleRunAnalysis = () => {
+    if (canRunAnalysis) {
+      console.log('🚀 StudioToolbar: Starting analysis workflow');
+      workflow.goToStep('analyzing');
     }
   };
 
-  return {
-    analyzeImages,
-    isAnalyzing,
-    error
+  const handleGoBack = () => {
+    if (workflow.currentStep === 'results') {
+      workflow.goToStep('annotate');
+    } else if (workflow.currentStep === 'analyzing') {
+      workflow.goToStep('annotate');
+    } else if (workflow.currentStep === 'annotate') {
+      if (workflow.selectedImages.length > 1) {
+        workflow.goToStep('review');
+      } else {
+        workflow.goToStep('upload');
+      }
+    } else if (workflow.currentStep === 'review') {
+      workflow.goToStep('upload');
+    }
   };
+
+  const getStepTitle = () => {
+    switch (workflow.currentStep) {
+      case 'upload': return 'Upload Images';
+      case 'review': return 'Review Selection';
+      case 'annotate': return 'Add Annotations';
+      case 'analyzing': return 'Analyzing Design';
+      case 'results': return 'Analysis Results';
+      default: return 'Design Analysis';
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-between p-4 bg-slate-700 border-b border-slate-600">
+      {/* Left Section - Back Button & Title */}
+      <div className="flex items-center space-x-4">
+        {workflow.currentStep !== 'upload' && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleGoBack}
+            className="text-slate-300 hover:text-white"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
+        )}
+        <h2 className="text-lg font-semibold text-white">
+          {getStepTitle()}
+        </h2>
+      </div>
+
+      {/* Center Section - Device Selector */}
+      <div className="flex items-center space-x-2 bg-slate-800 rounded-lg p-1">
+        <Button
+          variant={selectedDevice === 'desktop' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setSelectedDevice('desktop')}
+          className="text-slate-300 hover:text-white"
+        >
+          <Monitor className="w-4 h-4" />
+        </Button>
+        <Button
+          variant={selectedDevice === 'tablet' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setSelectedDevice('tablet')}
+          className="text-slate-300 hover:text-white"
+        >
+          <Tablet className="w-4 h-4" />
+        </Button>
+        <Button
+          variant={selectedDevice === 'mobile' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setSelectedDevice('mobile')}
+          className="text-slate-300 hover:text-white"
+        >
+          <Smartphone className="w-4 h-4" />
+        </Button>
+      </div>
+
+      {/* Right Section - Run Analysis */}
+      <div className="flex items-center space-x-2">
+        {workflow.currentStep === 'annotate' && (
+          <Button
+            onClick={handleRunAnalysis}
+            disabled={!canRunAnalysis}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <Play className="w-4 h-4 mr-2" />
+            Run Analysis
+          </Button>
+        )}
+      </div>
+    </div>
+  );
 };
