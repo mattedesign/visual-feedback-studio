@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { Badge } from '@/components/ui/badge';
@@ -7,10 +8,24 @@ import { AlertTriangle } from 'lucide-react';
 interface ResultsCanvasStateProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
   selectedDevice: 'desktop' | 'tablet' | 'mobile';
+  activeAnnotation?: string | null;
+  onAnnotationClick?: (annotationId: string) => void;
 }
 
-export const ResultsCanvasState = ({ workflow, selectedDevice }: ResultsCanvasStateProps) => {
+export const ResultsCanvasState = ({ 
+  workflow, 
+  selectedDevice, 
+  activeAnnotation, 
+  onAnnotationClick 
+}: ResultsCanvasStateProps) => {
   const [selectedFeedback, setSelectedFeedback] = useState<any>(null);
+
+  const handleAnnotationClick = (annotation: any) => {
+    setSelectedFeedback(annotation);
+    if (onAnnotationClick) {
+      onAnnotationClick(annotation.id);
+    }
+  };
 
   if (workflow.aiAnnotations.length === 0) {
     return (
@@ -35,12 +50,12 @@ export const ResultsCanvasState = ({ workflow, selectedDevice }: ResultsCanvasSt
     );
   }
 
-  // Show existing annotations without trying to create new ones
+  // Show existing annotations with active highlighting
   const imageUrl = workflow.selectedImages[0];
   const aiAnnotations = workflow.aiAnnotations;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
           Analysis Results
@@ -58,20 +73,30 @@ export const ResultsCanvasState = ({ workflow, selectedDevice }: ResultsCanvasSt
           style={{ maxHeight: '70vh' }}
         />
         
-        {/* Display existing AI annotations exactly as they come from your system */}
-        {aiAnnotations.map((annotation, index) => (
-          <div
-            key={annotation.id || index}
-            className="absolute w-8 h-8 bg-red-500 rounded-full border-2 border-white shadow-lg flex items-center justify-center cursor-pointer transform -translate-x-1/2 -translate-y-1/2 hover:scale-110 transition-transform z-10"
-            style={{
-              left: `${annotation.x}%`,
-              top: `${annotation.y}%`
-            }}
-            onClick={() => setSelectedFeedback(annotation)}
-          >
-            <span className="text-white text-xs font-bold">{annotation.id || index + 1}</span>
-          </div>
-        ))}
+        {/* Display AI annotations with active highlighting */}
+        {aiAnnotations.map((annotation, index) => {
+          const isActive = activeAnnotation === annotation.id;
+          
+          return (
+            <div
+              key={annotation.id || index}
+              className={`absolute w-8 h-8 rounded-full border-2 shadow-lg flex items-center justify-center cursor-pointer transform -translate-x-1/2 -translate-y-1/2 transition-all duration-200 z-10 ${
+                isActive 
+                  ? 'bg-blue-500 border-blue-300 scale-125 ring-4 ring-blue-200 dark:ring-blue-800' 
+                  : 'bg-red-500 border-white hover:scale-110 hover:ring-2 hover:ring-red-200 dark:hover:ring-red-800'
+              }`}
+              style={{
+                left: `${annotation.x}%`,
+                top: `${annotation.y}%`
+              }}
+              onClick={() => handleAnnotationClick(annotation)}
+            >
+              <span className="text-white text-xs font-bold">
+                {annotation.id || index + 1}
+              </span>
+            </div>
+          );
+        })}
       </div>
 
       {/* Show feedback if available */}
@@ -82,9 +107,9 @@ export const ResultsCanvasState = ({ workflow, selectedDevice }: ResultsCanvasSt
               <h4 className="font-medium text-gray-900 dark:text-white">
                 {selectedFeedback.title || 'Analysis Insight'}
               </h4>
-              {selectedFeedback.description && (
+              {selectedFeedback.feedback && (
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {selectedFeedback.description}
+                  {selectedFeedback.feedback}
                 </p>
               )}
               {selectedFeedback.recommendation && (

@@ -23,13 +23,20 @@ export const AnalysisStudioLayout = ({
   setRightPanelCollapsed
 }: AnalysisStudioLayoutProps) => {
   const [selectedDevice, setSelectedDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+  const [activeAnnotation, setActiveAnnotation] = useState<string | null>(null);
+
+  // Handle annotation click from either panel or canvas
+  const handleAnnotationClick = (annotationId: string) => {
+    setActiveAnnotation(prevActive => prevActive === annotationId ? null : annotationId);
+  };
 
   console.log('🏗️ STUDIO LAYOUT RENDER:', {
     currentStep: workflow.currentStep,
     sidebarCollapsed,
     rightPanelCollapsed,
     selectedDevice,
-    selectedImagesCount: workflow.selectedImages.length
+    selectedImagesCount: workflow.selectedImages.length,
+    activeAnnotation
   });
 
   return (
@@ -52,6 +59,8 @@ export const AnalysisStudioLayout = ({
         <StudioCanvas 
           workflow={workflow}
           selectedDevice={selectedDevice}
+          activeAnnotation={activeAnnotation}
+          onAnnotationClick={handleAnnotationClick}
         />
         
         <StudioChat workflow={workflow} />
@@ -62,6 +71,8 @@ export const AnalysisStudioLayout = ({
         <StudioRightPanel 
           workflow={workflow}
           selectedDevice={selectedDevice}
+          activeAnnotation={activeAnnotation}
+          onAnnotationClick={handleAnnotationClick}
         />
       )}
     </div>

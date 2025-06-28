@@ -9,9 +9,16 @@ import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 interface StudioCanvasProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
   selectedDevice: 'desktop' | 'tablet' | 'mobile';
+  activeAnnotation?: string | null;
+  onAnnotationClick?: (annotationId: string) => void;
 }
 
-export const StudioCanvas = ({ workflow, selectedDevice }: StudioCanvasProps) => {
+export const StudioCanvas = ({ 
+  workflow, 
+  selectedDevice, 
+  activeAnnotation, 
+  onAnnotationClick 
+}: StudioCanvasProps) => {
   const renderCanvasState = () => {
     switch (workflow.currentStep) {
       case 'upload':
@@ -23,7 +30,14 @@ export const StudioCanvas = ({ workflow, selectedDevice }: StudioCanvasProps) =>
       case 'analyzing':
         return <AnalyzingCanvasState workflow={workflow} />;
       case 'results':
-        return <ResultsCanvasState workflow={workflow} selectedDevice={selectedDevice} />;
+        return (
+          <ResultsCanvasState 
+            workflow={workflow} 
+            selectedDevice={selectedDevice}
+            activeAnnotation={activeAnnotation}
+            onAnnotationClick={onAnnotationClick}
+          />
+        );
       default:
         return <UploadCanvasState workflow={workflow} />;
     }
