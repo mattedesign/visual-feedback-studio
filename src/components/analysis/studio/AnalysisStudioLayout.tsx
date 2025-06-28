@@ -1,10 +1,10 @@
-
-import { StudioCanvas } from './StudioCanvas';
-import { StudioSidebar } from './StudioSidebar';
-import { StudioToolbar } from './StudioToolbar';
-import { StudioRightPanel } from './StudioRightPanel';
-import { StudioChat } from './StudioChat';
+import { useState } from 'react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
+import { StudioSidebar } from './StudioSidebar';
+import { StudioCanvas } from './StudioCanvas';
+import { StudioRightPanel } from './StudioRightPanel';
+import { StudioToolbar } from './StudioToolbar';
+import { StudioChat } from './StudioChat';
 
 interface AnalysisStudioLayoutProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -14,44 +14,55 @@ interface AnalysisStudioLayoutProps {
   setRightPanelCollapsed: (collapsed: boolean) => void;
 }
 
-export const AnalysisStudioLayout = ({
-  workflow,
-  sidebarCollapsed,
+export const AnalysisStudioLayout = ({ 
+  workflow, 
+  sidebarCollapsed, 
   setSidebarCollapsed,
   rightPanelCollapsed,
-  setRightPanelCollapsed,
+  setRightPanelCollapsed
 }: AnalysisStudioLayoutProps) => {
+  const [selectedDevice, setSelectedDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+
+  console.log('🏗️ STUDIO LAYOUT RENDER:', {
+    currentStep: workflow.currentStep,
+    sidebarCollapsed,
+    rightPanelCollapsed,
+    selectedDevice,
+    selectedImagesCount: workflow.selectedImages.length
+  });
+
   return (
-    <div className="min-h-screen bg-slate-900 text-white flex flex-col">
-      {/* Top Toolbar */}
-      <StudioToolbar 
+    <div className="flex h-screen bg-gray-100 dark:bg-slate-800">
+      {/* Left Sidebar - File Management */}
+      <StudioSidebar 
         workflow={workflow}
-        onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
-        onToggleRightPanel={() => setRightPanelCollapsed(!rightPanelCollapsed)}
+        collapsed={sidebarCollapsed}
+        setCollapsed={setSidebarCollapsed}
       />
       
-      {/* Main Content Area */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar */}
-        <StudioSidebar 
+      {/* Main Canvas Area */}
+      <div className="flex-1 flex flex-col">
+        <StudioToolbar 
           workflow={workflow}
-          collapsed={sidebarCollapsed}
+          selectedDevice={selectedDevice}
+          setSelectedDevice={setSelectedDevice}
         />
         
-        {/* Main Canvas */}
-        <div className="flex-1 flex flex-col">
-          <StudioCanvas workflow={workflow} />
-          
-          {/* Bottom Chat Panel */}
-          <StudioChat workflow={workflow} />
-        </div>
+        <StudioCanvas 
+          workflow={workflow}
+          selectedDevice={selectedDevice}
+        />
         
-        {/* Right Panel */}
+        <StudioChat workflow={workflow} />
+      </div>
+
+      {/* Right Panel - Results & Actions */}
+      {!rightPanelCollapsed && (
         <StudioRightPanel 
           workflow={workflow}
-          collapsed={rightPanelCollapsed}
+          selectedDevice={selectedDevice}
         />
-      </div>
+      )}
     </div>
   );
 };

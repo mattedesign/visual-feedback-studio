@@ -20,7 +20,7 @@ export const StudioToolbar = ({ workflow, selectedDevice, setSelectedDevice }: S
       workflow.goToStep('analyzing');
       // Simulate analysis completion after 3 seconds
       setTimeout(() => {
-        // Add mock AI annotations for demonstration
+        // Add mock AI annotations for demonstration with correct type structure
         const mockAnnotations = [
           {
             id: 1,
@@ -31,7 +31,11 @@ export const StudioToolbar = ({ workflow, selectedDevice, setSelectedDevice }: S
             description: 'Main navigation needs accessibility improvements',
             recommendation: 'Add ARIA labels and keyboard navigation support',
             category: 'Accessibility',
-            imageIndex: 0
+            imageIndex: 0,
+            // Add required properties that might be missing
+            feedback: 'Navigation accessibility needs improvement',
+            implementationEffort: 'Medium',
+            businessImpact: 'High'
           },
           {
             id: 2,
@@ -42,7 +46,11 @@ export const StudioToolbar = ({ workflow, selectedDevice, setSelectedDevice }: S
             description: 'Button text contrast could be improved',
             recommendation: 'Increase contrast ratio to meet WCAG AA standards',
             category: 'Accessibility',
-            imageIndex: 0
+            imageIndex: 0,
+            // Add required properties that might be missing
+            feedback: 'Button contrast needs improvement',
+            implementationEffort: 'Low',
+            businessImpact: 'Medium'
           }
         ];
         workflow.setAiAnnotations(mockAnnotations);
@@ -113,11 +121,6 @@ export const StudioToolbar = ({ workflow, selectedDevice, setSelectedDevice }: S
         >
           <Zap className="w-4 h-4 mr-2" />
           {workflow.isAnalyzing ? 'Analyzing...' : 'Analyze'}
-          {!workflow.isAnalyzing && (
-            <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          )}
         </Button>
       </div>
 
