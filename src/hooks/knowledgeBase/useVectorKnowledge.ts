@@ -260,7 +260,7 @@ export const useVectorKnowledge = () => {
     }
   }, []);
 
-  // Get Category Breakdown
+  // Get Category Breakdown - Fixed to call without arguments
   const getCategoryBreakdown = useCallback(async () => {
     setIsLoading(true);
     try {
