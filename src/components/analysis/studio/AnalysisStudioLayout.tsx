@@ -22,7 +22,6 @@ export const AnalysisStudioLayout = ({
   rightPanelCollapsed,
   setRightPanelCollapsed
 }: AnalysisStudioLayoutProps) => {
-  const [selectedDevice, setSelectedDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [activeAnnotation, setActiveAnnotation] = useState<string | null>(null);
 
   // Handle annotation click from either panel or canvas
@@ -34,7 +33,6 @@ export const AnalysisStudioLayout = ({
     currentStep: workflow.currentStep,
     sidebarCollapsed,
     rightPanelCollapsed,
-    selectedDevice,
     selectedImagesCount: workflow.selectedImages.length,
     activeAnnotation
   });
@@ -50,15 +48,10 @@ export const AnalysisStudioLayout = ({
       
       {/* Main Canvas Area */}
       <div className="flex-1 flex flex-col">
-        <StudioToolbar 
-          workflow={workflow}
-          selectedDevice={selectedDevice}
-          setSelectedDevice={setSelectedDevice}
-        />
+        <StudioToolbar workflow={workflow} />
         
         <StudioCanvas 
           workflow={workflow}
-          selectedDevice={selectedDevice}
           activeAnnotation={activeAnnotation}
           onAnnotationClick={handleAnnotationClick}
         />
@@ -70,7 +63,6 @@ export const AnalysisStudioLayout = ({
       {!rightPanelCollapsed && (
         <StudioRightPanel 
           workflow={workflow}
-          selectedDevice={selectedDevice}
           activeAnnotation={activeAnnotation}
           onAnnotationClick={handleAnnotationClick}
         />

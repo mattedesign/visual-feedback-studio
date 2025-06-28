@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { X, MessageSquare, Sparkles } from 'lucide-react';
 import { MultiImageAnnotateStep } from './MultiImageAnnotateStep';
@@ -71,14 +70,6 @@ export const AnnotateStep = ({ workflow }: AnnotateStepProps) => {
 
   const handleSubmitForAnalysis = () => {
     workflow.goToStep('analyzing');
-  };
-
-  const handleBack = () => {
-    if (workflow.uploadedFiles.length > 1) {
-      workflow.goToStep('review');
-    } else {
-      workflow.goToStep('upload');
-    }
   };
 
   return (
@@ -172,14 +163,7 @@ export const AnnotateStep = ({ workflow }: AnnotateStepProps) => {
             </div>
           </div>
 
-          <div className="flex justify-between">
-            <Button
-              onClick={handleBack}
-              variant="outline"
-              className="border-slate-600 hover:bg-slate-700"
-            >
-              Back
-            </Button>
+          <div className="flex justify-center">
             <Button
               onClick={handleSubmitForAnalysis}
               disabled={workflow.userAnnotations.length === 0 && !workflow.analysisContext.trim()}
