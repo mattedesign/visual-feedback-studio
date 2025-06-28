@@ -1,70 +1,79 @@
+// src/pages/Auth.tsx
+// Safe fix to redirect logged-in users to analysis page
 
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { toast } from 'sonner';
-import { AlertTriangle, ArrowRight } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { AlertTriangle, ArrowRight } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
   
-  const { user, session, loading: authLoading, error: authError } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+
+  // 🚀 SAFE REDIRECT FIX: Automatically redirect logged-in users
+  useEffect(() => {
+    // Only redirect if we have both user and session, and auth is not loading
+    if (!authLoading && user && session) {
+      console.log('✅ User already authenticated, redirecting to analysis...');
+      
+      // Use replace to avoid adding to browser history (prevents back button loops)
+      navigate('/analysis', { replace: true });
+    }
+  }, [user, session, authLoading, navigate]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     setLoading(true);
+    setAuthError('');
 
     try {
       if (isSignUp) {
-        const { data, error } = await supabase.auth.signUp({
+        const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/analysis`
           }
         });
-
         if (error) throw error;
-        
-        if (data.session) {
-          toast.success('Account created and signed in successfully!');
-        } else if (data.user && !data.user.email_confirmed_at) {
-          toast.success('Account created! Please check your email to confirm your account.');
-        } else {
-          toast.success('Account created successfully! Please sign in.');
-          setIsSignUp(false);
-        }
+        toast.success('Check your email to confirm your account!');
       } else {
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { error } = await supabase.auth.signInWithPassword({
           email,
-          password,
+          password
         });
-
         if (error) throw error;
         
-        toast.success('Welcome back! You can now go to Analysis.');
+        // Success! The useEffect above will handle the redirect
+        toast.success('Signed in successfully!');
       }
     } catch (error: any) {
+      console.error('Auth error:', error);
+      
       if (error.message.includes('Invalid login credentials')) {
-        toast.error('Invalid email or password. Please check your credentials and try again.');
+        setAuthError('Invalid email or password. Please check your credentials and try again.');
       } else if (error.message.includes('User already registered')) {
         toast.error('An account with this email already exists. Please sign in instead.');
         setIsSignUp(false);
       } else if (error.message.includes('Password should be at least 6 characters')) {
-        toast.error('Password should be at least 6 characters long.');
+        setAuthError('Password should be at least 6 characters long.');
       } else if (error.message.includes('Email not confirmed')) {
-        toast.error('Please check your email and click the confirmation link before signing in.');
+        setAuthError('Please check your email and click the confirmation link before signing in.');
       } else {
-        toast.error(error.message || 'An error occurred during authentication');
+        setAuthError(error.message || 'An error occurred during authentication');
       }
     } finally {
       setLoading(false);
@@ -97,29 +106,36 @@ const Auth = () => {
     }
   };
 
-  const handleGoToAnalysis = () => {
-    window.location.href = '/analysis';
-  };
-
   // Show loading spinner while checking auth state
   if (authLoading) {
     return <LoadingSpinner />;
   }
 
+  // 🚨 IMPORTANT: If user is authenticated, don't render the form
+  // The useEffect will handle the redirect
+  if (user && session) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <LoadingSpinner />
+          <p className="text-white mt-4">Redirecting to analysis...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Only show auth form for non-authenticated users
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-slate-800 border-slate-700">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl text-white">
-            {user && session ? 'Already Logged In' : (isSignUp ? 'Create Account' : 'Welcome Back')}
+            {isSignUp ? 'Create Account' : 'Welcome Back'}
           </CardTitle>
           <CardDescription className="text-slate-400">
-            {user && session 
-              ? 'You are already signed in to your account' 
-              : (isSignUp 
-                ? 'Sign up to start analyzing your designs' 
-                : 'Sign in to your account'
-              )
+            {isSignUp 
+              ? 'Sign up to start analyzing your designs' 
+              : 'Sign in to your account'
             }
           </CardDescription>
         </CardHeader>
@@ -133,87 +149,62 @@ const Auth = () => {
             </Alert>
           )}
 
-          {/* Show logged-in state if user exists */}
-          {user && session ? (
-            <div className="space-y-4">
-              <div className="p-4 bg-green-900/20 rounded-lg border border-green-700">
-                <p className="text-green-400 text-sm mb-1">
-                  ✅ You are logged in as:
-                </p>
-                <p className="text-green-300 font-medium">
-                  {user.email}
-                </p>
-              </div>
-              <Button
-                onClick={handleGoToAnalysis}
-                className="w-full bg-blue-600 hover:bg-blue-700"
-                size="lg"
-              >
-                <ArrowRight className="w-4 h-4 mr-2" />
-                Go to Analysis
-              </Button>
+          <form onSubmit={handleAuth} className="space-y-4">
+            <div>
+              <Input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+              />
             </div>
-          ) : (
-            /* Show login/signup form for non-authenticated users */
-            <>
-              <form onSubmit={handleAuth} className="space-y-4">
-                <div>
-                  <Input
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
-                  />
-                </div>
-                <div>
-                  <Input
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
-                    className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {loading ? 'Loading...' : (isSignUp ? 'Sign Up' : 'Sign In')}
-                </Button>
-              </form>
-              
-              {!isSignUp && (
-                <div className="mt-4">
-                  <Button
-                    onClick={handleMagicLink}
-                    disabled={loading}
-                    variant="outline"
-                    className="w-full border-slate-600 text-slate-300 hover:bg-slate-700"
-                  >
-                    Send Magic Link
-                  </Button>
-                </div>
-              )}
-              
-              <div className="mt-4 text-center">
-                <button
-                  type="button"
-                  onClick={() => setIsSignUp(!isSignUp)}
-                  className="text-blue-400 hover:text-blue-300 underline"
-                >
-                  {isSignUp 
-                    ? 'Already have an account? Sign in' 
-                    : "Don't have an account? Sign up"
-                  }
-                </button>
-              </div>
-            </>
-          )}
+            <div>
+              <Input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+            >
+              {loading ? 'Loading...' : (isSignUp ? 'Create Account' : 'Sign In')}
+            </Button>
+          </form>
+
+          <div className="mt-4">
+            <Button
+              onClick={handleMagicLink}
+              disabled={loading}
+              variant="outline"
+              className="w-full border-slate-600 text-slate-300 hover:bg-slate-700"
+            >
+              {loading ? 'Sending...' : 'Send Magic Link'}
+            </Button>
+          </div>
+
+          <div className="mt-4 text-center">
+            <button
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setAuthError('');
+              }}
+              className="text-blue-400 hover:text-blue-300 text-sm"
+            >
+              {isSignUp 
+                ? 'Already have an account? Sign in' 
+                : "Don't have an account? Sign up"
+              }
+            </button>
+          </div>
         </CardContent>
       </Card>
     </div>
