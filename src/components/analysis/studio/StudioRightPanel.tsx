@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BarChart3, ChevronDown, ChevronUp } from 'lucide-react';
+import { BarChart3, ChevronDown, ChevronUp, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
 
 interface StudioRightPanelProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -20,6 +20,33 @@ export const StudioRightPanel = ({
 }: StudioRightPanelProps) => {
   const [expandedAnnotations, setExpandedAnnotations] = useState<Set<string>>(new Set());
   const hasResults = workflow.currentStep === 'results' && workflow.aiAnnotations.length > 0;
+
+  // Calculate summary metrics
+  const totalAnnotations = workflow.aiAnnotations.length;
+  const criticalCount = workflow.aiAnnotations.filter(a => a.severity === 'critical').length;
+  const suggestedCount = workflow.aiAnnotations.filter(a => a.severity === 'suggested').length;
+  const enhancementCount = workflow.aiAnnotations.filter(a => a.severity === 'enhancement').length;
+
+  // Calculate UX score based on issues found
+  const calculateUXScore = () => {
+    if (totalAnnotations === 0) return 95;
+    const baseScore = 100;
+    const criticalPenalty = criticalCount * 15;
+    const suggestedPenalty = suggestedCount * 8;
+    const enhancementPenalty = enhancementCount * 3;
+    return Math.max(20, baseScore - criticalPenalty - suggestedPenalty - enhancementPenalty);
+  };
+
+  const uxScore = calculateUXScore();
+
+  // Get score color and status
+  const getScoreStatus = (score: number) => {
+    if (score >= 85) return { color: 'text-green-500', status: 'Excellent', icon: CheckCircle };
+    if (score >= 70) return { color: 'text-yellow-500', status: 'Good', icon: TrendingUp };
+    return { color: 'text-red-500', status: 'Needs Work', icon: AlertTriangle };
+  };
+
+  const scoreStatus = getScoreStatus(uxScore);
 
   // Helper function to get severity color
   const getSeverityColor = (severity?: string) => {
@@ -76,24 +103,55 @@ export const StudioRightPanel = ({
       <div className="flex-1 overflow-auto p-4">
         {hasResults ? (
           <div className="space-y-6">
-            {/* Overall Score */}
-            <div className="text-center">
-              <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">87.2</div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">UX Score</div>
-            </div>
+            {/* Analysis Summary Section */}
+            <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-4 border border-gray-200 dark:border-slate-700">
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <BarChart3 className="w-4 h-4" />
+                Analysis Summary
+              </h4>
+              
+              {/* UX Score */}
+              <div className="text-center mb-4">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <scoreStatus.icon className={`w-6 h-6 ${scoreStatus.color}`} />
+                  <div className={`text-3xl font-bold ${scoreStatus.color}`}>{uxScore}</div>
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">UX Score</div>
+                <div className={`text-xs font-medium ${scoreStatus.color}`}>{scoreStatus.status}</div>
+              </div>
 
-            {/* Device Info */}
-            <div>
-              <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Device View</h4>
-              <div className="text-sm text-gray-600 dark:text-gray-400 capitalize">
-                Current: {selectedDevice}
+              {/* Metrics Grid */}
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="text-center">
+                  <div className="text-lg font-bold text-gray-900 dark:text-white">{totalAnnotations}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Total Issues</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-red-500">{criticalCount}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Critical</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-yellow-500">{suggestedCount}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Suggested</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-blue-500">{enhancementCount}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Enhancement</div>
+                </div>
+              </div>
+
+              {/* Device Info */}
+              <div className="text-center">
+                <div className="text-xs text-gray-600 dark:text-gray-400 capitalize">
+                  Analyzing: {selectedDevice} view
+                </div>
               </div>
             </div>
 
             {/* Insights Found */}
             <div>
               <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-medium text-gray-900 dark:text-white">Insights Found</h4>
+                <h4 className="text-sm font-medium text-gray-900 dark:text-white">Detailed Insights</h4>
                 <Badge variant="secondary">{workflow.aiAnnotations.length}</Badge>
               </div>
               <div className="space-y-2">
