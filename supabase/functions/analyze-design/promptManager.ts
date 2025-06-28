@@ -124,6 +124,75 @@ function parseContextIntelligence(analysisPrompt?: string): {
   };
 }
 
+// Enhanced function to extract detailed design elements for DALL-E context
+function extractDesignElementsForDALLE(analysisPrompt?: string): {
+  layoutAnalysis: string;
+  visualStyle: string;
+  componentInventory: string;
+  contextClues: string;
+  dallePromptEnhancement: string;
+} {
+  console.log('🎨 === DESIGN ELEMENT EXTRACTION FOR DALL-E ===');
+  
+  const prompt = analysisPrompt?.toLowerCase() || '';
+  
+  // Layout Analysis
+  let layoutAnalysis = 'standard grid layout';
+  if (prompt.includes('dashboard')) layoutAnalysis = 'dashboard grid with cards and panels';
+  else if (prompt.includes('landing')) layoutAnalysis = 'hero-focused vertical layout';
+  else if (prompt.includes('ecommerce') || prompt.includes('product')) layoutAnalysis = 'product grid with details sidebar';
+  else if (prompt.includes('form') || prompt.includes('signup')) layoutAnalysis = 'centered form layout with clear hierarchy';
+  
+  // Visual Style Assessment
+  let visualStyle = 'clean modern design';
+  if (prompt.includes('professional') || prompt.includes('corporate')) visualStyle = 'professional corporate aesthetic';
+  else if (prompt.includes('minimal')) visualStyle = 'minimalist design with generous whitespace';
+  else if (prompt.includes('colorful') || prompt.includes('vibrant')) visualStyle = 'vibrant colorful interface';
+  else if (prompt.includes('dark')) visualStyle = 'dark theme with accent colors';
+  
+  // Component Inventory
+  let componentInventory = 'standard UI components';
+  if (prompt.includes('button')) componentInventory += ', prominent call-to-action buttons';
+  if (prompt.includes('form')) componentInventory += ', form fields and inputs';
+  if (prompt.includes('navigation') || prompt.includes('nav')) componentInventory += ', navigation elements';
+  if (prompt.includes('card')) componentInventory += ', content cards';
+  if (prompt.includes('table') || prompt.includes('data')) componentInventory += ', data tables';
+  
+  // Context Clues
+  let contextClues = 'general web application';
+  if (prompt.includes('mobile')) contextClues = 'mobile-optimized interface';
+  else if (prompt.includes('desktop')) contextClues = 'desktop-focused application';
+  if (prompt.includes('ecommerce')) contextClues += ', e-commerce platform';
+  else if (prompt.includes('dashboard')) contextClues += ', analytics dashboard';
+  else if (prompt.includes('landing')) contextClues += ', marketing landing page';
+  
+  // Generate DALL-E prompt enhancement
+  const dallePromptEnhancement = `
+DESIGN CONTEXT FOR UI MOCKUP:
+- Layout: ${layoutAnalysis}
+- Visual Style: ${visualStyle}
+- Components: ${componentInventory}
+- Context: ${contextClues}
+- Focus: Create a realistic, modern UI interface that addresses user feedback
+- Quality: High-fidelity mockup suitable for professional presentation
+`;
+
+  console.log('🎨 Design Elements Extracted:', {
+    layoutAnalysis,
+    visualStyle,
+    componentInventory,
+    contextClues
+  });
+
+  return {
+    layoutAnalysis,
+    visualStyle,
+    componentInventory,
+    contextClues,
+    dallePromptEnhancement
+  };
+}
+
 export function createEnhancedPrompt(
   analysisPrompt?: string,
   isComparative?: boolean,
@@ -149,6 +218,53 @@ export function createEnhancedPrompt(
     targetedQueries: contextIntelligence.ragQueries.length
   });
 
+  // NEW: Extract design elements for enhanced DALL-E context
+  const designElements = extractDesignElementsForDALLE(analysisPrompt);
+  console.log('🎨 Design Elements for DALL-E Enhancement Ready');
+
+  // Enhanced analysis prompt for better design extraction
+  const enhancedAnalysisPrompt = `
+DETAILED DESIGN EXTRACTION FOR DALL-E ENHANCEMENT:
+
+1. LAYOUT ANALYSIS:
+   - Grid system (columns, spacing, alignment)
+   - Visual hierarchy (primary/secondary elements)
+   - Content density (sparse/balanced/dense)
+   - Component relationships and flow
+
+2. VISUAL STYLE ASSESSMENT:
+   - Color scheme (primary, secondary, accent colors)
+   - Typography (font families, weights, sizes, line heights)
+   - Visual tone (playful/professional/minimal/bold/elegant)
+   - Brand personality indicators
+   - Spacing and padding patterns
+
+3. COMPONENT INVENTORY:
+   - Button styles and states (primary, secondary, disabled)
+   - Form element treatments (inputs, dropdowns, checkboxes)
+   - Navigation patterns (header, sidebar, breadcrumbs)
+   - Content block layouts (cards, lists, tables)
+   - Interactive elements (modals, tooltips, accordions)
+
+4. CONTEXT CLUES:
+   - Target audience indicators (age, profession, tech-savviness)
+   - Industry/sector hints (finance, healthcare, e-commerce, SaaS)
+   - Device/platform optimization (mobile-first, desktop, tablet)
+   - Accessibility considerations (contrast, font sizes, keyboard navigation)
+   - Business goals (conversion, retention, engagement, information)
+
+5. DESIGN ENHANCEMENT OPPORTUNITIES:
+   - Identify specific improvement areas
+   - Extract current design patterns for reference
+   - Note successful elements to maintain
+   - Highlight areas needing redesign focus
+
+Extract these details to build context-rich DALL-E prompts that create realistic, actionable UI mockups.
+
+CURRENT DESIGN CONTEXT:
+${designElements.dallePromptEnhancement}
+`;
+
   // If RAG context is available, use the enhanced prompt
   if (ragContext?.enhancedPrompt) {
     console.log('📚 Using RAG-enhanced prompt with research context');
@@ -160,8 +276,13 @@ export function createEnhancedPrompt(
       buildTimestamp: ragContext.buildTimestamp
     });
     
-    // Enhance the RAG prompt with context intelligence
+    // Enhance the RAG prompt with context intelligence and design extraction
     let enhancedRAGPrompt = ragContext.enhancedPrompt;
+    
+    // Add design element extraction to RAG prompt
+    enhancedRAGPrompt += `\n\n=== DESIGN ELEMENT EXTRACTION ===\n`;
+    enhancedRAGPrompt += enhancedAnalysisPrompt;
+    enhancedRAGPrompt += `\n=== END DESIGN ELEMENT EXTRACTION ===\n`;
     
     if (contextIntelligence.analysisType === 'targeted') {
       enhancedRAGPrompt += `\n\n=== TARGETED ANALYSIS FOCUS ===\n`;
@@ -175,8 +296,8 @@ export function createEnhancedPrompt(
     return enhancedRAGPrompt;
   }
 
-  // Fallback: Use existing prompt building logic
-  console.log('📊 Using standard prompt (no RAG context available)');
+  // Fallback: Use existing prompt building logic with design extraction enhancement
+  console.log('📊 Using standard prompt with design extraction enhancement');
   
   const systemPrompt = createAnalysisPrompt(
     analysisPrompt, 
@@ -191,6 +312,11 @@ export function createEnhancedPrompt(
   });
 
   let enhancedPrompt = systemPrompt;
+  
+  // Add design element extraction to standard prompt
+  enhancedPrompt += `\n\n=== ENHANCED DESIGN ANALYSIS ===\n`;
+  enhancedPrompt += enhancedAnalysisPrompt;
+  enhancedPrompt += `\n=== END ENHANCED DESIGN ANALYSIS ===\n`;
   
   // Add context intelligence enhancement to standard prompt
   if (contextIntelligence.analysisType === 'targeted') {
@@ -220,7 +346,8 @@ export function createEnhancedPrompt(
   console.log('Enhanced prompt prepared:', {
     finalLength: enhancedPrompt.length,
     isComparativeAnalysis: isComparative || isMultiImage,
-    hasContextIntelligence: contextIntelligence.analysisType === 'targeted'
+    hasContextIntelligence: contextIntelligence.analysisType === 'targeted',
+    hasDesignExtraction: true
   });
 
   return enhancedPrompt;
