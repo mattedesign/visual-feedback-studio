@@ -10,6 +10,7 @@ import { ResultsActions } from './components/ResultsActions';
 import { ImageIndicator } from './components/ImageIndicator';
 import { VisualSuggestions } from '../VisualSuggestions';
 import { CodeSolutions } from '../CodeSolutions';
+import { AnalysisContextPanel } from './components/AnalysisContextPanel';
 
 interface ResultsStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -203,6 +204,9 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
           </div>
         </CardHeader>
         <CardContent className="space-y-8">
+          {/* Analysis Context Display */}
+          <AnalysisContextPanel workflow={workflow} />
+
           {/* Image Indicator - New visual indicator */}
           <ImageIndicator 
             currentImageIndex={activeImageIndex >= 0 ? activeImageIndex : 0}

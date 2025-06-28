@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { X, MessageSquare, Sparkles } from 'lucide-react';
 import { MultiImageAnnotateStep } from './MultiImageAnnotateStep';
+import { AnalysisContextPanel } from './components/AnalysisContextPanel';
 
 interface AnnotateStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -80,13 +82,16 @@ export const AnnotateStep = ({ workflow }: AnnotateStepProps) => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto space-y-6">
+      {/* Analysis Context Panel - Always visible */}
+      <AnalysisContextPanel workflow={workflow} />
+
       <Card className="bg-slate-800/50 border-slate-700">
         <CardHeader>
           <CardTitle className="text-2xl text-center">Add Your Comments</CardTitle>
           <p className="text-slate-400 text-center">
             Click anywhere on the image to add comments about what you'd like analyzed.
-            You can also add general context below.
+            Your analysis context above will guide the overall analysis.
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -163,19 +168,6 @@ export const AnnotateStep = ({ workflow }: AnnotateStepProps) => {
                     </div>
                   ))}
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  General Analysis Context (Optional)
-                </label>
-                <Textarea
-                  value={workflow.analysisContext}
-                  onChange={(e) => workflow.setAnalysisContext(e.target.value)}
-                  placeholder="Add any general context about what you'd like analyzed..."
-                  className="bg-slate-700 border-slate-600"
-                  rows={4}
-                />
               </div>
             </div>
           </div>

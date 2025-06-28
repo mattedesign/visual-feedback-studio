@@ -1,7 +1,8 @@
 
-import { Files, Menu, MessageCircle } from 'lucide-react';
+import { Files, Menu, MessageCircle, Target } from 'lucide-react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { SidebarUpload } from './SidebarUpload';
+import { Badge } from '@/components/ui/badge';
 
 interface StudioSidebarProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -50,13 +51,39 @@ export const StudioSidebar = ({ workflow, collapsed, setCollapsed }: StudioSideb
           </div>
 
           {!collapsed && (
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-3">
               <h4 className="text-sm font-medium text-gray-900 dark:text-white">
                 Images ({workflow.uploadedFiles.length})
               </h4>
               <span className="text-xs text-gray-500 dark:text-gray-400">
                 Step: {workflow.currentStep}
               </span>
+            </div>
+          )}
+
+          {/* Analysis Context Indicator */}
+          {!collapsed && (
+            <div className="mb-2">
+              <div className="flex items-center space-x-2">
+                <Target className="w-3 h-3 text-gray-500 dark:text-gray-400" />
+                <span className="text-xs text-gray-500 dark:text-gray-400">Analysis Context:</span>
+              </div>
+              <div className="mt-1">
+                {workflow.analysisContext ? (
+                  <Badge variant="secondary" className="text-xs max-w-full">
+                    <span className="truncate">
+                      {workflow.analysisContext.length > 30 
+                        ? workflow.analysisContext.substring(0, 30) + '...' 
+                        : workflow.analysisContext
+                      }
+                    </span>
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-xs text-gray-500 dark:text-gray-400">
+                    Not set
+                  </Badge>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -132,6 +159,11 @@ export const StudioSidebar = ({ workflow, collapsed, setCollapsed }: StudioSideb
           {/* Collapsed state - show image thumbnails */}
           {collapsed && workflow.uploadedFiles.length > 0 && (
             <div className="p-2 space-y-2">
+              {/* Context indicator for collapsed state */}
+              {workflow.analysisContext && (
+                <div className="w-10 h-2 bg-blue-500 rounded-full mb-2" title="Analysis context set" />
+              )}
+              
               {workflow.uploadedFiles.slice(0, 6).map((file: string, index: number) => {
                 const isActive = isImageActive(file);
                 
