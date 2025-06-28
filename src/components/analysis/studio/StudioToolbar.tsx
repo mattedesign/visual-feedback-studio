@@ -1,6 +1,9 @@
+
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
+import { useAIAnalysis } from '@/hooks/analysis/useAIAnalysisStudio';
 import { Button } from '@/components/ui/button';
 import { Zap, Monitor, Tablet, Smartphone } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface StudioToolbarProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -9,23 +12,81 @@ interface StudioToolbarProps {
 }
 
 export const StudioToolbar = ({ workflow, selectedDevice, setSelectedDevice }: StudioToolbarProps) => {
+  const { analyzeImages, isAnalyzing: aiAnalyzing } = useAIAnalysis();
+
   const deviceTypes = [
     { id: 'desktop' as const, name: 'Desktop', icon: Monitor },
     { id: 'tablet' as const, name: 'Tablet', icon: Tablet },
     { id: 'mobile' as const, name: 'Mobile', icon: Smartphone }
   ];
 
-  const handleAnalyze = () => {
-    if (workflow.currentStep === 'annotate') {
+  const handleAnalyze = async () => {
+    if (workflow.currentStep !== 'annotate' || workflow.selectedImages.length === 0) {
+      toast.error('Please upload and annotate images before analyzing');
+      return;
+    }
+
+    try {
+      // Set analyzing state
+      workflow.setIsAnalyzing(true);
       workflow.goToStep('analyzing');
-      // Just move to results without creating mock data - let existing system handle it
-      setTimeout(() => {
-        workflow.goToStep('results');
-      }, 3000);
+
+      // Prepare analysis data
+      const imageUrls = workflow.selectedImages;
+      const userAnnotations = workflow.imageAnnotations.flatMap(ia => 
+        ia.annotations.map(annotation => ({
+          imageUrl: ia.imageUrl,
+          x: annotation.x,
+          y: annotation.y,
+          comment: annotation.comment,
+          id: annotation.id
+        }))
+      );
+      const analysisPrompt = workflow.analysisContext || 'Analyze this design for UX best practices and usability improvements';
+
+      console.log('🔍 Starting AI Analysis:', {
+        imageUrls: imageUrls.length,
+        annotations: userAnnotations.length,
+        prompt: analysisPrompt
+      });
+
+      // Call AI analysis
+      const result = await analyzeImages({
+        imageUrls,
+        userAnnotations,
+        analysisPrompt,
+        deviceType: selectedDevice
+      });
+
+      console.log('✅ AI Analysis Complete:', result);
+
+      // Update workflow with results
+      if (result.annotations) {
+        workflow.setAiAnnotations(result.annotations);
+      }
+
+      if (result.analysis) {
+        workflow.setCurrentAnalysis(result.analysis);
+      }
+
+      // Move to results step
+      workflow.goToStep('results');
+      toast.success('Analysis complete!');
+
+    } catch (error) {
+      console.error('❌ Analysis failed:', error);
+      toast.error('Analysis failed. Please try again.');
+      // Reset to annotate step on error
+      workflow.goToStep('annotate');
+    } finally {
+      workflow.setIsAnalyzing(false);
     }
   };
 
-  const canAnalyze = workflow.currentStep === 'annotate' && workflow.selectedImages.length > 0;
+  const canAnalyze = workflow.currentStep === 'annotate' && 
+                   workflow.selectedImages.length > 0 && 
+                   !workflow.isAnalyzing && 
+                   !aiAnalyzing;
 
   return (
     <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-6 py-3">
@@ -82,11 +143,11 @@ export const StudioToolbar = ({ workflow, selectedDevice, setSelectedDevice }: S
         {/* Analyze Button */}
         <Button 
           onClick={handleAnalyze}
-          disabled={!canAnalyze || workflow.isAnalyzing}
+          disabled={!canAnalyze}
           className="flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
           <Zap className="w-4 h-4 mr-2" />
-          {workflow.isAnalyzing ? 'Analyzing...' : 'Analyze'}
+          {(workflow.isAnalyzing || aiAnalyzing) ? 'Analyzing...' : 'Analyze'}
         </Button>
       </div>
     </div>
