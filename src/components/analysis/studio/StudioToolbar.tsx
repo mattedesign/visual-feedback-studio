@@ -18,40 +18,8 @@ export const StudioToolbar = ({ workflow, selectedDevice, setSelectedDevice }: S
   const handleAnalyze = () => {
     if (workflow.currentStep === 'annotate') {
       workflow.goToStep('analyzing');
-      // Simulate analysis completion after 3 seconds
+      // Just move to results without creating mock data - let existing system handle it
       setTimeout(() => {
-        // Add mock AI annotations for demonstration with correct string IDs
-        const mockAnnotations = [
-          {
-            id: "1", // String ID instead of number
-            x: 25,
-            y: 35,
-            severity: 'critical',
-            title: 'Navigation Issue',
-            description: 'Main navigation needs accessibility improvements',
-            recommendation: 'Add ARIA labels and keyboard navigation support',
-            category: 'Accessibility',
-            imageIndex: 0,
-            feedback: 'Navigation accessibility needs improvement',
-            implementationEffort: 'Medium',
-            businessImpact: 'High'
-          },
-          {
-            id: "2", // String ID instead of number
-            x: 60,
-            y: 60,
-            severity: 'medium',
-            title: 'Button Contrast',
-            description: 'Button text contrast could be improved',
-            recommendation: 'Increase contrast ratio to meet WCAG AA standards',
-            category: 'Accessibility',
-            imageIndex: 0,
-            feedback: 'Button contrast needs improvement',
-            implementationEffort: 'Low',
-            businessImpact: 'Medium'
-          }
-        ];
-        workflow.setAiAnnotations(mockAnnotations);
         workflow.goToStep('results');
       }, 3000);
     }
@@ -121,18 +89,6 @@ export const StudioToolbar = ({ workflow, selectedDevice, setSelectedDevice }: S
           {workflow.isAnalyzing ? 'Analyzing...' : 'Analyze'}
         </Button>
       </div>
-
-      {/* Analysis Progress Bar */}
-      {workflow.isAnalyzing && (
-        <div className="mt-3">
-          <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-1">
-            <div 
-              className="bg-gradient-to-r from-purple-600 to-pink-600 h-1 rounded-full transition-all duration-300 animate-pulse"
-              style={{ width: '75%' }}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 };
