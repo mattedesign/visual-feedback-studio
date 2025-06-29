@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Annotation } from '@/types/analysis';
@@ -40,7 +39,7 @@ export const useAIAnalysis = () => {
   const [buildingStage, setBuildingStage] = useState<string>('');
 
   const analyzeImages = async (params: AnalyzeImagesParams): Promise<AnalyzeImagesResult> => {
-    console.log('🚀 Starting AI Analysis with params:', params);
+    console.log('🚀 CORRECTED: Starting integrated Vision + RAG + OpenAI/Claude analysis');
     
     setIsAnalyzing(true);
     setError(null);
@@ -57,21 +56,37 @@ export const useAIAnalysis = () => {
 
       console.log('✅ Analysis record created:', analysisId);
 
-      let finalPrompt = params.analysisPrompt;
+      // STEP 1: Use Google Vision + RAG to build enhanced context
       let enhancedCtx: EnhancedContext | null = null;
+      let finalPrompt = params.analysisPrompt;
 
-      // Enhanced RAG Processing (if enabled - default to true)
-      if (params.useEnhancedRag !== false) {
-        console.log('🚀 Starting Enhanced RAG Analysis...');
+      if (params.useEnhancedRag !== false) { // Default to true
+        console.log('👁️ ENHANCEMENT: Building Google Vision + RAG context...');
         setIsBuilding(true);
         
         try {
           setBuildingStage('Analyzing images with Google Vision...');
           toast.info('Building enhanced context with AI vision...', { duration: 2000 });
           
-          // Run enhanced RAG analysis
-          enhancedCtx = await enhancedRagService.enhanceAnalysis(
-            params.imageUrls,
+          // Create workflow mock for enhanced RAG (existing approach)
+          const mockWorkflow = {
+            selectedImages: params.imageUrls,
+            aiAnnotations: [],
+            currentStep: 'analyzing' as const,
+            imageAnnotations: params.userAnnotations.map(ann => ({
+              imageUrl: ann.imageUrl,
+              annotations: [{
+                id: ann.id,
+                x: ann.x,
+                y: ann.y,
+                comment: ann.comment
+              }]
+            }))
+          };
+
+          // THIS IS THE EXISTING GOOGLE VISION + RAG CODE - KEEP IT
+          enhancedCtx = await enhancedRagService.enhanceAnalysisWithWorkflow(
+            mockWorkflow,
             params.analysisPrompt,
             {
               maxKnowledgeEntries: 12,
@@ -83,13 +98,16 @@ export const useAIAnalysis = () => {
           
           setBuildingStage('Enhanced context built successfully');
           setEnhancedContext(enhancedCtx);
+          
+          // ✅ CRITICAL FIX: Use the enhanced prompt for main analysis
           finalPrompt = enhancedCtx.enhancedPrompt;
           
-          console.log('✅ Enhanced RAG completed:', {
+          console.log('✅ ENHANCEMENT: Google Vision + RAG completed:', {
             visionElementsDetected: enhancedCtx.visionAnalysis.uiElements.length,
             knowledgeSourcesUsed: enhancedCtx.knowledgeSourcesUsed,
             overallConfidence: enhancedCtx.confidenceScore,
-            processingTime: enhancedCtx.processingTime
+            processingTime: enhancedCtx.processingTime,
+            promptEnhanced: enhancedCtx.enhancedPrompt.length > params.analysisPrompt.length
           });
           
           toast.success(`Enhanced context built! Vision analyzed ${enhancedCtx.visionAnalysis.uiElements.length} UI elements and retrieved ${enhancedCtx.knowledgeSourcesUsed} knowledge sources.`, {
@@ -97,15 +115,16 @@ export const useAIAnalysis = () => {
           });
           
         } catch (enhancedError) {
-          console.error('⚠️ Enhanced RAG failed, falling back to standard analysis:', enhancedError);
+          console.error('⚠️ ENHANCEMENT FAILED: Falling back to standard analysis:', enhancedError);
           toast.warning('Enhanced analysis failed, continuing with standard analysis...', { duration: 3000 });
+          // Continue with original prompt if enhancement fails
         } finally {
           setIsBuilding(false);
           setBuildingStage('');
         }
       }
 
-      // Build enhanced prompt with user annotations
+      // Add user annotations to final prompt if any
       if (params.userAnnotations.length > 0) {
         const annotationContext = params.userAnnotations
           .map(ann => `User highlighted area at (${ann.x}%, ${ann.y}%): "${ann.comment}"`)
@@ -118,18 +137,23 @@ export const useAIAnalysis = () => {
       console.log('📝 Final enhanced prompt prepared:', {
         originalLength: params.analysisPrompt.length,
         finalLength: finalPrompt.length,
-        hasEnhancedContext: !!enhancedCtx
+        hasEnhancedContext: !!enhancedCtx,
+        enhancementType: enhancedCtx ? 'VISION+RAG ENHANCED' : 'STANDARD'
       });
 
-      // Call the analyze-design edge function with enhanced context
+      // STEP 2: Send enhanced prompt to EXISTING OpenAI/Claude analysis
+      console.log('🤖 MAIN ANALYSIS: Calling OpenAI/Claude with enhanced prompt');
+      console.log('📝 Prompt type:', enhancedCtx ? 'VISION+RAG ENHANCED' : 'STANDARD');
+
       const { data, error: analysisError } = await supabase.functions.invoke('analyze-design', {
         body: {
           imageUrls: params.imageUrls,
           imageUrl: params.imageUrls[0], // Include both for compatibility
           analysisId: analysisId,
-          analysisPrompt: finalPrompt,
+          analysisPrompt: finalPrompt, // ✅ ENHANCED PROMPT WITH VISION+RAG CONTEXT
           isComparative: params.imageUrls.length > 1,
           ragEnabled: true,
+          // Pass enhanced context for logging/debugging in edge function
           enhancedContext: enhancedCtx ? {
             visionAnalysis: enhancedCtx.visionAnalysis,
             knowledgeSourcesUsed: enhancedCtx.knowledgeSourcesUsed,
@@ -148,11 +172,12 @@ export const useAIAnalysis = () => {
         throw new Error('No data returned from analysis function');
       }
 
-      console.log('✅ AI Analysis successful:', {
+      console.log('✅ MAIN ANALYSIS: OpenAI/Claude completed successfully:', {
         annotationCount: data.annotations?.length || 0,
         ragEnhanced: data.ragEnhanced || false,
         knowledgeSourcesUsed: data.knowledgeSourcesUsed || 0,
-        hasEnhancedContext: !!enhancedCtx
+        hasEnhancedContext: !!enhancedCtx,
+        resultType: enhancedCtx ? 'RESEARCH-BACKED' : 'STANDARD'
       });
 
       // 🔍 DEBUG: Log the raw annotations we received
