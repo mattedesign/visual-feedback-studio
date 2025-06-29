@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useKnowledgePopulationManager } from '@/hooks/knowledgeBase/useKnowledgePopulationManager';
 import { Database, Play, CheckCircle, AlertCircle, Loader2, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 
 export const KnowledgePopulationManager = () => {
   const [showStats, setShowStats] = useState(false);
@@ -26,10 +26,20 @@ export const KnowledgePopulationManager = () => {
     batchNine,
     activeBatch,
     isAnyBatchPopulating,
+    isInitialized,
     executePopulation,
     clearAllResults,
     batchSizes
   } = useKnowledgePopulationManager();
+
+  // Show loading state while initializing
+  if (!isInitialized) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   const batches = [
     { 

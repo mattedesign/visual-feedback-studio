@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useBatchTwoPopulation } from './useBatchTwoPopulation';
 import { useBatchThreePopulation } from './useBatchThreePopulation';
 import { useBatchFourPopulation } from './useBatchFourPopulation';
@@ -12,6 +12,13 @@ import { useInitialKnowledgePopulation } from './useInitialKnowledgePopulation';
 
 export const useKnowledgePopulationManager = () => {
   const [activeBatch, setActiveBatch] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Initialize hooks conditionally to prevent issues on app load
+  useEffect(() => {
+    // Only initialize when this hook is actually used
+    setIsInitialized(true);
+  }, []);
 
   const initialBatch = useInitialKnowledgePopulation();
   const batchTwo = useBatchTwoPopulation();
@@ -24,6 +31,8 @@ export const useKnowledgePopulationManager = () => {
   const batchNine = useBatchNinePopulation();
 
   const clearAllResults = useCallback(() => {
+    if (!isInitialized) return;
+    
     initialBatch.clearResults();
     batchTwo.clearResults();
     batchThree.clearResults();
@@ -34,9 +43,9 @@ export const useKnowledgePopulationManager = () => {
     batchEight.clearResults();
     batchNine.clearResults();
     setActiveBatch(null);
-  }, [initialBatch, batchTwo, batchThree, batchFour, batchFive, batchSix, batchSeven, batchEight, batchNine]);
+  }, [isInitialized, initialBatch, batchTwo, batchThree, batchFour, batchFive, batchSix, batchSeven, batchEight, batchNine]);
 
-  const isAnyBatchPopulating = 
+  const isAnyBatchPopulating = isInitialized && (
     initialBatch.isPopulating || 
     batchTwo.isPopulating || 
     batchThree.isPopulating || 
@@ -45,10 +54,11 @@ export const useKnowledgePopulationManager = () => {
     batchSix.isPopulating || 
     batchSeven.isPopulating || 
     batchEight.isPopulating || 
-    batchNine.isPopulating;
+    batchNine.isPopulating
+  );
 
   const executePopulation = useCallback(async (batchName: string) => {
-    if (isAnyBatchPopulating) return;
+    if (!isInitialized || isAnyBatchPopulating) return;
     
     setActiveBatch(batchName);
     
@@ -87,7 +97,7 @@ export const useKnowledgePopulationManager = () => {
     } finally {
       setActiveBatch(null);
     }
-  }, [isAnyBatchPopulating, initialBatch, batchTwo, batchThree, batchFour, batchFive, batchSix, batchSeven, batchEight, batchNine]);
+  }, [isInitialized, isAnyBatchPopulating, initialBatch, batchTwo, batchThree, batchFour, batchFive, batchSix, batchSeven, batchEight, batchNine]);
 
   return {
     // Batch hooks
@@ -104,6 +114,7 @@ export const useKnowledgePopulationManager = () => {
     // Manager state
     activeBatch,
     isAnyBatchPopulating,
+    isInitialized,
     
     // Actions
     executePopulation,
