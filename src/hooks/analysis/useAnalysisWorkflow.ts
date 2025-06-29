@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { Annotation } from '@/types/analysis';
 import { useAIAnalysis } from './useAIAnalysis';
@@ -19,8 +20,8 @@ interface ImageAnnotations {
 
 export const useAnalysisWorkflow = () => {
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('upload');
-  // ✅ SINGLE SOURCE OF TRUTH: Only use selectedImages, remove uploadedFiles
-  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  // 🔥 COMPLETE REFACTOR: Single image array, no aliases or duplicates
+  const [images, setImages] = useState<string[]>([]);
   const [activeImageUrl, setActiveImageUrl] = useState<string | null>(null);
   const [userAnnotations, setUserAnnotations] = useState<Record<string, UserAnnotation[]>>({});
   const [imageAnnotations, setImageAnnotations] = useState<ImageAnnotations[]>([]);
@@ -44,7 +45,7 @@ export const useAnalysisWorkflow = () => {
   const resetWorkflow = useCallback(() => {
     console.log('🔄 RESET: Clearing all workflow state');
     setCurrentStep('upload');
-    setSelectedImages([]);
+    setImages([]);
     setActiveImageUrl(null);
     setUserAnnotations({});
     setImageAnnotations([]);
@@ -62,48 +63,22 @@ export const useAnalysisWorkflow = () => {
     setCurrentAnalysis(null);
   }, []);
 
-  // ✅ FIXED: Single source of truth for images
-  const selectImages = useCallback((images: string[]) => {
-    console.log('🖼️ SELECTING IMAGES:', {
-      newImages: images,
-      currentImages: selectedImages,
-      isDuplicate: images.every(img => selectedImages.includes(img))
-    });
-    setSelectedImages(images);
-    if (images.length > 0) {
-      setActiveImageUrl(images[0]);
-    }
-  }, [selectedImages]);
-
-  const selectImage = useCallback((imageUrl: string) => {
-    console.log('🖼️ SELECTING SINGLE IMAGE:', {
+  // 🔥 SIMPLIFIED: Single function to add images
+  const addImage = useCallback((imageUrl: string) => {
+    console.log('📸 ADD IMAGE CALLED:', {
       imageUrl,
-      alreadySelected: selectedImages.includes(imageUrl),
-      currentImages: selectedImages
-    });
-    if (!selectedImages.includes(imageUrl)) {
-      setSelectedImages(prev => [...prev, imageUrl]);
-    }
-    setActiveImageUrl(imageUrl);
-  }, [selectedImages]);
-
-  // ✅ CRITICAL FIX: Prevent duplicate additions with comprehensive logging
-  const addUploadedFile = useCallback((imageUrl: string) => {
-    console.log('📸 ADD UPLOADED FILE CALLED:', {
-      imageUrl,
-      currentImages: selectedImages,
-      alreadyExists: selectedImages.includes(imageUrl),
-      stackTrace: new Error().stack?.split('\n').slice(1, 4).join('\n')
+      currentImages: images,
+      alreadyExists: images.includes(imageUrl)
     });
     
-    setSelectedImages(prev => {
+    setImages(prev => {
       if (prev.includes(imageUrl)) {
-        console.log('⚠️ DUPLICATE PREVENTED: Image already exists in array');
+        console.log('⚠️ DUPLICATE PREVENTED: Image already exists');
         return prev;
       }
       
       const newImages = [...prev, imageUrl];
-      console.log('✅ IMAGE ADDED SUCCESSFULLY:', {
+      console.log('✅ IMAGE ADDED:', {
         previousCount: prev.length,
         newCount: newImages.length,
         addedImage: imageUrl
@@ -111,10 +86,31 @@ export const useAnalysisWorkflow = () => {
       return newImages;
     });
     
-    if (!activeImageUrl) {
+    // Set as active if it's the first image
+    if (images.length === 0) {
       setActiveImageUrl(imageUrl);
     }
-  }, [selectedImages, activeImageUrl]);
+  }, [images]);
+
+  // 🔥 SIMPLIFIED: Single function to select multiple images
+  const selectImages = useCallback((imageUrls: string[]) => {
+    console.log('🖼️ SELECT IMAGES:', {
+      newImages: imageUrls,
+      currentImages: images
+    });
+    setImages(imageUrls);
+    if (imageUrls.length > 0 && !activeImageUrl) {
+      setActiveImageUrl(imageUrls[0]);
+    }
+  }, [images, activeImageUrl]);
+
+  const selectImage = useCallback((imageUrl: string) => {
+    console.log('🖼️ SELECT SINGLE IMAGE:', imageUrl);
+    if (!images.includes(imageUrl)) {
+      addImage(imageUrl);
+    }
+    setActiveImageUrl(imageUrl);
+  }, [images, addImage]);
 
   const setActiveImage = useCallback((imageUrl: string) => {
     console.log('🎯 SETTING ACTIVE IMAGE:', imageUrl);
@@ -194,7 +190,7 @@ export const useAnalysisWorkflow = () => {
   }, [imageAnnotations]);
 
   const startAnalysis = useCallback(async () => {
-    if (selectedImages.length === 0) {
+    if (images.length === 0) {
       toast.error('Please select at least one image to analyze');
       return;
     }
@@ -211,7 +207,7 @@ export const useAnalysisWorkflow = () => {
     }
 
     console.log('🚀 Starting analysis workflow:', {
-      imageCount: selectedImages.length,
+      imageCount: images.length,
       annotationCount: getTotalAnnotationsCount(),
       contextLength: analysisContext.length
     });
@@ -231,7 +227,7 @@ export const useAnalysisWorkflow = () => {
       );
 
       const result = await analyzeImages({
-        imageUrls: selectedImages,
+        imageUrls: images,
         userAnnotations: userAnnotationsArray,
         analysisPrompt: analysisContext,
         deviceType: 'desktop',
@@ -260,7 +256,7 @@ export const useAnalysisWorkflow = () => {
     } finally {
       setIsAnalyzing(false);
     }
-  }, [selectedImages, imageAnnotations, analysisContext, analyzeImages, isAnalyzing, aiAnalyzing, getTotalAnnotationsCount]);
+  }, [images, imageAnnotations, analysisContext, analyzeImages, isAnalyzing, aiAnalyzing, getTotalAnnotationsCount]);
 
   const goToStep = useCallback((step: WorkflowStep) => {
     console.log('🔄 Workflow: Navigating to step:', step);
@@ -270,7 +266,7 @@ export const useAnalysisWorkflow = () => {
   const goToNextStep = useCallback(() => {
     switch (currentStep) {
       case 'upload':
-        if (selectedImages.length > 0) {
+        if (images.length > 0) {
           setCurrentStep('annotate');
         }
         break;
@@ -287,7 +283,7 @@ export const useAnalysisWorkflow = () => {
         resetWorkflow();
         break;
     }
-  }, [currentStep, selectedImages.length, startAnalysis, resetWorkflow]);
+  }, [currentStep, images.length, startAnalysis, resetWorkflow]);
 
   const goToPreviousStep = useCallback(() => {
     switch (currentStep) {
@@ -307,14 +303,11 @@ export const useAnalysisWorkflow = () => {
     setCurrentStep('annotate');
   }, []);
 
-  // Legacy properties for backward compatibility
-  const selectedImageUrl = selectedImages[0] || null;
-
   return {
-    // State
+    // State - using single source of truth
     currentStep,
-    selectedImages,
-    uploadedFiles: selectedImages, // ✅ ALIAS: Both point to same array to prevent duplication
+    selectedImages: images, // Main array
+    uploadedFiles: images,  // Alias for compatibility
     activeImageUrl,
     userAnnotations,
     imageAnnotations,
@@ -332,13 +325,13 @@ export const useAnalysisWorkflow = () => {
     isBuilding,
     buildingStage,
     currentAnalysis,
-    selectedImageUrl, // Legacy compatibility
+    selectedImageUrl: images[0] || null, // Legacy compatibility
 
-    // Actions
+    // Actions - simplified interface
     resetWorkflow,
     selectImages,
     selectImage,
-    addUploadedFile,
+    addUploadedFile: addImage, // Renamed for clarity
     setActiveImageUrl,
     setActiveImage,
     addUserAnnotation,

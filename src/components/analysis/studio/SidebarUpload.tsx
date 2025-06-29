@@ -17,20 +17,19 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragAreaFileInputRef = useRef<HTMLInputElement>(null);
 
-  // ✅ FIXED: Pass workflow.addUploadedFile directly to avoid double callback
+  // 🔥 SIMPLIFIED: Single callback that handles everything
   const handleUploadComplete = (imageUrl: string) => {
-    console.log('✅ FIXED: Upload completed, adding to workflow once:', imageUrl);
+    console.log('🔥 UPLOAD COMPLETE - SINGLE HANDLER:', imageUrl);
     
-    // Add to workflow (this is now the ONLY place we call addUploadedFile)
+    // Add to workflow using the simplified interface
     workflow.addUploadedFile(imageUrl);
     
-    // Handle UI transitions
-    if (workflow.uploadedFiles.length === 0) {
-      // If this is the first image, select it and go to annotate
-      workflow.selectImage(imageUrl);
+    // Handle navigation - only if this is the first image
+    if (workflow.selectedImages.length === 0) {
+      console.log('🔥 FIRST IMAGE - GOING TO ANNOTATE');
       workflow.goToStep('annotate');
     } else if (workflow.currentStep === 'annotate') {
-      // If we're already in annotate step, switch to the new image
+      // If already in annotate, set as active
       workflow.setActiveImage(imageUrl);
     }
   };
@@ -40,9 +39,8 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
   const handleMultipleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
-      // Process multiple files
+      // Process multiple files with small delays
       Array.from(files).forEach((file, index) => {
-        // Add a small delay between uploads to prevent race conditions
         setTimeout(() => {
           handleFileUpload(file);
         }, index * 100);
@@ -55,7 +53,6 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
   const handleDragAreaFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
-      // Process multiple files
       Array.from(files).forEach((file, index) => {
         if (file.type.startsWith('image/')) {
           setTimeout(() => {
@@ -91,7 +88,6 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // Only set drag over to false if we're leaving the drag area completely
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX;
     const y = e.clientY;
@@ -108,7 +104,6 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
     
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
-      // Process multiple dropped files
       Array.from(files).forEach((file, index) => {
         if (file.type.startsWith('image/')) {
           setTimeout(() => {
@@ -150,7 +145,7 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
     );
   }
 
-  const canUploadMore = workflow.uploadedFiles.length < 5;
+  const canUploadMore = workflow.selectedImages.length < 5;
 
   return (
     <div className="p-4 border-b border-gray-200 dark:border-slate-600">
@@ -276,9 +271,9 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
       </div>
 
       {/* Upload limit indicator */}
-      {workflow.uploadedFiles.length > 0 && (
+      {workflow.selectedImages.length > 0 && (
         <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
-          {workflow.uploadedFiles.length}/5 images uploaded
+          {workflow.selectedImages.length}/5 images uploaded
           {!canUploadMore && " (limit reached)"}
         </div>
       )}
