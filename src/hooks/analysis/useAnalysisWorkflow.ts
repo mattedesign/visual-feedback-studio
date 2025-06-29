@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { Annotation } from '@/types/analysis';
 import { useAIAnalysis } from './useAIAnalysis';
@@ -21,7 +20,6 @@ interface ImageAnnotations {
 export const useAnalysisWorkflow = () => {
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('upload');
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
-  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [activeImageUrl, setActiveImageUrl] = useState<string | null>(null);
   const [userAnnotations, setUserAnnotations] = useState<Record<string, UserAnnotation[]>>({});
   const [imageAnnotations, setImageAnnotations] = useState<ImageAnnotations[]>([]);
@@ -45,7 +43,6 @@ export const useAnalysisWorkflow = () => {
   const resetWorkflow = useCallback(() => {
     setCurrentStep('upload');
     setSelectedImages([]);
-    setUploadedFiles([]);
     setActiveImageUrl(null);
     setUserAnnotations({});
     setImageAnnotations([]);
@@ -64,9 +61,8 @@ export const useAnalysisWorkflow = () => {
   }, []);
 
   const selectImages = useCallback((images: string[]) => {
-    console.log('📸 Workflow: Selecting images:', images.length);
+    console.log('🖼️ FIXED: Selecting images (single source):', images.length, images);
     setSelectedImages(images);
-    setUploadedFiles(images);
     if (images.length > 0) {
       setActiveImageUrl(images[0]);
     }
@@ -80,21 +76,20 @@ export const useAnalysisWorkflow = () => {
   }, [selectedImages]);
 
   const addUploadedFile = useCallback((imageUrl: string) => {
-    console.log('📁 Workflow: Adding uploaded file:', imageUrl);
-    setUploadedFiles(prev => {
+    setSelectedImages(prev => {
       if (!prev.includes(imageUrl)) {
-        return [...prev, imageUrl];
+        const newImages = [...prev, imageUrl];
+        console.log('📸 FIXED: Added image to selection:', newImages.length, 'total');
+        return newImages;
       }
+      console.log('⚠️ FIXED: Image already in selection, skipping duplicate');
       return prev;
     });
     
-    setSelectedImages(prev => {
-      if (!prev.includes(imageUrl)) {
-        return [...prev, imageUrl];
-      }
-      return prev;
-    });
-  }, []);
+    if (!activeImageUrl) {
+      setActiveImageUrl(imageUrl);
+    }
+  }, [activeImageUrl]);
 
   const setActiveImage = useCallback((imageUrl: string) => {
     setActiveImageUrl(imageUrl);
@@ -310,6 +305,7 @@ export const useAnalysisWorkflow = () => {
 
   // Legacy properties for backward compatibility
   const selectedImageUrl = selectedImages[0] || null;
+  const uploadedFiles = selectedImages;
 
   return {
     // State
