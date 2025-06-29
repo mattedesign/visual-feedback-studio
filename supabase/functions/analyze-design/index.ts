@@ -1,4 +1,3 @@
-
 import { corsHeaders, corsHandler } from './corsHandler.ts';
 import { requestValidator } from './requestValidator.ts';
 import { imageProcessingManager } from './imageProcessingManager.ts';
@@ -418,23 +417,38 @@ Your feedback should be precise, referencing actual detected elements rather tha
   return finalPrompt;
 }
 
-// NEW: Function to build annotation instructions based on context
+// ✅ NEW: Enhanced function to build annotation instructions based on context
 function buildAnnotationInstructions(imageCount: number, userAnnotations: any[], isEnhanced: boolean): string {
+  console.log('🎯 Building annotation instructions:', {
+    imageCount,
+    userAnnotationsCount: userAnnotations?.length || 0,
+    isEnhanced
+  });
+
   const baseInstructions = `
-You are analyzing ${imageCount > 1 ? `${imageCount} design images` : 'a design image'} for UX improvements.
+ANNOTATION REQUIREMENTS:
+- Provide 8-12 specific annotations per image
+- Each annotation MUST include exact x,y coordinates (0-100 scale)
+- Distribute annotations across ALL ${imageCount} image${imageCount > 1 ? 's' : ''}
+- Include severity levels: critical, high, medium, low
+- Categories: usability, accessibility, visual, conversion, mobile, content
 
-${userAnnotations.length > 0 ? `
-The user has highlighted ${userAnnotations.length} specific areas with comments:
-${userAnnotations.map((annotation, index) => `
-${index + 1}. At coordinates (${annotation.x}, ${annotation.y}): "${annotation.comment}"
-`).join('')}
-
-Please address these specific areas in your analysis.
+${imageCount > 1 ? `
+MULTI-IMAGE ANALYSIS:
+- Analyze each image individually 
+- Provide comparative insights between images
+- Use imageIndex 0 to ${imageCount - 1} to specify which image each annotation targets
+- Ensure annotations are distributed across all images, not just the first one
 ` : ''}
 
 ${isEnhanced ? `
-This is a RESEARCH-ENHANCED analysis with Google Vision AI detection and UX knowledge base integration.
-Use the provided research context and detected elements to give evidence-backed recommendations.
+RESEARCH-BACKED ANALYSIS INSTRUCTIONS:
+- Reference specific UX research findings when applicable
+- Cite accessibility guidelines (WCAG 2.1) for relevant issues
+- Include conversion optimization insights from established research
+- Mention industry best practices with authoritative sources
+- Use phrases like "Research shows...", "Studies indicate...", "According to Nielsen..."
+- Provide evidence-based recommendations, not just opinions
 ` : ''}
 
 Provide your analysis as a JSON array of annotations with the following structure:
@@ -450,12 +464,33 @@ Provide your analysis as a JSON array of annotations with the following structur
     "width": 50,
     "height": 50,
     "businessImpact": "How this affects business metrics",
-    "quickFix": "Immediate action that can be taken"
+    "quickFix": "Immediate action that can be taken"${imageCount > 1 ? ',\n    "imageIndex": 0' : ''}
   }
 ]
 
-CRITICAL: Return ONLY the JSON array, no additional text or formatting.
-`;
+CRITICAL: Return ONLY the JSON array, no additional text or formatting.`;
+
+  if (userAnnotations && userAnnotations.length > 0) {
+    const userAnnotationsSection = `
+
+USER ANNOTATIONS PROVIDED:
+${userAnnotations.map((ua, i) => `${i + 1}. At (${ua.x}, ${ua.y}): "${ua.comment}"`).join('\n')}
+
+Please acknowledge and build upon these user-identified areas in your analysis.`;
+    
+    console.log('✅ Added user annotations to instructions:', {
+      userAnnotationsCount: userAnnotations.length
+    });
+    
+    return baseInstructions + userAnnotationsSection;
+  }
+
+  console.log('✅ Built annotation instructions:', {
+    totalLength: baseInstructions.length,
+    includesMultiImage: imageCount > 1,
+    includesResearchBacked: isEnhanced,
+    includesUserAnnotations: false
+  });
 
   return baseInstructions;
 }
@@ -710,12 +745,19 @@ Deno.serve(async (req) => {
       hasRelevantPatterns: competitiveResults.relevantPatterns.length > 0
     });
     
-    // ✅ Build comprehensive annotation instructions
+    // ✅ Build comprehensive annotation instructions using the new helper function
     const annotationInstructions = buildAnnotationInstructions(
       imageCount,
       userAnnotations || [],
       isEnhanced
     );
+
+    console.log('🎯 Built annotation instructions:', {
+      instructionsLength: annotationInstructions.length,
+      imageCount,
+      isEnhanced,
+      hasUserAnnotations: (userAnnotations || []).length > 0
+    });
 
     // ✅ Enhanced prompt includes research context and citations
     const fullAnalysisPrompt = `${finalPrompt}
