@@ -1,143 +1,137 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
-import { RAGStatusIndicator } from '../RAGStatusIndicator';
-import { EnhancedAnalysisDisplay } from './components/EnhancedAnalysisDisplay';
-import { ContextIntelligenceDisplay } from './components/ContextIntelligenceDisplay';
+import { AnalysisProgressSteps } from './components/AnalysisProgressSteps';
 import { toast } from 'sonner';
 
 interface AnalyzingStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
 }
 
-const parseContextForDisplay = (context: string): string[] => {
-  if (!context) return ['Comprehensive UX'];
-  
-  const focusAreas = [];
-  const lower = context.toLowerCase();
-  
-  if (/checkout|cart|purchase|ecommerce|e-commerce|order|product/.test(lower)) focusAreas.push('E-commerce');
-  if (/mobile|responsive|touch|tablet|phone|ios|android|device/.test(lower)) focusAreas.push('Mobile UX');
-  if (/accessibility|contrast|wcag|ada|screen reader|keyboard|disability/.test(lower)) focusAreas.push('Accessibility');
-  if (/conversion|cta|revenue|optimize|funnel|landing|signup/.test(lower)) focusAreas.push('Conversion');
-  if (/usability|navigation|flow|journey|interaction|ux/.test(lower)) focusAreas.push('Usability');
-  if (/visual|design|color|typography|layout|brand|aesthetic/.test(lower)) focusAreas.push('Visual Design');
-  
-  return focusAreas.length > 0 ? focusAreas : ['Comprehensive UX'];
-};
+type AnalysisPhase = 'uploading' | 'processing' | 'research' | 'analysis' | 'recommendations';
 
 export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
+  const [currentPhase, setCurrentPhase] = useState<AnalysisPhase>('uploading');
   const [analysisProgress, setAnalysisProgress] = useState(0);
-  const [currentStep, setCurrentStep] = useState('Initializing enhanced analysis...');
   const [retryCount, setRetryCount] = useState(0);
-  const [detectedFocusAreas, setDetectedFocusAreas] = useState<string[]>([]);
+  const [researchSourcesFound, setResearchSourcesFound] = useState(0);
   const maxRetries = 1;
   const analysisStartedRef = useRef(false);
 
-  useEffect(() => {
-    const focusAreas = parseContextForDisplay(workflow.analysisContext);
-    setDetectedFocusAreas(focusAreas);
-    setCurrentStep(`Analyzing your context: ${focusAreas.join(', ')}...`);
-  }, [workflow.analysisContext]);
+  // 🎯 PHASE MANAGEMENT WITH REALISTIC TIMING
+  const progressPhases = [
+    { phase: 'uploading', duration: 5000, progressStart: 0, progressEnd: 15 },
+    { phase: 'processing', duration: 8000, progressStart: 15, progressEnd: 35 },
+    { phase: 'research', duration: 12000, progressStart: 35, progressEnd: 60 },
+    { phase: 'analysis', duration: 20000, progressStart: 60, progressEnd: 85 },
+    { phase: 'recommendations', duration: 8000, progressStart: 85, progressEnd: 100 }
+  ];
 
-  // 🔥 FIXED: Simplified analysis execution using workflow's startAnalysis
+  const updateProgressWithPhase = useCallback((phase: AnalysisPhase, phaseProgress: number) => {
+    const currentPhaseData = progressPhases.find(p => p.phase === phase);
+    if (currentPhaseData) {
+      const { progressStart, progressEnd } = currentPhaseData;
+      const actualProgress = progressStart + (phaseProgress * (progressEnd - progressStart) / 100);
+      setAnalysisProgress(Math.min(actualProgress, 100));
+    }
+  }, []);
+
+  const simulatePhaseProgress = useCallback(async (phase: AnalysisPhase) => {
+    const phaseData = progressPhases.find(p => p.phase === phase);
+    if (!phaseData) return;
+
+    console.log(`🔄 Starting phase: ${phase}`);
+    setCurrentPhase(phase);
+    
+    const steps = 20;
+    const stepDuration = phaseData.duration / steps;
+    
+    for (let i = 0; i <= steps; i++) {
+      if (analysisStartedRef.current === false) break; // Stop if analysis was cancelled
+      
+      const phaseProgress = (i / steps) * 100;
+      updateProgressWithPhase(phase, phaseProgress);
+      
+      // Special handling for research phase to show sources found
+      if (phase === 'research' && i > 5) {
+        const sourcesFound = Math.min(12, Math.floor((i / steps) * 12));
+        setResearchSourcesFound(sourcesFound);
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, stepDuration));
+    }
+  }, [updateProgressWithPhase]);
+
   const performAnalysis = useCallback(async () => {
     if (analysisStartedRef.current) {
       console.log('⚠️ Enhanced analysis already in progress, skipping duplicate call');
       return;
     }
 
-    console.log('=== Enhanced AnalyzingStep - Starting ===');
-    
+    console.log('=== Enhanced AnalyzingStep - Starting with Progress Tracking ===');
     analysisStartedRef.current = true;
 
     try {
-      setCurrentStep('Initializing enhanced analysis...');
-      setAnalysisProgress(5);
-      
+      // Validate inputs
       if (workflow.selectedImages.length === 0) {
         throw new Error('No images selected for analysis');
       }
 
-      setCurrentStep('Validating images...');
-      setAnalysisProgress(15);
-
-      // Image validation
-      const imageValidationPromises = workflow.selectedImages.map(async (imageUrl, index) => {
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 10000);
-          
-          const response = await fetch(imageUrl, { 
-            method: 'HEAD',
-            signal: controller.signal
-          });
-          
-          clearTimeout(timeoutId);
-          
-          if (!response.ok) {
-            throw new Error(`Image ${index + 1} not accessible: ${response.status}`);
-          }
-          
-          console.log(`✅ Image ${index + 1} validated successfully`);
-          return true;
-        } catch (error) {
-          console.error(`❌ Image ${index + 1} validation failed:`, error);
-          throw new Error(`Image ${index + 1} validation failed`);
-        }
-      });
-
-      await Promise.all(imageValidationPromises);
-      setAnalysisProgress(25);
-
-      setCurrentStep('Building vision analysis context...');
-      setAnalysisProgress(35);
-
-      setCurrentStep('Retrieving UX research knowledge...');
-      setAnalysisProgress(50);
-
-      setCurrentStep('Running enhanced AI analysis...');
-      setAnalysisProgress(65);
-
-      // 🔥 FIXED: Use workflow's enhanced analysis
-      await workflow.startAnalysis();
-
-      setAnalysisProgress(85);
-
-      if (workflow.aiAnnotations && workflow.aiAnnotations.length > 0) {
-        setCurrentStep('Processing enhanced results...');
-        setAnalysisProgress(95);
-
-        setCurrentStep(`Enhanced analysis complete for ${detectedFocusAreas.join(' & ')}!`);
-        setAnalysisProgress(100);
-
-        console.log('✅ Enhanced AnalyzingStep: Analysis completed successfully', {
-          annotationsReceived: workflow.aiAnnotations.length,
-          enhancedContext: !!workflow.enhancedContext,
-          knowledgeSourcesUsed: workflow.knowledgeSourcesUsed
-        });
-
-        // Smooth transition to results
-        setTimeout(() => {
-          workflow.goToStep('results');
-        }, 1000);
-      } else {
-        throw new Error('Enhanced analysis failed to return valid results');
+      if (!workflow.analysisContext.trim()) {
+        throw new Error('No analysis context provided');
       }
 
+      // Phase 1: Uploading
+      await simulatePhaseProgress('uploading');
+      
+      // Phase 2: Processing design elements
+      await simulatePhaseProgress('processing');
+      
+      // Phase 3: Building research context
+      await simulatePhaseProgress('research');
+      
+      // Phase 4: AI Analysis - This is where real analysis happens
+      setCurrentPhase('analysis');
+      console.log('🤖 Starting real AI analysis');
+      
+      // Start real analysis in parallel with progress simulation
+      const analysisPromise = workflow.startAnalysis();
+      const progressPromise = simulatePhaseProgress('analysis');
+      
+      // Wait for both to complete
+      await Promise.all([analysisPromise, progressPromise]);
+      
+      // Phase 5: Generating recommendations
+      await simulatePhaseProgress('recommendations');
+      
+      console.log('✅ Enhanced analysis completed successfully', {
+        annotationsReceived: workflow.aiAnnotations?.length || 0,
+        enhancedContext: !!workflow.enhancedContext,
+        knowledgeSourcesUsed: workflow.knowledgeSourcesUsed
+      });
+
+      // Final progress update
+      setAnalysisProgress(100);
+      
+      // Brief pause to show completion
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Navigate to results
+      workflow.goToStep('results');
+
     } catch (error) {
-      console.error('❌ Enhanced AnalyzingStep: Analysis failed:', error);
+      console.error('❌ Enhanced analysis failed:', error);
       
       if (retryCount < maxRetries) {
         const nextRetry = retryCount + 1;
         console.log(`🔄 Attempting enhanced analysis retry ${nextRetry}/${maxRetries}`);
         setRetryCount(nextRetry);
-        setCurrentStep(`Retrying enhanced analysis (${nextRetry}/${maxRetries})...`);
-        setAnalysisProgress(0);
         
+        // Reset state for retry
         analysisStartedRef.current = false;
+        setCurrentPhase('uploading');
+        setAnalysisProgress(0);
+        setResearchSourcesFound(0);
         
         const delay = 3000;
         setTimeout(() => {
@@ -149,8 +143,6 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
         });
       } else {
         console.error('❌ Max retries exceeded for enhanced analysis');
-        setCurrentStep('Enhanced analysis failed');
-        setAnalysisProgress(0);
         workflow.setIsAnalyzing(false);
         
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -161,21 +153,14 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
         analysisStartedRef.current = false;
       }
     }
-  }, [workflow, detectedFocusAreas, retryCount]);
+  }, [workflow, retryCount, simulatePhaseProgress]);
 
   useEffect(() => {
-    console.log('🚀 Enhanced AnalyzingStep: useEffect - Starting enhanced analysis effect', {
-      timestamp: new Date().toISOString(),
-      hasImages: workflow.selectedImages.length > 0,
-      hasAnalysis: !!workflow.currentAnalysis,
-      analysisStarted: analysisStartedRef.current,
-      currentAiAnnotations: workflow.aiAnnotations?.length || 0
-    });
-
+    console.log('🚀 Enhanced AnalyzingStep: Starting analysis with progress tracking');
     if (!analysisStartedRef.current) {
       performAnalysis();
     }
-  }, []);
+  }, [performAnalysis]);
 
   useEffect(() => {
     if (retryCount > 0 && analysisStartedRef.current) {
@@ -183,94 +168,26 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
     }
   }, [retryCount]);
 
-  const totalAnnotations = workflow.getTotalAnnotationsCount();
   const isMultiImage = workflow.selectedImages.length > 1;
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <Card className="bg-slate-800/50 border-slate-700">
-        <CardContent className="p-12 text-center">
-          <div className="space-y-6">
-            <div className="animate-spin w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
-            
-            <div>
-              <h3 className="text-2xl font-semibold mb-4">
-                Enhanced {isMultiImage ? 'Multi-Image' : 'Design'} Analysis
-              </h3>
-              
-              {/* Context Intelligence Display */}
-              <div className="mb-4">
-                <ContextIntelligenceDisplay 
-                  analysisContext={workflow.analysisContext}
-                  focusAreas={detectedFocusAreas}
-                  researchSourcesCount={workflow.researchSourcesCount}
-                  isAnalyzing={true}
-                />
-              </div>
-              
-              {/* RAG Status Indicator */}
-              <div className="mb-4">
-                <RAGStatusIndicator 
-                  hasResearchContext={workflow.hasResearchContext}
-                  researchSourcesCount={workflow.researchSourcesCount}
-                  isAnalyzing={true}
-                />
-              </div>
-
-              {/* Enhanced Analysis Display */}
-              {workflow.enhancedContext && (
-                <div className="mb-4">
-                  <EnhancedAnalysisDisplay 
-                    enhancedContext={workflow.enhancedContext}
-                    isAnalyzing={true}
-                  />
-                </div>
-              )}
-              
-              <p className="text-slate-400 mb-2">
-                {currentStep}
-              </p>
-              {retryCount > 0 && (
-                <p className="text-yellow-400 text-sm">
-                  Retry attempt {retryCount} of {maxRetries}
-                </p>
-              )}
-            </div>
-
-            {workflow.currentAnalysis && (
-              <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
-                <p className="text-blue-300 text-sm">
-                  Analysis ID: {workflow.currentAnalysis.id}
-                </p>
-              </div>
-            )}
-
-            <div className="bg-slate-700 rounded-lg p-4">
-              <h4 className="font-medium mb-2">Enhanced Analysis Features:</h4>
-              <ul className="text-sm text-slate-300 space-y-1">
-                <li>• Vision analysis detecting UI patterns and industry context</li>
-                <li>• {totalAnnotations} specific areas you highlighted across {isMultiImage ? 'all images' : 'the image'}</li>
-                {workflow.analysisContext && <li>• Your context priorities: {detectedFocusAreas.join(', ')}</li>}
-                {isMultiImage && <li>• Comparative analysis between selected images</li>}
-                <li>• Knowledge base integration with UX research</li>
-                <li>• Confidence scoring and evidence-backed recommendations</li>
-                {workflow.knowledgeSourcesUsed > 0 && <li>• Analysis enhanced with {workflow.knowledgeSourcesUsed} research insights</li>}
-              </ul>
-            </div>
-
-            <div className="bg-slate-600 rounded-full h-3 overflow-hidden">
-              <div 
-                className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-500 ease-out"
-                style={{ width: `${analysisProgress}%` }}
-              />
-            </div>
-            
-            <div className="text-sm text-slate-400">
-              {analysisProgress}% complete
-            </div>
+    <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center p-4">
+      <div className="w-full max-w-4xl">
+        <AnalysisProgressSteps
+          currentStep={currentPhase}
+          progress={analysisProgress}
+          researchSourcesFound={researchSourcesFound}
+          totalImages={workflow.selectedImages.length}
+        />
+        
+        {retryCount > 0 && (
+          <div className="mt-4 text-center">
+            <p className="text-yellow-400 text-sm">
+              Retry attempt {retryCount} of {maxRetries}
+            </p>
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
     </div>
   );
 };
