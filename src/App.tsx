@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import Analysis from "./pages/Analysis";
 import AnalysisDetails from "./pages/AnalysisDetails";
 import Subscription from "./pages/Subscription";
 import Success from "./pages/Success";
@@ -29,6 +30,7 @@ function App() {
             <Route path="/login" element={<Auth />} />
             <Route path="/signup" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/analysis" element={<Analysis />} />
             <Route path="/analysis/:id" element={<AnalysisDetails />} />
             <Route path="/subscription" element={<Subscription />} />
             <Route path="/success" element={<Success />} />
