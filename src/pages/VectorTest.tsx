@@ -33,7 +33,7 @@ export default function VectorTest() {
           <CardContent>
             <div className="flex flex-wrap gap-3">
               <Button 
-                onClick={() => navigate('/knowledge-population')}
+                onClick={() => navigate('/knowledge/population')}
                 className="flex items-center gap-2"
               >
                 <Database className="w-4 h-4" />
@@ -41,7 +41,7 @@ export default function VectorTest() {
               </Button>
               <Button 
                 variant="outline"
-                onClick={() => navigate('/knowledge-population')}
+                onClick={() => navigate('/knowledge/population')}
                 className="flex items-center gap-2"
               >
                 <GitBranch className="w-4 h-4" />

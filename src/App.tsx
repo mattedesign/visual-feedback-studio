@@ -1,41 +1,27 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Analysis from "./pages/Analysis";
-import Auth from "./pages/Auth";
-import DALLEDemo from "./pages/DalleDemo";
-import UpgradeSuccess from "./pages/UpgradeSuccess";
-import MigrationPage from "./pages/MigrationPage";
-import VectorTest from "./pages/VectorTest";
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from '@/components/ui/sonner';
+import Analysis from '@/pages/Analysis';
+import { KnowledgeRoutes } from '@/components/routing/KnowledgeRoutes';
 
 const queryClient = new QueryClient();
 
-const App = () => {
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+      <Router>
+        <div className="App">
           <Routes>
-            {/* Default route - everything goes to /auth */}
-            <Route path="/" element={<Navigate to="/auth" replace />} />
-            <Route path="/auth" element={<Auth />} />
+            <Route path="/" element={<Navigate to="/analysis" replace />} />
             <Route path="/analysis" element={<Analysis />} />
-            <Route path="/dalle-demo" element={<DALLEDemo />} />
-            <Route path="/upgrade-success" element={<UpgradeSuccess />} />
-            <Route path="/migration-page" element={<MigrationPage />} />
-            <Route path="/vector-test" element={<VectorTest />} />
-            {/* Catch all other routes and redirect to /auth */}
-            <Route path="*" element={<Navigate to="/auth" replace />} />
+            <Route path="/knowledge/*" element={<KnowledgeRoutes />} />
           </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+          <Toaster />
+        </div>
+      </Router>
     </QueryClientProvider>
   );
-};
+}
 
 export default App;

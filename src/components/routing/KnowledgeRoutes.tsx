@@ -7,8 +7,8 @@ import VectorTest from '@/pages/VectorTest';
 export const KnowledgeRoutes = () => {
   return (
     <Routes>
-      <Route path="/knowledge-population" element={<KnowledgeBasePopulation />} />
-      <Route path="/vector-test" element={<VectorTest />} />
+      <Route path="population" element={<KnowledgeBasePopulation />} />
+      <Route path="vector-test" element={<VectorTest />} />
     </Routes>
   );
 };
