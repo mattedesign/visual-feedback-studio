@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -37,16 +38,25 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
   const [activeAnnotation, setActiveAnnotation] = useState<string | null>(null);
   const [activeImageUrl, setActiveImageUrl] = useState(workflow.selectedImages[0] || '');
 
-  // ✅ ADDED: Debug logging for analysis results data structure
-  console.log('🔍 ANALYSIS RESULTS FULL DEBUG:', {
-    hasResults: !!workflow.analysisResults,
-    resultsCount: workflow.analysisResults?.length || 0,
-    firstResult: workflow.analysisResults?.[0],
-    firstResultKeys: workflow.analysisResults?.[0] ? Object.keys(workflow.analysisResults[0]) : [],
-    allResults: workflow.analysisResults,
+  // 🔍 COMPREHENSIVE WORKFLOW DATA DEBUG
+  console.log('📊 RESULTS STEP - COMPLETE WORKFLOW DEBUG:', {
     workflowKeys: Object.keys(workflow),
+    currentStep: workflow.currentStep,
     aiAnnotationsCount: workflow.aiAnnotations?.length || 0,
-    aiAnnotationsSource: workflow.aiAnnotations?.[0] ? Object.keys(workflow.aiAnnotations[0]) : []
+    aiAnnotationsStructure: workflow.aiAnnotations?.map((a, i) => ({
+      index: i + 1,
+      id: a.id,
+      category: a.category,
+      severity: a.severity,
+      feedback: a.feedback,
+      feedbackLength: a.feedback?.length || 0,
+      feedbackPreview: a.feedback?.substring(0, 100) + '...',
+      allProperties: Object.keys(a)
+    })),
+    analysisResultsPresent: !!workflow.analysisResults,
+    analysisResultsType: typeof workflow.analysisResults,
+    analysisResultsCount: Array.isArray(workflow.analysisResults) ? workflow.analysisResults.length : 'not array',
+    analysisResultsPreview: workflow.analysisResults
   });
 
   const getSeverityColor = (severity: string) =>  {
@@ -77,50 +87,38 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
   const activeImageIndex = workflow.selectedImages.indexOf(activeImageUrl);
   const detectedFocusAreas = parseContextForDisplay(workflow.analysisContext);
 
-  // Filter AI annotations for the current image
+  // 🔧 ENHANCED ANNOTATION FILTERING WITH DEBUGGING
   const getAnnotationsForImage = (imageIndex: number) => {
     const filteredAnnotations = workflow.aiAnnotations.filter(annotation => 
       (annotation.imageIndex ?? 0) === imageIndex
     );
     
-    // 🔍 DEBUG: Enhanced annotation distribution logging for ResultsStep
-    console.log('🔍 ResultsStep - Annotation Distribution Debug:', {
+    console.log('🎯 RESULTS STEP - ANNOTATION FILTERING DEBUG:', {
       requestedImageIndex: imageIndex,
       totalAnnotations: workflow.aiAnnotations.length,
       annotationsForThisImage: filteredAnnotations.length,
-      allImageIndexes: workflow.aiAnnotations.map(a => ({
+      filteringLogic: workflow.aiAnnotations.map(a => ({
         id: a.id,
         imageIndex: a.imageIndex,
-        category: a.category,
-        severity: a.severity
+        imageIndexType: typeof a.imageIndex,
+        matches: (a.imageIndex ?? 0) === imageIndex,
+        feedback: a.feedback,
+        feedbackLength: a.feedback?.length || 0
       })),
-      annotationsByImage: workflow.aiAnnotations.reduce((acc, ann) => {
-        const idx = ann.imageIndex ?? 0;
-        acc[idx] = (acc[idx] || 0) + 1;
-        return acc;
-      }, {} as Record<number, number>),
-      imageIndexDistribution: {
-        undefined: workflow.aiAnnotations.filter(a => a.imageIndex === undefined).length,
-        null: workflow.aiAnnotations.filter(a => a.imageIndex === null).length,
-        zero: workflow.aiAnnotations.filter(a => a.imageIndex === 0).length,
-        one: workflow.aiAnnotations.filter(a => a.imageIndex === 1).length,
-        two: workflow.aiAnnotations.filter(a => a.imageIndex === 2).length,
-        three: workflow.aiAnnotations.filter(a => a.imageIndex === 3).length
-      },
-      currentActiveImageIndex: imageIndex,
-      isMultiImageAnalysis: isMultiImage,
-      totalImagesCount: workflow.selectedImages.length
+      filteredResults: filteredAnnotations.map(a => ({
+        id: a.id,
+        feedback: a.feedback,
+        feedbackLength: a.feedback?.length || 0
+      }))
     });
     
     return filteredAnnotations;
   };
 
-  // Filter user annotations for the current image
   const getUserAnnotationsForImage = (imageUrl: string) => {
     const userAnnotations = workflow.userAnnotations[imageUrl] || [];
     
-    // 🔍 DEBUG: Log user annotations for debugging
-    console.log('🔍 ResultsStep - User Annotations Debug:', {
+    console.log('👤 RESULTS STEP - USER ANNOTATIONS DEBUG:', {
       imageUrl: imageUrl,
       userAnnotationsCount: userAnnotations.length,
       userAnnotationIds: userAnnotations.map(a => a.id)
@@ -129,63 +127,41 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
     return userAnnotations;
   };
 
-  // ✅ ENHANCED: Better analysis results extraction
+  // 🎯 CURRENT IMAGE ANNOTATIONS WITH ENHANCED DEBUGGING
   const currentImageAIAnnotations = (() => {
-    // First try the existing aiAnnotations approach
-    const existingAnnotations = getAnnotationsForImage(activeImageIndex >= 0 ? activeImageIndex : 0);
+    const imageIndex = activeImageIndex >= 0 ? activeImageIndex : 0;
+    const filteredAnnotations = getAnnotationsForImage(imageIndex);
     
-    // Also try extracting from analysisResults if available
-    const results = workflow.analysisResults;
-    if (results && Array.isArray(results)) {
-      const currentResult = results[activeImageIndex >= 0 ? activeImageIndex : 0];
-      console.log('🔍 CURRENT IMAGE RESULT:', {
-        activeImageIndex,
-        currentResult,
-        resultKeys: currentResult ? Object.keys(currentResult) : [],
-        resultType: typeof currentResult
-      });
-      
-      // Try multiple possible annotation sources
-      const resultAnnotations = 
-        currentResult?.annotations || 
-        currentResult?.feedback || 
-        currentResult?.aiAnnotations ||
-        currentResult?.insights ||
-        currentResult?.analysis?.annotations ||
-        [];
-        
-      console.log('📊 EXTRACTED ANNOTATIONS FROM RESULTS:', {
-        count: resultAnnotations.length,
-        firstAnnotation: resultAnnotations[0],
-        annotationKeys: resultAnnotations[0] ? Object.keys(resultAnnotations[0]) : []
-      });
-      
-      // Use analysisResults annotations if they exist and are more than existing
-      if (resultAnnotations.length > existingAnnotations.length) {
-        return resultAnnotations;
-      }
-    }
+    console.log('🎯 CURRENT IMAGE AI ANNOTATIONS - FINAL RESULT:', {
+      activeImageIndex: imageIndex,
+      currentImageAIAnnotationsCount: filteredAnnotations.length,
+      annotationsData: filteredAnnotations.map((a, i) => ({
+        index: i + 1,
+        id: a.id,
+        feedback: a.feedback,
+        feedbackLength: a.feedback?.length || 0,
+        isValidFeedback: !!(a.feedback && a.feedback.trim() && a.feedback !== 'Analysis insight'),
+        category: a.category,
+        severity: a.severity
+      }))
+    });
     
-    return existingAnnotations;
+    return filteredAnnotations;
   })();
 
   const currentImageUserAnnotations = getUserAnnotationsForImage(activeImageUrl);
 
-  // 🔍 DEBUG: Log overall component state
-  console.log('🔍 ResultsStep - Component State Debug:', {
-    activeImageUrl: activeImageUrl,
-    activeImageIndex: activeImageIndex,
-    isMultiImage: isMultiImage,
-    totalImagesCount: workflow.selectedImages.length,
-    selectedImages: workflow.selectedImages,
+  console.log('🎯 FINAL DATA BEING PASSED TO FEEDBACK PANEL:', {
     currentImageAIAnnotationsCount: currentImageAIAnnotations.length,
     currentImageUserAnnotationsCount: currentImageUserAnnotations.length,
     totalAIAnnotations: workflow.aiAnnotations.length,
-    overallAnnotationDistribution: workflow.aiAnnotations.reduce((acc, ann) => {
-      const idx = ann.imageIndex ?? 0;
-      acc[`Image_${idx}`] = (acc[`Image_${idx}`] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>)
+    activeImageIndex: activeImageIndex,
+    isMultiImage: isMultiImage,
+    firstAnnotationPreview: currentImageAIAnnotations[0] ? {
+      id: currentImageAIAnnotations[0].id,
+      feedback: currentImageAIAnnotations[0].feedback,
+      feedbackLength: currentImageAIAnnotations[0].feedback?.length || 0
+    } : 'No annotations'
   });
 
   // Extract business impact and insights
@@ -216,7 +192,6 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <CardTitle className="text-2xl">Analysis Results</CardTitle>
-              {/* Professional Analysis Scope Badge */}
               {isMultiImage && (
                 <Badge className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-500 px-4 py-2 text-sm font-bold shadow-lg">
                   📊 Analysis across {workflow.selectedImages.length} images
@@ -224,7 +199,6 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
               )}
             </div>
             <div className="flex gap-2">
-              {/* Multi-Image Insights Badge */}
               {isMultiImage && (
                 <Badge className="bg-gradient-to-r from-purple-600 to-violet-600 text-white border-purple-500 px-3 py-1 text-xs font-semibold shadow-md">
                   🔍 Multi-image insights
@@ -245,7 +219,6 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
                   : `Analysis focused on ${detectedFocusAreas.join(' & ')} with research-backed recommendations.`
                 }
               </p>
-              {/* Cross-Image Comparison Badge */}
               {isMultiImage && (
                 <Badge className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-emerald-500 px-3 py-1 text-xs font-semibold shadow-md ml-auto">
                   📈 Cross-image comparison
@@ -255,9 +228,7 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
           </div>
         </CardHeader>
         <CardContent className="space-y-8">
-          {/* Analysis Context Display */}
           <AnalysisContextPanel workflow={workflow} />
-          {/* ✅ ENHANCED CONTEXT DISPLAY - Properly integrated */}
           <EnhancedContextDisplay
             enhancedContext={workflow.enhancedContext}
             ragEnhanced={workflow.ragEnhanced}
@@ -267,13 +238,11 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
             visionConfidenceScore={workflow.visionConfidenceScore}
             visionElementsDetected={workflow.visionElementsDetected}
           />
-          {/* ✅ IMAGE INDICATOR - Fixed count display */}
           <ImageIndicator 
             currentImageIndex={activeImageIndex >= 0 ? activeImageIndex : 0}
             totalImages={workflow.selectedImages.length}
             isMultiImage={isMultiImage}
           />
-          {/* Comparative Analysis Summary */}
           {isMultiImage && (
             <ComparativeAnalysisSummary 
               annotations={workflow.aiAnnotations}
@@ -281,7 +250,6 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
             />
           )}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Image viewer */}
             <div className="lg:col-span-2">
               {isMultiImage ? (
                 <ImageTabsViewer
@@ -305,7 +273,6 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
                 />
               )}
             </div>
-            {/* Feedback panel */}
             <FeedbackPanel
               currentImageAIAnnotations={currentImageAIAnnotations}
               currentImageUserAnnotations={currentImageUserAnnotations}
@@ -319,7 +286,6 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
               insights={insights}
             />
           </div>
-          {/* Visual Design Suggestions */}
           <div className="mt-8">
             <VisualSuggestions
               analysisInsights={workflow.aiAnnotations.map(a => a.feedback).slice(0, 5)}
@@ -328,7 +294,6 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
               designType={isMultiImage ? 'responsive' : 'desktop'}
             />
           </div>
-          {/* Interactive Code Solutions - PREMIUM FEATURE */}
           <div className="mt-8">
             <CodeSolutions
               analysisInsights={workflow.aiAnnotations.map(a => a.feedback).slice(0, 5)}

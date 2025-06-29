@@ -17,7 +17,30 @@ export const DetailedAnnotationsList = ({
   getSeverityColor,
   isMultiImage = false,
 }: DetailedAnnotationsListProps) => {
+  
+  // 🔍 DETAILED ANNOTATIONS LIST DEBUG
+  console.log('📝 DETAILED ANNOTATIONS LIST - COMPREHENSIVE DEBUG:', {
+    componentName: 'DetailedAnnotationsList',
+    annotationsReceived: annotations.length,
+    annotationsData: annotations.map((annotation, index) => ({
+      index: index + 1,
+      id: annotation.id,
+      feedback: annotation.feedback,
+      feedbackType: typeof annotation.feedback,
+      feedbackLength: annotation.feedback?.length || 0,
+      feedbackPreview: annotation.feedback?.substring(0, 100) + '...',
+      feedbackIsEmpty: !annotation.feedback || annotation.feedback.trim() === '',
+      feedbackIsGeneric: annotation.feedback?.startsWith('Analysis insight'),
+      category: annotation.category,
+      severity: annotation.severity,
+      allAnnotationProperties: Object.keys(annotation)
+    })),
+    activeAnnotation,
+    isMultiImage
+  });
+
   if (annotations.length === 0) {
+    console.log('⚠️ DETAILED ANNOTATIONS LIST - NO ANNOTATIONS TO DISPLAY');
     return (
       <div className="text-center py-8">
         <p className="text-gray-500 dark:text-gray-400">No insights available yet.</p>
@@ -28,17 +51,25 @@ export const DetailedAnnotationsList = ({
   return (
     <div className="space-y-4">
       {annotations.map((annotation, index) => {
-        // 🔍 DEBUG: Log annotation data to see what we're receiving
-        console.log(`🔍 DetailedAnnotationsList - Annotation ${index + 1}:`, {
+        // 🔍 DEBUG: Individual annotation processing
+        console.log(`📝 PROCESSING ANNOTATION ${index + 1}:`, {
           id: annotation.id,
           feedback: annotation.feedback,
+          feedbackLength: annotation.feedback?.length || 0,
+          feedbackIsValid: !!(annotation.feedback && annotation.feedback.trim()),
           category: annotation.category,
-          severity: annotation.severity,
-          fullAnnotation: annotation
+          severity: annotation.severity
         });
 
-        // Use the feedback property which is the correct property in the Annotation type
+        // ✅ ROBUST FEEDBACK EXTRACTION
         const feedbackContent = annotation.feedback || 'No feedback available';
+        const isValidFeedback = feedbackContent && feedbackContent.trim() !== '' && feedbackContent !== 'No feedback available';
+
+        console.log(`✅ FINAL FEEDBACK FOR ANNOTATION ${index + 1}:`, {
+          feedbackContent,
+          isValidFeedback,
+          contentLength: feedbackContent.length
+        });
 
         return (
           <div
@@ -74,7 +105,13 @@ export const DetailedAnnotationsList = ({
                 
                 {/* Feedback Content */}
                 <div className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">
-                  {feedbackContent}
+                  {isValidFeedback ? (
+                    <span className="font-medium">{feedbackContent}</span>
+                  ) : (
+                    <span className="text-gray-500 italic">
+                      Feedback content is being processed... Please check the console for details.
+                    </span>
+                  )}
                 </div>
                 
                 {/* Implementation details */}

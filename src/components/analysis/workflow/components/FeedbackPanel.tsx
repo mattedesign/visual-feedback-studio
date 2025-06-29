@@ -1,3 +1,4 @@
+
 import { Annotation } from '@/types/analysis';
 import { CurrentImageSummary } from './CurrentImageSummary';
 import { OverallAnalysisSummary } from './OverallAnalysisSummary';
@@ -54,20 +55,50 @@ export const FeedbackPanel = ({
   insights,
 }: FeedbackPanelProps) => {
   
-  // ✅ ADD: Debug logging for FeedbackPanel
-  console.log('🔍 FEEDBACK PANEL DEBUG:', {
-    isMultiImage,
-    activeImageIndex,
-    currentImageAIAnnotationsCount: currentImageAIAnnotations.length,
-    totalAIAnnotationsCount: aiAnnotations.length,
-    currentImageAIAnnotations,
-    aiAnnotations,
-    annotationsBeingPassedToList: isMultiImage ? currentImageAIAnnotations : aiAnnotations,
-    imageIndexDistribution: aiAnnotations.reduce((acc, ann) => {
-      const idx = ann.imageIndex ?? 0;
-      acc[`Image_${idx}`] = (acc[`Image_${idx}`] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>)
+  // 🔍 FEEDBACK PANEL COMPREHENSIVE DEBUG
+  console.log('📊 FEEDBACK PANEL - COMPREHENSIVE DEBUG:', {
+    componentName: 'FeedbackPanel',
+    receivedProps: {
+      currentImageAIAnnotationsCount: currentImageAIAnnotations.length,
+      currentImageUserAnnotationsCount: currentImageUserAnnotations.length,
+      totalAIAnnotationsCount: aiAnnotations.length,
+      activeImageIndex,
+      isMultiImage,
+      activeAnnotation
+    },
+    currentImageAIAnnotationsDetail: currentImageAIAnnotations.map((a, i) => ({
+      index: i + 1,
+      id: a.id,
+      feedback: a.feedback,
+      feedbackLength: a.feedback?.length || 0,
+      feedbackIsValid: !!(a.feedback && a.feedback.trim() && a.feedback !== 'Analysis insight'),
+      category: a.category,
+      severity: a.severity,
+      allProperties: Object.keys(a)
+    })),
+    annotationsPassedToDetailedList: isMultiImage ? currentImageAIAnnotations : aiAnnotations,
+    annotationsPassedToDetailedListCount: (isMultiImage ? currentImageAIAnnotations : aiAnnotations).length,
+    annotationsPassedToDetailedListPreview: (isMultiImage ? currentImageAIAnnotations : aiAnnotations).slice(0, 2).map(a => ({
+      id: a.id,
+      feedback: a.feedback,
+      feedbackLength: a.feedback?.length || 0
+    }))
+  });
+
+  // 🎯 DETERMINE WHICH ANNOTATIONS TO SHOW
+  const annotationsToShow = isMultiImage ? currentImageAIAnnotations : aiAnnotations;
+  
+  console.log('🎯 FEEDBACK PANEL - ANNOTATIONS TO SHOW:', {
+    source: isMultiImage ? 'currentImageAIAnnotations' : 'aiAnnotations',
+    count: annotationsToShow.length,
+    firstThreeAnnotations: annotationsToShow.slice(0, 3).map((a, i) => ({
+      index: i + 1,
+      id: a.id,
+      feedback: a.feedback,
+      feedbackPreview: a.feedback?.substring(0, 50) + '...',
+      category: a.category,
+      severity: a.severity
+    }))
   });
 
   return (
@@ -126,7 +157,7 @@ export const FeedbackPanel = ({
           <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
             <span className="text-2xl">💬</span>
             <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-              Individual Comments
+              Individual Comments ({annotationsToShow.length})
             </span>
           </h2>
           <p className="text-sm text-gray-600 mt-2 font-medium">
@@ -136,7 +167,7 @@ export const FeedbackPanel = ({
         
         <div className="p-6">
           <DetailedAnnotationsList
-            annotations={isMultiImage ? currentImageAIAnnotations : aiAnnotations}
+            annotations={annotationsToShow}
             activeAnnotation={activeAnnotation}
             onAnnotationClick={onAnnotationClick}
             getSeverityColor={getSeverityColor}

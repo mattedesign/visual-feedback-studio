@@ -21,6 +21,23 @@ export const StudioRightPanel = ({
   const [expandedAnnotations, setExpandedAnnotations] = useState<Set<string>>(new Set());
   const hasResults = workflow.currentStep === 'results' && workflow.aiAnnotations.length > 0;
 
+  // 🔍 STUDIO RIGHT PANEL DEBUG
+  console.log('🎛️ STUDIO RIGHT PANEL - DEBUG:', {
+    componentName: 'StudioRightPanel',
+    currentStep: workflow.currentStep,
+    hasResults,
+    aiAnnotationsCount: workflow.aiAnnotations.length,
+    aiAnnotationsPreview: workflow.aiAnnotations.slice(0, 2).map(a => ({
+      id: a.id,
+      feedback: a.feedback,
+      feedbackLength: a.feedback?.length || 0,
+      category: a.category,
+      severity: a.severity
+    })),
+    selectedDevice,
+    activeAnnotation
+  });
+
   // Calculate summary metrics
   const totalAnnotations = workflow.aiAnnotations.length;
   const criticalCount = workflow.aiAnnotations.filter(a => a.severity === 'critical').length;
@@ -161,6 +178,16 @@ export const StudioRightPanel = ({
                   const feedback = annotation.feedback || 'No feedback available';
                   const shouldShowExpand = feedback.length > 100;
 
+                  // 🔍 DEBUG: Individual annotation in right panel
+                  console.log(`🎛️ RIGHT PANEL ANNOTATION ${index + 1}:`, {
+                    id: annotation.id,
+                    feedback: feedback,
+                    feedbackLength: feedback.length,
+                    isActive,
+                    category: annotation.category,
+                    severity: annotation.severity
+                  });
+
                   return (
                     <div 
                       key={annotation.id || `annotation-${index}`} 
@@ -187,7 +214,9 @@ export const StudioRightPanel = ({
                           
                           {/* Feedback Content with Expand/Collapse */}
                           <div className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">
-                            {isExpanded || !shouldShowExpand ? feedback : truncateText(feedback)}
+                            <span className="font-medium">
+                              {isExpanded || !shouldShowExpand ? feedback : truncateText(feedback)}
+                            </span>
                           </div>
                           
                           {/* Expand/Collapse Button */}

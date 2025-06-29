@@ -24,11 +24,60 @@ export const useAIAnalysis = () => {
   const [isBuilding, setIsBuilding] = useState(false);
   const [buildingStage, setBuildingStage] = useState<string>('');
 
+  // 🔧 NORMALIZE ANNOTATION DATA - Ensure consistent structure
+  const normalizeAnnotation = (annotation: any, index: number): Annotation => {
+    console.log(`🔧 NORMALIZING ANNOTATION ${index + 1}:`, {
+      rawAnnotation: annotation,
+      availableProperties: Object.keys(annotation || {}),
+      feedbackValue: annotation?.feedback,
+      descriptionValue: annotation?.description,
+      titleValue: annotation?.title
+    });
+
+    // Extract feedback text from multiple possible sources
+    const feedbackText = 
+      annotation?.feedback || 
+      annotation?.description || 
+      annotation?.title || 
+      annotation?.content || 
+      annotation?.text || 
+      annotation?.message ||
+      `Analysis insight ${index + 1}`;
+
+    const normalizedAnnotation: Annotation = {
+      id: annotation?.id || `annotation-${index + 1}-${Date.now()}`,
+      x: typeof annotation?.x === 'number' ? annotation.x : 50,
+      y: typeof annotation?.y === 'number' ? annotation.y : 50,
+      category: annotation?.category || 'ux',
+      severity: annotation?.severity || 'suggested',
+      feedback: feedbackText,
+      implementationEffort: annotation?.implementationEffort || annotation?.effort || 'medium',
+      businessImpact: annotation?.businessImpact || annotation?.impact || 'medium',
+      imageIndex: typeof annotation?.imageIndex === 'number' ? annotation.imageIndex : 0,
+      // Enhanced business impact fields
+      enhancedBusinessImpact: annotation?.enhancedBusinessImpact,
+      researchCitations: annotation?.researchCitations,
+      competitiveBenchmarks: annotation?.competitiveBenchmarks,
+      priorityScore: annotation?.priorityScore,
+      quickWinPotential: annotation?.quickWinPotential
+    };
+
+    console.log(`✅ NORMALIZED ANNOTATION ${index + 1}:`, {
+      id: normalizedAnnotation.id,
+      feedback: normalizedAnnotation.feedback,
+      category: normalizedAnnotation.category,
+      severity: normalizedAnnotation.severity,
+      feedbackLength: normalizedAnnotation.feedback.length
+    });
+
+    return normalizedAnnotation;
+  };
+
   const analyzeImages = useCallback(async (params: AnalyzeImagesParams): Promise<AnalysisResult> => {
     console.log('🚀 ANALYSIS START:', {
       imageCount: params.imageUrls.length,
       userAnnotationsCount: params.userAnnotations.length,
-      enhancedRagDisabled: true // Always disabled now
+      enhancedRagDisabled: true
     });
 
     setIsAnalyzing(true);
@@ -36,17 +85,16 @@ export const useAIAnalysis = () => {
     setBuildingStage('Preparing analysis...');
 
     try {
-      // 🔥 DISABLE ENHANCED RAG - Always set to false
       const analysisParams = {
         imageUrls: params.imageUrls,
         userAnnotations: params.userAnnotations,
         analysisPrompt: params.analysisPrompt,
         deviceType: params.deviceType,
-        useEnhancedRag: false, // ✅ DISABLED
+        useEnhancedRag: false, // Always disabled
         analysisId: `analysis-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
       };
 
-      console.log('📝 Analysis parameters (Enhanced RAG disabled):', {
+      console.log('📝 Analysis parameters:', {
         ...analysisParams,
         imageUrls: analysisParams.imageUrls.map(url => url.substring(0, 50) + '...'),
         enhancedRagStatus: 'DISABLED'
@@ -68,17 +116,36 @@ export const useAIAnalysis = () => {
         throw new Error('No analysis data returned');
       }
 
-      console.log('✅ Analysis completed successfully:', {
+      console.log('📊 RAW ANALYSIS DATA:', {
+        dataKeys: Object.keys(data),
         annotationsCount: data.annotations?.length || 0,
+        annotationsPreview: data.annotations?.slice(0, 2),
         hasAnalysis: !!data.analysis,
-        enhancedRagUsed: false
+        fullData: data
       });
 
       setBuildingStage('Processing results...');
 
+      // 🔧 NORMALIZE ALL ANNOTATIONS
+      const rawAnnotations = data.annotations || [];
+      const normalizedAnnotations = rawAnnotations.map((annotation: any, index: number) => 
+        normalizeAnnotation(annotation, index)
+      );
+
+      console.log('✅ ANNOTATION NORMALIZATION COMPLETE:', {
+        originalCount: rawAnnotations.length,
+        normalizedCount: normalizedAnnotations.length,
+        sampleNormalizedAnnotation: normalizedAnnotations[0],
+        allFeedbackLengths: normalizedAnnotations.map((a: Annotation, i: number) => ({
+          index: i + 1,
+          feedbackLength: a.feedback.length,
+          hasValidFeedback: a.feedback && a.feedback !== 'Analysis insight'
+        }))
+      });
+
       return {
         success: true,
-        annotations: data.annotations || [],
+        annotations: normalizedAnnotations,
         analysis: data.analysis || null
       };
 
@@ -107,8 +174,7 @@ export const useAIAnalysis = () => {
     isAnalyzing,
     isBuilding,
     buildingStage,
-    // 🔥 ADD MISSING PROPERTIES - Mock values since RAG is disabled
-    hasResearchContext: false, // RAG is disabled, so no research context
-    researchSourcesCount: 0    // RAG is disabled, so 0 sources
+    hasResearchContext: false,
+    researchSourcesCount: 0
   };
 };
