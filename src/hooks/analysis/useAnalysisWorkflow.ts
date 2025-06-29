@@ -60,6 +60,7 @@ export const useAnalysisWorkflow = () => {
     setCurrentAnalysis(null);
   }, []);
 
+  // ✅ FIXED: Single source of truth for images
   const selectImages = useCallback((images: string[]) => {
     console.log('🖼️ FIXED: Selecting images (single source):', images.length, images);
     setSelectedImages(images);
@@ -75,6 +76,7 @@ export const useAnalysisWorkflow = () => {
     setActiveImageUrl(imageUrl);
   }, [selectedImages]);
 
+  // ✅ FIXED: Only add to selectedImages, not both arrays
   const addUploadedFile = useCallback((imageUrl: string) => {
     setSelectedImages(prev => {
       if (!prev.includes(imageUrl)) {
@@ -283,13 +285,12 @@ export const useAnalysisWorkflow = () => {
 
   // Legacy properties for backward compatibility
   const selectedImageUrl = selectedImages[0] || null;
-  const uploadedFiles = selectedImages;
 
   return {
     // State
     currentStep,
     selectedImages,
-    uploadedFiles,
+    uploadedFiles: selectedImages, // ✅ FIXED: Use selectedImages as source of truth
     activeImageUrl,
     userAnnotations,
     imageAnnotations,
