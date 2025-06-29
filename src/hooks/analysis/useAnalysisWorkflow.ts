@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { Annotation } from '@/types/analysis';
 import { useAIAnalysis } from './useAIAnalysis';
@@ -29,7 +30,7 @@ export const useAnalysisWorkflow = () => {
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [currentAnalysis, setCurrentAnalysis] = useState<any>(null);
   
-  // Enhanced context state
+  // Enhanced context state - read-only for display
   const [enhancedContext, setEnhancedContext] = useState<any>(null);
   const [ragEnhanced, setRagEnhanced] = useState<boolean>(false);
   const [knowledgeSourcesUsed, setKnowledgeSourcesUsed] = useState<number>(0);
@@ -214,34 +215,12 @@ export const useAnalysisWorkflow = () => {
 
       if (result.success) {
         console.log('✅ Analysis completed successfully:', {
-          annotationCount: result.annotations.length,
-          hasEnhancedContext: !!result.enhancedContext
+          annotationCount: result.annotations.length
         });
 
         setAIAnnotations(result.annotations);
         setAnalysisResults(result.analysis);
         
-        // Set enhanced context information
-        if (result.enhancedContext) {
-          setEnhancedContext(result.enhancedContext);
-          setVisionEnhanced(true);
-          setVisionConfidenceScore(result.enhancedContext.confidenceScore);
-          setVisionElementsDetected(result.enhancedContext.visionAnalysis?.uiElements?.length || 0);
-          setKnowledgeSourcesUsed(prev => prev + (result.enhancedContext.knowledgeSourcesUsed || 0));
-          setResearchCitations(prev => [...prev, ...(result.enhancedContext.citations || [])]);
-        }
-        
-        // Set RAG context information
-        if (result.ragContext) {
-          setRagEnhanced(true);
-          if (result.ragContext.knowledgeSourcesUsed) {
-            setKnowledgeSourcesUsed(prev => prev + result.ragContext.knowledgeSourcesUsed);
-          }
-          if (result.ragContext.researchCitations) {
-            setResearchCitations(prev => [...prev, ...result.ragContext.researchCitations]);
-          }
-        }
-
         setCurrentStep('results');
         toast.success(`Analysis complete! Found ${result.annotations.length} insights.`);
       } else {

@@ -45,7 +45,6 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
     setCurrentStep(`Analyzing your context: ${focusAreas.join(', ')}...`);
   }, [workflow.analysisContext]);
 
-  // ✅ FIXED: Complete performAnalysis function replacement
   const performAnalysis = useCallback(async () => {
     if (analysisStartedRef.current) {
       console.log('⚠️ Analysis already in progress, skipping duplicate call');
@@ -57,7 +56,6 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
     analysisStartedRef.current = true;
 
     try {
-      // ✅ FIXED: Proper progress milestones to prevent 40% hang
       setCurrentStep('Initializing analysis...');
       setAnalysisProgress(5);
       
@@ -69,11 +67,11 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       setCurrentStep('Validating images...');
       setAnalysisProgress(15);
 
-      // ✅ FIXED: Robust image validation with timeout
+      // Robust image validation with timeout
       const imageValidationPromises = workflow.selectedImages.map(async (imageUrl, index) => {
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+          const timeoutId = setTimeout(() => controller.abort(), 10000);
           
           const response = await fetch(imageUrl, { 
             method: 'HEAD',
@@ -100,7 +98,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       setCurrentStep('Building research context...');
       setAnalysisProgress(35);
 
-      // ✅ FIXED: Proper user annotation preparation
+      // Prepare user annotations
       const userAnnotations = workflow.imageAnnotations.flatMap(imageAnnotation => 
         imageAnnotation.annotations.map(annotation => ({
           imageUrl: imageAnnotation.imageUrl,
@@ -117,13 +115,13 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       setCurrentStep('Running AI analysis...');
       setAnalysisProgress(65);
 
-      // ✅ FIXED: Call analysis with enhanced RAG enabled by default
+      // Call analysis with enhanced RAG enabled by default
       const result = await analyzeImages({
         imageUrls: workflow.selectedImages,
         userAnnotations,
         analysisPrompt: workflow.analysisContext || 'Analyze this design for UX improvements',
         deviceType: 'desktop',
-        useEnhancedRag: true // Enable RAG by default
+        useEnhancedRag: true
       });
 
       setAnalysisProgress(85);
@@ -132,33 +130,17 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
         setCurrentStep('Processing results...');
         setAnalysisProgress(95);
 
-        // ✅ FIXED: Store all enhanced context data in workflow
+        // Store AI annotations in workflow
         workflow.setAiAnnotations(result.annotations);
-        
-        if (result.enhancedContext) {
-          workflow.setEnhancedContext(result.enhancedContext);
-          workflow.setRagEnhanced(true);
-          workflow.setKnowledgeSourcesUsed(result.knowledgeSourcesUsed || 0);
-          workflow.setResearchCitations(result.researchCitations || []);
-          workflow.setVisionEnhanced(result.visionEnhanced || false);
-          if (result.enhancedContext.visionAnalysis) {
-            workflow.setVisionConfidenceScore(result.enhancedContext.confidenceScore);
-            workflow.setVisionElementsDetected(
-              result.enhancedContext.visionAnalysis.uiElements?.length || 0
-            );
-          }
-        }
 
         setCurrentStep(`Analysis complete for ${detectedFocusAreas.join(' & ')}!`);
         setAnalysisProgress(100);
 
         console.log('✅ AnalyzingStep: Analysis completed successfully', {
-          annotationsReceived: result.annotations.length,
-          ragEnhanced: result.ragEnhanced,
-          knowledgeSourcesUsed: result.knowledgeSourcesUsed
+          annotationsReceived: result.annotations.length
         });
 
-        // ✅ FIXED: Smooth transition to results
+        // Smooth transition to results
         setTimeout(() => {
           workflow.goToStep('results');
         }, 1000);
@@ -169,7 +151,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
     } catch (error) {
       console.error('❌ AnalyzingStep: Analysis failed:', error);
       
-      // ✅ FIXED: Proper error handling without infinite retries
+      // Proper error handling without infinite retries
       if (retryCount < maxRetries) {
         const nextRetry = retryCount + 1;
         console.log(`🔄 Attempting retry ${nextRetry}/${maxRetries}`);
@@ -198,7 +180,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
           duration: 8000,
         });
         
-        // ✅ FIXED: Reset for potential retry
+        // Reset for potential retry
         analysisStartedRef.current = false;
       }
     }
