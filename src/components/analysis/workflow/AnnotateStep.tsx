@@ -23,6 +23,11 @@ export const AnnotateStep = ({ workflow }: AnnotateStepProps) => {
   const [commentText, setCommentText] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  // Get annotations for the current selected image
+  const currentImageAnnotations = workflow.selectedImageUrl 
+    ? (workflow.userAnnotations[workflow.selectedImageUrl] || [])
+    : [];
+
   const handleImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -54,7 +59,7 @@ export const AnnotateStep = ({ workflow }: AnnotateStepProps) => {
   };
 
   const handleEditAnnotation = (id: string) => {
-    const annotation = workflow.userAnnotations.find(ann => ann.id === id);
+    const annotation = currentImageAnnotations.find(ann => ann.id === id);
     if (annotation) {
       setCurrentPosition({ x: annotation.x, y: annotation.y });
       setCommentText(annotation.comment);
@@ -98,7 +103,7 @@ export const AnnotateStep = ({ workflow }: AnnotateStepProps) => {
                 />
                 
                 {/* User annotations */}
-                {workflow.userAnnotations.map((annotation) => (
+                {currentImageAnnotations.map((annotation) => (
                   <div
                     key={annotation.id}
                     className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
@@ -140,9 +145,9 @@ export const AnnotateStep = ({ workflow }: AnnotateStepProps) => {
             {/* Sidebar */}
             <div className="space-y-4">
               <div>
-                <h3 className="text-lg font-medium mb-3">Your Comments ({workflow.userAnnotations.length})</h3>
+                <h3 className="text-lg font-medium mb-3">Your Comments ({currentImageAnnotations.length})</h3>
                 <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {workflow.userAnnotations.map((annotation, index) => (
+                  {currentImageAnnotations.map((annotation, index) => (
                     <div key={annotation.id} className="bg-slate-700 p-3 rounded">
                       <div className="flex justify-between items-start mb-2">
                         <span className="text-sm font-medium">Comment {index + 1}</span>
@@ -166,7 +171,7 @@ export const AnnotateStep = ({ workflow }: AnnotateStepProps) => {
           <div className="flex justify-center">
             <Button
               onClick={handleSubmitForAnalysis}
-              disabled={workflow.userAnnotations.length === 0 && !workflow.analysisContext.trim()}
+              disabled={currentImageAnnotations.length === 0 && !workflow.analysisContext.trim()}
               className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
             >
               <Sparkles className="w-4 h-4 mr-2" />
