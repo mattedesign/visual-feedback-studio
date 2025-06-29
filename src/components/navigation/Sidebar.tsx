@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { usePathname } from 'next/navigation';
+import { useLocation } from 'react-router-dom';
 import { Home, LayoutDashboard, Users, Settings, Database } from 'lucide-react';
 import { SidebarItem, SidebarHeader } from './';
 
@@ -8,7 +9,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
-  const pathname = usePathname();
+  const location = useLocation();
 
   return (
     <div className={`flex flex-col h-full ${isCollapsed ? 'w-16' : 'w-60'} border-r border-gray-200 bg-white`}>
@@ -19,30 +20,31 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
           to="/dashboard"
           icon={<LayoutDashboard className="w-4 h-4" />}
           label="Dashboard"
-          isActive={pathname === '/dashboard'}
+          isActive={location.pathname === '/dashboard'}
         />
         <SidebarItem
           to="/"
           icon={<Home className="w-4 h-4" />}
           label="Home"
-          isActive={pathname === '/'}
+          isActive={location.pathname === '/'}
         />
         <SidebarItem
           to="/admin"
           icon={<Users className="w-4 h-4" />}
           label="Admin"
-          isActive={pathname === '/admin'}
+          isActive={location.pathname === '/admin'}
         />
         <SidebarItem
           to="/settings"
           icon={<Settings className="w-4 h-4" />}
           label="Settings"
-          isActive={pathname === '/settings'}
+          isActive={location.pathname.startsWith('/settings')}
         />
         <SidebarItem 
           to="/knowledge-recovery" 
           icon={<Database className="w-4 h-4" />}
           label="Knowledge Recovery"
+          isActive={location.pathname === '/knowledge-recovery'}
         />
       </nav>
     </div>
