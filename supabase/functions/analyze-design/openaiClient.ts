@@ -1,3 +1,4 @@
+
 export async function analyzeWithOpenAI(
   base64Image: string,
   mimeType: string,
@@ -157,14 +158,14 @@ export async function analyzeWithOpenAI(
     const content = data.choices[0].message.content;
     console.log('Raw OpenAI content preview:', content.substring(0, 200) + '...');
 
-    // Enhanced JSON parsing with better error handling
+    // ✅ CRITICAL FIX: Enhanced JSON parsing with proper feedback extraction
     let annotations;
     try {
       // First, try to extract JSON from the content
       const jsonMatch = content.match(/\[[\s\S]*\]/);
       const jsonString = jsonMatch ? jsonMatch[0] : content;
       
-      console.log('Attempting to parse JSON:', {
+      console.log('🔍 FEEDBACK EXTRACTION DEBUG - Attempting to parse JSON:', {
         hasJsonMatch: !!jsonMatch,
         jsonStringLength: jsonString.length,
         startsWithBracket: jsonString.startsWith('['),
@@ -178,10 +179,22 @@ export async function analyzeWithOpenAI(
         throw new Error('Expected an array of annotations');
       }
       
-      console.log('JSON parsing successful:', {
+      console.log('✅ JSON parsing successful:', {
         annotationCount: annotations.length,
         firstAnnotationKeys: annotations[0] ? Object.keys(annotations[0]) : []
       });
+
+      // ✅ CRITICAL DEBUG: Log raw annotation structure before processing
+      console.log('🔍 RAW ANNOTATIONS FROM OPENAI:', annotations.slice(0, 2).map((ann, i) => ({
+        index: i,
+        rawAnnotation: ann,
+        availableProperties: Object.keys(ann),
+        titleValue: ann.title,
+        descriptionValue: ann.description,
+        businessImpactValue: ann.businessImpact,
+        quickFixValue: ann.quickFix,
+        feedbackValue: ann.feedback
+      })));
       
     } catch (parseError) {
       console.error('JSON parsing failed:', parseError);
@@ -193,17 +206,76 @@ export async function analyzeWithOpenAI(
         y: 50,
         category: 'ux',
         severity: 'suggested',
-        feedback: 'Analysis completed but response format needs attention. Please review the overall design for UX improvements.',
+        title: 'Analysis Response Issue',
+        description: 'Analysis completed but response format needs attention. Please review the overall design for UX improvements.',
+        businessImpact: 'Medium impact on user experience',
+        quickFix: 'Review and improve response parsing',
         implementationEffort: 'medium',
-        businessImpact: 'medium',
         imageIndex: 0
       }];
       
       console.log('Using fallback annotation due to parsing error');
     }
 
-    // Validate annotation structure
+    // ✅ CRITICAL FIX: Enhanced validation with proper feedback extraction
     const validatedAnnotations = annotations.map((annotation, index) => {
+      console.log(`🔍 PROCESSING ANNOTATION ${index + 1}:`, {
+        rawAnnotation: annotation,
+        title: annotation.title,
+        description: annotation.description,
+        businessImpact: annotation.businessImpact,
+        quickFix: annotation.quickFix,
+        existingFeedback: annotation.feedback
+      });
+
+      // ✅ ENHANCED FEEDBACK EXTRACTION - Build comprehensive feedback from AI response
+      let comprehensiveFeedback = '';
+      
+      // Primary: Use description as main feedback content
+      if (annotation.description && typeof annotation.description === 'string' && annotation.description.trim().length > 0) {
+        comprehensiveFeedback = annotation.description.trim();
+        console.log(`✅ Using description as primary feedback: "${comprehensiveFeedback.substring(0, 100)}..."`);
+      }
+      // Secondary: Use title if no description
+      else if (annotation.title && typeof annotation.title === 'string' && annotation.title.trim().length > 0) {
+        comprehensiveFeedback = annotation.title.trim();
+        console.log(`✅ Using title as feedback: "${comprehensiveFeedback.substring(0, 100)}..."`);
+      }
+      // Tertiary: Use existing feedback field
+      else if (annotation.feedback && typeof annotation.feedback === 'string' && annotation.feedback.trim().length > 0) {
+        comprehensiveFeedback = annotation.feedback.trim();
+        console.log(`✅ Using existing feedback field: "${comprehensiveFeedback.substring(0, 100)}..."`);
+      }
+      // Fallback: Create basic feedback
+      else {
+        comprehensiveFeedback = `UX improvement needed in ${annotation.category || 'general'} area`;
+        console.log(`⚠️ Using fallback feedback: "${comprehensiveFeedback}"`);
+      }
+
+      // ✅ ENHANCE FEEDBACK: Add business impact and quick fix if available
+      if (annotation.businessImpact && typeof annotation.businessImpact === 'string' && annotation.businessImpact.trim().length > 0) {
+        if (!comprehensiveFeedback.toLowerCase().includes(annotation.businessImpact.toLowerCase().substring(0, 20))) {
+          comprehensiveFeedback += ` Impact: ${annotation.businessImpact.trim()}`;
+        }
+      }
+      
+      if (annotation.quickFix && typeof annotation.quickFix === 'string' && annotation.quickFix.trim().length > 0) {
+        if (!comprehensiveFeedback.toLowerCase().includes(annotation.quickFix.toLowerCase().substring(0, 20))) {
+          comprehensiveFeedback += ` Quick Fix: ${annotation.quickFix.trim()}`;
+        }
+      }
+
+      console.log(`✅ FINAL COMPREHENSIVE FEEDBACK FOR ANNOTATION ${index + 1}:`, {
+        feedbackLength: comprehensiveFeedback.length,
+        feedbackPreview: comprehensiveFeedback.substring(0, 150) + '...',
+        sources: {
+          usedDescription: !!(annotation.description && comprehensiveFeedback.includes(annotation.description)),
+          usedTitle: !!(annotation.title && comprehensiveFeedback.includes(annotation.title)),
+          usedBusinessImpact: !!(annotation.businessImpact && comprehensiveFeedback.includes(annotation.businessImpact)),
+          usedQuickFix: !!(annotation.quickFix && comprehensiveFeedback.includes(annotation.quickFix))
+        }
+      });
+
       const validated = {
         x: typeof annotation.x === 'number' ? annotation.x : 50,
         y: typeof annotation.y === 'number' ? annotation.y : 50,
@@ -211,7 +283,7 @@ export async function analyzeWithOpenAI(
           ? annotation.category : 'ux',
         severity: ['critical', 'suggested', 'enhancement'].includes(annotation.severity) 
           ? annotation.severity : 'suggested',
-        feedback: typeof annotation.feedback === 'string' ? annotation.feedback : 'Feedback not provided',
+        feedback: comprehensiveFeedback, // ✅ FIXED: Use the extracted comprehensive feedback
         implementationEffort: ['low', 'medium', 'high'].includes(annotation.implementationEffort) 
           ? annotation.implementationEffort : 'medium',
         businessImpact: ['low', 'medium', 'high'].includes(annotation.businessImpact) 
@@ -219,9 +291,11 @@ export async function analyzeWithOpenAI(
         imageIndex: typeof annotation.imageIndex === 'number' ? annotation.imageIndex : 0
       };
       
-      if (JSON.stringify(validated) !== JSON.stringify(annotation)) {
-        console.log(`Annotation ${index} was validated/corrected`);
-      }
+      console.log(`✅ VALIDATED ANNOTATION ${index + 1}:`, {
+        feedbackLength: validated.feedback.length,
+        feedbackIsPlaceholder: validated.feedback === 'Feedback not provided' || validated.feedback.startsWith('UX improvement needed'),
+        feedbackPreview: validated.feedback.substring(0, 100) + '...'
+      });
       
       return validated;
     });
@@ -229,6 +303,21 @@ export async function analyzeWithOpenAI(
     console.log('=== OpenAI Client Completed Successfully ===');
     console.log('Final annotation count:', validatedAnnotations.length);
     console.log('Model used:', data.model || model);
+    
+    // ✅ FINAL VALIDATION: Ensure no annotations have placeholder feedback
+    const annotationsWithPlaceholders = validatedAnnotations.filter(a => 
+      a.feedback === 'Feedback not provided' || 
+      a.feedback.startsWith('UX improvement needed') ||
+      a.feedback.length < 20
+    );
+    
+    if (annotationsWithPlaceholders.length > 0) {
+      console.warn(`⚠️ WARNING: ${annotationsWithPlaceholders.length} annotations still have placeholder feedback:`, 
+        annotationsWithPlaceholders.map(a => ({ feedback: a.feedback, x: a.x, y: a.y }))
+      );
+    } else {
+      console.log('✅ SUCCESS: All annotations have meaningful feedback content');
+    }
     
     return validatedAnnotations;
 
