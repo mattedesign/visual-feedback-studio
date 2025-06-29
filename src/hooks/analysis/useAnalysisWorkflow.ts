@@ -64,6 +64,7 @@ export const useAnalysisWorkflow = () => {
   }, []);
 
   const selectImages = useCallback((images: string[]) => {
+    console.log('📸 Workflow: Selecting images:', images.length);
     setSelectedImages(images);
     setUploadedFiles(images);
     if (images.length > 0) {
@@ -71,7 +72,6 @@ export const useAnalysisWorkflow = () => {
     }
   }, []);
 
-  // Single image selection
   const selectImage = useCallback((imageUrl: string) => {
     if (!selectedImages.includes(imageUrl)) {
       setSelectedImages(prev => [...prev, imageUrl]);
@@ -79,8 +79,8 @@ export const useAnalysisWorkflow = () => {
     setActiveImageUrl(imageUrl);
   }, [selectedImages]);
 
-  // Add uploaded file to the list
   const addUploadedFile = useCallback((imageUrl: string) => {
+    console.log('📁 Workflow: Adding uploaded file:', imageUrl);
     setUploadedFiles(prev => {
       if (!prev.includes(imageUrl)) {
         return [...prev, imageUrl];
@@ -88,7 +88,6 @@ export const useAnalysisWorkflow = () => {
       return prev;
     });
     
-    // Also add to selected images if not already there
     setSelectedImages(prev => {
       if (!prev.includes(imageUrl)) {
         return [...prev, imageUrl];
@@ -97,7 +96,6 @@ export const useAnalysisWorkflow = () => {
     });
   }, []);
 
-  // Set active image
   const setActiveImage = useCallback((imageUrl: string) => {
     setActiveImageUrl(imageUrl);
   }, []);
@@ -108,13 +106,11 @@ export const useAnalysisWorkflow = () => {
       id: Date.now().toString()
     };
     
-    // Update userAnnotations (legacy format)
     setUserAnnotations(prev => ({
       ...prev,
       [imageUrl]: [...(prev[imageUrl] || []), newAnnotation]
     }));
 
-    // Update imageAnnotations (new format)
     setImageAnnotations(prev => {
       const existingIndex = prev.findIndex(ia => ia.imageUrl === imageUrl);
       if (existingIndex >= 0) {
@@ -131,13 +127,11 @@ export const useAnalysisWorkflow = () => {
   }, []);
 
   const removeUserAnnotation = useCallback((imageUrl: string, annotationId: string) => {
-    // Update userAnnotations (legacy format)
     setUserAnnotations(prev => ({
       ...prev,
       [imageUrl]: (prev[imageUrl] || []).filter(a => a.id !== annotationId)
     }));
 
-    // Update imageAnnotations (new format)
     setImageAnnotations(prev => {
       return prev.map(ia => {
         if (ia.imageUrl === imageUrl) {
@@ -152,7 +146,6 @@ export const useAnalysisWorkflow = () => {
   }, []);
 
   const updateUserAnnotation = useCallback((imageUrl: string, annotationId: string, comment: string) => {
-    // Update userAnnotations (legacy format)
     setUserAnnotations(prev => ({
       ...prev,
       [imageUrl]: (prev[imageUrl] || []).map(a => 
@@ -160,7 +153,6 @@ export const useAnalysisWorkflow = () => {
       )
     }));
 
-    // Update imageAnnotations (new format)
     setImageAnnotations(prev => {
       return prev.map(ia => {
         if (ia.imageUrl === imageUrl) {
@@ -191,7 +183,18 @@ export const useAnalysisWorkflow = () => {
       return;
     }
 
-    setCurrentStep('analyzing');
+    // Prevent duplicate analysis
+    if (isAnalyzing || aiAnalyzing) {
+      console.log('⚠️ Analysis already in progress, skipping');
+      return;
+    }
+
+    console.log('🚀 Starting analysis workflow:', {
+      imageCount: selectedImages.length,
+      annotationCount: getTotalAnnotationsCount(),
+      contextLength: analysisContext.length
+    });
+
     setIsAnalyzing(true);
 
     try {
@@ -206,14 +209,6 @@ export const useAnalysisWorkflow = () => {
         }))
       );
 
-      console.log('🚀 Starting analysis with params:', {
-        imageUrls: selectedImages,
-        userAnnotations: userAnnotationsArray,
-        analysisPrompt: analysisContext,
-        deviceType: 'desktop',
-        useEnhancedRag: true
-      });
-
       const result = await analyzeImages({
         imageUrls: selectedImages,
         userAnnotations: userAnnotationsArray,
@@ -223,6 +218,11 @@ export const useAnalysisWorkflow = () => {
       });
 
       if (result.success) {
+        console.log('✅ Analysis completed successfully:', {
+          annotationCount: result.annotations.length,
+          hasEnhancedContext: !!result.enhancedContext
+        });
+
         setAIAnnotations(result.annotations);
         setAnalysisResults(result.analysis);
         
@@ -248,22 +248,23 @@ export const useAnalysisWorkflow = () => {
         }
 
         setCurrentStep('results');
-        setIsAnalyzing(false);
         toast.success(`Analysis complete! Found ${result.annotations.length} insights.`);
       } else {
+        console.error('❌ Analysis failed:', result);
         toast.error('Analysis failed. Please try again.');
-        setCurrentStep('review');
-        setIsAnalyzing(false);
+        setCurrentStep('annotate');
       }
     } catch (error) {
-      console.error('Analysis failed:', error);
+      console.error('❌ Analysis failed:', error);
       toast.error('Analysis failed. Please try again.');
-      setCurrentStep('review');
+      setCurrentStep('annotate');
+    } finally {
       setIsAnalyzing(false);
     }
-  }, [selectedImages, imageAnnotations, analysisContext, analyzeImages]);
+  }, [selectedImages, imageAnnotations, analysisContext, analyzeImages, isAnalyzing, aiAnalyzing, getTotalAnnotationsCount]);
 
   const goToStep = useCallback((step: WorkflowStep) => {
+    console.log('🔄 Workflow: Navigating to step:', step);
     setCurrentStep(step);
   }, []);
 

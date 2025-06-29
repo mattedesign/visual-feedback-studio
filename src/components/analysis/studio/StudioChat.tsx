@@ -1,63 +1,30 @@
 
 import { useState } from 'react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
-import { useAIAnalysis } from '@/hooks/analysis/useAIAnalysis';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Sparkles, Zap, ChevronDown, ChevronUp, Play } from 'lucide-react';
+import { Sparkles, ChevronDown, ChevronUp, Play } from 'lucide-react';
 
 interface StudioChatProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
 }
 
 export const StudioChat = ({ workflow }: StudioChatProps) => {
-  const { analyzeImages, isAnalyzing } = useAIAnalysis();
   const [isExpanded, setIsExpanded] = useState(true);
 
   const handleAnalyze = async () => {
     if (!workflow.analysisContext.trim() || workflow.selectedImages.length === 0) return;
 
-    console.log('🚀 Starting analysis from StudioChat');
-
-    // Start analyzing step
+    console.log('🚀 StudioChat: Starting analysis via startAnalysis method');
     workflow.goToStep('analyzing');
-
-    try {
-      // Prepare user annotations for analysis
-      const userAnnotations = workflow.imageAnnotations.flatMap(imageAnnotation => 
-        imageAnnotation.annotations.map((annotation: any) => ({
-          imageUrl: imageAnnotation.imageUrl,
-          x: annotation.x,
-          y: annotation.y,
-          comment: annotation.comment,
-          id: annotation.id
-        }))
-      );
-
-      // Call the AI analysis
-      const result = await analyzeImages({
-        imageUrls: workflow.selectedImages,
-        userAnnotations,
-        analysisPrompt: workflow.analysisContext,
-        deviceType: 'desktop'
-      });
-
-      if (result.success && result.annotations) {
-        workflow.setAiAnnotations(result.annotations);
-        workflow.goToStep('results');
-      } else {
-        workflow.goToStep('annotate');
-      }
-    } catch (error) {
-      console.error('Analysis failed:', error);
-      workflow.goToStep('annotate');
-    }
+    
+    // Use the workflow's built-in analysis method
+    await workflow.startAnalysis();
   };
 
   const canAnalyze = workflow.selectedImages.length > 0 && 
                    workflow.analysisContext.trim().length > 0 && 
-                   !isAnalyzing;
+                   !workflow.isAnalyzing;
 
   const hasImages = workflow.selectedImages.length > 0;
   const hasContext = workflow.analysisContext.trim().length > 0;
@@ -123,11 +90,11 @@ export const StudioChat = ({ workflow }: StudioChatProps) => {
                   onClick={handleAnalyze}
                   size="lg"
                   className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold px-6 py-3 shadow-lg"
-                  disabled={isAnalyzing}
+                  disabled={workflow.isAnalyzing}
                 >
-                  {isAnalyzing ? (
+                  {workflow.isAnalyzing ? (
                     <>
-                      <Zap className="w-5 h-5 mr-2 animate-pulse" />
+                      <Sparkles className="w-5 h-5 mr-2 animate-pulse" />
                       Analyzing...
                     </>
                   ) : (
@@ -225,9 +192,9 @@ export const StudioChat = ({ workflow }: StudioChatProps) => {
                 size="lg"
                 className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed px-8 py-4 text-lg font-semibold shadow-lg"
               >
-                {isAnalyzing ? (
+                {workflow.isAnalyzing ? (
                   <>
-                    <Zap className="w-6 h-6 mr-3 animate-pulse" />
+                    <Sparkles className="w-6 h-6 mr-3 animate-pulse" />
                     Analyzing...
                   </>
                 ) : (
