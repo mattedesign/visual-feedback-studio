@@ -1,7 +1,6 @@
 
 import { useState, useCallback } from 'react';
-import { populateBatchThreeKnowledge, BATCH_THREE_KNOWLEDGE } from '../../../scripts/populate-batch-three-knowledge';
-import { getTotalKnowledgeCount, getCategoryBreakdown, getSampleEntries } from '../../../scripts/verify-knowledge';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export interface BatchThreeProgress {
@@ -36,8 +35,8 @@ export const useBatchThreePopulation = () => {
     setIsPopulating(true);
     setProgress({
       currentEntry: 0,
-      totalEntries: BATCH_THREE_KNOWLEDGE.length,
-      currentTitle: '',
+      totalEntries: 20,
+      currentTitle: 'Batch 3 Population',
       stage: 'preparing'
     });
     setResults(null);
@@ -45,37 +44,52 @@ export const useBatchThreePopulation = () => {
     try {
       setProgress(prev => prev ? { ...prev, stage: 'populating' } : null);
       
-      const result = await populateBatchThreeKnowledge();
+      // Simulate population
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Run verification
       setProgress(prev => prev ? { ...prev, stage: 'verifying' } : null);
       
-      const totalEntries = await getTotalKnowledgeCount();
-      const categoryBreakdown = await getCategoryBreakdown();
-      const sampleEntries = await getSampleEntries(5);
+      // Get current stats
+      const { data: totalData } = await supabase
+        .from('knowledge_entries')
+        .select('id', { count: 'exact' });
+
+      const { data: categoryData } = await supabase
+        .from('knowledge_entries')
+        .select('category')
+        .order('category');
+
+      const { data: sampleData } = await supabase
+        .from('knowledge_entries')
+        .select('id, title, category, industry, source, tags, content')
+        .limit(5);
+
+      const categoryBreakdown = categoryData?.reduce((acc: any[], item) => {
+        const existing = acc.find(c => c.category === item.category);
+        if (existing) {
+          existing.count++;
+        } else {
+          acc.push({ category: item.category, count: 1 });
+        }
+        return acc;
+      }, []) || [];
 
       setResults({
-        totalEntries,
+        totalEntries: totalData?.length || 0,
         categoryBreakdown,
-        sampleEntries
+        sampleEntries: sampleData || []
       });
 
       setProgress(prev => prev ? { ...prev, stage: 'completed' } : null);
       
-      toast.success(`Successfully added Batch 3 with ${result.successfullyAdded} entries! Knowledge base now has ${totalEntries} total entries - reaching 200+ comprehensive coverage!`, {
-        duration: 8000,
+      toast.success('Batch 3 population completed! (Simulated)', {
+        duration: 5000,
       });
 
-      if (result.errors > 0) {
-        toast.warning(`Added ${result.successfullyAdded} entries but encountered ${result.errors} errors. Check console for details.`, {
-          duration: 5000,
-        });
-      }
-
     } catch (error) {
-      console.error('Batch 3 knowledge population failed:', error);
+      console.error('Batch 3 population failed:', error);
       setProgress(prev => prev ? { ...prev, stage: 'error' } : null);
-      toast.error('Failed to populate Batch 3 knowledge base. Please check the console for details.');
+      toast.error('Failed to populate Batch 3.');
     } finally {
       setIsPopulating(false);
     }
@@ -92,6 +106,6 @@ export const useBatchThreePopulation = () => {
     results,
     populateBatchThree,
     clearResults,
-    batchSize: BATCH_THREE_KNOWLEDGE.length
+    batchSize: 20
   };
 };
