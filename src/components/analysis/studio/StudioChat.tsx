@@ -15,11 +15,15 @@ export const StudioChat = ({ workflow }: StudioChatProps) => {
   const handleAnalyze = async () => {
     if (!workflow.analysisContext.trim() || workflow.selectedImages.length === 0) return;
 
-    console.log('🚀 StudioChat: Starting analysis via startAnalysis method');
-    workflow.goToStep('analyzing');
+    console.log('🚀 StudioChat: Starting analysis - transitioning to analyzing step');
+    console.log('📊 Analysis params:', {
+      selectedImages: workflow.selectedImages.length,
+      context: workflow.analysisContext.length,
+      annotations: workflow.getTotalAnnotationsCount()
+    });
     
-    // Use the workflow's built-in analysis method
-    await workflow.startAnalysis();
+    // Transition to analyzing step - the AnalyzingCanvasState will handle the actual analysis
+    workflow.goToStep('analyzing');
   };
 
   const canAnalyze = workflow.selectedImages.length > 0 && 

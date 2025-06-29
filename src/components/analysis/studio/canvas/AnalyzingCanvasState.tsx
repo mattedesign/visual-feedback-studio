@@ -12,48 +12,54 @@ interface AnalyzingCanvasStateProps {
 export const AnalyzingCanvasState = ({ workflow }: AnalyzingCanvasStateProps) => {
   const [currentPhase, setCurrentPhase] = useState<'initializing' | 'vision' | 'rag' | 'analysis' | 'complete'>('initializing');
   const [phaseProgress, setPhaseProgress] = useState(0);
+  const [hasStartedAnalysis, setHasStartedAnalysis] = useState(false);
 
   useEffect(() => {
-    // Don't start analysis if already analyzing or if no analysis context
-    if (workflow.isAnalyzing || !workflow.analysisContext.trim()) {
-      console.log('⚠️ AnalyzingCanvasState: Skipping analysis - already analyzing or no context');
+    // Only start analysis once and if we have the required data
+    if (hasStartedAnalysis || !workflow.analysisContext.trim() || workflow.selectedImages.length === 0) {
+      console.log('⚠️ AnalyzingCanvasState: Skipping analysis start', {
+        hasStartedAnalysis,
+        hasContext: !!workflow.analysisContext.trim(),
+        hasImages: workflow.selectedImages.length > 0
+      });
       return;
     }
 
+    console.log('🚀 AnalyzingCanvasState: Starting real analysis execution');
+    setHasStartedAnalysis(true);
+    
+    // Start the actual analysis workflow
     const runAnalysis = async () => {
       try {
-        console.log('🚀 AnalyzingCanvasState: Starting analysis execution');
-        
-        // Phase 1: Initializing
         setCurrentPhase('initializing');
         setPhaseProgress(10);
         
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Short delay for UI feedback
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Phase 2: Vision Analysis
         setCurrentPhase('vision');
         setPhaseProgress(25);
+        console.log('🔍 Starting Google Vision analysis phase');
         
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Phase 3: RAG Context Building
         setCurrentPhase('rag');
         setPhaseProgress(50);
+        console.log('🧠 Starting RAG context building phase');
         
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Phase 4: AI Analysis
         setCurrentPhase('analysis');
         setPhaseProgress(75);
+        console.log('🤖 Starting AI analysis phase');
         
-        // Trigger the actual analysis
+        // Trigger the actual analysis using the workflow's method
         await workflow.startAnalysis();
         
-        // Phase 5: Complete
         setCurrentPhase('complete');
         setPhaseProgress(100);
         
-        console.log('✅ AnalyzingCanvasState: Analysis phases completed');
+        console.log('✅ AnalyzingCanvasState: Analysis completed successfully');
         
       } catch (error) {
         console.error('❌ AnalyzingCanvasState: Analysis failed:', error);
@@ -62,7 +68,35 @@ export const AnalyzingCanvasState = ({ workflow }: AnalyzingCanvasStateProps) =>
     };
 
     runAnalysis();
-  }, []); // Empty dependency array - only run once
+  }, [workflow.analysisContext, workflow.selectedImages.length, hasStartedAnalysis, workflow.startAnalysis]);
+
+  // Monitor workflow state changes
+  useEffect(() => {
+    console.log('📊 AnalyzingCanvasState: Workflow state update:', {
+      isAnalyzing: workflow.isAnalyzing,
+      isBuilding: workflow.isBuilding,
+      buildingStage: workflow.buildingStage,
+      aiAnnotationsCount: workflow.aiAnnotations?.length || 0,
+      currentStep: workflow.currentStep
+    });
+
+    // Update phase based on workflow state
+    if (workflow.isBuilding && workflow.buildingStage) {
+      if (workflow.buildingStage.includes('Vision')) {
+        setCurrentPhase('vision');
+        setPhaseProgress(40);
+      } else if (workflow.buildingStage.includes('context')) {
+        setCurrentPhase('rag');
+        setPhaseProgress(60);
+      }
+    }
+
+    // If we have AI annotations, we're complete
+    if (workflow.aiAnnotations && workflow.aiAnnotations.length > 0) {
+      setCurrentPhase('complete');
+      setPhaseProgress(100);
+    }
+  }, [workflow.isAnalyzing, workflow.isBuilding, workflow.buildingStage, workflow.aiAnnotations]);
 
   const getPhaseInfo = () => {
     switch (currentPhase) {
@@ -154,12 +188,24 @@ export const AnalyzingCanvasState = ({ workflow }: AnalyzingCanvasStateProps) =>
             </div>
           )}
 
-          {/* Image Count */}
+          {/* Image Count - Show selected images only */}
           <div className="mt-4">
             <Badge variant="outline" className="text-gray-600 dark:text-gray-300">
               Analyzing {workflow.selectedImages.length} image{workflow.selectedImages.length !== 1 ? 's' : ''}
             </Badge>
           </div>
+
+          {/* Enhanced Context Status */}
+          {workflow.enhancedContext && (
+            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <p className="text-sm text-blue-700 dark:text-blue-300">
+                Enhanced with {workflow.enhancedContext.knowledgeSourcesUsed} knowledge sources
+                {workflow.enhancedContext.visionAnalysis?.uiElements?.length > 0 && 
+                  ` • Detected ${workflow.enhancedContext.visionAnalysis.uiElements.length} UI elements`
+                }
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
