@@ -34,7 +34,7 @@ export function formatErrorResponse(error: Error): {
   };
 }
 
-// Enhanced response formatter that supports RAG and competitive intelligence fields
+// Enhanced response formatter that supports RAG, competitive intelligence, and vision analysis fields
 export const responseFormatter = {
   formatSuccessResponse: (data: {
     annotations: AnnotationData[];
@@ -47,6 +47,9 @@ export const responseFormatter = {
     competitiveEnhanced?: boolean;
     competitivePatternsUsed?: number;
     industryBenchmarks?: string[];
+    visionEnhanced?: boolean; // NEW: Vision enhancement status
+    visionConfidenceScore?: number; // NEW: Vision confidence score
+    visionElementsDetected?: number; // NEW: Number of UI elements detected
   }) => {
     const processedAnnotations = data.annotations.map((ann, index) => ({
       id: `ai-${Date.now()}-${index}`,
@@ -71,7 +74,10 @@ export const responseFormatter = {
       researchCitations: data.researchCitations || [],
       competitiveEnhanced: data.competitiveEnhanced || false,
       competitivePatternsUsed: data.competitivePatternsUsed || 0,
-      industryBenchmarks: data.industryBenchmarks || []
+      industryBenchmarks: data.industryBenchmarks || [],
+      visionEnhanced: data.visionEnhanced || false, // NEW: Include vision enhancement status
+      visionConfidenceScore: data.visionConfidenceScore, // NEW: Include vision confidence
+      visionElementsDetected: data.visionElementsDetected || 0 // NEW: Include detected elements count
     };
 
     return {

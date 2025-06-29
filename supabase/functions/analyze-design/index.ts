@@ -1,3 +1,4 @@
+
 import { corsHeaders, corsHandler } from './corsHandler.ts';
 import { requestValidator } from './requestValidator.ts';
 import { imageProcessingManager } from './imageProcessingManager.ts';
@@ -13,7 +14,7 @@ import { buildCompetitiveIntelligence, checkCompetitivePatternsDatabase, Competi
 import { EnhancedAnalysisIntegrator } from './enhancedAnalysisIntegrator.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 
-console.log('🚀 Design Analysis Function Starting with Enhanced Business Impact - Multi-Image Fix v3 - URGENT MULTI-IMAGE REPAIR');
+console.log('🚀 Design Analysis Function Starting with Enhanced Vision Integration - Multi-Image Fix v4 - VISION CONTEXT UPDATE');
 
 // Enhanced RAG helper function with comprehensive logging and error handling
 async function addKnowledgeContext(prompt: string, supabase: any, enableRAG = false): Promise<{
@@ -288,6 +289,135 @@ async function checkKnowledgeBase(supabase: any): Promise<void> {
   }
 }
 
+// NEW: Function to process vision context and build enhanced system prompt
+function buildVisionEnhancedPrompt(originalPrompt: string, visionContext: any): string {
+  console.log('👁️ === BUILDING VISION ENHANCED PROMPT ===');
+  
+  if (!visionContext || !visionContext.visionAnalysis) {
+    console.log('⚠️ No vision context provided, using original prompt');
+    return originalPrompt;
+  }
+  
+  const vision = visionContext.visionAnalysis;
+  console.log('🔍 Vision context received:', {
+    uiElementsCount: vision.uiElements?.length || 0,
+    layoutType: vision.layout?.type || 'unknown',
+    industryDetected: vision.industry?.industry || 'unknown',
+    deviceType: vision.deviceType?.type || 'unknown',
+    accessibilityIssues: vision.accessibility?.length || 0,
+    confidenceScore: visionContext.confidenceScore || 0
+  });
+  
+  // Build comprehensive vision summary
+  let visionSummary = `\n\n=== GOOGLE VISION ANALYSIS SUMMARY ===\n`;
+  
+  // Device and Layout Context
+  if (vision.deviceType) {
+    visionSummary += `🖥️ DEVICE TYPE: ${vision.deviceType.type} (${Math.round(vision.deviceType.confidence * 100)}% confidence)\n`;
+    visionSummary += `   Dimensions: ${vision.deviceType.dimensions?.width || 'N/A'}x${vision.deviceType.dimensions?.height || 'N/A'}px\n`;
+  }
+  
+  if (vision.layout) {
+    visionSummary += `🏗️ LAYOUT: ${vision.layout.type} layout (${Math.round(vision.layout.confidence * 100)}% confidence)\n`;
+    visionSummary += `   Description: ${vision.layout.description || 'Standard layout'}\n`;
+  }
+  
+  // Industry Context
+  if (vision.industry) {
+    visionSummary += `🏢 INDUSTRY: ${vision.industry.industry} (${Math.round(vision.industry.confidence * 100)}% confidence)\n`;
+    if (vision.industry.indicators && vision.industry.indicators.length > 0) {
+      visionSummary += `   Key indicators: ${vision.industry.indicators.slice(0, 3).join(', ')}\n`;
+    }
+  }
+  
+  // UI Elements Analysis
+  if (vision.uiElements && vision.uiElements.length > 0) {
+    const elementCounts = vision.uiElements.reduce((counts: any, element: any) => {
+      counts[element.type] = (counts[element.type] || 0) + 1;
+      return counts;
+    }, {});
+    
+    visionSummary += `🎯 UI ELEMENTS DETECTED (${vision.uiElements.length} total):\n`;
+    Object.entries(elementCounts).forEach(([type, count]) => {
+      visionSummary += `   - ${count} ${type}${count > 1 ? 's' : ''}\n`;
+    });
+    
+    // Highlight specific elements with text
+    const elementsWithText = vision.uiElements
+      .filter((el: any) => el.text && el.text.length > 0)
+      .slice(0, 5);
+    
+    if (elementsWithText.length > 0) {
+      visionSummary += `   Key element texts: ${elementsWithText.map((el: any) => `"${el.text}"`).join(', ')}\n`;
+    }
+  }
+  
+  // Accessibility Issues
+  if (vision.accessibility && vision.accessibility.length > 0) {
+    const highPriorityIssues = vision.accessibility.filter((issue: any) => issue.severity === 'high');
+    const mediumPriorityIssues = vision.accessibility.filter((issue: any) => issue.severity === 'medium');
+    
+    visionSummary += `⚠️ ACCESSIBILITY ISSUES FOUND (${vision.accessibility.length} total):\n`;
+    if (highPriorityIssues.length > 0) {
+      visionSummary += `   - ${highPriorityIssues.length} HIGH priority issues\n`;
+    }
+    if (mediumPriorityIssues.length > 0) {
+      visionSummary += `   - ${mediumPriorityIssues.length} MEDIUM priority issues\n`;
+    }
+    
+    // List top 3 issues
+    vision.accessibility.slice(0, 3).forEach((issue: any, index: number) => {
+      visionSummary += `   ${index + 1}. ${issue.type}: ${issue.description}\n`;
+    });
+  }
+  
+  // Color Analysis
+  if (vision.colors) {
+    visionSummary += `🎨 COLOR ANALYSIS:\n`;
+    if (vision.colors.dominantColors && vision.colors.dominantColors.length > 0) {
+      visionSummary += `   Dominant colors: ${vision.colors.dominantColors.slice(0, 3).join(', ')}\n`;
+    }
+    if (vision.colors.colorContrast) {
+      visionSummary += `   Contrast ratio: ${vision.colors.colorContrast.textBackground}:1 (${vision.colors.colorContrast.accessibility})\n`;
+    }
+  }
+  
+  // Overall Confidence
+  if (visionContext.confidenceScore) {
+    visionSummary += `📊 OVERALL ANALYSIS CONFIDENCE: ${Math.round(visionContext.confidenceScore * 100)}%\n`;
+  }
+  
+  visionSummary += `\n=== END VISION ANALYSIS ===\n\n`;
+  
+  // Enhanced system instructions
+  const enhancedInstructions = `
+IMPORTANT: Use the Google Vision analysis above to provide highly specific, actionable feedback. 
+
+When analyzing the design:
+1. Reference the specific UI elements detected (buttons, forms, navigation, etc.)
+2. Consider the detected industry context for relevant best practices
+3. Address the accessibility issues identified with priority on high-severity items
+4. Provide layout-specific recommendations based on the detected layout type
+5. Consider device-type optimization recommendations
+6. Reference specific color and contrast issues found
+7. Use research-backed recommendations when available
+
+Your feedback should be precise, referencing actual detected elements rather than generic advice.
+`;
+  
+  const finalPrompt = visionSummary + enhancedInstructions + originalPrompt;
+  
+  console.log('✅ Vision enhanced prompt built:', {
+    originalLength: originalPrompt.length,
+    visionSummaryLength: visionSummary.length,
+    finalLength: finalPrompt.length,
+    elementsReferenced: vision.uiElements?.length || 0,
+    accessibilityIssuesIncluded: vision.accessibility?.length || 0
+  });
+  
+  return finalPrompt;
+}
+
 Deno.serve(async (req) => {
   console.log(`📥 ${req.method} ${req.url}`);
   
@@ -379,12 +509,26 @@ Deno.serve(async (req) => {
       );
     }
 
+    // NEW: Extract vision context from request
+    const visionContext = requestData.enhancedContext;
+    console.log('👁️ === VISION CONTEXT PROCESSING ===');
+    console.log('🔍 Vision context provided:', !!visionContext);
+    if (visionContext) {
+      console.log('📊 Vision context details:', {
+        hasVisionAnalysis: !!visionContext.visionAnalysis,
+        confidenceScore: visionContext.confidenceScore || 'N/A',
+        knowledgeSourcesUsed: visionContext.knowledgeSourcesUsed || 0,
+        citationsCount: visionContext.citations?.length || 0
+      });
+    }
+
     // Log analysis configuration with calculated imageCount
     console.log('🎯 Analysis Request Details:', {
       imageCount,
       isMultiImage: imageCount > 1,
       isComparative: requestData.isComparative || false,
       ragEnabled: requestData.ragEnabled || false,
+      visionContextProvided: !!visionContext,
       analysisId: requestData.analysisId,
       imagesToProcess: requestData.imagesToProcess.length
     });
@@ -442,11 +586,12 @@ Deno.serve(async (req) => {
     const enableBusinessImpact = requestData.businessImpactEnabled !== false; // Enable by default
     const originalPrompt = requestData.analysisPrompt || 'Analyze this design for UX improvements';
     
-    console.log(`🔧 === ENHANCED ANALYSIS WITH BUSINESS IMPACT START ===`);
+    console.log(`🔧 === ENHANCED ANALYSIS WITH VISION INTEGRATION START ===`);
     console.log(`📋 Enhanced Analysis Configuration:`, {
       ragEnabled: enableRAG,
       competitiveEnabled: enableCompetitive,
       businessImpactEnabled: enableBusinessImpact,
+      visionContextProvided: !!visionContext,
       originalPromptLength: originalPrompt.length,
       originalPromptPreview: originalPrompt.substring(0, 200) + '...',
       imageCount: imageCount,
@@ -454,8 +599,16 @@ Deno.serve(async (req) => {
       timestamp: new Date().toISOString()
     });
     
-    // Build RAG context
-    const ragContext = await addKnowledgeContext(originalPrompt, supabase, enableRAG);
+    // NEW: Start with vision-enhanced prompt if available
+    let currentPrompt = originalPrompt;
+    if (visionContext) {
+      console.log('👁️ === INTEGRATING VISION CONTEXT ===');
+      currentPrompt = buildVisionEnhancedPrompt(originalPrompt, visionContext);
+      console.log('✅ Vision context integrated into prompt');
+    }
+    
+    // Build RAG context using the vision-enhanced prompt
+    const ragContext = await addKnowledgeContext(currentPrompt, supabase, enableRAG);
     ragResults = {
       researchEnhanced: ragContext.researchEnhanced,
       knowledgeSourcesUsed: ragContext.knowledgeSourcesUsed,
@@ -465,7 +618,7 @@ Deno.serve(async (req) => {
     console.log(`📚 === RAG CONTEXT RESULTS ===`, ragResults);
     
     // Build competitive intelligence context
-    competitiveResults = await buildCompetitiveIntelligence(originalPrompt, supabase, enableCompetitive);
+    competitiveResults = await buildCompetitiveIntelligence(currentPrompt, supabase, enableCompetitive);
     
     console.log(`🏢 === COMPETITIVE INTELLIGENCE RESULTS ===`, {
       totalPatterns: competitiveResults.totalPatterns,
@@ -474,44 +627,46 @@ Deno.serve(async (req) => {
       hasRelevantPatterns: competitiveResults.relevantPatterns.length > 0
     });
     
-    // 🚨 CRITICAL: Build the complete enhanced prompt with CORRECT imageCount parameter
-    console.log(`🏗️ === BUILDING ENHANCED PROMPT WITH CRITICAL IMAGE COUNT FIX ===`);
-    console.log('🚨 URGENT: Prompt Builder Parameters with CORRECT imageCount:', {
-      originalPromptLength: originalPrompt.length,
+    // 🚨 CRITICAL: Build the complete enhanced prompt with vision context integration
+    console.log(`🏗️ === BUILDING FINAL ENHANCED PROMPT WITH VISION INTEGRATION ===`);
+    console.log('🚨 URGENT: Final Prompt Builder Parameters:', {
+      visionEnhancedPromptLength: currentPrompt.length,
       ragContextLength: ragContext.researchEnhanced ? ragContext.enhancedPrompt.length : 0,
       competitiveContextLength: competitiveResults.totalPatterns > 0 ? competitiveResults.competitiveContext.length : 0,
       imageCount: imageCount,
       isComparative: requestData.isComparative || false,
-      criticalFix: 'PASSING CORRECT imageCount TO PROMPT BUILDER'
+      visionIntegrated: !!visionContext,
+      criticalFix: 'VISION CONTEXT PROPERLY INTEGRATED'
     });
     
-    // 🚨🚨🚨 CRITICAL FIX: Pass imageCount as the 5th parameter to buildEnhancedAnalysisPrompt
+    // Use the vision-enhanced prompt as the base, then add RAG and competitive context
     const enhancedPrompt = buildEnhancedAnalysisPrompt(
-      originalPrompt,
+      currentPrompt, // This now includes vision context
       ragContext.researchEnhanced ? ragContext.enhancedPrompt : undefined,
       competitiveResults.totalPatterns > 0 ? competitiveResults.competitiveContext : undefined,
       requestData.isComparative || false,
-      imageCount // 🚨 CRITICAL: This is the fix - passing correct imageCount
+      imageCount
     );
     
     // ===== MAIN CONSOLE LOG FOR USER VISIBILITY =====
-    console.log("🎯🎯🎯 === COMPLETE ENHANCED PROMPT WITH URGENT MULTI-IMAGE FIX === 🎯🎯🎯");
+    console.log("🎯🎯🎯 === COMPLETE ENHANCED PROMPT WITH VISION INTEGRATION === 🎯🎯🎯");
     console.log("📏 Total Enhanced Prompt Length:", enhancedPrompt.length);
+    console.log("👁️ Vision Context Status:", visionContext ? "ENABLED with Google Vision analysis" : "DISABLED");
     console.log("📝 RAG Status:", ragContext.researchEnhanced ? "ENABLED with research context" : "DISABLED");
     console.log("🏢 Competitive Intelligence Status:", competitiveResults.totalPatterns > 0 ? "ENABLED with competitive context" : "DISABLED");
     console.log("💼 Business Impact Quantification Status:", enableBusinessImpact ? "ENABLED" : "DISABLED");
     console.log("📊 Research Sources Used:", ragContext.knowledgeSourcesUsed);
     console.log("🏆 Competitive Patterns Used:", competitiveResults.totalPatterns);
-    console.log("🚨🚨🚨 URGENT MULTI-IMAGE FIX:", {
-      imageCount: imageCount,
-      isMultiImage: imageCount > 1,
-      distributionRequired: imageCount > 1,
-      criticalFix: 'IMAGE COUNT PROPERLY PASSED TO PROMPT BUILDER'
+    console.log("🚨🚨🚨 VISION INTEGRATION:", {
+      visionContextIntegrated: !!visionContext,
+      visionConfidenceScore: visionContext?.confidenceScore || 'N/A',
+      visionElementsDetected: visionContext?.visionAnalysis?.uiElements?.length || 0,
+      accessibilityIssuesFound: visionContext?.visionAnalysis?.accessibility?.length || 0
     });
     console.log("");
     
     for (const processedImage of imageProcessingResult.processedImages) {
-      console.log(`🔍 Analyzing image with ${aiProviderConfig.provider}...`);
+      console.log(`🔍 Analyzing image with ${aiProviderConfig.provider} using vision-enhanced prompt...`);
       
       try {
         const annotations = await analyzeWithAIProvider(
@@ -532,6 +687,7 @@ Deno.serve(async (req) => {
               environment: envConfig,
               ragStatus: ragResults,
               competitiveStatus: competitiveResults,
+              visionStatus: visionContext ? 'integrated' : 'not_provided',
               imageCount: imageCount,
               timestamp: new Date().toISOString()
             }
@@ -589,7 +745,7 @@ Deno.serve(async (req) => {
 
       console.log('✅ Enhanced results saved to database');
 
-      // Format enhanced response
+      // Format enhanced response with vision context information
       const response = enhancedResponseFormatter.formatEnhancedResponse(
         enhancedResults,
         {
@@ -600,7 +756,10 @@ Deno.serve(async (req) => {
           researchCitations: ragResults.researchCitations,
           competitiveEnhanced: competitiveResults.totalPatterns > 0,
           competitivePatternsUsed: competitiveResults.totalPatterns,
-          industryBenchmarks: competitiveResults.industryBenchmarks
+          industryBenchmarks: competitiveResults.industryBenchmarks,
+          visionEnhanced: !!visionContext,
+          visionConfidenceScore: visionContext?.confidenceScore,
+          visionElementsDetected: visionContext?.visionAnalysis?.uiElements?.length || 0
         }
       );
 
@@ -611,6 +770,7 @@ Deno.serve(async (req) => {
       });
 
       const enhancementStatus = [
+        visionContext ? 'Google Vision analysis' : null,
         ragResults.researchEnhanced ? 'RAG enhancement' : null,
         competitiveResults.totalPatterns > 0 ? 'competitive intelligence' : null,
         'business impact quantification'
@@ -645,7 +805,7 @@ Deno.serve(async (req) => {
 
       console.log('✅ Results saved to database');
 
-      // Format response with enhanced information
+      // Format response with enhanced information including vision context
       const response = responseFormatter.formatSuccessResponse({
         annotations: allAnnotations,
         totalAnnotations: allAnnotations.length,
@@ -656,7 +816,10 @@ Deno.serve(async (req) => {
         researchCitations: ragResults.researchCitations,
         competitiveEnhanced: competitiveResults.totalPatterns > 0,
         competitivePatternsUsed: competitiveResults.totalPatterns,
-        industryBenchmarks: competitiveResults.industryBenchmarks
+        industryBenchmarks: competitiveResults.industryBenchmarks,
+        visionEnhanced: !!visionContext,
+        visionConfidenceScore: visionContext?.confidenceScore,
+        visionElementsDetected: visionContext?.visionAnalysis?.uiElements?.length || 0
       });
 
       // Add CORS headers to successful response
@@ -666,6 +829,7 @@ Deno.serve(async (req) => {
       });
 
       const enhancementStatus = [
+        visionContext ? 'Google Vision analysis' : null,
         ragResults.researchEnhanced ? 'RAG enhancement' : null,
         competitiveResults.totalPatterns > 0 ? 'competitive intelligence' : null
       ].filter(Boolean).join(' and ') || 'standard analysis';

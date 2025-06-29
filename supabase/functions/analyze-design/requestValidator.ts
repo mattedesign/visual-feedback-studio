@@ -16,6 +16,17 @@ interface RAGContext {
   industryContext: string;
 }
 
+interface EnhancedContext {
+  visionAnalysis: any;
+  searchQueries: any[];
+  retrievedKnowledge: any[];
+  enhancedPrompt: string;
+  confidenceScore: number;
+  processingTime: number;
+  knowledgeSourcesUsed: number;
+  citations: string[];
+}
+
 export interface ValidatedRequest {
   analysisId: string;
   imagesToProcess: string[];
@@ -29,6 +40,7 @@ export interface ValidatedRequest {
   ragEnabled?: boolean;
   ragContext?: RAGContext;
   researchCitations?: string[];
+  enhancedContext?: EnhancedContext; // NEW: Support for enhanced context from vision service
   // Keep backward compatibility
   imageUrl?: string;
   imageUrls?: string[];
@@ -57,7 +69,8 @@ export async function validateAndParseRequest(req: Request): Promise<ValidatedRe
     testMode,
     ragEnabled,
     ragContext,
-    researchCitations
+    researchCitations,
+    enhancedContext // NEW: Extract enhanced context
   } = requestBody;
 
   // Determine which images to process
@@ -78,7 +91,10 @@ export async function validateAndParseRequest(req: Request): Promise<ValidatedRe
     ragEnabled: ragEnabled || false,
     ragKnowledgeCount: ragContext?.retrievedKnowledge.relevantPatterns.length || 0,
     ragCitationsCount: researchCitations?.length || 0,
-    ragIndustryContext: ragContext?.industryContext || 'none'
+    ragIndustryContext: ragContext?.industryContext || 'none',
+    enhancedContextProvided: !!enhancedContext, // NEW: Log enhanced context status
+    visionAnalysisIncluded: !!enhancedContext?.visionAnalysis, // NEW: Log vision analysis status
+    enhancedConfidenceScore: enhancedContext?.confidenceScore || 0 // NEW: Log confidence score
   });
 
   // Validate required parameters
@@ -104,6 +120,7 @@ export async function validateAndParseRequest(req: Request): Promise<ValidatedRe
     ragEnabled,
     ragContext,
     researchCitations,
+    enhancedContext, // NEW: Include enhanced context in validated request
     imageUrl,
     imageUrls
   };
