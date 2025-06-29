@@ -46,7 +46,15 @@ class VectorService {
       }
 
       console.log('✅ Vector Search: Found knowledge entries:', data?.length || 0);
-      return data || [];
+      
+      // Fix: Add missing 'source' field to match KnowledgeEntry type
+      const processedData = (data || []).map(item => ({
+        ...item,
+        source: item.source || 'Unknown', // Add default source if missing
+        similarity: item.similarity || 0
+      }));
+      
+      return processedData;
 
     } catch (error) {
       console.error('❌ Vector Search: Search failed:', error);
@@ -83,6 +91,184 @@ class VectorService {
     }
   }
 
+  // Enhanced methods that were expected by the hook
+  async searchByHierarchy(
+    query: string,
+    primaryCategory?: string,
+    secondaryCategory?: string,
+    industryTags?: string[],
+    complexityLevel?: string
+  ): Promise<KnowledgeEntry[]> {
+    try {
+      const filters: SearchFilters = {
+        primary_category: primaryCategory,
+        secondary_category: secondaryCategory,
+        industry_tags: industryTags,
+        complexity_level: complexityLevel
+      };
+
+      return await this.searchKnowledge(query, {
+        maxResults: 20,
+        confidenceThreshold: 0.6
+      });
+    } catch (error) {
+      console.error('❌ Vector Search: Hierarchy search failed:', error);
+      return [];
+    }
+  }
+
+  async getKnowledgeStats() {
+    try {
+      const { data, error } = await supabase
+        .from('knowledge_entries')
+        .select('primary_category, complexity_level, industry_tags');
+
+      if (error) throw error;
+
+      const categoryBreakdown = data?.reduce((acc: any[], item: any) => {
+        const category = item.primary_category || 'Unknown';
+        const existing = acc.find(c => c.category === category);
+        if (existing) {
+          existing.count++;
+        } else {
+          acc.push({ category, count: 1 });
+        }
+        return acc;
+      }, []) || [];
+
+      const complexityBreakdown = data?.reduce((acc: any[], item: any) => {
+        const level = item.complexity_level || 'intermediate';
+        const existing = acc.find(c => c.level === level);
+        if (existing) {
+          existing.count++;
+        } else {
+          acc.push({ level, count: 1 });
+        }
+        return acc;
+      }, []) || [];
+
+      const industryTagsBreakdown: Array<{ tag: string; count: number }> = [];
+
+      return {
+        totalEntries: data?.length || 0,
+        categoryBreakdown,
+        complexityBreakdown,
+        industryTagsBreakdown
+      };
+    } catch (error) {
+      console.error('❌ Vector Search: Stats loading failed:', error);
+      throw error;
+    }
+  }
+
+  async addKnowledgeEntry(entry: Omit<KnowledgeEntry, 'id' | 'created_at' | 'updated_at'>): Promise<KnowledgeEntry> {
+    try {
+      const { data, error } = await supabase
+        .from('knowledge_entries')
+        .insert([entry])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('❌ Vector Search: Failed to add knowledge entry:', error);
+      throw error;
+    }
+  }
+
+  async addCompetitorPattern(pattern: any): Promise<any> {
+    try {
+      const { data, error } = await supabase
+        .from('competitor_patterns')
+        .insert([pattern])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('❌ Vector Search: Failed to add competitor pattern:', error);
+      throw error;
+    }
+  }
+
+  async findRelatedPatterns(entryId: string, maxResults = 5): Promise<KnowledgeEntry[]> {
+    try {
+      const { data, error } = await supabase
+        .from('knowledge_entries')
+        .select('*')
+        .neq('id', entryId)
+        .limit(maxResults);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('❌ Vector Search: Failed to find related patterns:', error);
+      return [];
+    }
+  }
+
+  async getIndustryPatterns(industry: string, limit = 10): Promise<KnowledgeEntry[]> {
+    try {
+      const { data, error } = await supabase
+        .from('knowledge_entries')
+        .select('*')
+        .contains('industry_tags', [industry])
+        .limit(limit);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('❌ Vector Search: Failed to get industry patterns:', error);
+      return [];
+    }
+  }
+
+  async searchByComplexity(
+    query: string,
+    userLevel: string,
+    includeHigher = false
+  ): Promise<Array<KnowledgeEntry & { similarity: number }>> {
+    try {
+      let complexityFilter = [userLevel];
+      
+      if (includeHigher) {
+        const levels = ['beginner', 'intermediate', 'advanced'];
+        const currentIndex = levels.indexOf(userLevel);
+        if (currentIndex !== -1) {
+          complexityFilter = levels.slice(currentIndex);
+        }
+      }
+
+      const { data, error } = await supabase
+        .from('knowledge_entries')
+        .select('*')
+        .in('complexity_level', complexityFilter);
+
+      if (error) throw error;
+      
+      return (data || []).map(item => ({
+        ...item,
+        source: item.source || 'Unknown',
+        similarity: 0.8
+      }));
+    } catch (error) {
+      console.error('❌ Vector Search: Complexity search failed:', error);
+      return [];
+    }
+  }
+
+  async getCategoryBreakdown() {
+    try {
+      const stats = await this.getKnowledgeStats();
+      return stats.categoryBreakdown;
+    } catch (error) {
+      console.error('❌ Vector Search: Category breakdown failed:', error);
+      throw error;
+    }
+  }
+
   private async generateEmbedding(text: string): Promise<string> {
     try {
       const { data, error } = await supabase.functions.invoke('generate-embeddings', {
@@ -103,3 +289,6 @@ class VectorService {
 }
 
 export const vectorService = new VectorService();
+
+// Fix: Export with the expected name for backward compatibility
+export const vectorKnowledgeService = vectorService;

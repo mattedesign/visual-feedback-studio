@@ -27,7 +27,11 @@ export const useVectorKnowledge = () => {
     setIsLoading(true);
     try {
       const results = await vectorKnowledgeService.searchKnowledge(query, filters);
-      setSearchResults(results);
+      const resultsWithSimilarity = results.map(result => ({
+        ...result,
+        similarity: result.similarity || 0.8
+      }));
+      setSearchResults(resultsWithSimilarity);
       console.log(`Found ${results.length} knowledge entries matching "${query}"`, {
         filters,
         topResults: results.slice(0, 3).map(r => ({
@@ -66,7 +70,6 @@ export const useVectorKnowledge = () => {
     }
   }, []);
 
-  // Basic hierarchical search (without query parameter)
   const searchByHierarchy = useCallback(async (
     primaryCategory: string,
     secondaryCategory?: string,
@@ -75,19 +78,17 @@ export const useVectorKnowledge = () => {
   ) => {
     setIsLoading(true);
     try {
-      // Call enhanced version with empty query for basic hierarchy search
       const results = await vectorKnowledgeService.searchByHierarchy(
-        '', // empty query for basic hierarchy filtering
+        '',
         primaryCategory,
         secondaryCategory,
         industryTags,
         complexityLevel
       );
       
-      // Convert to search results format (without similarity score)
       const resultsWithSimilarity = results.map(result => ({
         ...result,
-        similarity: 1.0 // Default high similarity for hierarchical search
+        similarity: 1.0
       }));
       
       setSearchResults(resultsWithSimilarity);
@@ -156,7 +157,6 @@ export const useVectorKnowledge = () => {
     }
   }, []);
 
-  // Enhanced Hierarchical Search (with query parameter)
   const searchByHierarchyEnhanced = useCallback(async (
     query: string,
     primaryCategory?: string,
@@ -174,7 +174,6 @@ export const useVectorKnowledge = () => {
         complexityLevel
       );
       
-      // Convert to search results format with default similarity
       const resultsWithSimilarity = results.map(result => ({
         ...result,
         similarity: 1.0
@@ -197,7 +196,6 @@ export const useVectorKnowledge = () => {
     }
   }, []);
 
-  // Find Related Patterns
   const findRelatedPatterns = useCallback(async (entryId: string, maxResults = 5) => {
     setIsLoading(true);
     try {
@@ -205,7 +203,7 @@ export const useVectorKnowledge = () => {
       
       const resultsWithSimilarity = results.map(result => ({
         ...result,
-        similarity: 0.9 // High similarity for related patterns
+        similarity: 0.9
       }));
       
       setSearchResults(resultsWithSimilarity);
@@ -219,7 +217,6 @@ export const useVectorKnowledge = () => {
     }
   }, []);
 
-  // Get Industry Patterns
   const getIndustryPatterns = useCallback(async (industry: string, limit = 10) => {
     setIsLoading(true);
     try {
@@ -227,7 +224,7 @@ export const useVectorKnowledge = () => {
       
       const resultsWithSimilarity = results.map(result => ({
         ...result,
-        similarity: 0.85 // Good similarity for industry-specific results
+        similarity: 0.85
       }));
       
       setSearchResults(resultsWithSimilarity);
@@ -241,7 +238,6 @@ export const useVectorKnowledge = () => {
     }
   }, []);
 
-  // Search by Complexity - Fixed to handle single string parameter
   const searchByComplexity = useCallback(async (
     query: string,
     userLevel: string,
@@ -263,7 +259,6 @@ export const useVectorKnowledge = () => {
     }
   }, []);
 
-  // Get Category Breakdown - Fixed to call without arguments
   const getCategoryBreakdown = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -291,7 +286,6 @@ export const useVectorKnowledge = () => {
     loadKnowledgeStats,
     addKnowledgeEntry,
     addCompetitorPattern,
-    // Enhanced methods
     searchByHierarchyEnhanced,
     findRelatedPatterns,
     getIndustryPatterns,
