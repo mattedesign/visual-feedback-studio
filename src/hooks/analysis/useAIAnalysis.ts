@@ -24,22 +24,24 @@ export const useAIAnalysis = () => {
   const [isBuilding, setIsBuilding] = useState(false);
   const [buildingStage, setBuildingStage] = useState<string>('');
 
-  // 🔧 NORMALIZE ANNOTATION DATA - Updated to use correct property names
+  // 🔧 NORMALIZE ANNOTATION DATA - Fixed to use correct API response structure
   const normalizeAnnotation = (annotation: any, index: number): Annotation => {
     console.log(`🔧 NORMALIZING ANNOTATION ${index + 1}:`, {
       rawAnnotation: annotation,
       availableProperties: Object.keys(annotation || {}),
+      feedbackValue: annotation?.feedback,
       titleValue: annotation?.title,
       descriptionValue: annotation?.description,
       categoryValue: annotation?.category,
       severityValue: annotation?.severity
     });
 
-    // Extract feedback text from the correct properties based on actual API response
+    // Extract feedback text from the correct API response structure
+    // Based on edge function logs, the API returns feedback, title, and description
     const feedbackText = 
-      annotation?.description ||  // Primary detailed feedback
-      annotation?.title ||        // Fallback to title if description missing
-      annotation?.feedback ||     // Legacy fallback
+      annotation?.feedback ||     // Primary feedback from API
+      annotation?.description ||  // Secondary detailed feedback
+      annotation?.title ||        // Fallback to title
       annotation?.content || 
       annotation?.text || 
       annotation?.message ||
@@ -66,10 +68,15 @@ export const useAIAnalysis = () => {
     console.log(`✅ NORMALIZED ANNOTATION ${index + 1}:`, {
       id: normalizedAnnotation.id,
       feedback: normalizedAnnotation.feedback,
-      feedbackSource: annotation?.description ? 'description' : annotation?.title ? 'title' : 'fallback',
+      feedbackSource: annotation?.feedback ? 'feedback' : annotation?.description ? 'description' : annotation?.title ? 'title' : 'fallback',
       category: normalizedAnnotation.category,
       severity: normalizedAnnotation.severity,
-      feedbackLength: normalizedAnnotation.feedback.length
+      feedbackLength: normalizedAnnotation.feedback.length,
+      originalAnnotationStructure: {
+        hasFeedback: !!annotation?.feedback,
+        hasDescription: !!annotation?.description,
+        hasTitle: !!annotation?.title
+      }
     });
 
     return normalizedAnnotation;
@@ -126,6 +133,21 @@ export const useAIAnalysis = () => {
         fullData: data
       });
 
+      // 🔍 LOG RAW API RESPONSE STRUCTURE FOR DEBUGGING
+      if (data.annotations && data.annotations.length > 0) {
+        console.log('🔍 RAW API ANNOTATION STRUCTURE:', {
+          firstAnnotation: data.annotations[0],
+          annotationKeys: Object.keys(data.annotations[0] || {}),
+          annotationValues: {
+            feedback: data.annotations[0]?.feedback,
+            title: data.annotations[0]?.title,
+            description: data.annotations[0]?.description,
+            category: data.annotations[0]?.category,
+            severity: data.annotations[0]?.severity
+          }
+        });
+      }
+
       setBuildingStage('Processing results...');
 
       // 🔧 NORMALIZE ALL ANNOTATIONS with corrected property mapping
@@ -141,7 +163,8 @@ export const useAIAnalysis = () => {
         allFeedbackLengths: normalizedAnnotations.map((a: Annotation, i: number) => ({
           index: i + 1,
           feedbackLength: a.feedback.length,
-          hasValidFeedback: a.feedback && a.feedback !== 'Analysis insight' && !a.feedback.startsWith('Analysis insight')
+          hasValidFeedback: a.feedback && a.feedback !== 'Analysis insight' && !a.feedback.startsWith('Analysis insight'),
+          feedbackPreview: a.feedback.substring(0, 100) + '...'
         }))
       });
 
