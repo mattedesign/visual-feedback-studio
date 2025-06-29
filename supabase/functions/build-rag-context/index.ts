@@ -13,13 +13,10 @@ interface KnowledgeEntry {
   title: string;
   content: string;
   category: string;
-  primary_category?: string;
-  secondary_category?: string;
-  industry_tags?: string[];
-  complexity_level?: string;
-  use_cases?: string[];
-  freshness_score?: number;
-  application_context?: any;
+  tags?: string[];
+  metadata?: any;
+  created_at?: string;
+  updated_at?: string;
   similarity: number;
 }
 
@@ -99,11 +96,12 @@ serve(async (req) => {
         // Generate embedding for the query
         const embedding = await generateEmbedding(query, openaiApiKey);
         
-        // Search knowledge base
+        // Search knowledge base using the corrected function
         const { data: knowledgeData, error: knowledgeError } = await supabase.rpc('match_knowledge', {
           query_embedding: embedding,
           match_threshold: 0.7,
-          match_count: 5
+          match_count: 5,
+          filter_category: null
         });
 
         if (knowledgeError) {
@@ -113,11 +111,13 @@ serve(async (req) => {
           console.log(`✅ Found ${knowledgeData.length} knowledge entries for "${query}"`);
         }
 
-        // Search competitor patterns
+        // Search competitor patterns using the corrected function
         const { data: patternsData, error: patternsError } = await supabase.rpc('match_patterns', {
           query_embedding: embedding,
           match_threshold: 0.7,
-          match_count: 3
+          match_count: 3,
+          filter_industry: null,
+          filter_pattern_type: null
         });
 
         if (patternsError) {
@@ -317,10 +317,6 @@ function extractContextIntelligence(userPrompt: string, knowledge: KnowledgeEntr
   // Extract from knowledge entries
   knowledge.forEach(entry => {
     if (entry.category) focusAreas.add(entry.category);
-    if (entry.primary_category) primaryCategories.add(entry.primary_category);
-    if (entry.secondary_category) secondaryCategories.add(entry.secondary_category);
-    if (entry.industry_tags) entry.industry_tags.forEach(tag => industryTags.add(tag));
-    if (entry.use_cases) entry.use_cases.forEach(useCase => useCases.add(useCase));
   });
 
   // Extract from patterns
@@ -355,12 +351,6 @@ function inferIndustryContext(knowledge: KnowledgeEntry[], patterns: CompetitorP
   
   patterns.forEach(pattern => {
     if (pattern.industry) industries.add(pattern.industry);
-  });
-  
-  knowledge.forEach(entry => {
-    if (entry.industry_tags) {
-      entry.industry_tags.forEach(tag => industries.add(tag));
-    }
   });
 
   if (industries.size === 0) {

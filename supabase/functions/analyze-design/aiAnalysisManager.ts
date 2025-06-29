@@ -62,7 +62,7 @@ class AIAnalysisManager {
         throw new Error('No processed images provided');
       }
 
-      // 🔥 FIXED: Build proper RAG context if enabled
+      // Build proper RAG context if enabled
       let enhancedPrompt = analysisPrompt;
       let ragContext = '';
 
@@ -362,7 +362,7 @@ When research context is available, ensure feedback includes specific citations 
   }
 }
 
-// 🔥 FIXED: Export properly functioning RAG context getter
+// Export properly functioning RAG context getter
 export async function getRAGContext(userPrompt: string) {
   console.log('🔍 getRAGContext called with prompt:', userPrompt.substring(0, 50));
   
