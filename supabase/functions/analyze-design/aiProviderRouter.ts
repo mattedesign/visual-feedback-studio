@@ -1,9 +1,9 @@
-
 import { analyzeWithOpenAI } from './openaiClient.ts';
 import { analyzeWithClaude } from './claudeClient.ts';
+import { analyzeWithGoogle } from './googleClient.ts';
 import { AnnotationData } from './types.ts';
 
-export type AIProvider = 'openai' | 'claude';
+export type AIProvider = 'openai' | 'claude' | 'google';
 
 export interface AIProviderConfig {
   provider: AIProvider;
@@ -111,6 +111,19 @@ async function callProvider(
       }
       return await analyzeWithClaude(base64Image, mimeType, prompt, claudeApiKey, model);
       
+    case 'google':
+      const googleCredentials = Deno.env.get('GOOGLE_CLOUD_CREDENTIALS');
+      console.log('Google environment check:', {
+        credentialsExists: !!googleCredentials,
+        credentialsLength: googleCredentials?.length || 0,
+        credentialsPreview: googleCredentials ? 'JSON credentials configured' : 'N/A'
+      });
+      
+      if (!googleCredentials) {
+        throw new Error('Google Cloud credentials not configured in environment variables');
+      }
+      return await analyzeWithGoogle(base64Image, mimeType, prompt, googleCredentials, model);
+      
     default:
       throw new Error(`Unsupported AI provider: ${provider}`);
   }
@@ -119,30 +132,37 @@ async function callProvider(
 export function determineOptimalProvider(): AIProviderConfig {
   const openaiKey = Deno.env.get('OPENAI_API_KEY');
   const claudeKey = Deno.env.get('ANTHROPIC_API_KEY');
+  const googleCredentials = Deno.env.get('GOOGLE_CLOUD_CREDENTIALS');
   
   console.log('Available providers:', {
     openai: !!openaiKey,
     claude: !!claudeKey,
+    google: !!googleCredentials,
     openaiKeyLength: openaiKey?.length || 0,
-    claudeKeyLength: claudeKey?.length || 0
+    claudeKeyLength: claudeKey?.length || 0,
+    googleCredentialsLength: googleCredentials?.length || 0
   });
   
-  // Default to OpenAI with Claude fallback if both are available
-  if (openaiKey && claudeKey) {
+  // Default to OpenAI with fallbacks if multiple are available
+  if (openaiKey && claudeKey && googleCredentials) {
     return {
       provider: 'openai',
       fallbackProvider: 'claude'
     };
   }
   
-  // Use whichever is available
+  // Use whichever is available, prioritizing OpenAI, then Claude, then Google
   if (openaiKey) {
-    return { provider: 'openai' };
+    return { provider: 'openai', fallbackProvider: claudeKey ? 'claude' : (googleCredentials ? 'google' : undefined) };
   }
   
   if (claudeKey) {
-    return { provider: 'claude' };
+    return { provider: 'claude', fallbackProvider: googleCredentials ? 'google' : undefined };
   }
   
-  throw new Error('No AI provider API keys configured. Please set OPENAI_API_KEY or ANTHROPIC_API_KEY.');
+  if (googleCredentials) {
+    return { provider: 'google' };
+  }
+  
+  throw new Error('No AI provider API keys configured. Please set OPENAI_API_KEY, ANTHROPIC_API_KEY, or GOOGLE_CLOUD_CREDENTIALS.');
 }

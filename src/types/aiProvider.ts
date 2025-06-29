@@ -1,137 +1,92 @@
 
-export type AIProvider = 'openai' | 'claude';
+export type AIProvider = 'openai' | 'claude' | 'google';
 
-export type OpenAIModel = 
-  | 'gpt-4.1-2025-04-14'
-  | 'o3-2025-04-16'
-  | 'o4-mini-2025-04-16'
-  | 'gpt-4.1-mini-2025-04-14';
-
-export type ClaudeModel = 
-  | 'claude-opus-4-20250514'
-  | 'claude-sonnet-4-20250514'
-  | 'claude-3-5-haiku-20241022'
-  | 'claude-3-5-sonnet-20241022'
-  | 'claude-3-opus-20240229';
-
-export interface AIProviderConfig {
-  provider: AIProvider;
-  model?: OpenAIModel | ClaudeModel;
-  fallbackProvider?: AIProvider;
-}
+export type OpenAIModel = 'gpt-4o' | 'gpt-4o-mini' | 'gpt-4-turbo';
+export type ClaudeModel = 'claude-3-5-sonnet-20241022' | 'claude-3-5-haiku-20241022' | 'claude-3-opus-20240229';
+export type GoogleModel = 'gemini-1.5-pro' | 'gemini-1.5-flash';
 
 export interface ModelInfo {
   id: string;
   name: string;
   description: string;
   capabilities: string[];
-  recommended?: boolean;
   speed: 'fast' | 'medium' | 'slow';
-  quality: 'high' | 'very-high' | 'excellent';
-}
-
-export interface ProviderCapabilities {
-  vision: boolean;
-  multiImage: boolean;
-  maxTokens: number;
-  supportedFormats: string[];
-  models: Record<string, ModelInfo>;
+  quality: 'excellent' | 'very-high' | 'high';
+  recommended?: boolean;
 }
 
 export const OPENAI_MODELS: Record<OpenAIModel, ModelInfo> = {
-  'gpt-4.1-2025-04-14': {
-    id: 'gpt-4.1-2025-04-14',
-    name: 'GPT-4.1 (2025)',
-    description: 'Flagship model with exceptional reasoning and vision capabilities',
-    capabilities: ['Vision', 'Reasoning', 'Code Analysis'],
-    recommended: true,
+  'gpt-4o': {
+    id: 'gpt-4o',
+    name: 'GPT-4o',
+    description: 'Most capable model for complex analysis',
+    capabilities: ['Vision', 'Detailed Analysis', 'Code Generation'],
     speed: 'medium',
-    quality: 'excellent'
+    quality: 'excellent',
+    recommended: true
   },
-  'o3-2025-04-16': {
-    id: 'o3-2025-04-16',
-    name: 'O3 Reasoning',
-    description: 'Advanced reasoning model for complex multi-step analysis',
-    capabilities: ['Advanced Reasoning', 'Complex Analysis', 'Vision'],
-    speed: 'slow',
-    quality: 'excellent'
-  },
-  'o4-mini-2025-04-16': {
-    id: 'o4-mini-2025-04-16',
-    name: 'O4 Mini',
-    description: 'Fast reasoning model optimized for coding and visual tasks',
-    capabilities: ['Fast Reasoning', 'Vision', 'Code Analysis'],
+  'gpt-4o-mini': {
+    id: 'gpt-4o-mini',
+    name: 'GPT-4o Mini',
+    description: 'Fast and efficient for most analysis tasks',
+    capabilities: ['Vision', 'Quick Analysis'],
     speed: 'fast',
-    quality: 'high'
+    quality: 'very-high'
   },
-  'gpt-4.1-mini-2025-04-14': {
-    id: 'gpt-4.1-mini-2025-04-14',
-    name: 'GPT-4.1 Mini',
-    description: 'Efficient model with vision capabilities',
-    capabilities: ['Vision', 'General Analysis'],
-    speed: 'fast',
-    quality: 'high'
+  'gpt-4-turbo': {
+    id: 'gpt-4-turbo',
+    name: 'GPT-4 Turbo',
+    description: 'Enhanced version with improved performance',
+    capabilities: ['Vision', 'Analysis', 'Long Context'],
+    speed: 'medium',
+    quality: 'very-high'
   }
 };
 
 export const CLAUDE_MODELS: Record<ClaudeModel, ModelInfo> = {
-  'claude-opus-4-20250514': {
-    id: 'claude-opus-4-20250514',
-    name: 'Claude Opus 4',
-    description: 'Most capable model with superior reasoning and analysis',
-    capabilities: ['Superior Reasoning', 'Vision', 'Complex Analysis'],
-    recommended: true,
-    speed: 'slow',
-    quality: 'excellent'
-  },
-  'claude-sonnet-4-20250514': {
-    id: 'claude-sonnet-4-20250514',
-    name: 'Claude Sonnet 4',
-    description: 'High-performance model with exceptional reasoning and efficiency',
-    capabilities: ['Advanced Reasoning', 'Vision', 'Efficient Processing'],
-    recommended: true,
+  'claude-3-5-sonnet-20241022': {
+    id: 'claude-3-5-sonnet-20241022',
+    name: 'Claude 3.5 Sonnet',
+    description: 'Best balance of intelligence and speed',
+    capabilities: ['Vision', 'Reasoning', 'Analysis'],
     speed: 'medium',
-    quality: 'excellent'
+    quality: 'excellent',
+    recommended: true
   },
   'claude-3-5-haiku-20241022': {
     id: 'claude-3-5-haiku-20241022',
     name: 'Claude 3.5 Haiku',
-    description: 'Fastest model for quick responses and analysis',
-    capabilities: ['Fast Processing', 'Vision', 'Quick Analysis'],
+    description: 'Fast and efficient for quick analysis',
+    capabilities: ['Vision', 'Quick Analysis'],
     speed: 'fast',
     quality: 'high'
-  },
-  'claude-3-5-sonnet-20241022': {
-    id: 'claude-3-5-sonnet-20241022',
-    name: 'Claude 3.5 Sonnet',
-    description: 'Previous generation intelligent model',
-    capabilities: ['Vision', 'Analysis', 'General Purpose'],
-    speed: 'medium',
-    quality: 'very-high'
   },
   'claude-3-opus-20240229': {
     id: 'claude-3-opus-20240229',
     name: 'Claude 3 Opus',
-    description: 'Powerful older model for comprehensive analysis',
-    capabilities: ['Vision', 'Analysis', 'Comprehensive Review'],
+    description: 'Most powerful model for complex tasks',
+    capabilities: ['Vision', 'Deep Analysis', 'Complex Reasoning'],
     speed: 'slow',
-    quality: 'very-high'
+    quality: 'excellent'
   }
 };
 
-export const PROVIDER_CAPABILITIES: Record<AIProvider, ProviderCapabilities> = {
-  openai: {
-    vision: true,
-    multiImage: true,
-    maxTokens: 4000,
-    supportedFormats: ['jpeg', 'png', 'gif', 'webp'],
-    models: OPENAI_MODELS as Record<string, ModelInfo>
+export const GOOGLE_MODELS: Record<GoogleModel, ModelInfo> = {
+  'gemini-1.5-pro': {
+    id: 'gemini-1.5-pro',
+    name: 'Gemini 1.5 Pro',
+    description: 'Advanced multimodal model with excellent vision capabilities',
+    capabilities: ['Vision', 'Multimodal', 'Long Context', 'Detailed Analysis'],
+    speed: 'medium',
+    quality: 'excellent',
+    recommended: true
   },
-  claude: {
-    vision: true,
-    multiImage: true,
-    maxTokens: 3000,
-    supportedFormats: ['jpeg', 'png', 'gif', 'webp'],
-    models: CLAUDE_MODELS as Record<string, ModelInfo>
+  'gemini-1.5-flash': {
+    id: 'gemini-1.5-flash',
+    name: 'Gemini 1.5 Flash',
+    description: 'Fast and efficient multimodal model',
+    capabilities: ['Vision', 'Quick Analysis', 'Multimodal'],
+    speed: 'fast',
+    quality: 'very-high'
   }
 };

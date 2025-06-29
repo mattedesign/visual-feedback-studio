@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -6,12 +5,12 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Bot, Sparkles, Zap, ChevronDown, ChevronRight, Settings, Clock, Award } from 'lucide-react';
-import { AIProvider, OpenAIModel, ClaudeModel, OPENAI_MODELS, CLAUDE_MODELS, ModelInfo } from '@/types/aiProvider';
+import { Bot, Sparkles, Zap, Search, ChevronDown, ChevronRight, Settings, Clock, Award } from 'lucide-react';
+import { AIProvider, OpenAIModel, ClaudeModel, GoogleModel, OPENAI_MODELS, CLAUDE_MODELS, GOOGLE_MODELS, ModelInfo } from '@/types/aiProvider';
 
 export type ModelSelection = {
   provider: AIProvider | 'auto';
-  model?: OpenAIModel | ClaudeModel;
+  model?: OpenAIModel | ClaudeModel | GoogleModel;
   testMode?: boolean;
 };
 
@@ -52,6 +51,13 @@ export const EnhancedModelSelector = ({
       icon: <Zap className="w-5 h-5" />,
       badge: 'Precise',
       color: 'bg-gradient-to-r from-orange-500 to-red-500'
+    },
+    google: {
+      name: 'Google Vision',
+      description: 'Advanced multimodal analysis with Gemini',
+      icon: <Search className="w-5 h-5" />,
+      badge: 'Multimodal',
+      color: 'bg-gradient-to-r from-red-500 to-pink-500'
     }
   };
 
@@ -80,7 +86,7 @@ export const EnhancedModelSelector = ({
         onValueChange={(model) => onConfigChange({ 
           ...selectedConfig, 
           provider, 
-          model: model as OpenAIModel | ClaudeModel 
+          model: model as OpenAIModel | ClaudeModel | GoogleModel
         })}
       >
         {Object.values(models).map((model) => (
@@ -120,10 +126,17 @@ export const EnhancedModelSelector = ({
     }
     
     const providerName = providerInfo[selectedConfig.provider].name;
-    const modelName = selectedConfig.model ? 
-      (selectedConfig.provider === 'openai' ? OPENAI_MODELS[selectedConfig.model as OpenAIModel]?.name : 
-       CLAUDE_MODELS[selectedConfig.model as ClaudeModel]?.name) : 
-      'Default Model';
+    let modelName = 'Default Model';
+    
+    if (selectedConfig.model) {
+      if (selectedConfig.provider === 'openai') {
+        modelName = OPENAI_MODELS[selectedConfig.model as OpenAIModel]?.name || 'Default Model';
+      } else if (selectedConfig.provider === 'claude') {
+        modelName = CLAUDE_MODELS[selectedConfig.model as ClaudeModel]?.name || 'Default Model';
+      } else if (selectedConfig.provider === 'google') {
+        modelName = GOOGLE_MODELS[selectedConfig.model as GoogleModel]?.name || 'Default Model';
+      }
+    }
     
     return `${providerName} - ${modelName}${selectedConfig.testMode ? ' (Test)' : ''}`;
   };
@@ -236,7 +249,9 @@ export const EnhancedModelSelector = ({
                   {selectedConfig.provider === provider && (
                     provider === 'openai' 
                       ? renderModelOptions(provider, OPENAI_MODELS)
-                      : renderModelOptions(provider, CLAUDE_MODELS)
+                      : provider === 'claude'
+                      ? renderModelOptions(provider, CLAUDE_MODELS)
+                      : renderModelOptions(provider, GOOGLE_MODELS)
                   )}
                 </CollapsibleContent>
               </Collapsible>
