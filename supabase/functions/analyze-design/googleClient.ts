@@ -8,7 +8,7 @@ export async function analyzeWithGoogle(
   googleCredentials: string,
   model?: string
 ): Promise<AnnotationData[]> {
-  console.log('=== Google Vision Analysis Started ===');
+  console.log('=== Google Gemini Analysis Started ===');
   console.log('Model:', model || 'gemini-1.5-pro');
   console.log('Image type:', mimeType);
   console.log('Prompt length:', prompt.length);
@@ -109,7 +109,7 @@ Focus on UX issues and provide specific, actionable recommendations.`
 
     if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
       console.error('Invalid response structure from Google:', data);
-      throw new Error('Invalid response from Google Vision API');
+      throw new Error('Invalid response from Google Gemini API');
     }
 
     const textResponse = data.candidates[0].content.parts[0].text;
@@ -146,39 +146,108 @@ Focus on UX issues and provide specific, actionable recommendations.`
       recommendation: annotation.recommendation || 'No recommendation provided'
     }));
 
-    console.log(`✅ Google Vision analysis completed successfully with ${annotations.length} annotations`);
+    console.log(`✅ Google Gemini analysis completed successfully with ${annotations.length} annotations`);
     return annotations;
 
   } catch (error) {
-    console.error('❌ Google Vision analysis failed:', error);
-    throw new Error(`Google Vision analysis failed: ${error.message}`);
+    console.error('❌ Google Gemini analysis failed:', error);
+    throw new Error(`Google Gemini analysis failed: ${error.message}`);
   }
 }
 
 async function getAccessToken(credentials: any): Promise<string> {
-  const now = Math.floor(Date.now() / 1000);
-  const payload = {
-    iss: credentials.client_email,
-    scope: 'https://www.googleapis.com/auth/generative-language',
-    aud: 'https://www.googleapis.com/auth/generative-language',
-    exp: now + 3600,
-    iat: now
-  };
+  try {
+    // Create JWT header
+    const jwtHeader = {
+      alg: 'RS256',
+      typ: 'JWT'
+    };
 
-  // Create JWT header
-  const header = {
-    alg: 'RS256',
-    typ: 'JWT'
-  };
+    // Create JWT payload
+    const now = Math.floor(Date.now() / 1000);
+    const jwtPayload = {
+      iss: credentials.client_email,
+      scope: 'https://www.googleapis.com/auth/generative-language',
+      aud: 'https://oauth2.googleapis.com/token',
+      exp: now + 3600, // 1 hour
+      iat: now
+    };
 
-  // Encode header and payload
-  const encodedHeader = btoa(JSON.stringify(header)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-  const encodedPayload = btoa(JSON.stringify(payload)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    // Encode header and payload
+    const encodedHeader = btoa(JSON.stringify(jwtHeader))
+      .replace(/=/g, '')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_');
+    
+    const encodedPayload = btoa(JSON.stringify(jwtPayload))
+      .replace(/=/g, '')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_');
 
-  // Create signature (simplified - in production, use proper JWT library)
-  const data = `${encodedHeader}.${encodedPayload}`;
-  
-  // For now, return a placeholder - you'll need to implement proper JWT signing
-  // In a real implementation, you'd use the private key from credentials.private_key
-  throw new Error('JWT signing not implemented. Please use Google Cloud Vision API directly or implement proper JWT signing.');
+    // Create the unsigned token
+    const unsignedToken = `${encodedHeader}.${encodedPayload}`;
+
+    // Import the private key
+    const privateKeyPem = credentials.private_key;
+    const privateKeyFormatted = privateKeyPem
+      .replace(/-----BEGIN PRIVATE KEY-----/, '')
+      .replace(/-----END PRIVATE KEY-----/, '')
+      .replace(/\n/g, '');
+
+    // Convert base64 to ArrayBuffer
+    const privateKeyBuffer = Uint8Array.from(atob(privateKeyFormatted), c => c.charCodeAt(0));
+
+    // Import the key for signing
+    const cryptoKey = await crypto.subtle.importKey(
+      'pkcs8',
+      privateKeyBuffer,
+      {
+        name: 'RSASSA-PKCS1-v1_5',
+        hash: 'SHA-256'
+      },
+      false,
+      ['sign']
+    );
+
+    // Sign the token
+    const signature = await crypto.subtle.sign(
+      'RSASSA-PKCS1-v1_5',
+      cryptoKey,
+      new TextEncoder().encode(unsignedToken)
+    );
+
+    // Encode signature
+    const encodedSignature = btoa(String.fromCharCode(...new Uint8Array(signature)))
+      .replace(/=/g, '')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_');
+
+    // Create the signed JWT
+    const signedJWT = `${unsignedToken}.${encodedSignature}`;
+
+    // Exchange JWT for access token
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({
+        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+        assertion: signedJWT
+      })
+    });
+
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      console.error('❌ Token exchange failed:', errorText);
+      throw new Error(`Token exchange failed: ${tokenResponse.status} - ${errorText}`);
+    }
+
+    const tokenData = await tokenResponse.json();
+    return tokenData.access_token;
+
+  } catch (error) {
+    console.error('❌ Access token generation failed:', error);
+    throw new Error(`Access token generation failed: ${error.message}`);
+  }
 }
