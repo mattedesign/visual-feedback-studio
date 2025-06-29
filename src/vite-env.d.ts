@@ -11,11 +11,3 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
-
-// Global window extensions for Supabase environment variables
-declare global {
-  interface Window {
-    SUPABASE_URL?: string;
-    SUPABASE_ANON_KEY?: string;
-  }
-}

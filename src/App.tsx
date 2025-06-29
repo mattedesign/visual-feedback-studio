@@ -10,7 +10,6 @@ import DALLEDemo from "./pages/DalleDemo";
 import UpgradeSuccess from "./pages/UpgradeSuccess";
 import MigrationPage from "./pages/MigrationPage";
 import VectorTest from "./pages/VectorTest";
-import KnowledgeRecovery from "./pages/KnowledgeRecovery";
 
 const queryClient = new QueryClient();
 
@@ -30,7 +29,6 @@ const App = () => {
             <Route path="/upgrade-success" element={<UpgradeSuccess />} />
             <Route path="/migration-page" element={<MigrationPage />} />
             <Route path="/vector-test" element={<VectorTest />} />
-            <Route path="/knowledge-recovery" element={<KnowledgeRecovery />} />
             {/* Catch all other routes and redirect to /auth */}
             <Route path="*" element={<Navigate to="/auth" replace />} />
           </Routes>

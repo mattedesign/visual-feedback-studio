@@ -1,5 +1,6 @@
 
-import { useCallback } from 'react';
+
+import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { AnalysisWithFiles, updateAnalysisStatus, updateAnalysisContext } from '@/services/analysisDataService';
 import { getAnnotationsForAnalysis } from '@/services/annotationsService';
@@ -18,6 +19,12 @@ export const useAnalysisExecution = ({
   setIsAnalyzing,
   setAnnotations,
 }: UseAnalysisExecutionProps) => {
+  // 🔄 LOOP DETECTION: Track hook renders
+  console.log('🔄 HOOK RENDER:', new Date().toISOString(), {
+    hookName: 'useAnalysisExecution',
+    renderCount: ++((window as any).useAnalysisExecutionRenderCount) || ((window as any).useAnalysisExecutionRenderCount = 1),
+    currentAnalysisId: currentAnalysis?.id
+  });
   
   const executeAnalysis = useCallback(async (
     imagesToAnalyze: string[],
@@ -25,13 +32,26 @@ export const useAnalysisExecution = ({
     isComparative: boolean,
     aiProvider?: AIProvider
   ) => {
-    console.log('=== Analysis Started ===');
+    // 🚨 LOOP DETECTION: Track execution calls
+    console.log('🚨 EXECUTE ANALYSIS CALLED:', {
+      timestamp: new Date().toISOString(),
+      executionCount: ++((window as any).executeAnalysisCount) || ((window as any).executeAnalysisCount = 1),
+      stackTrace: new Error().stack,
+      imagesToAnalyze: imagesToAnalyze.length,
+      promptLength: userAnalysisPrompt.length,
+      isComparative,
+      aiProvider,
+      currentAnalysisId: currentAnalysis?.id
+    });
+
+    console.log('=== Analysis Started (RAG DISABLED) ===');
     console.log('Analysis configuration:', { 
       imageCount: imagesToAnalyze.length,
       analysisId: currentAnalysis?.id,
       isComparative,
       userPromptLength: userAnalysisPrompt.length,
-      aiProvider: aiProvider || 'auto'
+      aiProvider: aiProvider || 'auto',
+      ragEnabled: false // PERMANENTLY DISABLED
     });
     
     // Update analysis status
@@ -42,9 +62,10 @@ export const useAnalysisExecution = ({
       });
     }
 
-    console.log('🚀 Executing analysis...');
+    console.log('⚠️ RAG system permanently disabled to prevent loops');
+    console.log('🚀 Executing standard analysis without RAG...');
     
-    // Call analyze-design
+    // Call analyze-design WITHOUT any RAG context
     const { data, error } = await supabase.functions.invoke('analyze-design', {
       body: {
         imageUrls: imagesToAnalyze,
@@ -54,6 +75,7 @@ export const useAnalysisExecution = ({
         designType: currentAnalysis?.design_type || 'web',
         isComparative,
         aiProvider,
+        // RAG completely disabled
         ragEnabled: false,
         ragContext: null,
         researchCitations: []
@@ -86,7 +108,7 @@ export const useAnalysisExecution = ({
         duration: 4000,
       });
       
-      console.log('=== Analysis Completed Successfully ===');
+      console.log('=== Analysis Completed Successfully (RAG DISABLED) ===');
     } else {
       console.error('Invalid response structure:', data);
       throw new Error('Invalid response from analysis service');
@@ -95,7 +117,7 @@ export const useAnalysisExecution = ({
 
   return {
     executeAnalysis,
-    ragContext: null,
-    isBuilding: false
+    ragContext: null, // Always null
+    isBuilding: false // Always false
   };
 };

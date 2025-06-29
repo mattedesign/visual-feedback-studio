@@ -10,6 +10,12 @@ import { AnalysisStudioLayout } from './studio/AnalysisStudioLayout';
 import { useState } from 'react';
 
 export const AnalysisWorkflow = () => {
+  // 🔄 LOOP DETECTION: Track component renders
+  console.log('🔄 COMPONENT RENDER:', new Date().toISOString(), {
+    componentName: 'AnalysisWorkflow',
+    renderCount: ++((window as any).analysisWorkflowRenderCount) || ((window as any).analysisWorkflowRenderCount = 1)
+  });
+
   const { user } = useAuth();
   const workflow = useAnalysisWorkflow();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
