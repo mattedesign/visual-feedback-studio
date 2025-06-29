@@ -627,19 +627,10 @@ Deno.serve(async (req) => {
       hasRelevantPatterns: competitiveResults.relevantPatterns.length > 0
     });
     
-    // 🚨 CRITICAL: Build the complete enhanced prompt with vision context integration
-    console.log(`🏗️ === BUILDING FINAL ENHANCED PROMPT WITH VISION INTEGRATION ===`);
-    console.log('🚨 URGENT: Final Prompt Builder Parameters:', {
-      visionEnhancedPromptLength: currentPrompt.length,
-      ragContextLength: ragContext.researchEnhanced ? ragContext.enhancedPrompt.length : 0,
-      competitiveContextLength: competitiveResults.totalPatterns > 0 ? competitiveResults.competitiveContext.length : 0,
-      imageCount: imageCount,
-      isComparative: requestData.isComparative || false,
-      visionIntegrated: !!visionContext,
-      criticalFix: 'VISION CONTEXT PROPERLY INTEGRATED'
-    });
+    // 🚨 CRITICAL FIX: Build the complete enhanced prompt with all context integration
+    console.log(`🏗️ === BUILDING FINAL ENHANCED PROMPT WITH ALL CONTEXTS ===`);
     
-    // Use the vision-enhanced prompt as the base, then add RAG and competitive context
+    // ✅ Build the final enhanced prompt using the existing function
     const enhancedPrompt = buildEnhancedAnalysisPrompt(
       currentPrompt, // This now includes vision context
       ragContext.researchEnhanced ? ragContext.enhancedPrompt : undefined,
@@ -647,6 +638,11 @@ Deno.serve(async (req) => {
       requestData.isComparative || false,
       imageCount
     );
+    
+    // 🔧 ANALYZE-DESIGN: Ensure enhanced prompt is used
+    console.log('🔧 ANALYZE-DESIGN: Prompt type:', visionContext || ragContext.researchEnhanced || competitiveResults.totalPatterns > 0 ? 'ENHANCED' : 'STANDARD');
+    console.log('📏 Enhanced prompt length:', enhancedPrompt.length, 'characters');
+    console.log('🚨 CRITICAL: Enhanced prompt will be passed to AI provider');
     
     // ===== MAIN CONSOLE LOG FOR USER VISIBILITY =====
     console.log("🎯🎯🎯 === COMPLETE ENHANCED PROMPT WITH VISION INTEGRATION === 🎯🎯🎯");
@@ -666,13 +662,14 @@ Deno.serve(async (req) => {
     console.log("");
     
     for (const processedImage of imageProcessingResult.processedImages) {
-      console.log(`🔍 Analyzing image with ${aiProviderConfig.provider} using vision-enhanced prompt...`);
+      console.log(`🔍 Analyzing image with ${aiProviderConfig.provider} using enhanced prompt...`);
       
       try {
+        // ✅ CRITICAL FIX: Pass the enhanced prompt to the AI provider
         const annotations = await analyzeWithAIProvider(
           processedImage.base64Data,
           processedImage.mimeType,
-          enhancedPrompt,
+          enhancedPrompt, // ✅ Enhanced prompt with vision, RAG, and competitive context
           aiProviderConfig
         );
         
