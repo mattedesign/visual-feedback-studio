@@ -3,8 +3,9 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
-import { useAIAnalysis } from '@/hooks/analysis/useAIAnalysis';
 import { RAGStatusIndicator } from '../RAGStatusIndicator';
+import { EnhancedAnalysisDisplay } from './components/EnhancedAnalysisDisplay';
+import { ContextIntelligenceDisplay } from './components/ContextIntelligenceDisplay';
 import { toast } from 'sonner';
 
 interface AnalyzingStepProps {
@@ -29,17 +30,13 @@ const parseContextForDisplay = (context: string): string[] => {
 
 export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
   const [analysisProgress, setAnalysisProgress] = useState(0);
-  const [currentStep, setCurrentStep] = useState('Initializing analysis...');
+  const [currentStep, setCurrentStep] = useState('Initializing enhanced analysis...');
   const [retryCount, setRetryCount] = useState(0);
   const [detectedFocusAreas, setDetectedFocusAreas] = useState<string[]>([]);
   const maxRetries = 1;
   const analysisStartedRef = useRef(false);
 
-  // Use the standardized AI Analysis hook
-  const { analyzeImages, isAnalyzing, hasResearchContext, researchSourcesCount } = useAIAnalysis();
-
   useEffect(() => {
-    // Parse context and set focus areas
     const focusAreas = parseContextForDisplay(workflow.analysisContext);
     setDetectedFocusAreas(focusAreas);
     setCurrentStep(`Analyzing your context: ${focusAreas.join(', ')}...`);
@@ -47,19 +44,18 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
 
   const performAnalysis = useCallback(async () => {
     if (analysisStartedRef.current) {
-      console.log('⚠️ Analysis already in progress, skipping duplicate call');
+      console.log('⚠️ Enhanced analysis already in progress, skipping duplicate call');
       return;
     }
 
-    console.log('=== AnalyzingStep.performAnalysis - Starting ===');
+    console.log('=== Enhanced AnalyzingStep - Starting ===');
     
     analysisStartedRef.current = true;
 
     try {
-      setCurrentStep('Initializing analysis...');
+      setCurrentStep('Initializing enhanced analysis...');
       setAnalysisProgress(5);
       
-      // Input validation
       if (workflow.selectedImages.length === 0) {
         throw new Error('No images selected for analysis');
       }
@@ -67,7 +63,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       setCurrentStep('Validating images...');
       setAnalysisProgress(15);
 
-      // Robust image validation with timeout
+      // Image validation
       const imageValidationPromises = workflow.selectedImages.map(async (imageUrl, index) => {
         try {
           const controller = new AbortController();
@@ -95,7 +91,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       await Promise.all(imageValidationPromises);
       setAnalysisProgress(25);
 
-      setCurrentStep('Building research context...');
+      setCurrentStep('Building vision analysis context...');
       setAnalysisProgress(35);
 
       // Prepare user annotations
@@ -109,35 +105,28 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
         }))
       );
 
-      setCurrentStep('Enhancing with UX research...');
+      setCurrentStep('Retrieving UX research knowledge...');
       setAnalysisProgress(50);
 
-      setCurrentStep('Running AI analysis...');
+      setCurrentStep('Running enhanced AI analysis...');
       setAnalysisProgress(65);
 
-      // Call analysis with enhanced RAG enabled by default
-      const result = await analyzeImages({
-        imageUrls: workflow.selectedImages,
-        userAnnotations,
-        analysisPrompt: workflow.analysisContext || 'Analyze this design for UX improvements',
-        deviceType: 'desktop',
-        useEnhancedRag: true
-      });
+      // Call enhanced analysis
+      const result = await workflow.startAnalysis();
 
       setAnalysisProgress(85);
 
-      if (result.success && result.annotations) {
-        setCurrentStep('Processing results...');
+      if (workflow.aiAnnotations && workflow.aiAnnotations.length > 0) {
+        setCurrentStep('Processing enhanced results...');
         setAnalysisProgress(95);
 
-        // Store AI annotations in workflow
-        workflow.setAiAnnotations(result.annotations);
-
-        setCurrentStep(`Analysis complete for ${detectedFocusAreas.join(' & ')}!`);
+        setCurrentStep(`Enhanced analysis complete for ${detectedFocusAreas.join(' & ')}!`);
         setAnalysisProgress(100);
 
-        console.log('✅ AnalyzingStep: Analysis completed successfully', {
-          annotationsReceived: result.annotations.length
+        console.log('✅ Enhanced AnalyzingStep: Analysis completed successfully', {
+          annotationsReceived: workflow.aiAnnotations.length,
+          enhancedContext: !!workflow.enhancedContext,
+          knowledgeSourcesUsed: workflow.knowledgeSourcesUsed
         });
 
         // Smooth transition to results
@@ -145,18 +134,17 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
           workflow.goToStep('results');
         }, 1000);
       } else {
-        throw new Error('Analysis failed to return valid results');
+        throw new Error('Enhanced analysis failed to return valid results');
       }
 
     } catch (error) {
-      console.error('❌ AnalyzingStep: Analysis failed:', error);
+      console.error('❌ Enhanced AnalyzingStep: Analysis failed:', error);
       
-      // Proper error handling without infinite retries
       if (retryCount < maxRetries) {
         const nextRetry = retryCount + 1;
-        console.log(`🔄 Attempting retry ${nextRetry}/${maxRetries}`);
+        console.log(`🔄 Attempting enhanced analysis retry ${nextRetry}/${maxRetries}`);
         setRetryCount(nextRetry);
-        setCurrentStep(`Retrying analysis (${nextRetry}/${maxRetries})...`);
+        setCurrentStep(`Retrying enhanced analysis (${nextRetry}/${maxRetries})...`);
         setAnalysisProgress(0);
         
         analysisStartedRef.current = false;
@@ -166,29 +154,27 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
           performAnalysis();
         }, delay);
         
-        toast(`Analysis failed, retrying in ${delay/1000} seconds...`, {
+        toast(`Enhanced analysis failed, retrying in ${delay/1000} seconds...`, {
           duration: delay - 500,
         });
       } else {
-        console.error('❌ Max retries exceeded');
-        setCurrentStep('Analysis failed');
+        console.error('❌ Max retries exceeded for enhanced analysis');
+        setCurrentStep('Enhanced analysis failed');
         setAnalysisProgress(0);
         workflow.setIsAnalyzing(false);
         
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        toast.error(`Analysis failed: ${errorMessage}. Please try again.`, {
+        toast.error(`Enhanced analysis failed: ${errorMessage}. Please try again.`, {
           duration: 8000,
         });
         
-        // Reset for potential retry
         analysisStartedRef.current = false;
       }
     }
-  }, [workflow, analyzeImages, detectedFocusAreas, retryCount]);
+  }, [workflow, detectedFocusAreas, retryCount]);
 
-  // Start analysis effect
   useEffect(() => {
-    console.log('🚀 AnalyzingStep: useEffect - Starting analysis effect', {
+    console.log('🚀 Enhanced AnalyzingStep: useEffect - Starting enhanced analysis effect', {
       timestamp: new Date().toISOString(),
       hasImages: workflow.selectedImages.length > 0,
       hasAnalysis: !!workflow.currentAnalysis,
@@ -201,24 +187,11 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
     }
   }, []);
 
-  // Separate effect for retry logic
   useEffect(() => {
     if (retryCount > 0 && analysisStartedRef.current) {
       analysisStartedRef.current = false;
     }
   }, [retryCount]);
-
-  // Monitor ai annotations changes
-  useEffect(() => {
-    console.log('📊 AnalyzingStep: AI annotations changed:', {
-      count: workflow.aiAnnotations?.length || 0,
-      annotations: workflow.aiAnnotations?.map(a => ({
-        id: a.id,
-        category: a.category,
-        severity: a.severity
-      })) || []
-    });
-  }, [workflow.aiAnnotations]);
 
   const totalAnnotations = workflow.getTotalAnnotationsCount();
   const isMultiImage = workflow.selectedImages.length > 1;
@@ -232,32 +205,37 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
             
             <div>
               <h3 className="text-2xl font-semibold mb-4">
-                {isMultiImage ? 'Analyzing Your Designs' : 'Analyzing Your Design'}
+                Enhanced {isMultiImage ? 'Multi-Image' : 'Design'} Analysis
               </h3>
               
               {/* Context Intelligence Display */}
-              {workflow.analysisContext && (
-                <div className="mb-4 p-4 bg-slate-700/50 rounded-lg">
-                  <h4 className="text-sm font-medium text-slate-300 mb-2">Your Analysis Context:</h4>
-                  <p className="text-sm text-slate-200 italic mb-3">"{workflow.analysisContext}"</p>
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {detectedFocusAreas.map((area) => (
-                      <Badge key={area} variant="secondary" className="bg-blue-600/80 text-white">
-                        {area}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <div className="mb-4">
+                <ContextIntelligenceDisplay 
+                  analysisContext={workflow.analysisContext}
+                  focusAreas={detectedFocusAreas}
+                  researchSourcesCount={workflow.researchSourcesCount}
+                  isAnalyzing={true}
+                />
+              </div>
               
               {/* RAG Status Indicator */}
               <div className="mb-4">
                 <RAGStatusIndicator 
-                  hasResearchContext={hasResearchContext}
-                  researchSourcesCount={researchSourcesCount}
+                  hasResearchContext={workflow.hasResearchContext}
+                  researchSourcesCount={workflow.researchSourcesCount}
                   isAnalyzing={true}
                 />
               </div>
+
+              {/* Enhanced Analysis Display */}
+              {workflow.enhancedContext && (
+                <div className="mb-4">
+                  <EnhancedAnalysisDisplay 
+                    enhancedContext={workflow.enhancedContext}
+                    isAnalyzing={true}
+                  />
+                </div>
+              )}
               
               <p className="text-slate-400 mb-2">
                 {currentStep}
@@ -278,15 +256,15 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
             )}
 
             <div className="bg-slate-700 rounded-lg p-4">
-              <h4 className="font-medium mb-2">Context-Aware Analysis Focus:</h4>
+              <h4 className="font-medium mb-2">Enhanced Analysis Features:</h4>
               <ul className="text-sm text-slate-300 space-y-1">
+                <li>• Vision analysis detecting UI patterns and industry context</li>
                 <li>• {totalAnnotations} specific areas you highlighted across {isMultiImage ? 'all images' : 'the image'}</li>
                 {workflow.analysisContext && <li>• Your context priorities: {detectedFocusAreas.join(', ')}</li>}
                 {isMultiImage && <li>• Comparative analysis between selected images</li>}
-                <li>• Research-enhanced UX recommendations</li>
-                <li>• Knowledge base insights targeting {detectedFocusAreas.join(' & ')}</li>
-                <li>• Evidence-backed {detectedFocusAreas.includes('Accessibility') ? 'accessibility' : 'usability'} improvements</li>
-                {researchSourcesCount && <li>• Analysis enhanced with {researchSourcesCount} research insights</li>}
+                <li>• Knowledge base integration with UX research</li>
+                <li>• Confidence scoring and evidence-backed recommendations</li>
+                {workflow.knowledgeSourcesUsed > 0 && <li>• Analysis enhanced with {workflow.knowledgeSourcesUsed} research insights</li>}
               </ul>
             </div>
 

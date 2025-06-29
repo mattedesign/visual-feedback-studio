@@ -1,8 +1,8 @@
-
 import { useState, useCallback } from 'react';
 import { Annotation } from '@/types/analysis';
-import { useAIAnalysis } from './useAIAnalysis';
+import { useEnhancedAnalysis } from './useEnhancedAnalysis';
 import { toast } from 'sonner';
+import { EnhancedContext } from '@/services/analysis/enhancedRagService';
 
 export type WorkflowStep = 'upload' | 'annotate' | 'review' | 'analyzing' | 'results';
 
@@ -31,8 +31,8 @@ export const useAnalysisWorkflow = () => {
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [currentAnalysis, setCurrentAnalysis] = useState<any>(null);
   
-  // Enhanced context state - read-only for display
-  const [enhancedContext, setEnhancedContext] = useState<any>(null);
+  // Enhanced context state
+  const [enhancedContext, setEnhancedContext] = useState<EnhancedContext | null>(null);
   const [ragEnhanced, setRagEnhanced] = useState<boolean>(false);
   const [knowledgeSourcesUsed, setKnowledgeSourcesUsed] = useState<number>(0);
   const [researchCitations, setResearchCitations] = useState<string[]>([]);
@@ -40,7 +40,14 @@ export const useAnalysisWorkflow = () => {
   const [visionConfidenceScore, setVisionConfidenceScore] = useState<number | undefined>(undefined);
   const [visionElementsDetected, setVisionElementsDetected] = useState<number>(0);
 
-  const { analyzeImages, isAnalyzing: aiAnalyzing, isBuilding, buildingStage } = useAIAnalysis();
+  const { 
+    analyzeImages, 
+    isAnalyzing: enhancedAnalyzing, 
+    isBuilding, 
+    buildingStage,
+    hasResearchContext,
+    researchSourcesCount
+  } = useEnhancedAnalysis({ currentAnalysis });
 
   const resetWorkflow = useCallback(() => {
     console.log('🔄 RESET: Clearing all workflow state');
@@ -200,22 +207,21 @@ export const useAnalysisWorkflow = () => {
       return;
     }
 
-    // Prevent duplicate analysis
-    if (isAnalyzing || aiAnalyzing) {
+    if (isAnalyzing || enhancedAnalyzing) {
       console.log('⚠️ Analysis already in progress, skipping');
       return;
     }
 
-    console.log('🚀 Starting analysis workflow:', {
+    console.log('🚀 Starting enhanced analysis workflow:', {
       imageCount: images.length,
       annotationCount: getTotalAnnotationsCount(),
       contextLength: analysisContext.length
     });
 
     setIsAnalyzing(true);
+    setCurrentStep('analyzing');
 
     try {
-      // Prepare user annotations for analysis
       const userAnnotationsArray = imageAnnotations.flatMap(imageAnnotation => 
         imageAnnotation.annotations.map(annotation => ({
           imageUrl: imageAnnotation.imageUrl,
@@ -235,28 +241,39 @@ export const useAnalysisWorkflow = () => {
       });
 
       if (result.success) {
-        console.log('✅ Analysis completed successfully:', {
-          annotationCount: result.annotations.length
+        console.log('✅ Enhanced analysis completed successfully:', {
+          annotationCount: result.annotations.length,
+          enhancedContext: !!result.enhancedContext
         });
 
         setAiAnnotations(result.annotations);
         setAnalysisResults(result.analysis);
         
+        // Store enhanced context data
+        if (result.enhancedContext) {
+          setEnhancedContext(result.enhancedContext);
+          setRagEnhanced(true);
+          setKnowledgeSourcesUsed(result.enhancedContext.knowledgeSourcesUsed);
+          setResearchCitations(result.enhancedContext.citations);
+          setVisionEnhanced(true);
+          setVisionConfidenceScore(result.enhancedContext.confidenceScore);
+          setVisionElementsDetected(result.enhancedContext.visionAnalysis.uiElements.length);
+        }
+        
         setCurrentStep('results');
-        toast.success(`Analysis complete! Found ${result.annotations.length} insights.`);
       } else {
-        console.error('❌ Analysis failed:', result);
-        toast.error('Analysis failed. Please try again.');
+        console.error('❌ Enhanced analysis failed:', result);
+        toast.error('Enhanced analysis failed. Please try again.');
         setCurrentStep('annotate');
       }
     } catch (error) {
-      console.error('❌ Analysis failed:', error);
-      toast.error('Analysis failed. Please try again.');
+      console.error('❌ Enhanced analysis failed:', error);
+      toast.error('Enhanced analysis failed. Please try again.');
       setCurrentStep('annotate');
     } finally {
       setIsAnalyzing(false);
     }
-  }, [images, imageAnnotations, analysisContext, analyzeImages, isAnalyzing, aiAnalyzing, getTotalAnnotationsCount]);
+  }, [images, imageAnnotations, analysisContext, analyzeImages, isAnalyzing, enhancedAnalyzing, getTotalAnnotationsCount]);
 
   const goToStep = useCallback((step: WorkflowStep) => {
     console.log('🔄 Workflow: Navigating to step:', step);
@@ -277,7 +294,6 @@ export const useAnalysisWorkflow = () => {
         startAnalysis();
         break;
       case 'analyzing':
-        // Analysis will automatically move to results
         break;
       case 'results':
         resetWorkflow();
@@ -314,16 +330,18 @@ export const useAnalysisWorkflow = () => {
     analysisContext,
     aiAnnotations,
     analysisResults,
-    enhancedContext: enhancedContext || null,
-    ragEnhanced: ragEnhanced || false,
-    knowledgeSourcesUsed: knowledgeSourcesUsed || 0,
-    researchCitations: researchCitations || [],
-    visionEnhanced: visionEnhanced || false,
-    visionConfidenceScore: visionConfidenceScore,
-    visionElementsDetected: visionElementsDetected || 0,
-    isAnalyzing: isAnalyzing || aiAnalyzing,
+    enhancedContext,
+    ragEnhanced,
+    knowledgeSourcesUsed,
+    researchCitations,
+    visionEnhanced,
+    visionConfidenceScore,
+    visionElementsDetected,
+    isAnalyzing: isAnalyzing || enhancedAnalyzing,
     isBuilding,
     buildingStage,
+    hasResearchContext,
+    researchSourcesCount,
     currentAnalysis,
     selectedImageUrl: images[0] || null, // Legacy compatibility
 
