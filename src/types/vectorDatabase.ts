@@ -68,6 +68,13 @@ export interface SearchFilters {
   match_count?: number;
 }
 
+export interface VectorSearchOptions {
+  maxResults?: number;
+  confidenceThreshold?: number;
+  categories?: string[];
+  industries?: string[];
+}
+
 export interface EmbeddingResponse {
   data: Array<{
     object: string;

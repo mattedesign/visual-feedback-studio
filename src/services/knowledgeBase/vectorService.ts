@@ -1,13 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
-import { KnowledgeEntry, SearchFilters } from '@/types/vectorDatabase';
+import { KnowledgeEntry, SearchFilters, VectorSearchOptions } from '@/types/vectorDatabase';
 import { TypeAdapter } from './typeAdapter';
-
-export interface VectorSearchOptions {
-  maxResults?: number;
-  confidenceThreshold?: number;
-  categories?: string[];
-  industries?: string[];
-}
 
 class VectorService {
   private readonly DEFAULT_OPTIONS: Required<VectorSearchOptions> = {
@@ -47,34 +40,69 @@ class VectorService {
 
       console.log('✅ Vector Search: Found knowledge entries:', data?.length || 0);
       
-      // Fix: Map database results to KnowledgeEntry type with proper field mapping
-      const processedData = (data || []).map(item => ({
-        id: item.id,
-        title: item.title,
-        content: item.content,
-        source: item.source || 'Database', // Add default source for database entries
-        category: item.category,
-        tags: item.tags || [],
-        metadata: item.metadata || {},
-        created_at: item.created_at,
-        updated_at: item.updated_at,
-        similarity: item.similarity || 0,
-        // Map additional fields from knowledge_entries table
-        primary_category: item.primary_category,
-        secondary_category: item.secondary_category,
-        industry_tags: item.industry_tags || [],
-        complexity_level: item.complexity_level,
-        use_cases: item.use_cases || [],
-        related_patterns: item.related_patterns || [],
-        freshness_score: item.freshness_score,
-        application_context: item.application_context
-      }));
+      // Process and map database results to KnowledgeEntry type
+      const processedData = (data || []).map(item => {
+        // Get the enhanced knowledge entry with all database fields
+        const enhancedEntry = this.getEnhancedKnowledgeEntry(item.id);
+        
+        return {
+          id: item.id,
+          title: item.title,
+          content: item.content,
+          source: 'Database', // Default source for database entries
+          category: item.category,
+          tags: item.tags || [],
+          metadata: item.metadata || {},
+          created_at: item.created_at,
+          updated_at: item.updated_at,
+          similarity: item.similarity || 0,
+          // Use enhanced entry fields if available, otherwise default values
+          primary_category: enhancedEntry?.primary_category,
+          secondary_category: enhancedEntry?.secondary_category,
+          industry_tags: enhancedEntry?.industry_tags || [],
+          complexity_level: enhancedEntry?.complexity_level,
+          use_cases: enhancedEntry?.use_cases || [],
+          related_patterns: enhancedEntry?.related_patterns || [],
+          freshness_score: enhancedEntry?.freshness_score,
+          application_context: enhancedEntry?.application_context
+        };
+      });
       
       return processedData;
 
     } catch (error) {
       console.error('❌ Vector Search: Search failed:', error);
       return [];
+    }
+  }
+
+  // Helper method to get enhanced knowledge entry with all database fields
+  private async getEnhancedKnowledgeEntry(entryId: string): Promise<Partial<KnowledgeEntry> | null> {
+    try {
+      const { data, error } = await supabase
+        .from('knowledge_entries')
+        .select(`
+          primary_category,
+          secondary_category,
+          industry_tags,
+          complexity_level,
+          use_cases,
+          related_patterns,
+          freshness_score,
+          application_context
+        `)
+        .eq('id', entryId)
+        .single();
+
+      if (error) {
+        console.warn('⚠️ Could not fetch enhanced entry data:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.warn('⚠️ Failed to get enhanced entry data:', error);
+      return null;
     }
   }
 
@@ -225,7 +253,7 @@ class VectorService {
 
       if (error) throw error;
       
-      // Fix: Map results to proper KnowledgeEntry format
+      // Map results to proper KnowledgeEntry format
       return (data || []).map(item => ({
         ...item,
         source: item.source || 'Database',
@@ -247,7 +275,7 @@ class VectorService {
 
       if (error) throw error;
       
-      // Fix: Map results to proper KnowledgeEntry format
+      // Map results to proper KnowledgeEntry format
       return (data || []).map(item => ({
         ...item,
         source: item.source || 'Database',
@@ -282,7 +310,7 @@ class VectorService {
 
       if (error) throw error;
       
-      // Fix: Map results to proper KnowledgeEntry format with similarity
+      // Map results to proper KnowledgeEntry format with similarity
       return (data || []).map(item => ({
         ...item,
         source: item.source || 'Database',
