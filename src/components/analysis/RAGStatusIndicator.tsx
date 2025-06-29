@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Brain, AlertCircle } from 'lucide-react';
+import { Brain, CheckCircle } from 'lucide-react';
 
 interface RAGStatusIndicatorProps {
   hasResearchContext: boolean;
@@ -14,21 +14,49 @@ export const RAGStatusIndicator: React.FC<RAGStatusIndicatorProps> = ({
   researchSourcesCount,
   isAnalyzing = false
 }) => {
-  // 🔥 SHOW DISABLED STATE - Since RAG is currently disabled
-  const ragEnabled = false; // Changed from true to false
+  // ✅ RAG IS NOW ENABLED
+  const ragEnabled = true;
   const displaySourcesCount = researchSourcesCount || 0;
   
+  if (ragEnabled && hasResearchContext && displaySourcesCount > 0) {
+    return (
+      <div className="flex items-center gap-2">
+        <Brain className="w-4 h-4 text-green-400" />
+        <Badge variant="outline" className="text-green-300 border-green-400 bg-green-900/20">
+          RAG Enhanced
+        </Badge>
+        <span className="text-sm text-green-300">
+          {isAnalyzing 
+            ? `Analyzing with ${displaySourcesCount} research sources...`
+            : `Enhanced with ${displaySourcesCount} research insights`
+          }
+        </span>
+      </div>
+    );
+  }
+
+  if (ragEnabled && isAnalyzing) {
+    return (
+      <div className="flex items-center gap-2">
+        <Brain className="w-4 h-4 text-blue-400 animate-pulse" />
+        <Badge variant="outline" className="text-blue-300 border-blue-400 bg-blue-900/20">
+          Building Context
+        </Badge>
+        <span className="text-sm text-blue-300">
+          Gathering research insights...
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center gap-2">
-      <AlertCircle className="w-4 h-4 text-yellow-400" />
-      <Badge variant="outline" className="text-yellow-300 border-yellow-400 bg-yellow-900/20">
-        RAG Disabled
+      <CheckCircle className="w-4 h-4 text-blue-400" />
+      <Badge variant="outline" className="text-blue-300 border-blue-400 bg-blue-900/20">
+        RAG Ready
       </Badge>
-      <span className="text-sm text-yellow-300">
-        {isAnalyzing 
-          ? `Running basic analysis (enhanced features temporarily disabled)`
-          : `Enhanced research features are temporarily disabled`
-        }
+      <span className="text-sm text-blue-300">
+        Research-enhanced analysis available
       </span>
     </div>
   );

@@ -86,7 +86,7 @@ export const useAIAnalysis = () => {
     return normalizedAnnotation;
   };
 
-  // 🔍 RAG CONTEXT BUILDER - Re-enabled
+  // 🔍 RAG CONTEXT BUILDER - Now fully enabled
   const buildRAGContext = async (imageUrls: string[], userPrompt: string, analysisId: string) => {
     console.log('🔍 === RAG CONTEXT BUILDING START ===');
     setBuildingStage('Building research context...');
@@ -111,7 +111,8 @@ export const useAIAnalysis = () => {
         console.log('✅ RAG context built successfully:', {
           knowledgeEntries: knowledgeCount,
           citations: ragData.researchCitations?.length || 0,
-          industryContext: ragData.industryContext
+          industryContext: ragData.industryContext,
+          ragStatus: ragData.ragStatus
         });
         
         setHasResearchContext(true);
@@ -154,7 +155,7 @@ export const useAIAnalysis = () => {
       let ragContext = null;
       let enhancedPrompt = params.analysisPrompt;
 
-      // ✅ RAG CONTEXT BUILDING - RE-ENABLED
+      // ✅ RAG CONTEXT BUILDING - FULLY ENABLED
       if (params.useEnhancedRag !== false) {
         console.log('🔍 Building RAG context for enhanced analysis...');
         ragContext = await buildRAGContext(params.imageUrls, params.analysisPrompt, analysisId);
@@ -164,7 +165,8 @@ export const useAIAnalysis = () => {
           console.log('✅ Using RAG-enhanced prompt:', {
             originalLength: params.analysisPrompt.length,
             enhancedLength: enhancedPrompt.length,
-            researchSources: ragContext.retrievedKnowledge?.relevantPatterns?.length || 0
+            researchSources: ragContext.retrievedKnowledge?.relevantPatterns?.length || 0,
+            ragStatus: ragContext.ragStatus
           });
         }
       }
