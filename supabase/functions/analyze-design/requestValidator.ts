@@ -1,142 +1,88 @@
-import { AnalysisRequest } from './types.ts';
 
-interface RAGContext {
-  retrievedKnowledge: {
-    relevantPatterns: Array<{
-      id: string;
-      title: string;
-      content: string;
-      category: string;
-      source: string;
-    }>;
-    competitorInsights: any[];
-  };
-  enhancedPrompt: string;
-  researchCitations: string[];
-  industryContext: string;
+interface ValidationResult {
+  isValid: boolean;
+  errors: string[];
 }
 
-interface EnhancedContext {
-  visionAnalysis: any;
-  searchQueries: any[];
-  retrievedKnowledge: any[];
-  enhancedPrompt: string;
-  confidenceScore: number;
-  processingTime: number;
-  knowledgeSourcesUsed: number;
-  citations: string[];
-}
-
-export interface ValidatedRequest {
-  analysisId: string;
-  imagesToProcess: string[];
-  isMultiImage: boolean;
+interface AnalysisRequest {
+  imageUrls?: string[];
+  analysisId?: string;
   analysisPrompt?: string;
   designType?: string;
   isComparative?: boolean;
-  aiProvider?: 'openai' | 'claude';
-  model?: string;
-  testMode?: boolean;
   ragEnabled?: boolean;
-  ragContext?: RAGContext;
-  researchCitations?: string[];
-  enhancedContext?: EnhancedContext; // NEW: Support for enhanced context from vision service
-  // Keep backward compatibility
-  imageUrl?: string;
-  imageUrls?: string[];
+  ragEnhanced?: boolean;
 }
 
-export async function validateAndParseRequest(req: Request): Promise<ValidatedRequest> {
-  let requestBody: AnalysisRequest;
-  
-  try {
-    requestBody = await req.json();
-    console.log('Request body parsed successfully');
-  } catch (parseError) {
-    console.error('Request parsing failed:', parseError);
-    throw new Error('Invalid JSON in request body');
+class RequestValidator {
+  validate(requestData: AnalysisRequest): ValidationResult {
+    const errors: string[] = [];
+
+    // Validate required fields
+    if (!requestData.imageUrls || !Array.isArray(requestData.imageUrls)) {
+      errors.push('imageUrls is required and must be an array');
+    } else if (requestData.imageUrls.length === 0) {
+      errors.push('At least one image URL is required');
+    } else if (requestData.imageUrls.length > 10) {
+      errors.push('Maximum 10 images allowed');
+    }
+
+    // Validate image URLs
+    if (requestData.imageUrls && Array.isArray(requestData.imageUrls)) {
+      requestData.imageUrls.forEach((url, index) => {
+        if (typeof url !== 'string' || url.trim().length === 0) {
+          errors.push(`Image URL at index ${index} is invalid`);
+        } else if (!this.isValidUrl(url)) {
+          errors.push(`Image URL at index ${index} is not a valid URL`);
+        }
+      });
+    }
+
+    // Validate analysis ID
+    if (!requestData.analysisId || typeof requestData.analysisId !== 'string') {
+      errors.push('analysisId is required and must be a string');
+    }
+
+    // Validate analysis prompt
+    if (!requestData.analysisPrompt || typeof requestData.analysisPrompt !== 'string') {
+      errors.push('analysisPrompt is required and must be a string');
+    } else if (requestData.analysisPrompt.trim().length < 10) {
+      errors.push('analysisPrompt must be at least 10 characters long');
+    } else if (requestData.analysisPrompt.length > 2000) {
+      errors.push('analysisPrompt must be less than 2000 characters');
+    }
+
+    // Validate optional fields
+    if (requestData.designType && typeof requestData.designType !== 'string') {
+      errors.push('designType must be a string');
+    }
+
+    if (requestData.isComparative !== undefined && typeof requestData.isComparative !== 'boolean') {
+      errors.push('isComparative must be a boolean');
+    }
+
+    if (requestData.ragEnabled !== undefined && typeof requestData.ragEnabled !== 'boolean') {
+      errors.push('ragEnabled must be a boolean');
+    }
+
+    if (requestData.ragEnhanced !== undefined && typeof requestData.ragEnhanced !== 'boolean') {
+      errors.push('ragEnhanced must be a boolean');
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
   }
 
-  const { 
-    imageUrl, 
-    imageUrls, 
-    analysisId, 
-    analysisPrompt, 
-    designType, 
-    isComparative, 
-    aiProvider,
-    model,
-    testMode,
-    ragEnabled,
-    ragContext,
-    researchCitations,
-    enhancedContext // NEW: Extract enhanced context
-  } = requestBody;
-
-  // Determine which images to process
-  const imagesToProcess = imageUrls && imageUrls.length > 0 ? imageUrls : (imageUrl ? [imageUrl] : []);
-  const isMultiImage = imagesToProcess.length > 1;
-
-  console.log('=== Analysis Configuration ===');
-  console.log({
-    analysisId,
-    imageCount: imagesToProcess.length,
-    isComparative: isComparative || isMultiImage,
-    isMultiImage,
-    designType,
-    promptLength: analysisPrompt?.length || 0,
-    requestedProvider: aiProvider || 'auto',
-    model: model || 'default',
-    testMode: testMode || false,
-    ragEnabled: ragEnabled || false,
-    ragKnowledgeCount: ragContext?.retrievedKnowledge.relevantPatterns.length || 0,
-    ragCitationsCount: researchCitations?.length || 0,
-    ragIndustryContext: ragContext?.industryContext || 'none',
-    enhancedContextProvided: !!enhancedContext, // NEW: Log enhanced context status
-    visionAnalysisIncluded: !!enhancedContext?.visionAnalysis, // NEW: Log vision analysis status
-    enhancedConfidenceScore: enhancedContext?.confidenceScore || 0 // NEW: Log confidence score
-  });
-
-  // Validate required parameters
-  if (imagesToProcess.length === 0) {
-    console.error('Validation failed: No images provided');
-    throw new Error('At least one image URL is required');
-  }
-  if (!analysisId) {
-    console.error('Validation failed: No analysis ID provided');
-    throw new Error('analysisId is required');
-  }
-
-  return {
-    analysisId,
-    imagesToProcess,
-    isMultiImage,
-    analysisPrompt,
-    designType,
-    isComparative,
-    aiProvider,
-    model,
-    testMode,
-    ragEnabled,
-    ragContext,
-    researchCitations,
-    enhancedContext, // NEW: Include enhanced context in validated request
-    imageUrl,
-    imageUrls
-  };
-}
-
-// Export a validator object for compatibility
-export const requestValidator = {
-  validate: async (req: Request) => {
+  private isValidUrl(url: string): boolean {
     try {
-      const data = await validateAndParseRequest(req);
-      return { isValid: true, data };
-    } catch (error) {
-      return { 
-        isValid: false, 
-        error: error instanceof Error ? error.message : 'Validation failed'
-      };
+      new URL(url);
+      return true;
+    } catch {
+      return false;
     }
   }
-};
+}
+
+export const requestValidator = new RequestValidator();

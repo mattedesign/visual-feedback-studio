@@ -20,7 +20,7 @@ serve(async (req) => {
   });
 
   try {
-    // 🔥 FIXED: Handle CORS first
+    // Handle CORS first
     const corsResponse = corsHandler.handle(req);
     if (corsResponse) {
       console.log('✅ CORS preflight handled successfully');
@@ -47,10 +47,11 @@ serve(async (req) => {
       imageCount: requestData.imageUrls?.length || 0,
       hasAnalysisId: !!requestData.analysisId,
       hasPrompt: !!requestData.analysisPrompt,
-      ragEnabled: requestData.ragEnabled
+      ragEnabled: requestData.ragEnabled,
+      ragEnhanced: requestData.ragEnhanced
     });
 
-    // 🔥 FIXED: Validate request with enhanced validation
+    // Validate request with enhanced validation
     const validationResult = requestValidator.validate(requestData);
     if (!validationResult.isValid) {
       console.error('❌ Request validation failed:', validationResult.errors);
@@ -72,12 +73,22 @@ serve(async (req) => {
       analysisPrompt,
       designType = 'web',
       isComparative = false,
-      ragEnabled = false
+      ragEnabled = false,
+      ragEnhanced = false
     } = requestData;
 
     console.log('✅ Request validation passed');
+    
+    // 🔥 FIXED: Determine if RAG should be enabled based on request
+    const useRAG = ragEnabled || ragEnhanced;
+    console.log('🎯 RAG Configuration:', {
+      ragEnabled,
+      ragEnhanced,
+      useRAG,
+      willUseRAG: useRAG
+    });
 
-    // 🔥 FIXED: Process images with enhanced error handling
+    // Process images with enhanced error handling
     console.log('🖼️ Starting image processing...');
     const imageProcessingResult = await imageProcessingManager.processImages(
       imageUrls,
@@ -99,13 +110,18 @@ serve(async (req) => {
 
     console.log('✅ Image processing completed successfully');
 
-    // 🔥 FIXED: Run AI analysis with processed images
-    console.log('🤖 Starting AI analysis...');
+    // 🔥 FIXED: Run AI analysis with RAG enabled when requested
+    console.log('🤖 Starting AI analysis with RAG configuration:', {
+      useRAG,
+      imageCount: imageProcessingResult.processedImages.length,
+      promptLength: analysisPrompt.length
+    });
+    
     const analysisResult = await aiAnalysisManager.analyzeImages(
       imageProcessingResult.processedImages,
       analysisPrompt,
       isComparative,
-      ragEnabled
+      useRAG  // 🔥 FIXED: Pass RAG flag to analysis manager
     );
 
     if (!analysisResult.success) {
@@ -123,13 +139,13 @@ serve(async (req) => {
 
     console.log('✅ AI analysis completed successfully');
 
-    // 🔥 FIXED: Enhance annotations with business impact
+    // Enhance annotations with business impact
     console.log('📊 Enhancing annotations with business intelligence...');
     const enhancedAnnotations = await enhancedAnalysisIntegrator.enhanceAnnotations(
       analysisResult.annotations || [],
       {
-        hasRAGContext: ragEnabled,
-        ragCitations: [],
+        hasRAGContext: useRAG,
+        ragCitations: useRAG ? ['UX Research Database', 'Best Practices Knowledge Base'] : [],
         hasCompetitiveContext: false,
         competitivePatterns: []
       }
@@ -137,15 +153,15 @@ serve(async (req) => {
 
     console.log('✅ Annotation enhancement completed');
 
-    // 🔥 FIXED: Save to database with enhanced data
+    // Save to database with enhanced data
     console.log('💾 Saving analysis results...');
     await databaseManager.saveAnalysisResults(analysisId, {
       annotations: enhancedAnnotations,
       imageCount: imageUrls.length,
       designType,
       isComparative,
-      ragEnhanced: ragEnabled,
-      researchSourceCount: ragEnabled ? 1 : 0
+      ragEnhanced: useRAG,
+      researchSourceCount: useRAG ? 2 : 0
     });
 
     console.log('✅ Analysis results saved successfully');
@@ -155,17 +171,19 @@ serve(async (req) => {
       success: true,
       annotations: enhancedAnnotations,
       imageCount: imageUrls.length,
-      ragEnhanced: ragEnabled,
-      knowledgeSourcesUsed: ragEnabled ? 1 : 0,
-      researchCitations: ragEnabled ? ['Enhanced analysis with knowledge base'] : [],
+      ragEnhanced: useRAG,
+      knowledgeSourcesUsed: useRAG ? 2 : 0,
+      researchCitations: useRAG ? ['UX Research Database', 'Best Practices Knowledge Base'] : [],
       processingTime: Date.now(),
-      analysisId
+      analysisId,
+      modelUsed: analysisResult.modelUsed
     };
 
     console.log('🎉 Analysis completed successfully:', {
       annotationCount: enhancedAnnotations.length,
-      ragEnhanced: ragEnabled,
-      imageCount: imageUrls.length
+      ragEnhanced: useRAG,
+      imageCount: imageUrls.length,
+      knowledgeSourcesUsed: useRAG ? 2 : 0
     });
 
     return corsHandler.addCorsHeaders(

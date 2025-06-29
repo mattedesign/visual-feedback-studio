@@ -1,24 +1,28 @@
 
-import { BusinessImpactCalculator, EnhancedBusinessImpact } from './businessImpactCalculator.ts';
-import { CompetitiveIntelligence } from './competitiveIntelligence.ts';
-
 export interface EnhancedAnnotation {
-  id: string;
+  id?: string;
   x: number;
   y: number;
-  category: 'ux' | 'visual' | 'accessibility' | 'conversion' | 'brand';
-  severity: 'critical' | 'suggested' | 'enhancement';
+  category: string;
+  severity: string;
   feedback: string;
-  implementationEffort: 'low' | 'medium' | 'high';
-  businessImpact: 'low' | 'medium' | 'high';
+  implementationEffort: string;
+  businessImpact: string;
   imageIndex?: number;
-  
-  // Enhanced fields
-  enhancedBusinessImpact?: EnhancedBusinessImpact;
-  researchCitations?: string[];
-  competitiveBenchmarks?: string[];
-  priorityScore?: number;
-  quickWinPotential?: boolean;
+  enhancedBusinessImpact?: {
+    score: {
+      roiScore: number;
+      implementationEffort: {
+        category: string;
+        timeEstimate: string;
+      };
+    };
+    metrics: {
+      revenueProjection: {
+        monthlyIncrease: string;
+      };
+    };
+  };
 }
 
 export interface EnhancedAnalysisResults {
@@ -28,193 +32,135 @@ export interface EnhancedAnalysisResults {
     quickWinsCount: number;
     criticalIssuesCount: number;
     averageROIScore: number;
-    implementationPriorities: {
-      critical: EnhancedAnnotation[];
-      important: EnhancedAnnotation[];
-      enhancement: EnhancedAnnotation[];
-    };
   };
   competitiveInsights?: {
-    patternsAnalyzed: number;
-    benchmarksUsed: string[];
-    competitiveAdvantages: string[];
+    competitiveAdvantages?: string[];
   };
   researchInsights?: {
     sourcesUsed: number;
-    citations: string[];
-    evidenceStrength: 'low' | 'medium' | 'high';
+    evidenceStrength: string;
   };
 }
 
-export class EnhancedAnalysisIntegrator {
-  static integrateBusinessImpact(
-    rawAnnotations: any[],
-    ragContext?: { researchCitations: string[]; enhancedPrompt: string },
-    competitiveResults?: CompetitiveIntelligence
-  ): EnhancedAnalysisResults {
-    console.log('🔗 === ENHANCED ANALYSIS INTEGRATION START ===');
-    console.log('📊 Integration Configuration:', {
-      annotationsCount: rawAnnotations.length,
-      hasRAGContext: !!ragContext,
-      hasCompetitiveContext: !!competitiveResults,
-      ragCitationsCount: ragContext?.researchCitations?.length || 0,
-      competitivePatternsCount: competitiveResults?.totalPatterns || 0
+interface AnalysisContext {
+  hasRAGContext: boolean;
+  ragCitations: string[];
+  hasCompetitiveContext: boolean;
+  competitivePatterns: any[];
+}
+
+class EnhancedAnalysisIntegrator {
+  async enhanceAnnotations(
+    baseAnnotations: any[],
+    context: AnalysisContext
+  ): Promise<EnhancedAnnotation[]> {
+    console.log('📊 EnhancedAnalysisIntegrator.enhanceAnnotations - Starting enhancement', {
+      baseAnnotationCount: baseAnnotations.length,
+      hasRAGContext: context.hasRAGContext,
+      ragCitationsCount: context.ragCitations.length
     });
 
-    const enhancedAnnotations: EnhancedAnnotation[] = rawAnnotations.map((annotation, index) => {
-      console.log(`🔍 Processing annotation ${index + 1}/${rawAnnotations.length}:`, {
-        category: annotation.category,
-        severity: annotation.severity,
-        x: annotation.x,
-        y: annotation.y
+    try {
+      const enhancedAnnotations: EnhancedAnnotation[] = baseAnnotations.map((annotation, index) => {
+        // Generate business impact metrics
+        const roiScore = this.calculateROIScore(annotation);
+        const implementationEffort = this.categorizeImplementationEffort(annotation);
+        const revenueProjection = this.estimateRevenueImpact(annotation, roiScore);
+
+        const enhanced: EnhancedAnnotation = {
+          ...annotation,
+          id: annotation.id || `annotation-${index}`,
+          enhancedBusinessImpact: {
+            score: {
+              roiScore,
+              implementationEffort
+            },
+            metrics: {
+              revenueProjection: {
+                monthlyIncrease: revenueProjection
+              }
+            }
+          }
+        };
+
+        // Enhance feedback with research context if available
+        if (context.hasRAGContext && context.ragCitations.length > 0) {
+          enhanced.feedback += ` [Enhanced with research from: ${context.ragCitations.join(', ')}]`;
+        }
+
+        return enhanced;
       });
 
-      // Calculate business impact for this annotation
-      const businessImpact = BusinessImpactCalculator.calculateBusinessImpact(
-        annotation,
-        competitiveResults?.competitiveContext,
-        ragContext?.enhancedPrompt,
-        competitiveResults?.industryBenchmarks
-      );
+      console.log('✅ Annotation enhancement completed:', {
+        enhancedCount: enhancedAnnotations.length,
+        avgROIScore: this.calculateAverageROI(enhancedAnnotations)
+      });
 
-      // Determine if this is a quick win
-      const quickWinPotential = businessImpact.score.roiScore >= 7 && 
-                               businessImpact.score.implementationEffort.category === 'quick-win';
+      return enhancedAnnotations;
 
-      const enhancedAnnotation: EnhancedAnnotation = {
+    } catch (error) {
+      console.error('❌ EnhancedAnalysisIntegrator.enhanceAnnotations - Error:', error);
+      // Return base annotations if enhancement fails
+      return baseAnnotations.map((annotation, index) => ({
         ...annotation,
-        enhancedBusinessImpact: businessImpact,
-        researchCitations: ragContext?.researchCitations || [],
-        competitiveBenchmarks: competitiveResults?.industryBenchmarks || [],
-        priorityScore: businessImpact.score.roiScore,
-        quickWinPotential,
-      };
+        id: annotation.id || `annotation-${index}`
+      }));
+    }
+  }
 
-      console.log(`✅ Enhanced annotation ${index + 1}:`, {
-        roiScore: businessImpact.score.roiScore,
-        priority: businessImpact.score.priority,
-        quickWin: quickWinPotential,
-        revenueImpact: businessImpact.metrics.revenueProjection.monthlyIncrease
-      });
+  private calculateROIScore(annotation: any): number {
+    let score = 5; // Base score
 
-      return enhancedAnnotation;
-    });
+    // Increase score based on business impact
+    if (annotation.businessImpact === 'high') score += 3;
+    else if (annotation.businessImpact === 'medium') score += 1;
 
-    // Generate business summary
-    const businessSummary = this.generateBusinessSummary(enhancedAnnotations);
+    // Increase score based on severity
+    if (annotation.severity === 'critical') score += 2;
+    else if (annotation.severity === 'suggested') score += 1;
+
+    // Decrease score based on implementation effort
+    if (annotation.implementationEffort === 'high') score -= 2;
+    else if (annotation.implementationEffort === 'medium') score -= 1;
+
+    // Ensure score is within bounds
+    return Math.max(1, Math.min(10, score));
+  }
+
+  private categorizeImplementationEffort(annotation: any): { category: string; timeEstimate: string } {
+    const effort = annotation.implementationEffort || 'medium';
     
-    // Generate insights summaries
-    const competitiveInsights = this.generateCompetitiveInsights(competitiveResults);
-    const researchInsights = this.generateResearchInsights(ragContext);
-
-    const results: EnhancedAnalysisResults = {
-      annotations: enhancedAnnotations,
-      businessSummary,
-      competitiveInsights,
-      researchInsights
-    };
-
-    console.log('🎯 === ENHANCED ANALYSIS INTEGRATION COMPLETE ===');
-    console.log('📈 Business Summary:', {
-      totalRevenuePotential: businessSummary.totalPotentialRevenue,
-      quickWins: businessSummary.quickWinsCount,
-      criticalIssues: businessSummary.criticalIssuesCount,
-      averageROI: businessSummary.averageROIScore
-    });
-
-    return results;
+    switch (effort) {
+      case 'low':
+        return { category: 'quick-win', timeEstimate: '1-2 hours' };
+      case 'high':
+        return { category: 'complex', timeEstimate: '1-2 weeks' };
+      default:
+        return { category: 'standard', timeEstimate: '1-3 days' };
+    }
   }
 
-  private static generateBusinessSummary(annotations: EnhancedAnnotation[]) {
-    console.log('📊 Generating business summary for', annotations.length, 'annotations');
-
-    // Calculate total potential revenue (using minimum estimates for conservative approach)
-    let totalMonthlyRevenue = 0;
-    annotations.forEach(annotation => {
-      if (annotation.enhancedBusinessImpact?.metrics.revenueProjection.monthlyIncrease) {
-        const revenueString = annotation.enhancedBusinessImpact.metrics.revenueProjection.monthlyIncrease;
-        const minRevenue = this.extractMinRevenue(revenueString);
-        totalMonthlyRevenue += minRevenue;
-      }
-    });
-
-    // Categorize annotations by priority
-    const prioritized = {
-      critical: annotations.filter(a => a.enhancedBusinessImpact?.score.priority === 'critical'),
-      important: annotations.filter(a => a.enhancedBusinessImpact?.score.priority === 'important'),
-      enhancement: annotations.filter(a => a.enhancedBusinessImpact?.score.priority === 'enhancement')
-    };
-
-    // Count quick wins
-    const quickWinsCount = annotations.filter(a => a.quickWinPotential).length;
-    const criticalIssuesCount = prioritized.critical.length;
-
-    // Calculate average ROI score
-    const totalROI = annotations.reduce((sum, a) => sum + (a.enhancedBusinessImpact?.score.roiScore || 0), 0);
-    const averageROIScore = Math.round((totalROI / annotations.length) * 10) / 10;
-
-    const summary = {
-      totalPotentialRevenue: `$${totalMonthlyRevenue.toLocaleString()}/month ($${(totalMonthlyRevenue * 12).toLocaleString()}/year)`,
-      quickWinsCount,
-      criticalIssuesCount,
-      averageROIScore,
-      implementationPriorities: prioritized
-    };
-
-    console.log('📈 Business summary generated:', {
-      monthlyRevenue: totalMonthlyRevenue,
-      quickWins: quickWinsCount,
-      critical: criticalIssuesCount,
-      avgROI: averageROIScore
-    });
-
-    return summary;
+  private estimateRevenueImpact(annotation: any, roiScore: number): string {
+    const baseImpact = roiScore * 100;
+    
+    if (annotation.category === 'conversion') {
+      return `$${baseImpact * 2}-${baseImpact * 4}`;
+    } else if (annotation.category === 'ux') {
+      return `$${baseImpact}-${baseImpact * 3}`;
+    } else {
+      return `$${Math.floor(baseImpact * 0.5)}-${baseImpact * 2}`;
+    }
   }
 
-  private static extractMinRevenue(revenueString: string): number {
-    // Extract minimum revenue from strings like "$2,000-8,000"
-    const match = revenueString.match(/\$([0-9,]+)/);
-    if (match) {
-      return parseInt(match[1].replace(/,/g, ''));
-    }
-    return 0;
-  }
-
-  private static generateCompetitiveInsights(competitiveResults?: CompetitiveIntelligence) {
-    if (!competitiveResults || competitiveResults.totalPatterns === 0) {
-      return undefined;
-    }
-
-    // Extract competitive advantages from patterns
-    const competitiveAdvantages = competitiveResults.relevantPatterns
-      .filter(pattern => pattern.effectiveness_score && pattern.effectiveness_score > 70)
-      .map(pattern => `${pattern.industry}: ${pattern.pattern_name} (${pattern.effectiveness_score}% effective)`)
-      .slice(0, 3);
-
-    return {
-      patternsAnalyzed: competitiveResults.totalPatterns,
-      benchmarksUsed: competitiveResults.industryBenchmarks,
-      competitiveAdvantages
-    };
-  }
-
-  private static generateResearchInsights(ragContext?: { researchCitations: string[]; enhancedPrompt: string }) {
-    if (!ragContext || !ragContext.researchCitations.length) {
-      return undefined;
-    }
-
-    // Determine evidence strength based on number and quality of citations
-    let evidenceStrength: 'low' | 'medium' | 'high' = 'low';
-    if (ragContext.researchCitations.length >= 5) {
-      evidenceStrength = 'high';
-    } else if (ragContext.researchCitations.length >= 3) {
-      evidenceStrength = 'medium';
-    }
-
-    return {
-      sourcesUsed: ragContext.researchCitations.length,
-      citations: ragContext.researchCitations,
-      evidenceStrength
-    };
+  private calculateAverageROI(annotations: EnhancedAnnotation[]): number {
+    if (annotations.length === 0) return 0;
+    
+    const total = annotations.reduce((sum, annotation) => {
+      return sum + (annotation.enhancedBusinessImpact?.score.roiScore || 0);
+    }, 0);
+    
+    return Math.round(total / annotations.length * 10) / 10;
   }
 }
+
+export const enhancedAnalysisIntegrator = new EnhancedAnalysisIntegrator();
