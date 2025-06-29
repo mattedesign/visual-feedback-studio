@@ -19,12 +19,13 @@ interface ImageAnnotations {
 
 export const useAnalysisWorkflow = () => {
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('upload');
+  // ✅ SINGLE SOURCE OF TRUTH: Only use selectedImages, remove uploadedFiles
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [activeImageUrl, setActiveImageUrl] = useState<string | null>(null);
   const [userAnnotations, setUserAnnotations] = useState<Record<string, UserAnnotation[]>>({});
   const [imageAnnotations, setImageAnnotations] = useState<ImageAnnotations[]>([]);
   const [analysisContext, setAnalysisContext] = useState<string>('');
-  const [aiAnnotations, setAIAnnotations] = useState<Annotation[]>([]);
+  const [aiAnnotations, setAiAnnotations] = useState<Annotation[]>([]);
   const [analysisResults, setAnalysisResults] = useState<any>(null);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [currentAnalysis, setCurrentAnalysis] = useState<any>(null);
@@ -41,13 +42,14 @@ export const useAnalysisWorkflow = () => {
   const { analyzeImages, isAnalyzing: aiAnalyzing, isBuilding, buildingStage } = useAIAnalysis();
 
   const resetWorkflow = useCallback(() => {
+    console.log('🔄 RESET: Clearing all workflow state');
     setCurrentStep('upload');
     setSelectedImages([]);
     setActiveImageUrl(null);
     setUserAnnotations({});
     setImageAnnotations([]);
     setAnalysisContext('');
-    setAIAnnotations([]);
+    setAiAnnotations([]);
     setAnalysisResults(null);
     setEnhancedContext(null);
     setRagEnhanced(false);
@@ -62,38 +64,60 @@ export const useAnalysisWorkflow = () => {
 
   // ✅ FIXED: Single source of truth for images
   const selectImages = useCallback((images: string[]) => {
-    console.log('🖼️ FIXED: Selecting images (single source):', images.length, images);
+    console.log('🖼️ SELECTING IMAGES:', {
+      newImages: images,
+      currentImages: selectedImages,
+      isDuplicate: images.every(img => selectedImages.includes(img))
+    });
     setSelectedImages(images);
     if (images.length > 0) {
       setActiveImageUrl(images[0]);
     }
-  }, []);
+  }, [selectedImages]);
 
   const selectImage = useCallback((imageUrl: string) => {
+    console.log('🖼️ SELECTING SINGLE IMAGE:', {
+      imageUrl,
+      alreadySelected: selectedImages.includes(imageUrl),
+      currentImages: selectedImages
+    });
     if (!selectedImages.includes(imageUrl)) {
       setSelectedImages(prev => [...prev, imageUrl]);
     }
     setActiveImageUrl(imageUrl);
   }, [selectedImages]);
 
-  // ✅ FIXED: Only add to selectedImages, not both arrays
+  // ✅ CRITICAL FIX: Prevent duplicate additions with comprehensive logging
   const addUploadedFile = useCallback((imageUrl: string) => {
+    console.log('📸 ADD UPLOADED FILE CALLED:', {
+      imageUrl,
+      currentImages: selectedImages,
+      alreadyExists: selectedImages.includes(imageUrl),
+      stackTrace: new Error().stack?.split('\n').slice(1, 4).join('\n')
+    });
+    
     setSelectedImages(prev => {
-      if (!prev.includes(imageUrl)) {
-        const newImages = [...prev, imageUrl];
-        console.log('📸 FIXED: Added image to selection:', newImages.length, 'total');
-        return newImages;
+      if (prev.includes(imageUrl)) {
+        console.log('⚠️ DUPLICATE PREVENTED: Image already exists in array');
+        return prev;
       }
-      console.log('⚠️ FIXED: Image already in selection, skipping duplicate');
-      return prev;
+      
+      const newImages = [...prev, imageUrl];
+      console.log('✅ IMAGE ADDED SUCCESSFULLY:', {
+        previousCount: prev.length,
+        newCount: newImages.length,
+        addedImage: imageUrl
+      });
+      return newImages;
     });
     
     if (!activeImageUrl) {
       setActiveImageUrl(imageUrl);
     }
-  }, [activeImageUrl]);
+  }, [selectedImages, activeImageUrl]);
 
   const setActiveImage = useCallback((imageUrl: string) => {
+    console.log('🎯 SETTING ACTIVE IMAGE:', imageUrl);
     setActiveImageUrl(imageUrl);
   }, []);
 
@@ -219,7 +243,7 @@ export const useAnalysisWorkflow = () => {
           annotationCount: result.annotations.length
         });
 
-        setAIAnnotations(result.annotations);
+        setAiAnnotations(result.annotations);
         setAnalysisResults(result.analysis);
         
         setCurrentStep('results');
@@ -290,14 +314,13 @@ export const useAnalysisWorkflow = () => {
     // State
     currentStep,
     selectedImages,
-    uploadedFiles: selectedImages, // ✅ FIXED: Use selectedImages as source of truth
+    uploadedFiles: selectedImages, // ✅ ALIAS: Both point to same array to prevent duplication
     activeImageUrl,
     userAnnotations,
     imageAnnotations,
     analysisContext,
     aiAnnotations,
     analysisResults,
-    // ✅ VERIFY these enhanced context properties are included:
     enhancedContext: enhancedContext || null,
     ragEnhanced: ragEnhanced || false,
     knowledgeSourcesUsed: knowledgeSourcesUsed || 0,
@@ -328,7 +351,7 @@ export const useAnalysisWorkflow = () => {
     goToPreviousStep,
     proceedFromReview,
     getTotalAnnotationsCount,
-    setAiAnnotations: setAIAnnotations,
+    setAiAnnotations: setAiAnnotations,
     setIsAnalyzing
   };
 };

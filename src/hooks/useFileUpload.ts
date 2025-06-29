@@ -10,7 +10,12 @@ export const useFileUpload = (onImageUpload: (imageUrl: string) => void) => {
   const handleFileUpload = async (file: File) => {
     // Don't set processing state - we want immediate UI feedback without screens
     try {
-      console.log('🔄 FIXED: Starting file upload process for:', file.name, 'Size:', file.size, 'Type:', file.type);
+      console.log('🔄 FILE UPLOAD START:', {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        timestamp: new Date().toISOString()
+      });
       
       // Validate file
       if (!file.type.startsWith('image/')) {
@@ -35,12 +40,17 @@ export const useFileUpload = (onImageUpload: (imageUrl: string) => void) => {
         return;
       }
 
-      console.log('✅ FIXED: File upload completed successfully, calling callback ONCE:', publicUrl);
+      console.log('✅ UPLOAD COMPLETE - CALLING CALLBACK ONCE:', {
+        fileName: file.name,
+        publicUrl,
+        callbackFunction: onImageUpload.name,
+        timestamp: new Date().toISOString()
+      });
 
-      // ✅ FIXED: Call the callback ONLY ONCE with the uploaded file URL
+      // ✅ CRITICAL: Call the callback ONLY ONCE with the uploaded file URL
       onImageUpload(publicUrl);
       
-      console.log('✅ FIXED: Callback invoked for', file.name, '- single call confirmed');
+      console.log('✅ CALLBACK INVOKED SUCCESSFULLY for', file.name);
       
     } catch (error) {
       console.error('❌ Error during file upload process:', error);
