@@ -35,49 +35,64 @@ class ImageProcessingManager {
     return imageUrl;
   }
 
-  // 🔥 FIXED: Safe base64 conversion without recursion
+  // 🔥 FIXED: Improved base64 conversion with better error handling
   private arrayBufferToBase64(buffer: ArrayBuffer): string {
     console.log('🔄 Converting array buffer to base64, size:', buffer.byteLength);
     
     try {
-      const uint8Array = new Uint8Array(buffer);
+      // Convert to Uint8Array
+      const bytes = new Uint8Array(buffer);
       
-      // Use smaller chunk size to prevent stack overflow
-      const chunkSize = 8192; // 8KB chunks
-      let result = '';
+      // Convert to binary string using a safe method
+      let binaryString = '';
+      const chunkSize = 1024; // Smaller chunks for stability
       
-      for (let i = 0; i < uint8Array.length; i += chunkSize) {
-        const chunk = uint8Array.slice(i, i + chunkSize);
-        
-        // Convert chunk to string using a safe method
-        const chunkArray = Array.from(chunk);
-        const binaryString = String.fromCharCode.apply(null, chunkArray);
-        result += btoa(binaryString);
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.slice(i, i + chunkSize);
+        // Use Array.from to avoid spread operator issues
+        const charCodes = Array.from(chunk);
+        binaryString += String.fromCharCode.apply(null, charCodes);
       }
       
-      console.log('✅ Base64 conversion completed, length:', result.length);
-      return result;
+      // Convert to base64
+      const base64 = btoa(binaryString);
+      
+      console.log('✅ Base64 conversion completed, length:', base64.length);
+      return base64;
       
     } catch (error) {
       console.error('❌ Base64 conversion failed:', error);
-      
-      // Fallback: Use FileReader approach for smaller images
-      try {
-        const blob = new Blob([buffer]);
-        const reader = new FileReader();
-        
-        return new Promise((resolve, reject) => {
-          reader.onload = () => {
-            const base64String = (reader.result as string).split(',')[1];
-            resolve(base64String);
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
-        }) as any;
-      } catch (fallbackError) {
-        throw new Error(`Base64 conversion failed: ${error.message}`);
-      }
+      throw new Error(`Base64 conversion failed: ${error.message}`);
     }
+  }
+
+  // 🔥 FIXED: Better image validation and processing
+  private async validateAndProcessImage(arrayBuffer: ArrayBuffer, mimeType: string): Promise<string> {
+    // Check if it's a valid image by looking at the first few bytes (magic numbers)
+    const bytes = new Uint8Array(arrayBuffer);
+    
+    // PNG signature
+    if (bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) {
+      console.log('✅ Valid PNG image detected');
+      return this.arrayBufferToBase64(arrayBuffer);
+    }
+    
+    // JPEG signature
+    if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xD8) {
+      console.log('✅ Valid JPEG image detected');
+      return this.arrayBufferToBase64(arrayBuffer);
+    }
+    
+    // WebP signature
+    if (bytes.length >= 12 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 && 
+        bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) {
+      console.log('✅ Valid WebP image detected');
+      return this.arrayBufferToBase64(arrayBuffer);
+    }
+    
+    // If we can't identify the format, try to process anyway but log a warning
+    console.warn('⚠️ Unknown image format, attempting to process anyway');
+    return this.arrayBufferToBase64(arrayBuffer);
   }
 
   async processImages(
@@ -112,14 +127,15 @@ class ImageProcessingManager {
         console.log(`   Full URL: ${fullUrl.substring(0, 100)}...`);
         
         try {
-          // 🔥 FIXED: Add timeout and proper error handling
+          // 🔥 FIXED: Better fetch with timeout and headers
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
           
           const response = await fetch(fullUrl, {
             signal: controller.signal,
             headers: {
-              'User-Agent': 'FigmantAI/1.0'
+              'User-Agent': 'FigmantAI/1.0',
+              'Accept': 'image/*'
             }
           });
           
@@ -132,22 +148,22 @@ class ImageProcessingManager {
           // Get the image as array buffer with size check
           const arrayBuffer = await response.arrayBuffer();
           
-          // 🔥 FIXED: Validate image size (max 10MB for processing to avoid stack overflow)
-          const maxSize = 10 * 1024 * 1024;
+          // 🔥 FIXED: Validate image size (max 5MB to be safe)
+          const maxSize = 5 * 1024 * 1024;
           if (arrayBuffer.byteLength > maxSize) {
             console.warn(`⚠️ Image ${i + 1} too large: ${Math.round(arrayBuffer.byteLength / 1024)}KB, skipping`);
-            continue; // Skip this image instead of failing entirely
+            continue;
           }
           
           if (arrayBuffer.byteLength === 0) {
             throw new Error('Empty image data received');
           }
           
-          // 🔥 FIXED: Use safe base64 conversion
-          const base64Data = this.arrayBufferToBase64(arrayBuffer);
-          
           // Get content type with fallback
-          const mimeType = response.headers.get('content-type') || 'image/jpeg';
+          const mimeType = response.headers.get('content-type') || 'image/png';
+          
+          // 🔥 FIXED: Validate and process the image
+          const base64Data = await this.validateAndProcessImage(arrayBuffer, mimeType);
           
           console.log(`✅ Image ${i + 1} processed successfully:`, {
             mimeType,
