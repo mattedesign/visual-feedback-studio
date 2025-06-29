@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +36,18 @@ const parseContextForDisplay = (context: string): string[] => {
 export const ResultsStep = ({ workflow }: ResultsStepProps) => {
   const [activeAnnotation, setActiveAnnotation] = useState<string | null>(null);
   const [activeImageUrl, setActiveImageUrl] = useState(workflow.selectedImages[0] || '');
+
+  // ✅ ADDED: Debug logging for analysis results data structure
+  console.log('🔍 ANALYSIS RESULTS FULL DEBUG:', {
+    hasResults: !!workflow.analysisResults,
+    resultsCount: workflow.analysisResults?.length || 0,
+    firstResult: workflow.analysisResults?.[0],
+    firstResultKeys: workflow.analysisResults?.[0] ? Object.keys(workflow.analysisResults[0]) : [],
+    allResults: workflow.analysisResults,
+    workflowKeys: Object.keys(workflow),
+    aiAnnotationsCount: workflow.aiAnnotations?.length || 0,
+    aiAnnotationsSource: workflow.aiAnnotations?.[0] ? Object.keys(workflow.aiAnnotations[0]) : []
+  });
 
   const getSeverityColor = (severity: string) =>  {
     switch (severity) {
@@ -118,8 +129,46 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
     return userAnnotations;
   };
 
-  // Get annotations for the currently active image
-  const currentImageAIAnnotations = getAnnotationsForImage(activeImageIndex >= 0 ? activeImageIndex : 0);
+  // ✅ ENHANCED: Better analysis results extraction
+  const currentImageAIAnnotations = (() => {
+    // First try the existing aiAnnotations approach
+    const existingAnnotations = getAnnotationsForImage(activeImageIndex >= 0 ? activeImageIndex : 0);
+    
+    // Also try extracting from analysisResults if available
+    const results = workflow.analysisResults;
+    if (results && Array.isArray(results)) {
+      const currentResult = results[activeImageIndex >= 0 ? activeImageIndex : 0];
+      console.log('🔍 CURRENT IMAGE RESULT:', {
+        activeImageIndex,
+        currentResult,
+        resultKeys: currentResult ? Object.keys(currentResult) : [],
+        resultType: typeof currentResult
+      });
+      
+      // Try multiple possible annotation sources
+      const resultAnnotations = 
+        currentResult?.annotations || 
+        currentResult?.feedback || 
+        currentResult?.aiAnnotations ||
+        currentResult?.insights ||
+        currentResult?.analysis?.annotations ||
+        [];
+        
+      console.log('📊 EXTRACTED ANNOTATIONS FROM RESULTS:', {
+        count: resultAnnotations.length,
+        firstAnnotation: resultAnnotations[0],
+        annotationKeys: resultAnnotations[0] ? Object.keys(resultAnnotations[0]) : []
+      });
+      
+      // Use analysisResults annotations if they exist and are more than existing
+      if (resultAnnotations.length > existingAnnotations.length) {
+        return resultAnnotations;
+      }
+    }
+    
+    return existingAnnotations;
+  })();
+
   const currentImageUserAnnotations = getUserAnnotationsForImage(activeImageUrl);
 
   // 🔍 DEBUG: Log overall component state
@@ -208,7 +257,6 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
         <CardContent className="space-y-8">
           {/* Analysis Context Display */}
           <AnalysisContextPanel workflow={workflow} />
-
           {/* ✅ ENHANCED CONTEXT DISPLAY - Properly integrated */}
           <EnhancedContextDisplay
             enhancedContext={workflow.enhancedContext}
@@ -219,14 +267,12 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
             visionConfidenceScore={workflow.visionConfidenceScore}
             visionElementsDetected={workflow.visionElementsDetected}
           />
-
           {/* ✅ IMAGE INDICATOR - Fixed count display */}
           <ImageIndicator 
             currentImageIndex={activeImageIndex >= 0 ? activeImageIndex : 0}
             totalImages={workflow.selectedImages.length}
             isMultiImage={isMultiImage}
           />
-
           {/* Comparative Analysis Summary */}
           {isMultiImage && (
             <ComparativeAnalysisSummary 
@@ -234,7 +280,6 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
               imageUrls={workflow.selectedImages}
             />
           )}
-
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Image viewer */}
             <div className="lg:col-span-2">
@@ -260,7 +305,6 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
                 />
               )}
             </div>
-
             {/* Feedback panel */}
             <FeedbackPanel
               currentImageAIAnnotations={currentImageAIAnnotations}
@@ -275,7 +319,6 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
               insights={insights}
             />
           </div>
-
           {/* Visual Design Suggestions */}
           <div className="mt-8">
             <VisualSuggestions
@@ -285,7 +328,6 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
               designType={isMultiImage ? 'responsive' : 'desktop'}
             />
           </div>
-
           {/* Interactive Code Solutions - PREMIUM FEATURE */}
           <div className="mt-8">
             <CodeSolutions
@@ -295,7 +337,6 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
               designType={isMultiImage ? 'responsive' : 'desktop'}
             />
           </div>
-
           <ResultsActions onStartNew={handleStartNew} />
         </CardContent>
       </Card>
