@@ -41,9 +41,9 @@ class VectorService {
       console.log('✅ Vector Search: Found knowledge entries:', data?.length || 0);
       
       // Process and map database results to KnowledgeEntry type
-      const processedData = (data || []).map(item => {
-        // Get the enhanced knowledge entry with all database fields
-        const enhancedEntry = this.getEnhancedKnowledgeEntry(item.id);
+      const processedData = await Promise.all((data || []).map(async (item) => {
+        // 🔥 FIXED: Properly await the enhanced knowledge entry
+        const enhancedEntry = await this.getEnhancedKnowledgeEntry(item.id);
         
         return {
           id: item.id,
@@ -66,7 +66,7 @@ class VectorService {
           freshness_score: enhancedEntry?.freshness_score,
           application_context: enhancedEntry?.application_context
         };
-      });
+      }));
       
       return processedData;
 
