@@ -14,20 +14,20 @@ export const RAGStatusIndicator: React.FC<RAGStatusIndicatorProps> = ({
   researchSourcesCount,
   isAnalyzing = false
 }) => {
-  // Always show RAG as enabled since we're using the RAG-enhanced edge function
-  const ragEnabled = true;
-  const effectiveSourcesCount = researchSourcesCount || 5; // Default to 5 since edge function shows 48 total entries
+  // 🔥 SHOW DISABLED STATE - Since RAG is currently disabled
+  const ragEnabled = false; // Changed from true to false
+  const displaySourcesCount = researchSourcesCount || 0;
   
   return (
     <div className="flex items-center gap-2">
-      <Brain className="w-4 h-4 text-blue-400" />
-      <Badge variant="outline" className="text-blue-300 border-blue-400 bg-blue-900/20">
-        RAG Enhanced
+      <AlertCircle className="w-4 h-4 text-yellow-400" />
+      <Badge variant="outline" className="text-yellow-300 border-yellow-400 bg-yellow-900/20">
+        RAG Disabled
       </Badge>
-      <span className="text-sm text-blue-300">
+      <span className="text-sm text-yellow-300">
         {isAnalyzing 
-          ? `Analyzing with knowledge base (${effectiveSourcesCount} sources available)`
-          : `Research enhanced with ${effectiveSourcesCount} knowledge sources`
+          ? `Running basic analysis (enhanced features temporarily disabled)`
+          : `Enhanced research features are temporarily disabled`
         }
       </span>
     </div>

@@ -106,6 +106,9 @@ export const useAIAnalysis = () => {
     analyzeImages,
     isAnalyzing,
     isBuilding,
-    buildingStage
+    buildingStage,
+    // 🔥 ADD MISSING PROPERTIES - Mock values since RAG is disabled
+    hasResearchContext: false, // RAG is disabled, so no research context
+    researchSourcesCount: 0    // RAG is disabled, so 0 sources
   };
 };
