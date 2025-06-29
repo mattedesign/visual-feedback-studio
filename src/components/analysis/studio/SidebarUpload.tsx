@@ -1,4 +1,3 @@
-
 import { useState, useRef } from 'react';
 import { Upload, Plus, Link, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,23 +17,25 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragAreaFileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImageUpload = (imageUrl: string) => {
-    console.log('Sidebar upload completed:', imageUrl);
+  // ✅ FIXED: Pass workflow.addUploadedFile directly to avoid double callback
+  const handleUploadComplete = (imageUrl: string) => {
+    console.log('✅ FIXED: Upload completed, adding to workflow once:', imageUrl);
+    
+    // Add to workflow (this is now the ONLY place we call addUploadedFile)
     workflow.addUploadedFile(imageUrl);
     
-    // If this is the first image, select it immediately and go to annotate
+    // Handle UI transitions
     if (workflow.uploadedFiles.length === 0) {
+      // If this is the first image, select it and go to annotate
       workflow.selectImage(imageUrl);
       workflow.goToStep('annotate');
-    }
-    
-    // If we're in annotate step, switch to the new image
-    if (workflow.currentStep === 'annotate') {
+    } else if (workflow.currentStep === 'annotate') {
+      // If we're already in annotate step, switch to the new image
       workflow.setActiveImage(imageUrl);
     }
   };
 
-  const { isProcessing, handleFileUpload, handleUrlSubmit } = useUploadLogic(handleImageUpload);
+  const { isProcessing, handleFileUpload, handleUrlSubmit } = useUploadLogic(handleUploadComplete);
 
   const handleMultipleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
