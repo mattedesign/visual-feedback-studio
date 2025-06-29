@@ -1,24 +1,19 @@
 
-import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Analysis from "./pages/Analysis";
-import AnalysisDetails from "./pages/AnalysisDetails";
-import Subscription from "./pages/Subscription";
-import Success from "./pages/Success";
-import Admin from "./pages/Admin";
+import Auth from "./pages/Auth";
+import DALLEDemo from "./pages/DalleDemo";
+import UpgradeSuccess from "./pages/UpgradeSuccess";
+import MigrationPage from "./pages/MigrationPage";
 import VectorTest from "./pages/VectorTest";
-import KnowledgeBaseRecoveryPage from "./pages/KnowledgeBaseRecoveryPage";
 
 const queryClient = new QueryClient();
 
-function App() {
+const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -26,22 +21,21 @@ function App() {
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Auth />} />
-            <Route path="/signup" element={<Auth />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+            {/* Default route - everything goes to /auth */}
+            <Route path="/" element={<Navigate to="/auth" replace />} />
+            <Route path="/auth" element={<Auth />} />
             <Route path="/analysis" element={<Analysis />} />
-            <Route path="/analysis/:id" element={<AnalysisDetails />} />
-            <Route path="/subscription" element={<Subscription />} />
-            <Route path="/success" element={<Success />} />
-            <Route path="/admin" element={<Admin />} />
+            <Route path="/dalle-demo" element={<DALLEDemo />} />
+            <Route path="/upgrade-success" element={<UpgradeSuccess />} />
+            <Route path="/migration-page" element={<MigrationPage />} />
             <Route path="/vector-test" element={<VectorTest />} />
-            <Route path="/knowledge-recovery" element={<KnowledgeBaseRecoveryPage />} />
+            {/* Catch all other routes and redirect to /auth */}
+            <Route path="*" element={<Navigate to="/auth" replace />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
   );
-}
+};
 
 export default App;
