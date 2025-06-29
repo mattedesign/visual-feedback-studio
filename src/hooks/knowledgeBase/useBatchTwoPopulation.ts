@@ -35,7 +35,7 @@ export const useBatchTwoPopulation = () => {
     setIsPopulating(true);
     setProgress({
       currentEntry: 0,
-      totalEntries: 15, // Placeholder
+      totalEntries: 15,
       currentTitle: 'Batch 2 Population',
       stage: 'preparing'
     });
@@ -44,10 +44,13 @@ export const useBatchTwoPopulation = () => {
     try {
       setProgress(prev => prev ? { ...prev, stage: 'populating' } : null);
       
-      // For now, we'll just simulate the population
-      // In a real implementation, you would call a specific edge function for batch 2
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Call the new Batch 2 edge function
+      const { data, error } = await supabase.functions.invoke('populate-batch-two');
       
+      if (error) {
+        throw error;
+      }
+
       setProgress(prev => prev ? { ...prev, stage: 'verifying' } : null);
       
       // Get current knowledge base stats
@@ -83,7 +86,7 @@ export const useBatchTwoPopulation = () => {
 
       setProgress(prev => prev ? { ...prev, stage: 'completed' } : null);
       
-      toast.success('Batch 2 population completed! (Simulated)', {
+      toast.success(`Batch 2 population completed! Added ${data?.added || 0} new entries.`, {
         duration: 5000,
       });
 

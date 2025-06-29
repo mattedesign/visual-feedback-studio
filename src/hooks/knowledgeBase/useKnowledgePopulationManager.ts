@@ -120,17 +120,17 @@ export const useKnowledgePopulationManager = () => {
     executePopulation,
     clearAllResults,
     
-    // Batch sizes
+    // Batch sizes - Updated with accurate sizes
     batchSizes: {
-      initial: initialBatch.batchSize,
-      batch2: batchTwo.batchSize,
-      batch3: batchThree.batchSize,
-      batch4: batchFour.batchSize,
-      batch5: batchFive.batchSize,
-      batch6: batchSix.batchSize,
-      batch7: batchSeven.batchSize,
-      batch8: batchEight.batchSize,
-      batch9: batchNine.batchSize,
+      initial: 12,
+      batch2: 15,
+      batch3: 20,
+      batch4: 20,
+      batch5: 20,
+      batch6: 35,
+      batch7: 40,
+      batch8: 45,
+      batch9: 50,
     }
   };
 };

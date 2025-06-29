@@ -7,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Essential UX Knowledge (Core entries for immediate RAG improvement)
+// Import knowledge data
 const ESSENTIAL_KNOWLEDGE = [
   {
     title: "Fitts' Law for UI Design",
