@@ -49,20 +49,22 @@ export const AnalysisStudioLayout = ({
       />
       
       {/* Main Canvas Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         <StudioToolbar workflow={workflow} />
         
-        <StudioCanvas 
-          workflow={workflow}
-          selectedDevice={selectedDevice}
-          activeAnnotation={activeAnnotation}
-          onAnnotationClick={handleAnnotationClick}
-        />
-        
-        {/* Always show chat for upload and annotate steps */}
-        {(workflow.currentStep === 'upload' || workflow.currentStep === 'annotate') && (
-          <StudioChat workflow={workflow} />
-        )}
+        <div className="flex-1 flex flex-col min-h-0">
+          <StudioCanvas 
+            workflow={workflow}
+            selectedDevice={selectedDevice}
+            activeAnnotation={activeAnnotation}
+            onAnnotationClick={handleAnnotationClick}
+          />
+          
+          {/* Always show chat for upload and annotate steps - positioned at bottom */}
+          {(workflow.currentStep === 'upload' || workflow.currentStep === 'annotate') && (
+            <StudioChat workflow={workflow} />
+          )}
+        </div>
       </div>
 
       {/* Right Panel - Results & Actions - Show for results step */}

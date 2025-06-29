@@ -74,10 +74,10 @@ export const AnnotateStep = ({ workflow }: AnnotateStepProps) => {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      <Card className="bg-slate-800/50 border-slate-700">
+      <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Add Specific Comments</CardTitle>
-          <p className="text-slate-400 text-center">
+          <CardTitle className="text-2xl text-center text-gray-900 dark:text-white">Add Specific Comments</CardTitle>
+          <p className="text-gray-600 dark:text-gray-400 text-center">
             Click anywhere on the image to add specific comments about areas you'd like analyzed.
             Use the analysis setup below to provide overall context.
           </p>
@@ -86,7 +86,7 @@ export const AnnotateStep = ({ workflow }: AnnotateStepProps) => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Image viewer */}
             <div className="lg:col-span-2">
-              <div className="relative bg-white rounded-lg p-4">
+              <div className="relative bg-white rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-600">
                 <img
                   src={workflow.selectedImageUrl!}
                   alt="Selected design"
@@ -108,8 +108,8 @@ export const AnnotateStep = ({ workflow }: AnnotateStepProps) => {
                       <MessageSquare className="w-4 h-4" />
                     </div>
                     
-                    <div className="absolute top-10 left-1/2 transform -translate-x-1/2 w-64 bg-slate-800 border border-slate-600 rounded-lg p-3 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                      <p className="text-sm text-slate-300 mb-2">{annotation.comment}</p>
+                    <div className="absolute top-10 left-1/2 transform -translate-x-1/2 w-64 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg p-3 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                      <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">{annotation.comment}</p>
                       <div className="flex gap-2">
                         <Button
                           size="sm"
@@ -123,7 +123,7 @@ export const AnnotateStep = ({ workflow }: AnnotateStepProps) => {
                           size="sm"
                           variant="outline"
                           onClick={() => handleDeleteAnnotation(annotation.id)}
-                          className="text-xs text-red-400 hover:text-red-300"
+                          className="text-xs text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                         >
                           Delete
                         </Button>
@@ -137,22 +137,22 @@ export const AnnotateStep = ({ workflow }: AnnotateStepProps) => {
             {/* Sidebar */}
             <div className="space-y-4">
               <div>
-                <h3 className="text-lg font-medium mb-3">Your Comments ({currentImageAnnotations.length})</h3>
+                <h3 className="text-lg font-medium mb-3 text-gray-900 dark:text-white">Your Comments ({currentImageAnnotations.length})</h3>
                 <div className="space-y-2 max-h-40 overflow-y-auto">
                   {currentImageAnnotations.map((annotation, index) => (
-                    <div key={annotation.id} className="bg-slate-700 p-3 rounded">
+                    <div key={annotation.id} className="bg-gray-50 dark:bg-slate-700 p-3 rounded border border-gray-200 dark:border-slate-600">
                       <div className="flex justify-between items-start mb-2">
-                        <span className="text-sm font-medium">Comment {index + 1}</span>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Comment {index + 1}</span>
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => handleDeleteAnnotation(annotation.id)}
-                          className="h-6 w-6 p-0 text-slate-400 hover:text-red-400"
+                          className="h-6 w-6 p-0 text-gray-400 hover:text-red-600 dark:hover:text-red-400"
                         >
                           <X className="w-3 h-3" />
                         </Button>
                       </div>
-                      <p className="text-sm text-slate-300">{annotation.comment}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">{annotation.comment}</p>
                     </div>
                   ))}
                 </div>
@@ -165,9 +165,9 @@ export const AnnotateStep = ({ workflow }: AnnotateStepProps) => {
       {/* Comment dialog */}
       {showCommentDialog && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-96 bg-slate-800 border-slate-700">
+          <Card className="w-96 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
             <CardHeader>
-              <CardTitle className="text-lg">
+              <CardTitle className="text-lg text-gray-900 dark:text-white">
                 {editingId ? 'Edit Comment' : 'Add Comment'}
               </CardTitle>
             </CardHeader>
@@ -176,7 +176,7 @@ export const AnnotateStep = ({ workflow }: AnnotateStepProps) => {
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
                 placeholder="What would you like analyzed in this area?"
-                className="bg-slate-700 border-slate-600 text-slate-100"
+                className="text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600"
                 rows={3}
                 autoFocus
               />
@@ -184,7 +184,7 @@ export const AnnotateStep = ({ workflow }: AnnotateStepProps) => {
                 <Button
                   variant="outline"
                   onClick={() => setShowCommentDialog(false)}
-                  className="border-slate-600"
+                  className="border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300"
                 >
                   Cancel
                 </Button>
