@@ -45,7 +45,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
     setCurrentStep(`Analyzing your context: ${focusAreas.join(', ')}...`);
   }, [workflow.analysisContext]);
 
-  // Memoized analysis execution function
+  // ✅ FIXED: Complete performAnalysis function replacement
   const performAnalysis = useCallback(async () => {
     if (analysisStartedRef.current) {
       console.log('⚠️ Analysis already in progress, skipping duplicate call');
@@ -53,64 +53,54 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
     }
 
     console.log('=== AnalyzingStep.performAnalysis - Starting ===');
-    console.log('📊 Workflow state:', {
-      selectedImages: workflow.selectedImages.length,
-      currentAnalysisId: workflow.currentAnalysis?.id,
-      userAnnotations: workflow.getTotalAnnotationsCount(),
-      analysisContext: workflow.analysisContext ? 'PROVIDED' : 'NONE',
-      aiAnnotationsCount: workflow.aiAnnotations?.length || 0,
-      detectedFocusAreas
-    });
-
-    if (workflow.selectedImages.length === 0) {
-      console.error('❌ No images selected for analysis');
-      toast.error('No images selected for analysis');
-      return;
-    }
-
-    if (!workflow.currentAnalysis) {
-      console.error('❌ No current analysis found');
-      toast.error('Analysis session not found. Please go back and upload your images again.');
-      return;
-    }
-
+    
     analysisStartedRef.current = true;
 
     try {
-      setCurrentStep('Preparing images...');
-      setAnalysisProgress(10);
+      // ✅ FIXED: Proper progress milestones to prevent 40% hang
+      setCurrentStep('Initializing analysis...');
+      setAnalysisProgress(5);
+      
+      // Input validation
+      if (workflow.selectedImages.length === 0) {
+        throw new Error('No images selected for analysis');
+      }
 
-      // Validate images are accessible
+      setCurrentStep('Validating images...');
+      setAnalysisProgress(15);
+
+      // ✅ FIXED: Robust image validation with timeout
       const imageValidationPromises = workflow.selectedImages.map(async (imageUrl, index) => {
         try {
-          console.log(`🔍 Validating image ${index + 1}:`, imageUrl);
-          const response = await fetch(imageUrl, { method: 'HEAD' });
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+          
+          const response = await fetch(imageUrl, { 
+            method: 'HEAD',
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
+          
           if (!response.ok) {
             throw new Error(`Image ${index + 1} not accessible: ${response.status}`);
           }
+          
           console.log(`✅ Image ${index + 1} validated successfully`);
           return true;
         } catch (error) {
           console.error(`❌ Image ${index + 1} validation failed:`, error);
-          throw error;
+          throw new Error(`Image ${index + 1} validation failed`);
         }
       });
 
       await Promise.all(imageValidationPromises);
       setAnalysisProgress(25);
 
-      setCurrentStep(`Retrieving relevant UX research for ${detectedFocusAreas.join(', ')}...`);
-      setAnalysisProgress(40);
+      setCurrentStep('Building research context...');
+      setAnalysisProgress(35);
 
-      setCurrentStep(`Building targeted analysis based on ${detectedFocusAreas.join(' & ')} priorities...`);
-      setAnalysisProgress(60);
-
-      setCurrentStep(`Generating context-aware insights for ${workflow.selectedImages.length} image${workflow.selectedImages.length > 1 ? 's' : ''}...`);
-      setAnalysisProgress(80);
-
-      console.log('🚀 About to call analyzeImages');
-      
-      // Prepare user annotations
+      // ✅ FIXED: Proper user annotation preparation
       const userAnnotations = workflow.imageAnnotations.flatMap(imageAnnotation => 
         imageAnnotation.annotations.map(annotation => ({
           imageUrl: imageAnnotation.imageUrl,
@@ -121,43 +111,70 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
         }))
       );
 
-      // Call the analysis
+      setCurrentStep('Enhancing with UX research...');
+      setAnalysisProgress(50);
+
+      setCurrentStep('Running AI analysis...');
+      setAnalysisProgress(65);
+
+      // ✅ FIXED: Call analysis with enhanced RAG enabled by default
       const result = await analyzeImages({
         imageUrls: workflow.selectedImages,
         userAnnotations,
         analysisPrompt: workflow.analysisContext || 'Analyze this design for UX improvements',
-        deviceType: 'desktop'
+        deviceType: 'desktop',
+        useEnhancedRag: true // Enable RAG by default
       });
-      
-      console.log('✅ analyzeImages completed, checking result');
-      console.log('📊 Analysis result:', result);
-      
-      setAnalysisProgress(100);
-      setCurrentStep(`Context-aware analysis complete for ${detectedFocusAreas.join(' & ')}!`);
-      
+
+      setAnalysisProgress(85);
+
       if (result.success && result.annotations) {
+        setCurrentStep('Processing results...');
+        setAnalysisProgress(95);
+
+        // ✅ FIXED: Store all enhanced context data in workflow
         workflow.setAiAnnotations(result.annotations);
-        console.log('=== AnalyzingStep.performAnalysis - Completed Successfully ===');
         
-        // Small delay to show completion before transitioning
+        if (result.enhancedContext) {
+          workflow.setEnhancedContext(result.enhancedContext);
+          workflow.setRagEnhanced(true);
+          workflow.setKnowledgeSourcesUsed(result.knowledgeSourcesUsed || 0);
+          workflow.setResearchCitations(result.researchCitations || []);
+          workflow.setVisionEnhanced(result.visionEnhanced || false);
+          if (result.enhancedContext.visionAnalysis) {
+            workflow.setVisionConfidenceScore(result.enhancedContext.confidenceScore);
+            workflow.setVisionElementsDetected(
+              result.enhancedContext.visionAnalysis.uiElements?.length || 0
+            );
+          }
+        }
+
+        setCurrentStep(`Analysis complete for ${detectedFocusAreas.join(' & ')}!`);
+        setAnalysisProgress(100);
+
+        console.log('✅ AnalyzingStep: Analysis completed successfully', {
+          annotationsReceived: result.annotations.length,
+          ragEnhanced: result.ragEnhanced,
+          knowledgeSourcesUsed: result.knowledgeSourcesUsed
+        });
+
+        // ✅ FIXED: Smooth transition to results
         setTimeout(() => {
-          console.log('🎯 Transitioning to results step');
           workflow.goToStep('results');
         }, 1000);
       } else {
-        throw new Error('Analysis failed to return results');
+        throw new Error('Analysis failed to return valid results');
       }
 
     } catch (error) {
-      console.error('=== AnalyzingStep.performAnalysis - Failed ===');
-      console.error('❌ Error details:', error);
-      console.error('🔄 Retry count:', retryCount);
+      console.error('❌ AnalyzingStep: Analysis failed:', error);
       
+      // ✅ FIXED: Proper error handling without infinite retries
       if (retryCount < maxRetries) {
         const nextRetry = retryCount + 1;
         console.log(`🔄 Attempting retry ${nextRetry}/${maxRetries}`);
         setRetryCount(nextRetry);
-        setCurrentStep(`Retrying context-aware analysis (${nextRetry}/${maxRetries})...`);
+        setCurrentStep(`Retrying analysis (${nextRetry}/${maxRetries})...`);
         setAnalysisProgress(0);
         
         analysisStartedRef.current = false;
@@ -167,37 +184,25 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
           performAnalysis();
         }, delay);
         
-        toast(`Analysis failed, retrying in ${delay/1000} seconds... (${nextRetry}/${maxRetries})`, {
+        toast(`Analysis failed, retrying in ${delay/1000} seconds...`, {
           duration: delay - 500,
         });
       } else {
-        console.error('❌ Max retries exceeded, giving up');
+        console.error('❌ Max retries exceeded');
         setCurrentStep('Analysis failed');
+        setAnalysisProgress(0);
         workflow.setIsAnalyzing(false);
         
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        toast.error(`Analysis failed: ${errorMessage}. Please check your API configuration or try again.`, {
+        toast.error(`Analysis failed: ${errorMessage}. Please try again.`, {
           duration: 8000,
         });
-      }
-    } finally {
-      if (retryCount >= maxRetries) {
+        
+        // ✅ FIXED: Reset for potential retry
         analysisStartedRef.current = false;
       }
     }
-  }, [
-    workflow.selectedImages.length,
-    workflow.currentAnalysis?.id,
-    workflow.analysisContext,
-    analyzeImages,
-    retryCount,
-    workflow.goToStep,
-    workflow.setIsAnalyzing,
-    workflow.getTotalAnnotationsCount,
-    workflow.imageAnnotations,
-    workflow.aiAnnotations?.length,
-    detectedFocusAreas
-  ]);
+  }, [workflow, analyzeImages, detectedFocusAreas, retryCount]);
 
   // Start analysis effect
   useEffect(() => {
