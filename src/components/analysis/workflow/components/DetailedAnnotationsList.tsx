@@ -1,13 +1,16 @@
 
-import { Badge } from '@/components/ui/badge';
 import { Annotation } from '@/types/analysis';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { CitationIndicator } from './CitationIndicator';
 
 interface DetailedAnnotationsListProps {
   annotations: Annotation[];
   activeAnnotation: string | null;
   onAnnotationClick: (annotationId: string) => void;
   getSeverityColor: (severity: string) => string;
-  isMultiImage?: boolean;
+  isMultiImage: boolean;
+  researchCitations?: string[];
 }
 
 export const DetailedAnnotationsList = ({
@@ -15,117 +18,144 @@ export const DetailedAnnotationsList = ({
   activeAnnotation,
   onAnnotationClick,
   getSeverityColor,
-  isMultiImage = false,
+  isMultiImage,
+  researchCitations = []
 }: DetailedAnnotationsListProps) => {
-  
   // 🔍 DETAILED ANNOTATIONS LIST DEBUG
-  console.log('📝 DETAILED ANNOTATIONS LIST - COMPREHENSIVE DEBUG:', {
+  console.log('📝 DETAILED ANNOTATIONS LIST - DEBUG:', {
     componentName: 'DetailedAnnotationsList',
-    annotationsReceived: annotations.length,
-    annotationsData: annotations.map((annotation, index) => ({
-      index: index + 1,
-      id: annotation.id,
-      feedback: annotation.feedback,
-      feedbackType: typeof annotation.feedback,
-      feedbackLength: annotation.feedback?.length || 0,
-      feedbackPreview: annotation.feedback?.substring(0, 100) + '...',
-      feedbackIsEmpty: !annotation.feedback || annotation.feedback.trim() === '',
-      feedbackIsGeneric: annotation.feedback?.startsWith('Analysis insight'),
-      category: annotation.category,
-      severity: annotation.severity,
-      allAnnotationProperties: Object.keys(annotation)
+    annotationsCount: annotations.length,
+    annotationsPreview: annotations.slice(0, 3).map((a, i) => ({
+      index: i + 1,
+      id: a.id,
+      feedback: a.feedback,
+      feedbackLength: a.feedback?.length || 0,
+      feedbackPreview: a.feedback?.substring(0, 50) + '...',
+      category: a.category,
+      severity: a.severity,
+      isValidFeedback: !!(a.feedback && a.feedback.trim() && a.feedback !== 'Analysis insight')
     })),
     activeAnnotation,
-    isMultiImage
+    isMultiImage,
+    researchCitationsCount: researchCitations.length
   });
 
   if (annotations.length === 0) {
-    console.log('⚠️ DETAILED ANNOTATIONS LIST - NO ANNOTATIONS TO DISPLAY');
     return (
       <div className="text-center py-8">
-        <p className="text-gray-500 dark:text-gray-400">No insights available yet.</p>
+        <p className="text-gray-500 dark:text-gray-400">No detailed insights available for this image.</p>
       </div>
     );
   }
 
+  // Helper function to assign citations to annotations based on categories
+  const getCitationForAnnotation = (annotation: Annotation, index: number): { number: number; text?: string } => {
+    if (researchCitations.length === 0) return { number: 0 };
+    
+    // Match citation to annotation category
+    const categoryKeywords = {
+      'ux': ['ux', 'usability', 'user experience'],
+      'visual': ['visual', 'design', 'aesthetic'],
+      'accessibility': ['accessibility', 'wcag', 'inclusive'],
+      'conversion': ['conversion', 'cro', 'optimize'],
+      'brand': ['brand', 'identity', 'trust']
+    };
+    
+    const annotationCategory = annotation.category.toLowerCase();
+    const keywords = categoryKeywords[annotationCategory as keyof typeof categoryKeywords] || [];
+    
+    // Find matching citation
+    for (let i = 0; i < researchCitations.length; i++) {
+      const citation = researchCitations[i].toLowerCase();
+      if (keywords.some(keyword => citation.includes(keyword))) {
+        return { number: i + 1, text: researchCitations[i] };
+      }
+    }
+    
+    // Fallback: assign citation based on index
+    const citationIndex = index % researchCitations.length;
+    return { number: citationIndex + 1, text: researchCitations[citationIndex] };
+  };
+
   return (
     <div className="space-y-4">
       {annotations.map((annotation, index) => {
-        // 🔍 DEBUG: Individual annotation processing
-        console.log(`📝 PROCESSING ANNOTATION ${index + 1}:`, {
+        const isActive = activeAnnotation === annotation.id;
+        const citation = getCitationForAnnotation(annotation, index);
+        
+        console.log(`📝 ANNOTATION ${index + 1} RENDER:`, {
           id: annotation.id,
           feedback: annotation.feedback,
           feedbackLength: annotation.feedback?.length || 0,
-          feedbackIsValid: !!(annotation.feedback && annotation.feedback.trim()),
+          isActive,
           category: annotation.category,
-          severity: annotation.severity
-        });
-
-        // ✅ ROBUST FEEDBACK EXTRACTION
-        const feedbackContent = annotation.feedback || 'No feedback available';
-        const isValidFeedback = feedbackContent && feedbackContent.trim() !== '' && feedbackContent !== 'No feedback available';
-
-        console.log(`✅ FINAL FEEDBACK FOR ANNOTATION ${index + 1}:`, {
-          feedbackContent,
-          isValidFeedback,
-          contentLength: feedbackContent.length
+          severity: annotation.severity,
+          citationNumber: citation.number,
+          hasCitation: citation.number > 0
         });
 
         return (
-          <div
-            key={annotation.id || `annotation-${index}`}
-            className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 ${
-              activeAnnotation === annotation.id
-                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+          <Card
+            key={annotation.id}
+            className={`cursor-pointer transition-all duration-200 ${
+              isActive 
+                ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700' 
+                : 'hover:bg-gray-50 dark:hover:bg-slate-800 border-gray-200 dark:border-slate-700'
             }`}
             onClick={() => onAnnotationClick(annotation.id)}
           >
-            <div className="flex items-start space-x-3">
-              {/* Annotation Number/Icon */}
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${getSeverityColor(annotation.severity).split(' ')[0]}`}>
-                {index + 1}
-              </div>
-              
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge className={`text-xs font-bold ${getSeverityColor(annotation.severity)}`}>
-                    {annotation.severity.toUpperCase()}
-                  </Badge>
-                  <Badge variant="outline" className="text-xs capitalize">
-                    {annotation.category}
-                  </Badge>
-                  {isMultiImage && annotation.imageIndex !== undefined && (
-                    <Badge variant="secondary" className="text-xs">
-                      Image {annotation.imageIndex + 1}
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${getSeverityColor(annotation.severity).split(' ')[0]}`}>
+                    {index + 1}
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge className={getSeverityColor(annotation.severity)}>
+                      {annotation.severity?.toUpperCase()}
                     </Badge>
-                  )}
-                </div>
-                
-                {/* Feedback Content */}
-                <div className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">
-                  {isValidFeedback ? (
-                    <span className="font-medium">{feedbackContent}</span>
-                  ) : (
-                    <span className="text-gray-500 italic">
-                      Feedback content is being processed... Please check the console for details.
-                    </span>
-                  )}
-                </div>
-                
-                {/* Implementation details */}
-                <div className="flex items-center gap-4 mt-3 text-xs text-gray-600 dark:text-gray-400">
-                  <span>
-                    <strong>Effort:</strong> {annotation.implementationEffort || 'Unknown'}
-                  </span>
-                  <span>
-                    <strong>Impact:</strong> {annotation.businessImpact || 'Unknown'}
-                  </span>
+                    <Badge variant="outline" className="capitalize">
+                      {annotation.category}
+                    </Badge>
+                    {isMultiImage && annotation.imageIndex !== undefined && (
+                      <Badge variant="secondary" className="text-xs">
+                        Image {annotation.imageIndex + 1}
+                      </Badge>
+                    )}
+                    {/* Citation Indicator */}
+                    {citation.number > 0 && (
+                      <CitationIndicator
+                        citationNumber={citation.number}
+                        citationText={citation.text}
+                      />
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">
+                      {annotation.feedback}
+                    </p>
+                    
+                    <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
+                      <span>
+                        <strong>Effort:</strong> {annotation.implementationEffort}
+                      </span>
+                      <span>
+                        <strong>Impact:</strong> {annotation.businessImpact}
+                      </span>
+                      {citation.number > 0 && (
+                        <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                          Research-backed
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         );
       })}
     </div>

@@ -1,4 +1,3 @@
-
 import { Annotation } from '@/types/analysis';
 import { CurrentImageSummary } from './CurrentImageSummary';
 import { OverallAnalysisSummary } from './OverallAnalysisSummary';
@@ -40,6 +39,7 @@ interface FeedbackPanelProps {
     competitiveAdvantage?: string;
     researchEvidence?: string;
   };
+  researchCitations?: string[];
 }
 
 export const FeedbackPanel = ({
@@ -53,6 +53,7 @@ export const FeedbackPanel = ({
   getSeverityColor,
   businessImpact,
   insights,
+  researchCitations = [],
 }: FeedbackPanelProps) => {
   
   // 🔍 FEEDBACK PANEL COMPREHENSIVE DEBUG
@@ -98,7 +99,8 @@ export const FeedbackPanel = ({
       feedbackPreview: a.feedback?.substring(0, 50) + '...',
       category: a.category,
       severity: a.severity
-    }))
+    })),
+    researchCitationsCount: researchCitations.length
   });
 
   return (
@@ -162,6 +164,12 @@ export const FeedbackPanel = ({
           </h2>
           <p className="text-sm text-gray-600 mt-2 font-medium">
             Detailed feedback on specific areas of your design
+            {researchCitations.length > 0 && (
+              <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-800 text-xs rounded-full font-semibold">
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                Research citations included
+              </span>
+            )}
           </p>
         </div>
         
@@ -172,6 +180,7 @@ export const FeedbackPanel = ({
             onAnnotationClick={onAnnotationClick}
             getSeverityColor={getSeverityColor}
             isMultiImage={isMultiImage}
+            researchCitations={researchCitations}
           />
         </div>
       </div>

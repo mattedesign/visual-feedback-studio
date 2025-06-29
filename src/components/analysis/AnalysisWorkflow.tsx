@@ -1,4 +1,3 @@
-
 import { ReviewStep } from './workflow/ReviewStep';
 import { AnnotateStep } from './workflow/AnnotateStep';
 import { MultiImageAnnotateStep } from './workflow/MultiImageAnnotateStep';

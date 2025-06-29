@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +12,8 @@ import { VisualSuggestions } from '../VisualSuggestions';
 import { CodeSolutions } from '../CodeSolutions';
 import { AnalysisContextPanel } from './components/AnalysisContextPanel';
 import { EnhancedContextDisplay } from './components/EnhancedContextDisplay';
+import { ResearchBadge } from './components/ResearchBadge';
+import { ResearchSourcesPanel } from './components/ResearchSourcesPanel';
 
 interface ResultsStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -211,6 +212,15 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
               ))}
             </div>
           </div>
+          
+          {/* Research Badge - Prominent Display */}
+          <div className="mt-4">
+            <ResearchBadge
+              knowledgeSourcesUsed={workflow.knowledgeSourcesUsed}
+              ragEnhanced={workflow.ragEnhanced}
+            />
+          </div>
+          
           <div className="text-slate-300">
             <div className="flex items-center gap-4">
               <p>
@@ -228,6 +238,13 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
           </div>
         </CardHeader>
         <CardContent className="space-y-8">
+          {/* Research Sources Panel - Prominent Position */}
+          <ResearchSourcesPanel
+            researchCitations={workflow.researchCitations}
+            knowledgeSourcesUsed={workflow.knowledgeSourcesUsed}
+            ragEnhanced={workflow.ragEnhanced}
+          />
+          
           <AnalysisContextPanel workflow={workflow} />
           <EnhancedContextDisplay
             enhancedContext={workflow.enhancedContext}
