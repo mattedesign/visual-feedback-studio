@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Annotation } from '@/types/analysis';
 import { toast } from 'sonner';
 import { analysisService } from '@/services/analysisService';
+import { enhancedRagService, EnhancedContext } from '@/services/analysis/enhancedRagService';
 
 interface AnalyzeImagesParams {
   imageUrls: string[];
@@ -16,12 +17,14 @@ interface AnalyzeImagesParams {
   }>;
   analysisPrompt: string;
   deviceType?: 'desktop' | 'tablet' | 'mobile';
+  useEnhancedRag?: boolean;
 }
 
 interface AnalyzeImagesResult {
   annotations: Annotation[];
   analysis: any;
   ragContext?: any;
+  enhancedContext?: EnhancedContext;
   success: boolean;
 }
 
@@ -30,12 +33,18 @@ export const useAIAnalysis = () => {
   const [error, setError] = useState<string | null>(null);
   const [hasResearchContext, setHasResearchContext] = useState(true);
   const [researchSourcesCount, setResearchSourcesCount] = useState(5);
+  
+  // Enhanced RAG state
+  const [isBuilding, setIsBuilding] = useState(false);
+  const [enhancedContext, setEnhancedContext] = useState<EnhancedContext | null>(null);
+  const [buildingStage, setBuildingStage] = useState<string>('');
 
   const analyzeImages = async (params: AnalyzeImagesParams): Promise<AnalyzeImagesResult> => {
     console.log('🚀 Starting AI Analysis with params:', params);
     
     setIsAnalyzing(true);
     setError(null);
+    setEnhancedContext(null);
 
     try {
       // Create analysis record first
@@ -48,29 +57,85 @@ export const useAIAnalysis = () => {
 
       console.log('✅ Analysis record created:', analysisId);
 
+      let finalPrompt = params.analysisPrompt;
+      let enhancedCtx: EnhancedContext | null = null;
+
+      // Enhanced RAG Processing (if enabled - default to true)
+      if (params.useEnhancedRag !== false) {
+        console.log('🚀 Starting Enhanced RAG Analysis...');
+        setIsBuilding(true);
+        
+        try {
+          setBuildingStage('Analyzing images with Google Vision...');
+          toast.info('Building enhanced context with AI vision...', { duration: 2000 });
+          
+          // Run enhanced RAG analysis
+          enhancedCtx = await enhancedRagService.enhanceAnalysis(
+            params.imageUrls,
+            params.analysisPrompt,
+            {
+              maxKnowledgeEntries: 12,
+              minConfidenceThreshold: 0.65,
+              includeIndustrySpecific: true,
+              focusAreas: params.deviceType ? [params.deviceType] : []
+            }
+          );
+          
+          setBuildingStage('Enhanced context built successfully');
+          setEnhancedContext(enhancedCtx);
+          finalPrompt = enhancedCtx.enhancedPrompt;
+          
+          console.log('✅ Enhanced RAG completed:', {
+            visionElementsDetected: enhancedCtx.visionAnalysis.uiElements.length,
+            knowledgeSourcesUsed: enhancedCtx.knowledgeSourcesUsed,
+            overallConfidence: enhancedCtx.confidenceScore,
+            processingTime: enhancedCtx.processingTime
+          });
+          
+          toast.success(`Enhanced context built! Vision analyzed ${enhancedCtx.visionAnalysis.uiElements.length} UI elements and retrieved ${enhancedCtx.knowledgeSourcesUsed} knowledge sources.`, {
+            duration: 4000
+          });
+          
+        } catch (enhancedError) {
+          console.error('⚠️ Enhanced RAG failed, falling back to standard analysis:', enhancedError);
+          toast.warning('Enhanced analysis failed, continuing with standard analysis...', { duration: 3000 });
+        } finally {
+          setIsBuilding(false);
+          setBuildingStage('');
+        }
+      }
+
       // Build enhanced prompt with user annotations
-      let enhancedPrompt = params.analysisPrompt;
-      
       if (params.userAnnotations.length > 0) {
         const annotationContext = params.userAnnotations
           .map(ann => `User highlighted area at (${ann.x}%, ${ann.y}%): "${ann.comment}"`)
           .join('; ');
-        enhancedPrompt += `\n\nUser has highlighted these specific areas: ${annotationContext}`;
+        finalPrompt += `\n\nUser has highlighted these specific areas: ${annotationContext}`;
       }
       
-      enhancedPrompt += `\n\nPlease analyze this ${params.deviceType || 'desktop'} design and provide actionable insights.`;
+      finalPrompt += `\n\nPlease analyze this ${params.deviceType || 'desktop'} design and provide actionable insights.`;
 
-      console.log('📝 Enhanced prompt:', enhancedPrompt);
+      console.log('📝 Final enhanced prompt prepared:', {
+        originalLength: params.analysisPrompt.length,
+        finalLength: finalPrompt.length,
+        hasEnhancedContext: !!enhancedCtx
+      });
 
-      // Call the analyze-design edge function with the analysisId
+      // Call the analyze-design edge function with enhanced context
       const { data, error: analysisError } = await supabase.functions.invoke('analyze-design', {
         body: {
           imageUrls: params.imageUrls,
           imageUrl: params.imageUrls[0], // Include both for compatibility
-          analysisId: analysisId, // Now we have a valid analysisId
-          analysisPrompt: enhancedPrompt,
+          analysisId: analysisId,
+          analysisPrompt: finalPrompt,
           isComparative: params.imageUrls.length > 1,
-          ragEnabled: true
+          ragEnabled: true,
+          enhancedContext: enhancedCtx ? {
+            visionAnalysis: enhancedCtx.visionAnalysis,
+            knowledgeSourcesUsed: enhancedCtx.knowledgeSourcesUsed,
+            confidenceScore: enhancedCtx.confidenceScore,
+            citations: enhancedCtx.citations
+          } : undefined
         }
       });
 
@@ -86,7 +151,8 @@ export const useAIAnalysis = () => {
       console.log('✅ AI Analysis successful:', {
         annotationCount: data.annotations?.length || 0,
         ragEnhanced: data.ragEnhanced || false,
-        knowledgeSourcesUsed: data.knowledgeSourcesUsed || 0
+        knowledgeSourcesUsed: data.knowledgeSourcesUsed || 0,
+        hasEnhancedContext: !!enhancedCtx
       });
 
       // 🔍 DEBUG: Log the raw annotations we received
@@ -103,18 +169,24 @@ export const useAIAnalysis = () => {
       }
 
       // Update research context state
-      setHasResearchContext(data.ragEnhanced || false);
-      setResearchSourcesCount(data.knowledgeSourcesUsed || 0);
+      const totalSources = (data.knowledgeSourcesUsed || 0) + (enhancedCtx?.knowledgeSourcesUsed || 0);
+      setHasResearchContext(data.ragEnhanced || !!enhancedCtx);
+      setResearchSourcesCount(totalSources);
 
       // Transform the response to match expected format
       const result: AnalyzeImagesResult = {
         annotations: data.annotations || [],
         analysis: data.analysis || null,
         ragContext: data.ragContext,
+        enhancedContext: enhancedCtx,
         success: data.success || true
       };
 
-      if (data.ragEnhanced) {
+      if (enhancedCtx) {
+        toast.success(`Enhanced analysis complete! Used ${totalSources} research sources with ${Math.round(enhancedCtx.confidenceScore * 100)}% confidence.`, {
+          duration: 6000
+        });
+      } else if (data.ragEnhanced) {
         toast.success(`Analysis complete! Enhanced with ${data.knowledgeSourcesUsed || 0} research sources.`);
       } else {
         toast.success('Analysis complete!');
@@ -132,10 +204,13 @@ export const useAIAnalysis = () => {
         annotations: [],
         analysis: null,
         ragContext: null,
+        enhancedContext: null,
         success: false
       };
     } finally {
       setIsAnalyzing(false);
+      setIsBuilding(false);
+      setBuildingStage('');
     }
   };
 
@@ -158,7 +233,8 @@ export const useAIAnalysis = () => {
       imageUrls,
       userAnnotations,
       analysisPrompt,
-      deviceType: 'desktop'
+      deviceType: 'desktop',
+      useEnhancedRag: true
     });
 
     return result;
@@ -168,7 +244,9 @@ export const useAIAnalysis = () => {
     analyzeImages,
     handleAnalyze,
     isAnalyzing,
-    isBuilding: isAnalyzing, // Alias for compatibility
+    isBuilding, // New: indicates when building enhanced context
+    buildingStage, // New: current stage of enhanced context building
+    enhancedContext, // New: the enhanced context result
     error,
     hasResearchContext,
     researchSourcesCount
