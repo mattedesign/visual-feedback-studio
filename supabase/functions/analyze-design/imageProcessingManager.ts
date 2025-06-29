@@ -21,41 +21,37 @@ class ImageProcessingManager {
     
     // If it's a relative URL starting with /lovable-uploads/, convert to full URL
     if (imageUrl.startsWith('/lovable-uploads/')) {
-      // Use the current origin for lovable-uploads
       return `https://preview--figmant-ai.lovable.app${imageUrl}`;
     }
     
     // If it's a relative URL that might be a Supabase storage path
     if (imageUrl.startsWith('/')) {
-      // Try to construct a full URL using the current request origin
       const supabaseUrl = Deno.env.get('SUPABASE_URL');
       if (supabaseUrl) {
         return `${supabaseUrl}${imageUrl}`;
       }
     }
     
-    // If none of the above, assume it's already a valid URL
     return imageUrl;
   }
 
-  // 🔥 FIXED: Memory-efficient base64 conversion without recursion
+  // 🔥 FIXED: Safe base64 conversion without recursion
   private arrayBufferToBase64(buffer: ArrayBuffer): string {
     console.log('🔄 Converting array buffer to base64, size:', buffer.byteLength);
     
     try {
       const uint8Array = new Uint8Array(buffer);
-      const chunkSize = 32768; // 32KB chunks to prevent stack overflow
+      
+      // Use smaller chunk size to prevent stack overflow
+      const chunkSize = 8192; // 8KB chunks
       let result = '';
       
       for (let i = 0; i < uint8Array.length; i += chunkSize) {
         const chunk = uint8Array.slice(i, i + chunkSize);
-        let binaryString = '';
         
-        // Convert chunk to binary string safely
-        for (let j = 0; j < chunk.length; j++) {
-          binaryString += String.fromCharCode(chunk[j]);
-        }
-        
+        // Convert chunk to string using a safe method
+        const chunkArray = Array.from(chunk);
+        const binaryString = String.fromCharCode.apply(null, chunkArray);
         result += btoa(binaryString);
       }
       
@@ -64,7 +60,23 @@ class ImageProcessingManager {
       
     } catch (error) {
       console.error('❌ Base64 conversion failed:', error);
-      throw new Error(`Base64 conversion failed: ${error.message}`);
+      
+      // Fallback: Use FileReader approach for smaller images
+      try {
+        const blob = new Blob([buffer]);
+        const reader = new FileReader();
+        
+        return new Promise((resolve, reject) => {
+          reader.onload = () => {
+            const base64String = (reader.result as string).split(',')[1];
+            resolve(base64String);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        }) as any;
+      } catch (fallbackError) {
+        throw new Error(`Base64 conversion failed: ${error.message}`);
+      }
     }
   }
 
@@ -120,8 +132,8 @@ class ImageProcessingManager {
           // Get the image as array buffer with size check
           const arrayBuffer = await response.arrayBuffer();
           
-          // 🔥 FIXED: Validate image size (max 20MB for processing)
-          const maxSize = 20 * 1024 * 1024;
+          // 🔥 FIXED: Validate image size (max 10MB for processing to avoid stack overflow)
+          const maxSize = 10 * 1024 * 1024;
           if (arrayBuffer.byteLength > maxSize) {
             console.warn(`⚠️ Image ${i + 1} too large: ${Math.round(arrayBuffer.byteLength / 1024)}KB, skipping`);
             continue; // Skip this image instead of failing entirely

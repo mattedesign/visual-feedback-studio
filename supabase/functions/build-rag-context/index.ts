@@ -1,11 +1,12 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-requested-with',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
+  'Access-Control-Max-Age': '86400',
 };
 
 interface KnowledgeEntry {
@@ -56,14 +57,19 @@ interface RAGContext {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { 
+      headers: corsHeaders,
+      status: 200 
+    });
   }
 
   try {
     console.log('🔍 === RAG CONTEXT BUILDER STARTING ===');
     
-    const { imageUrls, userPrompt, imageAnnotations, analysisId } = await req.json();
+    const requestData = await req.json();
+    const { imageUrls = [], userPrompt = '', imageAnnotations = [], analysisId = 'temp' } = requestData;
     
     console.log('📋 Request parameters:', {
       imageCount: imageUrls?.length || 0,
@@ -84,7 +90,7 @@ serve(async (req) => {
     }
 
     // Generate search queries from user prompt
-    const searchQueries = generateSearchQueries(userPrompt);
+    const searchQueries = generateSearchQueries(userPrompt || '');
     console.log('🔍 Generated search queries:', searchQueries);
 
     // Retrieve knowledge for each query
@@ -143,13 +149,13 @@ serve(async (req) => {
     });
 
     // Build enhanced prompt with retrieved knowledge
-    const enhancedPrompt = buildEnhancedPrompt(userPrompt, uniqueKnowledge, uniquePatterns);
+    const enhancedPrompt = buildEnhancedPrompt(userPrompt || '', uniqueKnowledge, uniquePatterns);
     
     // Extract context intelligence
-    const contextIntelligence = extractContextIntelligence(userPrompt, uniqueKnowledge, uniquePatterns);
+    const contextIntelligence = extractContextIntelligence(userPrompt || '', uniqueKnowledge, uniquePatterns);
     
     // Infer industry context
-    const industryContext = inferIndustryContext(uniqueKnowledge, uniquePatterns, userPrompt);
+    const industryContext = inferIndustryContext(uniqueKnowledge, uniquePatterns, userPrompt || '');
     
     // Generate research citations
     const researchCitations = generateResearchCitations(uniqueKnowledge, uniquePatterns);
@@ -175,18 +181,19 @@ serve(async (req) => {
 
     return new Response(JSON.stringify(ragContext), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200
     });
 
   } catch (error) {
     console.error('❌ Error in build-rag-context:', error);
     
-    // Return fallback response
+    // Return fallback response with proper CORS
     const fallbackResponse: RAGContext = {
       retrievedKnowledge: {
         relevantPatterns: [],
         competitorInsights: []
       },
-      enhancedPrompt: userPrompt || 'Please analyze the provided images for UX improvements.',
+      enhancedPrompt: 'Please analyze the provided images for UX improvements.',
       researchCitations: [],
       industryContext: 'General Web Application',
       contextIntelligence: {
@@ -207,6 +214,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify(fallbackResponse), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200
     });
   }
 });
@@ -268,7 +276,7 @@ function deduplicateKnowledge(knowledge: KnowledgeEntry[]): KnowledgeEntry[] {
     if (seen.has(entry.id)) return false;
     seen.add(entry.id);
     return true;
-  }).sort((a, b) => b.similarity - a.similarity).slice(0, 10); // Top 10 most relevant
+  }).sort((a, b) => b.similarity - a.similarity).slice(0, 10);
 }
 
 // Helper function to remove duplicate patterns
@@ -278,7 +286,7 @@ function deduplicatePatterns(patterns: CompetitorPattern[]): CompetitorPattern[]
     if (seen.has(pattern.id)) return false;
     seen.add(pattern.id);
     return true;
-  }).sort((a, b) => b.similarity - a.similarity).slice(0, 5); // Top 5 most relevant
+  }).sort((a, b) => b.similarity - a.similarity).slice(0, 5);
 }
 
 // Helper function to build enhanced prompt
@@ -309,38 +317,25 @@ function buildEnhancedPrompt(originalPrompt: string, knowledge: KnowledgeEntry[]
 // Helper function to extract context intelligence
 function extractContextIntelligence(userPrompt: string, knowledge: KnowledgeEntry[], patterns: CompetitorPattern[]) {
   const focusAreas = new Set<string>();
-  const primaryCategories = new Set<string>();
-  const secondaryCategories = new Set<string>();
-  const industryTags = new Set<string>();
-  const useCases = new Set<string>();
-
-  // Extract from knowledge entries
+  
   knowledge.forEach(entry => {
     if (entry.category) focusAreas.add(entry.category);
   });
-
-  // Extract from patterns
+  
   patterns.forEach(pattern => {
-    if (pattern.industry) industryTags.add(pattern.industry);
     if (pattern.pattern_type) focusAreas.add(pattern.pattern_type);
   });
-
-  // Analyze user prompt for additional context
-  const promptLower = userPrompt.toLowerCase();
-  if (promptLower.includes('mobile')) focusAreas.add('mobile-ux');
-  if (promptLower.includes('ecommerce') || promptLower.includes('checkout')) focusAreas.add('ecommerce');
-  if (promptLower.includes('accessibility')) focusAreas.add('accessibility');
 
   return {
     focusAreas: Array.from(focusAreas),
     analysisType: 'research-enhanced',
     targetedQueries: generateSearchQueries(userPrompt),
     hierarchicalContext: {
-      primaryCategories: Array.from(primaryCategories),
-      secondaryCategories: Array.from(secondaryCategories),
-      industryTags: Array.from(industryTags),
+      primaryCategories: [],
+      secondaryCategories: [],
+      industryTags: [],
       complexityLevel: knowledge.length > 0 ? 'advanced' : 'intermediate',
-      useCases: Array.from(useCases)
+      useCases: []
     }
   };
 }
@@ -354,7 +349,6 @@ function inferIndustryContext(knowledge: KnowledgeEntry[], patterns: CompetitorP
   });
 
   if (industries.size === 0) {
-    // Infer from user prompt
     const promptLower = userPrompt.toLowerCase();
     if (promptLower.includes('ecommerce') || promptLower.includes('shop')) return 'E-commerce';
     if (promptLower.includes('fintech') || promptLower.includes('banking')) return 'Financial Services';
