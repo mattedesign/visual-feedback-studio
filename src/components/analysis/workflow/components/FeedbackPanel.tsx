@@ -1,3 +1,31 @@
+export const FeedbackPanel = ({
+  currentImageAIAnnotations,
+  currentImageUserAnnotations,
+  activeImageIndex,
+  isMultiImage,
+  activeAnnotation,
+  onAnnotationClick,
+  aiAnnotations,
+  getSeverityColor,
+  businessImpact,
+  insights,
+}: FeedbackPanelProps) => {
+  
+  // ✅ ADD: Debug logging for FeedbackPanel
+  console.log('🔍 FEEDBACK PANEL DEBUG:', {
+    isMultiImage,
+    activeImageIndex,
+    currentImageAIAnnotationsCount: currentImageAIAnnotations.length,
+    totalAIAnnotationsCount: aiAnnotations.length,
+    currentImageAIAnnotations,
+    aiAnnotations,
+    annotationsBeingPassedToList: isMultiImage ? currentImageAIAnnotations : aiAnnotations
+  });
+
+  return (
+    <div className="space-y-8">
+      // ... rest of your component
+
 
 import { Annotation } from '@/types/analysis';
 import { CurrentImageSummary } from './CurrentImageSummary';
