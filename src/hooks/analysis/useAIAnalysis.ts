@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Annotation } from '@/types/analysis';
@@ -17,12 +16,17 @@ interface AnalysisResult {
   annotations: Annotation[];
   analysis: any;
   error?: string;
+  ragContext?: any;
+  researchEnhanced?: boolean;
+  knowledgeSourcesUsed?: number;
 }
 
 export const useAIAnalysis = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isBuilding, setIsBuilding] = useState(false);
   const [buildingStage, setBuildingStage] = useState<string>('');
+  const [hasResearchContext, setHasResearchContext] = useState(false);
+  const [researchSourcesCount, setResearchSourcesCount] = useState(0);
 
   // 🔧 NORMALIZE ANNOTATION DATA - Fixed to use correct API response structure
   const normalizeAnnotation = (annotation: any, index: number): Annotation => {
@@ -82,34 +86,115 @@ export const useAIAnalysis = () => {
     return normalizedAnnotation;
   };
 
+  // 🔍 RAG CONTEXT BUILDER - Re-enabled
+  const buildRAGContext = async (imageUrls: string[], userPrompt: string, analysisId: string) => {
+    console.log('🔍 === RAG CONTEXT BUILDING START ===');
+    setBuildingStage('Building research context...');
+    
+    try {
+      const { data: ragData, error: ragError } = await supabase.functions.invoke('build-rag-context', {
+        body: {
+          imageUrls,
+          userPrompt,
+          imageAnnotations: [],
+          analysisId
+        }
+      });
+
+      if (ragError) {
+        console.warn('⚠️ RAG context building failed:', ragError);
+        return null;
+      }
+
+      if (ragData && ragData.retrievedKnowledge?.relevantPatterns?.length > 0) {
+        const knowledgeCount = ragData.retrievedKnowledge.relevantPatterns.length;
+        console.log('✅ RAG context built successfully:', {
+          knowledgeEntries: knowledgeCount,
+          citations: ragData.researchCitations?.length || 0,
+          industryContext: ragData.industryContext
+        });
+        
+        setHasResearchContext(true);
+        setResearchSourcesCount(knowledgeCount);
+        setBuildingStage(`Research context ready: ${knowledgeCount} insights found`);
+        
+        // Show success toast
+        toast.success(`Research context ready: ${knowledgeCount} insights found`, { duration: 3000 });
+        
+        return ragData;
+      } else {
+        console.log('⚠️ No knowledge retrieved from RAG');
+        setHasResearchContext(false);
+        setResearchSourcesCount(0);
+        return null;
+      }
+    } catch (error) {
+      console.error('❌ RAG context building error:', error);
+      setHasResearchContext(false);
+      setResearchSourcesCount(0);
+      return null;
+    }
+  };
+
   const analyzeImages = useCallback(async (params: AnalyzeImagesParams): Promise<AnalysisResult> => {
     console.log('🚀 ANALYSIS START:', {
       imageCount: params.imageUrls.length,
       userAnnotationsCount: params.userAnnotations.length,
-      enhancedRagDisabled: true
+      enhancedRagEnabled: params.useEnhancedRag !== false // ✅ RAG NOW ENABLED BY DEFAULT
     });
 
     setIsAnalyzing(true);
     setIsBuilding(true);
     setBuildingStage('Preparing analysis...');
+    setHasResearchContext(false);
+    setResearchSourcesCount(0);
 
     try {
+      const analysisId = `analysis-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      let ragContext = null;
+      let enhancedPrompt = params.analysisPrompt;
+
+      // ✅ RAG CONTEXT BUILDING - RE-ENABLED
+      if (params.useEnhancedRag !== false) {
+        console.log('🔍 Building RAG context for enhanced analysis...');
+        ragContext = await buildRAGContext(params.imageUrls, params.analysisPrompt, analysisId);
+        
+        if (ragContext && ragContext.enhancedPrompt) {
+          enhancedPrompt = ragContext.enhancedPrompt;
+          console.log('✅ Using RAG-enhanced prompt:', {
+            originalLength: params.analysisPrompt.length,
+            enhancedLength: enhancedPrompt.length,
+            researchSources: ragContext.retrievedKnowledge?.relevantPatterns?.length || 0
+          });
+        }
+      }
+
       const analysisParams = {
         imageUrls: params.imageUrls,
         userAnnotations: params.userAnnotations,
-        analysisPrompt: params.analysisPrompt,
+        analysisPrompt: enhancedPrompt, // ✅ Use enhanced prompt with research context
         deviceType: params.deviceType,
-        useEnhancedRag: false, // Always disabled
-        analysisId: `analysis-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        useEnhancedRag: params.useEnhancedRag !== false, // ✅ Pass RAG setting to backend
+        analysisId,
+        ragContext // ✅ Include RAG context in analysis
       };
 
       console.log('📝 Analysis parameters:', {
         ...analysisParams,
         imageUrls: analysisParams.imageUrls.map(url => url.substring(0, 50) + '...'),
-        enhancedRagStatus: 'DISABLED'
+        enhancedRagStatus: params.useEnhancedRag !== false ? 'ENABLED' : 'DISABLED',
+        promptType: ragContext ? 'RAG_ENHANCED' : 'STANDARD',
+        researchSourcesIncluded: ragContext?.retrievedKnowledge?.relevantPatterns?.length || 0
       });
 
-      setBuildingStage('Analyzing images...');
+      setBuildingStage('Analyzing images with research context...');
+      
+      // Show different toast based on RAG status
+      if (ragContext) {
+        toast.info(`Analyzing with ${researchSourcesCount} research sources...`, { duration: 2000 });
+      } else {
+        toast.info('Analyzing with standard AI...', { duration: 2000 });
+      }
 
       const { data, error } = await supabase.functions.invoke('analyze-design', {
         body: analysisParams,
@@ -130,7 +215,8 @@ export const useAIAnalysis = () => {
         annotationsCount: data.annotations?.length || 0,
         annotationsPreview: data.annotations?.slice(0, 2),
         hasAnalysis: !!data.analysis,
-        fullData: data
+        researchEnhanced: !!ragContext,
+        knowledgeSourcesUsed: ragContext?.retrievedKnowledge?.relevantPatterns?.length || 0
       });
 
       // 🔍 EXPANDED RAW API RESPONSE STRUCTURE LOGGING
@@ -182,6 +268,8 @@ export const useAIAnalysis = () => {
         originalCount: rawAnnotations.length,
         normalizedCount: normalizedAnnotations.length,
         sampleNormalizedAnnotation: normalizedAnnotations[0],
+        researchEnhanced: !!ragContext,
+        knowledgeSourcesUsed: ragContext?.retrievedKnowledge?.relevantPatterns?.length || 0,
         allFeedbackLengths: normalizedAnnotations.map((a: Annotation, i: number) => ({
           index: i + 1,
           feedbackLength: a.feedback.length,
@@ -190,10 +278,20 @@ export const useAIAnalysis = () => {
         }))
       });
 
+      // ✅ SUCCESS TOAST WITH RAG STATUS
+      const successMessage = ragContext 
+        ? `Analysis complete! Enhanced with ${ragContext.retrievedKnowledge?.relevantPatterns?.length || 0} research sources.`
+        : 'Analysis complete!';
+      
+      toast.success(successMessage, { duration: 4000 });
+
       return {
         success: true,
         annotations: normalizedAnnotations,
-        analysis: data.analysis || null
+        analysis: data.analysis || null,
+        ragContext: ragContext,
+        researchEnhanced: !!ragContext,
+        knowledgeSourcesUsed: ragContext?.retrievedKnowledge?.relevantPatterns?.length || 0
       };
 
     } catch (error) {
@@ -207,7 +305,9 @@ export const useAIAnalysis = () => {
         success: false,
         annotations: [],
         analysis: null,
-        error: errorMessage
+        error: errorMessage,
+        researchEnhanced: false,
+        knowledgeSourcesUsed: 0
       };
     } finally {
       setIsAnalyzing(false);
@@ -221,7 +321,7 @@ export const useAIAnalysis = () => {
     isAnalyzing,
     isBuilding,
     buildingStage,
-    hasResearchContext: false,
-    researchSourcesCount: 0
+    hasResearchContext, // ✅ Now properly tracks RAG status
+    researchSourcesCount // ✅ Now properly tracks research sources count
   };
 };
