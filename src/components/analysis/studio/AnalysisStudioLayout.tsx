@@ -59,11 +59,14 @@ export const AnalysisStudioLayout = ({
           onAnnotationClick={handleAnnotationClick}
         />
         
-        <StudioChat workflow={workflow} />
+        {/* Always show chat for upload and annotate steps */}
+        {(workflow.currentStep === 'upload' || workflow.currentStep === 'annotate') && (
+          <StudioChat workflow={workflow} />
+        )}
       </div>
 
-      {/* Right Panel - Results & Actions */}
-      {!rightPanelCollapsed && (
+      {/* Right Panel - Results & Actions - Show for results step */}
+      {!rightPanelCollapsed && workflow.currentStep === 'results' && (
         <StudioRightPanel 
           workflow={workflow}
           selectedDevice={selectedDevice}

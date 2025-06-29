@@ -4,9 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
-import { X, MessageSquare, Sparkles } from 'lucide-react';
+import { X, MessageSquare } from 'lucide-react';
 import { MultiImageAnnotateStep } from './MultiImageAnnotateStep';
-import { AnalysisContextPanel } from './components/AnalysisContextPanel';
 
 interface AnnotateStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -73,21 +72,14 @@ export const AnnotateStep = ({ workflow }: AnnotateStepProps) => {
     workflow.removeUserAnnotation(workflow.selectedImageUrl, id);
   };
 
-  const handleSubmitForAnalysis = () => {
-    workflow.goToStep('analyzing');
-  };
-
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* Analysis Context Panel - Always visible */}
-      <AnalysisContextPanel workflow={workflow} />
-
       <Card className="bg-slate-800/50 border-slate-700">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Add Your Comments</CardTitle>
+          <CardTitle className="text-2xl text-center">Add Specific Comments</CardTitle>
           <p className="text-slate-400 text-center">
-            Click anywhere on the image to add comments about what you'd like analyzed.
-            Your analysis context above will guide the overall analysis.
+            Click anywhere on the image to add specific comments about areas you'd like analyzed.
+            Use the analysis setup below to provide overall context.
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -167,17 +159,6 @@ export const AnnotateStep = ({ workflow }: AnnotateStepProps) => {
               </div>
             </div>
           </div>
-
-          <div className="flex justify-center">
-            <Button
-              onClick={handleSubmitForAnalysis}
-              disabled={currentImageAnnotations.length === 0 && !workflow.analysisContext.trim()}
-              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              Submit for Analysis
-            </Button>
-          </div>
         </CardContent>
       </Card>
 
@@ -195,7 +176,7 @@ export const AnnotateStep = ({ workflow }: AnnotateStepProps) => {
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
                 placeholder="What would you like analyzed in this area?"
-                className="bg-slate-700 border-slate-600"
+                className="bg-slate-700 border-slate-600 text-slate-100"
                 rows={3}
                 autoFocus
               />
