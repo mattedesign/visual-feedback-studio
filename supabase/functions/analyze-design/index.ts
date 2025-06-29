@@ -14,7 +14,7 @@ import { buildCompetitiveIntelligence, checkCompetitivePatternsDatabase, Competi
 import { EnhancedAnalysisIntegrator } from './enhancedAnalysisIntegrator.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 
-console.log('🚀 Design Analysis Function Starting with Enhanced Vision Integration - Multi-Image Fix v4 - VISION CONTEXT UPDATE');
+console.log('🚀 Design Analysis Function Starting with Enhanced Vision Integration - ENHANCED CONTEXT UPDATE v1');
 
 // Enhanced RAG helper function with comprehensive logging and error handling
 async function addKnowledgeContext(prompt: string, supabase: any, enableRAG = false): Promise<{
@@ -418,6 +418,48 @@ Your feedback should be precise, referencing actual detected elements rather tha
   return finalPrompt;
 }
 
+// NEW: Function to build annotation instructions based on context
+function buildAnnotationInstructions(imageCount: number, userAnnotations: any[], isEnhanced: boolean): string {
+  const baseInstructions = `
+You are analyzing ${imageCount > 1 ? `${imageCount} design images` : 'a design image'} for UX improvements.
+
+${userAnnotations.length > 0 ? `
+The user has highlighted ${userAnnotations.length} specific areas with comments:
+${userAnnotations.map((annotation, index) => `
+${index + 1}. At coordinates (${annotation.x}, ${annotation.y}): "${annotation.comment}"
+`).join('')}
+
+Please address these specific areas in your analysis.
+` : ''}
+
+${isEnhanced ? `
+This is a RESEARCH-ENHANCED analysis with Google Vision AI detection and UX knowledge base integration.
+Use the provided research context and detected elements to give evidence-backed recommendations.
+` : ''}
+
+Provide your analysis as a JSON array of annotations with the following structure:
+[
+  {
+    "id": "unique-id",
+    "category": "usability|accessibility|visual-design|performance|conversion",
+    "severity": "high|medium|low",
+    "title": "Brief title",
+    "description": "Detailed description with specific recommendations",
+    "x": coordinate_number,
+    "y": coordinate_number,
+    "width": 50,
+    "height": 50,
+    "businessImpact": "How this affects business metrics",
+    "quickFix": "Immediate action that can be taken"
+  }
+]
+
+CRITICAL: Return ONLY the JSON array, no additional text or formatting.
+`;
+
+  return baseInstructions;
+}
+
 Deno.serve(async (req) => {
   console.log(`📥 ${req.method} ${req.url}`);
   
@@ -485,6 +527,26 @@ Deno.serve(async (req) => {
     const requestData = validationResult.data;
     console.log('✅ Request validated successfully');
 
+    // ✅ CRITICAL FIX: Enhanced Request Body Parsing
+    const { 
+      imageUrls, 
+      userAnnotations, 
+      analysisPrompt, 
+      deviceType,
+      enhancedContext,     // ✅ ADD THIS
+      ragEnhanced          // ✅ ADD THIS
+    } = requestData;
+
+    console.log('🚀 analyze-design: Starting analysis', {
+      imageCount: imageUrls?.length || requestData.imagesToProcess?.length || 0,
+      hasEnhancedContext: !!enhancedContext,     // ✅ ADD THIS
+      ragEnhanced: !!ragEnhanced,                // ✅ ADD THIS
+      promptLength: analysisPrompt?.length || 0,
+      userAnnotationsCount: userAnnotations?.length || 0,
+      visionElementsDetected: enhancedContext?.visionAnalysis?.uiElements?.length || 0,
+      knowledgeSourcesUsed: enhancedContext?.knowledgeSourcesUsed || 0
+    });
+
     // 🚨 CRITICAL: Calculate imageCount from validated request data
     const imageCount = requestData.imagesToProcess.length;
     
@@ -510,7 +572,7 @@ Deno.serve(async (req) => {
     }
 
     // NEW: Extract vision context from request
-    const visionContext = requestData.enhancedContext;
+    const visionContext = requestData.enhancedContext || enhancedContext;
     console.log('👁️ === VISION CONTEXT PROCESSING ===');
     console.log('🔍 Vision context provided:', !!visionContext);
     if (visionContext) {
@@ -527,7 +589,7 @@ Deno.serve(async (req) => {
       imageCount,
       isMultiImage: imageCount > 1,
       isComparative: requestData.isComparative || false,
-      ragEnabled: requestData.ragEnabled || false,
+      ragEnabled: requestData.ragEnabled || ragEnhanced || false,
       visionContextProvided: !!visionContext,
       analysisId: requestData.analysisId,
       imagesToProcess: requestData.imagesToProcess.length
@@ -581,10 +643,10 @@ Deno.serve(async (req) => {
     };
     
     // Enhanced RAG context building
-    const enableRAG = requestData.ragEnabled === true;
+    const enableRAG = requestData.ragEnabled === true || ragEnhanced === true;
     const enableCompetitive = requestData.competitiveEnabled !== false; // Enable by default
     const enableBusinessImpact = requestData.businessImpactEnabled !== false; // Enable by default
-    const originalPrompt = requestData.analysisPrompt || 'Analyze this design for UX improvements';
+    const originalPrompt = requestData.analysisPrompt || analysisPrompt || 'Analyze this design for UX improvements';
     
     console.log(`🔧 === ENHANCED ANALYSIS WITH VISION INTEGRATION START ===`);
     console.log(`📋 Enhanced Analysis Configuration:`, {
@@ -599,6 +661,13 @@ Deno.serve(async (req) => {
       timestamp: new Date().toISOString()
     });
     
+    // ✅ CRITICAL: Use enhanced prompt if available, with fallback
+    const finalPrompt = enhancedContext?.enhancedPrompt || visionContext?.enhancedPrompt || originalPrompt;
+    const isEnhanced = !!(enhancedContext || visionContext);
+
+    console.log(`📝 Using ${isEnhanced ? 'ENHANCED (Vision + RAG)' : 'STANDARD'} prompt analysis`);
+    console.log(`📏 Prompt length: ${finalPrompt.length} characters`);
+
     // NEW: Start with vision-enhanced prompt if available
     let currentPrompt = originalPrompt;
     if (visionContext) {
@@ -607,8 +676,22 @@ Deno.serve(async (req) => {
       console.log('✅ Vision context integrated into prompt');
     }
     
-    // Build RAG context using the vision-enhanced prompt
-    const ragContext = await addKnowledgeContext(currentPrompt, supabase, enableRAG);
+    // Build RAG context using the vision-enhanced prompt or enhanced context
+    let ragContext;
+    if (enhancedContext?.enhancedPrompt) {
+      // Use pre-built enhanced context from request
+      console.log('📋 Using pre-built enhanced context from request');
+      ragContext = {
+        enhancedPrompt: enhancedContext.enhancedPrompt,
+        researchEnhanced: true,
+        knowledgeSourcesUsed: enhancedContext.knowledgeSourcesUsed || 0,
+        researchCitations: enhancedContext.citations || []
+      };
+    } else {
+      // Build RAG context dynamically
+      ragContext = await addKnowledgeContext(currentPrompt, supabase, enableRAG);
+    }
+    
     ragResults = {
       researchEnhanced: ragContext.researchEnhanced,
       knowledgeSourcesUsed: ragContext.knowledgeSourcesUsed,
@@ -627,26 +710,37 @@ Deno.serve(async (req) => {
       hasRelevantPatterns: competitiveResults.relevantPatterns.length > 0
     });
     
-    // 🚨 CRITICAL FIX: Build the complete enhanced prompt with all context integration
-    console.log(`🏗️ === BUILDING FINAL ENHANCED PROMPT WITH ALL CONTEXTS ===`);
-    
-    // ✅ Build the final enhanced prompt using the existing function
-    const enhancedPrompt = buildEnhancedAnalysisPrompt(
-      currentPrompt, // This now includes vision context
-      ragContext.researchEnhanced ? ragContext.enhancedPrompt : undefined,
-      competitiveResults.totalPatterns > 0 ? competitiveResults.competitiveContext : undefined,
-      requestData.isComparative || false,
-      imageCount
+    // ✅ Build comprehensive annotation instructions
+    const annotationInstructions = buildAnnotationInstructions(
+      imageCount,
+      userAnnotations || [],
+      isEnhanced
     );
-    
-    // 🔧 ANALYZE-DESIGN: Ensure enhanced prompt is used
-    console.log('🔧 ANALYZE-DESIGN: Prompt type:', visionContext || ragContext.researchEnhanced || competitiveResults.totalPatterns > 0 ? 'ENHANCED' : 'STANDARD');
-    console.log('📏 Enhanced prompt length:', enhancedPrompt.length, 'characters');
-    console.log('🚨 CRITICAL: Enhanced prompt will be passed to AI provider');
+
+    // ✅ Enhanced prompt includes research context and citations
+    const fullAnalysisPrompt = `${finalPrompt}
+
+${annotationInstructions}
+
+${isEnhanced && (enhancedContext || visionContext) ? `
+🔬 RESEARCH-ENHANCED ANALYSIS CONTEXT:
+- Google Vision detected: ${(enhancedContext?.visionAnalysis || visionContext?.visionAnalysis)?.uiElements?.length || 0} UI elements
+- Knowledge sources applied: ${ragResults.knowledgeSourcesUsed} research citations
+- Industry context: ${(enhancedContext?.visionAnalysis || visionContext?.visionAnalysis)?.industry?.industry || 'general'}
+- Analysis confidence: ${Math.round(((enhancedContext?.confidenceScore || visionContext?.confidenceScore) || 0) * 100)}%
+- Search queries used: ${(enhancedContext?.searchQueries || visionContext?.searchQueries)?.length || 0}
+
+IMPORTANT: Provide research-backed recommendations citing the applied knowledge sources when applicable.
+Your analysis should reference specific UX research findings, accessibility guidelines, and industry best practices.
+` : ''}
+
+CRITICAL: Analyze thoroughly and provide specific, actionable feedback with precise image coordinates.`;
+
+    console.log(`🔧 Final prompt ready - Type: ${isEnhanced ? 'RESEARCH-ENHANCED' : 'STANDARD'}`);
     
     // ===== MAIN CONSOLE LOG FOR USER VISIBILITY =====
     console.log("🎯🎯🎯 === COMPLETE ENHANCED PROMPT WITH VISION INTEGRATION === 🎯🎯🎯");
-    console.log("📏 Total Enhanced Prompt Length:", enhancedPrompt.length);
+    console.log("📏 Total Enhanced Prompt Length:", fullAnalysisPrompt.length);
     console.log("👁️ Vision Context Status:", visionContext ? "ENABLED with Google Vision analysis" : "DISABLED");
     console.log("📝 RAG Status:", ragContext.researchEnhanced ? "ENABLED with research context" : "DISABLED");
     console.log("🏢 Competitive Intelligence Status:", competitiveResults.totalPatterns > 0 ? "ENABLED with competitive context" : "DISABLED");
@@ -665,11 +759,11 @@ Deno.serve(async (req) => {
       console.log(`🔍 Analyzing image with ${aiProviderConfig.provider} using enhanced prompt...`);
       
       try {
-        // ✅ CRITICAL FIX: Pass the enhanced prompt to the AI provider
+        // ✅ CRITICAL FIX: Pass the full enhanced prompt to the AI provider
         const annotations = await analyzeWithAIProvider(
           processedImage.base64Data,
           processedImage.mimeType,
-          enhancedPrompt, // ✅ Enhanced prompt with vision, RAG, and competitive context
+          fullAnalysisPrompt, // ✅ Enhanced prompt with vision, RAG, and competitive context
           aiProviderConfig
         );
         
@@ -742,13 +836,13 @@ Deno.serve(async (req) => {
 
       console.log('✅ Enhanced results saved to database');
 
-      // Format enhanced response with vision context information
+      // ✅ FIND your response return and ADD enhanced context information:
       const response = enhancedResponseFormatter.formatEnhancedResponse(
         enhancedResults,
         {
           modelUsed: aiProviderConfig.provider + (aiProviderConfig.model ? `:${aiProviderConfig.model}` : ''),
           processingTime: Date.now(),
-          ragEnhanced: ragResults.researchEnhanced,
+          ragEnhanced: ragResults.researchEnhanced,                     // ✅ ADD THIS
           knowledgeSourcesUsed: ragResults.knowledgeSourcesUsed,
           researchCitations: ragResults.researchCitations,
           competitiveEnhanced: competitiveResults.totalPatterns > 0,
@@ -756,7 +850,9 @@ Deno.serve(async (req) => {
           industryBenchmarks: competitiveResults.industryBenchmarks,
           visionEnhanced: !!visionContext,
           visionConfidenceScore: visionContext?.confidenceScore,
-          visionElementsDetected: visionContext?.visionAnalysis?.uiElements?.length || 0
+          visionElementsDetected: visionContext?.visionAnalysis?.uiElements?.length || 0,
+          enhancedContext: enhancedContext || visionContext || null,     // ✅ ADD THIS
+          analysisType: isEnhanced ? 'research-enhanced' : 'standard'    // ✅ ADD THIS
         }
       );
 
@@ -802,13 +898,13 @@ Deno.serve(async (req) => {
 
       console.log('✅ Results saved to database');
 
-      // Format response with enhanced information including vision context
+      // ✅ FIND your response return and ADD enhanced context information:
       const response = responseFormatter.formatSuccessResponse({
         annotations: allAnnotations,
         totalAnnotations: allAnnotations.length,
         modelUsed: aiProviderConfig.provider + (aiProviderConfig.model ? `:${aiProviderConfig.model}` : ''),
         processingTime: Date.now(),
-        ragEnhanced: ragResults.researchEnhanced,
+        ragEnhanced: ragResults.researchEnhanced,                       // ✅ ADD THIS
         knowledgeSourcesUsed: ragResults.knowledgeSourcesUsed,
         researchCitations: ragResults.researchCitations,
         competitiveEnhanced: competitiveResults.totalPatterns > 0,
@@ -816,7 +912,9 @@ Deno.serve(async (req) => {
         industryBenchmarks: competitiveResults.industryBenchmarks,
         visionEnhanced: !!visionContext,
         visionConfidenceScore: visionContext?.confidenceScore,
-        visionElementsDetected: visionContext?.visionAnalysis?.uiElements?.length || 0
+        visionElementsDetected: visionContext?.visionAnalysis?.uiElements?.length || 0,
+        enhancedContext: enhancedContext || visionContext || null,       // ✅ ADD THIS
+        analysisType: isEnhanced ? 'research-enhanced' : 'standard'      // ✅ ADD THIS
       });
 
       // Add CORS headers to successful response
