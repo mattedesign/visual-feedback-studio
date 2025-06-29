@@ -1,252 +1,234 @@
-import { useState, useMemo, useCallback } from 'react';
+
+import { useState, useCallback } from 'react';
 import { Annotation } from '@/types/analysis';
-import { AnalysisWithFiles } from '@/services/analysisDataService';
-import { createAnalysis } from '@/services/analysisService';
-import { getUserAnalyses } from '@/services/analysisDataService';
+import { useAIAnalysis } from './useAIAnalysis';
+import { toast } from 'sonner';
 
-export type WorkflowStep = 'upload' | 'review' | 'annotate' | 'analyzing' | 'results';
+export type WorkflowStep = 'upload' | 'annotate' | 'review' | 'analyzing' | 'results';
 
-export interface ImageAnnotations {
-  imageUrl: string;
-  annotations: Array<{
-    x: number;
-    y: number;
-    comment: string;
-    id: string;
-  }>;
+interface UserAnnotation {
+  id: string;
+  x: number;
+  y: number;
+  comment: string;
 }
 
 export const useAnalysisWorkflow = () => {
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('upload');
-  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [activeImageUrl, setActiveImageUrl] = useState<string | null>(null);
-  const [imageAnnotations, setImageAnnotations] = useState<ImageAnnotations[]>([]);
+  const [userAnnotations, setUserAnnotations] = useState<Record<string, UserAnnotation[]>>({});
   const [analysisContext, setAnalysisContext] = useState<string>('');
-  const [currentAnalysis, setCurrentAnalysis] = useState<AnalysisWithFiles | null>(null);
-  const [aiAnnotations, setAiAnnotations] = useState<Annotation[]>([]);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiAnnotations, setAIAnnotations] = useState<Annotation[]>([]);
+  const [analysisResults, setAnalysisResults] = useState<any>(null);
+  
+  // Enhanced context state
+  const [enhancedContext, setEnhancedContext] = useState<any>(null);
+  const [ragEnhanced, setRagEnhanced] = useState<boolean>(false);
+  const [knowledgeSourcesUsed, setKnowledgeSourcesUsed] = useState<number>(0);
+  const [researchCitations, setResearchCitations] = useState<string[]>([]);
+  const [visionEnhanced, setVisionEnhanced] = useState<boolean>(false);
+  const [visionConfidenceScore, setVisionConfidenceScore] = useState<number | undefined>(undefined);
+  const [visionElementsDetected, setVisionElementsDetected] = useState<number>(0);
 
-  // Memoized computed values
-  const selectedImageUrl = useMemo(() => 
-    activeImageUrl || (selectedImages.length > 0 ? selectedImages[0] : null),
-    [activeImageUrl, selectedImages]
-  );
-
-  const userAnnotations = useMemo(() => {
-    const currentUrl = activeImageUrl || selectedImages[0];
-    if (!currentUrl) return [];
-    const imageAnnotation = imageAnnotations.find(ia => ia.imageUrl === currentUrl);
-    return imageAnnotation?.annotations || [];
-  }, [imageAnnotations, activeImageUrl, selectedImages]);
-
-  const goToStep = useCallback((step: WorkflowStep) => {
-    console.log('Workflow step change:', currentStep, '->', step);
-    setCurrentStep(step);
-  }, [currentStep]);
-
-  const addUploadedFile = useCallback(async (url: string) => {
-    console.log('Adding uploaded file to workflow:', url);
-    
-    // Create analysis session if one doesn't exist
-    if (!currentAnalysis) {
-      console.log('Creating new analysis session for upload...');
-      try {
-        const analysisId = await createAnalysis();
-        
-        if (analysisId) {
-          // Fetch the created analysis to get full details
-          const userAnalyses = await getUserAnalyses();
-          const newAnalysis = userAnalyses.find(analysis => analysis.id === analysisId);
-          
-          if (newAnalysis) {
-            console.log('Analysis session created successfully:', newAnalysis.id);
-            setCurrentAnalysis(newAnalysis);
-          }
-        }
-      } catch (error) {
-        console.error('Error creating analysis session:', error);
-      }
-    }
-    
-    setUploadedFiles(prev => [...prev, url]);
-  }, [currentAnalysis]);
-
-  const selectImage = useCallback((url: string) => {
-    console.log('Selecting single image:', url);
-    setSelectedImages([url]);
-    setActiveImageUrl(url);
-    setImageAnnotations(prev => {
-      const existing = prev.find(ia => ia.imageUrl === url);
-      return existing ? prev : [...prev, { imageUrl: url, annotations: [] }];
-    });
-  }, []);
-
-  const selectImages = useCallback((urls: string[]) => {
-    console.log('Selecting multiple images:', urls.length);
-    setSelectedImages(urls);
-    setActiveImageUrl(urls[0] || null);
-    setImageAnnotations(prev => {
-      const newImageAnnotations = urls.map(url => {
-        const existing = prev.find(ia => ia.imageUrl === url);
-        return existing || { imageUrl: url, annotations: [] };
-      });
-      return [...prev.filter(ia => !urls.includes(ia.imageUrl)), ...newImageAnnotations];
-    });
-  }, []);
-
-  const setActiveImage = useCallback((url: string) => {
-    console.log('Setting active image:', url);
-    setActiveImageUrl(url);
-    // Ensure we have an annotation entry for this image
-    setImageAnnotations(prev => {
-      const existing = prev.find(ia => ia.imageUrl === url);
-      return existing ? prev : [...prev, { imageUrl: url, annotations: [] }];
-    });
-  }, []);
-
-  const addUserAnnotation = useCallback((imageUrl: string, annotation: { x: number; y: number; comment: string }) => {
-    const newAnnotation = {
-      ...annotation,
-      id: `user-${Date.now()}-${Math.random()}`
-    };
-    
-    console.log('Adding user annotation to image:', imageUrl, newAnnotation);
-    
-    setImageAnnotations(prev => 
-      prev.map(ia => 
-        ia.imageUrl === imageUrl 
-          ? { ...ia, annotations: [...ia.annotations, newAnnotation] }
-          : ia
-      )
-    );
-  }, []);
-
-  const removeUserAnnotation = useCallback((imageUrl: string, id: string) => {
-    console.log('Removing user annotation:', imageUrl, id);
-    setImageAnnotations(prev =>
-      prev.map(ia =>
-        ia.imageUrl === imageUrl
-          ? { ...ia, annotations: ia.annotations.filter(ann => ann.id !== id) }
-          : ia
-      )
-    );
-  }, []);
-
-  const updateUserAnnotation = useCallback((imageUrl: string, id: string, comment: string) => {
-    console.log('Updating user annotation:', imageUrl, id, comment);
-    setImageAnnotations(prev =>
-      prev.map(ia =>
-        ia.imageUrl === imageUrl
-          ? { 
-              ...ia, 
-              annotations: ia.annotations.map(ann => 
-                ann.id === id ? { ...ann, comment } : ann
-              ) 
-            }
-          : ia
-      )
-    );
-  }, []);
-
-  const getTotalAnnotationsCount = useCallback(() => {
-    return imageAnnotations.reduce((total, ia) => total + ia.annotations.length, 0);
-  }, [imageAnnotations]);
-
-  // Safe setter for analysis context that preserves user input
-  const updateAnalysisContext = useCallback((value: string) => {
-    console.log('Updating user analysis context:', value.substring(0, 100) + '...');
-    setAnalysisContext(value);
-  }, []);
+  const { analyzeImages, isAnalyzing, isBuilding, buildingStage } = useAIAnalysis();
 
   const resetWorkflow = useCallback(() => {
-    console.log('Resetting workflow state');
     setCurrentStep('upload');
-    setUploadedFiles([]);
     setSelectedImages([]);
+    setUploadedFiles([]);
     setActiveImageUrl(null);
-    setImageAnnotations([]);
+    setUserAnnotations({});
     setAnalysisContext('');
-    setCurrentAnalysis(null);
-    setAiAnnotations([]);
-    setIsAnalyzing(false);
+    setAIAnnotations([]);
+    setAnalysisResults(null);
+    setEnhancedContext(null);
+    setRagEnhanced(false);
+    setKnowledgeSourcesUsed(0);
+    setResearchCitations([]);
+    setVisionEnhanced(false);
+    setVisionConfidenceScore(undefined);
+    setVisionElementsDetected(0);
   }, []);
 
-  // Smart workflow progression based on number of images
-  const proceedFromUpload = useCallback((imageUrls: string[]) => {
-    console.log('Proceeding from upload with images:', imageUrls.length);
-    
-    if (imageUrls.length === 1) {
-      // Single image: Upload → Annotate (skip review)
-      selectImage(imageUrls[0]);
-      goToStep('annotate');
-    } else {
-      // Multiple images: Upload → Review
-      selectImages(imageUrls);
-      goToStep('review');
+  const selectImages = useCallback((images: string[]) => {
+    setSelectedImages(images);
+    setUploadedFiles(images);
+    if (images.length > 0) {
+      setActiveImageUrl(images[0]);
     }
-  }, [selectImage, selectImages, goToStep]);
+  }, []);
 
-  const proceedFromReview = useCallback(() => {
-    console.log('Proceeding from review to annotate');
-    // Always go to annotate step from review
-    // The AnalysisWorkflow component will determine which annotate component to use
-    goToStep('annotate');
-  }, [goToStep]);
+  const addUserAnnotation = useCallback((imageUrl: string, annotation: Omit<UserAnnotation, 'id'>) => {
+    const newAnnotation = {
+      ...annotation,
+      id: Date.now().toString()
+    };
+    
+    setUserAnnotations(prev => ({
+      ...prev,
+      [imageUrl]: [...(prev[imageUrl] || []), newAnnotation]
+    }));
+  }, []);
 
-  // Memoize the return object to prevent unnecessary re-renders
-  return useMemo(() => ({
+  const removeUserAnnotation = useCallback((imageUrl: string, annotationId: string) => {
+    setUserAnnotations(prev => ({
+      ...prev,
+      [imageUrl]: (prev[imageUrl] || []).filter(a => a.id !== annotationId)
+    }));
+  }, []);
+
+  const startAnalysis = useCallback(async () => {
+    if (selectedImages.length === 0) {
+      toast.error('Please select at least one image to analyze');
+      return;
+    }
+
+    if (!analysisContext.trim()) {
+      toast.error('Please provide analysis context');
+      return;
+    }
+
+    setCurrentStep('analyzing');
+
+    try {
+      // Prepare user annotations for analysis
+      const userAnnotationsArray = selectedImages.flatMap(imageUrl => 
+        (userAnnotations[imageUrl] || []).map(annotation => ({
+          imageUrl,
+          x: annotation.x,
+          y: annotation.y,
+          comment: annotation.comment,
+          id: annotation.id
+        }))
+      );
+
+      console.log('🚀 Starting analysis with params:', {
+        imageUrls: selectedImages,
+        userAnnotations: userAnnotationsArray,
+        analysisPrompt: analysisContext,
+        deviceType: 'desktop',
+        useEnhancedRag: true
+      });
+
+      const result = await analyzeImages({
+        imageUrls: selectedImages,
+        userAnnotations: userAnnotationsArray,
+        analysisPrompt: analysisContext,
+        deviceType: 'desktop',
+        useEnhancedRag: true
+      });
+
+      if (result.success) {
+        setAIAnnotations(result.annotations);
+        setAnalysisResults(result.analysis);
+        
+        // Set enhanced context information
+        if (result.enhancedContext) {
+          setEnhancedContext(result.enhancedContext);
+          setVisionEnhanced(true);
+          setVisionConfidenceScore(result.enhancedContext.confidenceScore);
+          setVisionElementsDetected(result.enhancedContext.visionAnalysis?.uiElements?.length || 0);
+          setKnowledgeSourcesUsed(prev => prev + (result.enhancedContext.knowledgeSourcesUsed || 0));
+          setResearchCitations(prev => [...prev, ...(result.enhancedContext.citations || [])]);
+        }
+        
+        // Set RAG context information
+        if (result.ragContext) {
+          setRagEnhanced(true);
+          if (result.ragContext.knowledgeSourcesUsed) {
+            setKnowledgeSourcesUsed(prev => prev + result.ragContext.knowledgeSourcesUsed);
+          }
+          if (result.ragContext.researchCitations) {
+            setResearchCitations(prev => [...prev, ...result.ragContext.researchCitations]);
+          }
+        }
+
+        setCurrentStep('results');
+        toast.success(`Analysis complete! Found ${result.annotations.length} insights.`);
+      } else {
+        toast.error('Analysis failed. Please try again.');
+        setCurrentStep('review');
+      }
+    } catch (error) {
+      console.error('Analysis failed:', error);
+      toast.error('Analysis failed. Please try again.');
+      setCurrentStep('review');
+    }
+  }, [selectedImages, userAnnotations, analysisContext, analyzeImages]);
+
+  const goToStep = useCallback((step: WorkflowStep) => {
+    setCurrentStep(step);
+  }, []);
+
+  const goToNextStep = useCallback(() => {
+    switch (currentStep) {
+      case 'upload':
+        if (selectedImages.length > 0) {
+          setCurrentStep('annotate');
+        }
+        break;
+      case 'annotate':
+        setCurrentStep('review');
+        break;
+      case 'review':
+        startAnalysis();
+        break;
+      case 'analyzing':
+        // Analysis will automatically move to results
+        break;
+      case 'results':
+        resetWorkflow();
+        break;
+    }
+  }, [currentStep, selectedImages.length, startAnalysis, resetWorkflow]);
+
+  const goToPreviousStep = useCallback(() => {
+    switch (currentStep) {
+      case 'annotate':
+        setCurrentStep('upload');
+        break;
+      case 'review':
+        setCurrentStep('annotate');
+        break;
+      case 'results':
+        setCurrentStep('review');
+        break;
+    }
+  }, [currentStep]);
+
+  return {
+    // State
     currentStep,
-    uploadedFiles,
     selectedImages,
-    selectedImageUrl,
+    uploadedFiles,
     activeImageUrl,
-    imageAnnotations,
     userAnnotations,
     analysisContext,
-    currentAnalysis,
     aiAnnotations,
+    analysisResults,
+    enhancedContext,
+    ragEnhanced,
+    knowledgeSourcesUsed,
+    researchCitations,
+    visionEnhanced,
+    visionConfidenceScore,
+    visionElementsDetected,
     isAnalyzing,
-    goToStep,
-    addUploadedFile,
-    selectImage,
+    isBuilding,
+    buildingStage,
+
+    // Actions
+    resetWorkflow,
     selectImages,
-    setActiveImage,
+    setActiveImageUrl,
     addUserAnnotation,
     removeUserAnnotation,
-    updateUserAnnotation,
-    getTotalAnnotationsCount,
-    setAnalysisContext: updateAnalysisContext,
-    setCurrentAnalysis,
-    setAiAnnotations,
-    setIsAnalyzing,
-    resetWorkflow,
-    proceedFromUpload,
-    proceedFromReview,
-  }), [
-    currentStep,
-    uploadedFiles,
-    selectedImages,
-    selectedImageUrl,
-    activeImageUrl,
-    imageAnnotations,
-    userAnnotations,
-    analysisContext,
-    currentAnalysis,
-    aiAnnotations,
-    isAnalyzing,
+    setAnalysisContext,
+    startAnalysis,
     goToStep,
-    addUploadedFile,
-    selectImage,
-    selectImages,
-    setActiveImage,
-    addUserAnnotation,
-    removeUserAnnotation,
-    updateUserAnnotation,
-    getTotalAnnotationsCount,
-    updateAnalysisContext,
-    resetWorkflow,
-    proceedFromUpload,
-    proceedFromReview,
-  ]);
+    goToNextStep,
+    goToPreviousStep
+  };
 };

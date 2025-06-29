@@ -11,6 +11,7 @@ import { ImageIndicator } from './components/ImageIndicator';
 import { VisualSuggestions } from '../VisualSuggestions';
 import { CodeSolutions } from '../CodeSolutions';
 import { AnalysisContextPanel } from './components/AnalysisContextPanel';
+import { EnhancedContextDisplay } from './components/EnhancedContextDisplay';
 
 interface ResultsStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -206,6 +207,17 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
         <CardContent className="space-y-8">
           {/* Analysis Context Display */}
           <AnalysisContextPanel workflow={workflow} />
+
+          {/* NEW: Enhanced Context Display */}
+          <EnhancedContextDisplay
+            enhancedContext={workflow.enhancedContext}
+            ragEnhanced={workflow.ragEnhanced}
+            knowledgeSourcesUsed={workflow.knowledgeSourcesUsed}
+            researchCitations={workflow.researchCitations}
+            visionEnhanced={workflow.visionEnhanced}
+            visionConfidenceScore={workflow.visionConfidenceScore}
+            visionElementsDetected={workflow.visionElementsDetected}
+          />
 
           {/* Image Indicator - New visual indicator */}
           <ImageIndicator 
