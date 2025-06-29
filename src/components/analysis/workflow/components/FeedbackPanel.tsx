@@ -1,32 +1,3 @@
-export const FeedbackPanel = ({
-  currentImageAIAnnotations,
-  currentImageUserAnnotations,
-  activeImageIndex,
-  isMultiImage,
-  activeAnnotation,
-  onAnnotationClick,
-  aiAnnotations,
-  getSeverityColor,
-  businessImpact,
-  insights,
-}: FeedbackPanelProps) => {
-  
-  // ✅ ADD: Debug logging for FeedbackPanel
-  console.log('🔍 FEEDBACK PANEL DEBUG:', {
-    isMultiImage,
-    activeImageIndex,
-    currentImageAIAnnotationsCount: currentImageAIAnnotations.length,
-    totalAIAnnotationsCount: aiAnnotations.length,
-    currentImageAIAnnotations,
-    aiAnnotations,
-    annotationsBeingPassedToList: isMultiImage ? currentImageAIAnnotations : aiAnnotations
-  });
-
-  return (
-    <div className="space-y-8">
-      // ... rest of your component
-
-
 import { Annotation } from '@/types/analysis';
 import { CurrentImageSummary } from './CurrentImageSummary';
 import { OverallAnalysisSummary } from './OverallAnalysisSummary';
@@ -82,6 +53,23 @@ export const FeedbackPanel = ({
   businessImpact,
   insights,
 }: FeedbackPanelProps) => {
+  
+  // ✅ ADD: Debug logging for FeedbackPanel
+  console.log('🔍 FEEDBACK PANEL DEBUG:', {
+    isMultiImage,
+    activeImageIndex,
+    currentImageAIAnnotationsCount: currentImageAIAnnotations.length,
+    totalAIAnnotationsCount: aiAnnotations.length,
+    currentImageAIAnnotations,
+    aiAnnotations,
+    annotationsBeingPassedToList: isMultiImage ? currentImageAIAnnotations : aiAnnotations,
+    imageIndexDistribution: aiAnnotations.reduce((acc, ann) => {
+      const idx = ann.imageIndex ?? 0;
+      acc[`Image_${idx}`] = (acc[`Image_${idx}`] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>)
+  });
+
   return (
     <div className="space-y-8">
       {/* Business Impact Summary (if available) */}
@@ -107,71 +95,3 @@ export const FeedbackPanel = ({
             Comprehensive insights and recommendations from your UX analysis
           </p>
         </div>
-        
-        <div className="p-6 space-y-6">
-          <OverallAnalysisSummary 
-            annotations={aiAnnotations}
-            isMultiImage={isMultiImage}
-            imageCount={isMultiImage ? Math.max(...aiAnnotations.map(a => (a.imageIndex ?? 0) + 1)) : 1}
-          />
-          
-          <div className="border-t border-gray-100 pt-6">
-            <CategorySummaries annotations={aiAnnotations} />
-          </div>
-          
-          <div className="border-t border-gray-100 pt-6">
-            <PrioritySummary annotations={aiAnnotations} />
-          </div>
-        </div>
-      </div>
-
-      {/* Current Image Summary (for multi-image) */}
-      {isMultiImage && (
-        <div className="mb-6">
-          <CurrentImageSummary
-            currentImageAIAnnotations={currentImageAIAnnotations}
-            currentImageUserAnnotations={currentImageUserAnnotations}
-            isMultiImage={isMultiImage}
-          />
-        </div>
-      )}
-
-      {/* Individual Comments Section */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-5 border-b border-gray-100">
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-            <span className="text-2xl">💬</span>
-            <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-              Individual Comments
-            </span>
-          </h2>
-          <p className="text-sm text-gray-600 mt-2 font-medium">
-            Detailed feedback on specific areas of your design
-          </p>
-        </div>
-        
-        <div className="p-6">
-          <DetailedAnnotationsList
-            annotations={isMultiImage ? currentImageAIAnnotations : aiAnnotations}
-            activeAnnotation={activeAnnotation}
-            onAnnotationClick={onAnnotationClick}
-            getSeverityColor={getSeverityColor}
-            isMultiImage={isMultiImage}
-          />
-        </div>
-      </div>
-
-      {/* Selected Annotation Details */}
-      {activeAnnotation && (
-        <div className="mt-6">
-          <DetailedFeedbackCard
-            activeAnnotation={activeAnnotation}
-            aiAnnotations={aiAnnotations}
-            isMultiImage={isMultiImage}
-            getSeverityColor={getSeverityColor}
-          />
-        </div>
-      )}
-    </div>
-  );
-};
