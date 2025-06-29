@@ -24,21 +24,22 @@ export const useAIAnalysis = () => {
   const [isBuilding, setIsBuilding] = useState(false);
   const [buildingStage, setBuildingStage] = useState<string>('');
 
-  // 🔧 NORMALIZE ANNOTATION DATA - Ensure consistent structure
+  // 🔧 NORMALIZE ANNOTATION DATA - Updated to use correct property names
   const normalizeAnnotation = (annotation: any, index: number): Annotation => {
     console.log(`🔧 NORMALIZING ANNOTATION ${index + 1}:`, {
       rawAnnotation: annotation,
       availableProperties: Object.keys(annotation || {}),
-      feedbackValue: annotation?.feedback,
+      titleValue: annotation?.title,
       descriptionValue: annotation?.description,
-      titleValue: annotation?.title
+      categoryValue: annotation?.category,
+      severityValue: annotation?.severity
     });
 
-    // Extract feedback text from multiple possible sources
+    // Extract feedback text from the correct properties based on actual API response
     const feedbackText = 
-      annotation?.feedback || 
-      annotation?.description || 
-      annotation?.title || 
+      annotation?.description ||  // Primary detailed feedback
+      annotation?.title ||        // Fallback to title if description missing
+      annotation?.feedback ||     // Legacy fallback
       annotation?.content || 
       annotation?.text || 
       annotation?.message ||
@@ -65,6 +66,7 @@ export const useAIAnalysis = () => {
     console.log(`✅ NORMALIZED ANNOTATION ${index + 1}:`, {
       id: normalizedAnnotation.id,
       feedback: normalizedAnnotation.feedback,
+      feedbackSource: annotation?.description ? 'description' : annotation?.title ? 'title' : 'fallback',
       category: normalizedAnnotation.category,
       severity: normalizedAnnotation.severity,
       feedbackLength: normalizedAnnotation.feedback.length
@@ -126,7 +128,7 @@ export const useAIAnalysis = () => {
 
       setBuildingStage('Processing results...');
 
-      // 🔧 NORMALIZE ALL ANNOTATIONS
+      // 🔧 NORMALIZE ALL ANNOTATIONS with corrected property mapping
       const rawAnnotations = data.annotations || [];
       const normalizedAnnotations = rawAnnotations.map((annotation: any, index: number) => 
         normalizeAnnotation(annotation, index)
@@ -139,7 +141,7 @@ export const useAIAnalysis = () => {
         allFeedbackLengths: normalizedAnnotations.map((a: Annotation, i: number) => ({
           index: i + 1,
           feedbackLength: a.feedback.length,
-          hasValidFeedback: a.feedback && a.feedback !== 'Analysis insight'
+          hasValidFeedback: a.feedback && a.feedback !== 'Analysis insight' && !a.feedback.startsWith('Analysis insight')
         }))
       });
 
