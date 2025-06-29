@@ -133,19 +133,41 @@ export const useAIAnalysis = () => {
         fullData: data
       });
 
-      // 🔍 LOG RAW API RESPONSE STRUCTURE FOR DEBUGGING
+      // 🔍 EXPANDED RAW API RESPONSE STRUCTURE LOGGING
       if (data.annotations && data.annotations.length > 0) {
-        console.log('🔍 RAW API ANNOTATION STRUCTURE:', {
-          firstAnnotation: data.annotations[0],
-          annotationKeys: Object.keys(data.annotations[0] || {}),
-          annotationValues: {
-            feedback: data.annotations[0]?.feedback,
-            title: data.annotations[0]?.title,
-            description: data.annotations[0]?.description,
-            category: data.annotations[0]?.category,
-            severity: data.annotations[0]?.severity
+        const firstAnnotation = data.annotations[0];
+        console.log('🔍 RAW ANNOTATION PROPERTIES:', Object.keys(firstAnnotation));
+        console.log('🔍 RAW ANNOTATION VALUES:', firstAnnotation);
+        console.log('🔍 DETAILED ANNOTATION BREAKDOWN:', {
+          annotationKeys: Object.keys(firstAnnotation),
+          annotationKeysCount: Object.keys(firstAnnotation).length,
+          propertyTypeMapping: Object.keys(firstAnnotation).reduce((acc, key) => {
+            acc[key] = {
+              type: typeof firstAnnotation[key],
+              value: firstAnnotation[key],
+              hasValue: !!firstAnnotation[key]
+            };
+            return acc;
+          }, {} as Record<string, any>),
+          possibleFeedbackSources: {
+            feedback: firstAnnotation?.feedback,
+            description: firstAnnotation?.description,
+            title: firstAnnotation?.title,
+            content: firstAnnotation?.content,
+            text: firstAnnotation?.text,
+            message: firstAnnotation?.message
           }
         });
+        
+        // Log all annotations for complete picture
+        console.log('🔍 ALL RAW ANNOTATIONS SAMPLE:', data.annotations.slice(0, 3).map((ann, i) => ({
+          index: i,
+          keys: Object.keys(ann),
+          feedbackProperty: ann?.feedback,
+          descriptionProperty: ann?.description,
+          titleProperty: ann?.title,
+          fullAnnotation: ann
+        })));
       }
 
       setBuildingStage('Processing results...');
