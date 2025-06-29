@@ -20,7 +20,7 @@ export interface LayoutAnalysis {
 }
 
 export interface IndustryClassification {
-  industry: 'ecommerce' | 'saas' | 'finance' | 'healthcare' | 'education' | 'general' | 'marketing' | 'news';
+  industry: 'ecommerce' | 'saas' | 'finance' | 'healthcare' | 'education' | 'marketing' | 'news';
   confidence: number;
   indicators: string[];
 }
@@ -72,15 +72,60 @@ export interface VisionAnalysisResult {
   processingTime: number;
 }
 
+interface GoogleVisionResponse {
+  responses: {
+    textAnnotations?: {
+      description: string;
+      boundingPoly: {
+        vertices: { x: number; y: number }[];
+      };
+    }[];
+    localizedObjectAnnotations?: {
+      name: string;
+      score: number;
+      boundingPoly: {
+        normalizedVertices: { x: number; y: number }[];
+      };
+    }[];
+    imagePropertiesAnnotation?: {
+      dominantColors: {
+        colors: {
+          color: {
+            red: number;
+            green: number;
+            blue: number;
+          };
+          score: number;
+        }[];
+      };
+    };
+    labelAnnotations?: {
+      description: string;
+      score: number;
+    }[];
+    error?: {
+      code: number;
+      message: string;
+    };
+  }[];
+}
+
 class GoogleVisionService {
+  private async getGoogleApiKey(): Promise<string> {
+    // In a browser environment, we'll use the Supabase edge function to make the API call
+    // This avoids exposing the Google API key in the browser
+    throw new Error('Google Vision API calls should be made through Supabase edge functions for security');
+  }
+
   private async callVisionAPI(imageData: string, features: string[]): Promise<any> {
-    console.log('🔍 GoogleVisionService: Calling Vision API with features:', features);
+    console.log('🔍 GoogleVisionService: Calling Vision API through Supabase edge function');
     
     try {
       const { data, error } = await supabase.functions.invoke('analyze-vision', {
         body: {
           image: imageData,
-          features: features
+          features: features,
+          provider: 'google'
         }
       });
 
@@ -271,7 +316,7 @@ class GoogleVisionService {
       news: ['news', 'article', 'breaking', 'story', 'reporter', 'journalism']
     };
     
-    let bestMatch: keyof typeof industryKeywords = 'general';
+    let bestMatch: keyof typeof industryKeywords = 'marketing'; // Default to marketing instead of general
     let highestScore = 0;
     
     Object.entries(industryKeywords).forEach(([industry, keywords]) => {
