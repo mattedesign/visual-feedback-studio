@@ -1,6 +1,4 @@
 
-
-
 interface ProcessedImage {
   base64Data: string;
   mimeType: string;
@@ -24,7 +22,7 @@ class ImageProcessingManager {
     // If it's a relative URL starting with /lovable-uploads/, convert to full URL
     if (imageUrl.startsWith('/lovable-uploads/')) {
       // Use the current origin for lovable-uploads
-      return `https://e1dd9711-6db1-4967-b1cc-c8425b453c2a.lovableproject.com${imageUrl}`;
+      return `https://preview--figmant-ai.lovable.app${imageUrl}`;
     }
     
     // If it's a relative URL that might be a Supabase storage path
@@ -40,18 +38,34 @@ class ImageProcessingManager {
     return imageUrl;
   }
 
+  // 🔥 FIXED: Memory-efficient base64 conversion without recursion
   private arrayBufferToBase64(buffer: ArrayBuffer): string {
-    const uint8Array = new Uint8Array(buffer);
-    let binaryString = '';
+    console.log('🔄 Converting array buffer to base64, size:', buffer.byteLength);
     
-    // Process in chunks to avoid stack overflow
-    const chunkSize = 8192;
-    for (let i = 0; i < uint8Array.length; i += chunkSize) {
-      const chunk = uint8Array.slice(i, i + chunkSize);
-      binaryString += String.fromCharCode.apply(null, Array.from(chunk));
+    try {
+      const uint8Array = new Uint8Array(buffer);
+      const chunkSize = 32768; // 32KB chunks to prevent stack overflow
+      let result = '';
+      
+      for (let i = 0; i < uint8Array.length; i += chunkSize) {
+        const chunk = uint8Array.slice(i, i + chunkSize);
+        let binaryString = '';
+        
+        // Convert chunk to binary string safely
+        for (let j = 0; j < chunk.length; j++) {
+          binaryString += String.fromCharCode(chunk[j]);
+        }
+        
+        result += btoa(binaryString);
+      }
+      
+      console.log('✅ Base64 conversion completed, length:', result.length);
+      return result;
+      
+    } catch (error) {
+      console.error('❌ Base64 conversion failed:', error);
+      throw new Error(`Base64 conversion failed: ${error.message}`);
     }
-    
-    return btoa(binaryString);
   }
 
   async processImages(
@@ -86,24 +100,41 @@ class ImageProcessingManager {
         console.log(`   Full URL: ${fullUrl.substring(0, 100)}...`);
         
         try {
-          // Fetch the image
-          const response = await fetch(fullUrl);
+          // 🔥 FIXED: Add timeout and proper error handling
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+          
+          const response = await fetch(fullUrl, {
+            signal: controller.signal,
+            headers: {
+              'User-Agent': 'FigmantAI/1.0'
+            }
+          });
+          
+          clearTimeout(timeoutId);
+          
           if (!response.ok) {
             throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
           }
 
-          // Get the image as array buffer
+          // Get the image as array buffer with size check
           const arrayBuffer = await response.arrayBuffer();
           
-          // Validate image size (max 50MB)
-          if (arrayBuffer.byteLength > 50 * 1024 * 1024) {
-            throw new Error(`Image too large: ${Math.round(arrayBuffer.byteLength / 1024)}KB (max 50MB allowed)`);
+          // 🔥 FIXED: Validate image size (max 20MB for processing)
+          const maxSize = 20 * 1024 * 1024;
+          if (arrayBuffer.byteLength > maxSize) {
+            console.warn(`⚠️ Image ${i + 1} too large: ${Math.round(arrayBuffer.byteLength / 1024)}KB, skipping`);
+            continue; // Skip this image instead of failing entirely
           }
           
-          // Convert to base64 using safe method
+          if (arrayBuffer.byteLength === 0) {
+            throw new Error('Empty image data received');
+          }
+          
+          // 🔥 FIXED: Use safe base64 conversion
           const base64Data = this.arrayBufferToBase64(arrayBuffer);
           
-          // Get content type
+          // Get content type with fallback
           const mimeType = response.headers.get('content-type') || 'image/jpeg';
           
           console.log(`✅ Image ${i + 1} processed successfully:`, {
@@ -119,12 +150,26 @@ class ImageProcessingManager {
 
         } catch (imageError) {
           console.error(`❌ Failed to process image ${i + 1}:`, imageError);
-          throw new Error(`Failed to process image ${i + 1}: ${imageError instanceof Error ? imageError.message : 'Unknown error'}`);
+          
+          // 🔥 FIXED: Don't fail entire batch for one image
+          if (imageUrls.length === 1) {
+            // If it's the only image, fail the request
+            throw new Error(`Failed to process image: ${imageError instanceof Error ? imageError.message : 'Unknown error'}`);
+          } else {
+            // If it's part of a batch, log and continue
+            console.warn(`⚠️ Skipping image ${i + 1} due to processing error:`, imageError.message);
+            continue;
+          }
         }
       }
 
-      console.log('✅ All images processed successfully:', {
+      if (processedImages.length === 0) {
+        throw new Error('No images could be processed successfully');
+      }
+
+      console.log('✅ Image processing completed:', {
         totalProcessed: processedImages.length,
+        totalRequested: imageUrls.length,
         isComparative
       });
 
@@ -145,5 +190,3 @@ class ImageProcessingManager {
 }
 
 export const imageProcessingManager = new ImageProcessingManager();
-
-

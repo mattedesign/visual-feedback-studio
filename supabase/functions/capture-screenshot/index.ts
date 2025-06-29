@@ -7,7 +7,8 @@ import { handleError } from './errorHandler.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-requested-with',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
 };
 
 // Maximum image size in bytes (2MB - conservative limit)
@@ -111,7 +112,7 @@ async function processImageResponse(blob: Blob, format: string): Promise<Respons
       throw new Error(`Invalid ${format.toUpperCase()} image data format`);
     }
     
-    // Use memory-efficient base64 conversion with validation
+    // 🔥 FIXED: Use memory-efficient base64 conversion
     console.log('Starting optimized base64 conversion...');
     const base64 = await convertToBase64Optimized(uint8Array);
     
@@ -139,13 +140,6 @@ async function processImageResponse(blob: Blob, format: string): Promise<Respons
     if (!/^[A-Za-z0-9+/]*={0,2}$/.test(base64)) {
       throw new Error('Generated base64 string contains invalid characters');
     }
-    
-    // Sample validation - check first and last few characters
-    const firstChars = base64.substring(0, 10);
-    const lastChars = base64.substring(base64.length - 10);
-    console.log('Base64 validation:');
-    console.log('- First 10 chars:', firstChars);
-    console.log('- Last 10 chars:', lastChars);
     
     if (screenshotUrl.length < 100) {
       throw new Error('Generated data URL appears to be too small to be valid');
@@ -191,11 +185,11 @@ async function processImageResponse(blob: Blob, format: string): Promise<Respons
   }
 }
 
-// Optimized base64 conversion with better memory management
+// 🔥 FIXED: Memory-efficient base64 conversion without recursion
 async function convertToBase64Optimized(uint8Array: Uint8Array): Promise<string> {
   console.log('Base64 conversion starting with optimized algorithm...');
   
-  const chunkSize = 3 * 1024; // 3KB chunks for optimal base64 conversion (divisible by 3)
+  const chunkSize = 32768; // 32KB chunks to prevent stack overflow
   let base64 = '';
   
   for (let i = 0; i < uint8Array.length; i += chunkSize) {
@@ -216,8 +210,8 @@ async function convertToBase64Optimized(uint8Array: Uint8Array): Promise<string>
       throw new Error(`Base64 encoding failed at position ${i}: ${btoaError.message}`);
     }
     
-    // Log progress every 50 chunks to monitor without overwhelming logs
-    if ((i / chunkSize) % 50 === 0) {
+    // Log progress every 100 chunks to monitor without overwhelming logs
+    if ((i / chunkSize) % 100 === 0) {
       const progress = Math.round((i / uint8Array.length) * 100);
       console.log('Base64 conversion progress:', progress, '%');
       
