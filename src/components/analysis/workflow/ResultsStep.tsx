@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -208,7 +209,7 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
           {/* Analysis Context Display */}
           <AnalysisContextPanel workflow={workflow} />
 
-          {/* NEW: Enhanced Context Display */}
+          {/* ✅ ENHANCED CONTEXT DISPLAY - Properly integrated */}
           <EnhancedContextDisplay
             enhancedContext={workflow.enhancedContext}
             ragEnhanced={workflow.ragEnhanced}
@@ -219,7 +220,7 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
             visionElementsDetected={workflow.visionElementsDetected}
           />
 
-          {/* Image Indicator - New visual indicator */}
+          {/* ✅ IMAGE INDICATOR - Fixed count display */}
           <ImageIndicator 
             currentImageIndex={activeImageIndex >= 0 ? activeImageIndex : 0}
             totalImages={workflow.selectedImages.length}

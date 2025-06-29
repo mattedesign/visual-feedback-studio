@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { Annotation } from '@/types/analysis';
 import { useAIAnalysis } from './useAIAnalysis';
@@ -297,13 +296,14 @@ export const useAnalysisWorkflow = () => {
     analysisContext,
     aiAnnotations,
     analysisResults,
-    enhancedContext,
-    ragEnhanced,
-    knowledgeSourcesUsed,
-    researchCitations,
-    visionEnhanced,
-    visionConfidenceScore,
-    visionElementsDetected,
+    // ✅ VERIFY these enhanced context properties are included:
+    enhancedContext: enhancedContext || null,
+    ragEnhanced: ragEnhanced || false,
+    knowledgeSourcesUsed: knowledgeSourcesUsed || 0,
+    researchCitations: researchCitations || [],
+    visionEnhanced: visionEnhanced || false,
+    visionConfidenceScore: visionConfidenceScore,
+    visionElementsDetected: visionElementsDetected || 0,
     isAnalyzing: isAnalyzing || aiAnalyzing,
     isBuilding,
     buildingStage,
