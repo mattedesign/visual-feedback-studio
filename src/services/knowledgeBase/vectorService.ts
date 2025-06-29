@@ -1,6 +1,6 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { KnowledgeEntry, SearchFilters } from '@/types/vectorDatabase';
+import { TypeAdapter } from './typeAdapter';
 
 export interface VectorSearchOptions {
   maxResults?: number;
@@ -32,7 +32,7 @@ class VectorService {
       // Generate embedding for the query
       const embedding = await this.generateEmbedding(query);
       
-      // Use the corrected database function parameters
+      // Use the corrected database function parameters with proper field selection
       const { data, error } = await supabase.rpc('match_knowledge', {
         query_embedding: embedding,
         match_threshold: opts.confidenceThreshold,
@@ -47,11 +47,27 @@ class VectorService {
 
       console.log('✅ Vector Search: Found knowledge entries:', data?.length || 0);
       
-      // Fix: Add missing 'source' field to match KnowledgeEntry type
+      // Fix: Map database results to KnowledgeEntry type with proper field mapping
       const processedData = (data || []).map(item => ({
-        ...item,
-        source: item.source || 'Unknown', // Add default source if missing
-        similarity: item.similarity || 0
+        id: item.id,
+        title: item.title,
+        content: item.content,
+        source: item.source || 'Database', // Add default source for database entries
+        category: item.category,
+        tags: item.tags || [],
+        metadata: item.metadata || {},
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        similarity: item.similarity || 0,
+        // Map additional fields from knowledge_entries table
+        primary_category: item.primary_category,
+        secondary_category: item.secondary_category,
+        industry_tags: item.industry_tags || [],
+        complexity_level: item.complexity_level,
+        use_cases: item.use_cases || [],
+        related_patterns: item.related_patterns || [],
+        freshness_score: item.freshness_score,
+        application_context: item.application_context
       }));
       
       return processedData;
@@ -60,6 +76,15 @@ class VectorService {
       console.error('❌ Vector Search: Search failed:', error);
       return [];
     }
+  }
+
+  // Update searchKnowledge overload to accept SearchFilters
+  async searchKnowledgeWithFilters(
+    query: string,
+    filters?: SearchFilters
+  ): Promise<KnowledgeEntry[]> {
+    const options = TypeAdapter.searchFiltersToVectorOptions(filters);
+    return this.searchKnowledge(query, options);
   }
 
   async searchPatterns(
@@ -107,10 +132,7 @@ class VectorService {
         complexity_level: complexityLevel
       };
 
-      return await this.searchKnowledge(query, {
-        maxResults: 20,
-        confidenceThreshold: 0.6
-      });
+      return await this.searchKnowledgeWithFilters(query, filters);
     } catch (error) {
       console.error('❌ Vector Search: Hierarchy search failed:', error);
       return [];
@@ -202,7 +224,13 @@ class VectorService {
         .limit(maxResults);
 
       if (error) throw error;
-      return data || [];
+      
+      // Fix: Map results to proper KnowledgeEntry format
+      return (data || []).map(item => ({
+        ...item,
+        source: item.source || 'Database',
+        similarity: 0.8 // Default similarity for related patterns
+      }));
     } catch (error) {
       console.error('❌ Vector Search: Failed to find related patterns:', error);
       return [];
@@ -218,7 +246,13 @@ class VectorService {
         .limit(limit);
 
       if (error) throw error;
-      return data || [];
+      
+      // Fix: Map results to proper KnowledgeEntry format
+      return (data || []).map(item => ({
+        ...item,
+        source: item.source || 'Database',
+        similarity: 0.85 // Default similarity for industry patterns
+      }));
     } catch (error) {
       console.error('❌ Vector Search: Failed to get industry patterns:', error);
       return [];
@@ -248,9 +282,10 @@ class VectorService {
 
       if (error) throw error;
       
+      // Fix: Map results to proper KnowledgeEntry format with similarity
       return (data || []).map(item => ({
         ...item,
-        source: item.source || 'Unknown',
+        source: item.source || 'Database',
         similarity: 0.8
       }));
     } catch (error) {
@@ -289,6 +324,4 @@ class VectorService {
 }
 
 export const vectorService = new VectorService();
-
-// Fix: Export with the expected name for backward compatibility
 export const vectorKnowledgeService = vectorService;

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { vectorKnowledgeService } from '@/services/knowledgeBase/vectorService';
+import { TypeAdapter } from '@/services/knowledgeBase/typeAdapter';
 import { 
   KnowledgeEntry, 
   CompetitorPattern, 
@@ -26,7 +27,8 @@ export const useVectorKnowledge = () => {
 
     setIsLoading(true);
     try {
-      const results = await vectorKnowledgeService.searchKnowledge(query, filters);
+      // Use the new searchKnowledgeWithFilters method that properly handles SearchFilters
+      const results = await vectorKnowledgeService.searchKnowledgeWithFilters(query, filters);
       const resultsWithSimilarity = results.map(result => ({
         ...result,
         similarity: result.similarity || 0.8
@@ -58,7 +60,9 @@ export const useVectorKnowledge = () => {
 
     setIsLoading(true);
     try {
-      const results = await vectorKnowledgeService.searchPatterns(query, filters);
+      // Convert SearchFilters to VectorSearchOptions using the type adapter
+      const options = TypeAdapter.searchFiltersToVectorOptions(filters);
+      const results = await vectorKnowledgeService.searchPatterns(query, options);
       setPatternResults(results);
       console.log(`Found ${results.length} competitor patterns matching "${query}"`);
     } catch (error) {
