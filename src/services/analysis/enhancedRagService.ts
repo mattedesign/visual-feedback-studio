@@ -1,6 +1,6 @@
 import { googleVisionService, VisionAnalysisResult } from '../vision/googleVisionService';
-import { supabase } from '@/integrations/supabase/client';
-import { KnowledgeEntry, SearchFilters } from '@/types/vectorDatabase';
+import { ragIntegrationService } from './ragIntegrationService';
+import { KnowledgeEntry } from '@/types/vectorDatabase';
 
 export interface EnhancedSearchQuery {
   query: string;
@@ -76,48 +76,51 @@ class EnhancedRagService {
       console.log('👁️ Enhanced RAG: Running vision analysis...');
       const visionResults = await this.analyzeImages(workflow.selectedImages);
       
-      // Step 2: Generate intelligent search queries based on vision analysis and workflow context
+      // Step 2: Generate intelligent search queries
       console.log('🔍 Enhanced RAG: Generating intelligent search queries...');
       const searchQueries = this.generateSearchQueries(visionResults, originalPrompt, workflow, opts);
       
-      // Step 3: Retrieve relevant knowledge using smart queries
-      console.log('📚 Enhanced RAG: Retrieving relevant knowledge...');
-      const retrievedKnowledge = await this.retrieveKnowledge(searchQueries, opts);
+      // Step 3: Retrieve knowledge using unified RAG integration
+      console.log('📚 Enhanced RAG: Retrieving knowledge via unified service...');
+      const mainQuery = this.buildMainSearchQuery(searchQueries, originalPrompt);
+      const ragResult = await ragIntegrationService.retrieveKnowledgeContext(mainQuery, {
+        maxKnowledgeEntries: opts.maxKnowledgeEntries,
+        minConfidenceThreshold: opts.minConfidenceThreshold,
+        includeIndustrySpecific: opts.includeIndustrySpecific
+      });
       
-      // Step 4: Build enhanced prompt with vision + knowledge + workflow context
+      // Step 4: Build enhanced prompt
       console.log('✨ Enhanced RAG: Building enhanced prompt...');
-      const enhancedPrompt = this.buildEnhancedPrompt(
+      const visionContext = this.buildVisionContext(visionResults);
+      const enhancedPrompt = ragIntegrationService.buildEnhancedPrompt(
         originalPrompt,
-        visionResults,
-        retrievedKnowledge,
-        searchQueries,
-        workflow
+        ragResult.contextSummary,
+        visionContext
       );
       
-      // Step 5: Calculate confidence and metrics
-      const confidenceScore = this.calculateOverallConfidence(visionResults, retrievedKnowledge, searchQueries);
-      const citations = this.extractCitations(retrievedKnowledge);
+      // Step 5: Calculate metrics
+      const confidenceScore = this.calculateOverallConfidence(visionResults, ragResult.knowledge, searchQueries);
+      const citations = this.extractCitations(ragResult.knowledge);
       
       const processingTime = Date.now() - startTime;
       
       const enhancedContext: EnhancedContext = {
         visionAnalysis: visionResults[0] || this.getEmptyVisionResult(),
         searchQueries,
-        retrievedKnowledge,
+        retrievedKnowledge: ragResult.knowledge,
         enhancedPrompt,
         confidenceScore,
         processingTime,
-        knowledgeSourcesUsed: retrievedKnowledge.length,
+        knowledgeSourcesUsed: ragResult.sourceCount,
         citations
       };
       
       console.log('✅ Enhanced RAG: Analysis completed successfully', {
         visionElementsDetected: visionResults.reduce((sum, r) => sum + r.uiElements.length, 0),
         searchQueriesGenerated: searchQueries.length,
-        knowledgeEntriesRetrieved: retrievedKnowledge.length,
+        knowledgeEntriesRetrieved: ragResult.knowledge.length,
         overallConfidence: confidenceScore,
-        processingTimeMs: processingTime,
-        workflowAnnotationsUsed: workflow.aiAnnotations.length
+        processingTimeMs: processingTime
       });
       
       return enhancedContext;
@@ -136,68 +139,14 @@ class EnhancedRagService {
     originalPrompt: string,
     options: EnhancedRagOptions = {}
   ): Promise<EnhancedContext> {
-    const startTime = Date.now();
-    const opts = { ...this.DEFAULT_OPTIONS, ...options };
+    const mockWorkflow = {
+      selectedImages: imageUrls,
+      aiAnnotations: [],
+      currentStep: 'analyzing',
+      imageAnnotations: []
+    };
     
-    console.log('🚀 Enhanced RAG: Starting legacy analysis', {
-      imageCount: imageUrls.length,
-      originalPromptLength: originalPrompt.length,
-      options: opts
-    });
-
-    try {
-      // Step 1: Analyze images with Google Vision
-      console.log('👁️ Enhanced RAG: Running vision analysis...');
-      const visionResults = await this.analyzeImages(imageUrls);
-      
-      // Step 2: Generate intelligent search queries based on vision analysis
-      console.log('🔍 Enhanced RAG: Generating intelligent search queries...');
-      const searchQueries = this.generateSearchQueriesLegacy(visionResults, originalPrompt, opts);
-      
-      // Step 3: Retrieve relevant knowledge using smart queries
-      console.log('📚 Enhanced RAG: Retrieving relevant knowledge...');
-      const retrievedKnowledge = await this.retrieveKnowledge(searchQueries, opts);
-      
-      // Step 4: Build enhanced prompt with vision + knowledge context
-      console.log('✨ Enhanced RAG: Building enhanced prompt...');
-      const enhancedPrompt = this.buildEnhancedPromptLegacy(
-        originalPrompt,
-        visionResults,
-        retrievedKnowledge,
-        searchQueries
-      );
-      
-      // Step 5: Calculate confidence and metrics
-      const confidenceScore = this.calculateOverallConfidence(visionResults, retrievedKnowledge, searchQueries);
-      const citations = this.extractCitations(retrievedKnowledge);
-      
-      const processingTime = Date.now() - startTime;
-      
-      const enhancedContext: EnhancedContext = {
-        visionAnalysis: visionResults[0] || this.getEmptyVisionResult(),
-        searchQueries,
-        retrievedKnowledge,
-        enhancedPrompt,
-        confidenceScore,
-        processingTime,
-        knowledgeSourcesUsed: retrievedKnowledge.length,
-        citations
-      };
-      
-      console.log('✅ Enhanced RAG: Legacy analysis completed successfully', {
-        visionElementsDetected: visionResults.reduce((sum, r) => sum + r.uiElements.length, 0),
-        searchQueriesGenerated: searchQueries.length,
-        knowledgeEntriesRetrieved: retrievedKnowledge.length,
-        overallConfidence: confidenceScore,
-        processingTimeMs: processingTime
-      });
-      
-      return enhancedContext;
-      
-    } catch (error) {
-      console.error('❌ Enhanced RAG: Legacy analysis failed:', error);
-      throw new Error(`Enhanced RAG analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+    return this.enhanceAnalysisWithWorkflow(mockWorkflow, originalPrompt, options);
   }
 
   /**
@@ -213,7 +162,6 @@ class EnhancedRagService {
         results.push(result);
       } catch (error) {
         console.error(`❌ Enhanced RAG: Failed to analyze image ${i + 1}:`, error);
-        // Continue with other images
       }
     }
     
@@ -221,7 +169,7 @@ class EnhancedRagService {
   }
 
   /**
-   * Generate intelligent search queries based on vision analysis and workflow context
+   * Generate intelligent search queries based on vision analysis
    */
   private generateSearchQueries(
     visionResults: VisionAnalysisResult[],
@@ -231,95 +179,17 @@ class EnhancedRagService {
   ): EnhancedSearchQuery[] {
     const queries: EnhancedSearchQuery[] = [];
     
-    visionResults.forEach((vision, index) => {
-      // Industry-specific queries
+    // Generate queries based on vision analysis
+    visionResults.forEach((vision) => {
       if (options.includeIndustrySpecific && vision.industry.confidence > 0.5) {
         queries.push({
           query: `${vision.industry.industry} UX best practices user interface design`,
           category: 'industry_patterns',
           industry: vision.industry.industry,
           confidence: vision.industry.confidence,
-          reasoning: `Detected ${vision.industry.industry} industry with ${vision.industry.indicators.length} indicators`
+          reasoning: `Detected ${vision.industry.industry}`
         });
       }
-      
-      // Layout-specific queries
-      if (vision.layout.confidence > 0.6) {
-        queries.push({
-          query: `${vision.layout.type} layout design patterns user experience`,
-          category: 'layout_patterns',
-          confidence: vision.layout.confidence,
-          reasoning: `Identified ${vision.layout.type} layout: ${vision.layout.description}`
-        });
-      }
-      
-      // Device-specific queries
-      if (vision.deviceType.confidence > 0.7) {
-        queries.push({
-          query: `${vision.deviceType.type} UX design responsive interface`,
-          category: 'device_optimization',
-          confidence: vision.deviceType.confidence,
-          reasoning: `Detected ${vision.deviceType.type} interface design`
-        });
-      }
-      
-      // Accessibility queries (if issues found)
-      if (vision.accessibility.length > 0) {
-        const highPriorityIssues = vision.accessibility.filter(issue => issue.severity === 'high');
-        if (highPriorityIssues.length > 0) {
-          queries.push({
-            query: `accessibility WCAG compliance ${highPriorityIssues.map(i => i.type).join(' ')}`,
-            category: 'accessibility',
-            confidence: 0.9,
-            reasoning: `Found ${highPriorityIssues.length} high-priority accessibility issues`
-          });
-        }
-      }
-      
-      // UI Element-specific queries
-      const buttonCount = vision.uiElements.filter(e => e.type === 'button').length;
-      const formCount = vision.uiElements.filter(e => e.type === 'form').length;
-      
-      if (buttonCount > 2) {
-        queries.push({
-          query: 'button design interaction patterns call to action',
-          category: 'interaction_patterns',
-          confidence: 0.8,
-          reasoning: `Detected ${buttonCount} buttons requiring interaction design guidance`
-        });
-      }
-      
-      if (formCount > 0) {
-        queries.push({
-          query: 'form design user input validation UX patterns',
-          category: 'form_patterns',
-          confidence: 0.85,
-          reasoning: `Found ${formCount} forms requiring input design optimization`
-        });
-      }
-    });
-    
-    // Add workflow-specific context queries
-    if (workflow.aiAnnotations.length > 0) {
-      const criticalAnnotations = workflow.aiAnnotations.filter(a => a.severity === 'critical');
-      if (criticalAnnotations.length > 0) {
-        queries.push({
-          query: `critical UX issues ${criticalAnnotations.map(a => a.category).join(' ')} optimization`,
-          category: 'critical_issues',
-          confidence: 0.95,
-          reasoning: `Found ${criticalAnnotations.length} critical issues in workflow annotations`
-        });
-      }
-    }
-    
-    // Add focus area queries if specified
-    options.focusAreas.forEach(area => {
-      queries.push({
-        query: `${area} UX design best practices`,
-        category: 'focus_area',
-        confidence: 0.9,
-        reasoning: `User-specified focus area: ${area}`
-      });
     });
     
     // Add general prompt-based query
@@ -332,173 +202,38 @@ class EnhancedRagService {
       });
     }
     
-    // Sort by confidence and limit
     return queries
       .filter(q => q.confidence >= options.minConfidenceThreshold)
       .sort((a, b) => b.confidence - a.confidence)
-      .slice(0, 8); // Limit to top 8 queries
+      .slice(0, 5);
   }
 
   /**
-   * Legacy search query generation for backward compatibility
+   * Build main search query from search queries
    */
-  private generateSearchQueriesLegacy(
-    visionResults: VisionAnalysisResult[],
-    originalPrompt: string,
-    options: Required<EnhancedRagOptions>
-  ): EnhancedSearchQuery[] {
-    const queries: EnhancedSearchQuery[] = [];
+  private buildMainSearchQuery(queries: EnhancedSearchQuery[], originalPrompt: string): string {
+    if (queries.length === 0) {
+      return originalPrompt;
+    }
     
+    const topQueries = queries.slice(0, 3).map(q => q.query).join(' ');
+    return `${originalPrompt} ${topQueries}`.substring(0, 200);
+  }
+
+  /**
+   * Build vision context from vision results
+   */
+  private buildVisionContext(visionResults: VisionAnalysisResult[]): string {
+    if (visionResults.length === 0) {
+      return '';
+    }
+    
+    let context = '=== VISUAL ANALYSIS CONTEXT ===\n';
     visionResults.forEach((vision, index) => {
-      if (options.includeIndustrySpecific && vision.industry.confidence > 0.5) {
-        queries.push({
-          query: `${vision.industry.industry} UX best practices user interface design`,
-          category: 'industry_patterns',
-          industry: vision.industry.industry,
-          confidence: vision.industry.confidence,
-          reasoning: `Detected ${vision.industry.industry} industry with ${vision.industry.indicators.length} indicators`
-        });
-      }
+      context += `Image ${index + 1}: ${vision.industry.industry} industry, ${vision.layout.type} layout, ${vision.uiElements.length} UI elements\n`;
     });
     
-    if (originalPrompt.length > 10) {
-      queries.push({
-        query: originalPrompt.substring(0, 100),
-        category: 'general',
-        confidence: 0.7,
-        reasoning: 'Based on user prompt requirements'
-      });
-    }
-    
-    return queries
-      .filter(q => q.confidence >= options.minConfidenceThreshold)
-      .sort((a, b) => b.confidence - a.confidence)
-      .slice(0, 8);
-  }
-
-  /**
-   * Retrieve knowledge using intelligent queries
-   */
-  private async retrieveKnowledge(
-    searchQueries: EnhancedSearchQuery[],
-    options: Required<EnhancedRagOptions>
-  ): Promise<KnowledgeEntry[]> {
-    const allKnowledge: KnowledgeEntry[] = [];
-    const seenIds = new Set<string>();
-    
-    for (const query of searchQueries) {
-      try {
-        console.log(`🔍 Enhanced RAG: Searching for "${query.query}" (${query.category})`);
-        
-        const filters: SearchFilters = {
-          match_threshold: 0.75,
-          match_count: Math.ceil(options.maxKnowledgeEntries / searchQueries.length)
-        };
-        
-        // Add category-specific filters
-        if (query.category === 'industry_patterns' && query.industry) {
-          filters.industry_tags = [query.industry];
-        }
-        
-        if (query.category === 'accessibility') {
-          filters.primary_category = 'accessibility';
-        }
-        
-        if (query.category === 'form_patterns') {
-          filters.secondary_category = 'forms';
-        }
-        
-        // Call vector search
-        const { data, error } = await supabase.functions.invoke('build-rag-context', {
-          body: {
-            query: query.query,
-            filters,
-            includeCompetitive: options.includeIndustrySpecific
-          }
-        });
-        
-        if (error) {
-          console.error(`❌ Enhanced RAG: Search failed for "${query.query}":`, error);
-          continue;
-        }
-        
-        if (data?.knowledge) {
-          data.knowledge.forEach((entry: KnowledgeEntry) => {
-            if (!seenIds.has(entry.id)) {
-              seenIds.add(entry.id);
-              // Add query context to entry
-              entry.metadata = {
-                ...entry.metadata,
-                searchQuery: query.query,
-                searchCategory: query.category,
-                searchConfidence: query.confidence,
-                searchReasoning: query.reasoning
-              };
-              allKnowledge.push(entry);
-            }
-          });
-        }
-        
-      } catch (error) {
-        console.error(`❌ Enhanced RAG: Knowledge retrieval failed for query "${query.query}":`, error);
-      }
-    }
-    
-    // Sort by relevance and limit
-    return allKnowledge
-      .sort((a, b) => (b.similarity || 0) - (a.similarity || 0))
-      .slice(0, options.maxKnowledgeEntries);
-  }
-
-  /**
-   * Build enhanced prompt with vision + knowledge + workflow context
-   */
-  private buildEnhancedPrompt(
-    originalPrompt: string,
-    visionResults: VisionAnalysisResult[],
-    knowledge: KnowledgeEntry[],
-    searchQueries: EnhancedSearchQuery[],
-    workflow: WorkflowState
-  ): string {
-    let enhancedPrompt = originalPrompt + '\n\n';
-    
-    enhancedPrompt += '=== VISUAL ANALYSIS CONTEXT ===\n';
-    visionResults.forEach((vision, index) => {
-      enhancedPrompt += `Image ${index + 1} Analysis:\n`;
-      enhancedPrompt += `- Industry: ${vision.industry.industry} (${Math.round(vision.industry.confidence * 100)}% confidence)\n`;
-      enhancedPrompt += `- Layout Type: ${vision.layout.type} - ${vision.layout.description}\n`;
-      enhancedPrompt += `- Device Type: ${vision.deviceType.type} (${vision.deviceType.dimensions.width}x${vision.deviceType.dimensions.height})\n`;
-      enhancedPrompt += `- UI Elements: ${vision.uiElements.length} detected\n\n`;
-    });
-    
-    if (workflow.aiAnnotations.length > 0) {
-      enhancedPrompt += '=== EXISTING ANALYSIS CONTEXT ===\n';
-      enhancedPrompt += `Current workflow has ${workflow.aiAnnotations.length} annotations\n\n`;
-    }
-    
-    if (knowledge.length > 0) {
-      enhancedPrompt += '=== RESEARCH KNOWLEDGE CONTEXT ===\n';
-      enhancedPrompt += `Retrieved ${knowledge.length} relevant UX knowledge sources:\n\n`;
-      
-      knowledge.slice(0, 8).forEach((entry, index) => {
-        enhancedPrompt += `${index + 1}. ${entry.title}\n`;
-        enhancedPrompt += `   Content: ${entry.content.substring(0, 200)}...\n\n`;
-      });
-    }
-    
-    return enhancedPrompt;
-  }
-
-  /**
-   * Legacy prompt building for backward compatibility
-   */
-  private buildEnhancedPromptLegacy(
-    originalPrompt: string,
-    visionResults: VisionAnalysisResult[],
-    knowledge: KnowledgeEntry[],
-    searchQueries: EnhancedSearchQuery[]
-  ): string {
-    return originalPrompt + '\n\nEnhanced with vision and knowledge context.';
+    return context;
   }
 
   /**

@@ -20,7 +20,6 @@ interface ImageAnnotations {
 
 export const useAnalysisWorkflow = () => {
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('upload');
-  // 🔥 COMPLETE REFACTOR: Single image array, no aliases or duplicates
   const [images, setImages] = useState<string[]>([]);
   const [activeImageUrl, setActiveImageUrl] = useState<string | null>(null);
   const [userAnnotations, setUserAnnotations] = useState<Record<string, UserAnnotation[]>>({});
@@ -40,14 +39,8 @@ export const useAnalysisWorkflow = () => {
   const [visionConfidenceScore, setVisionConfidenceScore] = useState<number | undefined>(undefined);
   const [visionElementsDetected, setVisionElementsDetected] = useState<number>(0);
 
-  const { 
-    analyzeImages, 
-    isAnalyzing: enhancedAnalyzing, 
-    isBuilding, 
-    buildingStage,
-    hasResearchContext,
-    researchSourcesCount
-  } = useEnhancedAnalysis({ currentAnalysis });
+  // 🔥 FIXED: Properly integrate enhanced analysis hook
+  const enhancedAnalysis = useEnhancedAnalysis({ currentAnalysis });
 
   const resetWorkflow = useCallback(() => {
     console.log('🔄 RESET: Clearing all workflow state');
@@ -68,7 +61,10 @@ export const useAnalysisWorkflow = () => {
     setVisionElementsDetected(0);
     setIsAnalyzing(false);
     setCurrentAnalysis(null);
-  }, []);
+    
+    // Reset enhanced analysis state
+    enhancedAnalysis.resetState();
+  }, [enhancedAnalysis]);
 
   // 🔥 SIMPLIFIED: Single function to add images
   const addImage = useCallback((imageUrl: string) => {
@@ -196,6 +192,7 @@ export const useAnalysisWorkflow = () => {
     return imageAnnotations.reduce((total, ia) => total + ia.annotations.length, 0);
   }, [imageAnnotations]);
 
+  // 🔥 FIXED: Use enhanced analysis instead of basic analysis
   const startAnalysis = useCallback(async () => {
     if (images.length === 0) {
       toast.error('Please select at least one image to analyze');
@@ -207,7 +204,7 @@ export const useAnalysisWorkflow = () => {
       return;
     }
 
-    if (isAnalyzing || enhancedAnalyzing) {
+    if (isAnalyzing || enhancedAnalysis.isAnalyzing) {
       console.log('⚠️ Analysis already in progress, skipping');
       return;
     }
@@ -232,7 +229,8 @@ export const useAnalysisWorkflow = () => {
         }))
       );
 
-      const result = await analyzeImages({
+      // 🔥 FIXED: Use enhanced analysis hook
+      const result = await enhancedAnalysis.analyzeImages({
         imageUrls: images,
         userAnnotations: userAnnotationsArray,
         analysisPrompt: analysisContext,
@@ -249,7 +247,7 @@ export const useAnalysisWorkflow = () => {
         setAiAnnotations(result.annotations);
         setAnalysisResults(result.analysis);
         
-        // Store enhanced context data
+        // 🔥 FIXED: Store enhanced context data properly
         if (result.enhancedContext) {
           setEnhancedContext(result.enhancedContext);
           setRagEnhanced(true);
@@ -273,7 +271,7 @@ export const useAnalysisWorkflow = () => {
     } finally {
       setIsAnalyzing(false);
     }
-  }, [images, imageAnnotations, analysisContext, analyzeImages, isAnalyzing, enhancedAnalyzing, getTotalAnnotationsCount]);
+  }, [images, imageAnnotations, analysisContext, enhancedAnalysis, isAnalyzing, getTotalAnnotationsCount]);
 
   const goToStep = useCallback((step: WorkflowStep) => {
     console.log('🔄 Workflow: Navigating to step:', step);
@@ -322,8 +320,8 @@ export const useAnalysisWorkflow = () => {
   return {
     // State - using single source of truth
     currentStep,
-    selectedImages: images, // Main array
-    uploadedFiles: images,  // Alias for compatibility
+    selectedImages: images,
+    uploadedFiles: images,
     activeImageUrl,
     userAnnotations,
     imageAnnotations,
@@ -337,19 +335,21 @@ export const useAnalysisWorkflow = () => {
     visionEnhanced,
     visionConfidenceScore,
     visionElementsDetected,
-    isAnalyzing: isAnalyzing || enhancedAnalyzing,
-    isBuilding,
-    buildingStage,
-    hasResearchContext,
-    researchSourcesCount,
     currentAnalysis,
-    selectedImageUrl: images[0] || null, // Legacy compatibility
+    selectedImageUrl: images[0] || null,
+
+    // 🔥 FIXED: Enhanced analysis state integration
+    isAnalyzing: isAnalyzing || enhancedAnalysis.isAnalyzing,
+    isBuilding: enhancedAnalysis.isBuilding,
+    buildingStage: enhancedAnalysis.buildingStage,
+    hasResearchContext: enhancedAnalysis.hasResearchContext,
+    researchSourcesCount: enhancedAnalysis.researchSourcesCount,
 
     // Actions - simplified interface
     resetWorkflow,
     selectImages,
     selectImage,
-    addUploadedFile: addImage, // Renamed for clarity
+    addUploadedFile: addImage,
     setActiveImageUrl,
     setActiveImage,
     addUserAnnotation,

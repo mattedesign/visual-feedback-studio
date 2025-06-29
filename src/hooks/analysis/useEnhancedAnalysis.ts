@@ -56,7 +56,12 @@ export const useEnhancedAnalysis = ({ currentAnalysis }: UseEnhancedAnalysisProp
 
     setIsAnalyzing(true);
     setIsBuilding(true);
-    resetState();
+    
+    // Don't reset state here, let it accumulate
+    setBuildingStage('');
+    setHasResearchContext(false);
+    setResearchSourcesCount(0);
+    setEnhancedContext(null);
 
     try {
       // Phase 1: Build enhanced context if requested
@@ -68,22 +73,44 @@ export const useEnhancedAnalysis = ({ currentAnalysis }: UseEnhancedAnalysisProp
         console.log('📚 Enhanced Analysis: Building RAG context');
 
         try {
-          // Create a simplified workflow state for the enhanced service
+          // 🔥 FIXED: Create proper workflow state for enhanced service
           const workflowState = {
             selectedImages: request.imageUrls,
             aiAnnotations: [], // Will be populated after analysis
             currentStep: 'analyzing',
-            imageAnnotations: request.userAnnotations.map(ua => ({
-              imageUrl: ua.imageUrl,
-              annotations: [{
-                id: ua.id,
-                x: ua.x,
-                y: ua.y,
-                comment: ua.comment
-              }]
-            }))
+            imageAnnotations: request.userAnnotations.reduce((acc, ua) => {
+              const existingImage = acc.find(img => img.imageUrl === ua.imageUrl);
+              if (existingImage) {
+                existingImage.annotations.push({
+                  id: ua.id,
+                  x: ua.x,
+                  y: ua.y,
+                  comment: ua.comment
+                });
+              } else {
+                acc.push({
+                  imageUrl: ua.imageUrl,
+                  annotations: [{
+                    id: ua.id,
+                    x: ua.x,
+                    y: ua.y,
+                    comment: ua.comment
+                  }]
+                });
+              }
+              return acc;
+            }, [] as Array<{
+              imageUrl: string;
+              annotations: Array<{
+                id: string;
+                x: number;
+                y: number;
+                comment: string;
+              }>;
+            }>)
           };
 
+          // 🔥 FIXED: Use enhanced RAG service with workflow integration
           contextData = await enhancedRagService.enhanceAnalysisWithWorkflow(
             workflowState,
             request.analysisPrompt,
@@ -120,6 +147,7 @@ export const useEnhancedAnalysis = ({ currentAnalysis }: UseEnhancedAnalysisProp
         hasEnhancedContext: !!contextData
       });
 
+      // 🔥 FIXED: Use the same analysis service but with enhanced prompt
       const analysisResult = await analysisService.analyzeDesign({
         imageUrls: request.imageUrls,
         analysisId: currentAnalysis?.id || 'temp-analysis',
@@ -174,7 +202,7 @@ export const useEnhancedAnalysis = ({ currentAnalysis }: UseEnhancedAnalysisProp
       setIsAnalyzing(false);
       setIsBuilding(false);
     }
-  }, [currentAnalysis, resetState]);
+  }, [currentAnalysis]);
 
   return {
     analyzeImages,

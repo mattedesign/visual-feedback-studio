@@ -42,6 +42,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
     setCurrentStep(`Analyzing your context: ${focusAreas.join(', ')}...`);
   }, [workflow.analysisContext]);
 
+  // 🔥 FIXED: Simplified analysis execution using workflow's startAnalysis
   const performAnalysis = useCallback(async () => {
     if (analysisStartedRef.current) {
       console.log('⚠️ Enhanced analysis already in progress, skipping duplicate call');
@@ -94,25 +95,14 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       setCurrentStep('Building vision analysis context...');
       setAnalysisProgress(35);
 
-      // Prepare user annotations
-      const userAnnotations = workflow.imageAnnotations.flatMap(imageAnnotation => 
-        imageAnnotation.annotations.map(annotation => ({
-          imageUrl: imageAnnotation.imageUrl,
-          x: annotation.x,
-          y: annotation.y,
-          comment: annotation.comment,
-          id: annotation.id
-        }))
-      );
-
       setCurrentStep('Retrieving UX research knowledge...');
       setAnalysisProgress(50);
 
       setCurrentStep('Running enhanced AI analysis...');
       setAnalysisProgress(65);
 
-      // Call enhanced analysis
-      const result = await workflow.startAnalysis();
+      // 🔥 FIXED: Use workflow's enhanced analysis
+      await workflow.startAnalysis();
 
       setAnalysisProgress(85);
 
