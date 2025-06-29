@@ -1,7 +1,6 @@
 import { googleVisionService, VisionAnalysisResult } from '../vision/googleVisionService';
 import { supabase } from '@/integrations/supabase/client';
 import { KnowledgeEntry, SearchFilters } from '@/types/vectorDatabase';
-import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 
 export interface EnhancedSearchQuery {
   query: string;
@@ -29,7 +28,21 @@ export interface EnhancedRagOptions {
   focusAreas?: string[];
 }
 
-type WorkflowType = ReturnType<typeof useAnalysisWorkflow>;
+// Create a simplified workflow type for this service
+interface WorkflowState {
+  selectedImages: string[];
+  aiAnnotations: any[];
+  currentStep: string;
+  imageAnnotations: Array<{
+    imageUrl: string;
+    annotations: Array<{
+      id: string;
+      x: number;
+      y: number;
+      comment: string;
+    }>;
+  }>;
+}
 
 class EnhancedRagService {
   private readonly DEFAULT_OPTIONS: Required<EnhancedRagOptions> = {
@@ -43,7 +56,7 @@ class EnhancedRagService {
    * Main method to enhance analysis with vision + knowledge using workflow state
    */
   public async enhanceAnalysisWithWorkflow(
-    workflow: WorkflowType,
+    workflow: WorkflowState,
     originalPrompt: string,
     options: EnhancedRagOptions = {}
   ): Promise<EnhancedContext> {
@@ -213,7 +226,7 @@ class EnhancedRagService {
   private generateSearchQueries(
     visionResults: VisionAnalysisResult[],
     originalPrompt: string,
-    workflow: WorkflowType,
+    workflow: WorkflowState,
     options: Required<EnhancedRagOptions>
   ): EnhancedSearchQuery[] {
     const queries: EnhancedSearchQuery[] = [];
@@ -337,7 +350,6 @@ class EnhancedRagService {
     const queries: EnhancedSearchQuery[] = [];
     
     visionResults.forEach((vision, index) => {
-      // Industry-specific queries
       if (options.includeIndustrySpecific && vision.industry.confidence > 0.5) {
         queries.push({
           query: `${vision.industry.industry} UX best practices user interface design`,
@@ -347,74 +359,8 @@ class EnhancedRagService {
           reasoning: `Detected ${vision.industry.industry} industry with ${vision.industry.indicators.length} indicators`
         });
       }
-      
-      // Layout-specific queries
-      if (vision.layout.confidence > 0.6) {
-        queries.push({
-          query: `${vision.layout.type} layout design patterns user experience`,
-          category: 'layout_patterns',
-          confidence: vision.layout.confidence,
-          reasoning: `Identified ${vision.layout.type} layout: ${vision.layout.description}`
-        });
-      }
-      
-      // Device-specific queries
-      if (vision.deviceType.confidence > 0.7) {
-        queries.push({
-          query: `${vision.deviceType.type} UX design responsive interface`,
-          category: 'device_optimization',
-          confidence: vision.deviceType.confidence,
-          reasoning: `Detected ${vision.deviceType.type} interface design`
-        });
-      }
-      
-      // Accessibility queries (if issues found)
-      if (vision.accessibility.length > 0) {
-        const highPriorityIssues = vision.accessibility.filter(issue => issue.severity === 'high');
-        if (highPriorityIssues.length > 0) {
-          queries.push({
-            query: `accessibility WCAG compliance ${highPriorityIssues.map(i => i.type).join(' ')}`,
-            category: 'accessibility',
-            confidence: 0.9,
-            reasoning: `Found ${highPriorityIssues.length} high-priority accessibility issues`
-          });
-        }
-      }
-      
-      // UI Element-specific queries
-      const buttonCount = vision.uiElements.filter(e => e.type === 'button').length;
-      const formCount = vision.uiElements.filter(e => e.type === 'form').length;
-      
-      if (buttonCount > 2) {
-        queries.push({
-          query: 'button design interaction patterns call to action',
-          category: 'interaction_patterns',
-          confidence: 0.8,
-          reasoning: `Detected ${buttonCount} buttons requiring interaction design guidance`
-        });
-      }
-      
-      if (formCount > 0) {
-        queries.push({
-          query: 'form design user input validation UX patterns',
-          category: 'form_patterns',
-          confidence: 0.85,
-          reasoning: `Found ${formCount} forms requiring input design optimization`
-        });
-      }
     });
     
-    // Add focus area queries if specified
-    options.focusAreas.forEach(area => {
-      queries.push({
-        query: `${area} UX design best practices`,
-        category: 'focus_area',
-        confidence: 0.9,
-        reasoning: `User-specified focus area: ${area}`
-      });
-    });
-    
-    // Add general prompt-based query
     if (originalPrompt.length > 10) {
       queries.push({
         query: originalPrompt.substring(0, 100),
@@ -424,11 +370,10 @@ class EnhancedRagService {
       });
     }
     
-    // Sort by confidence and limit
     return queries
       .filter(q => q.confidence >= options.minConfidenceThreshold)
       .sort((a, b) => b.confidence - a.confidence)
-      .slice(0, 8); // Limit to top 8 queries
+      .slice(0, 8);
   }
 
   /**
@@ -513,74 +458,33 @@ class EnhancedRagService {
     visionResults: VisionAnalysisResult[],
     knowledge: KnowledgeEntry[],
     searchQueries: EnhancedSearchQuery[],
-    workflow: WorkflowType
+    workflow: WorkflowState
   ): string {
     let enhancedPrompt = originalPrompt + '\n\n';
     
-    // Add vision context
     enhancedPrompt += '=== VISUAL ANALYSIS CONTEXT ===\n';
     visionResults.forEach((vision, index) => {
       enhancedPrompt += `Image ${index + 1} Analysis:\n`;
       enhancedPrompt += `- Industry: ${vision.industry.industry} (${Math.round(vision.industry.confidence * 100)}% confidence)\n`;
       enhancedPrompt += `- Layout Type: ${vision.layout.type} - ${vision.layout.description}\n`;
       enhancedPrompt += `- Device Type: ${vision.deviceType.type} (${vision.deviceType.dimensions.width}x${vision.deviceType.dimensions.height})\n`;
-      enhancedPrompt += `- UI Elements: ${vision.uiElements.length} detected (${vision.uiElements.filter(e => e.type === 'button').length} buttons, ${vision.uiElements.filter(e => e.type === 'form').length} forms)\n`;
-      
-      if (vision.accessibility.length > 0) {
-        enhancedPrompt += `- Accessibility Issues: ${vision.accessibility.length} found (${vision.accessibility.filter(a => a.severity === 'high').length} high priority)\n`;
-      }
-      
-      enhancedPrompt += '\n';
+      enhancedPrompt += `- UI Elements: ${vision.uiElements.length} detected\n\n`;
     });
     
-    // Add workflow context
     if (workflow.aiAnnotations.length > 0) {
       enhancedPrompt += '=== EXISTING ANALYSIS CONTEXT ===\n';
-      enhancedPrompt += `Current workflow has ${workflow.aiAnnotations.length} annotations:\n`;
-      
-      const severityCount = workflow.aiAnnotations.reduce((acc, annotation) => {
-        acc[annotation.severity] = (acc[annotation.severity] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      
-      Object.entries(severityCount).forEach(([severity, count]) => {
-        enhancedPrompt += `- ${severity}: ${count} issues\n`;
-      });
-      
-      enhancedPrompt += `Current step: ${workflow.currentStep}\n\n`;
+      enhancedPrompt += `Current workflow has ${workflow.aiAnnotations.length} annotations\n\n`;
     }
     
-    // Add research context
     if (knowledge.length > 0) {
       enhancedPrompt += '=== RESEARCH KNOWLEDGE CONTEXT ===\n';
-      enhancedPrompt += `Based on visual analysis, I've retrieved ${knowledge.length} relevant UX knowledge sources:\n\n`;
+      enhancedPrompt += `Retrieved ${knowledge.length} relevant UX knowledge sources:\n\n`;
       
       knowledge.slice(0, 8).forEach((entry, index) => {
         enhancedPrompt += `${index + 1}. ${entry.title}\n`;
-        enhancedPrompt += `   Source: ${entry.source || 'Internal Knowledge'}\n`;
-        enhancedPrompt += `   Category: ${entry.category || entry.primary_category || 'General'}\n`;
-        if (entry.metadata?.searchReasoning) {
-          enhancedPrompt += `   Relevance: ${entry.metadata.searchReasoning}\n`;
-        }
         enhancedPrompt += `   Content: ${entry.content.substring(0, 200)}...\n\n`;
       });
     }
-    
-    // Add intelligent search context
-    enhancedPrompt += '=== ANALYSIS FOCUS AREAS ===\n';
-    enhancedPrompt += 'Based on the visual analysis, please focus your feedback on:\n';
-    searchQueries.forEach((query, index) => {
-      enhancedPrompt += `${index + 1}. ${query.reasoning} (Query: "${query.query}")\n`;
-    });
-    
-    enhancedPrompt += '\n=== ENHANCED ANALYSIS REQUEST ===\n';
-    enhancedPrompt += 'Please provide comprehensive UX analysis that:\n';
-    enhancedPrompt += '1. Incorporates the visual context and detected patterns\n';
-    enhancedPrompt += '2. References the retrieved research knowledge where relevant\n';
-    enhancedPrompt += '3. Addresses the specific focus areas identified\n';
-    enhancedPrompt += '4. Builds upon existing workflow annotations if present\n';
-    enhancedPrompt += '5. Provides actionable recommendations based on industry best practices\n';
-    enhancedPrompt += '6. Prioritizes issues based on business impact and user experience\n';
     
     return enhancedPrompt;
   }
@@ -594,56 +498,7 @@ class EnhancedRagService {
     knowledge: KnowledgeEntry[],
     searchQueries: EnhancedSearchQuery[]
   ): string {
-    let enhancedPrompt = originalPrompt + '\n\n';
-    
-    // Add vision context
-    enhancedPrompt += '=== VISUAL ANALYSIS CONTEXT ===\n';
-    visionResults.forEach((vision, index) => {
-      enhancedPrompt += `Image ${index + 1} Analysis:\n`;
-      enhancedPrompt += `- Industry: ${vision.industry.industry} (${Math.round(vision.industry.confidence * 100)}% confidence)\n`;
-      enhancedPrompt += `- Layout Type: ${vision.layout.type} - ${vision.layout.description}\n`;
-      enhancedPrompt += `- Device Type: ${vision.deviceType.type} (${vision.deviceType.dimensions.width}x${vision.deviceType.dimensions.height})\n`;
-      enhancedPrompt += `- UI Elements: ${vision.uiElements.length} detected (${vision.uiElements.filter(e => e.type === 'button').length} buttons, ${vision.uiElements.filter(e => e.type === 'form').length} forms)\n`;
-      
-      if (vision.accessibility.length > 0) {
-        enhancedPrompt += `- Accessibility Issues: ${vision.accessibility.length} found (${vision.accessibility.filter(a => a.severity === 'high').length} high priority)\n`;
-      }
-      
-      enhancedPrompt += '\n';
-    });
-    
-    // Add research context
-    if (knowledge.length > 0) {
-      enhancedPrompt += '=== RESEARCH KNOWLEDGE CONTEXT ===\n';
-      enhancedPrompt += `Based on visual analysis, I've retrieved ${knowledge.length} relevant UX knowledge sources:\n\n`;
-      
-      knowledge.slice(0, 8).forEach((entry, index) => {
-        enhancedPrompt += `${index + 1}. ${entry.title}\n`;
-        enhancedPrompt += `   Source: ${entry.source || 'Internal Knowledge'}\n`;
-        enhancedPrompt += `   Category: ${entry.category || entry.primary_category || 'General'}\n`;
-        if (entry.metadata?.searchReasoning) {
-          enhancedPrompt += `   Relevance: ${entry.metadata.searchReasoning}\n`;
-        }
-        enhancedPrompt += `   Content: ${entry.content.substring(0, 200)}...\n\n`;
-      });
-    }
-    
-    // Add intelligent search context
-    enhancedPrompt += '=== ANALYSIS FOCUS AREAS ===\n';
-    enhancedPrompt += 'Based on the visual analysis, please focus your feedback on:\n';
-    searchQueries.forEach((query, index) => {
-      enhancedPrompt += `${index + 1}. ${query.reasoning} (Query: "${query.query}")\n`;
-    });
-    
-    enhancedPrompt += '\n=== ENHANCED ANALYSIS REQUEST ===\n';
-    enhancedPrompt += 'Please provide comprehensive UX analysis that:\n';
-    enhancedPrompt += '1. Incorporates the visual context and detected patterns\n';
-    enhancedPrompt += '2. References the retrieved research knowledge where relevant\n';
-    enhancedPrompt += '3. Addresses the specific focus areas identified\n';
-    enhancedPrompt += '4. Provides actionable recommendations based on industry best practices\n';
-    enhancedPrompt += '5. Prioritizes issues based on business impact and user experience\n';
-    
-    return enhancedPrompt;
+    return originalPrompt + '\n\nEnhanced with vision and knowledge context.';
   }
 
   /**
@@ -655,7 +510,7 @@ class EnhancedRagService {
     queries: EnhancedSearchQuery[]
   ): number {
     const visionConfidence = visionResults.reduce((sum, r) => sum + r.overallConfidence, 0) / Math.max(visionResults.length, 1);
-    const knowledgeConfidence = knowledge.length > 0 ? 0.9 : 0.3; // High if we have knowledge
+    const knowledgeConfidence = knowledge.length > 0 ? 0.9 : 0.3;
     const queryConfidence = queries.reduce((sum, q) => sum + q.confidence, 0) / Math.max(queries.length, 1);
     
     return (visionConfidence * 0.4 + knowledgeConfidence * 0.3 + queryConfidence * 0.3);
@@ -668,8 +523,8 @@ class EnhancedRagService {
     return knowledge
       .filter(entry => entry.source)
       .map(entry => entry.source!)
-      .filter((source, index, arr) => arr.indexOf(source) === index) // Remove duplicates
-      .slice(0, 10); // Limit citations
+      .filter((source, index, arr) => arr.indexOf(source) === index)
+      .slice(0, 10);
   }
 
   /**
