@@ -48,7 +48,7 @@ export const DesignViewer = ({
   };
 
   return (
-    <Card className="h-full bg-white border-gray-200 flex flex-col relative">
+    <Card className="h-full w-full bg-white border-gray-200 flex flex-col relative">
       {/* Figmant-style toolbar */}
       <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
         <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 flex items-center gap-2">
@@ -120,15 +120,15 @@ export const DesignViewer = ({
       {/* Main viewer area */}
       <div 
         ref={containerRef}
-        className="flex-1 overflow-hidden relative bg-gray-50 cursor-crosshair"
+        className="flex-1 w-full overflow-hidden relative bg-gray-50 cursor-crosshair"
       >
-        <div className="absolute inset-4 flex items-center justify-center">
-          <div className="relative">
+        <div className="w-full h-full p-4 flex items-center justify-center">
+          <div className="relative w-full h-full flex items-center justify-center">
             <img
               ref={imageRef}
               src={imageUrl}
               alt="Design to analyze"
-              className="max-w-full max-h-full object-contain shadow-xl rounded-lg transition-transform duration-200"
+              className="max-w-full max-h-full w-full object-contain shadow-xl rounded-lg transition-transform duration-200"
               style={{ 
                 transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
                 cursor: isAnalyzing ? 'wait' : 'crosshair'

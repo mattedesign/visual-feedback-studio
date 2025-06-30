@@ -59,10 +59,10 @@ export const ImageTabsViewer = ({
   };
 
   return (
-    <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
-      <CardContent className="p-6">
-        <Tabs value={activeImageUrl} onValueChange={onImageChange}>
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-6">
+    <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 h-full">
+      <CardContent className="p-6 h-full flex flex-col">
+        <Tabs value={activeImageUrl} onValueChange={onImageChange} className="flex flex-col h-full">
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-6 flex-shrink-0">
             {images.map((imageUrl, index) => {
               const aiAnnotations = getAnnotationsForImage(index);
               const userAnnotations = getUserAnnotationsForImage(imageUrl);
@@ -88,95 +88,97 @@ export const ImageTabsViewer = ({
             const userAnnotations = getUserAnnotationsForImage(imageUrl);
 
             return (
-              <TabsContent key={imageUrl} value={imageUrl} className="mt-0">
-                <div className="relative inline-block max-w-full">
-                  <img
-                    src={imageUrl}
-                    alt={`Analysis Image ${index + 1}`}
-                    className="max-w-full h-auto rounded-lg shadow-sm border border-gray-200 dark:border-slate-600"
-                    style={{ maxHeight: '70vh' }}
-                  />
-                  
-                  {/* User annotations (blue) */}
-                  {userAnnotations.map((annotation) => (
-                    <div
-                      key={annotation.id}
-                      className="absolute transform -translate-x-1/2 -translate-y-1/2"
-                      style={{
-                        left: `${annotation.x}%`,
-                        top: `${annotation.y}%`,
-                      }}
-                    >
-                      <div className="w-10 h-10 bg-blue-600 border-4 border-white rounded-full flex items-center justify-center shadow-xl">
-                        <span className="text-sm text-white font-bold">U</span>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* AI annotations with sequential numbering */}
-                  {aiAnnotations.map((annotation, annotationIndex) => {
-                    const isActive = activeAnnotation === annotation.id;
-                    const feedbackContent = annotation.feedback || 'No feedback available';
-
-                    return (
+              <TabsContent key={imageUrl} value={imageUrl} className="mt-0 flex-1 flex flex-col">
+                <div className="flex-1 flex items-center justify-center mb-4">
+                  <div className="relative w-full">
+                    <img
+                      src={imageUrl}
+                      alt={`Analysis Image ${index + 1}`}
+                      className="w-full h-auto rounded-lg shadow-sm border border-gray-200 dark:border-slate-600 object-contain"
+                      style={{ maxHeight: '70vh' }}
+                    />
+                    
+                    {/* User annotations (blue) */}
+                    {userAnnotations.map((annotation) => (
                       <div
-                        key={annotation.id || `ai-${annotationIndex}`}
-                        className={`absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-300 ${
-                          isActive ? 'scale-110 z-20' : 'z-10 hover:scale-105'
-                        }`}
+                        key={annotation.id}
+                        className="absolute transform -translate-x-1/2 -translate-y-1/2"
                         style={{
                           left: `${annotation.x}%`,
                           top: `${annotation.y}%`,
                         }}
-                        onClick={() => handleAnnotationClick(annotation.id, annotationIndex)}
                       >
-                        {/* Pulsing ring effect for active annotations */}
-                        {isActive && (
-                          <div className="absolute inset-0 w-12 h-12 rounded-full border-4 border-blue-400 animate-ping opacity-75"></div>
-                        )}
-                        
-                        <div className={`w-12 h-12 rounded-full border-4 border-white flex items-center justify-center text-white font-bold text-lg shadow-xl transition-all duration-300 ${getSeverityColor(annotation.severity)} ${
-                          isActive ? 'ring-4 ring-blue-400 ring-offset-2' : ''
-                        }`}>
-                          {/* Sequential number instead of category icon */}
-                          <span className="text-base font-bold">{annotationIndex + 1}</span>
+                        <div className="w-10 h-10 bg-blue-600 border-4 border-white rounded-full flex items-center justify-center shadow-xl">
+                          <span className="text-sm text-white font-bold">U</span>
                         </div>
-                        
-                        {/* Active state tooltip */}
-                        {isActive && (
-                          <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white text-xs px-2 py-1 rounded whitespace-nowrap animate-fade-in">
-                            Detail #{annotationIndex + 1}
-                          </div>
-                        )}
-                        
-                        {/* Content overlay when clicked */}
-                        {isActive && (
-                          <div className="absolute top-14 left-1/2 transform -translate-x-1/2 w-80 bg-white dark:bg-slate-800 border-2 border-gray-300 dark:border-slate-600 rounded-lg p-4 shadow-xl z-30">
-                            <div className="flex items-center gap-2 mb-3">
-                              <div className={`w-3 h-3 rounded-full ${getSeverityColor(annotation.severity)}`}></div>
-                              <span className="text-sm font-semibold capitalize text-gray-900 dark:text-white">
-                                {annotation.severity} • {annotation.category}
-                              </span>
-                            </div>
-                            <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed mb-3 whitespace-pre-wrap">
-                              {feedbackContent}
-                            </p>
-                            <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
-                              <span>Effort: {annotation.implementationEffort || 'Unknown'}</span>
-                              <span>Impact: {annotation.businessImpact || 'Unknown'}</span>
-                            </div>
-                            
-                            {/* Arrow pointing to annotation */}
-                            <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white dark:bg-slate-800 border-l-2 border-t-2 border-gray-300 dark:border-slate-600 rotate-45"></div>
-                          </div>
-                        )}
                       </div>
-                    );
-                  })}
+                    ))}
+
+                    {/* AI annotations with sequential numbering */}
+                    {aiAnnotations.map((annotation, annotationIndex) => {
+                      const isActive = activeAnnotation === annotation.id;
+                      const feedbackContent = annotation.feedback || 'No feedback available';
+
+                      return (
+                        <div
+                          key={annotation.id || `ai-${annotationIndex}`}
+                          className={`absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-300 ${
+                            isActive ? 'scale-110 z-20' : 'z-10 hover:scale-105'
+                          }`}
+                          style={{
+                            left: `${annotation.x}%`,
+                            top: `${annotation.y}%`,
+                          }}
+                          onClick={() => handleAnnotationClick(annotation.id, annotationIndex)}
+                        >
+                          {/* Pulsing ring effect for active annotations */}
+                          {isActive && (
+                            <div className="absolute inset-0 w-12 h-12 rounded-full border-4 border-blue-400 animate-ping opacity-75"></div>
+                          )}
+                          
+                          <div className={`w-12 h-12 rounded-full border-4 border-white flex items-center justify-center text-white font-bold text-lg shadow-xl transition-all duration-300 ${getSeverityColor(annotation.severity)} ${
+                            isActive ? 'ring-4 ring-blue-400 ring-offset-2' : ''
+                          }`}>
+                            {/* Sequential number instead of category icon */}
+                            <span className="text-base font-bold">{annotationIndex + 1}</span>
+                          </div>
+                          
+                          {/* Active state tooltip */}
+                          {isActive && (
+                            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white text-xs px-2 py-1 rounded whitespace-nowrap animate-fade-in">
+                              Detail #{annotationIndex + 1}
+                            </div>
+                          )}
+                          
+                          {/* Content overlay when clicked */}
+                          {isActive && (
+                            <div className="absolute top-14 left-1/2 transform -translate-x-1/2 w-80 bg-white dark:bg-slate-800 border-2 border-gray-300 dark:border-slate-600 rounded-lg p-4 shadow-xl z-30">
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className={`w-3 h-3 rounded-full ${getSeverityColor(annotation.severity)}`}></div>
+                                <span className="text-sm font-semibold capitalize text-gray-900 dark:text-white">
+                                  {annotation.severity} • {annotation.category}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed mb-3 whitespace-pre-wrap">
+                                {feedbackContent}
+                              </p>
+                              <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
+                                <span>Effort: {annotation.implementationEffort || 'Unknown'}</span>
+                                <span>Impact: {annotation.businessImpact || 'Unknown'}</span>
+                              </div>
+                              
+                              {/* Arrow pointing to annotation */}
+                              <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white dark:bg-slate-800 border-l-2 border-t-2 border-gray-300 dark:border-slate-600 rotate-45"></div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* Summary for this image */}
-                <div className="mt-4 p-4 bg-gray-50 dark:bg-slate-700 rounded-lg">
+                <div className="flex-shrink-0 p-4 bg-gray-50 dark:bg-slate-700 rounded-lg">
                   <h4 className="font-medium text-gray-900 dark:text-white mb-2">
                     Image {index + 1} Summary
                   </h4>

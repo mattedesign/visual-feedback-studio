@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { Button } from '@/components/ui/button';
@@ -63,8 +64,8 @@ export const AnnotateCanvasState = ({ workflow, selectedDevice }: AnnotateCanvas
   const currentImageIndex = workflow.uploadedFiles.indexOf(currentImageUrl);
 
   return (
-    <div className="space-y-4 p-4">
-      <div className="flex items-center justify-between" style={{ display: 'none' }}>
+    <div className="w-full h-full p-4">
+      <div className="flex items-center justify-between mb-4" style={{ display: 'none' }}>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
           Annotate Image {currentImageIndex + 1}
         </h3>
@@ -81,29 +82,31 @@ export const AnnotateCanvasState = ({ workflow, selectedDevice }: AnnotateCanvas
         </div>
       </div>
 
-      <div className="relative inline-block max-w-full">
-        <img
-          src={currentImageUrl}
-          alt="Design for annotation"
-          onClick={(e) => handleImageClick(e, currentImageUrl)}
-          className="max-w-full h-auto cursor-crosshair rounded-lg shadow-sm border border-gray-200 dark:border-slate-600"
-          style={{ maxHeight: '70vh' }}
-        />
-        
-        {/* User Annotations */}
-        {userAnnotations.map((annotation, index) => (
-          <div
-            key={annotation.id}
-            className="absolute w-6 h-6 bg-blue-500 rounded-full border-2 border-white shadow-lg flex items-center justify-center cursor-pointer transform -translate-x-1/2 -translate-y-1/2 z-10 hover:scale-110 transition-transform"
-            style={{
-              left: `${annotation.x}%`,
-              top: `${annotation.y}%`
-            }}
-            title={annotation.comment}
-          >
-            <span className="text-white text-xs font-bold">{index + 1}</span>
-          </div>
-        ))}
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="relative w-full max-w-none">
+          <img
+            src={currentImageUrl}
+            alt="Design for annotation"
+            onClick={(e) => handleImageClick(e, currentImageUrl)}
+            className="w-full h-auto cursor-crosshair rounded-lg shadow-sm border border-gray-200 dark:border-slate-600 object-contain"
+            style={{ maxHeight: '80vh', width: '100%' }}
+          />
+          
+          {/* User Annotations */}
+          {userAnnotations.map((annotation, index) => (
+            <div
+              key={annotation.id}
+              className="absolute w-6 h-6 bg-blue-500 rounded-full border-2 border-white shadow-lg flex items-center justify-center cursor-pointer transform -translate-x-1/2 -translate-y-1/2 z-10 hover:scale-110 transition-transform"
+              style={{
+                left: `${annotation.x}%`,
+                top: `${annotation.y}%`
+              }}
+              title={annotation.comment}
+            >
+              <span className="text-white text-xs font-bold">{index + 1}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {userAnnotations.length > 0 && (
