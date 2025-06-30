@@ -22,12 +22,14 @@ export const AnalysisStudio = () => {
   }
 
   return (
-    <AnalysisStudioLayout
-      workflow={workflow}
-      sidebarCollapsed={sidebarCollapsed}
-      setSidebarCollapsed={setSidebarCollapsed}
-      rightPanelCollapsed={rightPanelCollapsed}
-      setRightPanelCollapsed={setRightPanelCollapsed}
-    />
+    <div className="h-full">
+      <AnalysisStudioLayout
+        workflow={workflow}
+        sidebarCollapsed={sidebarCollapsed}
+        setSidebarCollapsed={setSidebarCollapsed}
+        rightPanelCollapsed={rightPanelCollapsed}
+        setRightPanelCollapsed={setRightPanelCollapsed}
+      />
+    </div>
   );
 };

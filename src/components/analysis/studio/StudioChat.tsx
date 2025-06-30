@@ -31,9 +31,9 @@ export const StudioChat = ({
   }
 
   return (
-    <div className="shadow-lg">
-      <div className="p-6 py-0">
-        <div className="max-w-4xl mx-auto space-y-6">
+    <div className="bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700">
+      <div className="p-4">
+        <div className="max-w-4xl mx-auto">
           {/* Simplified Context Input */}
           <SimplifiedContextInput 
             analysisContext={workflow.analysisContext}
@@ -46,8 +46,8 @@ export const StudioChat = ({
 
           {/* Helper text */}
           {!hasImages && (
-            <div className="text-center">
-              <p className="hidden text-sm text-gray-600 dark:text-gray-400 bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-700">
+            <div className="text-center mt-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400 bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-700">
                 ⚠️ Please upload and select images first before starting the analysis.
               </p>
             </div>

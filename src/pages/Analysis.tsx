@@ -47,9 +47,9 @@ const Analysis = () => {
 
   // User is authenticated - show the analysis studio (NO subscription checks)
   return (
-    <div className="h-screen bg-slate-900 text-white overflow-hidden">
+    <div className="h-screen bg-slate-900 text-white flex flex-col overflow-hidden">
       <Header user={user} onSignOut={handleSignOut} />
-      <div className="h-[calc(100vh-4rem)] overflow-hidden">
+      <div className="flex-1 min-h-0">
         <AnalysisStudio />
       </div>
     </div>
