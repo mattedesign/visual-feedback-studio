@@ -1,8 +1,7 @@
 
 import { useState, useRef } from 'react';
-import { Upload, Plus, Link, X } from 'lucide-react';
+import { Upload, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useUploadLogic } from '@/hooks/useUploadLogic';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 
@@ -12,8 +11,6 @@ interface SidebarUploadProps {
 }
 
 export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
-  const [showUrlInput, setShowUrlInput] = useState(false);
-  const [urlValue, setUrlValue] = useState('');
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragAreaFileInputRef = useRef<HTMLInputElement>(null);
@@ -35,7 +32,7 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
     }
   };
 
-  const { isProcessing, handleFileUpload, handleUrlSubmit } = useUploadLogic(handleUploadComplete);
+  const { isProcessing, handleFileUpload } = useUploadLogic(handleUploadComplete);
 
   const handleMultipleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -64,14 +61,6 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
     }
     // Reset input
     event.target.value = '';
-  };
-
-  const handleUrlSubmitClick = () => {
-    if (urlValue.trim()) {
-      handleUrlSubmit(urlValue.trim());
-      setUrlValue('');
-      setShowUrlInput(false);
-    }
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -195,80 +184,6 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
             }
           </p>
         </div>
-      </div>
-
-      {/* Upload Buttons */}
-      <div className="space-y-2">
-        <div className="relative hidden">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handleMultipleFileInputChange}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer hidden"
-            disabled={isProcessing || !canUploadMore}
-          />
-          <Button
-            size="sm"
-            variant="outline"
-            className="w-full"
-            disabled={isProcessing || !canUploadMore}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            {isProcessing ? 'Uploading...' : 'Upload Images'}
-          </Button>
-        </div>
-
-        {!showUrlInput ? (
-          <Button
-            size="sm"
-            variant="outline"
-            className="w-full"
-            onClick={() => setShowUrlInput(true)}
-            disabled={isProcessing || !canUploadMore}
-          >
-            <Link className="w-4 h-4 mr-2" />
-            Add from URL
-          </Button>
-        ) : (
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <Input
-                type="url"
-                placeholder="Enter image URL..."
-                value={urlValue}
-                onChange={(e) => setUrlValue(e.target.value)}
-                className="text-sm"
-                disabled={isProcessing}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleUrlSubmitClick();
-                  }
-                }}
-              />
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setShowUrlInput(false);
-                  setUrlValue('');
-                }}
-                className="p-1 h-8 w-8"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-            <Button
-              size="sm"
-              onClick={handleUrlSubmitClick}
-              disabled={!urlValue.trim() || isProcessing || !canUploadMore}
-              className="w-full"
-            >
-              {isProcessing ? 'Adding...' : 'Add URL'}
-            </Button>
-          </div>
-        )}
       </div>
 
       {/* Upload limit indicator */}
