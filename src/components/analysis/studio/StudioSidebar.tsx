@@ -90,7 +90,7 @@ export const StudioSidebar = ({
               <img 
                 src="/lovable-uploads/7d4bfbe9-e4ca-4e8d-9d33-77637e4dcdc6.png" 
                 alt="Menu" 
-                className="w-4 h-4 text-gray-500"
+                className="w-6 h-6 text-gray-500"
               />
             </button>
           </div>
