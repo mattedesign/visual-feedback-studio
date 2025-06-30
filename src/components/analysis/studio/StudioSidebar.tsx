@@ -71,7 +71,7 @@ export const StudioSidebar = ({
             </div>}
 
           {/* Analysis Context Indicator */}
-          {!collapsed && <div className="mb-2">
+          {!collapsed && <div className="mb-2 hidden">
               <div className="flex items-center space-x-2">
                 <Target className="w-3 h-3 text-gray-500 dark:text-gray-400" />
                 <span className="text-xs text-gray-500 dark:text-gray-400">Analysis Context:</span>
