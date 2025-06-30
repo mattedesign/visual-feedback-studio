@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { Badge } from '@/components/ui/badge';
@@ -19,27 +20,47 @@ export const ResultsCanvasState = ({
 }: ResultsCanvasStateProps) => {
   const [selectedFeedback, setSelectedFeedback] = useState<any>(null);
 
-  // SAFETY CHECK: Ensure annotations exist and are valid with better validation
+  // FIXED: Enhanced annotation validation with proper type checking
   const safeAnnotations = Array.isArray(workflow.aiAnnotations) 
     ? workflow.aiAnnotations.filter((annotation, index) => {
-        // More comprehensive validation
+        // Comprehensive validation with detailed logging
         if (!annotation || typeof annotation !== 'object') {
-          console.warn(`Invalid annotation at index ${index}:`, annotation);
+          console.warn(`🔴 Invalid annotation at index ${index}:`, annotation);
           return false;
         }
         
-        // Ensure required properties exist - fixed type comparison
-        if (!annotation.id && annotation.id !== '' && annotation.id !== 0) {
-          console.warn(`Annotation missing ID at index ${index}:`, annotation);
+        // FIXED: Proper type checking for annotation ID
+        if (annotation.id === null || annotation.id === undefined || annotation.id === '') {
+          console.warn(`🔴 Annotation missing valid ID at index ${index}:`, annotation);
           return false;
         }
         
         // Ensure position properties are valid numbers
-        if (typeof annotation.x !== 'number' || typeof annotation.y !== 'number') {
-          console.warn(`Annotation has invalid position at index ${index}:`, annotation);
+        if (typeof annotation.x !== 'number' || typeof annotation.y !== 'number' || 
+            isNaN(annotation.x) || isNaN(annotation.y)) {
+          console.warn(`🔴 Annotation has invalid position at index ${index}:`, { 
+            x: annotation.x, 
+            y: annotation.y, 
+            xType: typeof annotation.x, 
+            yType: typeof annotation.y 
+          });
           return false;
         }
         
+        // Validate position bounds
+        if (annotation.x < 0 || annotation.x > 100 || annotation.y < 0 || annotation.y > 100) {
+          console.warn(`🔴 Annotation position out of bounds at index ${index}:`, { 
+            x: annotation.x, 
+            y: annotation.y 
+          });
+          return false;
+        }
+        
+        console.log(`✅ Valid annotation at index ${index}:`, { 
+          id: annotation.id, 
+          x: annotation.x, 
+          y: annotation.y 
+        });
         return true;
       })
     : [];
@@ -151,25 +172,31 @@ export const ResultsCanvasState = ({
           }}
         />
         
-        {/* FIXED ANNOTATION RENDERING: More robust key generation and validation */}
+        {/* FIXED ANNOTATION RENDERING: Enhanced error handling and validation */}
         {filteredAiAnnotations.map((annotation, index) => {
-          // COMPREHENSIVE SAFETY CHECKS for each annotation
+          // COMPREHENSIVE SAFETY: Additional validation before rendering
           if (!annotation || typeof annotation !== 'object') {
-            console.warn('Skipping invalid annotation:', annotation);
+            console.warn('🔴 Skipping invalid annotation during render:', annotation);
             return null;
           }
 
-          // Generate a more robust key
+          // Generate a more robust key with fallback
           const annotationId = annotation.id || `fallback-${index}-${Date.now()}`;
           const isActive = activeAnnotation === annotationId;
           
-          // Validate position values with fallbacks
+          // Validate and sanitize position values
           const xPosition = (typeof annotation.x === 'number' && !isNaN(annotation.x)) ? annotation.x : 50;
           const yPosition = (typeof annotation.y === 'number' && !isNaN(annotation.y)) ? annotation.y : 50;
           
           // Ensure positions are within reasonable bounds
           const safeX = Math.max(0, Math.min(100, xPosition));
           const safeY = Math.max(0, Math.min(100, yPosition));
+          
+          console.log(`🎨 Rendering annotation ${index + 1}:`, {
+            id: annotationId,
+            position: { x: safeX, y: safeY },
+            isActive
+          });
           
           return (
             <div
