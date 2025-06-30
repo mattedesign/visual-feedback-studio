@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +19,7 @@ import { ProminentBusinessImpact } from './components/ProminentBusinessImpact';
 import { StrengthsSummaryCard } from './components/StrengthsSummaryCard';
 import { PositiveLanguageWrapper } from './components/PositiveLanguageWrapper';
 import { EnhancedBusinessImpactCard } from './components/EnhancedBusinessImpactCard';
+import { PositiveDesignSummary } from './components/PositiveDesignSummary';
 
 interface ResultsStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -242,6 +244,13 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
           </div>
         </CardHeader>
         <CardContent className="space-y-8">
+          {/* 🎉 NEW: Positive Design Summary - FIRST thing users see */}
+          <PositiveDesignSummary
+            imageCount={workflow.selectedImages.length}
+            context={workflow.analysisContext || ''}
+            annotations={workflow.aiAnnotations || []}
+          />
+          
           {/* NEW: Strengths Summary Card - First Priority */}
           <StrengthsSummaryCard
             annotations={workflow.aiAnnotations}
