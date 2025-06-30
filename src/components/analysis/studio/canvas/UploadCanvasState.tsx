@@ -1,3 +1,4 @@
+
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -46,16 +47,19 @@ export const UploadCanvasState = ({
                 alignSelf: 'stretch',
                 borderRadius: '8px',
                 background: 'var(--Background-secondary, #F5F6FA)',
-                color: 'var(--Text-primary, #353535)',
-                fontFamily: '"Creato Display"',
-                fontSize: '12px',
-                fontStyle: 'normal',
-                fontWeight: '400',
-                lineHeight: '150%',
                 flex: '1',
                 width: '100%'
               }}>
-                  <p>Example prompt 1</p>
+                  <p style={{
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Instrument Sans"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '500',
+                    lineHeight: '16px',
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
+                  }}>Example prompt 1</p>
                 </CardContent>
               </Card>
               
@@ -68,15 +72,18 @@ export const UploadCanvasState = ({
                 alignSelf: 'stretch',
                 borderRadius: '8px',
                 background: 'var(--Background-secondary, #F5F6FA)',
-                color: 'var(--Text-primary, #353535)',
-                fontFamily: '"Creato Display"',
-                fontSize: '12px',
-                fontStyle: 'normal',
-                fontWeight: '400',
-                lineHeight: '150%',
                 flex: '1'
               }}>
-                  <p>Example prompt 2</p>
+                  <p style={{
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Instrument Sans"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '500',
+                    lineHeight: '16px',
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
+                  }}>Example prompt 2</p>
                 </CardContent>
               </Card>
               
@@ -89,15 +96,18 @@ export const UploadCanvasState = ({
                 alignSelf: 'stretch',
                 borderRadius: '8px',
                 background: 'var(--Background-secondary, #F5F6FA)',
-                color: 'var(--Text-primary, #353535)',
-                fontFamily: '"Creato Display"',
-                fontSize: '12px',
-                fontStyle: 'normal',
-                fontWeight: '400',
-                lineHeight: '150%',
                 flex: '1'
               }}>
-                  <p>Example prompt 3</p>
+                  <p style={{
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Instrument Sans"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '500',
+                    lineHeight: '16px',
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
+                  }}>Example prompt 3</p>
                 </CardContent>
               </Card>
               
@@ -110,15 +120,18 @@ export const UploadCanvasState = ({
                 alignSelf: 'stretch',
                 borderRadius: '8px',
                 background: 'var(--Background-secondary, #F5F6FA)',
-                color: 'var(--Text-primary, #353535)',
-                fontFamily: '"Creato Display"',
-                fontSize: '12px',
-                fontStyle: 'normal',
-                fontWeight: '400',
-                lineHeight: '150%',
                 flex: '1'
               }}>
-                  <p>Example prompt 4</p>
+                  <p style={{
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Instrument Sans"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '500',
+                    lineHeight: '16px',
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
+                  }}>Example prompt 4</p>
                 </CardContent>
               </Card>
               
@@ -131,15 +144,18 @@ export const UploadCanvasState = ({
                 alignSelf: 'stretch',
                 borderRadius: '8px',
                 background: 'var(--Background-secondary, #F5F6FA)',
-                color: 'var(--Text-primary, #353535)',
-                fontFamily: '"Creato Display"',
-                fontSize: '12px',
-                fontStyle: 'normal',
-                fontWeight: '400',
-                lineHeight: '150%',
                 flex: '1'
               }}>
-                  <p>Example prompt 5</p>
+                  <p style={{
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Instrument Sans"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '500',
+                    lineHeight: '16px',
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
+                  }}>Example prompt 5</p>
                 </CardContent>
               </Card>
             </div>
@@ -179,15 +195,18 @@ export const UploadCanvasState = ({
                 alignSelf: 'stretch',
                 borderRadius: '8px',
                 background: 'var(--Background-secondary, #F5F6FA)',
-                color: 'var(--Text-primary, #353535)',
-                fontFamily: '"Creato Display"',
-                fontSize: '12px',
-                fontStyle: 'normal',
-                fontWeight: '400',
-                lineHeight: '150%',
                 flex: '1'
               }}>
-                  <p>Insights backed by 272+ UX research studies</p>
+                  <p style={{
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Instrument Sans"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '500',
+                    lineHeight: '16px',
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
+                  }}>Insights backed by 272+ UX research studies</p>
                 </CardContent>
               </Card>
               
@@ -200,15 +219,18 @@ export const UploadCanvasState = ({
                 alignSelf: 'stretch',
                 borderRadius: '8px',
                 background: 'var(--Background-secondary, #F5F6FA)',
-                color: 'var(--Text-primary, #353535)',
-                fontFamily: '"Creato Display"',
-                fontSize: '12px',
-                fontStyle: 'normal',
-                fontWeight: '400',
-                lineHeight: '150%',
                 flex: '1'
               }}>
-                  <p>Creates actionable and detailed insights</p>
+                  <p style={{
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Instrument Sans"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '500',
+                    lineHeight: '16px',
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
+                  }}>Creates actionable and detailed insights</p>
                 </CardContent>
               </Card>
               
@@ -221,15 +243,18 @@ export const UploadCanvasState = ({
                 alignSelf: 'stretch',
                 borderRadius: '8px',
                 background: 'var(--Background-secondary, #F5F6FA)',
-                color: 'var(--Text-primary, #353535)',
-                fontFamily: '"Creato Display"',
-                fontSize: '12px',
-                fontStyle: 'normal',
-                fontWeight: '400',
-                lineHeight: '150%',
                 flex: '1'
               }}>
-                  <p>Annotate on specific images</p>
+                  <p style={{
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Instrument Sans"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '500',
+                    lineHeight: '16px',
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
+                  }}>Annotate on specific images</p>
                 </CardContent>
               </Card>
               
@@ -242,15 +267,18 @@ export const UploadCanvasState = ({
                 alignSelf: 'stretch',
                 borderRadius: '8px',
                 background: 'var(--Background-secondary, #F5F6FA)',
-                color: 'var(--Text-primary, #353535)',
-                fontFamily: '"Creato Display"',
-                fontSize: '12px',
-                fontStyle: 'normal',
-                fontWeight: '400',
-                lineHeight: '150%',
                 flex: '1'
               }}>
-                  <p>Comparative results between designs</p>
+                  <p style={{
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Instrument Sans"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '500',
+                    lineHeight: '16px',
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
+                  }}>Comparative results between designs</p>
                 </CardContent>
               </Card>
               
@@ -263,15 +291,18 @@ export const UploadCanvasState = ({
                 alignSelf: 'stretch',
                 borderRadius: '8px',
                 background: 'var(--Background-secondary, #F5F6FA)',
-                color: 'var(--Text-primary, #353535)',
-                fontFamily: '"Creato Display"',
-                fontSize: '12px',
-                fontStyle: 'normal',
-                fontWeight: '400',
-                lineHeight: '150%',
                 flex: '1'
               }}>
-                  <p>Extracts information from UI and recommendati...</p>
+                  <p style={{
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Instrument Sans"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '500',
+                    lineHeight: '16px',
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
+                  }}>Extracts information from UI and recommendati...</p>
                 </CardContent>
               </Card>
             </div>
@@ -311,15 +342,18 @@ export const UploadCanvasState = ({
                 alignSelf: 'stretch',
                 borderRadius: '8px',
                 background: 'var(--Background-secondary, #F5F6FA)',
-                color: 'var(--Text-primary, #353535)',
-                fontFamily: '"Creato Display"',
-                fontSize: '12px',
-                fontStyle: 'normal',
-                fontWeight: '400',
-                lineHeight: '150%',
                 flex: '1'
               }}>
-                  <p>Open AI GPT 4o</p>
+                  <p style={{
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Instrument Sans"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '500',
+                    lineHeight: '16px',
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
+                  }}>Open AI GPT 4o</p>
                 </CardContent>
               </Card>
               
@@ -332,15 +366,18 @@ export const UploadCanvasState = ({
                 alignSelf: 'stretch',
                 borderRadius: '8px',
                 background: 'var(--Background-secondary, #F5F6FA)',
-                color: 'var(--Text-primary, #353535)',
-                fontFamily: '"Creato Display"',
-                fontSize: '12px',
-                fontStyle: 'normal',
-                fontWeight: '400',
-                lineHeight: '150%',
                 flex: '1'
               }}>
-                  <p>Claude Sonnet 3.5</p>
+                  <p style={{
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Instrument Sans"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '500',
+                    lineHeight: '16px',
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
+                  }}>Claude Sonnet 3.5</p>
                 </CardContent>
               </Card>
               
@@ -353,15 +390,18 @@ export const UploadCanvasState = ({
                 alignSelf: 'stretch',
                 borderRadius: '8px',
                 background: 'var(--Background-secondary, #F5F6FA)',
-                color: 'var(--Text-primary, #353535)',
-                fontFamily: '"Creato Display"',
-                fontSize: '12px',
-                fontStyle: 'normal',
-                fontWeight: '400',
-                lineHeight: '150%',
                 flex: '1'
               }}>
-                  <p>Claude Sonnet 4</p>
+                  <p style={{
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Instrument Sans"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '500',
+                    lineHeight: '16px',
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
+                  }}>Claude Sonnet 4</p>
                 </CardContent>
               </Card>
               
@@ -374,15 +414,18 @@ export const UploadCanvasState = ({
                 alignSelf: 'stretch',
                 borderRadius: '8px',
                 background: 'var(--Background-secondary, #F5F6FA)',
-                color: 'var(--Text-primary, #353535)',
-                fontFamily: '"Creato Display"',
-                fontSize: '12px',
-                fontStyle: 'normal',
-                fontWeight: '400',
-                lineHeight: '150%',
                 flex: '1'
               }}>
-                  <p>Claude Opus</p>
+                  <p style={{
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Instrument Sans"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '500',
+                    lineHeight: '16px',
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
+                  }}>Claude Opus</p>
                 </CardContent>
               </Card>
               
@@ -395,15 +438,18 @@ export const UploadCanvasState = ({
                 alignSelf: 'stretch',
                 borderRadius: '8px',
                 background: 'var(--Background-secondary, #F5F6FA)',
-                color: 'var(--Text-primary, #353535)',
-                fontFamily: '"Creato Display"',
-                fontSize: '12px',
-                fontStyle: 'normal',
-                fontWeight: '400',
-                lineHeight: '150%',
                 flex: '1'
               }}>
-                  <p>Google Vision</p>
+                  <p style={{
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Instrument Sans"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '500',
+                    lineHeight: '16px',
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
+                  }}>Google Vision</p>
                 </CardContent>
               </Card>
             </div>
