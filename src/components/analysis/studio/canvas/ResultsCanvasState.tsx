@@ -21,6 +21,7 @@ export const ResultsCanvasState = ({
   const [selectedFeedback, setSelectedFeedback] = useState<any>(null);
 
   const handleAnnotationClick = (annotation: any) => {
+    console.log('🎯 ResultsCanvasState: Annotation clicked on image, highlighting insight:', annotation.id);
     setSelectedFeedback(annotation);
     if (onAnnotationClick) {
       onAnnotationClick(annotation.id);
@@ -81,17 +82,17 @@ export const ResultsCanvasState = ({
           style={{ maxHeight: '70vh' }}
         />
         
-        {/* Display AI annotations with active highlighting */}
+        {/* Display AI annotations with enhanced active highlighting */}
         {aiAnnotations.map((annotation, index) => {
           const isActive = activeAnnotation === annotation.id;
           
           return (
             <div
               key={annotation.id || index}
-              className={`absolute w-8 h-8 rounded-full border-2 shadow-lg flex items-center justify-center cursor-pointer transform -translate-x-1/2 -translate-y-1/2 transition-all duration-200 z-10 ${
+              className={`absolute rounded-full border-2 shadow-lg flex items-center justify-center cursor-pointer transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300 ease-in-out ${
                 isActive 
-                  ? 'bg-blue-500 border-blue-300 scale-125 ring-4 ring-blue-200 dark:ring-blue-800' 
-                  : 'bg-red-500 border-white hover:scale-110 hover:ring-2 hover:ring-red-200 dark:hover:ring-red-800'
+                  ? 'w-12 h-12 bg-blue-600 border-blue-400 scale-125 ring-4 ring-blue-200 dark:ring-blue-700 shadow-xl z-20 animate-pulse' 
+                  : 'w-8 h-8 bg-red-500 border-white hover:scale-110 hover:ring-2 hover:ring-red-200 dark:hover:ring-red-800 hover:shadow-md z-10'
               }`}
               style={{
                 left: `${annotation.x}%`,
@@ -99,9 +100,18 @@ export const ResultsCanvasState = ({
               }}
               onClick={() => handleAnnotationClick(annotation)}
             >
-              <span className="text-white text-xs font-bold">
+              <span className={`font-bold transition-all duration-300 ${
+                isActive 
+                  ? 'text-white text-sm' 
+                  : 'text-white text-xs'
+              }`}>
                 {annotation.id || index + 1}
               </span>
+              
+              {/* Active annotation indicator */}
+              {isActive && (
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-400 rounded-full animate-ping"></div>
+              )}
             </div>
           );
         })}
@@ -117,19 +127,22 @@ export const ResultsCanvasState = ({
 
       {/* Show feedback if available */}
       {selectedFeedback && (
-        <Card className="mt-4">
+        <Card className="mt-4 border-blue-200 dark:border-blue-700">
           <CardContent className="pt-4">
             <div className="space-y-2">
-              <h4 className="font-medium text-gray-900 dark:text-white">
-                {selectedFeedback.title || 'Analysis Insight'}
-              </h4>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
+                <h4 className="font-medium text-blue-900 dark:text-blue-100">
+                  {selectedFeedback.title || 'Analysis Insight'}
+                </h4>
+              </div>
               {selectedFeedback.feedback && (
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {selectedFeedback.feedback}
                 </p>
               )}
               {selectedFeedback.recommendation && (
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-700">
                   <p className="text-sm text-blue-700 dark:text-blue-300">
                     <strong>Recommendation:</strong> {selectedFeedback.recommendation}
                   </p>
@@ -141,10 +154,10 @@ export const ResultsCanvasState = ({
       )}
 
       {!selectedFeedback && aiAnnotations.length > 0 && (
-        <Card>
+        <Card className="border-gray-200 dark:border-slate-700">
           <CardContent className="pt-4">
             <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-              Click on any marker above to see detailed feedback.
+              Click on any marker above to see detailed feedback, or select an insight from the right panel.
             </p>
           </CardContent>
         </Card>

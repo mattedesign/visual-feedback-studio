@@ -102,8 +102,9 @@ export const StudioRightPanel = ({
     setExpandedInsights(newExpanded);
   };
 
-  // Handle annotation click
+  // Handle annotation click with highlighting
   const handleAnnotationClick = (annotationId: string) => {
+    console.log('🎯 StudioRightPanel: Insight clicked, highlighting annotation:', annotationId);
     if (onAnnotationClick) {
       onAnnotationClick(annotationId);
     }
@@ -243,15 +244,19 @@ export const StudioRightPanel = ({
                           key={annotation.id || `annotation-${index}`} 
                           className={`group rounded-lg border transition-all duration-200 cursor-pointer ${
                             isActive 
-                              ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700' 
-                              : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 hover:border-gray-300 dark:hover:border-slate-600'
+                              ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-400 ring-2 ring-blue-200 dark:ring-blue-700 shadow-md' 
+                              : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 hover:border-gray-300 dark:hover:border-slate-600 hover:shadow-sm'
                           }`}
                           onClick={() => handleAnnotationClick(annotation.id)}
                         >
                           <div className="p-3">
                             <div className="flex items-start gap-3">
                               {/* Insight Number Circle */}
-                              <div className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-medium">
+                              <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-medium transition-all duration-200 ${
+                                isActive 
+                                  ? 'bg-blue-600 border-blue-500 text-white shadow-sm' 
+                                  : 'bg-blue-100 dark:bg-blue-900 border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400'
+                              }`}>
                                 {index + 1}
                               </div>
                               
@@ -259,14 +264,22 @@ export const StudioRightPanel = ({
                                 {/* Severity Badge */}
                                 <div className="mb-2">
                                   <Badge 
-                                    className={`text-xs font-medium ${getSeverityBadgeColor(annotation.severity)}`}
+                                    className={`text-xs font-medium transition-all duration-200 ${
+                                      isActive 
+                                        ? 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:text-blue-200 dark:border-blue-600' 
+                                        : getSeverityBadgeColor(annotation.severity)
+                                    }`}
                                   >
                                     {annotation.severity?.toUpperCase() || 'UNKNOWN'}
                                   </Badge>
                                 </div>
                                 
                                 {/* Content */}
-                                <div className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">
+                                <div className={`text-sm leading-relaxed transition-all duration-200 ${
+                                  isActive 
+                                    ? 'text-blue-900 dark:text-blue-100' 
+                                    : 'text-gray-800 dark:text-gray-200'
+                                }`}>
                                   {isExpanded || !needsTruncation ? feedback : truncatedFeedback}
                                 </div>
                                 
@@ -277,14 +290,22 @@ export const StudioRightPanel = ({
                                       e.stopPropagation();
                                       toggleInsightExpansion(annotation.id);
                                     }}
-                                    className="mt-2 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 font-medium"
+                                    className={`mt-2 text-xs font-medium transition-all duration-200 ${
+                                      isActive 
+                                        ? 'text-blue-700 dark:text-blue-300 hover:text-blue-800 dark:hover:text-blue-200' 
+                                        : 'text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200'
+                                    }`}
                                   >
                                     {isExpanded ? 'See Less' : 'See More'}
                                   </button>
                                 )}
                                 
                                 {/* Implementation Details */}
-                                <div className="flex items-center gap-4 mt-3 text-xs text-gray-500 dark:text-gray-400">
+                                <div className={`flex items-center gap-4 mt-3 text-xs transition-all duration-200 ${
+                                  isActive 
+                                    ? 'text-blue-700 dark:text-blue-300' 
+                                    : 'text-gray-500 dark:text-gray-400'
+                                }`}>
                                   <span>
                                     <strong>Effort:</strong> {annotation.implementationEffort || 'Unknown'}
                                   </span>
