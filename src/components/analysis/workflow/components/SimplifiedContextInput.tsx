@@ -1,8 +1,9 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, ChevronDown, ChevronUp, Bot } from 'lucide-react';
+import { Sparkles, ChevronDown, ChevronUp, Bot, Shuffle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 interface SimplifiedContextInputProps {
@@ -28,7 +29,7 @@ export const SimplifiedContextInput = ({
 
   // Smart suggestions based on common use cases
   const quickSuggestions = [
-    { label: "Surprise me 🎲", value: "Comprehensive UX analysis with surprising insights and hidden opportunities" },
+    { label: "Surprise me", icon: "🎲", value: "Comprehensive UX analysis with surprising insights and hidden opportunities" },
     { label: "Visual Hierarchy", value: "Visual hierarchy and layout analysis - improve information prioritization and scanning patterns" },
     { label: "Comparison", value: uploadedImageCount > 1 ? "Comparative analysis across designs for consistency and best practices" : "Single design analysis with industry comparison insights" },
     { label: "Usability", value: "Usability and user experience audit - identify friction points and improvement opportunities" },
@@ -143,90 +144,74 @@ export const SimplifiedContextInput = ({
             )}
           </Button>
         </div>
-      </div>
 
-      {/* Quick Suggestions */}
-      {showSuggestions && (
-        <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 shadow-lg">
-          <CardContent className="p-4">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium text-gray-900 dark:text-white">Quick Suggestions</h4>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowSuggestions(false)}
-                  className="h-6 w-6 p-0 text-gray-400"
+        {/* Quick Suggestions - Integrated into the input bar */}
+        {showSuggestions && (
+          <div className="w-full mt-3 pt-3 border-t border-gray-100 dark:border-slate-700">
+            <div className="flex flex-wrap gap-2">
+              {quickSuggestions.map((suggestion, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-full transition-colors border border-gray-200 dark:border-slate-600"
                 >
-                  <ChevronUp className="w-3 h-3" />
-                </Button>
-              </div>
-              
-              <div className="flex flex-wrap gap-2">
-                {quickSuggestions.map((suggestion, index) => (
-                  <Badge
-                    key={index}
-                    variant="outline"
-                    className="cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-600 transition-colors px-3 py-1"
-                    onClick={() => handleSuggestionClick(suggestion)}
-                  >
-                    {suggestion.label}
-                  </Badge>
+                  {suggestion.icon && <span className="text-xs">{suggestion.icon}</span>}
+                  {suggestion.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Advanced Toggle */}
+            <div className="mt-3 pt-2 border-t border-gray-100 dark:border-slate-700">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              >
+                {showAdvanced ? (
+                  <>
+                    <ChevronUp className="w-3 h-3 mr-1" />
+                    Hide Advanced
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-3 h-3 mr-1" />
+                    Show Advanced Options
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* Advanced Templates */}
+            {showAdvanced && (
+              <div className="space-y-3 pt-2">
+                {Object.entries(advancedTemplates).map(([category, templates]) => (
+                  <div key={category} className="space-y-2">
+                    <div className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                      {category}
+                    </div>
+                    <div className="space-y-1">
+                      {templates.map((template, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleAdvancedTemplate(template)}
+                          className="text-left text-xs text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-slate-700 p-2 rounded w-full transition-colors"
+                        >
+                          {template.split(' - ')[0]}
+                          <div className="text-gray-500 dark:text-gray-500 mt-1">
+                            {template.split(' - ')[1]}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
-
-              {/* Advanced Toggle */}
-              <div className="pt-2 border-t border-gray-100 dark:border-slate-700">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowAdvanced(!showAdvanced)}
-                  className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                >
-                  {showAdvanced ? (
-                    <>
-                      <ChevronUp className="w-3 h-3 mr-1" />
-                      Hide Advanced
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDown className="w-3 h-3 mr-1" />
-                      Show Advanced Options
-                    </>
-                  )}
-                </Button>
-              </div>
-
-              {/* Advanced Templates */}
-              {showAdvanced && (
-                <div className="space-y-3 pt-2">
-                  {Object.entries(advancedTemplates).map(([category, templates]) => (
-                    <div key={category} className="space-y-2">
-                      <div className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
-                        {category}
-                      </div>
-                      <div className="space-y-1">
-                        {templates.map((template, index) => (
-                          <button
-                            key={index}
-                            onClick={() => handleAdvancedTemplate(template)}
-                            className="text-left text-xs text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-slate-700 p-2 rounded w-full transition-colors"
-                          >
-                            {template.split(' - ')[0]}
-                            <div className="text-gray-500 dark:text-gray-500 mt-1">
-                              {template.split(' - ')[1]}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Context Preview (when something is entered) */}
       {analysisContext && !showSuggestions && (
