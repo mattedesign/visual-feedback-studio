@@ -19,10 +19,12 @@ import {
   Calendar,
   BarChart3,
   FileText,
-  Users
+  Users,
+  Loader2
 } from 'lucide-react';
 import { useBusinessMetrics } from '../../../hooks/useBusinessMetrics';
 import { businessImpactService, BusinessImpactData } from '@/services/businessImpactService';
+import { executiveReportService, ExecutiveReportData } from '@/services/executiveReportService';
 import { SharingModal } from './SharingModal';
 import { DetailedBreakdownPage } from './DetailedBreakdownPage';
 
@@ -60,8 +62,8 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
   const siteName = original?.siteName || original?.analysisContext || 'Website Analysis';
   const { impactScore, revenueEstimate, implementationTimeline, competitivePosition, prioritizedRecommendations } = businessMetrics;
   
-  // Prepare data for services
-  const businessImpactData: BusinessImpactData = {
+  // Prepare data for enhanced executive report
+  const executiveReportData: ExecutiveReportData = {
     siteName,
     impactScore,
     revenueEstimate,
@@ -69,7 +71,15 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
     competitivePosition,
     prioritizedRecommendations,
     knowledgeSourcesUsed: enhancedContext?.knowledgeSourcesUsed || 23,
-    analysisId: analysisData.id || 'temp_analysis'
+    analysisId: analysisData.id || 'temp_analysis',
+    analysisDate: new Date().toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }),
+    totalAnnotations: original?.annotations?.length || 0,
+    criticalIssues: original?.annotations?.filter((a: any) => a?.severity === 'critical').length || 0,
+    researchSources: enhancedContext?.knowledgeSourcesUsed || 23
   };
 
   const getScoreColor = (score: number) => {
@@ -84,16 +94,20 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
     return 'Needs Work';
   };
 
-  // Button handlers
+  // Enhanced button handlers
   const handleGenerateExecutiveReport = async () => {
     setIsGeneratingReport(true);
     try {
-      await businessImpactService.generateExecutiveReport(businessImpactData);
+      await executiveReportService.generateExecutiveReport(executiveReportData);
       toast.success('Executive report generated successfully!', {
-        description: 'Professional PDF report has been downloaded.'
+        description: 'Professional PDF report with business insights has been downloaded.',
+        duration: 5000,
       });
     } catch (error) {
-      toast.error('Failed to generate executive report');
+      console.error('Executive report generation failed:', error);
+      toast.error('Failed to generate executive report', {
+        description: 'Please try again or contact support if the issue persists.',
+      });
     } finally {
       setIsGeneratingReport(false);
     }
@@ -133,7 +147,7 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
   if (showDetailedBreakdown) {
     return (
       <DetailedBreakdownPage
-        data={businessImpactData}
+        data={executiveReportData}
         onBack={() => setShowDetailedBreakdown(false)}
       />
     );
@@ -163,8 +177,17 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
                 onClick={handleGenerateExecutiveReport}
                 disabled={isGeneratingReport}
               >
-                <Download className="w-4 h-4" />
-                {isGeneratingReport ? 'Generating...' : 'Export Report'}
+                {isGeneratingReport ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    Export Report
+                  </>
+                )}
               </Button>
               <Button 
                 variant="outline" 
@@ -423,10 +446,16 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
                 onClick={handleGenerateExecutiveReport}
                 disabled={isGeneratingReport}
               >
-                <Download className="w-5 h-5" />
+                {isGeneratingReport ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Download className="w-5 h-5" />
+                )}
                 <div className="text-left">
-                  <div className="font-medium">Generate Executive Report</div>
-                  <div className="text-xs text-gray-500">PDF with key insights</div>
+                  <div className="font-medium">
+                    {isGeneratingReport ? 'Generating...' : 'Generate Executive Report'}
+                  </div>
+                  <div className="text-xs text-gray-500">Professional PDF with insights</div>
                 </div>
                 <ArrowRight className="w-4 h-4" />
               </Button>
@@ -451,7 +480,7 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
         <SharingModal
           isOpen={isSharingModalOpen}
           onClose={() => setIsSharingModalOpen(false)}
-          analysisId={businessImpactData.analysisId}
+          analysisId={executiveReportData.analysisId}
           siteName={siteName}
         />
       </div>
