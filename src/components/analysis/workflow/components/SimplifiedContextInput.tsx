@@ -96,14 +96,25 @@ export const SimplifiedContextInput = ({
         }}
       >
         <div className="flex items-center space-x-3 w-full">
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
             onClick={() => setShowSuggestions(!showSuggestions)}
-            className={`h-8 w-8 p-0 ${showSuggestions ? 'text-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-400 hover:text-blue-500'}`}
+            style={{
+              display: 'flex',
+              width: '44px',
+              height: '44px',
+              padding: '10px',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: '16px',
+              color: '#7B7B7B',
+              borderRadius: '10px',
+              border: '1px solid var(--Stroke-02, #E2E2E2)',
+              background: 'transparent',
+              cursor: 'pointer'
+            }}
           >
             <Sparkles className="w-4 h-4" />
-          </Button>
+          </button>
           
           <Input
             ref={inputRef}
