@@ -72,10 +72,11 @@ export const StudioSidebar = ({
         {/* Header */}
         <div className="p-6 border-b border-gray-200 dark:border-slate-700">
           <div className="flex items-center mb-4">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg flex items-center justify-center mr-3">
-              <Files className="w-5 h-5 text-white" />
-            </div>
-            {!collapsed && <span className="font-bold text-xl text-gray-900 dark:text-white">UXAnalyzer</span>}
+            <img 
+              src="/lovable-uploads/25ed480c-5313-435c-82db-ccfb1ca20af8.png" 
+              alt="Figmant" 
+              className="h-8 mr-3"
+            />
             <button onClick={() => setCollapsed(!collapsed)} className="ml-auto p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
               <Menu className="w-4 h-4 text-gray-500" />
             </button>
