@@ -80,39 +80,55 @@ export const SimplifiedContextInput = ({
   return (
     <div className="space-y-4">
       {/* Main Input */}
-      <div className="flex items-center space-x-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg p-3 shadow-sm">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowSuggestions(!showSuggestions)}
-          className={`h-8 w-8 p-0 ${showSuggestions ? 'text-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-400 hover:text-blue-500'}`}
-        >
-          <Sparkles className="w-4 h-4" />
-        </Button>
-        
-        <Input
-          ref={inputRef}
-          value={analysisContext}
-          onChange={(e) => onAnalysisContextChange(e.target.value)}
-          onKeyPress={handleKeyPress}
-          placeholder="How can I help..."
-          className="border-0 bg-transparent focus-visible:ring-0 text-base placeholder:text-gray-500 dark:placeholder:text-gray-400"
-        />
-        
-        <Button
-          onClick={onAnalyze}
-          disabled={!canAnalyze}
-          className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-medium px-6 py-2 shadow-lg disabled:opacity-50"
-        >
-          {isAnalyzing ? (
-            <>
-              <Sparkles className="w-4 h-4 mr-2 animate-pulse" />
-              Analyzing...
-            </>
-          ) : (
-            'Analyze'
-          )}
-        </Button>
+      <div 
+        className="flex items-center space-x-3 p-3"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-end',
+          alignItems: 'center',
+          alignSelf: 'stretch',
+          borderRadius: '24px',
+          border: '1px solid var(--Stroke-02, #E2E2E2)',
+          background: 'var(--Color, #FFF)',
+          boxShadow: '0px 239px 67px 0px rgba(0, 0, 0, 0.00), 0px 153px 61px 0px rgba(0, 0, 0, 0.01), 0px 86px 52px 0px rgba(0, 0, 0, 0.04), 0px 38px 38px 0px rgba(0, 0, 0, 0.06), 0px 10px 21px 0px rgba(0, 0, 0, 0.07)',
+          backdropFilter: 'blur(6px)'
+        }}
+      >
+        <div className="flex items-center space-x-3 w-full">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowSuggestions(!showSuggestions)}
+            className={`h-8 w-8 p-0 ${showSuggestions ? 'text-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-400 hover:text-blue-500'}`}
+          >
+            <Sparkles className="w-4 h-4" />
+          </Button>
+          
+          <Input
+            ref={inputRef}
+            value={analysisContext}
+            onChange={(e) => onAnalysisContextChange(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="How can I help..."
+            className="border-0 bg-transparent focus-visible:ring-0 text-base placeholder:text-gray-500 dark:placeholder:text-gray-400"
+          />
+          
+          <Button
+            onClick={onAnalyze}
+            disabled={!canAnalyze}
+            className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-medium px-6 py-2 shadow-lg disabled:opacity-50"
+          >
+            {isAnalyzing ? (
+              <>
+                <Sparkles className="w-4 h-4 mr-2 animate-pulse" />
+                Analyzing...
+              </>
+            ) : (
+              'Analyze'
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Quick Suggestions */}
