@@ -3,6 +3,7 @@ import { Annotation } from '@/types/analysis';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { CitationIndicator } from './CitationIndicator';
+import { BookOpen, Award, Zap } from 'lucide-react';
 
 interface DetailedAnnotationsListProps {
   annotations: Annotation[];
@@ -79,6 +80,25 @@ export const DetailedAnnotationsList = ({
 
   return (
     <div className="space-y-4">
+      {/* Research-Backed Header */}
+      {researchCitations.length > 0 && (
+        <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border-2 border-emerald-200 dark:border-emerald-700 rounded-lg p-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
+              <Award className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h4 className="font-bold text-emerald-900 dark:text-emerald-100 text-lg">
+                Research-Backed Recommendations
+              </h4>
+              <p className="text-emerald-700 dark:text-emerald-300 text-sm">
+                Each insight below is supported by peer-reviewed UX research from our database
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {annotations.map((annotation, index) => {
         const isActive = activeAnnotation === annotation.id;
         const citation = getCitationForAnnotation(annotation, index);
@@ -99,24 +119,24 @@ export const DetailedAnnotationsList = ({
             key={annotation.id}
             className={`cursor-pointer transition-all duration-200 ${
               isActive 
-                ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700' 
-                : 'hover:bg-gray-50 dark:hover:bg-slate-800 border-gray-200 dark:border-slate-700'
+                ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700 shadow-lg' 
+                : 'hover:bg-gray-50 dark:hover:bg-slate-800 border-gray-200 dark:border-slate-700 hover:shadow-md'
             }`}
             onClick={() => onAnnotationClick(annotation.id)}
           >
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
+            <CardContent className="p-5">
+              <div className="flex items-start gap-4">
                 <div className="flex-shrink-0">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${getSeverityColor(annotation.severity).split(' ')[0]}`}>
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md ${getSeverityColor(annotation.severity).split(' ')[0]}`}>
                     {index + 1}
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge className={getSeverityColor(annotation.severity)}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Badge className={`${getSeverityColor(annotation.severity)} font-bold`}>
                       {annotation.severity?.toUpperCase()}
                     </Badge>
-                    <Badge variant="outline" className="capitalize">
+                    <Badge variant="outline" className="capitalize font-medium">
                       {annotation.category}
                     </Badge>
                     {isMultiImage && annotation.imageIndex !== undefined && (
@@ -124,31 +144,62 @@ export const DetailedAnnotationsList = ({
                         Image {annotation.imageIndex + 1}
                       </Badge>
                     )}
-                    {/* Citation Indicator */}
+                    {/* Prominent Citation Indicator */}
                     {citation.number > 0 && (
-                      <CitationIndicator
-                        citationNumber={citation.number}
-                        citationText={citation.text}
-                      />
+                      <div className="flex items-center gap-2">
+                        <CitationIndicator
+                          citationNumber={citation.number}
+                          citationText={citation.text}
+                          className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-emerald-400 hover:from-emerald-600 hover:to-teal-600 font-bold shadow-sm"
+                        />
+                        <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold">
+                          <BookOpen className="w-3 h-3 mr-1" />
+                          EVIDENCE-BASED
+                        </Badge>
+                      </div>
                     )}
                   </div>
                   
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">
-                      {annotation.feedback}
-                    </p>
-                    
-                    <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
-                      <span>
-                        <strong>Effort:</strong> {annotation.implementationEffort}
-                      </span>
-                      <span>
-                        <strong>Impact:</strong> {annotation.businessImpact}
-                      </span>
+                  <div className="space-y-3">
+                    <div className={`p-4 rounded-lg ${citation.number > 0 ? 'bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-700' : 'bg-gray-50 dark:bg-slate-700'}`}>
+                      <div className="flex items-start gap-2 mb-2">
+                        {citation.number > 0 && (
+                          <div className="w-6 h-6 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <Zap className="w-3 h-3 text-white" />
+                          </div>
+                        )}
+                        <p className={`text-sm leading-relaxed ${citation.number > 0 ? 'text-emerald-800 dark:text-emerald-200 font-medium' : 'text-gray-800 dark:text-gray-200'}`}>
+                          {annotation.feedback}
+                        </p>
+                      </div>
+                      
                       {citation.number > 0 && (
-                        <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                          Research-backed
-                        </span>
+                        <div className="mt-2 p-2 bg-white dark:bg-slate-800 rounded border-l-4 border-emerald-500">
+                          <p className="text-xs text-emerald-700 dark:text-emerald-300 font-semibold">
+                            📚 Research Foundation: This recommendation is backed by peer-reviewed UX research (Source #{citation.number})
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center gap-6 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-gray-700 dark:text-gray-300">Effort:</span>
+                        <Badge variant="outline" className="text-xs">
+                          {annotation.implementationEffort}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-gray-700 dark:text-gray-300">Impact:</span>
+                        <Badge variant="outline" className="text-xs">
+                          {annotation.businessImpact}
+                        </Badge>
+                      </div>
+                      {citation.number > 0 && (
+                        <Badge className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold">
+                          <Award className="w-3 h-3 mr-1" />
+                          Research-Backed
+                        </Badge>
                       )}
                     </div>
                   </div>

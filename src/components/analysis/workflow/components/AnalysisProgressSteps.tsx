@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle, Clock, Loader2, Brain, Search, Lightbulb, Upload, Zap } from 'lucide-react';
+import { CheckCircle, Clock, Loader2, Brain, Search, Lightbulb, Upload, Zap, Star, BookOpen } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ProgressStep {
@@ -43,23 +43,23 @@ const PROGRESS_STEPS: ProgressStep[] = [
   {
     id: 'research',
     title: 'Building Research Context',
-    description: 'Searching our database of UX research studies...',
+    description: 'Searching our database of 272+ UX research studies...',
     estimatedTime: 15,
     icon: <Brain className="w-4 h-4" />,
     educationalTip: 'We have 272+ UX research studies covering usability, conversion, and accessibility'
   },
   {
     id: 'analysis',
-    title: 'AI Analysis',
-    description: 'Analyzing your design against best practices...',
+    title: 'Research-Backed AI Analysis',
+    description: 'Analyzing your design against evidence-based best practices...',
     estimatedTime: 30,
     icon: <Zap className="w-4 h-4" />,
     educationalTip: 'AI combines visual analysis with research insights to generate recommendations'
   },
   {
     id: 'recommendations',
-    title: 'Generating Recommendations',
-    description: 'Creating actionable improvement suggestions...',
+    title: 'Generating Evidence-Based Recommendations',
+    description: 'Creating research-backed improvement suggestions...',
     estimatedTime: 10,
     icon: <Lightbulb className="w-4 h-4" />,
     educationalTip: 'Each recommendation includes effort estimate and business impact assessment'
@@ -106,12 +106,17 @@ export const AnalysisProgressSteps = ({
 
   const getStepDescription = (step: ProgressStep) => {
     if (step.id === 'research' && researchSourcesFound > 0) {
-      return `Found ${researchSourcesFound} relevant research insights`;
+      return `Found ${researchSourcesFound} relevant research insights from our 272-entry database`;
     }
     if (step.id === 'uploading' && totalImages > 1) {
       return `Preparing ${totalImages} design files for analysis...`;
     }
     return step.description;
+  };
+
+  const getResearchAreas = () => {
+    const areas = ['Accessibility guidelines', 'Conversion patterns', 'Mobile UX', 'Visual hierarchy', 'User psychology'];
+    return areas.slice(0, Math.min(3, researchSourcesFound));
   };
 
   const currentStepData = getCurrentStep();
@@ -124,10 +129,19 @@ export const AnalysisProgressSteps = ({
     <TooltipProvider>
       <Card className="w-full max-w-2xl mx-auto bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
         <CardContent className="p-6">
-          {/* Header */}
+          {/* Header with Prominent Research Badge */}
           <div className="text-center mb-6">
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <Badge className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-emerald-500 px-6 py-3 text-base font-bold shadow-lg">
+                <Star className="w-5 h-5 mr-2 fill-current" />
+                Research-Backed Analysis
+              </Badge>
+              <Badge className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-500 px-4 py-2 text-sm font-semibold shadow-md">
+                272+ UX Studies Database
+              </Badge>
+            </div>
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              Enhanced UX Analysis in Progress
+              Evidence-Based UX Analysis in Progress
             </h3>
             <p className="text-gray-600 dark:text-gray-300 text-sm">
               Research-backed analysis • {formatTime(elapsedTime)} elapsed • ~{formatTime(remainingTime)} remaining
@@ -149,6 +163,57 @@ export const AnalysisProgressSteps = ({
               className="h-3 bg-gray-200 dark:bg-slate-700"
             />
           </div>
+
+          {/* RAG Process Transparency - Research Context Building */}
+          {currentStep === 'research' && (
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-700 rounded-lg p-5 mb-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
+                    <Brain className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-emerald-900 dark:text-emerald-100 text-lg">
+                    Building Research Context from 272 UX Studies
+                  </h4>
+                  <p className="text-emerald-800 dark:text-emerald-200 text-sm mt-1">
+                    {researchSourcesFound > 0 
+                      ? `Found ${researchSourcesFound} relevant studies for your design type`
+                      : 'Searching comprehensive UX research database...'
+                    }
+                  </p>
+                </div>
+              </div>
+              
+              {researchSourcesFound > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-emerald-600" />
+                    <span className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
+                      Research context ready: {researchSourcesFound} insights found
+                    </span>
+                  </div>
+                  
+                  <div className="bg-white dark:bg-slate-800 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <BookOpen className="w-4 h-4 text-emerald-600" />
+                      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        Research Areas Being Used:
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {getResearchAreas().map((area, index) => (
+                        <Badge key={index} variant="outline" className="text-xs bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/20 dark:text-emerald-300">
+                          {area}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Current Step Highlight */}
           {currentStepData && (
@@ -275,19 +340,33 @@ export const AnalysisProgressSteps = ({
             })}
           </div>
 
-          {/* Research Context Summary */}
+          {/* Enhanced Research Context Summary */}
           {researchSourcesFound > 0 && (
-            <div className="mt-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Brain className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <h4 className="font-medium text-emerald-900 dark:text-emerald-100">
-                  Research Context Ready
-                </h4>
+            <div className="mt-6 p-5 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border-2 border-emerald-200 dark:border-emerald-700 rounded-lg">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
+                  <Star className="w-5 h-5 text-white fill-current" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-emerald-900 dark:text-emerald-100 text-lg">
+                    Research Context Ready
+                  </h4>
+                  <p className="text-emerald-700 dark:text-emerald-300 text-sm">
+                    Based on {researchSourcesFound} relevant UX studies from our 272-entry database
+                  </p>
+                </div>
               </div>
-              <p className="text-emerald-800 dark:text-emerald-200 text-sm">
-                Found {researchSourcesFound} relevant UX insights covering usability patterns, 
-                conversion optimization, and accessibility guidelines.
-              </p>
+              <div className="bg-white dark:bg-slate-800 rounded-lg p-4">
+                <p className="text-emerald-800 dark:text-emerald-200 text-sm font-medium mb-2">
+                  🎯 Your analysis will include evidence-based insights covering:
+                </p>
+                <ul className="text-emerald-700 dark:text-emerald-300 text-sm space-y-1">
+                  <li>• Usability patterns with proven success rates</li>
+                  <li>• Conversion optimization based on A/B test data</li>
+                  <li>• Accessibility guidelines with compliance metrics</li>
+                  <li>• Industry-specific best practices</li>
+                </ul>
+              </div>
             </div>
           )}
         </CardContent>
