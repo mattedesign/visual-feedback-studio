@@ -31,32 +31,117 @@ export const UploadCanvasState = ({
             
             <div className="space-y-3">
               <Card className="bg-gray-50 border-0">
-                <CardContent className="p-4">
-                  <p className="text-sm text-gray-700">Example prompt 1</p>
+                <CardContent 
+                  className="flex justify-center items-center self-stretch rounded-lg text-center"
+                  style={{
+                    display: 'flex',
+                    padding: '8px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    alignSelf: 'stretch',
+                    borderRadius: '8px',
+                    background: 'var(--Background-secondary, #F5F6FA)',
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Creato Display"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '400',
+                    lineHeight: '150%'
+                  }}
+                >
+                  <p>Example prompt 1</p>
                 </CardContent>
               </Card>
               
               <Card className="bg-gray-50 border-0">
-                <CardContent className="p-4">
-                  <p className="text-sm text-gray-700">Example prompt 2</p>
+                <CardContent 
+                  className="flex justify-center items-center self-stretch rounded-lg text-center"
+                  style={{
+                    display: 'flex',
+                    padding: '8px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    alignSelf: 'stretch',
+                    borderRadius: '8px',
+                    background: 'var(--Background-secondary, #F5F6FA)',
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Creato Display"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '400',
+                    lineHeight: '150%'
+                  }}
+                >
+                  <p>Example prompt 2</p>
                 </CardContent>
               </Card>
               
               <Card className="bg-gray-50 border-0">
-                <CardContent className="p-4">
-                  <p className="text-sm text-gray-700">Example prompt 3</p>
+                <CardContent 
+                  className="flex justify-center items-center self-stretch rounded-lg text-center"
+                  style={{
+                    display: 'flex',
+                    padding: '8px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    alignSelf: 'stretch',
+                    borderRadius: '8px',
+                    background: 'var(--Background-secondary, #F5F6FA)',
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Creato Display"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '400',
+                    lineHeight: '150%'
+                  }}
+                >
+                  <p>Example prompt 3</p>
                 </CardContent>
               </Card>
               
               <Card className="bg-gray-50 border-0">
-                <CardContent className="p-4">
-                  <p className="text-sm text-gray-700">Example prompt 4</p>
+                <CardContent 
+                  className="flex justify-center items-center self-stretch rounded-lg text-center"
+                  style={{
+                    display: 'flex',
+                    padding: '8px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    alignSelf: 'stretch',
+                    borderRadius: '8px',
+                    background: 'var(--Background-secondary, #F5F6FA)',
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Creato Display"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '400',
+                    lineHeight: '150%'
+                  }}
+                >
+                  <p>Example prompt 4</p>
                 </CardContent>
               </Card>
               
               <Card className="bg-gray-50 border-0">
-                <CardContent className="p-4">
-                  <p className="text-sm text-gray-700">Example prompt 5</p>
+                <CardContent 
+                  className="flex justify-center items-center self-stretch rounded-lg text-center"
+                  style={{
+                    display: 'flex',
+                    padding: '8px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    alignSelf: 'stretch',
+                    borderRadius: '8px',
+                    background: 'var(--Background-secondary, #F5F6FA)',
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Creato Display"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '400',
+                    lineHeight: '150%'
+                  }}
+                >
+                  <p>Example prompt 5</p>
                 </CardContent>
               </Card>
             </div>
@@ -78,32 +163,117 @@ export const UploadCanvasState = ({
             
             <div className="space-y-3">
               <Card className="bg-gray-50 border-0">
-                <CardContent className="p-4">
-                  <p className="text-sm text-gray-700">Insights backed by 272+ UX research studies</p>
+                <CardContent 
+                  className="flex justify-center items-center self-stretch rounded-lg text-center"
+                  style={{
+                    display: 'flex',
+                    padding: '8px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    alignSelf: 'stretch',
+                    borderRadius: '8px',
+                    background: 'var(--Background-secondary, #F5F6FA)',
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Creato Display"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '400',
+                    lineHeight: '150%'
+                  }}
+                >
+                  <p>Insights backed by 272+ UX research studies</p>
                 </CardContent>
               </Card>
               
               <Card className="bg-gray-50 border-0">
-                <CardContent className="p-4">
-                  <p className="text-sm text-gray-700">Creates actionable and detailed insights</p>
+                <CardContent 
+                  className="flex justify-center items-center self-stretch rounded-lg text-center"
+                  style={{
+                    display: 'flex',
+                    padding: '8px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    alignSelf: 'stretch',
+                    borderRadius: '8px',
+                    background: 'var(--Background-secondary, #F5F6FA)',
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Creato Display"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '400',
+                    lineHeight: '150%'
+                  }}
+                >
+                  <p>Creates actionable and detailed insights</p>
                 </CardContent>
               </Card>
               
               <Card className="bg-gray-50 border-0">
-                <CardContent className="p-4">
-                  <p className="text-sm text-gray-700">Annotate on specific images</p>
+                <CardContent 
+                  className="flex justify-center items-center self-stretch rounded-lg text-center"
+                  style={{
+                    display: 'flex',
+                    padding: '8px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    alignSelf: 'stretch',
+                    borderRadius: '8px',
+                    background: 'var(--Background-secondary, #F5F6FA)',
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Creato Display"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '400',
+                    lineHeight: '150%'
+                  }}
+                >
+                  <p>Annotate on specific images</p>
                 </CardContent>
               </Card>
               
               <Card className="bg-gray-50 border-0">
-                <CardContent className="p-4">
-                  <p className="text-sm text-gray-700">Comparative results between designs</p>
+                <CardContent 
+                  className="flex justify-center items-center self-stretch rounded-lg text-center"
+                  style={{
+                    display: 'flex',
+                    padding: '8px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    alignSelf: 'stretch',
+                    borderRadius: '8px',
+                    background: 'var(--Background-secondary, #F5F6FA)',
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Creato Display"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '400',
+                    lineHeight: '150%'
+                  }}
+                >
+                  <p>Comparative results between designs</p>
                 </CardContent>
               </Card>
               
               <Card className="bg-gray-50 border-0">
-                <CardContent className="p-4">
-                  <p className="text-sm text-gray-700">Extracts information from UI and recommendati...</p>
+                <CardContent 
+                  className="flex justify-center items-center self-stretch rounded-lg text-center"
+                  style={{
+                    display: 'flex',
+                    padding: '8px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    alignSelf: 'stretch',
+                    borderRadius: '8px',
+                    background: 'var(--Background-secondary, #F5F6FA)',
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Creato Display"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '400',
+                    lineHeight: '150%'
+                  }}
+                >
+                  <p>Extracts information from UI and recommendati...</p>
                 </CardContent>
               </Card>
             </div>
@@ -125,32 +295,117 @@ export const UploadCanvasState = ({
             
             <div className="space-y-3">
               <Card className="bg-gray-50 border-0">
-                <CardContent className="p-4">
-                  <p className="text-sm text-gray-700">Open AI GPT 4o</p>
+                <CardContent 
+                  className="flex justify-center items-center self-stretch rounded-lg text-center"
+                  style={{
+                    display: 'flex',
+                    padding: '8px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    alignSelf: 'stretch',
+                    borderRadius: '8px',
+                    background: 'var(--Background-secondary, #F5F6FA)',
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Creato Display"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '400',
+                    lineHeight: '150%'
+                  }}
+                >
+                  <p>Open AI GPT 4o</p>
                 </CardContent>
               </Card>
               
               <Card className="bg-gray-50 border-0">
-                <CardContent className="p-4">
-                  <p className="text-sm text-gray-700">Claude Sonnet 3.5</p>
+                <CardContent 
+                  className="flex justify-center items-center self-stretch rounded-lg text-center"
+                  style={{
+                    display: 'flex',
+                    padding: '8px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    alignSelf: 'stretch',
+                    borderRadius: '8px',
+                    background: 'var(--Background-secondary, #F5F6FA)',
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Creato Display"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '400',
+                    lineHeight: '150%'
+                  }}
+                >
+                  <p>Claude Sonnet 3.5</p>
                 </CardContent>
               </Card>
               
               <Card className="bg-gray-50 border-0">
-                <CardContent className="p-4">
-                  <p className="text-sm text-gray-700">Claude Sonnet 4</p>
+                <CardContent 
+                  className="flex justify-center items-center self-stretch rounded-lg text-center"
+                  style={{
+                    display: 'flex',
+                    padding: '8px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    alignSelf: 'stretch',
+                    borderRadius: '8px',
+                    background: 'var(--Background-secondary, #F5F6FA)',
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Creato Display"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '400',
+                    lineHeight: '150%'
+                  }}
+                >
+                  <p>Claude Sonnet 4</p>
                 </CardContent>
               </Card>
               
               <Card className="bg-gray-50 border-0">
-                <CardContent className="p-4">
-                  <p className="text-sm text-gray-700">Claude Opus</p>
+                <CardContent 
+                  className="flex justify-center items-center self-stretch rounded-lg text-center"
+                  style={{
+                    display: 'flex',
+                    padding: '8px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    alignSelf: 'stretch',
+                    borderRadius: '8px',
+                    background: 'var(--Background-secondary, #F5F6FA)',
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Creato Display"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '400',
+                    lineHeight: '150%'
+                  }}
+                >
+                  <p>Claude Opus</p>
                 </CardContent>
               </Card>
               
               <Card className="bg-gray-50 border-0">
-                <CardContent className="p-4">
-                  <p className="text-sm text-gray-700">Google Vision</p>
+                <CardContent 
+                  className="flex justify-center items-center self-stretch rounded-lg text-center"
+                  style={{
+                    display: 'flex',
+                    padding: '8px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    alignSelf: 'stretch',
+                    borderRadius: '8px',
+                    background: 'var(--Background-secondary, #F5F6FA)',
+                    color: 'var(--Text-primary, #353535)',
+                    fontFamily: '"Creato Display"',
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: '400',
+                    lineHeight: '150%'
+                  }}
+                >
+                  <p>Google Vision</p>
                 </CardContent>
               </Card>
             </div>
