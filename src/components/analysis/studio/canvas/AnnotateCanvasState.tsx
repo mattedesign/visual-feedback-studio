@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { Button } from '@/components/ui/button';
@@ -127,7 +126,7 @@ export const AnnotateCanvasState = ({ workflow, selectedDevice }: AnnotateCanvas
       )}
 
       {userAnnotations.length === 0 && (
-        <div className="text-center p-6 bg-gray-50 dark:bg-slate-800 rounded-lg">
+        <div className="text-center p-6 bg-gray-50 dark:bg-slate-800 rounded-lg" style={{ display: 'none' }}>
           <Plus className="w-8 h-8 text-gray-400 mx-auto mb-2" />
           <p className="text-gray-600 dark:text-gray-400">
             Click anywhere on the image to add your first annotation
