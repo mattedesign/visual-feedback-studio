@@ -1,3 +1,4 @@
+
 import { Files, MessageCircle, Target, Trash2 } from 'lucide-react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { SidebarUpload } from './SidebarUpload';
@@ -56,7 +57,7 @@ export const StudioSidebar = ({
       background: 'var(--01-White-01, #FFF)',
       boxShadow: '0px 2px 0px 0px rgba(255, 255, 255, 0.80) inset, 0px 1px 3.2px -2px rgba(0, 0, 0, 0.99)',
       display: 'flex',
-      width: '240px',
+      width: collapsed ? '64px' : '240px',
       flexDirection: 'column',
       alignItems: 'center',
       flexShrink: 0,
@@ -65,37 +66,41 @@ export const StudioSidebar = ({
       marginRight: '12px',
       marginTop: '12px',
       marginBottom: '12px',
-      height: 'calc(100vh - 24px)'
+      height: 'calc(100vh - 24px)',
+      transition: 'width 0.3s ease'
     }}>
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full w-full">
         {/* Header */}
-        <div className="p-6 border-b border-gray-200 dark:border-slate-700">
+        <div className={`border-b border-gray-200 dark:border-slate-700 ${collapsed ? 'p-3' : 'p-6'}`}>
           <div className="flex items-center">
             <img 
               src="/lovable-uploads/47930faa-a736-4a3b-a873-e704ca21395f.png" 
               alt="Figmant" 
               className="h-6 mr-3"
             />
-            <button onClick={() => setCollapsed(!collapsed)} className="ml-auto p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
-              <img 
-                src="/lovable-uploads/7d4bfbe9-e4ca-4e8d-9d33-77637e4dcdc6.png" 
-                alt="Menu" 
-                className="w-6 h-6 text-gray-500"
-              />
-            </button>
+            {!collapsed && (
+              <button onClick={() => setCollapsed(!collapsed)} className="ml-auto p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
+                <img 
+                  src="/lovable-uploads/7d4bfbe9-e4ca-4e8d-9d33-77637e4dcdc6.png" 
+                  alt="Menu" 
+                  className="w-6 h-6 text-gray-500"
+                />
+              </button>
+            )}
+            {collapsed && (
+              <button onClick={() => setCollapsed(!collapsed)} className="ml-auto p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
+                <img 
+                  src="/lovable-uploads/7d4bfbe9-e4ca-4e8d-9d33-77637e4dcdc6.png" 
+                  alt="Menu" 
+                  className="w-4 h-4 text-gray-500"
+                />
+              </button>
+            )}
           </div>
 
-          <div className="flex items-center justify-between mb-3 hidden">
-              <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-                Images ({workflow.uploadedFiles.length})
-              </h4>
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                Step: {workflow.currentStep}
-              </span>
-            </div>
-
-          {/* Analysis Context Indicator */}
-          <div className="mb-2 hidden">
+          {/* Analysis Context Indicator - Hidden when collapsed */}
+          {!collapsed && (
+            <div className="mb-2 hidden">
               <div className="flex items-center space-x-2">
                 <Target className="w-3 h-3 text-gray-500 dark:text-gray-400" />
                 <span className="text-xs text-gray-500 dark:text-gray-400">Analysis Context:</span>
@@ -110,6 +115,7 @@ export const StudioSidebar = ({
                   </Badge>}
               </div>
             </div>
+          )}
         </div>
 
         {/* Upload Section */}
