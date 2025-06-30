@@ -90,8 +90,8 @@ export const SimplifiedContextInput = ({
           background: 'var(--Color, #FFF)',
           boxShadow: '0px 32px 67px 0px rgba(0, 0, 0, 0.00), 0px 24px 61px 0px rgba(0, 0, 0, 0.01), 0px 12px 52px 0px rgba(0, 0, 0, 0.04), 0px 12px 38px 0px rgba(0, 0, 0, 0.06), 0px 4px 21px 0px rgba(0, 0, 0, 0.07)',
           backdropFilter: 'blur(6px)',
-          // Shift the container up when suggestions are shown
-          transform: showSuggestions ? 'translateY(-60px)' : 'translateY(0)',
+          // Reduce the upward movement to stay aligned with left panel
+          transform: showSuggestions ? 'translateY(-20px)' : 'translateY(0)',
         }}
       >
         {/* Quick Suggestions - Now appears above input */}
