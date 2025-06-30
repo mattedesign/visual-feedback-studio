@@ -1,3 +1,4 @@
+
 import { Files, MessageCircle, Target, Trash2 } from 'lucide-react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { SidebarUpload } from './SidebarUpload';
@@ -72,7 +73,7 @@ export const StudioSidebar = ({
         <div className="p-6 border-b border-gray-200 dark:border-slate-700">
           <div className="flex items-center">
             <img 
-              src="/lovable-uploads/25ed480c-5313-435c-82db-ccfb1ca20af8.png" 
+              src="/lovable-uploads/47930faa-a736-4a3b-a873-e704ca21395f.png" 
               alt="Figmant" 
               className="h-8 mr-3"
             />
