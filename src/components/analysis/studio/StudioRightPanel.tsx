@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { Badge } from '@/components/ui/badge';
@@ -171,7 +172,23 @@ export const StudioRightPanel = ({
   };
 
   return (
-    <div className="w-80 bg-white dark:bg-slate-900 border-l border-gray-200 dark:border-slate-700 flex flex-col" style={{ marginLeft: '12px', marginRight: '12px' }}>
+    <div style={{
+      display: 'flex',
+      width: '240px',
+      flexDirection: 'column',
+      alignItems: 'center',
+      flexShrink: 0,
+      alignSelf: 'stretch',
+      borderRadius: '20px',
+      border: '1px solid var(--Stroke-02, #E2E2E2)',
+      background: 'var(--01-White-01, #FFF)',
+      boxShadow: '0px 2px 0px 0px rgba(255, 255, 255, 0.80) inset, 0px 1px 3.2px -2px rgba(0, 0, 0, 0.99)',
+      marginLeft: '12px',
+      marginRight: '12px',
+      marginTop: '12px',
+      marginBottom: '12px',
+      height: 'calc(100vh - 24px)'
+    }}>
       {/* Panel Header with Controls */}
       <div className="p-4 border-b border-gray-200 dark:border-slate-700 space-y-4">
         <div className="flex items-center justify-between">
