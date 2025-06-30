@@ -149,7 +149,7 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
   const canUploadMore = workflow.selectedImages.length < 5;
 
   return (
-    <div className="p-4 border-b border-gray-200 dark:border-slate-600">
+    <div className="p-4">
       {/* Hidden file input for drag area */}
       <input
         ref={dragAreaFileInputRef}
