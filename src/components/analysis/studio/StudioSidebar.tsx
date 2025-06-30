@@ -63,7 +63,8 @@ export const StudioSidebar = ({
       flexShrink: 0,
       alignSelf: 'stretch',
       marginLeft: '12px',
-      marginRight: '12px'
+      marginRight: '12px',
+      height: '100vh'
     }}>
       <div className="flex flex-col h-full">
         {/* Header */}

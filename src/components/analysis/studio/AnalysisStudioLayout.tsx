@@ -43,14 +43,12 @@ export const AnalysisStudioLayout = ({
 
   return (
     <div className="flex h-full bg-gray-100 dark:bg-slate-800 overflow-hidden">
-      {/* Left Sidebar - File Management with vertical padding */}
-      <div className="py-3">
-        <StudioSidebar 
-          workflow={workflow}
-          collapsed={sidebarCollapsed}
-          setCollapsed={setSidebarCollapsed}
-        />
-      </div>
+      {/* Left Sidebar - File Management - Full height */}
+      <StudioSidebar 
+        workflow={workflow}
+        collapsed={sidebarCollapsed}
+        setCollapsed={setSidebarCollapsed}
+      />
       
       {/* Main Canvas Area */}
       <div className="flex-1 flex flex-col min-w-0 h-full">
