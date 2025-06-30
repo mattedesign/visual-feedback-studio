@@ -13,12 +13,24 @@ type AnalysisPhase = 'uploading' | 'processing' | 'research' | 'analysis' | 'rec
 export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
   const [currentPhase, setCurrentPhase] = useState<AnalysisPhase>('uploading');
   const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState<string[]>([]);
   const [retryCount, setRetryCount] = useState(0);
   const [researchSourcesFound, setResearchSourcesFound] = useState(0);
   const maxRetries = 1;
   const analysisStartedRef = useRef(false);
 
-  // 🎯 PHASE MANAGEMENT WITH REALISTIC TIMING
+  // Complete a step and add it to completed steps
+  const completeStep = useCallback((stepId: string) => {
+    console.log(`✅ Step completed: ${stepId}`);
+    setCompletedSteps(prev => {
+      if (!prev.includes(stepId)) {
+        return [...prev, stepId];
+      }
+      return prev;
+    });
+  }, []);
+
+  // 🎯 PHASE MANAGEMENT WITH REALISTIC TIMING AND PROPER COMPLETION TRACKING
   const progressPhases = [
     { phase: 'uploading', duration: 5000, progressStart: 0, progressEnd: 15 },
     { phase: 'processing', duration: 8000, progressStart: 15, progressEnd: 35 },
@@ -60,7 +72,11 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       
       await new Promise(resolve => setTimeout(resolve, stepDuration));
     }
-  }, [updateProgressWithPhase]);
+
+    // Mark step as completed when phase finishes
+    completeStep(phase);
+    console.log(`✅ Phase completed: ${phase}`);
+  }, [updateProgressWithPhase, completeStep]);
 
   const performAnalysis = useCallback(async () => {
     if (analysisStartedRef.current) {
@@ -132,6 +148,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
         setCurrentPhase('uploading');
         setAnalysisProgress(0);
         setResearchSourcesFound(0);
+        setCompletedSteps([]);
         
         const delay = 3000;
         setTimeout(() => {
@@ -168,6 +185,20 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
     }
   }, [retryCount]);
 
+  // Monitor workflow state changes for real completion tracking
+  useEffect(() => {
+    // Mark research as complete when we have research context
+    if (workflow.enhancedContext && workflow.enhancedContext.knowledgeSourcesUsed > 0) {
+      setResearchSourcesFound(workflow.enhancedContext.knowledgeSourcesUsed);
+      completeStep('research');
+    }
+    
+    // Mark analysis as complete when we have AI annotations
+    if (workflow.aiAnnotations && workflow.aiAnnotations.length > 0) {
+      completeStep('analysis');
+    }
+  }, [workflow.enhancedContext, workflow.aiAnnotations, completeStep]);
+
   const isMultiImage = workflow.selectedImages.length > 1;
 
   return (
@@ -178,6 +209,8 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
           progress={analysisProgress}
           researchSourcesFound={researchSourcesFound}
           totalImages={workflow.selectedImages.length}
+          completedSteps={completedSteps}
+          onStepComplete={completeStep}
         />
         
         {retryCount > 0 && (

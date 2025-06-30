@@ -21,6 +21,7 @@ interface AnalysisProgressStepsProps {
   progress: number;
   researchSourcesFound?: number;
   totalImages?: number;
+  completedSteps?: string[];
   onStepComplete?: (stepId: string) => void;
 }
 
@@ -72,9 +73,9 @@ export const AnalysisProgressSteps = ({
   progress,
   researchSourcesFound = 0,
   totalImages = 1,
+  completedSteps = [],
   onStepComplete
 }: AnalysisProgressStepsProps) => {
-  const [completedSteps, setCompletedSteps] = useState<string[]>([]);
   const [startTime] = useState(Date.now());
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -273,7 +274,7 @@ export const AnalysisProgressSteps = ({
                 </div>
               )}
 
-              {/* Step Indicators */}
+              {/* Step Indicators with Proper Status Tracking */}
               <div className="space-y-3">
                 {PROGRESS_STEPS.map((step, index) => {
                   const status = getStepStatus(step.id);
@@ -283,7 +284,7 @@ export const AnalysisProgressSteps = ({
                   return (
                     <div
                       key={step.id}
-                      className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 ${
+                      className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-500 ${
                         isActive 
                           ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700' 
                           : isCompleted
@@ -292,9 +293,9 @@ export const AnalysisProgressSteps = ({
                       }`}
                     >
                       <div className="flex-shrink-0">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 ${
                           isCompleted
-                            ? 'bg-green-500 text-white'
+                            ? 'bg-green-500 text-white scale-110'
                             : isActive
                             ? 'bg-blue-500 text-white'
                             : 'bg-gray-300 dark:bg-slate-600 text-gray-600 dark:text-slate-400'
@@ -311,7 +312,7 @@ export const AnalysisProgressSteps = ({
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <h5 className={`font-medium ${
+                          <h5 className={`font-medium transition-colors duration-300 ${
                             isActive 
                               ? 'text-blue-900 dark:text-blue-100' 
                               : isCompleted
@@ -321,8 +322,8 @@ export const AnalysisProgressSteps = ({
                             {step.title}
                           </h5>
                           {isCompleted && (
-                            <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
-                              Complete
+                            <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 animate-fade-in">
+                              ✓ Complete
                             </Badge>
                           )}
                           {isActive && (
@@ -331,7 +332,7 @@ export const AnalysisProgressSteps = ({
                             </Badge>
                           )}
                         </div>
-                        <p className={`text-sm mt-1 ${
+                        <p className={`text-sm mt-1 transition-colors duration-300 ${
                           isActive 
                             ? 'text-blue-700 dark:text-blue-200' 
                             : isCompleted

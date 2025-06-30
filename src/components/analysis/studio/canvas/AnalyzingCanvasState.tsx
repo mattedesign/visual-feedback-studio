@@ -12,8 +12,20 @@ type AnalysisPhase = 'uploading' | 'processing' | 'research' | 'analysis' | 'rec
 export const AnalyzingCanvasState = ({ workflow }: AnalyzingCanvasStateProps) => {
   const [currentPhase, setCurrentPhase] = useState<AnalysisPhase>('processing');
   const [phaseProgress, setPhaseProgress] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState<string[]>([]);
   const [researchSourcesFound, setResearchSourcesFound] = useState(0);
   const [hasStartedAnalysis, setHasStartedAnalysis] = useState(false);
+
+  // Complete a step and add it to completed steps
+  const completeStep = (stepId: string) => {
+    console.log(`✅ Canvas Step completed: ${stepId}`);
+    setCompletedSteps(prev => {
+      if (!prev.includes(stepId)) {
+        return [...prev, stepId];
+      }
+      return prev;
+    });
+  };
 
   useEffect(() => {
     // Only start analysis once and if we have the required data
@@ -36,6 +48,7 @@ export const AnalyzingCanvasState = ({ workflow }: AnalyzingCanvasStateProps) =>
         setPhaseProgress(15);
         
         await new Promise(resolve => setTimeout(resolve, 2000));
+        completeStep('uploading'); // Mark uploading as complete since we're in canvas
         
         // Phase 2: Research context building
         setCurrentPhase('research');
@@ -48,12 +61,16 @@ export const AnalyzingCanvasState = ({ workflow }: AnalyzingCanvasStateProps) =>
           setPhaseProgress(35 + (i * 3)); // Progress 35-59
         }
         
+        completeStep('processing');
+        
         // Phase 3: AI Analysis
         setCurrentPhase('analysis');
         setPhaseProgress(60);
         
         // Start real analysis
         await workflow.startAnalysis();
+        
+        completeStep('research');
         
         // Phase 4: Recommendations
         setCurrentPhase('recommendations');
@@ -62,6 +79,8 @@ export const AnalyzingCanvasState = ({ workflow }: AnalyzingCanvasStateProps) =>
         await new Promise(resolve => setTimeout(resolve, 3000));
         
         setPhaseProgress(100);
+        completeStep('analysis');
+        completeStep('recommendations');
         
         console.log('✅ AnalyzingCanvasState: Analysis completed successfully');
         
@@ -77,11 +96,13 @@ export const AnalyzingCanvasState = ({ workflow }: AnalyzingCanvasStateProps) =>
   useEffect(() => {
     if (workflow.enhancedContext && workflow.enhancedContext.knowledgeSourcesUsed > 0) {
       setResearchSourcesFound(workflow.enhancedContext.knowledgeSourcesUsed);
+      completeStep('research');
     }
     
     if (workflow.aiAnnotations && workflow.aiAnnotations.length > 0) {
       setCurrentPhase('recommendations');
       setPhaseProgress(100);
+      completeStep('analysis');
     }
   }, [workflow.enhancedContext, workflow.aiAnnotations]);
 
@@ -92,6 +113,8 @@ export const AnalyzingCanvasState = ({ workflow }: AnalyzingCanvasStateProps) =>
         progress={phaseProgress}
         researchSourcesFound={researchSourcesFound}
         totalImages={workflow.selectedImages.length}
+        completedSteps={completedSteps}
+        onStepComplete={completeStep}
       />
     </div>
   );
