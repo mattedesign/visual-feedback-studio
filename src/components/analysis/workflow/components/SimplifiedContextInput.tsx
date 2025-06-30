@@ -90,28 +90,28 @@ export const SimplifiedContextInput = ({
           background: '#FFF',
           boxShadow: '0px 32px 67px 0px rgba(0, 0, 0, 0.00), 0px 24px 61px 0px rgba(0, 0, 0, 0.01), 0px 12px 52px 0px rgba(0, 0, 0, 0.04), 0px 12px 38px 0px rgba(0, 0, 0, 0.06), 0px 4px 21px 0px rgba(0, 0, 0, 0.07)',
           backdropFilter: 'blur(6px)',
-          padding: showSuggestions ? '0 0 20px 0' : '12px',
+          padding: showSuggestions ? '0' : '12px',
           // Reduce the upward movement to stay aligned with left panel
           transform: showSuggestions ? 'translateY(-20px)' : 'translateY(0)',
         }}
       >
         {/* Quick Suggestions - Now appears above input */}
         {showSuggestions && (
-          <div className="w-full order-1" style={{ marginBottom: '16px' }}>
+          <div className="w-full order-1">
             <div 
               className="flex gap-2 overflow-x-auto" 
               style={{ 
                 scrollbarWidth: 'none', 
                 msOverflowStyle: 'none',
-                paddingBottom: '4px',
+                paddingBottom: '16px',
                 paddingLeft: '16px',
                 paddingRight: '16px',
                 paddingTop: '16px',
                 background: '#F8F9FA',
                 marginLeft: '-1px',
                 marginRight: '-1px',
-                borderTopLeftRadius: '24px',
-                borderTopRightRadius: '24px',
+                borderBottomLeftRadius: '24px',
+                borderBottomRightRadius: '24px',
               }}
             >
               {quickSuggestions.map((suggestion, index) => (
