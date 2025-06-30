@@ -106,6 +106,7 @@ export const SimplifiedContextInput = ({
                 scrollbarWidth: 'none', 
                 msOverflowStyle: 'none',
                 padding: '20px !important',
+                paddingBottom: '12px',
                 background: '#F8F9FA',
                 marginLeft: '-1px',
                 marginRight: '-1px',
