@@ -81,11 +81,8 @@ export const SimplifiedContextInput = ({
     <div className="space-y-4">
       {/* Main Input Container */}
       <div 
-        className="p-3"
+        className="p-3 flex flex-col-reverse"
         style={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'flex-end',
           alignItems: 'center',
           alignSelf: 'stretch',
           borderRadius: '24px',
@@ -95,77 +92,9 @@ export const SimplifiedContextInput = ({
           backdropFilter: 'blur(6px)'
         }}
       >
-        {/* Input Field - First Row */}
-        <div className="w-full mb-3">
-          <Input
-            ref={inputRef}
-            value={analysisContext}
-            onChange={(e) => onAnalysisContextChange(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="How can I help..."
-            className="border-0 bg-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none text-base text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 w-full"
-            style={{ 
-              outline: 'none',
-              boxShadow: 'none'
-            }}
-          />
-        </div>
-
-        {/* Buttons - Second Row */}
-        <div className="flex items-center justify-between w-full">
-          <button
-            onClick={() => setShowSuggestions(!showSuggestions)}
-            style={{
-              display: 'flex',
-              width: '44px',
-              height: '44px',
-              padding: '10px',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: '16px',
-              color: '#7B7B7B',
-              borderRadius: '10px',
-              border: '1px solid var(--Stroke-02, #E2E2E2)',
-              background: 'transparent',
-              cursor: 'pointer'
-            }}
-          >
-            <Sparkles className="w-4 h-4" />
-          </button>
-          
-          <Button
-            onClick={onAnalyze}
-            disabled={!canAnalyze}
-            className="text-white font-medium disabled:opacity-50"
-            style={{
-              display: 'flex',
-              padding: '11px 16px',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: '4px',
-              borderRadius: '10px',
-              background: 'var(--Gradient-Linear, linear-gradient(97deg, #6912D4 15.89%, #CE169B 69.34%, #FB9A2B 103.4%))',
-              boxShadow: '0px 1px 2px 0px rgba(135, 80, 255, 0.05)',
-              border: 'none'
-            }}
-          >
-            {isAnalyzing ? (
-              <>
-                <Sparkles className="w-4 h-4 animate-pulse" />
-                Analyzing...
-              </>
-            ) : (
-              <>
-                <Bot className="w-4 h-4" />
-                Analyze
-              </>
-            )}
-          </Button>
-        </div>
-
-        {/* Quick Suggestions - Integrated into the input bar */}
+        {/* Quick Suggestions - Now appears above input */}
         {showSuggestions && (
-          <div className="w-full mt-3 pt-3 border-t border-gray-100 dark:border-slate-700">
+          <div className="w-full mb-3 pb-3 border-b border-gray-100 dark:border-slate-700 order-1">
             <div className="flex gap-2 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               {quickSuggestions.map((suggestion, index) => (
                 <button
@@ -229,6 +158,74 @@ export const SimplifiedContextInput = ({
             )}
           </div>
         )}
+
+        {/* Buttons - Now first row */}
+        <div className="flex items-center justify-between w-full mb-3 order-2">
+          <button
+            onClick={() => setShowSuggestions(!showSuggestions)}
+            style={{
+              display: 'flex',
+              width: '44px',
+              height: '44px',
+              padding: '10px',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: '16px',
+              color: '#7B7B7B',
+              borderRadius: '10px',
+              border: '1px solid var(--Stroke-02, #E2E2E2)',
+              background: 'transparent',
+              cursor: 'pointer'
+            }}
+          >
+            <Sparkles className="w-4 h-4" />
+          </button>
+          
+          <Button
+            onClick={onAnalyze}
+            disabled={!canAnalyze}
+            className="text-white font-medium disabled:opacity-50"
+            style={{
+              display: 'flex',
+              padding: '11px 16px',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: '4px',
+              borderRadius: '10px',
+              background: 'var(--Gradient-Linear, linear-gradient(97deg, #6912D4 15.89%, #CE169B 69.34%, #FB9A2B 103.4%))',
+              boxShadow: '0px 1px 2px 0px rgba(135, 80, 255, 0.05)',
+              border: 'none'
+            }}
+          >
+            {isAnalyzing ? (
+              <>
+                <Sparkles className="w-4 h-4 animate-pulse" />
+                Analyzing...
+              </>
+            ) : (
+              <>
+                <Bot className="w-4 h-4" />
+                Analyze
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* Input Field - Now last row */}
+        <div className="w-full order-3">
+          <Input
+            ref={inputRef}
+            value={analysisContext}
+            onChange={(e) => onAnalysisContextChange(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="How can I help..."
+            className="border-0 bg-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none text-base text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 w-full"
+            style={{ 
+              outline: 'none',
+              boxShadow: 'none'
+            }}
+          />
+        </div>
       </div>
 
       {/* Context Preview - Hidden */}
