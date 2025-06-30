@@ -1,4 +1,3 @@
-
 import { Files, Menu, MessageCircle, Target } from 'lucide-react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { SidebarUpload } from './SidebarUpload';
@@ -36,7 +35,6 @@ export const StudioSidebar = ({
   return (
     <div style={{
       borderRadius: '20px',
-      border: '1px solid var(--Stroke-02, #E2E2E2)',
       background: 'var(--01-White-01, #FFF)',
       boxShadow: '0px 2px 0px 0px rgba(255, 255, 255, 0.80) inset, 0px 1px 3.2px -2px rgba(0, 0, 0, 0.99)',
       display: 'flex',
