@@ -167,7 +167,7 @@ export const UploadCanvasState = ({
               </h2>
             </div>
             
-            <div className="space-y-3 flex-1">
+            <div className="space-y-3 flex-1 w-full">
               <Card className="bg-gray-50 border-0">
                 <CardContent className="flex justify-center items-center self-stretch rounded-lg text-center" style={{
                 display: 'flex',
@@ -298,7 +298,7 @@ export const UploadCanvasState = ({
               </h2>
             </div>
             
-            <div className="space-y-3 flex-1">
+            <div className="space-y-3 flex-1 w-full">
               <Card className="bg-gray-50 border-0">
                 <CardContent className="flex justify-center items-center self-stretch rounded-lg text-center" style={{
                 display: 'flex',
