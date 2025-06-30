@@ -1,8 +1,6 @@
 
 import { useState } from 'react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
-import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronUp } from 'lucide-react';
 import { SimplifiedContextInput } from '../workflow/components/SimplifiedContextInput';
 
 interface StudioChatProps {
@@ -10,8 +8,6 @@ interface StudioChatProps {
 }
 
 export const StudioChat = ({ workflow }: StudioChatProps) => {
-  const [isExpanded, setIsExpanded] = useState(true);
-
   const handleAnalyze = async () => {
     if (!workflow.analysisContext.trim() || workflow.selectedImages.length === 0) return;
 
@@ -30,79 +26,35 @@ export const StudioChat = ({ workflow }: StudioChatProps) => {
                    !workflow.isAnalyzing;
 
   const hasImages = workflow.selectedImages.length > 0;
-  const hasContext = workflow.analysisContext.trim().length > 0;
 
   if (workflow.currentStep !== 'upload' && workflow.currentStep !== 'annotate') {
     return null;
   }
 
-  const handleExpandToggle = () => {
-    setIsExpanded(!isExpanded);
-  };
-
-  const getStatusColor = (condition: boolean) => condition ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500';
-  const getStatusIcon = (condition: boolean) => condition ? '✓' : '○';
-
   return (
     <div className="shadow-lg">
-      {!isExpanded ? (
-        /* Collapsed State */
-        <div className="p-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Ready to Analyze?
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleExpandToggle}
-                className="h-8 w-8 p-0 text-gray-500 dark:text-gray-400"
-              >
-                <ChevronUp className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : (
-        /* Expanded State - Clean Interface */
-        <div className="p-6">
-          <div className="max-w-4xl mx-auto space-y-6">
-            {/* Header with collapse button */}
-            <div className="flex items-center justify-end">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleExpandToggle}
-                className="h-8 w-8 p-0 text-gray-500 dark:text-gray-400"
-              >
-                <ChevronDown className="w-4 h-4" />
-              </Button>
-            </div>
+      <div className="p-6">
+        <div className="max-w-4xl mx-auto space-y-6">
+          {/* Simplified Context Input */}
+          <SimplifiedContextInput
+            analysisContext={workflow.analysisContext}
+            onAnalysisContextChange={workflow.setAnalysisContext}
+            onAnalyze={handleAnalyze}
+            canAnalyze={canAnalyze}
+            isAnalyzing={workflow.isAnalyzing}
+            uploadedImageCount={workflow.selectedImages.length}
+          />
 
-            {/* Simplified Context Input */}
-            <SimplifiedContextInput
-              analysisContext={workflow.analysisContext}
-              onAnalysisContextChange={workflow.setAnalysisContext}
-              onAnalyze={handleAnalyze}
-              canAnalyze={canAnalyze}
-              isAnalyzing={workflow.isAnalyzing}
-              uploadedImageCount={workflow.selectedImages.length}
-            />
-
-            {/* Helper text */}
-            {!hasImages && (
-              <div className="text-center">
-                <p className="hidden text-sm text-gray-600 dark:text-gray-400 bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-700">
-                  ⚠️ Please upload and select images first before starting the analysis.
-                </p>
-              </div>
-            )}
-          </div>
+          {/* Helper text */}
+          {!hasImages && (
+            <div className="text-center">
+              <p className="hidden text-sm text-gray-600 dark:text-gray-400 bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-700">
+                ⚠️ Please upload and select images first before starting the analysis.
+              </p>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };
