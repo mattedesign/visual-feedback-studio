@@ -44,7 +44,7 @@ export const StudioChat = ({ workflow }: StudioChatProps) => {
   const getStatusIcon = (condition: boolean) => condition ? '✓' : '○';
 
   return (
-    <div className="bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700 shadow-lg">
+    <div className="border-t border-gray-200 dark:border-slate-700 shadow-lg">
       {!isExpanded ? (
         /* Collapsed State */
         <div className="p-4">
@@ -53,16 +53,6 @@ export const StudioChat = ({ workflow }: StudioChatProps) => {
               <div className="flex items-center space-x-4">
                 <div className="text-lg font-semibold text-gray-900 dark:text-white">
                   Ready to Analyze?
-                </div>
-                <div className="flex items-center space-x-3 text-sm">
-                  <span className={`flex items-center space-x-1 ${getStatusColor(hasImages)}`}>
-                    <span>{getStatusIcon(hasImages)}</span>
-                    <span>Images ({workflow.selectedImages.length})</span>
-                  </span>
-                  <span className={`flex items-center space-x-1 ${getStatusColor(hasContext)}`}>
-                    <span>{getStatusIcon(hasContext)}</span>
-                    <span>Context</span>
-                  </span>
                 </div>
               </div>
               <Button
@@ -80,23 +70,8 @@ export const StudioChat = ({ workflow }: StudioChatProps) => {
         /* Expanded State - Clean Interface */
         <div className="p-6">
           <div className="max-w-4xl mx-auto space-y-6">
-            {/* Header with status and collapse button */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Analysis Setup
-                </h3>
-                <div className="flex items-center space-x-3 text-sm">
-                  <span className={`flex items-center space-x-1 ${getStatusColor(hasImages)}`}>
-                    <span>{getStatusIcon(hasImages)}</span>
-                    <span>Images ({workflow.selectedImages.length})</span>
-                  </span>
-                  <span className={`flex items-center space-x-1 ${getStatusColor(hasContext)}`}>
-                    <span>{getStatusIcon(hasContext)}</span>
-                    <span>Context</span>
-                  </span>
-                </div>
-              </div>
+            {/* Header with collapse button */}
+            <div className="flex items-center justify-end">
               <Button
                 variant="ghost"
                 size="sm"
