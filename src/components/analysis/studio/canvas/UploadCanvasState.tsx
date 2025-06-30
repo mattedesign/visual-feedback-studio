@@ -13,11 +13,11 @@ export const UploadCanvasState = ({
         {/* Three-column layout */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Example Prompt Column */}
-          <div className="flex flex-col items-flex-start gap-6 flex-1 self-stretch" style={{
+          <div className="flex flex-col items-center gap-6 flex-1 self-stretch" style={{
             display: 'flex',
             padding: '24px 8px',
             flexDirection: 'column',
-            alignItems: 'flex-start',
+            alignItems: 'center',
             flex: '1 0 0',
             alignSelf: 'stretch',
             borderRadius: '18px',
@@ -174,11 +174,11 @@ export const UploadCanvasState = ({
           </div>
 
           {/* Capabilities Column */}
-          <div className="flex flex-col items-flex-start gap-6 flex-1 self-stretch" style={{
+          <div className="flex flex-col items-center gap-6 flex-1 self-stretch" style={{
             display: 'flex',
             padding: '24px 8px',
             flexDirection: 'column',
-            alignItems: 'flex-start',
+            alignItems: 'center',
             flex: '1 0 0',
             alignSelf: 'stretch',
             borderRadius: '18px',
@@ -334,11 +334,11 @@ export const UploadCanvasState = ({
           </div>
 
           {/* Models Column */}
-          <div className="flex flex-col items-flex-start gap-6 flex-1 self-stretch" style={{
+          <div className="flex flex-col items-center gap-6 flex-1 self-stretch" style={{
             display: 'flex',
             padding: '24px 8px',
             flexDirection: 'column',
-            alignItems: 'flex-start',
+            alignItems: 'center',
             flex: '1 0 0',
             alignSelf: 'stretch',
             borderRadius: '18px',
