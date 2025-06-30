@@ -31,9 +31,9 @@ export const StudioChat = ({
   }
 
   return (
-    <div className="bg-white dark:bg-slate-900 shadow-lg">
-      <div className="p-4">
-        <div className="max-w-4xl mx-auto space-y-4">
+    <div className="shadow-lg">
+      <div className="p-6 py-0">
+        <div className="max-w-4xl mx-auto space-y-6">
           {/* Simplified Context Input */}
           <SimplifiedContextInput 
             analysisContext={workflow.analysisContext}

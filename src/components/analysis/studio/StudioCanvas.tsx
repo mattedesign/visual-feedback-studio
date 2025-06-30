@@ -37,7 +37,7 @@ export const StudioCanvas = ({
   };
 
   return (
-    <div className="flex-1 border-l border-r border-slate-700 bg-transparent overflow-auto min-h-0">
+    <div className="h-full border-l border-r border-slate-700 bg-transparent overflow-auto">
       {renderCanvasState()}
     </div>
   );

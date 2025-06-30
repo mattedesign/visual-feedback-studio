@@ -54,10 +54,10 @@ export const AnalysisStudioLayout = ({
       <div className="flex-1 flex flex-col min-w-0 h-full">
         <StudioToolbar workflow={workflow} />
         
-        {/* Content area - takes remaining space */}
-        <div className="flex-1 flex flex-col min-h-0">
-          {/* Canvas takes available space but leaves room for chat */}
-          <div className={`flex-1 min-h-0 ${showChat ? 'flex-shrink' : ''}`}>
+        {/* Content area with proper height constraints */}
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          {/* Canvas - scrollable content area */}
+          <div className="flex-1 overflow-auto">
             <StudioCanvas 
               workflow={workflow}
               selectedDevice={selectedDevice}
@@ -66,9 +66,9 @@ export const AnalysisStudioLayout = ({
             />
           </div>
           
-          {/* Chat positioned at bottom - always visible when shown */}
+          {/* Chat - fixed at bottom when visible */}
           {showChat && (
-            <div className="flex-shrink-0 border-t border-slate-700">
+            <div className="flex-shrink-0">
               <StudioChat workflow={workflow} />
             </div>
           )}
