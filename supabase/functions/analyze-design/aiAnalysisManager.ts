@@ -44,7 +44,8 @@ class AIAnalysisManager {
       isComparative,
       ragEnabled,
       circuitBreakerCount: this.circuitBreakerCount,
-      targetInsights: '16-19'
+      targetInsights: '16-19',
+      primaryModel: 'Claude Sonnet 4'
     });
 
     try {
@@ -87,24 +88,46 @@ class AIAnalysisManager {
         mandatoryRequirements: enhancedPrompt.includes('MANDATORY OUTPUT REQUIREMENT')
       });
 
-      // Perform AI analysis with comprehensive requirements
-      console.log('🚀 Calling OpenAI API for comprehensive analysis with 16-19 insights requirement...');
-      const response = await this.callOpenAI(processedImages, enhancedPrompt);
-
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+      // 🚀 TRY CLAUDE FIRST (Primary Model)
+      console.log('🎯 Attempting Claude Sonnet 4 analysis (Primary)...');
+      try {
+        const claudeResult = await this.callClaude(processedImages, enhancedPrompt);
+        console.log('✅ Claude analysis successful:', {
+          annotationCount: claudeResult.annotations.length,
+          modelUsed: 'Claude Sonnet 4',
+          targetAchieved: claudeResult.annotations.length >= 16
+        });
+        
+        const processingTime = Date.now() - startTime;
+        return {
+          success: true,
+          annotations: claudeResult.annotations,
+          modelUsed: 'Claude Sonnet 4',
+          processingTime,
+          ragEnhanced: !!ragContext
+        };
+      } catch (claudeError) {
+        console.warn('⚠️ Claude analysis failed, falling back to OpenAI:', claudeError);
       }
 
-      const data = await response.json();
+      // 🔄 FALLBACK TO OPENAI
+      console.log('🔄 Claude failed, attempting OpenAI fallback...');
+      const openaiResult = await this.callOpenAI(processedImages, enhancedPrompt);
+
+      if (!openaiResult.ok) {
+        throw new Error(`Both Claude and OpenAI failed. OpenAI error: ${openaiResult.status} ${openaiResult.statusText}`);
+      }
+
+      const data = await openaiResult.json();
       
-      console.log('📊 OpenAI comprehensive analysis response received:', {
+      console.log('📊 OpenAI fallback analysis response received:', {
         choices: data.choices?.length || 0,
         usage: data.usage,
         responseLength: data.choices?.[0]?.message?.content?.length || 0
       });
 
       if (!data.choices || data.choices.length === 0) {
-        throw new Error('No response choices received from OpenAI');
+        throw new Error('No response choices received from OpenAI fallback');
       }
 
       const rawContent = data.choices[0].message.content;
@@ -113,7 +136,7 @@ class AIAnalysisManager {
       // Parse comprehensive annotations with validation
       const annotations = this.parseAnnotations(rawContent);
       
-      console.log('✅ Comprehensive annotations parsed successfully:', {
+      console.log('✅ Comprehensive annotations parsed successfully (OpenAI fallback):', {
         annotationCount: annotations.length,
         targetCount: '16-19',
         meetsTarget: annotations.length >= 16,
@@ -141,25 +164,26 @@ class AIAnalysisManager {
 
       const processingTime = Date.now() - startTime;
 
-      console.log('✅ AI comprehensive analysis completed successfully:', {
+      console.log('✅ AI comprehensive analysis completed successfully (OpenAI fallback):', {
         annotationsCount: annotations.length,
         processingTimeMs: processingTime,
         ragEnhanced: !!ragContext,
         comprehensiveAnalysis: true,
         professionalStandard: annotations.length >= 16,
-        targetsAchieved: annotations.length >= 16
+        targetsAchieved: annotations.length >= 16,
+        modelUsed: 'OpenAI GPT-4o-mini (fallback)'
       });
 
       return {
         success: true,
         annotations,
-        modelUsed: 'gpt-4o-mini',
+        modelUsed: 'OpenAI GPT-4o-mini (fallback)',
         processingTime,
         ragEnhanced: !!ragContext
       };
 
     } catch (error) {
-      console.error('❌ AI comprehensive analysis failed:', error);
+      console.error('❌ AI comprehensive analysis failed (both Claude and OpenAI):', error);
       
       this.circuitBreakerCount++;
       
@@ -178,7 +202,100 @@ class AIAnalysisManager {
     }
   }
 
-  private async buildRagContext(prompt: string): Promise<RagContext | null> {
+  // 🎯 NEW: Claude Sonnet 4 Primary Method
+  private async callClaude(images: ProcessedImage[], prompt: string): Promise<{annotations: any[]}> {
+    const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
+    if (!anthropicApiKey) {
+      throw new Error('Anthropic API key not configured');
+    }
+
+    // Convert images to base64 for Claude
+    const imageContents = await Promise.all(
+      images.map(async (img) => {
+        const response = await fetch(img.imageUrl);
+        const arrayBuffer = await response.arrayBuffer();
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+        return {
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: `image/${img.format}`,
+            data: base64
+          }
+        };
+      })
+    );
+
+    const systemPrompt = `You are a professional UX analysis expert conducting comprehensive audits. You MUST generate exactly 16-19 detailed, research-backed insights covering all aspects of design quality, usability, and business impact. 
+
+CRITICAL REQUIREMENTS:
+- Generate EXACTLY 16-19 insights (professional consulting standard)
+- Include a mix of: critical issues, improvements, positive validations, and business opportunities
+- Cover: UX patterns, accessibility, visual design, conversion optimization, mobile experience
+- Use research-backed recommendations when possible
+- Format as valid JSON array with proper structure
+
+RESPONSE FORMAT - Return ONLY a JSON array like this:
+[
+  {
+    "id": "annotation-1",
+    "x": 50,
+    "y": 30,
+    "severity": "critical",
+    "category": "ux",
+    "feedback": "Detailed insight with specific recommendations...",
+    "imageIndex": 0
+  }
+]
+
+Ensure exactly 16-19 insights for comprehensive professional analysis.`;
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${anthropicApiKey}`,
+        'Content-Type': 'application/json',
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 4000,
+        temperature: 0.3,
+        system: systemPrompt,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: prompt },
+              ...imageContents
+            ]
+          }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Claude API error: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.content || !data.content[0] || !data.content[0].text) {
+      throw new Error('Invalid Claude response format');
+    }
+
+    const rawContent = data.content[0].text;
+    const annotations = this.parseAnnotations(rawContent);
+    
+    if (annotations.length < 12) {
+      throw new Error(`Claude returned insufficient insights: ${annotations.length} (minimum 12 required)`);
+    }
+
+    return { annotations };
+  }
+
+  private buildRagContext(prompt: string): Promise<RagContext | null> {
     try {
       console.log('🔍 Building RAG context for comprehensive analysis:', prompt.substring(0, 100));
       
@@ -238,6 +355,7 @@ class AIAnalysisManager {
     return context;
   }
 
+  // 🔄 KEPT: OpenAI Fallback Method
   private async callOpenAI(images: ProcessedImage[], prompt: string): Promise<Response> {
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openaiApiKey) {
