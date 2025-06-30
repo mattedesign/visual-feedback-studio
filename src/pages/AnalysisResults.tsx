@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { ModularAnalysisInterface } from '../components/analysis/modules/ModularAnalysisInterface';
 
@@ -7,10 +8,12 @@ const AnalysisResults = () => {
   const useModularInterface = useFeatureFlag('modular-analysis');
   const [analysisData, setAnalysisData] = useState(null);
   
-  // Get URL parameters for beta mode and analysis ID
+  // FIXED: Get analysis ID from route parameters instead of query parameters
+  const { id: analysisId } = useParams();
+  
+  // Get URL parameters for beta mode only
   const urlParams = new URLSearchParams(window.location.search);
   const betaMode = urlParams.get('beta') === 'true';
-  const analysisId = urlParams.get('analysis');
   
   // Load analysis data from sessionStorage on component mount
   useEffect(() => {
@@ -20,9 +23,11 @@ const AnalysisResults = () => {
         try {
           const parsedData = JSON.parse(storedData);
           console.log('📊 Loading analysis data for modular interface:', {
+            analysisId,
             annotationCount: parsedData.annotations?.length || 0,
             hasWellDone: !!parsedData.wellDone,
-            hasEnhancedContext: !!parsedData.enhancedContext
+            hasEnhancedContext: !!parsedData.enhancedContext,
+            routeStructure: 'CORRECT - ID from route params'
           });
           setAnalysisData(parsedData);
         } catch (error) {
@@ -91,6 +96,7 @@ const AnalysisResults = () => {
                 <li>• Routing to results page works</li>
                 <li>• Navigation buttons functional</li>
                 <li>• Ready for gradual feature restoration</li>
+                {analysisId && <li>• Analysis ID from route: {analysisId}</li>}
               </ul>
             </div>
           </div>
@@ -110,7 +116,10 @@ const AnalysisResults = () => {
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-center text-white">
           <h2 className="text-2xl font-bold mb-4">Loading Analysis Results...</h2>
-          <p className="text-slate-300 mb-4">Preparing your professional dashboard</p>
+          <p className="text-slate-300 mb-4">
+            Preparing your professional dashboard
+            {analysisId && <span className="block text-sm mt-2">Analysis ID: {analysisId}</span>}
+          </p>
           <button 
             onClick={() => window.location.href = '/analysis'}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors"

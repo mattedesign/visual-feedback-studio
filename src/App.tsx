@@ -31,6 +31,8 @@ const App = () => {
             <Route path="/" element={<Navigate to="/auth" replace />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/analysis" element={<Analysis />} />
+            {/* FIXED: Add route for analysis with ID parameter */}
+            <Route path="/analysis/:id" element={<AnalysisResults />} />
             <Route path="/analysis-results" element={<AnalysisResults />} />
             <Route path="/dalle-demo" element={<DALLEDemo />} />
             <Route path="/upgrade-success" element={<UpgradeSuccess />} />

@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { Annotation } from '@/types/analysis';
 import { useEnhancedAnalysis } from './useEnhancedAnalysis';
@@ -272,8 +273,8 @@ export const useAnalysisWorkflow = () => {
           setVisionElementsDetected(result.enhancedContext.visionAnalysis.uiElements.length);
         }
         
-        // 🚀 BYPASS STRATEGY: Route directly to ModularAnalysisInterface
-        console.log('🔄 Implementing bypass strategy - routing to modular interface');
+        // 🚀 FIXED ROUTING: Use correct route structure with analysis ID as path parameter
+        console.log('🔄 Implementing bypass strategy - routing to modular interface with correct URL structure');
         toast.success('Analysis complete! Redirecting to professional dashboard...');
         
         // Generate a unique analysis ID for the URL
@@ -282,9 +283,9 @@ export const useAnalysisWorkflow = () => {
         // Store the analysis data in sessionStorage for the modular interface
         sessionStorage.setItem('currentAnalysisData', JSON.stringify(analysisResultsWithWellDone));
         
-        // Route directly to modular interface with beta parameter
+        // 🔥 FIXED: Route with correct structure - ID as path parameter, beta as query parameter
         setTimeout(() => {
-          window.location.href = `/analysis?beta=true&analysis=${analysisId}`;
+          window.location.href = `/analysis/${analysisId}?beta=true`;
         }, 1000);
         
       } else {
