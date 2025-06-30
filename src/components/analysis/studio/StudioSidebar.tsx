@@ -61,7 +61,7 @@ export const StudioSidebar = ({
             </button>
           </div>
 
-          {!collapsed && <div className="flex items-center justify-between mb-3">
+          {!collapsed && <div className="flex items-center justify-between mb-3 hidden">
               <h4 className="text-sm font-medium text-gray-900 dark:text-white">
                 Images ({workflow.uploadedFiles.length})
               </h4>
