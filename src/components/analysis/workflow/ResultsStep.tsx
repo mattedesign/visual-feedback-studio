@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
@@ -20,6 +19,8 @@ import { StrengthsSummaryCard } from './components/StrengthsSummaryCard';
 import { PositiveLanguageWrapper } from './components/PositiveLanguageWrapper';
 import { EnhancedBusinessImpactCard } from './components/EnhancedBusinessImpactCard';
 import { PositiveDesignSummary } from './components/PositiveDesignSummary';
+import { AnnotationDebugger } from '@/components/debug/AnnotationDebugger';
+import { Button } from '@/components/ui/button';
 
 interface ResultsStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -66,6 +67,24 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
     analysisResultsPreview: workflow.analysisResults
   });
 
+  // 🚨 FORCE CACHE REFRESH FUNCTION
+  const forceCacheRefresh = () => {
+    console.log('🔄 Forcing cache refresh...');
+    // Force React to re-render everything
+    setActiveAnnotation(null);
+    setTimeout(() => setActiveAnnotation(activeAnnotation), 100);
+    
+    // Clear any cached font faces
+    if ('fonts' in document) {
+      document.fonts.clear();
+    }
+  };
+
+  // Call cache refresh on component mount
+  useEffect(() => {
+    forceCacheRefresh();
+  }, []);
+
   const getSeverityColor = (severity: string) =>  {
     switch (severity) {
       case 'critical': return 'bg-red-600 text-white border-red-500';
@@ -76,14 +95,9 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
   };
 
   const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'ux': return '👤';
-      case 'visual': return '🎨';
-      case 'accessibility': return '♿';
-      case 'conversion': return '📈';
-      case 'brand': return '🏷️';
-      default: return '💡';
-    }
+    // This function should NOT be used anymore - return empty string to debug
+    console.warn('⚠️ getCategoryIcon should not be called - returning empty string');
+    return '';
   };
 
   const handleStartNew = () => {
@@ -194,6 +208,9 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
 
   return (
     <div className="min-h-screen bg-slate-900 p-6">
+      {/* Debug Component */}
+      <AnnotationDebugger annotations={workflow.aiAnnotations} componentName="ResultsStep" />
+      
       <Card className="bg-slate-800 border-slate-700 text-white">
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -206,6 +223,14 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
               )}
             </div>
             <div className="flex gap-2">
+              <Button 
+                onClick={forceCacheRefresh} 
+                variant="outline" 
+                size="sm"
+                className="text-xs bg-orange-600 hover:bg-orange-700 border-orange-500"
+              >
+                🔄 Force Refresh
+              </Button>
               {isMultiImage && (
                 <Badge className="bg-gradient-to-r from-purple-600 to-violet-600 text-white border-purple-500 px-3 py-1 text-xs font-semibold shadow-md">
                   🔍 Multi-image insights

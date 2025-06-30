@@ -41,6 +41,14 @@ export const AnnotationMarker = ({
     }, 100);
   };
 
+  // Debug logging
+  console.log('🔢 AnnotationMarker rendering:', {
+    annotationId: annotation.id,
+    annotationIndex,
+    displayNumber: annotationIndex + 1,
+    category: annotation.category
+  });
+
   return (
     <div
       className={`absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-300 ${
@@ -62,8 +70,10 @@ export const AnnotationMarker = ({
           annotation.severity
         )} ${isActive ? 'ring-4 ring-blue-400 ring-offset-2' : ''}`}
       >
-        {/* Sequential number instead of category icon */}
-        <span className="text-xs font-bold">{annotationIndex + 1}</span>
+        {/* Sequential number - FORCED display */}
+        <span className="text-xs font-bold leading-none" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+          {annotationIndex + 1}
+        </span>
       </div>
       
       {/* Active state tooltip */}

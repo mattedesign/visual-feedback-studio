@@ -47,6 +47,14 @@ export const DesignViewer = ({
     setPan({ x: 0, y: 0 });
   };
 
+  // Debug logging for annotations
+  console.log('🎯 DesignViewer annotations:', annotations.map((a, i) => ({
+    index: i + 1,
+    id: a.id,
+    category: a.category,
+    shouldShowNumber: i + 1
+  })));
+
   return (
     <Card className="h-full w-full bg-white border-gray-200 flex flex-col relative">
       {/* Figmant-style toolbar */}

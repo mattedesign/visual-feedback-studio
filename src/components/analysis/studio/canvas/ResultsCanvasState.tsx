@@ -20,7 +20,12 @@ export const ResultsCanvasState = ({
 }: ResultsCanvasStateProps) => {
   const [selectedFeedback, setSelectedFeedback] = useState<any>(null);
 
-  const handleAnnotationClick = (annotation: any) => {
+  const handleAnnotationClick = (annotation: any, annotationIndex: number) => {
+    console.log('🎯 ResultsCanvasState annotation clicked:', { 
+      annotationId: annotation.id, 
+      annotationIndex, 
+      displayNumber: annotationIndex + 1 
+    });
     setSelectedFeedback(annotation);
     if (onAnnotationClick) {
       onAnnotationClick(annotation.id);
@@ -55,6 +60,12 @@ export const ResultsCanvasState = ({
   const aiAnnotations = workflow.aiAnnotations;
   const currentImageIndex = workflow.uploadedFiles.indexOf(currentImageUrl);
 
+  console.log('🔢 ResultsCanvasState rendering annotations:', aiAnnotations.map((a, i) => ({
+    id: a.id,
+    index: i,
+    displayNumber: i + 1
+  })));
+
   return (
     <div className="space-y-4 p-4">
       <div className="flex items-center justify-between">
@@ -81,7 +92,7 @@ export const ResultsCanvasState = ({
           style={{ maxHeight: '70vh' }}
         />
         
-        {/* Display AI annotations with active highlighting */}
+        {/* Display AI annotations with sequential numbers */}
         {aiAnnotations.map((annotation, index) => {
           const isActive = activeAnnotation === annotation.id;
           
@@ -97,10 +108,10 @@ export const ResultsCanvasState = ({
                 left: `${annotation.x}%`,
                 top: `${annotation.y}%`
               }}
-              onClick={() => handleAnnotationClick(annotation)}
+              onClick={() => handleAnnotationClick(annotation, index)}
             >
-              <span className="text-white text-xs font-bold">
-                {annotation.id || index + 1}
+              <span className="text-white text-xs font-bold leading-none" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                {index + 1}
               </span>
             </div>
           );
