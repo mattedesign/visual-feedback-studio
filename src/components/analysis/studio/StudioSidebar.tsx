@@ -1,4 +1,3 @@
-
 import { Files, MessageCircle, Target, Trash2 } from 'lucide-react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { SidebarUpload } from './SidebarUpload';
@@ -75,7 +74,7 @@ export const StudioSidebar = ({
             <img 
               src="/lovable-uploads/47930faa-a736-4a3b-a873-e704ca21395f.png" 
               alt="Figmant" 
-              className="h-8 mr-3"
+              className="h-6 mr-3"
             />
             <button onClick={() => setCollapsed(!collapsed)} className="ml-auto p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
               <img 
