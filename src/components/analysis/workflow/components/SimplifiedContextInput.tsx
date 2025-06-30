@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -218,7 +219,8 @@ export const SimplifiedContextInput = ({
         <div className="w-full order-3" style={{
         paddingLeft: showSuggestions ? '20px' : '0',
         paddingRight: showSuggestions ? '20px' : '0',
-        paddingBottom: showSuggestions ? '20px' : '0'
+        paddingBottom: showSuggestions ? '20px' : '24px', // More padding when collapsed
+        paddingTop: showSuggestions ? '16px' : '8px' // More padding when expanded
       }}>
           <Input ref={inputRef} value={analysisContext} onChange={e => onAnalysisContextChange(e.target.value)} onKeyPress={handleKeyPress} placeholder="How can I help..." className="border-0 bg-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none text-lg text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 w-full" style={{
           outline: 'none',
