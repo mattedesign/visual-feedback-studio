@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -122,7 +121,7 @@ export const SimplifiedContextInput = ({
             onChange={(e) => onAnalysisContextChange(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="How can I help..."
-            className="border-0 bg-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none text-base placeholder:text-gray-500 dark:placeholder:text-gray-400 flex-1"
+            className="border-0 bg-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none text-base text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 flex-1"
             style={{ 
               outline: 'none',
               boxShadow: 'none'
