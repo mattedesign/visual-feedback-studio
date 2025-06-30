@@ -199,7 +199,7 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
 
       {/* Upload Buttons */}
       <div className="space-y-2">
-        <div className="relative">
+        <div className="relative hidden">
           <input
             ref={fileInputRef}
             type="file"
