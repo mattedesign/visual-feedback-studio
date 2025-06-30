@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Brain, Search, BookOpen, ExternalLink, Award, CheckCircle, Database } from 'lucide-react';
 
@@ -38,10 +37,10 @@ export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = (
   // Add safety check for missing data
   if (!analysisData) {
     return (
-      <div className="research-citations-module flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+      <div className="research-citations-module flex items-center justify-center h-64 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-slate-900">
         <div className="text-center">
           <Brain className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-          <h3 className="font-medium mb-2">No Analysis Data Available</h3>
+          <h3 className="font-medium mb-2 text-gray-900 dark:text-white">No Analysis Data Available</h3>
           <p className="text-sm">Unable to load research citations for this analysis.</p>
         </div>
       </div>
@@ -248,84 +247,92 @@ export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = (
   };
 
   return (
-    <div className="research-citations-module h-screen bg-white dark:bg-slate-900 overflow-y-auto">
+    <div className="research-citations-module min-h-screen bg-gray-50 dark:bg-slate-900 overflow-y-auto">
       {/* Header with Knowledge Base Size Indicator */}
-      <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 p-6 z-10">
+      <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-6 py-8 z-10 shadow-sm">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center gap-3 mb-2">
-            <Brain className="w-6 h-6 text-blue-600" />
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Research-Backed Analysis
-            </h1>
-            <div className="bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-100 px-3 py-1 rounded-full text-sm font-medium">
-              274-Entry Knowledge Base
+          <div className="flex items-center gap-4 mb-4">
+            <div className="flex items-center gap-3">
+              <Brain className="w-7 h-7 text-blue-600" />
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                Research-Backed Analysis
+              </h1>
             </div>
-            <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-              ragStatus === 'ENABLED' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100' :
-              ragStatus === 'ENHANCED_CONTEXT' ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100' :
-              ragStatus === 'ANNOTATION_BACKED' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100' :
-              'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-100'
-            }`}>
-              {ragStatus.replace('_', ' ')}
+            <div className="flex items-center gap-3">
+              <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg">
+                🏆 274-Entry Knowledge Base
+              </div>
+              <div className={`px-4 py-2 rounded-full text-sm font-medium shadow-sm ${
+                ragStatus === 'ENABLED' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100' :
+                ragStatus === 'ENHANCED_CONTEXT' ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100' :
+                ragStatus === 'ANNOTATION_BACKED' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100' :
+                'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-100'
+              }`}>
+                {ragStatus.replace('_', ' ')}
+              </div>
             </div>
           </div>
-          <p className="text-gray-600 dark:text-gray-300">
-            Analysis enhanced with {knowledgeSourcesUsed} research sources from our comprehensive {knowledgeBaseSize}-entry knowledge base
+          <p className="text-gray-600 dark:text-gray-300 text-lg">
+            Analysis enhanced with <span className="font-semibold text-blue-600">{knowledgeSourcesUsed} research sources</span> from our comprehensive <span className="font-semibold text-indigo-600">{knowledgeBaseSize}-entry knowledge base</span>
           </p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-8">
         {/* Knowledge Base Strength Metrics */}
-        <div className="mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div className="mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {/* Knowledge Base Size */}
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
-              <div className="flex items-center gap-3 mb-2">
-                <Database className="w-5 h-5 text-blue-600" />
-                <h3 className="font-semibold text-gray-900 dark:text-white">Knowledge Base</h3>
+            <div className="bg-white dark:bg-slate-800 border-2 border-blue-200 dark:border-blue-800 rounded-xl p-8 shadow-lg hover:shadow-xl transition-shadow">
+              <div className="flex items-center gap-3 mb-3">
+                <Database className="w-6 h-6 text-blue-600" />
+                <h3 className="font-bold text-gray-900 dark:text-white">Knowledge Base</h3>
               </div>
-              <div className="text-3xl font-bold text-blue-600 mb-1">{knowledgeBaseSize}</div>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Research entries</p>
+              <div className="text-4xl font-bold text-blue-600 mb-2">{knowledgeBaseSize}</div>
+              <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">Research entries</p>
             </div>
 
             {/* Sources Used */}
-            <div className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-6">
-              <div className="flex items-center gap-3 mb-2">
-                <Search className="w-5 h-5 text-emerald-600" />
-                <h3 className="font-semibold text-gray-900 dark:text-white">Sources Used</h3>
+            <div className="bg-white dark:bg-slate-800 border-2 border-emerald-200 dark:border-emerald-800 rounded-xl p-8 shadow-lg hover:shadow-xl transition-shadow">
+              <div className="flex items-center gap-3 mb-3">
+                <Search className="w-6 h-6 text-emerald-600" />
+                <h3 className="font-bold text-gray-900 dark:text-white">Sources Used</h3>
               </div>
-              <div className="text-3xl font-bold text-emerald-600 mb-1">{knowledgeSourcesUsed}</div>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Active in this analysis</p>
+              <div className="text-4xl font-bold text-emerald-600 mb-2">{knowledgeSourcesUsed}</div>
+              <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">Active in this analysis</p>
             </div>
 
             {/* Research Confidence */}
-            <div className="bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6">
-              <div className="flex items-center gap-3 mb-2">
-                <Award className="w-5 h-5 text-purple-600" />
-                <h3 className="font-semibold text-gray-900 dark:text-white">Confidence Score</h3>
+            <div className="bg-white dark:bg-slate-800 border-2 border-purple-200 dark:border-purple-800 rounded-xl p-8 shadow-lg hover:shadow-xl transition-shadow">
+              <div className="flex items-center gap-3 mb-3">
+                <Award className="w-6 h-6 text-purple-600" />
+                <h3 className="font-bold text-gray-900 dark:text-white">Confidence Score</h3>
               </div>
-              <div className="text-3xl font-bold text-purple-600 mb-1">
+              <div className={`text-4xl font-bold mb-2 ${
+                confidence >= 0.9 ? 'text-green-600' : 
+                confidence >= 0.8 ? 'text-blue-600' : 
+                confidence >= 0.7 ? 'text-yellow-600' : 'text-orange-600'
+              }`}>
                 {Math.round(confidence * 100)}%
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Research backing strength</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">Research backing strength</p>
             </div>
 
             {/* Citations Available */}
-            <div className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6">
-              <div className="flex items-center gap-3 mb-2">
-                <BookOpen className="w-5 h-5 text-orange-600" />
-                <h3 className="font-semibold text-gray-900 dark:text-white">Citations</h3>
+            <div className="bg-white dark:bg-slate-800 border-2 border-orange-200 dark:border-orange-800 rounded-xl p-8 shadow-lg hover:shadow-xl transition-shadow">
+              <div className="flex items-center gap-3 mb-3">
+                <BookOpen className="w-6 h-6 text-orange-600" />
+                <h3 className="font-bold text-gray-900 dark:text-white">Citations</h3>
               </div>
-              <div className="text-3xl font-bold text-orange-600 mb-1">{researchCitations.length}</div>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Research citations</p>
+              <div className="text-4xl font-bold text-orange-600 mb-2">{researchCitations.length}</div>
+              <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">Research citations</p>
             </div>
           </div>
         </div>
 
         {/* Debug Information (Development) */}
         {debugInfo && process.env.NODE_ENV === 'development' && (
-          <div className="mb-6 p-4 bg-gray-100 dark:bg-slate-800 rounded-lg">
+          <div className="mb-8 p-6 bg-gray-100 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
             <h4 className="font-medium text-gray-900 dark:text-white mb-2">Debug Information:</h4>
             <pre className="text-xs text-gray-600 dark:text-gray-400 overflow-x-auto">
               {JSON.stringify({...debugInfo, processingStats}, null, 2)}
@@ -334,15 +341,15 @@ export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = (
         )}
 
         {/* Navigation Tabs */}
-        <div className="mb-6">
-          <div className="flex flex-wrap gap-2 border-b border-gray-200 dark:border-slate-700">
+        <div className="mb-8">
+          <div className="flex flex-wrap gap-2 border-b-2 border-gray-200 dark:border-slate-700">
             {['overview', 'sources', 'methodology', 'citations'].map((tab) => (
               <button
                 key={tab}
-                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                className={`px-6 py-3 text-sm font-semibold border-b-3 transition-all duration-200 ${
                   selectedCategory === tab
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                    ? 'border-blue-600 text-blue-600 bg-blue-50 dark:bg-blue-900/20'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800'
                 }`}
                 onClick={() => setSelectedCategory(tab)}
               >
@@ -354,48 +361,73 @@ export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = (
 
         {/* Content based on selected tab */}
         {selectedCategory === 'overview' && (
-          <div className="space-y-6">
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+          <div className="space-y-8">
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-xl p-8 shadow-lg">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
                 274-Entry Knowledge Base Advantage
               </h3>
-              <ul className="space-y-2 text-gray-700 dark:text-gray-300">
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>Comprehensive research coverage with {knowledgeBaseSize} curated UX research entries</span>
+              <ul className="space-y-4 text-gray-700 dark:text-gray-300">
+                <li className="flex items-start gap-3">
+                  <CheckCircle className="w-6 h-6 text-green-500 mt-1 flex-shrink-0" />
+                  <span className="text-lg">Comprehensive research coverage with <strong>{knowledgeBaseSize} curated UX research entries</strong></span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>Enhanced RAG (Retrieval-Augmented Generation) optimized for UX analysis</span>
+                <li className="flex items-start gap-3">
+                  <CheckCircle className="w-6 h-6 text-green-500 mt-1 flex-shrink-0" />
+                  <span className="text-lg">Enhanced RAG (Retrieval-Augmented Generation) optimized for UX analysis</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>Pattern matching against {knowledgeSourcesUsed} most relevant research sources</span>
+                <li className="flex items-start gap-3">
+                  <CheckCircle className="w-6 h-6 text-green-500 mt-1 flex-shrink-0" />
+                  <span className="text-lg">Pattern matching against <strong>{knowledgeSourcesUsed} most relevant research sources</strong></span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>Evidence-based recommendations with {Math.round(confidence * 100)}% confidence score</span>
+                <li className="flex items-start gap-3">
+                  <CheckCircle className="w-6 h-6 text-green-500 mt-1 flex-shrink-0" />
+                  <span className="text-lg">Evidence-based recommendations with <strong>{Math.round(confidence * 100)}% confidence score</strong></span>
                 </li>
               </ul>
             </div>
 
-            <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+            <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-8 shadow-lg">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
                 How Our Enhanced Analysis Works
               </h3>
-              <div className="space-y-3 text-gray-600 dark:text-gray-300">
-                <p>• <strong>Intelligent Query Generation:</strong> Analyze your designs to generate targeted research queries</p>
-                <p>• <strong>274-Entry Knowledge Retrieval:</strong> Search our comprehensive UX research database for relevant insights</p>
-                <p>• <strong>Context-Aware Matching:</strong> Match visual elements against established UX best practices</p>
-                <p>• <strong>Evidence Synthesis:</strong> Combine multiple research sources to support recommendations</p>
-                <p>• <strong>Confidence Scoring:</strong> Calculate reliability based on research consensus and evidence strength</p>
+              <div className="space-y-4 text-gray-600 dark:text-gray-300">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">1</div>
+                  <div>
+                    <p className="text-lg"><strong>Intelligent Query Generation:</strong> Analyze your designs to generate targeted research queries</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">2</div>
+                  <div>
+                    <p className="text-lg"><strong>274-Entry Knowledge Retrieval:</strong> Search our comprehensive UX research database for relevant insights</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">3</div>
+                  <div>
+                    <p className="text-lg"><strong>Context-Aware Matching:</strong> Match visual elements against established UX best practices</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">4</div>
+                  <div>
+                    <p className="text-lg"><strong>Evidence Synthesis:</strong> Combine multiple research sources to support recommendations</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">5</div>
+                  <div>
+                    <p className="text-lg"><strong>Confidence Scoring:</strong> Calculate reliability based on research consensus and evidence strength</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         )}
 
         {selectedCategory === 'sources' && (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {Object.entries(researchCategories).map(([category, sources]) => {
               const usedSources = sources.filter(source => 
                 researchCitations.some(citation => 
@@ -406,16 +438,16 @@ export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = (
               if (usedSources.length === 0) return null;
               
               return (
-                <div key={category} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                <div key={category} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-8 shadow-lg">
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
                     {category} ({usedSources.length} used)
                   </h3>
-                  <div className="grid gap-3">
+                  <div className="grid gap-4">
                     {usedSources.map((source, index) => (
-                      <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-700 rounded">
-                        <CheckCircle className="w-5 h-5 text-green-500" />
-                        <span className="text-gray-900 dark:text-white font-medium">{source}</span>
-                        <ExternalLink className="w-4 h-4 text-gray-400 ml-auto cursor-pointer hover:text-gray-600" />
+                      <div key={index} className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-slate-700 rounded-lg border border-gray-100 dark:border-slate-600 hover:shadow-md transition-shadow">
+                        <CheckCircle className="w-6 h-6 text-green-500 flex-shrink-0" />
+                        <span className="text-gray-900 dark:text-white font-semibold flex-1">{source}</span>
+                        <ExternalLink className="w-5 h-5 text-gray-400 cursor-pointer hover:text-blue-600 transition-colors" />
                       </div>
                     ))}
                   </div>
@@ -429,11 +461,11 @@ export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = (
                 typeof citation.source === 'string' && citation.source.toLowerCase().includes(knownSource.toLowerCase())
               )
             ).length > 0 && (
-              <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-8 shadow-lg">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
                   Additional Research Sources
                 </h3>
-                <div className="grid gap-3">
+                <div className="grid gap-4">
                   {researchCitations
                     .filter(citation => 
                       !Object.values(researchCategories).flat().some(knownSource => 
@@ -441,10 +473,10 @@ export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = (
                       )
                     )
                     .map((citation, index) => (
-                      <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-700 rounded">
-                        <CheckCircle className="w-5 h-5 text-blue-500" />
-                        <span className="text-gray-900 dark:text-white font-medium">{citation.source}</span>
-                        <ExternalLink className="w-4 h-4 text-gray-400 ml-auto cursor-pointer hover:text-gray-600" />
+                      <div key={index} className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-slate-700 rounded-lg border border-gray-100 dark:border-slate-600 hover:shadow-md transition-shadow">
+                        <CheckCircle className="w-6 h-6 text-blue-500 flex-shrink-0" />
+                        <span className="text-gray-900 dark:text-white font-semibold flex-1">{citation.source}</span>
+                        <ExternalLink className="w-5 h-5 text-gray-400 cursor-pointer hover:text-blue-600 transition-colors" />
                       </div>
                     ))
                   }
@@ -455,38 +487,38 @@ export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = (
         )}
 
         {selectedCategory === 'methodology' && (
-          <div className="space-y-6">
-            <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          <div className="space-y-8">
+            <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-8 shadow-lg">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">
                 274-Entry Knowledge Base Quality Assurance
               </h3>
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-sm font-bold">1</div>
+              <div className="space-y-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-lg font-bold flex-shrink-0">1</div>
                   <div>
-                    <h4 className="font-medium text-gray-900 dark:text-white">Comprehensive Coverage</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">274 carefully curated research entries covering all major UX domains</p>
+                    <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Comprehensive Coverage</h4>
+                    <p className="text-gray-600 dark:text-gray-400">274 carefully curated research entries covering all major UX domains</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-sm font-bold">2</div>
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-lg font-bold flex-shrink-0">2</div>
                   <div>
-                    <h4 className="font-medium text-gray-900 dark:text-white">Source Authority</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Ratings based on industry recognition, peer review, and research impact</p>
+                    <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Source Authority</h4>
+                    <p className="text-gray-600 dark:text-gray-400">Ratings based on industry recognition, peer review, and research impact</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-sm font-bold">3</div>
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-lg font-bold flex-shrink-0">3</div>
                   <div>
-                    <h4 className="font-medium text-gray-900 dark:text-white">Enhanced RAG Integration</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Optimized retrieval system specifically tuned for UX analysis workflows</p>
+                    <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Enhanced RAG Integration</h4>
+                    <p className="text-gray-600 dark:text-gray-400">Optimized retrieval system specifically tuned for UX analysis workflows</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-sm font-bold">4</div>
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-lg font-bold flex-shrink-0">4</div>
                   <div>
-                    <h4 className="font-medium text-gray-900 dark:text-white">Confidence Scoring</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Advanced algorithms calculate research backing strength and recommendation confidence</p>
+                    <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Confidence Scoring</h4>
+                    <p className="text-gray-600 dark:text-gray-400">Advanced algorithms calculate research backing strength and recommendation confidence</p>
                   </div>
                 </div>
               </div>
@@ -495,35 +527,41 @@ export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = (
         )}
 
         {selectedCategory === 'citations' && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
                 Research Citations ({researchCitations.length})
               </h3>
-              <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm transition-colors">
+              <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold transition-colors shadow-lg">
                 Download Citation Library
               </button>
             </div>
             
-            <div className="space-y-3">
+            <div className="space-y-4">
               {researchCitations.map((citation, index) => (
-                <div key={index} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
+                <div key={index} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h4 className="font-medium text-gray-900 dark:text-white mb-2">
+                      <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-3">
                         {index + 1}. {citation.title}
                       </h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                      <p className="text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
                         {citation.summary}
                       </p>
-                      <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-500">
-                        <span>Source: {citation.source}</span>
-                        <span>Category: {citation.category}</span>
-                        <span>Relevance: {Math.round((citation.relevance || 0.8) * 100)}%</span>
-                        <span>Confidence: {Math.round((citation.confidence || 0.8) * 100)}%</span>
+                      <div className="flex items-center gap-6 text-sm text-gray-500 dark:text-gray-500">
+                        <span><strong>Source:</strong> {citation.source}</span>
+                        <span><strong>Category:</strong> {citation.category}</span>
+                        <span><strong>Relevance:</strong> {Math.round((citation.relevance || 0.8) * 100)}%</span>
+                        <span className={`font-semibold ${
+                          (citation.confidence || 0.8) >= 0.9 ? 'text-green-600' : 
+                          (citation.confidence || 0.8) >= 0.8 ? 'text-blue-600' : 
+                          'text-yellow-600'
+                        }`}>
+                          <strong>Confidence:</strong> {Math.round((citation.confidence || 0.8) * 100)}%
+                        </span>
                       </div>
                     </div>
-                    <ExternalLink className="w-4 h-4 text-gray-400 cursor-pointer hover:text-gray-600 ml-4 flex-shrink-0" />
+                    <ExternalLink className="w-5 h-5 text-gray-400 cursor-pointer hover:text-blue-600 ml-6 flex-shrink-0 transition-colors" />
                   </div>
                 </div>
               ))}
@@ -532,18 +570,18 @@ export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = (
         )}
 
         {/* Stakeholder Resources */}
-        <div className="mt-8 pt-6 border-t border-gray-200 dark:border-slate-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <div className="mt-12 pt-8 border-t-2 border-gray-200 dark:border-slate-700">
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
             Stakeholder Resources
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button className="bg-blue-600 text-white px-4 py-3 rounded hover:bg-blue-700 text-sm font-medium transition-colors">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <button className="bg-blue-600 text-white px-6 py-4 rounded-lg hover:bg-blue-700 font-semibold transition-colors shadow-lg hover:shadow-xl">
               Send Research Summary to Team
             </button>
-            <button className="border border-gray-300 dark:border-gray-600 px-4 py-3 rounded hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 text-sm font-medium transition-colors">
+            <button className="border-2 border-gray-300 dark:border-gray-600 px-6 py-4 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-semibold transition-colors">
               Download Citation Library (BibTeX)
             </button>
-            <button className="border border-gray-300 dark:border-gray-600 px-4 py-3 rounded hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 text-sm font-medium transition-colors">
+            <button className="border-2 border-gray-300 dark:border-gray-600 px-6 py-4 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-semibold transition-colors">
               Export Research Report (PDF)
             </button>
           </div>
