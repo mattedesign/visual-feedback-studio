@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -112,7 +111,7 @@ export const SimplifiedContextInput = ({
         </div>
 
         {/* Buttons - Second Row */}
-        <div className="flex items-center space-x-3 w-full">
+        <div className="flex items-center justify-between w-full">
           <button
             onClick={() => setShowSuggestions(!showSuggestions)}
             style={{
@@ -136,14 +135,13 @@ export const SimplifiedContextInput = ({
           <Button
             onClick={onAnalyze}
             disabled={!canAnalyze}
-            className="text-white font-medium disabled:opacity-50 flex-1"
+            className="text-white font-medium disabled:opacity-50"
             style={{
               display: 'flex',
               padding: '11px 16px',
               justifyContent: 'center',
               alignItems: 'center',
               gap: '4px',
-              alignSelf: 'stretch',
               borderRadius: '10px',
               background: 'var(--Gradient-Linear, linear-gradient(97deg, #6912D4 15.89%, #CE169B 69.34%, #FB9A2B 103.4%))',
               boxShadow: '0px 1px 2px 0px rgba(135, 80, 255, 0.05)',
