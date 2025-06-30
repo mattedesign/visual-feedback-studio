@@ -111,7 +111,7 @@ export const AnalysisProgressSteps = ({
         {/* Condensed Header */}
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-3 mb-3">
-            <Badge className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-2 font-semibold">
+            <Badge className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-2 font-semibold hidden">
               <Star className="w-4 h-4 mr-2 fill-current" />
               Research-Backed Analysis
             </Badge>
