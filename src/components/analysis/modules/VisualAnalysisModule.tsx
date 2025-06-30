@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Eye, ZoomIn, ZoomOut, RotateCcw, Download, Share2, FileText } from 'lucide-react';
 
@@ -29,62 +30,47 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
   // Use existing annotation data as-is with proper safety checks
   const processedAnnotations = analysisData?.annotations || [];
   
-  // FIXED: Enhanced image data mapping to handle multiple data sources
+  // FIXED: Simplified image data extraction - primary focus on database 'images' array
   const images = (() => {
-    // Try multiple data sources for images
+    console.log('🔍 VisualAnalysisModule - Raw analysisData:', {
+      hasImages: !!analysisData?.images,
+      imagesType: typeof analysisData?.images,
+      imagesContent: analysisData?.images,
+      allKeys: Object.keys(analysisData || {})
+    });
+
+    // Primary: Direct images array from database
     if (analysisData?.images && Array.isArray(analysisData.images)) {
-      return analysisData.images;
+      console.log('✅ Using direct images array:', analysisData.images);
+      return analysisData.images.map((url: string) => ({ 
+        url: url, 
+        preview: url 
+      }));
     }
-    
-    // Check if images are stored as text array in database
+
+    // Secondary: Try parsing if stored as JSON string
     if (analysisData?.images && typeof analysisData.images === 'string') {
       try {
         const parsed = JSON.parse(analysisData.images);
         if (Array.isArray(parsed)) {
-          return parsed.map(img => ({ 
+          console.log('✅ Using parsed images from JSON string:', parsed);
+          return parsed.map((img: any) => ({ 
             url: typeof img === 'string' ? img : img.url, 
             preview: typeof img === 'string' ? img : img.preview || img.url 
           }));
         }
       } catch (e) {
-        console.warn('Failed to parse images from analysis data:', e);
+        console.warn('⚠️ Failed to parse images JSON:', e);
       }
     }
-    
-    // Check for raw annotation data with image references
-    if (analysisData?.annotations && Array.isArray(analysisData.annotations)) {
-      const imageUrls = [...new Set(
-        analysisData.annotations
-          .map(ann => ann?.imageUrl || ann?.image)
-          .filter(Boolean)
-      )];
-      
-      if (imageUrls.length > 0) {
-        return imageUrls.map(url => ({ url, preview: url }));
-      }
-    }
-    
-    // Check if there's a single image URL stored
+
+    // Fallback: Single image URL
     if (analysisData?.imageUrl) {
+      console.log('✅ Using single imageUrl:', analysisData.imageUrl);
       return [{ url: analysisData.imageUrl, preview: analysisData.imageUrl }];
     }
-    
-    // Check analysis results table for images array
-    if (analysisData?.images_array && Array.isArray(analysisData.images_array)) {
-      return analysisData.images_array.map(url => ({ url, preview: url }));
-    }
-    
-    // Log available data structure for debugging
-    console.log('VisualAnalysisModule: Available analysisData keys:', Object.keys(analysisData));
-    console.log('VisualAnalysisModule: Analysis data structure:', {
-      hasImages: !!analysisData?.images,
-      hasAnnotations: !!analysisData?.annotations,
-      hasImageUrl: !!analysisData?.imageUrl,
-      annotationCount: analysisData?.annotations?.length || 0,
-      analysisDataKeys: Object.keys(analysisData)
-    });
-    
-    // Fallback to placeholder
+
+    console.warn('❌ No valid images found, using placeholder');
     return [{ url: '/placeholder.svg', preview: '/placeholder.svg' }];
   })();
   
@@ -122,6 +108,22 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
     }
   };
 
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    const target = e.currentTarget;
+    const originalSrc = target.src;
+    
+    console.error('❌ Image failed to load:', {
+      originalSrc,
+      imageIndex: currentImageIndex,
+      availableImages: images
+    });
+    
+    // Only set to placeholder if not already placeholder
+    if (!originalSrc.includes('placeholder.svg')) {
+      target.src = '/placeholder.svg';
+    }
+  };
+
   return (
     <div className="visual-analysis-module flex flex-col lg:flex-row h-screen bg-white dark:bg-slate-900">
       {/* Left Panel - Image Display */}
@@ -131,21 +133,25 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
           <div className="relative inline-block max-w-full">
             {/* Display current image */}
             <img 
-              src={images[currentImageIndex]?.url || images[currentImageIndex]?.preview || '/placeholder.svg'}
+              src={images[currentImageIndex]?.url || '/placeholder.svg'}
               alt={`Analysis target ${currentImageIndex + 1}`}
               className="max-w-full h-auto rounded-lg shadow-lg"
-              onError={(e) => {
-                console.error('Image failed to load:', images[currentImageIndex]?.url);
-                e.currentTarget.src = '/placeholder.svg';
+              onError={handleImageError}
+              onLoad={() => {
+                console.log('✅ Image loaded successfully:', {
+                  src: images[currentImageIndex]?.url,
+                  imageIndex: currentImageIndex
+                });
               }}
             />
             
-            {/* Show image URL for debugging */}
-            {images[currentImageIndex]?.url && images[currentImageIndex]?.url !== '/placeholder.svg' && (
-              <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
-                Image {currentImageIndex + 1}: {images[currentImageIndex]?.url?.substring(0, 30)}...
+            {/* Debug info overlay */}
+            <div className="absolute top-2 left-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded max-w-xs">
+              <div>Image {currentImageIndex + 1}/{images.length}</div>
+              <div className="truncate">
+                URL: {images[currentImageIndex]?.url?.substring(0, 50)}...
               </div>
-            )}
+            </div>
             
             {/* Render annotations with positions over the image */}
             {annotationsWithPosition.map((annotation, index) => (
