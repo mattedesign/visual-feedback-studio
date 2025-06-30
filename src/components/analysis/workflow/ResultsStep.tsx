@@ -15,6 +15,9 @@ import { EnhancedContextDisplay } from './components/EnhancedContextDisplay';
 import { ResearchBadge } from './components/ResearchBadge';
 import { ResearchSourcesPanel } from './components/ResearchSourcesPanel';
 import { ProminentBusinessImpact } from './components/ProminentBusinessImpact';
+import { StrengthsSummaryCard } from './components/StrengthsSummaryCard';
+import { PositiveLanguageWrapper } from './components/PositiveLanguageWrapper';
+import { EnhancedBusinessImpactCard } from './components/EnhancedBusinessImpactCard';
 
 interface ResultsStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -239,9 +242,21 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
           </div>
         </CardHeader>
         <CardContent className="space-y-8">
-          {/* Prominent Business Impact Summary - First */}
+          {/* NEW: Strengths Summary Card - First Priority */}
+          <StrengthsSummaryCard
+            annotations={workflow.aiAnnotations}
+            analysisContext={workflow.analysisContext}
+            imageCount={workflow.selectedImages.length}
+            researchCitations={workflow.researchCitations}
+          />
+          
+          {/* Enhanced Business Impact - Now with positive framing */}
           {businessImpact && (
-            <ProminentBusinessImpact businessImpact={businessImpact} insights={insights} />
+            <EnhancedBusinessImpactCard
+              businessImpact={businessImpact}
+              insights={insights}
+              strengthsCount={5} // This would be calculated from StrengthsSummaryCard
+            />
           )}
           
           {/* Research Sources Panel */}
@@ -296,18 +311,23 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
                 />
               )}
             </div>
-            <FeedbackPanel
-              currentImageAIAnnotations={currentImageAIAnnotations}
-              currentImageUserAnnotations={currentImageUserAnnotations}
-              activeImageIndex={activeImageIndex}
-              isMultiImage={isMultiImage}
-              activeAnnotation={activeAnnotation}
-              onAnnotationClick={setActiveAnnotation}
-              aiAnnotations={workflow.aiAnnotations}
-              getSeverityColor={getSeverityColor}
-              businessImpact={businessImpact}
-              insights={insights}
-            />
+            
+            {/* Wrap FeedbackPanel with positive language transformer */}
+            <PositiveLanguageWrapper annotations={workflow.aiAnnotations}>
+              <FeedbackPanel
+                currentImageAIAnnotations={currentImageAIAnnotations}
+                currentImageUserAnnotations={currentImageUserAnnotations}
+                activeImageIndex={activeImageIndex}
+                isMultiImage={isMultiImage}
+                activeAnnotation={activeAnnotation}
+                onAnnotationClick={setActiveAnnotation}
+                aiAnnotations={workflow.aiAnnotations}
+                getSeverityColor={getSeverityColor}
+                businessImpact={businessImpact}
+                insights={insights}
+                researchCitations={workflow.researchCitations}
+              />
+            </PositiveLanguageWrapper>
           </div>
           <div className="mt-8">
             <VisualSuggestions
