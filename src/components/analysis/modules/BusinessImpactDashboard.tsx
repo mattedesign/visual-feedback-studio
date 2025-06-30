@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { toast } from 'sonner';
 import { 
   TrendingUp, 
   Clock, 
@@ -16,9 +17,14 @@ import {
   Eye,
   Zap,
   Calendar,
-  BarChart3
+  BarChart3,
+  FileText,
+  Users
 } from 'lucide-react';
 import { useBusinessMetrics } from '../../../hooks/useBusinessMetrics';
+import { businessImpactService, BusinessImpactData } from '@/services/businessImpactService';
+import { SharingModal } from './SharingModal';
+import { DetailedBreakdownPage } from './DetailedBreakdownPage';
 
 interface BusinessImpactDashboardProps {
   analysisData: any;
@@ -28,6 +34,9 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
   analysisData 
 }) => {
   const { businessMetrics, enhanced, original } = useBusinessMetrics(analysisData);
+  const [isSharingModalOpen, setIsSharingModalOpen] = useState(false);
+  const [showDetailedBreakdown, setShowDetailedBreakdown] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
   // Safety check for enhanced data
   if (!enhanced || !businessMetrics) {
@@ -51,6 +60,18 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
   const siteName = original?.siteName || original?.analysisContext || 'Website Analysis';
   const { impactScore, revenueEstimate, implementationTimeline, competitivePosition, prioritizedRecommendations } = businessMetrics;
   
+  // Prepare data for services
+  const businessImpactData: BusinessImpactData = {
+    siteName,
+    impactScore,
+    revenueEstimate,
+    implementationTimeline,
+    competitivePosition,
+    prioritizedRecommendations,
+    knowledgeSourcesUsed: enhancedContext?.knowledgeSourcesUsed || 23,
+    analysisId: analysisData.id || 'temp_analysis'
+  };
+
   const getScoreColor = (score: number) => {
     if (score >= 71) return 'text-green-600';
     if (score >= 41) return 'text-yellow-600';
@@ -62,6 +83,61 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
     if (score >= 41) return 'Good';
     return 'Needs Work';
   };
+
+  // Button handlers
+  const handleGenerateExecutiveReport = async () => {
+    setIsGeneratingReport(true);
+    try {
+      await businessImpactService.generateExecutiveReport(businessImpactData);
+      toast.success('Executive report generated successfully!', {
+        description: 'Professional PDF report has been downloaded.'
+      });
+    } catch (error) {
+      toast.error('Failed to generate executive report');
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
+  const handleShareWithTeam = () => {
+    setIsSharingModalOpen(true);
+  };
+
+  const handleViewDetails = () => {
+    setShowDetailedBreakdown(true);
+  };
+
+  const handleImplementFirst = async () => {
+    try {
+      await businessImpactService.generateImplementationChecklist(prioritizedRecommendations.quickWins);
+      toast.success('Implementation checklist generated!', {
+        description: 'Step-by-step action items have been downloaded.'
+      });
+    } catch (error) {
+      toast.error('Failed to generate implementation checklist');
+    }
+  };
+
+  const handlePlanForNextQuarter = async () => {
+    try {
+      await businessImpactService.generateProjectPlan(prioritizedRecommendations.majorProjects);
+      toast.success('Project planning guide generated!', {
+        description: 'Quarterly project plan has been downloaded.'
+      });
+    } catch (error) {
+      toast.error('Failed to generate project plan');
+    }
+  };
+
+  // Show detailed breakdown if requested
+  if (showDetailedBreakdown) {
+    return (
+      <DetailedBreakdownPage
+        data={businessImpactData}
+        onBack={() => setShowDetailedBreakdown(false)}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6">
@@ -81,15 +157,27 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Button variant="outline" className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2"
+                onClick={handleGenerateExecutiveReport}
+                disabled={isGeneratingReport}
+              >
                 <Download className="w-4 h-4" />
-                Export Report
+                {isGeneratingReport ? 'Generating...' : 'Export Report'}
               </Button>
-              <Button variant="outline" className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2"
+                onClick={handleShareWithTeam}
+              >
                 <Share2 className="w-4 h-4" />
                 Share Results
               </Button>
-              <Button className="flex items-center gap-2">
+              <Button 
+                className="flex items-center gap-2"
+                onClick={handleViewDetails}
+              >
                 <Eye className="w-4 h-4" />
                 View Details
               </Button>
@@ -237,7 +325,10 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
                       </div>
                     </div>
                   ))}
-                  <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
+                  <Button 
+                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    onClick={handleImplementFirst}
+                  >
                     <CheckCircle className="w-4 h-4 mr-2" />
                     Implement First
                   </Button>
@@ -291,7 +382,11 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
                       </div>
                     </div>
                   ))}
-                  <Button variant="outline" className="w-full">
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={handlePlanForNextQuarter}
+                  >
                     <Calendar className="w-4 h-4 mr-2" />
                     Plan for Next Quarter
                   </Button>
@@ -309,7 +404,11 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
         <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button variant="outline" className="flex items-center justify-center gap-2 py-6">
+              <Button 
+                variant="outline" 
+                className="flex items-center justify-center gap-2 py-6"
+                onClick={handleViewDetails}
+              >
                 <Eye className="w-5 h-5" />
                 <div className="text-left">
                   <div className="font-medium">View Detailed Analysis</div>
@@ -318,7 +417,12 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
                 <ArrowRight className="w-4 h-4" />
               </Button>
               
-              <Button variant="outline" className="flex items-center justify-center gap-2 py-6">
+              <Button 
+                variant="outline" 
+                className="flex items-center justify-center gap-2 py-6"
+                onClick={handleGenerateExecutiveReport}
+                disabled={isGeneratingReport}
+              >
                 <Download className="w-5 h-5" />
                 <div className="text-left">
                   <div className="font-medium">Generate Executive Report</div>
@@ -327,7 +431,11 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
                 <ArrowRight className="w-4 h-4" />
               </Button>
               
-              <Button variant="outline" className="flex items-center justify-center gap-2 py-6">
+              <Button 
+                variant="outline" 
+                className="flex items-center justify-center gap-2 py-6"
+                onClick={handleShareWithTeam}
+              >
                 <Share2 className="w-5 h-5" />
                 <div className="text-left">
                   <div className="font-medium">Share with Team</div>
@@ -338,6 +446,14 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
             </div>
           </CardContent>
         </Card>
+
+        {/* Sharing Modal */}
+        <SharingModal
+          isOpen={isSharingModalOpen}
+          onClose={() => setIsSharingModalOpen(false)}
+          analysisId={businessImpactData.analysisId}
+          siteName={siteName}
+        />
       </div>
     </div>
   );
