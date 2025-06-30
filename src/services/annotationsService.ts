@@ -1,4 +1,6 @@
 
+import { Annotation } from '@/types/analysis';
+
 // Minimal working service for modular dashboard
 export interface AnnotationData {
   id: string;
@@ -6,17 +8,6 @@ export interface AnnotationData {
   suggestion?: string;
   category?: string;
   severity?: string;
-}
-
-export interface Annotation {
-  id: string;
-  x: number;
-  y: number;
-  category: string;
-  severity: 'critical' | 'suggested' | 'enhancement';
-  feedback: string;
-  implementationEffort: 'low' | 'medium' | 'high';
-  businessImpact: 'low' | 'medium' | 'high';
 }
 
 export const annotationsService = {
