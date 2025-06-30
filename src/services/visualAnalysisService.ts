@@ -11,6 +11,21 @@ export interface VisualAnalysisExportData {
   siteName?: string;
 }
 
+// Helper function to calculate confidence from severity
+const calculateConfidence = (annotation: Annotation): number => {
+  switch (annotation.severity) {
+    case 'critical': return 0.9;
+    case 'suggested': return 0.7;
+    case 'enhancement': return 0.5;
+    default: return 0.6;
+  }
+};
+
+// Helper function to get display title from annotation
+const getAnnotationTitle = (annotation: Annotation): string => {
+  return annotation.feedback?.substring(0, 50) + '...' || 'Analysis finding';
+};
+
 export const visualAnalysisService = {
   downloadAnnotatedImage: async (data: VisualAnalysisExportData): Promise<void> => {
     try {
@@ -73,7 +88,7 @@ export const visualAnalysisService = {
             ctx.stroke();
             
             // Draw text background
-            const text = annotation.title || annotation.feedback?.substring(0, 40) + '...' || 'Annotation';
+            const text = getAnnotationTitle(annotation);
             ctx.font = '12px Arial';
             const textWidth = ctx.measureText(text).width + 20;
             
@@ -171,7 +186,8 @@ export const visualAnalysisService = {
         // Annotation header
         pdf.setFontSize(12);
         pdf.setFont('helvetica', 'bold');
-        pdf.text(`${index + 1}. ${annotation.title || 'Annotation'}`, 20, yPosition);
+        const title = annotation.feedback?.substring(0, 60) || `Analysis Finding ${index + 1}`;
+        pdf.text(`${index + 1}. ${title}`, 20, yPosition);
         yPosition += 10;
         
         // Severity and category
@@ -193,10 +209,11 @@ export const visualAnalysisService = {
         yPosition += 8;
         
         pdf.setFont('helvetica', 'normal');
+        const confidence = calculateConfidence(annotation);
         const techSpecs = [
           `• Implementation Effort: ${annotation.implementationEffort || 'Medium'}`,
           `• Business Impact: ${annotation.businessImpact || 'Medium'}`,
-          `• Confidence Level: ${annotation.confidence ? Math.round(annotation.confidence * 100) + '%' : '80%'}`,
+          `• Confidence Level: ${Math.round(confidence * 100)}%`,
           '• Accessibility: Ensure WCAG 2.1 AA compliance',
           '• Testing: Cross-browser compatibility required'
         ];
@@ -207,13 +224,13 @@ export const visualAnalysisService = {
         });
         
         // Research backing
-        if (annotation.researchBacking && annotation.researchBacking.length > 0) {
+        if (annotation.researchCitations && annotation.researchCitations.length > 0) {
           pdf.setFont('helvetica', 'bold');
           pdf.text('Research Backing:', 25, yPosition);
           yPosition += 8;
           
           pdf.setFont('helvetica', 'normal');
-          annotation.researchBacking.slice(0, 2).forEach(source => {
+          annotation.researchCitations.slice(0, 2).forEach(source => {
             const sourceText = pdf.splitTextToSize(`• ${source}`, pageWidth - 55);
             pdf.text(sourceText, 30, yPosition);
             yPosition += sourceText.length * 5;
