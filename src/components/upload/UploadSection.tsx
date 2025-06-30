@@ -1,103 +1,73 @@
 
 import { useState } from 'react';
-import { Image, Globe } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useUploadLogic } from '@/hooks/useUploadLogic';
-import { ProcessingState } from './ProcessingState';
 import { FileUploadTab } from './FileUploadTab';
 import { WebsiteUploadTab } from './WebsiteUploadTab';
+import { SvgConverterTab } from './SvgConverterTab';
+import { Upload, Globe, Code } from 'lucide-react';
 
 interface UploadSectionProps {
-  onImageUpload: (imageUrl: string) => void;
-  onMultipleImagesReady?: (imageUrls: string[]) => void;
+  onFileUpload: (file: File) => void;
+  onUrlUpload: (urls: string[]) => void;
+  onDemoUpload: () => void;
+  isProcessing: boolean;
+  uploadedImages: string[];
+  onRemoveImage: (imageUrl: string) => void;
+  onContinue: () => void;
 }
 
-export const UploadSection = ({ onImageUpload, onMultipleImagesReady }: UploadSectionProps) => {
-  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
-  
-  // Modified callback to only add to collection, not proceed immediately
-  const handleImageAddedToCollection = (imageUrl: string) => {
-    console.log('Adding image to collection (no workflow trigger):', imageUrl);
-    setUploadedImages(prev => {
-      const newImages = [...prev, imageUrl];
-      console.log('Collection now has', newImages.length, 'images');
-      return newImages;
-    });
-  };
-
-  const {
-    isProcessing,
-    handleFileUpload,
-    handleUrlSubmit,
-    handleDemoUpload,
-  } = useUploadLogic(handleImageAddedToCollection);
-
-  const handleRemoveImage = (imageUrlToRemove: string) => {
-    setUploadedImages(prev => prev.filter(url => url !== imageUrlToRemove));
-  };
-
-  const handleContinue = () => {
-    console.log('User clicked Continue with', uploadedImages.length, 'images');
-    if (uploadedImages.length > 0) {
-      if (onMultipleImagesReady) {
-        onMultipleImagesReady(uploadedImages);
-      } else {
-        // Fallback to single image handler for the first image
-        onImageUpload(uploadedImages[0]);
-      }
-    }
-  };
-
-  const handleWebsiteUpload = (imageUrl: string) => {
-    console.log('Website image uploaded, proceeding immediately:', imageUrl);
-    // For website uploads, we can continue immediately or add to collection
-    // For now, let's treat it like a single upload that proceeds immediately
-    onImageUpload(imageUrl);
-  };
-
-  const handleDemoClick = () => {
-    console.log('Demo button clicked, proceeding immediately');
-    // Demo should proceed immediately
-    handleDemoUpload();
-  };
-
-  // Only show processing state for operations that actually proceed immediately (like demo)
-  // File uploads to collection should not show processing state
-  if (isProcessing) {
-    return <ProcessingState />;
-  }
+export const UploadSection = ({
+  onFileUpload,
+  onUrlUpload,
+  onDemoUpload,
+  isProcessing,
+  uploadedImages,
+  onRemoveImage,
+  onContinue
+}: UploadSectionProps) => {
+  const [activeTab, setActiveTab] = useState('files');
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <Tabs defaultValue="upload" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 bg-slate-800/50 border border-slate-700">
-          <TabsTrigger value="upload" className="flex items-center gap-2">
-            <Image className="w-4 h-4" />
-            Upload Images
+    <div className="w-full max-w-4xl mx-auto">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsTrigger value="files" className="flex items-center gap-2">
+            <Upload className="w-4 h-4" />
+            Upload Files
           </TabsTrigger>
           <TabsTrigger value="website" className="flex items-center gap-2">
             <Globe className="w-4 h-4" />
-            Website URL
+            From Website
+          </TabsTrigger>
+          <TabsTrigger value="svg-converter" className="flex items-center gap-2">
+            <Code className="w-4 h-4" />
+            SVG to Component
           </TabsTrigger>
         </TabsList>
-        
-        <TabsContent value="upload" className="mt-6">
-          <FileUploadTab 
-            onFileUpload={handleFileUpload}
-            onDemoUpload={handleDemoClick}
-            isProcessing={false} // Never show processing for file uploads to collection
+
+        <TabsContent value="files">
+          <FileUploadTab
+            onFileUpload={onFileUpload}
+            onDemoUpload={onDemoUpload}
+            isProcessing={isProcessing}
             uploadedImages={uploadedImages}
-            onRemoveImage={handleRemoveImage}
-            onContinue={handleContinue}
+            onRemoveImage={onRemoveImage}
+            onContinue={onContinue}
           />
         </TabsContent>
-        
-        <TabsContent value="website" className="mt-6">
-          <WebsiteUploadTab 
-            onUrlSubmit={handleUrlSubmit}
-            onImageUpload={handleWebsiteUpload}
+
+        <TabsContent value="website">
+          <WebsiteUploadTab
+            onUrlUpload={onUrlUpload}
             isProcessing={isProcessing}
+            uploadedImages={uploadedImages}
+            onRemoveImage={onRemoveImage}
+            onContinue={onContinue}
           />
+        </TabsContent>
+
+        <TabsContent value="svg-converter">
+          <SvgConverterTab />
         </TabsContent>
       </Tabs>
     </div>
