@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { Badge } from '@/components/ui/badge';
@@ -29,8 +28,8 @@ export const ResultsCanvasState = ({
           return false;
         }
         
-        // Ensure required properties exist
-        if (!annotation.id && annotation.id !== 0) {
+        // Ensure required properties exist - fixed type comparison
+        if (!annotation.id && annotation.id !== '' && annotation.id !== 0) {
           console.warn(`Annotation missing ID at index ${index}:`, annotation);
           return false;
         }
