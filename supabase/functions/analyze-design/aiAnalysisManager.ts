@@ -1,4 +1,3 @@
-
 import { buildAnalysisPrompt } from './promptBuilder.ts';
 
 interface ProcessedImage {
@@ -46,8 +45,32 @@ class AIAnalysisManager {
       ragEnabled,
       circuitBreakerCount: this.circuitBreakerCount,
       targetInsights: '16-19',
-      primaryModel: 'Claude Sonnet 4'
+      primaryModel: 'Claude Sonnet 4',
+      imageDetails: processedImages.map(img => ({
+        hasUrl: !!img.imageUrl,
+        urlPreview: img.imageUrl ? img.imageUrl.substring(0, 50) + '...' : 'UNDEFINED',
+        size: img.size,
+        format: img.format
+      }))
     });
+
+    // Validate images have URLs
+    const validImages = processedImages.filter(img => img.imageUrl && img.imageUrl !== 'undefined');
+    if (validImages.length === 0) {
+      console.error('❌ No valid image URLs found:', processedImages);
+      return {
+        success: false,
+        error: 'No valid image URLs provided for analysis'
+      };
+    }
+
+    if (validImages.length !== processedImages.length) {
+      console.warn('⚠️ Some images have invalid URLs, proceeding with valid ones:', {
+        total: processedImages.length,
+        valid: validImages.length,
+        invalid: processedImages.length - validImages.length
+      });
+    }
 
     try {
       let enhancedPrompt = analysisPrompt;
@@ -78,7 +101,7 @@ class AIAnalysisManager {
         analysisPrompt,
         ragContext,
         isComparative,
-        processedImages.length
+        validImages.length
       );
 
       console.log('✅ Comprehensive prompt built successfully:', {
@@ -92,7 +115,7 @@ class AIAnalysisManager {
       // 🚀 TRY CLAUDE FIRST (Primary Model)
       console.log('🎯 Attempting Claude Sonnet 4 analysis (Primary)...');
       try {
-        const claudeResult = await this.callClaude(processedImages, enhancedPrompt);
+        const claudeResult = await this.callClaude(validImages, enhancedPrompt);
         console.log('✅ Claude analysis successful:', {
           annotationCount: claudeResult.annotations.length,
           modelUsed: 'Claude Sonnet 4',
@@ -113,10 +136,16 @@ class AIAnalysisManager {
 
       // 🔄 FALLBACK TO OPENAI
       console.log('🔄 Claude failed, attempting OpenAI fallback...');
-      const openaiResult = await this.callOpenAI(processedImages, enhancedPrompt);
+      const openaiResult = await this.callOpenAI(validImages, enhancedPrompt);
 
       if (!openaiResult.ok) {
-        throw new Error(`Both Claude and OpenAI failed. OpenAI error: ${openaiResult.status} ${openaiResult.statusText}`);
+        const errorText = await openaiResult.text();
+        console.error('❌ OpenAI API Error Details:', {
+          status: openaiResult.status,
+          statusText: openaiResult.statusText,
+          errorText: errorText.substring(0, 500)
+        });
+        throw new Error(`Both Claude and OpenAI failed. OpenAI error: ${openaiResult.status} ${openaiResult.statusText} - ${errorText}`);
       }
 
       const data = await openaiResult.json();
@@ -213,19 +242,40 @@ class AIAnalysisManager {
     console.log('🔍 Claude API Debug - Key status:', {
       hasKey: !!anthropicApiKey,
       keyLength: anthropicApiKey.length,
-      keyPreview: anthropicApiKey.substring(0, 12) + '...'
+      keyPreview: anthropicApiKey.substring(0, 12) + '...',
+      imageCount: images.length,
+      imagesValid: images.every(img => img.imageUrl && img.imageUrl !== 'undefined')
     });
+
+    // Validate all images have valid URLs
+    const invalidImages = images.filter(img => !img.imageUrl || img.imageUrl === 'undefined');
+    if (invalidImages.length > 0) {
+      console.error('❌ Invalid image URLs detected:', {
+        invalidCount: invalidImages.length,
+        totalImages: images.length
+      });
+      throw new Error(`${invalidImages.length} images have invalid URLs`);
+    }
 
     // Convert images to base64 for Claude
     const imageContents = await Promise.all(
-      images.map(async (img) => {
+      images.map(async (img, index) => {
         try {
+          console.log(`🔄 Processing image ${index + 1}/${images.length} for Claude:`, {
+            url: img.imageUrl.substring(0, 50) + '...',
+            size: img.size,
+            format: img.format
+          });
+          
           const response = await fetch(img.imageUrl);
           if (!response.ok) {
-            throw new Error(`Failed to fetch image: ${response.status}`);
+            throw new Error(`Failed to fetch image ${index + 1}: ${response.status} ${response.statusText}`);
           }
           const arrayBuffer = await response.arrayBuffer();
           const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+          
+          console.log(`✅ Image ${index + 1} converted to base64, length: ${base64.length}`);
+          
           return {
             type: "image",
             source: {
@@ -235,8 +285,8 @@ class AIAnalysisManager {
             }
           };
         } catch (error) {
-          console.error('Image processing error:', error);
-          throw new Error(`Failed to process image: ${error.message}`);
+          console.error(`❌ Image ${index + 1} processing error:`, error);
+          throw new Error(`Failed to process image ${index + 1}: ${error.message}`);
         }
       })
     );
@@ -399,8 +449,20 @@ Ensure exactly 16-19 insights for comprehensive professional analysis.`;
 
     console.log('🔍 OpenAI API Debug - Key status:', {
       hasKey: !!openaiApiKey,
-      keyLength: openaiApiKey.length
+      keyLength: openaiApiKey.length,
+      imageCount: images.length,
+      imagesValid: images.every(img => img.imageUrl && img.imageUrl !== 'undefined')
     });
+
+    // Validate all images have valid URLs
+    const invalidImages = images.filter(img => !img.imageUrl || img.imageUrl === 'undefined');
+    if (invalidImages.length > 0) {
+      console.error('❌ Invalid image URLs detected for OpenAI:', {
+        invalidCount: invalidImages.length,
+        totalImages: images.length
+      });
+      throw new Error(`${invalidImages.length} images have invalid URLs for OpenAI`);
+    }
 
     const messages = [
       {
