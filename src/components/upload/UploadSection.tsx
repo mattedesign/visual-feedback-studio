@@ -5,27 +5,33 @@ import { FileUploadTab } from './FileUploadTab';
 import { WebsiteUploadTab } from './WebsiteUploadTab';
 import { SvgConverterTab } from './SvgConverterTab';
 import { Upload, Globe, Code } from 'lucide-react';
+import { useUploadLogic } from '@/hooks/useUploadLogic';
 
 interface UploadSectionProps {
-  onFileUpload: (file: File) => void;
-  onUrlUpload: (urls: string[]) => void;
-  onDemoUpload: () => void;
-  isProcessing: boolean;
-  uploadedImages: string[];
-  onRemoveImage: (imageUrl: string) => void;
-  onContinue: () => void;
+  onImageUpload: (imageUrl: string) => void;
 }
 
-export const UploadSection = ({
-  onFileUpload,
-  onUrlUpload,
-  onDemoUpload,
-  isProcessing,
-  uploadedImages,
-  onRemoveImage,
-  onContinue
-}: UploadSectionProps) => {
+export const UploadSection = ({ onImageUpload }: UploadSectionProps) => {
   const [activeTab, setActiveTab] = useState('files');
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  
+  const { isProcessing, handleFileUpload, handleUrlSubmit, handleDemoUpload } = useUploadLogic(onImageUpload);
+
+  const handleImageUploadInternal = (imageUrl: string) => {
+    setUploadedImages(prev => [...prev, imageUrl]);
+    onImageUpload(imageUrl);
+  };
+
+  const handleRemoveImage = (imageUrl: string) => {
+    setUploadedImages(prev => prev.filter(img => img !== imageUrl));
+  };
+
+  const handleContinue = () => {
+    // For now, just proceed with the first uploaded image
+    if (uploadedImages.length > 0) {
+      onImageUpload(uploadedImages[0]);
+    }
+  };
 
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -47,22 +53,20 @@ export const UploadSection = ({
 
         <TabsContent value="files">
           <FileUploadTab
-            onFileUpload={onFileUpload}
-            onDemoUpload={onDemoUpload}
+            onFileUpload={handleFileUpload}
+            onDemoUpload={handleDemoUpload}
             isProcessing={isProcessing}
             uploadedImages={uploadedImages}
-            onRemoveImage={onRemoveImage}
-            onContinue={onContinue}
+            onRemoveImage={handleRemoveImage}
+            onContinue={handleContinue}
           />
         </TabsContent>
 
         <TabsContent value="website">
           <WebsiteUploadTab
-            onUrlUpload={onUrlUpload}
+            onUrlSubmit={handleUrlSubmit}
+            onImageUpload={handleImageUploadInternal}
             isProcessing={isProcessing}
-            uploadedImages={uploadedImages}
-            onRemoveImage={onRemoveImage}
-            onContinue={onContinue}
           />
         </TabsContent>
 
