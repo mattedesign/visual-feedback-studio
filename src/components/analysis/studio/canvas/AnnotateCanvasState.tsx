@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { Button } from '@/components/ui/button';
@@ -158,7 +157,7 @@ export const AnnotateCanvasState = ({ workflow, selectedDevice }: AnnotateCanvas
                 value={currentAnnotation.comment}
                 onChange={(e) => setCurrentAnnotation(prev => ({ ...prev, comment: e.target.value }))}
                 placeholder="Describe what needs attention at this location..."
-                className="w-full h-24 p-3 border border-gray-300 dark:border-slate-500 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors dark:bg-slate-600 dark:text-white"
+                className="w-full h-24 p-3 border border-gray-300 dark:border-slate-500 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors dark:bg-slate-600 text-gray-900 dark:text-gray-100"
               />
             </div>
             <div className="flex items-center justify-between">
