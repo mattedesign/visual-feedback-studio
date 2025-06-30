@@ -16,7 +16,12 @@ export const UploadCanvasState = ({
         {/* Three-column layout */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Example Prompt Column */}
-          <div className="space-y-6">
+          <div 
+            className="flex flex-col items-center gap-6 flex-1 self-stretch rounded-[18px] border border-black/6 bg-white"
+            style={{
+              padding: '24px 8px'
+            }}
+          >
             <div className="text-center">
               <div className="w-16 h-16 bg-slate-200 rounded-xl mx-auto mb-4 flex items-center justify-center">
                 <MessageSquare className="w-8 h-8 text-slate-600" />
@@ -58,7 +63,12 @@ export const UploadCanvasState = ({
           </div>
 
           {/* Capabilities Column */}
-          <div className="space-y-6">
+          <div 
+            className="flex flex-col items-center gap-6 flex-1 self-stretch rounded-[18px] border border-black/6 bg-white"
+            style={{
+              padding: '24px 8px'
+            }}
+          >
             <div className="text-center">
               <div className="w-16 h-16 bg-slate-200 rounded-xl mx-auto mb-4 flex items-center justify-center">
                 <Settings className="w-8 h-8 text-slate-600" />
@@ -100,7 +110,12 @@ export const UploadCanvasState = ({
           </div>
 
           {/* Models Column */}
-          <div className="space-y-6">
+          <div 
+            className="flex flex-col items-center gap-6 flex-1 self-stretch rounded-[18px] border border-black/6 bg-white"
+            style={{
+              padding: '24px 8px'
+            }}
+          >
             <div className="text-center">
               <div className="w-16 h-16 bg-slate-200 rounded-xl mx-auto mb-4 flex items-center justify-center">
                 <Brain className="w-8 h-8 text-slate-600" />
