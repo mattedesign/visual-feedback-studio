@@ -1,379 +1,293 @@
 
+import { buildAnalysisPrompt } from './promptBuilder.ts';
+
 interface ProcessedImage {
-  base64Data: string;
-  mimeType: string;
-  width?: number;
-  height?: number;
+  imageUrl: string;
+  size: number;
+  format: string;
 }
 
-interface AIAnalysisResult {
+interface AnalysisResult {
   success: boolean;
   annotations?: any[];
   error?: string;
   modelUsed?: string;
   processingTime?: number;
+  ragEnhanced?: boolean;
+}
+
+interface RagContext {
+  retrievedKnowledge: {
+    relevantPatterns: any[];
+    competitorInsights: any[];
+  };
+  enhancedPrompt: string;
+  researchCitations: string[];
+  industryContext: string;
+  ragStatus: string;
 }
 
 class AIAnalysisManager {
-  private readonly OPENAI_API_KEY: string;
-  private readonly MAX_TIMEOUT = 45000; // 45 seconds
-  private readonly CIRCUIT_BREAKER_THRESHOLD = 3;
   private circuitBreakerCount = 0;
-
-  constructor() {
-    this.OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY') || '';
-    if (!this.OPENAI_API_KEY) {
-      console.error('❌ OPENAI_API_KEY not configured');
-    }
-  }
+  private maxCircuitBreakerAttempts = 3;
 
   async analyzeImages(
     processedImages: ProcessedImage[],
     analysisPrompt: string,
     isComparative: boolean = false,
     ragEnabled: boolean = false
-  ): Promise<AIAnalysisResult> {
-    console.log('🤖 AIAnalysisManager.analyzeImages - Starting analysis:', {
+  ): Promise<AnalysisResult> {
+    const startTime = Date.now();
+    
+    console.log('🤖 AIAnalysisManager.analyzeImages - Starting comprehensive analysis:', {
       imageCount: processedImages.length,
       promptLength: analysisPrompt.length,
       isComparative,
       ragEnabled,
-      circuitBreakerCount: this.circuitBreakerCount
+      circuitBreakerCount: this.circuitBreakerCount,
+      targetInsights: '16-19'
     });
 
-    const startTime = Date.now();
-
     try {
-      // Circuit breaker check
-      if (this.circuitBreakerCount >= this.CIRCUIT_BREAKER_THRESHOLD) {
-        console.warn('⚠️ Circuit breaker triggered, falling back to basic analysis');
-        // Reset circuit breaker after some time
-        setTimeout(() => {
-          this.circuitBreakerCount = 0;
-          console.log('🔄 Circuit breaker reset');
-        }, 60000);
-      }
-
-      if (!this.OPENAI_API_KEY) {
-        throw new Error('OpenAI API key not configured');
-      }
-
-      if (processedImages.length === 0) {
-        throw new Error('No processed images provided');
-      }
-
-      // Build proper RAG context if enabled
       let enhancedPrompt = analysisPrompt;
-      let ragContext = '';
+      let ragContext: string | undefined;
 
-      if (ragEnabled && this.circuitBreakerCount < this.CIRCUIT_BREAKER_THRESHOLD) {
-        console.log('📚 Building RAG context...');
+      // Build RAG context if enabled
+      if (ragEnabled) {
+        console.log('📚 Building comprehensive RAG context...');
+        
         try {
-          ragContext = await this.buildRAGContext(analysisPrompt);
-          if (ragContext) {
-            enhancedPrompt = this.enhancePromptWithRAG(analysisPrompt, ragContext, isComparative, processedImages.length);
+          const ragResult = await this.buildRagContext(analysisPrompt);
+          if (ragResult && ragResult.ragStatus === 'ENABLED') {
+            ragContext = this.formatRagContext(ragResult);
             console.log('✅ RAG context built successfully:', {
               ragContextLength: ragContext.length,
-              enhancedPromptLength: enhancedPrompt.length
+              knowledgeEntries: ragResult.retrievedKnowledge.relevantPatterns.length,
+              competitiveInsights: ragResult.retrievedKnowledge.competitorInsights.length
             });
           }
         } catch (ragError) {
-          console.warn('⚠️ RAG context building failed, falling back to basic analysis:', ragError);
-          this.circuitBreakerCount++;
-          // Continue with basic analysis
+          console.warn('⚠️ RAG context building failed:', ragError);
         }
-      } else if (ragEnabled) {
-        console.log('⚠️ RAG requested but circuit breaker active, using basic analysis');
       }
 
-      // Prepare messages for OpenAI
-      const messages = this.buildOpenAIMessages(enhancedPrompt, processedImages);
+      // Build comprehensive analysis prompt
+      console.log('✨ Enhancing prompt for comprehensive analysis');
+      enhancedPrompt = buildAnalysisPrompt(
+        analysisPrompt,
+        ragContext,
+        isComparative,
+        processedImages.length
+      );
 
-      // Call OpenAI with timeout
-      console.log('🚀 Calling OpenAI API...');
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), this.MAX_TIMEOUT);
-
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o',
-          messages,
-          max_tokens: 4000,
-          temperature: 0.3,
-        }),
-        signal: controller.signal
+      console.log('✅ Comprehensive prompt built successfully:', {
+        enhancedPromptLength: enhancedPrompt.length,
+        ragEnhanced: !!ragContext,
+        targetInsights: '16-19',
+        comprehensiveScope: true
       });
 
-      clearTimeout(timeoutId);
+      // Perform AI analysis with comprehensive requirements
+      console.log('🚀 Calling OpenAI API for comprehensive analysis...');
+      const response = await this.callOpenAI(processedImages, enhancedPrompt);
 
       if (!response.ok) {
-        const errorData = await response.text();
-        console.error('❌ OpenAI API error:', {
-          status: response.status,
-          statusText: response.statusText,
-          errorData
-        });
         throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
-      console.log('📊 OpenAI response received:', {
+      
+      console.log('📊 OpenAI comprehensive analysis response received:', {
         choices: data.choices?.length || 0,
-        usage: data.usage
+        usage: data.usage,
+        responseLength: data.choices?.[0]?.message?.content?.length || 0
       });
 
       if (!data.choices || data.choices.length === 0) {
-        throw new Error('No analysis results returned from OpenAI');
+        throw new Error('No response choices received from OpenAI');
       }
 
-      // Parse annotations from response
-      const annotations = this.parseAnnotations(data.choices[0].message.content);
+      const rawContent = data.choices[0].message.content;
+      console.log('📝 Raw AI response length:', rawContent.length);
       
-      const processingTime = Date.now() - startTime;
-      console.log('✅ AI analysis completed successfully:', {
-        annotationsCount: annotations.length,
-        processingTimeMs: processingTime,
-        ragEnhanced: ragEnabled && !!ragContext
+      // Parse comprehensive annotations
+      const annotations = this.parseAnnotations(rawContent);
+      
+      console.log('✅ Comprehensive annotations parsed successfully:', {
+        annotationCount: annotations.length,
+        targetCount: '16-19',
+        meetsTarget: annotations.length >= 16
       });
 
-      // Reset circuit breaker on success
-      if (this.circuitBreakerCount > 0) {
-        this.circuitBreakerCount = Math.max(0, this.circuitBreakerCount - 1);
+      if (annotations.length < 10) {
+        console.warn('⚠️ Low annotation count detected:', {
+          received: annotations.length,
+          expected: '16-19',
+          rawResponsePreview: rawContent.substring(0, 500)
+        });
       }
+
+      const processingTime = Date.now() - startTime;
+
+      console.log('✅ AI comprehensive analysis completed successfully:', {
+        annotationsCount: annotations.length,
+        processingTimeMs: processingTime,
+        ragEnhanced: !!ragContext,
+        comprehensiveAnalysis: true,
+        targetsAchieved: annotations.length >= 16
+      });
 
       return {
         success: true,
         annotations,
-        modelUsed: 'gpt-4o',
-        processingTime
+        modelUsed: 'gpt-4o-mini',
+        processingTime,
+        ragEnhanced: !!ragContext
       };
 
     } catch (error) {
-      console.error('❌ AIAnalysisManager.analyzeImages - Error:', error);
+      console.error('❌ AI comprehensive analysis failed:', error);
       
-      // Increment circuit breaker on error
       this.circuitBreakerCount++;
       
+      if (this.circuitBreakerCount >= this.maxCircuitBreakerAttempts) {
+        console.error('🚨 Circuit breaker activated - too many failures');
+        return {
+          success: false,
+          error: 'Analysis service temporarily unavailable after multiple failures'
+        };
+      }
+
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown AI analysis error'
+        error: error instanceof Error ? error.message : 'Unknown analysis error'
       };
     }
   }
 
-  private async buildRAGContext(originalPrompt: string): Promise<string> {
-    console.log('🔍 Building RAG context for prompt:', originalPrompt.substring(0, 100));
-    
+  private async buildRagContext(prompt: string): Promise<RagContext | null> {
     try {
-      // Create a timeout controller for RAG operations
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout for RAG
+      console.log('🔍 Building RAG context for comprehensive analysis:', prompt.substring(0, 100));
+      
+      const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.7.1');
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
 
       // Call the build-rag-context function
-      const supabaseUrl = Deno.env.get('SUPABASE_URL');
-      const functionKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-      
-      if (!supabaseUrl || !functionKey) {
-        throw new Error('Supabase configuration missing');
-      }
-
-      const response = await fetch(`${supabaseUrl}/functions/v1/build-rag-context`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${functionKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userPrompt: originalPrompt,
-          imageUrls: [],
-          imageAnnotations: [],
-          analysisId: 'temp-rag-context'
-        }),
-        signal: controller.signal
+      const { data, error } = await supabase.functions.invoke('build-rag-context', {
+        body: {
+          userPrompt: prompt,
+          analysisId: 'temp-rag-' + Date.now()
+        }
       });
 
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`RAG context API error: ${response.status}`);
-      }
-
-      const ragData = await response.json();
-      
-      if (ragData.ragStatus === 'ERROR') {
-        throw new Error('RAG context building failed');
-      }
-
-      // Build context summary from retrieved knowledge
-      let contextSummary = '';
-      if (ragData.retrievedKnowledge?.relevantPatterns?.length > 0) {
-        contextSummary += '=== UX RESEARCH CONTEXT ===\n';
-        ragData.retrievedKnowledge.relevantPatterns.slice(0, 5).forEach((entry: any, index: number) => {
-          contextSummary += `${index + 1}. ${entry.title}: ${entry.content?.substring(0, 200)}...\n`;
-        });
-      }
-
-      if (ragData.retrievedKnowledge?.competitorInsights?.length > 0) {
-        contextSummary += '\n=== COMPETITIVE INSIGHTS ===\n';
-        ragData.retrievedKnowledge.competitorInsights.slice(0, 3).forEach((pattern: any, index: number) => {
-          contextSummary += `${index + 1}. ${pattern.pattern_name}: ${pattern.description?.substring(0, 150)}...\n`;
-        });
+      if (error) {
+        console.error('❌ RAG context building failed:', error);
+        return null;
       }
 
       console.log('✅ RAG context built:', {
-        contextLength: contextSummary.length,
-        knowledgeEntries: ragData.retrievedKnowledge?.relevantPatterns?.length || 0,
-        competitiveInsights: ragData.retrievedKnowledge?.competitorInsights?.length || 0
+        contextLength: data?.enhancedPrompt?.length || 0,
+        knowledgeEntries: data?.retrievedKnowledge?.relevantPatterns?.length || 0,
+        competitiveInsights: data?.retrievedKnowledge?.competitorInsights?.length || 0
       });
 
-      return contextSummary;
-
+      return data;
     } catch (error) {
-      console.error('❌ RAG context building failed:', error);
-      throw error;
+      console.error('❌ RAG context building error:', error);
+      return null;
     }
   }
 
-  private enhancePromptWithRAG(
-    originalPrompt: string, 
-    ragContext: string, 
-    isComparative: boolean, 
-    imageCount: number
-  ): string {
-    console.log('✨ Enhancing prompt with RAG context');
+  private formatRagContext(ragResult: RagContext): string {
+    let context = '=== UX RESEARCH CONTEXT FOR COMPREHENSIVE ANALYSIS ===\n\n';
     
-    let enhancedPrompt = originalPrompt;
-
-    if (ragContext && ragContext.trim().length > 0) {
-      enhancedPrompt = `RESEARCH-ENHANCED ANALYSIS:
-
-${ragContext}
-
-Based on the above research context and UX best practices, ${originalPrompt}`;
+    if (ragResult.retrievedKnowledge.relevantPatterns.length > 0) {
+      context += 'RELEVANT UX PATTERNS AND BEST PRACTICES:\n';
+      ragResult.retrievedKnowledge.relevantPatterns.slice(0, 8).forEach((pattern, index) => {
+        context += `${index + 1}. ${pattern.title}\n`;
+        context += `   ${pattern.content.substring(0, 200)}...\n\n`;
+      });
     }
 
-    // Add multi-image instructions if needed
-    if (imageCount > 1) {
-      enhancedPrompt += `
-
-🚨 MULTI-IMAGE ANALYSIS CRITICAL INSTRUCTIONS 🚨
-You are analyzing ${imageCount} different design images. Each annotation MUST specify the correct imageIndex (0 to ${imageCount - 1}) to indicate which image the annotation belongs to.
-
-MANDATORY IMAGE INDEX ASSIGNMENT:
-- Image 1 = imageIndex: 0
-- Image 2 = imageIndex: 1
-${imageCount > 2 ? '- Image 3 = imageIndex: 2' : ''}
-${imageCount > 3 ? '- Image 4 = imageIndex: 3' : ''}
-
-🚨 DISTRIBUTION REQUIREMENT 🚨
-Ensure annotations are distributed across ALL ${imageCount} images. Each image should receive 2-3 specific annotations analyzing its unique design aspects. DO NOT assign all annotations to imageIndex: 0.`;
+    if (ragResult.retrievedKnowledge.competitorInsights.length > 0) {
+      context += 'COMPETITIVE INSIGHTS:\n';
+      ragResult.retrievedKnowledge.competitorInsights.slice(0, 3).forEach((insight, index) => {
+        context += `${index + 1}. ${insight.pattern_name}: ${insight.description.substring(0, 150)}...\n`;
+      });
+      context += '\n';
     }
 
-    enhancedPrompt += `
-
-CRITICAL: You MUST respond with a valid JSON array of annotation objects only. Do not include any markdown, explanations, or other text.
-
-Required JSON format:
-[
-  {
-    "x": 50,
-    "y": 30,
-    "category": "ux",
-    "severity": "critical", 
-    "feedback": "Research-backed feedback with specific citations and best practices",
-    "implementationEffort": "medium",
-    "businessImpact": "high",
-    "imageIndex": ${imageCount > 1 ? `REQUIRED - specify 0 to ${imageCount - 1} based on which image this annotation analyzes` : '0 for single image'}
-  }
-]
-
-Rules:
-- x, y: Numbers 0-100 (percentage coordinates)
-- category: "ux", "visual", "accessibility", "conversion", or "brand"
-- severity: "critical", "suggested", or "enhancement"
-- feedback: Research-enhanced explanation citing best practices (2-3 sentences)
-- implementationEffort: "low", "medium", or "high"
-- businessImpact: "low", "medium", or "high"
-- imageIndex: ${imageCount > 1 ? `REQUIRED - specify 0 to ${imageCount - 1} based on which image this annotation analyzes` : '0 for single image'}
-
-When research context is available, ensure feedback includes specific citations and evidence-based recommendations.`;
-
-    return enhancedPrompt;
+    context += `INDUSTRY CONTEXT: ${ragResult.industryContext}\n\n`;
+    context += 'Use this research context to provide comprehensive, evidence-based recommendations.\n\n';
+    
+    return context;
   }
 
-  private buildOpenAIMessages(prompt: string, processedImages: ProcessedImage[]) {
+  private async callOpenAI(images: ProcessedImage[], prompt: string): Promise<Response> {
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openaiApiKey) {
+      throw new Error('OpenAI API key not configured');
+    }
+
     const messages = [
       {
         role: 'system',
-        content: 'You are a UX expert specializing in design analysis. Analyze the provided images and return only a valid JSON array of annotations. Do not include any explanations or markdown formatting.'
+        content: 'You are a comprehensive UX analysis expert. Generate detailed, research-backed insights covering all aspects of design quality, usability, and business impact. Always provide exactly 16-19 annotations for thorough professional analysis.'
       },
       {
         role: 'user',
         content: [
           { type: 'text', text: prompt },
-          ...processedImages.map(image => ({
+          ...images.map(img => ({
             type: 'image_url',
-            image_url: {
-              url: `data:${image.mimeType};base64,${image.base64Data}`,
-              detail: 'high'
-            }
+            image_url: { url: img.imageUrl, detail: 'high' }
           }))
         ]
       }
     ];
 
-    return messages;
+    return fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages,
+        max_tokens: 4000,
+        temperature: 0.3
+      }),
+    });
   }
 
-  private parseAnnotations(content: string): any[] {
+  private parseAnnotations(rawContent: string): any[] {
     try {
-      // Clean the content to extract JSON
-      let jsonContent = content.trim();
-      
-      // Remove markdown code blocks if present
-      jsonContent = jsonContent.replace(/```json\s*/, '').replace(/```\s*$/, '');
-      
-      // Try to find JSON array
-      const jsonMatch = jsonContent.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        jsonContent = jsonMatch[0];
-      }
-
-      const annotations = JSON.parse(jsonContent);
-      
-      if (!Array.isArray(annotations)) {
-        console.error('❌ Parsed content is not an array:', typeof annotations);
+      // Clean the response to extract JSON
+      const jsonMatch = rawContent.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) {
+        console.error('❌ No JSON array found in response');
         return [];
       }
 
-      console.log('✅ Successfully parsed annotations:', annotations.length);
+      const jsonString = jsonMatch[0];
+      const annotations = JSON.parse(jsonString);
+
+      if (!Array.isArray(annotations)) {
+        console.error('❌ Parsed result is not an array');
+        return [];
+      }
+
+      console.log('✅ Successfully parsed comprehensive annotations:', annotations.length);
       return annotations;
 
     } catch (error) {
       console.error('❌ Failed to parse annotations:', error);
-      console.error('Raw content:', content);
+      console.error('Raw content preview:', rawContent.substring(0, 1000));
       return [];
     }
-  }
-}
-
-// Export properly functioning RAG context getter
-export async function getRAGContext(userPrompt: string) {
-  console.log('🔍 getRAGContext called with prompt:', userPrompt.substring(0, 50));
-  
-  try {
-    const manager = new AIAnalysisManager();
-    const ragContext = await (manager as any).buildRAGContext(userPrompt);
-    console.log('✅ RAG context retrieved successfully');
-    return ragContext;
-  } catch (error) {
-    console.error('❌ getRAGContext failed:', error);
-    return null;
   }
 }
 

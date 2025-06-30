@@ -5,9 +5,10 @@ export const buildAnalysisPrompt = (
   isComparative: boolean = false, 
   imageCount: number = 1
 ): string => {
-  console.log('🎯 Building analysis prompt:', {
+  console.log('🎯 Building comprehensive analysis prompt:', {
     basePromptLength: basePrompt.length,
     hasRAGContext: !!ragContext,
+    ragContextLength: ragContext?.length || 0,
     isComparative,
     imageCount
   });
@@ -18,83 +19,104 @@ export const buildAnalysisPrompt = (
   let enhancedPrompt = basePrompt;
 
   if (ragContext && ragContext.trim()) {
-    enhancedPrompt = `RESEARCH-ENHANCED ANALYSIS:
+    enhancedPrompt = `RESEARCH-ENHANCED COMPREHENSIVE ANALYSIS:
 
 ${ragContext}
 
-Based on the above research context and UX best practices, ${basePrompt}`;
+ANALYSIS DIRECTIVE: Based on the above research context and UX best practices, perform a thorough comprehensive analysis of the provided design(s). ${basePrompt}`;
     
-    console.log('✅ Enhanced prompt with RAG context');
+    console.log('✅ Enhanced prompt with RAG context for comprehensive analysis');
   } else {
-    console.log('⚠️ No RAG context provided:', {
-      ragContextExists: !!ragContext,
-      ragContextType: typeof ragContext,
-      ragContextLength: ragContext?.length || 0,
-      ragContextTrimmed: ragContext?.trim?.()?.length || 0,
-      ragContextValue: ragContext || 'null/undefined'
-    });
+    console.log('⚠️ No RAG context provided - proceeding with standard comprehensive analysis');
   }
 
-  const jsonInstructions = `
+  const comprehensiveInstructions = `
 
-CRITICAL: You MUST respond with a valid JSON array of annotation objects only. Do not include any markdown, explanations, or other text.
+🎯 COMPREHENSIVE ANALYSIS REQUIREMENTS:
+
+SCOPE: Perform a thorough, professional UX audit covering ALL aspects of the design.
+
+INSIGHT GENERATION TARGET: Generate 16-19 detailed insights covering:
+• 4-5 Critical issues requiring immediate attention
+• 6-8 Important improvements with high business impact  
+• 4-5 Enhancement opportunities for optimization
+• 2-3 Positive validations of strong design elements
+
+ANALYSIS CATEGORIES (must cover all):
+1. USER EXPERIENCE (UX): Navigation, user flows, task completion, cognitive load
+2. VISUAL DESIGN: Typography, color usage, visual hierarchy, brand consistency
+3. ACCESSIBILITY: WCAG compliance, contrast ratios, screen reader compatibility
+4. CONVERSION OPTIMIZATION: CTAs, forms, trust signals, friction reduction
+5. BUSINESS IMPACT: Professional credibility, competitive positioning, ROI potential
+
+RESEARCH-BACKED APPROACH:
+${ragContext ? '• Reference the provided UX research and best practices context' : '• Apply established UX principles and industry standards'}
+• Cite specific methodologies (Nielsen's heuristics, WCAG guidelines, etc.)
+• Include quantitative impact estimates where applicable
+• Provide evidence-based recommendations
+
+CRITICAL: You MUST respond with a valid JSON array of 16-19 annotation objects. Do not include any markdown, explanations, or other text.
 
 ${imageCount > 1 ? `
-🚨 MULTI-IMAGE ANALYSIS CRITICAL INSTRUCTIONS 🚨
+🚨 MULTI-IMAGE COMPREHENSIVE ANALYSIS 🚨
 
-YOU ARE ANALYZING ${imageCount} DIFFERENT IMAGES. Each annotation MUST specify the correct imageIndex (0 to ${imageCount - 1}) to indicate which image the annotation belongs to.
+YOU ARE ANALYZING ${imageCount} DIFFERENT IMAGES. Each annotation MUST specify the correct imageIndex (0 to ${imageCount - 1}).
 
-MANDATORY IMAGE INDEX ASSIGNMENT:
-- Image 1 = imageIndex: 0
-- Image 2 = imageIndex: 1
-${imageCount > 2 ? '- Image 3 = imageIndex: 2' : ''}
-${imageCount > 3 ? '- Image 4 = imageIndex: 3' : ''}
-${imageCount > 4 ? `- Image ${imageCount} = imageIndex: ${imageCount - 1}` : ''}
+MANDATORY DISTRIBUTION ACROSS ALL IMAGES:
+- Image 1 (imageIndex: 0): 5-6 annotations analyzing its specific design elements
+- Image 2 (imageIndex: 1): 5-6 annotations analyzing its unique aspects
+${imageCount > 2 ? `- Image 3 (imageIndex: 2): 4-5 annotations analyzing its individual components` : ''}
+${imageCount > 3 ? `- Image 4 (imageIndex: 3): 4-5 annotations analyzing its distinct features` : ''}
+- Remaining annotations: Cross-image comparative insights
 
 🚨 CRITICAL DISTRIBUTION REQUIREMENT 🚨
-- You MUST distribute annotations across ALL ${imageCount} images
-- Each image should receive 2-3 specific annotations analyzing its unique design aspects
+- MUST distribute all 16-19 annotations across ALL ${imageCount} images
+- Each image should receive 4-6 specific annotations analyzing its unique design aspects
 - DO NOT assign all annotations to imageIndex: 0
-- Each imageIndex (0, 1, 2, etc.) must be used for multiple annotations
-- Analyze each image individually and assign the correct imageIndex based on which specific image you are analyzing
-
-VERIFICATION CHECKLIST:
-✓ Are annotations distributed across imageIndex 0, 1, ${imageCount > 2 ? '2' : '1'}${imageCount > 3 ? ', 3' : ''}?
-✓ Does each image receive 2-3 annotations?
-✓ Are imageIndex values correct for each specific image?
+- Ensure comprehensive coverage of each individual image
 ` : ''}
 
-Required JSON format:
+Required JSON format for COMPREHENSIVE analysis:
 [
   {
     "x": 50,
     "y": 30,
     "category": "ux",
     "severity": "critical", 
-    "feedback": "Research-backed feedback with specific citations and best practices",
+    "feedback": "Detailed, research-backed feedback with specific citations and actionable recommendations (3-4 sentences minimum)",
     "implementationEffort": "medium",
     "businessImpact": "high",
     "imageIndex": ${imageCount > 1 ? `REQUIRED - specify 0 to ${imageCount - 1} based on which image this annotation analyzes` : '0 for single image'}
   }
 ]
 
-Rules:
-- x, y: Numbers 0-100 (percentage coordinates)
-- category: "ux", "visual", "accessibility", "conversion", or "brand"
-- severity: "critical", "suggested", or "enhancement"
-- feedback: Research-enhanced explanation citing best practices (2-3 sentences)
-- implementationEffort: "low", "medium", or "high"
-- businessImpact: "low", "medium", or "high"
-- imageIndex: ${imageCount > 1 ? `REQUIRED - specify 0 to ${imageCount - 1} based on which image this annotation analyzes` : '0 for single image'}
+COMPREHENSIVE ANALYSIS RULES:
+- x, y: Numbers 0-100 (percentage coordinates) - vary positions across the design
+- category: "ux", "visual", "accessibility", "conversion", or "brand" - ensure good distribution
+- severity: "critical" (4-5 items), "suggested" (6-8 items), "enhancement" (4-5 items) - balanced mix
+- feedback: Detailed, research-enhanced explanation with specific citations (3-4 sentences minimum)
+- implementationEffort: "low", "medium", or "high" - realistic assessment
+- businessImpact: "low", "medium", or "high" - quantified when possible
+- imageIndex: ${imageCount > 1 ? `REQUIRED - specify 0 to ${imageCount - 1} based on which specific image this annotation analyzes` : '0 for single image'}
 
 ${imageCount > 1 ? `
-🚨 FINAL MULTI-IMAGE REQUIREMENTS 🚨
-- Provide 2-3 annotations per image, ensuring each image receives individual attention
+🚨 FINAL COMPREHENSIVE MULTI-IMAGE REQUIREMENTS 🚨
+- Provide 16-19 annotations total, distributed across all ${imageCount} images
+- Each image must receive 4-6 individual annotations analyzing its unique elements
+- Include cross-image comparative insights for consistency analysis
 - Each annotation must have the correct imageIndex (0, 1, 2, etc.)
-- Analyze each image's unique design elements, don't just copy annotations across images
+- Analyze both strengths and improvement opportunities for each image
 - Consider how different images work together in the overall user experience
-- VERIFY: Does each imageIndex (0, 1, 2) have multiple annotations assigned to it?
-` : 'Provide 3-5 specific, actionable annotations for the single image.'}
+- VERIFY: Does the distribution cover all images comprehensively?
+` : 'Provide exactly 16-19 specific, actionable annotations for comprehensive single-image analysis.'}
+
+QUALITY STANDARDS:
+- Each annotation must provide specific, actionable guidance
+- Include both improvement opportunities AND positive validations
+- Reference research context and industry best practices
+- Ensure annotations cover the full scope of the design
+- Balance critical issues with enhancement opportunities
+- Provide clear implementation guidance and business rationale
 
 When research context is available, ensure feedback includes specific citations and evidence-based recommendations.`;
 
@@ -103,84 +125,83 @@ When research context is available, ensure feedback includes specific citations 
   if (isComparative && imageCount > 1) {
     finalPrompt = `${enhancedPrompt}
 
-This is a COMPARATIVE ANALYSIS of ${imageCount} designs. Compare the designs using research-backed criteria and identify differences, strengths, and improvement opportunities across all images.
+COMPREHENSIVE COMPARATIVE ANALYSIS of ${imageCount} designs:
 
-🚨 CRITICAL MULTI-IMAGE INSTRUCTION 🚨
-You are analyzing ${imageCount} different design images. Each annotation must specify the correct imageIndex to indicate which specific image it belongs to:
-- Annotations for the first image should have "imageIndex": 0
-- Annotations for the second image should have "imageIndex": 1
-- Annotations for the third image should have "imageIndex": 2
+Compare the designs using research-backed criteria and identify differences, strengths, and improvement opportunities across all images. Generate 16-19 comprehensive insights.
+
+🚨 CRITICAL MULTI-IMAGE COMPREHENSIVE INSTRUCTION 🚨
+You are analyzing ${imageCount} different design images. Each annotation must specify the correct imageIndex:
+- Annotations for the first image: "imageIndex": 0
+- Annotations for the second image: "imageIndex": 1
+- Annotations for the third image: "imageIndex": 2
 - Continue this pattern for all ${imageCount} images
 
-🚨 DISTRIBUTION REQUIREMENT 🚨
-Ensure annotations are distributed across ALL ${imageCount} images. Each image should receive 2-3 specific annotations analyzing its unique design aspects. DO NOT assign all annotations to imageIndex: 0.
+🚨 COMPREHENSIVE DISTRIBUTION REQUIREMENT 🚨
+Distribute all 16-19 annotations across ALL ${imageCount} images based on comprehensive analysis. Each image should receive 4-6 specific annotations analyzing its unique design aspects, plus comparative insights.
 
-${jsonInstructions}`;
+${comprehensiveInstructions}`;
     
-    console.log('📊 Built COMPARATIVE analysis prompt:', {
+    console.log('📊 Built COMPREHENSIVE COMPARATIVE analysis prompt:', {
       totalLength: finalPrompt.length,
       hasResearchContext: !!ragContext,
       imageCount,
-      isComparative: true,
-      multiImageInstructionsIncluded: true
+      targetInsights: '16-19',
+      isComparative: true
     });
   } else if (imageCount > 1) {
     finalPrompt = `${enhancedPrompt}
 
-🚨 MULTI-IMAGE ANALYSIS CRITICAL INSTRUCTIONS 🚨
-You are analyzing ${imageCount} different design images. Analyze each design individually and provide specific insights for each image.
+🚨 COMPREHENSIVE MULTI-IMAGE ANALYSIS 🚨
+You are analyzing ${imageCount} different design images. Analyze each design individually and provide comprehensive insights for each image.
 
-CRITICAL IMAGEINDEX ASSIGNMENT: Each annotation must specify the correct imageIndex (0 to ${imageCount - 1}) to indicate which specific image it belongs to:
-- Image 1 analysis → "imageIndex": 0
-- Image 2 analysis → "imageIndex": 1  
-- Image 3 analysis → "imageIndex": 2
+CRITICAL IMAGEINDEX ASSIGNMENT: Each annotation must specify the correct imageIndex (0 to ${imageCount - 1}):
+- Image 1 comprehensive analysis → "imageIndex": 0 (5-6 annotations)
+- Image 2 comprehensive analysis → "imageIndex": 1 (5-6 annotations)
+- Image 3 comprehensive analysis → "imageIndex": 2 (4-5 annotations)
 - Continue for all ${imageCount} images
 
-🚨 DISTRIBUTION REQUIREMENT 🚨
-Ensure annotations are distributed across ALL ${imageCount} images based on their individual content and design elements. Each image should receive 2-3 specific annotations. DO NOT assign all annotations to the first image (imageIndex: 0).
+🚨 COMPREHENSIVE DISTRIBUTION REQUIREMENT 🚨
+Generate 16-19 total annotations distributed across ALL ${imageCount} images based on their individual content and design elements. Each image should receive 4-6 comprehensive annotations.
 
-${jsonInstructions}`;
+${comprehensiveInstructions}`;
 
-    console.log('📊 Built MULTI-IMAGE analysis prompt:', {
+    console.log('📊 Built COMPREHENSIVE MULTI-IMAGE analysis prompt:', {
       totalLength: finalPrompt.length,
       hasResearchContext: !!ragContext,
       imageCount,
-      isComparative: false,
-      multiImageInstructionsIncluded: true
+      targetInsights: '16-19',
+      isComparative: false
     });
   } else {
     finalPrompt = `${enhancedPrompt}
 
-Analyze this design for UX improvements, accessibility issues, and conversion optimization opportunities using research-backed methodologies.
+COMPREHENSIVE SINGLE-IMAGE ANALYSIS:
 
-${jsonInstructions}`;
+Analyze this design comprehensively for UX improvements, accessibility issues, conversion optimization opportunities, and positive validations using research-backed methodologies.
 
-    console.log('📊 Built STANDARD analysis prompt:', {
+Generate exactly 16-19 comprehensive insights covering all aspects of the design.
+
+${comprehensiveInstructions}`;
+
+    console.log('📊 Built COMPREHENSIVE STANDARD analysis prompt:', {
       totalLength: finalPrompt.length,
       hasResearchContext: !!ragContext,
       researchContextLength: ragContext?.length || 0,
-      isComparative: false,
-      imageCount: 1
+      targetInsights: '16-19',
+      isComparative: false
     });
   }
 
-  console.log('🎯 === FINAL PROMPT STRUCTURE ANALYSIS ===');
-  console.log('📏 Final Prompt Metrics:', {
+  console.log('🎯 === COMPREHENSIVE PROMPT STRUCTURE ANALYSIS ===');
+  console.log('📏 Final Comprehensive Prompt Metrics:', {
     totalLength: finalPrompt.length,
     basePromptLength: basePrompt.length,
-    ragContextIncluded: finalPrompt.includes('RESEARCH-ENHANCED ANALYSIS'),
+    ragContextIncluded: finalPrompt.includes('RESEARCH-ENHANCED'),
     researchSectionLength: ragContext ? ragContext.length : 0,
-    multiImageInstructions: finalPrompt.includes('MULTI-IMAGE ANALYSIS'),
-    imageIndexInstructions: finalPrompt.includes('imageIndex'),
-    imageCount: imageCount,
-    distributionRequirement: finalPrompt.includes('DISTRIBUTION REQUIREMENT'),
-    structureSections: {
-      hasBasePrompt: finalPrompt.includes(basePrompt),
-      hasResearchSection: finalPrompt.includes('RESEARCH-ENHANCED ANALYSIS'),
-      hasRAGContent: ragContext ? finalPrompt.includes(ragContext) : false,
-      hasImageIndexGuidance: finalPrompt.includes('imageIndex'),
-      hasMultiImageLogic: imageCount > 1
-    }
+    comprehensiveInstructions: finalPrompt.includes('16-19 detailed insights'),
+    targetInsightCount: '16-19',
+    distributionLogic: imageCount > 1,
+    imageCount: imageCount
   });
 
   return finalPrompt;
