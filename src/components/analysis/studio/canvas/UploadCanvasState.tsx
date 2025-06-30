@@ -59,7 +59,7 @@ export const UploadCanvasState = ({
                 width: '100%'
               }}>
                   <p style={{
-                    color: 'var(--Text-primary, #353535)',
+                    color: 'var(--Shade-6-100, #7B7B7B)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
@@ -83,7 +83,7 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    color: 'var(--Text-primary, #353535)',
+                    color: 'var(--Shade-6-100, #7B7B7B)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
@@ -107,7 +107,7 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    color: 'var(--Text-primary, #353535)',
+                    color: 'var(--Shade-6-100, #7B7B7B)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
@@ -131,7 +131,7 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    color: 'var(--Text-primary, #353535)',
+                    color: 'var(--Shade-6-100, #7B7B7B)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
@@ -155,7 +155,7 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    color: 'var(--Text-primary, #353535)',
+                    color: 'var(--Shade-6-100, #7B7B7B)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
@@ -214,7 +214,7 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    color: 'var(--Text-primary, #353535)',
+                    color: 'var(--Shade-6-100, #7B7B7B)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
@@ -238,7 +238,7 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    color: 'var(--Text-primary, #353535)',
+                    color: 'var(--Shade-6-100, #7B7B7B)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
@@ -262,7 +262,7 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    color: 'var(--Text-primary, #353535)',
+                    color: 'var(--Shade-6-100, #7B7B7B)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
@@ -286,7 +286,7 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    color: 'var(--Text-primary, #353535)',
+                    color: 'var(--Shade-6-100, #7B7B7B)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
@@ -310,7 +310,7 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    color: 'var(--Text-primary, #353535)',
+                    color: 'var(--Shade-6-100, #7B7B7B)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
@@ -369,7 +369,7 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    color: 'var(--Text-primary, #353535)',
+                    color: 'var(--Shade-6-100, #7B7B7B)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
@@ -393,7 +393,7 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    color: 'var(--Text-primary, #353535)',
+                    color: 'var(--Shade-6-100, #7B7B7B)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
@@ -417,7 +417,7 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    color: 'var(--Text-primary, #353535)',
+                    color: 'var(--Shade-6-100, #7B7B7B)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
@@ -441,7 +441,7 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    color: 'var(--Text-primary, #353535)',
+                    color: 'var(--Shade-6-100, #7B7B7B)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
@@ -465,7 +465,7 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    color: 'var(--Text-primary, #353535)',
+                    color: 'var(--Shade-6-100, #7B7B7B)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
