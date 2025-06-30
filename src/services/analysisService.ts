@@ -12,6 +12,9 @@ interface AnalyzeDesignRequest {
   isComparative: boolean;
   ragEnhanced?: boolean;
   researchSourceCount?: number;
+  aiProvider?: string;
+  model?: string;
+  testMode?: boolean;
 }
 
 interface AnalyzeDesignResponse {
@@ -57,14 +60,17 @@ export const createAnalysis = async () => {
 
 const analyzeDesign = async (request: AnalyzeDesignRequest): Promise<AnalyzeDesignResponse> => {
   try {
-    console.log('📡 Main Analysis: Calling analyze-design function with RAG enabled:', {
+    console.log('📡 Main Analysis: Calling analyze-design function with AI config:', {
       analysisId: request.analysisId,
       imageCount: request.imageUrls.length,
       isComparative: request.isComparative,
-      ragEnabled: true // Force enable RAG for main analysis
+      ragEnabled: true,
+      aiProvider: request.aiProvider,
+      model: request.model,
+      testMode: request.testMode
     });
 
-    // Use the same edge function call as the test - this is the working RAG implementation
+    // Use the same edge function call but include AI provider configuration
     const { data, error } = await supabase.functions.invoke('analyze-design', {
       body: {
         imageUrls: request.imageUrls,
@@ -73,7 +79,11 @@ const analyzeDesign = async (request: AnalyzeDesignRequest): Promise<AnalyzeDesi
         analysisPrompt: request.analysisPrompt,
         designType: request.designType,
         isComparative: request.isComparative,
-        ragEnabled: true // This is the key - always enable RAG
+        ragEnabled: true, // This is the key - always enable RAG
+        // Include AI provider configuration
+        aiProvider: request.aiProvider,
+        model: request.model,
+        testMode: request.testMode
       }
     });
 

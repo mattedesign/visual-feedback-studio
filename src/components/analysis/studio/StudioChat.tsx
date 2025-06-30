@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
+import { useAIProviderConfig } from '@/hooks/analysis/useAIProviderConfig';
 import { SimplifiedContextInput } from '../workflow/components/SimplifiedContextInput';
 
 interface StudioChatProps {
@@ -10,6 +11,8 @@ interface StudioChatProps {
 export const StudioChat = ({
   workflow
 }: StudioChatProps) => {
+  const { getRequestConfig } = useAIProviderConfig();
+
   const handleAnalyze = async () => {
     if (!workflow.analysisContext.trim() || workflow.selectedImages.length === 0) return;
     
@@ -17,8 +20,12 @@ export const StudioChat = ({
     console.log('📊 Analysis params:', {
       selectedImages: workflow.selectedImages.length,
       context: workflow.analysisContext.length,
-      annotations: workflow.getTotalAnnotationsCount()
+      annotations: workflow.getTotalAnnotationsCount(),
+      aiConfig: getRequestConfig()
     });
+    
+    // Store AI configuration in the workflow for use during analysis
+    workflow.setAIProviderConfig(getRequestConfig());
     
     workflow.goToStep('analyzing');
   };
@@ -34,7 +41,7 @@ export const StudioChat = ({
     <div className="bg-transparent">
       <div className="p-4">
         <div className="max-w-4xl mx-auto">
-          {/* Simplified Context Input */}
+          {/* Simplified Context Input with Model Selection */}
           <SimplifiedContextInput 
             analysisContext={workflow.analysisContext}
             onAnalysisContextChange={workflow.setAnalysisContext}
