@@ -1,6 +1,7 @@
-
-import React, { useState } from 'react';
-import { Eye, ZoomIn, ZoomOut, RotateCcw, Download, Share2, FileText } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Eye, ZoomIn, ZoomOut, RotateCcw, Download, Share2, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
+import { visualAnalysisService } from '@/services/visualAnalysisService';
+import { toast } from 'sonner';
 
 // Flexible interface for maximum compatibility
 interface VisualAnalysisModuleProps {
@@ -13,6 +14,8 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
   const [selectedAnnotation, setSelectedAnnotation] = useState<any>(null);
   const [severityFilter, setSeverityFilter] = useState<string>('all');
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const [isExporting, setIsExporting] = useState<boolean>(false);
   
   // Add safety check at the beginning of the component
   if (!analysisData) {
@@ -87,6 +90,40 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
     ann?.x === undefined || ann?.y === undefined
   );
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          handlePrevImage();
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          handleNextImage();
+          break;
+        case '+':
+        case '=':
+          e.preventDefault();
+          handleZoomIn();
+          break;
+        case '-':
+          e.preventDefault();
+          handleZoomOut();
+          break;
+        case '0':
+          e.preventDefault();
+          handleZoomReset();
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentImageIndex, zoomLevel]);
+
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'critical': return 'bg-red-500 hover:bg-red-600 border-red-400';
@@ -105,6 +142,83 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
       case 'enhancement': return 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100';
       case 'all': return 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100';
       default: return 'bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100';
+    }
+  };
+
+  // Navigation handlers
+  const handlePrevImage = () => {
+    if (currentImageIndex > 0) {
+      setCurrentImageIndex(currentImageIndex - 1);
+      setSelectedAnnotation(null);
+    }
+  };
+
+  const handleNextImage = () => {
+    if (currentImageIndex < images.length - 1) {
+      setCurrentImageIndex(currentImageIndex + 1);
+      setSelectedAnnotation(null);
+    }
+  };
+
+  // Zoom handlers
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(prev * 1.2, 3));
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel(prev => Math.max(prev / 1.2, 0.5));
+  };
+
+  const handleZoomReset = () => {
+    setZoomLevel(1);
+  };
+
+  // Export handlers
+  const handleDownloadAnnotatedImage = async () => {
+    if (isExporting) return;
+    
+    setIsExporting(true);
+    try {
+      await visualAnalysisService.downloadAnnotatedImage({
+        imageUrl: images[currentImageIndex]?.url || '',
+        annotations: annotationsWithPosition,
+        analysisId: analysisData.id || 'analysis',
+        siteName: analysisData.siteName || 'Image'
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleCopyAnnotationURLs = async () => {
+    if (isExporting) return;
+    
+    setIsExporting(true);
+    try {
+      await visualAnalysisService.copyAnnotationURLs({
+        imageUrl: images[currentImageIndex]?.url || '',
+        annotations: annotationsWithPosition,
+        analysisId: analysisData.id || 'analysis',
+        siteName: analysisData.siteName || 'Image'
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleGenerateTechnicalBrief = async () => {
+    if (isExporting) return;
+    
+    setIsExporting(true);
+    try {
+      await visualAnalysisService.generateTechnicalBrief({
+        imageUrl: images[currentImageIndex]?.url || '',
+        annotations: processedAnnotations,
+        analysisId: analysisData.id || 'analysis',
+        siteName: analysisData.siteName || 'Image'
+      });
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -129,13 +243,17 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
       {/* Left Panel - Image Display */}
       <div className="left-panel flex-1 p-4 lg:p-6">
         {/* Image container with annotations */}
-        <div className="image-container bg-gray-50 dark:bg-slate-800 rounded-lg p-4 mb-4 relative">
+        <div className="image-container bg-gray-50 dark:bg-slate-800 rounded-lg p-4 mb-4 relative overflow-hidden">
           <div className="relative inline-block max-w-full">
-            {/* Display current image */}
+            {/* Display current image with zoom */}
             <img 
               src={images[currentImageIndex]?.url || '/placeholder.svg'}
               alt={`Analysis target ${currentImageIndex + 1}`}
-              className="max-w-full h-auto rounded-lg shadow-lg"
+              className="max-w-full h-auto rounded-lg shadow-lg transition-transform duration-200"
+              style={{
+                transform: `scale(${zoomLevel})`,
+                transformOrigin: 'center center'
+              }}
               onError={handleImageError}
               onLoad={() => {
                 console.log('✅ Image loaded successfully:', {
@@ -147,10 +265,7 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
             
             {/* Debug info overlay */}
             <div className="absolute top-2 left-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded max-w-xs">
-              <div>Image {currentImageIndex + 1}/{images.length}</div>
-              <div className="truncate">
-                URL: {images[currentImageIndex]?.url?.substring(0, 50)}...
-              </div>
+              <div>Image {currentImageIndex + 1}/{images.length} • Zoom: {Math.round(zoomLevel * 100)}%</div>
             </div>
             
             {/* Render annotations with positions over the image */}
@@ -162,7 +277,8 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
                 } ${selectedAnnotation?.id === annotation?.id ? 'ring-4 ring-white scale-110' : ''}`}
                 style={{
                   left: `${annotation?.x || 50}%`,
-                  top: `${annotation?.y || 50}%`
+                  top: `${annotation?.y || 50}%`,
+                  transform: `translate(-50%, -50%) scale(${1 / zoomLevel})`
                 }}
                 onClick={() => setSelectedAnnotation(annotation)}
                 title={(annotation?.feedback || annotation?.title || 'Annotation').substring(0, 50) + '...'}
@@ -200,18 +316,32 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
           </div>
         )}
         
-        {/* Image controls */}
+        {/* Enhanced Image Controls */}
         <div className="image-controls flex flex-col sm:flex-row items-center justify-between bg-gray-100 dark:bg-slate-700 rounded-lg p-3 gap-3">
           <div className="zoom-controls flex space-x-2">
-            <button className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm flex items-center gap-1">
+            <button 
+              onClick={handleZoomIn}
+              disabled={zoomLevel >= 3}
+              className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center gap-1"
+              title="Zoom In (+)"
+            >
               <ZoomIn className="w-4 h-4" />
               Zoom In
             </button>
-            <button className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm flex items-center gap-1">
+            <button 
+              onClick={handleZoomOut}
+              disabled={zoomLevel <= 0.5}
+              className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center gap-1"
+              title="Zoom Out (-)"
+            >
               <ZoomOut className="w-4 h-4" />
               Zoom Out
             </button>
-            <button className="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm flex items-center gap-1">
+            <button 
+              onClick={handleZoomReset}
+              className="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm flex items-center gap-1"
+              title="Reset Zoom (0)"
+            >
               <RotateCcw className="w-4 h-4" />
               Reset
             </button>
@@ -221,21 +351,25 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
           {images && images.length > 1 && (
             <div className="image-navigation flex items-center space-x-2">
               <button 
-                className="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 disabled:opacity-50 text-sm"
-                onClick={() => setCurrentImageIndex(Math.max(0, currentImageIndex - 1))}
+                onClick={handlePrevImage}
                 disabled={currentImageIndex === 0}
+                className="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center gap-1"
+                title="Previous Image (←)"
               >
+                <ChevronLeft className="w-4 h-4" />
                 Previous
               </button>
               <span className="text-sm text-gray-600 dark:text-gray-300 px-2">
                 {currentImageIndex + 1} of {images.length}
               </span>
               <button 
-                className="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 disabled:opacity-50 text-sm"
-                onClick={() => setCurrentImageIndex(Math.min(images.length - 1, currentImageIndex + 1))}
+                onClick={handleNextImage}
                 disabled={currentImageIndex === images.length - 1}
+                className="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center gap-1"
+                title="Next Image (→)"
               >
                 Next
+                <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           )}
@@ -355,24 +489,51 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
           </div>
         </div>
         
-        {/* Export Options */}
+        {/* Enhanced Export Options */}
         <div className="export-options">
           <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
             Export Options
           </h3>
           <div className="space-y-2">
-            <button className="w-full bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+            <button 
+              onClick={handleDownloadAnnotatedImage}
+              disabled={isExporting}
+              className="w-full bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+            >
               <Download className="w-4 h-4" />
-              Download Annotated Image
+              {isExporting ? 'Generating...' : 'Download Annotated Image'}
             </button>
-            <button className="w-full border border-gray-300 dark:border-gray-600 px-4 py-2 rounded text-sm hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 transition-colors flex items-center justify-center gap-2">
+            <button 
+              onClick={handleCopyAnnotationURLs}
+              disabled={isExporting || annotationsWithPosition.length === 0}
+              className="w-full border border-gray-300 dark:border-gray-600 px-4 py-2 rounded text-sm hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 transition-colors flex items-center justify-center gap-2"
+            >
               <Share2 className="w-4 h-4" />
               Copy Annotation URLs
             </button>
-            <button className="w-full border border-gray-300 dark:border-gray-600 px-4 py-2 rounded text-sm hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 transition-colors flex items-center justify-center gap-2">
+            <button 
+              onClick={handleGenerateTechnicalBrief}
+              disabled={isExporting}
+              className="w-full border border-gray-300 dark:border-gray-600 px-4 py-2 rounded text-sm hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 transition-colors flex items-center justify-center gap-2"
+            >
               <FileText className="w-4 h-4" />
-              Generate Technical Brief
+              {isExporting ? 'Generating...' : 'Generate Technical Brief'}
             </button>
+          </div>
+          
+          {/* Keyboard shortcuts help */}
+          <div className="mt-4 p-3 bg-gray-100 dark:bg-slate-700 rounded-lg">
+            <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Keyboard Shortcuts</h4>
+            <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+              <div className="flex justify-between">
+                <span>Navigation:</span>
+                <span>← → Arrow keys</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Zoom:</span>
+                <span>+ - 0 keys</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
