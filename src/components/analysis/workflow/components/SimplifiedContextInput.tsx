@@ -120,14 +120,31 @@ export const SimplifiedContextInput = ({
                 <button
                   key={index}
                   onClick={() => handleSuggestionClick(suggestion)}
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors whitespace-nowrap flex-shrink-0"
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '20px',
-                    border: '1px solid #E2E2E2',
-                    background: '#FFF',
-                    boxShadow: '0px 1px 2px 0px rgba(0, 0, 0, 0.05)',
-                  }}
+                  className={`inline-flex items-center gap-1.5 text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+                    index === 0 ? '' : 'text-gray-700 hover:text-gray-900'
+                  }`}
+                  style={
+                    index === 0 ? {
+                      // Special styling for "Surprise me" button
+                      display: 'flex',
+                      padding: '10px 20px',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      gap: '8px',
+                      borderRadius: '12px',
+                      border: '1px solid var(--Stroke-02, #E2E2E2)',
+                      background: 'var(--Surface-03, #F1F1F1)',
+                      boxShadow: '0px 2px 0px 0px rgba(255, 255, 255, 0.80) inset, 0px 1px 3.2px -2px rgba(0, 0, 0, 0.99)',
+                      color: '#121212',
+                    } : {
+                      // Default styling for other buttons
+                      padding: '8px 16px',
+                      borderRadius: '20px',
+                      border: '1px solid #E2E2E2',
+                      background: '#FFF',
+                      boxShadow: '0px 1px 2px 0px rgba(0, 0, 0, 0.05)',
+                    }
+                  }
                 >
                   {suggestion.icon && <span className="text-xs">{suggestion.icon}</span>}
                   {suggestion.label}
