@@ -44,7 +44,7 @@ export const StudioChat = ({ workflow }: StudioChatProps) => {
   const getStatusIcon = (condition: boolean) => condition ? '✓' : '○';
 
   return (
-    <div className="border-t border-gray-200 dark:border-slate-700 shadow-lg">
+    <div className="shadow-lg">
       {!isExpanded ? (
         /* Collapsed State */
         <div className="p-4">
