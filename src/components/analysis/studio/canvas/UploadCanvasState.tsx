@@ -1,4 +1,3 @@
-
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -36,9 +35,9 @@ export const UploadCanvasState = ({
               </h2>
             </div>
             
-            <div className="space-y-3 flex-1">
+            <div className="space-y-3 flex-1 w-full">
               <Card className="bg-gray-50 border-0">
-                <CardContent className="flex justify-center items-center self-stretch rounded-lg text-center" style={{
+                <CardContent className="flex justify-center items-center self-stretch rounded-lg text-center w-full" style={{
                 display: 'flex',
                 padding: '8px',
                 justifyContent: 'center',
@@ -52,7 +51,8 @@ export const UploadCanvasState = ({
                 fontStyle: 'normal',
                 fontWeight: '400',
                 lineHeight: '150%',
-                flex: '1'
+                flex: '1',
+                width: '100%'
               }}>
                   <p>Example prompt 1</p>
                 </CardContent>
