@@ -1,11 +1,9 @@
-
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Bot, Sparkles, Zap, Search } from 'lucide-react';
-import { useAIProviderConfig } from '@/hooks/analysis/useAIProviderConfig';
-import { AIProvider, OPENAI_MODELS, CLAUDE_MODELS, GOOGLE_MODELS } from '@/types/aiProvider';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Sparkles, ChevronDown, ChevronUp, Bot, Shuffle } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface SimplifiedContextInputProps {
   analysisContext: string;
@@ -24,159 +22,215 @@ export const SimplifiedContextInput = ({
   isAnalyzing,
   uploadedImageCount
 }: SimplifiedContextInputProps) => {
-  const { selectedConfig, setSelectedConfig, availableProviders, getDisplayName } = useAIProviderConfig();
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const providerIcons = {
-    auto: <Sparkles className="w-4 h-4" />,
-    openai: <Bot className="w-4 h-4" />,
-    claude: <Zap className="w-4 h-4" />,
-    google: <Search className="w-4 h-4" />
+  // Smart suggestions based on common use cases
+  const quickSuggestions = [
+    { label: "Surprise me", icon: "🎲", value: "Comprehensive UX analysis with surprising insights and hidden opportunities" },
+    { label: "Visual Hierarchy", value: "Visual hierarchy and layout analysis - improve information prioritization and scanning patterns" },
+    { label: "Comparison", value: uploadedImageCount > 1 ? "Comparative analysis across designs for consistency and best practices" : "Single design analysis with industry comparison insights" },
+    { label: "Usability", value: "Usability and user experience audit - identify friction points and improvement opportunities" },
+    { label: "Comprehensive", value: "Complete professional UX audit covering accessibility, conversion, visual design, and user experience" },
+    { label: "Character", value: "Brand personality and visual character analysis - ensure design reflects intended brand voice" }
+  ];
+
+  // Advanced context templates (hidden by default)
+  const advancedTemplates = {
+    'E-commerce': [
+      'E-commerce checkout optimization - analyze conversion flow and reduce cart abandonment',
+      'Product page conversion analysis - optimize product display and purchase journey'
+    ],
+    'Accessibility': [
+      'WCAG accessibility audit - check compliance with web accessibility guidelines',
+      'Color contrast and readability review - ensure text is readable for all users'
+    ],
+    'Mobile UX': [
+      'Mobile responsiveness review - ensure optimal experience across devices',
+      'Touch interface optimization - improve tap targets and gestures'
+    ]
   };
 
-  const getModelOptions = () => {
-    const options = [
-      { value: 'auto', label: 'Auto Select', icon: providerIcons.auto }
-    ];
-
-    if (availableProviders.includes('openai')) {
-      options.push(
-        { value: 'openai-default', label: 'OpenAI (Default)', icon: providerIcons.openai },
-        ...Object.values(OPENAI_MODELS).map(model => ({
-          value: `openai-${model.id}`,
-          label: `OpenAI - ${model.name}`,
-          icon: providerIcons.openai
-        }))
-      );
-    }
-
-    if (availableProviders.includes('claude')) {
-      options.push(
-        { value: 'claude-default', label: 'Claude (Default)', icon: providerIcons.claude },
-        ...Object.values(CLAUDE_MODELS).map(model => ({
-          value: `claude-${model.id}`,
-          label: `Claude - ${model.name}`,
-          icon: providerIcons.claude
-        }))
-      );
-    }
-
-    if (availableProviders.includes('google')) {
-      options.push(
-        { value: 'google-default', label: 'Google (Default)', icon: providerIcons.google },
-        ...Object.values(GOOGLE_MODELS).map(model => ({
-          value: `google-${model.id}`,
-          label: `Google - ${model.name}`,
-          icon: providerIcons.google
-        }))
-      );
-    }
-
-    return options;
+  const handleSuggestionClick = (suggestion: typeof quickSuggestions[0]) => {
+    onAnalysisContextChange(suggestion.value);
+    setShowSuggestions(false);
+    inputRef.current?.focus();
   };
 
-  const getCurrentValue = () => {
-    if (selectedConfig.provider === 'auto') return 'auto';
-    if (selectedConfig.model) {
-      return `${selectedConfig.provider}-${selectedConfig.model}`;
-    }
-    return `${selectedConfig.provider}-default`;
+  const handleAdvancedTemplate = (template: string) => {
+    onAnalysisContextChange(template);
+    setShowAdvanced(false);
+    inputRef.current?.focus();
   };
 
-  const handleModelChange = (value: string) => {
-    if (value === 'auto') {
-      setSelectedConfig({ provider: 'auto', testMode: selectedConfig.testMode });
-      return;
-    }
-
-    const [provider, ...modelParts] = value.split('-');
-    const modelId = modelParts.join('-');
-
-    if (modelId === 'default') {
-      setSelectedConfig({ 
-        provider: provider as AIProvider, 
-        testMode: selectedConfig.testMode 
-      });
-    } else {
-      setSelectedConfig({ 
-        provider: provider as AIProvider, 
-        model: modelId as any,
-        testMode: selectedConfig.testMode 
-      });
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && canAnalyze) {
+      onAnalyze();
     }
   };
 
-  const modelOptions = getModelOptions();
+  useEffect(() => {
+    if (showSuggestions && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [showSuggestions]);
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-lg p-6">
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              What would you like me to analyze?
-            </label>
-            <Textarea
-              value={analysisContext}
-              onChange={(e) => onAnalysisContextChange(e.target.value)}
-              placeholder="Describe what you'd like me to focus on (e.g., 'Check for accessibility issues', 'Analyze the checkout flow', 'Review mobile responsiveness')..."
-              className="min-h-[100px] resize-none border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-              disabled={isAnalyzing}
-            />
-          </div>
+    <div className="space-y-4">
+      {/* Main Input Container */}
+      <div 
+        className="p-3"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-end',
+          alignItems: 'center',
+          alignSelf: 'stretch',
+          borderRadius: '24px',
+          border: '1px solid var(--Stroke-02, #E2E2E2)',
+          background: 'var(--Color, #FFF)',
+          boxShadow: '0px 239px 67px 0px rgba(0, 0, 0, 0.00), 0px 153px 61px 0px rgba(0, 0, 0, 0.01), 0px 86px 52px 0px rgba(0, 0, 0, 0.04), 0px 38px 38px 0px rgba(0, 0, 0, 0.06), 0px 10px 21px 0px rgba(0, 0, 0, 0.07)',
+          backdropFilter: 'blur(6px)'
+        }}
+      >
+        {/* Input Field - First Row */}
+        <div className="w-full mb-3">
+          <Input
+            ref={inputRef}
+            value={analysisContext}
+            onChange={(e) => onAnalysisContextChange(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="How can I help..."
+            className="border-0 bg-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none text-base text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 w-full"
+            style={{ 
+              outline: 'none',
+              boxShadow: 'none'
+            }}
+          />
+        </div>
 
-          <div className="flex items-center justify-between gap-4">
-            <div className="text-sm text-gray-600">
-              {uploadedImageCount > 0 ? (
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                  {uploadedImageCount} image{uploadedImageCount > 1 ? 's' : ''} ready for analysis
-                </span>
-              ) : (
-                <span className="text-orange-600">Please upload images first</span>
-              )}
+        {/* Buttons - Second Row */}
+        <div className="flex items-center justify-between w-full">
+          <button
+            onClick={() => setShowSuggestions(!showSuggestions)}
+            style={{
+              display: 'flex',
+              width: '44px',
+              height: '44px',
+              padding: '10px',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: '16px',
+              color: '#7B7B7B',
+              borderRadius: '10px',
+              border: '1px solid var(--Stroke-02, #E2E2E2)',
+              background: 'transparent',
+              cursor: 'pointer'
+            }}
+          >
+            <Sparkles className="w-4 h-4" />
+          </button>
+          
+          <Button
+            onClick={onAnalyze}
+            disabled={!canAnalyze}
+            className="text-white font-medium disabled:opacity-50"
+            style={{
+              display: 'flex',
+              padding: '11px 16px',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: '4px',
+              borderRadius: '10px',
+              background: 'var(--Gradient-Linear, linear-gradient(97deg, #6912D4 15.89%, #CE169B 69.34%, #FB9A2B 103.4%))',
+              boxShadow: '0px 1px 2px 0px rgba(135, 80, 255, 0.05)',
+              border: 'none'
+            }}
+          >
+            {isAnalyzing ? (
+              <>
+                <Sparkles className="w-4 h-4 animate-pulse" />
+                Analyzing...
+              </>
+            ) : (
+              <>
+                <Bot className="w-4 h-4" />
+                Analyze
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* Quick Suggestions - Integrated into the input bar */}
+        {showSuggestions && (
+          <div className="w-full mt-3 pt-3 border-t border-gray-100 dark:border-slate-700">
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              {quickSuggestions.map((suggestion, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-full transition-colors border border-gray-200 dark:border-slate-600 whitespace-nowrap flex-shrink-0"
+                >
+                  {suggestion.icon && <span className="text-xs">{suggestion.icon}</span>}
+                  {suggestion.label}
+                </button>
+              ))}
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-gray-700">Model:</label>
-                <Select
-                  value={getCurrentValue()}
-                  onValueChange={handleModelChange}
-                  disabled={isAnalyzing}
-                >
-                  <SelectTrigger className="w-[200px] h-9">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {modelOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        <div className="flex items-center gap-2">
-                          {option.icon}
-                          <span>{option.label}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
+            {/* Advanced Toggle */}
+            <div className="mt-3 pt-2 border-t border-gray-100 dark:border-slate-700 hidden">
               <Button
-                onClick={onAnalyze}
-                disabled={!canAnalyze}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
               >
-                {isAnalyzing ? 'Analyzing...' : 'Analyze'}
+                {showAdvanced ? (
+                  <>
+                    <ChevronUp className="w-3 h-3 mr-1" />
+                    Hide Advanced
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-3 h-3 mr-1" />
+                    Show Advanced Options
+                  </>
+                )}
               </Button>
             </div>
-          </div>
 
-          {!canAnalyze && uploadedImageCount > 0 && !analysisContext.trim() && (
-            <p className="text-sm text-orange-600 text-center">
-              Please describe what you'd like me to analyze before proceeding.
-            </p>
-          )}
-        </div>
+            {/* Advanced Templates */}
+            {showAdvanced && (
+              <div className="space-y-3 pt-2">
+                {Object.entries(advancedTemplates).map(([category, templates]) => (
+                  <div key={category} className="space-y-2">
+                    <div className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                      {category}
+                    </div>
+                    <div className="space-y-1">
+                      {templates.map((template, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleAdvancedTemplate(template)}
+                          className="text-left text-xs text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-slate-700 p-2 rounded w-full transition-colors"
+                        >
+                          {template.split(' - ')[0]}
+                          <div className="text-gray-500 dark:text-gray-500 mt-1">
+                            {template.split(' - ')[1]}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Context Preview - Hidden */}
     </div>
   );
 };
