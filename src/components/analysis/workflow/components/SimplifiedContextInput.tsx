@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -90,7 +91,7 @@ export const SimplifiedContextInput = ({
           borderRadius: '24px',
           border: '1px solid var(--Stroke-02, #E2E2E2)',
           background: 'var(--Color, #FFF)',
-          boxShadow: '0px 239px 67px 0px rgba(0, 0, 0, 0.00), 0px 153px 61px 0px rgba(0, 0, 0, 0.01), 0px 86px 52px 0px rgba(0, 0, 0, 0.04), 0px 38px 38px 0px rgba(0, 0, 0, 0.06), 0px 10px 21px 0px rgba(0, 0, 0, 0.07)',
+          boxShadow: '0px 32px 67px 0px rgba(0, 0, 0, 0.00), 0px 24px 61px 0px rgba(0, 0, 0, 0.01), 0px 12px 52px 0px rgba(0, 0, 0, 0.04), 0px 12px 38px 0px rgba(0, 0, 0, 0.06), 0px 4px 21px 0px rgba(0, 0, 0, 0.07)',
           backdropFilter: 'blur(6px)'
         }}
       >
