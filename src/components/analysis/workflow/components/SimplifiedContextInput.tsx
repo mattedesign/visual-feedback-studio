@@ -148,12 +148,12 @@ export const SimplifiedContextInput = ({
         {/* Quick Suggestions - Integrated into the input bar */}
         {showSuggestions && (
           <div className="w-full mt-3 pt-3 border-t border-gray-100 dark:border-slate-700">
-            <div className="flex flex-wrap gap-2">
+            <div className="flex gap-2 overflow-x-auto overflow-y-hidden scrollbar-hide">
               {quickSuggestions.map((suggestion, index) => (
                 <button
                   key={index}
                   onClick={() => handleSuggestionClick(suggestion)}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-full transition-colors border border-gray-200 dark:border-slate-600"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-full transition-colors border border-gray-200 dark:border-slate-600 whitespace-nowrap flex-shrink-0"
                 >
                   {suggestion.icon && <span className="text-xs">{suggestion.icon}</span>}
                   {suggestion.label}
