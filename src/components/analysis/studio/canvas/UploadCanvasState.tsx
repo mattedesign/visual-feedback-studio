@@ -1,47 +1,147 @@
+
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
-import { Upload, ArrowLeft, Sparkles, Zap, Brain } from 'lucide-react';
+import { MessageSquare, Settings, Brain } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+
 interface UploadCanvasStateProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
 }
+
 export const UploadCanvasState = ({
   workflow
 }: UploadCanvasStateProps) => {
-  return <div className="flex items-center justify-center h-full bg-transparent">
-      <div className="text-center space-y-6 max-w-2xl px-8">
-        {/* Enhanced Visual Design */}
-        <div className="relative">
-          {/* Background gradient circle */}
-          <div className="w-32 h-32 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-full mx-auto flex items-center justify-center relative overflow-hidden">
-            {/* Animated background pattern */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
-            
-            {/* Main icon container */}
-            <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center relative z-10">
-              <Upload className="w-10 h-10 text-white drop-shadow-lg" />
+  return (
+    <div className="flex items-center justify-center h-full bg-transparent">
+      <div className="w-full max-w-6xl px-8">
+        {/* Three-column layout */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Example Prompt Column */}
+          <div className="space-y-6">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-slate-200 rounded-xl mx-auto mb-4 flex items-center justify-center">
+                <MessageSquare className="w-8 h-8 text-slate-600" />
+              </div>
+              <h2 className="text-xl font-semibold text-zinc-900 mb-6">Example Prompt</h2>
             </div>
             
-            {/* Floating accent icons */}
-            <div className="absolute top-2 right-6 w-6 h-6 bg-white/30 rounded-full flex items-center justify-center">
-              <Sparkles className="w-3 h-3 text-white" />
+            <div className="space-y-3">
+              <Card className="bg-gray-50 border-0">
+                <CardContent className="p-4">
+                  <p className="text-sm text-gray-700">Example prompt 1</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gray-50 border-0">
+                <CardContent className="p-4">
+                  <p className="text-sm text-gray-700">Example prompt 2</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gray-50 border-0">
+                <CardContent className="p-4">
+                  <p className="text-sm text-gray-700">Example prompt 3</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gray-50 border-0">
+                <CardContent className="p-4">
+                  <p className="text-sm text-gray-700">Example prompt 4</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gray-50 border-0">
+                <CardContent className="p-4">
+                  <p className="text-sm text-gray-700">Example prompt 5</p>
+                </CardContent>
+              </Card>
             </div>
-            <div className="absolute bottom-4 left-4 w-5 h-5 bg-white/30 rounded-full flex items-center justify-center">
-              <Zap className="w-2.5 h-2.5 text-white" />
+          </div>
+
+          {/* Capabilities Column */}
+          <div className="space-y-6">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-slate-200 rounded-xl mx-auto mb-4 flex items-center justify-center">
+                <Settings className="w-8 h-8 text-slate-600" />
+              </div>
+              <h2 className="text-xl font-semibold text-zinc-900 mb-6">Capabilities</h2>
             </div>
-            <div className="absolute top-6 left-2 w-4 h-4 bg-white/30 rounded-full flex items-center justify-center">
-              <Brain className="w-2 h-2 text-white" />
+            
+            <div className="space-y-3">
+              <Card className="bg-gray-50 border-0">
+                <CardContent className="p-4">
+                  <p className="text-sm text-gray-700">Insights backed by 272+ UX research studies</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gray-50 border-0">
+                <CardContent className="p-4">
+                  <p className="text-sm text-gray-700">Creates actionable and detailed insights</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gray-50 border-0">
+                <CardContent className="p-4">
+                  <p className="text-sm text-gray-700">Annotate on specific images</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gray-50 border-0">
+                <CardContent className="p-4">
+                  <p className="text-sm text-gray-700">Comparative results between designs</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gray-50 border-0">
+                <CardContent className="p-4">
+                  <p className="text-sm text-gray-700">Extracts information from UI and recommendati...</p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Models Column */}
+          <div className="space-y-6">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-slate-200 rounded-xl mx-auto mb-4 flex items-center justify-center">
+                <Brain className="w-8 h-8 text-slate-600" />
+              </div>
+              <h2 className="text-xl font-semibold text-zinc-900 mb-6">Models</h2>
+            </div>
+            
+            <div className="space-y-3">
+              <Card className="bg-gray-50 border-0">
+                <CardContent className="p-4">
+                  <p className="text-sm text-gray-700">Open AI GPT 4o</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gray-50 border-0">
+                <CardContent className="p-4">
+                  <p className="text-sm text-gray-700">Claude Sonnet 3.5</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gray-50 border-0">
+                <CardContent className="p-4">
+                  <p className="text-sm text-gray-700">Claude Sonnet 4</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gray-50 border-0">
+                <CardContent className="p-4">
+                  <p className="text-sm text-gray-700">Claude Opus</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gray-50 border-0">
+                <CardContent className="p-4">
+                  <p className="text-sm text-gray-700">Google Vision</p>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
-        
-        {/* Enhanced Text Content */}
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold mb-2 text-zinc-900">
-            Ready to Analyze Your Design?
-          </h2>
-          <p className="text-lg max-w-md mx-auto leading-relaxed text-zinc-600">
-            Upload your design files to get started with AI-powered insights backed by 272+ UX research studies
-          </p>
-        </div>
       </div>
-    </div>;
+    </div>
+  );
 };
