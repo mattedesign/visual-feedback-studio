@@ -1,4 +1,5 @@
-import { Files, Menu, MessageCircle, Target } from 'lucide-react';
+
+import { Files, Menu, MessageCircle, Target, Trash2 } from 'lucide-react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { SidebarUpload } from './SidebarUpload';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +26,24 @@ export const StudioSidebar = ({
       workflow.setActiveImage(imageUrl);
     } else {
       workflow.selectImage(imageUrl);
+    }
+  };
+
+  const handleDeleteImage = (imageUrl: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent triggering the image click
+    console.log('Deleting image:', imageUrl);
+    
+    // Remove the image from the uploaded files
+    const updatedImages = workflow.uploadedFiles.filter(file => file !== imageUrl);
+    workflow.selectImages(updatedImages);
+    
+    // If this was the active image, set a new active image or clear it
+    if (workflow.activeImageUrl === imageUrl) {
+      if (updatedImages.length > 0) {
+        workflow.setActiveImage(updatedImages[0]);
+      } else {
+        workflow.setActiveImage(null);
+      }
     }
   };
 
@@ -97,8 +116,8 @@ export const StudioSidebar = ({
               const isSelected = workflow.selectedImages.includes(file);
               const isActive = isImageActive(file);
               const annotations = getFileAnnotations(file);
-              return <div key={index} onClick={() => handleImageClick(file)} className={`p-3 rounded-lg border cursor-pointer transition-all duration-200 ${isActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md ring-2 ring-blue-200 dark:ring-blue-800' : isSelected ? 'border-blue-300 bg-blue-25 dark:bg-blue-900/10 shadow-sm' : 'border-gray-200 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500 hover:shadow-sm'}`}>
-                      <div className="flex items-center space-x-3">
+              return <div key={index} className={`group relative p-3 rounded-lg border cursor-pointer transition-all duration-200 ${isActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md ring-2 ring-blue-200 dark:ring-blue-800' : isSelected ? 'border-blue-300 bg-blue-25 dark:bg-blue-900/10 shadow-sm' : 'border-gray-200 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500 hover:shadow-sm'}`}>
+                      <div className="flex items-center space-x-3" onClick={() => handleImageClick(file)}>
                         <div className="w-12 h-12 bg-gray-100 dark:bg-slate-700 rounded-lg overflow-hidden flex-shrink-0">
                           <img src={file} alt="Uploaded file" className="w-full h-full object-cover" />
                         </div>
@@ -118,6 +137,15 @@ export const StudioSidebar = ({
                             </div>}
                         </div>
                       </div>
+                      
+                      {/* Delete Button */}
+                      <button
+                        onClick={(e) => handleDeleteImage(file, e)}
+                        className="absolute top-2 right-2 p-1 rounded-full bg-red-500 hover:bg-red-600 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-sm"
+                        title="Delete image"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
                     </div>;
             })}
               </div>
@@ -142,8 +170,19 @@ export const StudioSidebar = ({
               
               {workflow.uploadedFiles.slice(0, 6).map((file: string, index: number) => {
             const isActive = isImageActive(file);
-            return <div key={index} onClick={() => handleImageClick(file)} className={`w-10 h-10 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${isActive ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-800' : 'border-gray-300 dark:border-slate-600 hover:border-gray-400'}`}>
-                    <img src={file} alt={`Image ${index + 1}`} className="w-full h-full object-cover" />
+            return <div key={index} className="group relative">
+                    <div onClick={() => handleImageClick(file)} className={`w-10 h-10 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${isActive ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-800' : 'border-gray-300 dark:border-slate-600 hover:border-gray-400'}`}>
+                      <img src={file} alt={`Image ${index + 1}`} className="w-full h-full object-cover" />
+                    </div>
+                    
+                    {/* Delete Button for collapsed state */}
+                    <button
+                      onClick={(e) => handleDeleteImage(file, e)}
+                      className="absolute -top-1 -right-1 p-0.5 rounded-full bg-red-500 hover:bg-red-600 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-sm"
+                      title="Delete image"
+                    >
+                      <Trash2 className="w-2 h-2" />
+                    </button>
                   </div>;
           })}
               {workflow.uploadedFiles.length > 6 && <div className="w-10 h-10 bg-gray-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
