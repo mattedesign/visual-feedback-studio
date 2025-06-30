@@ -136,8 +136,8 @@ const featureCards: FeatureCard[] = [
 
 export const FeatureCards = () => {
   return (
-    <div className="w-full max-w-[688px] mx-auto py-4">
-      <div className="flex gap-6 h-auto min-h-[400px]">
+    <div className="w-full mx-auto py-8">
+      <div className="flex gap-6 h-auto min-h-[420px]">
         {featureCards.map((card) => {
           const Icon = card.icon;
           
@@ -148,7 +148,7 @@ export const FeatureCards = () => {
                 group flex-1 bg-white border border-slate-200 rounded-xl p-6 
                 transition-all duration-200 ease-out
                 hover:shadow-lg hover:-translate-y-0.5 hover:shadow-black/8
-                h-auto min-h-[380px] max-h-none
+                h-auto min-h-[400px] max-h-none
                 ${card.hideOnMobile ? 'hidden min-[400px]:flex flex-col' : 'flex flex-col'}
                 ${card.hideOnTablet ? 'min-[400px]:hidden min-[900px]:flex' : ''}
               `}
