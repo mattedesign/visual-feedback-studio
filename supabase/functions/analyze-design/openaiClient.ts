@@ -37,7 +37,9 @@ Requirements:
 - Each annotation must have valid x,y coordinates (0-100)
 - Feedback must be specific and actionable
 - Categories must match the exact list provided
-- Focus on practical, implementable improvements`
+- Focus on practical, implementable improvements
+
+IMPORTANT: Your response must be valid JSON only. Do not include any other text or explanation outside the JSON structure.`
       },
       {
         role: 'user',
@@ -77,6 +79,18 @@ Requirements:
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`❌ OpenAI API error: ${response.status} ${response.statusText}`, errorText);
+      
+      // Log detailed error information for debugging
+      console.error('❌ OpenAI Request Details:', {
+        model,
+        messageCount: messages.length,
+        hasSystemMessage: messages.some(m => m.role === 'system'),
+        hasUserMessage: messages.some(m => m.role === 'user'),
+        responseFormat: 'json_object',
+        temperature: 0.1,
+        maxTokens: 4000
+      });
+      
       throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
     }
 
