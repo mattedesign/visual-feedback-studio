@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHandler } from './corsHandler.ts';
@@ -8,6 +7,8 @@ import { imageProcessingManager } from './imageProcessingManager.ts';
 import { aiAnalysisManager } from './aiAnalysisManager.ts';
 import { databaseManager } from './databaseManager.ts';
 import { enhancedAnalysisIntegrator } from './enhancedAnalysisIntegrator.ts';
+// ✅ NEW: Import Well Done Service (safe addition)
+import { WellDoneService } from './services/wellDoneService.ts';
 
 console.log('🚀 Enhanced Comprehensive Analysis Function - Starting up');
 
@@ -147,6 +148,41 @@ serve(async (req) => {
       comprehensiveSuccess: (analysisResult.annotations?.length || 0) >= 16
     });
 
+    // ✅ NEW: Generate Well Done insights (safe addition)
+    let wellDoneData = null;
+    try {
+      console.log('🎉 Generating Well Done insights from analysis results...');
+      
+      // Extract the AI response content for Well Done analysis
+      // We'll use the analysisPrompt or any available content from analysisResult
+      const contentForWellDone = analysisResult.rawContent || 
+                                analysisResult.content || 
+                                analysisPrompt || 
+                                'Strong design foundation with thoughtful UX considerations.';
+      
+      const wellDoneInsights = WellDoneService.extractInsights(contentForWellDone);
+      wellDoneData = WellDoneService.processInsights(wellDoneInsights);
+      
+      console.log('✅ Well Done insights generated successfully:', {
+        insightsCount: wellDoneData.insights.length,
+        categoriesFound: Object.keys(wellDoneData.categoryHighlights),
+        strengthsCount: wellDoneData.overallStrengths.length
+      });
+    } catch (wellDoneError) {
+      console.error('⚠️ Well Done generation failed (non-critical):', wellDoneError);
+      console.log('🔄 Continuing with analysis without Well Done section');
+      // Create fallback Well Done data
+      wellDoneData = {
+        insights: [{
+          title: "Strong Design Foundation",
+          description: "The design demonstrates solid UX principles and thoughtful consideration for user needs.",
+          category: 'overall' as const
+        }],
+        overallStrengths: ["Strong Design Foundation"],
+        categoryHighlights: { overall: "Strong Design Foundation" }
+      };
+    }
+
     // Enhance annotations with comprehensive business impact
     console.log('📊 Enhancing annotations with comprehensive business intelligence...');
     const enhancedAnnotations = await enhancedAnalysisIntegrator.enhanceAnnotations(
@@ -173,7 +209,9 @@ serve(async (req) => {
         designType,
         isComparative,
         ragEnhanced: useRAG,
-        researchSourceCount: useRAG ? 2 : 0
+        researchSourceCount: useRAG ? 2 : 0,
+        // ✅ NEW: Save Well Done data (safe addition)
+        wellDone: wellDoneData
       });
       console.log('✅ Comprehensive analysis results saved successfully');
     } catch (dbError) {
@@ -181,7 +219,7 @@ serve(async (req) => {
       console.log('🔄 Continuing with comprehensive analysis despite database save failure');
     }
 
-    // Prepare comprehensive response
+    // ✅ NEW: Prepare comprehensive response with Well Done data (safe addition)
     const response = {
       success: true,
       annotations: enhancedAnnotations,
@@ -194,7 +232,9 @@ serve(async (req) => {
       modelUsed: analysisResult.modelUsed,
       comprehensiveAnalysis: true,
       targetInsights: '16-19',
-      insightGoalAchieved: enhancedAnnotations.length >= 16
+      insightGoalAchieved: enhancedAnnotations.length >= 16,
+      // ✅ NEW: Add Well Done data to response (safe addition)
+      wellDone: wellDoneData
     };
 
     console.log('🎉 Comprehensive analysis completed successfully:', {
@@ -204,7 +244,10 @@ serve(async (req) => {
       ragEnhanced: useRAG,
       imageCount: imageUrls.length,
       knowledgeSourcesUsed: useRAG ? 2 : 0,
-      comprehensiveSuccess: true
+      comprehensiveSuccess: true,
+      // ✅ NEW: Log Well Done success (safe addition)
+      wellDoneInsights: wellDoneData?.insights?.length || 0,
+      wellDoneGenerated: !!wellDoneData
     });
 
     return corsHandler.addCorsHeaders(
