@@ -1,4 +1,3 @@
-
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -66,7 +65,7 @@ export const UploadCanvasState = ({
                     fontWeight: '500',
                     lineHeight: '16px',
                     letterSpacing: '-0.12px',
-                    textAlign: 'left',
+                    textAlign: 'center',
                     paddingBottom: '12px'
                   }}>Example prompt 1</p>
                 </CardContent>
@@ -91,7 +90,7 @@ export const UploadCanvasState = ({
                     fontWeight: '500',
                     lineHeight: '16px',
                     letterSpacing: '-0.12px',
-                    textAlign: 'left',
+                    textAlign: 'center',
                     paddingBottom: '12px'
                   }}>Example prompt 2</p>
                 </CardContent>
@@ -116,7 +115,7 @@ export const UploadCanvasState = ({
                     fontWeight: '500',
                     lineHeight: '16px',
                     letterSpacing: '-0.12px',
-                    textAlign: 'left',
+                    textAlign: 'center',
                     paddingBottom: '12px'
                   }}>Example prompt 3</p>
                 </CardContent>
@@ -141,7 +140,7 @@ export const UploadCanvasState = ({
                     fontWeight: '500',
                     lineHeight: '16px',
                     letterSpacing: '-0.12px',
-                    textAlign: 'left',
+                    textAlign: 'center',
                     paddingBottom: '12px'
                   }}>Example prompt 4</p>
                 </CardContent>
@@ -166,7 +165,7 @@ export const UploadCanvasState = ({
                     fontWeight: '500',
                     lineHeight: '16px',
                     letterSpacing: '-0.12px',
-                    textAlign: 'left',
+                    textAlign: 'center',
                     paddingBottom: '12px'
                   }}>Example prompt 5</p>
                 </CardContent>
@@ -226,7 +225,7 @@ export const UploadCanvasState = ({
                     fontWeight: '500',
                     lineHeight: '16px',
                     letterSpacing: '-0.12px',
-                    textAlign: 'left',
+                    textAlign: 'center',
                     paddingBottom: '12px'
                   }}>Insights backed by 272+ UX research studies</p>
                 </CardContent>
@@ -251,7 +250,7 @@ export const UploadCanvasState = ({
                     fontWeight: '500',
                     lineHeight: '16px',
                     letterSpacing: '-0.12px',
-                    textAlign: 'left',
+                    textAlign: 'center',
                     paddingBottom: '12px'
                   }}>Creates actionable and detailed insights</p>
                 </CardContent>
@@ -276,7 +275,7 @@ export const UploadCanvasState = ({
                     fontWeight: '500',
                     lineHeight: '16px',
                     letterSpacing: '-0.12px',
-                    textAlign: 'left',
+                    textAlign: 'center',
                     paddingBottom: '12px'
                   }}>Annotate on specific images</p>
                 </CardContent>
@@ -301,7 +300,7 @@ export const UploadCanvasState = ({
                     fontWeight: '500',
                     lineHeight: '16px',
                     letterSpacing: '-0.12px',
-                    textAlign: 'left',
+                    textAlign: 'center',
                     paddingBottom: '12px'
                   }}>Comparative results between designs</p>
                 </CardContent>
@@ -326,7 +325,7 @@ export const UploadCanvasState = ({
                     fontWeight: '500',
                     lineHeight: '16px',
                     letterSpacing: '-0.12px',
-                    textAlign: 'left',
+                    textAlign: 'center',
                     paddingBottom: '12px'
                   }}>Extracts information from UI and recommendati...</p>
                 </CardContent>
@@ -386,7 +385,7 @@ export const UploadCanvasState = ({
                     fontWeight: '500',
                     lineHeight: '16px',
                     letterSpacing: '-0.12px',
-                    textAlign: 'left',
+                    textAlign: 'center',
                     paddingBottom: '12px'
                   }}>Open AI GPT 4o</p>
                 </CardContent>
@@ -411,7 +410,7 @@ export const UploadCanvasState = ({
                     fontWeight: '500',
                     lineHeight: '16px',
                     letterSpacing: '-0.12px',
-                    textAlign: 'left',
+                    textAlign: 'center',
                     paddingBottom: '12px'
                   }}>Claude Sonnet 3.5</p>
                 </CardContent>
@@ -436,7 +435,7 @@ export const UploadCanvasState = ({
                     fontWeight: '500',
                     lineHeight: '16px',
                     letterSpacing: '-0.12px',
-                    textAlign: 'left',
+                    textAlign: 'center',
                     paddingBottom: '12px'
                   }}>Claude Sonnet 4</p>
                 </CardContent>
@@ -461,7 +460,7 @@ export const UploadCanvasState = ({
                     fontWeight: '500',
                     lineHeight: '16px',
                     letterSpacing: '-0.12px',
-                    textAlign: 'left',
+                    textAlign: 'center',
                     paddingBottom: '12px'
                   }}>Claude Opus</p>
                 </CardContent>
@@ -486,7 +485,7 @@ export const UploadCanvasState = ({
                     fontWeight: '500',
                     lineHeight: '16px',
                     letterSpacing: '-0.12px',
-                    textAlign: 'left',
+                    textAlign: 'center',
                     paddingBottom: '12px'
                   }}>Google Vision</p>
                 </CardContent>
