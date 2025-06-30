@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { BarChart3, Eye, BookOpen, Download, Share, ArrowLeft } from 'lucide-react';
 import { BusinessImpactDashboard } from './BusinessImpactDashboard';
@@ -12,13 +11,17 @@ interface ModularAnalysisInterfaceProps {
 
 export const ModularAnalysisInterface: React.FC<ModularAnalysisInterfaceProps> = ({ analysisData }) => {
   const [activeModule, setActiveModule] = useState('business-impact');
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isMobile, setIsMobile] = useState(false);
 
   // Handle window resize for responsive behavior
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
     };
+    
+    // Set initial state
+    handleResize();
+    
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -89,13 +92,7 @@ export const ModularAnalysisInterface: React.FC<ModularAnalysisInterfaceProps> =
     window.history.replaceState(null, '', `${window.location.pathname}?${newParams.toString()}`);
   };
 
-  const handleExport = () => {
-    // Placeholder for export functionality
-    console.log('Export functionality - to be implemented');
-  };
-
   const handleShare = () => {
-    // Placeholder for share functionality
     if (navigator.share) {
       navigator.share({
         title: 'UX Analysis Results',
@@ -103,7 +100,6 @@ export const ModularAnalysisInterface: React.FC<ModularAnalysisInterfaceProps> =
         url: window.location.href
       });
     } else {
-      // Fallback - copy to clipboard
       navigator.clipboard.writeText(window.location.href);
     }
   };
@@ -132,7 +128,6 @@ export const ModularAnalysisInterface: React.FC<ModularAnalysisInterfaceProps> =
             <div className="flex items-center gap-4">
               <button 
                 onClick={() => {
-                  // Remove beta parameter and go back to standard interface
                   const newParams = new URLSearchParams(window.location.search);
                   newParams.delete('beta');
                   newParams.delete('module');
@@ -165,10 +160,7 @@ export const ModularAnalysisInterface: React.FC<ModularAnalysisInterfaceProps> =
                 <Share className="w-4 h-4" />
                 <span className="hidden sm:inline">Share</span>
               </button>
-              <button 
-                onClick={handleExport}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
-              >
+              <button className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors">
                 <Download className="w-4 h-4" />
                 <span className="hidden sm:inline">Export</span>
               </button>

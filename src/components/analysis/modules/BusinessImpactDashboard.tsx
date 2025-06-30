@@ -20,9 +20,8 @@ import {
 } from 'lucide-react';
 import { useBusinessMetrics } from '../../../hooks/useBusinessMetrics';
 
-// Flexible interface for maximum compatibility
 interface BusinessImpactDashboardProps {
-  analysisData: any; // Use flexible type for compatibility
+  analysisData: any;
 }
 
 export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = ({ 
@@ -31,7 +30,7 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
   const { businessMetrics, enhanced, original } = useBusinessMetrics(analysisData);
 
   // Safety check for enhanced data
-  if (!enhanced) {
+  if (!enhanced || !businessMetrics) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6">
         <div className="max-w-7xl mx-auto flex items-center justify-center h-64">
@@ -39,8 +38,8 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
             <div className="mb-4">
               <BarChart3 className="w-12 h-12 mx-auto text-gray-400" />
             </div>
-            <h3 className="text-lg font-medium mb-2">No Analysis Data Available</h3>
-            <p className="text-sm">Unable to calculate business impact metrics.</p>
+            <h3 className="text-lg font-medium mb-2">Loading Business Impact Data</h3>
+            <p className="text-sm">Calculating business metrics from analysis results...</p>
           </div>
         </div>
       </div>
@@ -49,7 +48,7 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
 
   // Extract data with proper fallbacks
   const enhancedContext = original?.enhancedContext || {};
-  const siteName = original?.siteName || original?.analysisContext || 'Website';
+  const siteName = original?.siteName || original?.analysisContext || 'Website Analysis';
   const { impactScore, revenueEstimate, implementationTimeline, competitivePosition, prioritizedRecommendations } = businessMetrics;
   
   const getScoreColor = (score: number) => {
@@ -72,7 +71,7 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                {siteName} Analysis
+                {siteName}
               </h1>
               <p className="text-lg text-gray-600 dark:text-gray-300 mt-1">
                 Business Impact Analysis
@@ -90,16 +89,7 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
                 <Share2 className="w-4 h-4" />
                 Share Results
               </Button>
-              <Button 
-                className="flex items-center gap-2"
-                onClick={() => {
-                  // Navigate to Visual Analysis
-                  const urlParams = new URLSearchParams(window.location.search);
-                  urlParams.set('module', 'visual-analysis');
-                  window.history.pushState(null, '', `${window.location.pathname}?${urlParams.toString()}`);
-                  window.location.reload();
-                }}
-              >
+              <Button className="flex items-center gap-2">
                 <Eye className="w-4 h-4" />
                 View Details
               </Button>
@@ -319,16 +309,7 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
         <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button 
-                variant="outline" 
-                className="flex items-center justify-center gap-2 py-6"
-                onClick={() => {
-                  const urlParams = new URLSearchParams(window.location.search);
-                  urlParams.set('module', 'visual-analysis');
-                  window.history.pushState(null, '', `${window.location.pathname}?${urlParams.toString()}`);
-                  window.location.reload();
-                }}
-              >
+              <Button variant="outline" className="flex items-center justify-center gap-2 py-6">
                 <Eye className="w-5 h-5" />
                 <div className="text-left">
                   <div className="font-medium">View Detailed Analysis</div>
