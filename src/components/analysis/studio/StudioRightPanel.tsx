@@ -34,8 +34,21 @@ export const StudioRightPanel = ({
   const [isInsightsOpen, setIsInsightsOpen] = useState(true);
   const [overallView, setOverallView] = useState(true);
   const [filterBy, setFilterBy] = useState('all');
+  // ✅ NEW: Add Well Done state
+  const [isWellDoneOpen, setIsWellDoneOpen] = useState(true);
+  const [showAllWellDone, setShowAllWellDone] = useState(false);
   
   const hasResults = workflow.currentStep === 'results' && workflow.aiAnnotations.length > 0;
+
+  // ✅ NEW: Extract Well Done data from workflow
+  const wellDoneData = workflow.analysisResults?.wellDone;
+  
+  // ✅ NEW: Debug logging for Well Done data
+  console.log('🎛️ STUDIO RIGHT PANEL - Well Done DEBUG:', {
+    wellDoneData,
+    hasWellDoneData: !!(wellDoneData?.insights?.length),
+    insightsCount: wellDoneData?.insights?.length || 0
+  });
 
   // Calculate summary metrics
   const totalAnnotations = workflow.aiAnnotations.length;
@@ -82,6 +95,19 @@ export const StudioRightPanel = ({
       case 'enhancement': return 'bg-blue-100 text-blue-800 border-blue-200';
       default: return 'bg-slate-100 text-slate-800 border-slate-200';
     }
+  };
+
+  // ✅ NEW: Helper function for Well Done category badge colors
+  const getCategoryBadgeColor = (category: string) => {
+    const colors = {
+      visual: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300',
+      ux: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300',
+      accessibility: 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-300',
+      conversion: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300',
+      mobile: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-300',
+      overall: 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300'
+    };
+    return colors[category as keyof typeof colors] || colors.overall;
   };
 
   // Helper function to truncate text
@@ -210,6 +236,72 @@ export const StudioRightPanel = ({
                 </CollapsibleContent>
               </div>
             </Collapsible>
+
+            {/* ✅ NEW: Well Done Section */}
+            {wellDoneData && wellDoneData.insights && wellDoneData.insights.length > 0 && (
+              <Collapsible open={isWellDoneOpen} onOpenChange={setIsWellDoneOpen}>
+                <div className="px-4">
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="w-full justify-between p-0 h-auto font-medium text-emerald-700 dark:text-emerald-400">
+                      <span className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4" />
+                        Well Done
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
+                          {wellDoneData.insights.length}
+                        </Badge>
+                        {isWellDoneOpen ? (
+                          <ChevronUp className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4" />
+                        )}
+                      </div>
+                    </Button>
+                  </CollapsibleTrigger>
+                  
+                  <CollapsibleContent className="mt-3">
+                    <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
+                      <div className="space-y-3">
+                        {wellDoneData.insights.slice(0, showAllWellDone ? wellDoneData.insights.length : 3).map((insight, index) => (
+                          <div key={index} className="bg-white dark:bg-slate-800 rounded-md p-3 border border-green-100 dark:border-green-800">
+                            <div className="flex items-start gap-3">
+                              <div className="flex-shrink-0">
+                                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                                  <span className="text-white text-xs font-bold">✓</span>
+                                </div>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+                                  {insight.title}
+                                </h5>
+                                <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                                  {insight.description}
+                                </p>
+                                <div className="mt-2">
+                                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getCategoryBadgeColor(insight.category)}`}>
+                                    {insight.category.charAt(0).toUpperCase() + insight.category.slice(1)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        
+                        {wellDoneData.insights.length > 3 && (
+                          <button 
+                            className="text-xs text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 font-medium"
+                            onClick={() => setShowAllWellDone(!showAllWellDone)}
+                          >
+                            {showAllWellDone ? 'Show Less' : `View ${wellDoneData.insights.length - 3} More Strengths`}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+            )}
 
             {/* Detailed Insights Section */}
             <Collapsible open={isInsightsOpen} onOpenChange={setIsInsightsOpen}>
