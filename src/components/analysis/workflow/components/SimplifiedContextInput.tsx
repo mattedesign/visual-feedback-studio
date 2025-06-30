@@ -1,9 +1,8 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
+import { Sparkles, ChevronDown, ChevronUp, Bot } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 interface SimplifiedContextInputProps {
@@ -117,15 +116,30 @@ export const SimplifiedContextInput = ({
           <Button
             onClick={onAnalyze}
             disabled={!canAnalyze}
-            className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-medium px-6 py-2 shadow-lg disabled:opacity-50"
+            className="text-white font-medium disabled:opacity-50"
+            style={{
+              display: 'flex',
+              padding: '11px 16px',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: '4px',
+              alignSelf: 'stretch',
+              borderRadius: '10px',
+              background: 'var(--Gradient-Linear, linear-gradient(97deg, #6912D4 15.89%, #CE169B 69.34%, #FB9A2B 103.4%))',
+              boxShadow: '0px 1px 2px 0px rgba(135, 80, 255, 0.05)',
+              border: 'none'
+            }}
           >
             {isAnalyzing ? (
               <>
-                <Sparkles className="w-4 h-4 mr-2 animate-pulse" />
+                <Sparkles className="w-4 h-4 animate-pulse" />
                 Analyzing...
               </>
             ) : (
-              'Analyze'
+              <>
+                <Bot className="w-4 h-4" />
+                Analyze
+              </>
             )}
           </Button>
         </div>
