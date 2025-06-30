@@ -20,19 +20,32 @@ export const ResultsCanvasState = ({
 }: ResultsCanvasStateProps) => {
   const [selectedFeedback, setSelectedFeedback] = useState<any>(null);
 
+  // SAFETY CHECK: Ensure annotations exist and are valid
+  const safeAnnotations = Array.isArray(workflow.aiAnnotations) 
+    ? workflow.aiAnnotations.filter(annotation => 
+        annotation && 
+        typeof annotation === 'object' && 
+        annotation.id
+      )
+    : [];
+
   const handleAnnotationClick = (annotation: any, annotationIndex: number) => {
     console.log('🎯 ResultsCanvasState annotation clicked:', { 
-      annotationId: annotation.id, 
+      annotationId: annotation?.id, 
       annotationIndex, 
       displayNumber: annotationIndex + 1 
     });
-    setSelectedFeedback(annotation);
-    if (onAnnotationClick) {
-      onAnnotationClick(annotation.id);
+    
+    if (annotation && annotation.id) {
+      setSelectedFeedback(annotation);
+      if (onAnnotationClick && typeof onAnnotationClick === 'function') {
+        onAnnotationClick(annotation.id);
+      }
     }
   };
 
-  if (workflow.aiAnnotations.length === 0) {
+  // Early return if no valid annotations
+  if (safeAnnotations.length === 0) {
     return (
       <div className="h-full flex items-center justify-center">
         <Card className="w-full max-w-md">
@@ -44,7 +57,7 @@ export const ResultsCanvasState = ({
               Analysis Complete
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Your design has been analyzed. Results from your existing system should appear here.
+              Your design has been analyzed. Results should appear here.
             </p>
             <div className="text-sm text-gray-500 dark:text-gray-400">
               Viewing: {selectedDevice} layout
@@ -55,40 +68,57 @@ export const ResultsCanvasState = ({
     );
   }
 
-  // Show the active/selected image with annotations
-  const currentImageUrl = workflow.activeImageUrl || workflow.selectedImages[0];
-  const currentImageIndex = workflow.uploadedFiles.indexOf(currentImageUrl);
+  // SAFETY CHECK: Ensure image data exists
+  const currentImageUrl = workflow.activeImageUrl || (workflow.selectedImages && workflow.selectedImages[0]) || '';
+  const selectedImages = Array.isArray(workflow.selectedImages) ? workflow.selectedImages : [];
+  const uploadedFiles = Array.isArray(workflow.uploadedFiles) ? workflow.uploadedFiles : selectedImages;
   
-  // CRITICAL FIX: Filter annotations for the current image only
-  const filteredAiAnnotations = workflow.aiAnnotations.filter(annotation => 
-    (annotation.imageIndex ?? 0) === currentImageIndex
-  );
+  if (!currentImageUrl) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-8 pb-8 text-center">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              No Image Available
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Unable to display analysis results without an image.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const currentImageIndex = uploadedFiles.indexOf(currentImageUrl);
+  const safeCurrentImageIndex = currentImageIndex >= 0 ? currentImageIndex : 0;
+  
+  // CRITICAL FIX: Safely filter annotations for the current image only
+  const filteredAiAnnotations = safeAnnotations.filter(annotation => {
+    const annotationImageIndex = annotation.imageIndex ?? 0;
+    return annotationImageIndex === safeCurrentImageIndex;
+  });
 
   console.log('🔢 ResultsCanvasState rendering filtered annotations:', {
-    currentImageIndex,
-    totalAnnotations: workflow.aiAnnotations.length,
+    currentImageIndex: safeCurrentImageIndex,
+    totalAnnotations: safeAnnotations.length,
     filteredAnnotationsCount: filteredAiAnnotations.length,
-    filteredAnnotations: filteredAiAnnotations.map((a, i) => ({
-      id: a.id,
-      index: i,
-      displayNumber: i + 1,
-      imageIndex: a.imageIndex
-    }))
+    imageUrl: currentImageUrl
   });
 
   return (
     <div className="space-y-4 p-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          Analysis Results - Image {currentImageIndex + 1}
+          Analysis Results - Image {safeCurrentImageIndex + 1}
         </h3>
         <div className="flex items-center space-x-4">
           <Badge variant="secondary">
             {filteredAiAnnotations.length} insights found
           </Badge>
-          {workflow.uploadedFiles.length > 1 && (
+          {uploadedFiles.length > 1 && (
             <div className="text-sm text-gray-500 dark:text-gray-400">
-              {currentImageIndex + 1} of {workflow.uploadedFiles.length}
+              {safeCurrentImageIndex + 1} of {uploadedFiles.length}
             </div>
           )}
         </div>
@@ -100,27 +130,40 @@ export const ResultsCanvasState = ({
           alt="Analyzed design"
           className="max-w-full h-auto rounded-lg shadow-sm border border-gray-200 dark:border-slate-600"
           style={{ maxHeight: '70vh' }}
+          onError={(e) => {
+            console.error('Image failed to load:', currentImageUrl);
+            e.currentTarget.style.display = 'none';
+          }}
         />
         
-        {/* Display FILTERED AI annotations with sequential numbers */}
+        {/* SAFE ANNOTATION RENDERING: Display FILTERED AI annotations with sequential numbers */}
         {filteredAiAnnotations.map((annotation, index) => {
-          const isActive = activeAnnotation === annotation.id;
+          // SAFETY CHECKS for each annotation
+          if (!annotation || typeof annotation !== 'object') {
+            console.warn('Invalid annotation detected:', annotation);
+            return null;
+          }
+
+          const annotationId = annotation.id || `annotation-${index}`;
+          const isActive = activeAnnotation === annotationId;
+          const xPosition = typeof annotation.x === 'number' ? annotation.x : 50;
+          const yPosition = typeof annotation.y === 'number' ? annotation.y : 50;
           
           return (
             <div
-              key={annotation.id || index}
+              key={annotationId}
               className={`absolute w-8 h-8 rounded-full border-2 shadow-lg flex items-center justify-center cursor-pointer transform -translate-x-1/2 -translate-y-1/2 transition-all duration-200 z-10 ${
                 isActive 
                   ? 'bg-blue-500 border-blue-300 scale-125 ring-4 ring-blue-200 dark:ring-blue-800' 
                   : 'bg-red-500 border-white hover:scale-110 hover:ring-2 hover:ring-red-200 dark:hover:ring-red-800'
               }`}
               style={{
-                left: `${annotation.x}%`,
-                top: `${annotation.y}%`
+                left: `${xPosition}%`,
+                top: `${yPosition}%`
               }}
               onClick={() => handleAnnotationClick(annotation, index)}
             >
-              <span className="text-white text-xs font-bold leading-none annotation-marker-number" data-annotation-number={index + 1}>
+              <span className="text-white text-xs font-bold leading-none">
                 {index + 1}
               </span>
             </div>
@@ -128,7 +171,7 @@ export const ResultsCanvasState = ({
         })}
       </div>
 
-      {/* Show feedback if available */}
+      {/* SAFE FEEDBACK RENDERING: Show feedback if available */}
       {selectedFeedback && (
         <Card className="mt-4">
           <CardContent className="pt-4">
@@ -136,12 +179,12 @@ export const ResultsCanvasState = ({
               <h4 className="font-medium text-gray-900 dark:text-white">
                 {selectedFeedback.title || 'Analysis Insight'}
               </h4>
-              {selectedFeedback.feedback && (
+              {selectedFeedback.feedback && typeof selectedFeedback.feedback === 'string' && (
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {selectedFeedback.feedback}
                 </p>
               )}
-              {selectedFeedback.recommendation && (
+              {selectedFeedback.recommendation && typeof selectedFeedback.recommendation === 'string' && (
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
                   <p className="text-sm text-blue-700 dark:text-blue-300">
                     <strong>Recommendation:</strong> {selectedFeedback.recommendation}
