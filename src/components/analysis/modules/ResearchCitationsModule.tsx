@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Brain, Search, BookOpen, ExternalLink, Award, CheckCircle, Database } from 'lucide-react';
 
@@ -115,10 +116,10 @@ export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = (
       if (uniqueResearchSources.length > 0) {
         researchCitations = uniqueResearchSources.map(source => ({
           title: source,
-          source: source.includes('Nielsen') ? 'Nielsen Norman Group' : 
-                  source.includes('Baymard') ? 'Baymard Institute' : 
+          source: typeof source === 'string' && source.includes('Nielsen') ? 'Nielsen Norman Group' : 
+                  typeof source === 'string' && source.includes('Baymard') ? 'Baymard Institute' : 
                   'UX Research Database',
-          summary: `Research backing for UX recommendations: ${source.substring(0, 100)}...`,
+          summary: typeof source === 'string' ? `Research backing for UX recommendations: ${source.substring(0, 100)}...` : 'Research backing for UX recommendations',
           category: 'ux-research',
           relevance: 0.8,
           confidence: 0.8
@@ -239,7 +240,7 @@ export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = (
 
   const categorizeSource = (source: string) => {
     for (const [category, sources] of Object.entries(researchCategories)) {
-      if (sources.some(s => source.toLowerCase().includes(s.toLowerCase()))) {
+      if (sources.some(s => typeof source === 'string' && source.toLowerCase().includes(s.toLowerCase()))) {
         return category;
       }
     }
@@ -398,7 +399,7 @@ export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = (
             {Object.entries(researchCategories).map(([category, sources]) => {
               const usedSources = sources.filter(source => 
                 researchCitations.some(citation => 
-                  citation.source && citation.source.toLowerCase().includes(source.toLowerCase())
+                  citation.source && typeof citation.source === 'string' && citation.source.toLowerCase().includes(source.toLowerCase())
                 )
               );
               
@@ -425,7 +426,7 @@ export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = (
             {/* Show uncategorized sources */}
             {researchCitations.filter(citation => 
               !Object.values(researchCategories).flat().some(knownSource => 
-                citation.source.toLowerCase().includes(knownSource.toLowerCase())
+                typeof citation.source === 'string' && citation.source.toLowerCase().includes(knownSource.toLowerCase())
               )
             ).length > 0 && (
               <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-6">
@@ -436,7 +437,7 @@ export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = (
                   {researchCitations
                     .filter(citation => 
                       !Object.values(researchCategories).flat().some(knownSource => 
-                        citation.source.toLowerCase().includes(knownSource.toLowerCase())
+                        typeof citation.source === 'string' && citation.source.toLowerCase().includes(knownSource.toLowerCase())
                       )
                     )
                     .map((citation, index) => (
