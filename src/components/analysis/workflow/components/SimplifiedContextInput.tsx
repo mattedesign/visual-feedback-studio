@@ -81,28 +81,43 @@ export const SimplifiedContextInput = ({
     <div className="space-y-4">
       {/* Main Input Container */}
       <div 
-        className="p-3 flex flex-col-reverse transition-transform duration-300 ease-in-out"
+        className="flex flex-col-reverse transition-transform duration-300 ease-in-out"
         style={{
           alignItems: 'center',
           alignSelf: 'stretch',
           borderRadius: '24px',
-          border: '1px solid var(--Stroke-02, #E2E2E2)',
-          background: 'var(--Color, #FFF)',
+          border: '1px solid #E2E2E2',
+          background: '#FFF',
           boxShadow: '0px 32px 67px 0px rgba(0, 0, 0, 0.00), 0px 24px 61px 0px rgba(0, 0, 0, 0.01), 0px 12px 52px 0px rgba(0, 0, 0, 0.04), 0px 12px 38px 0px rgba(0, 0, 0, 0.06), 0px 4px 21px 0px rgba(0, 0, 0, 0.07)',
           backdropFilter: 'blur(6px)',
+          padding: showSuggestions ? '16px 16px 20px 16px' : '12px',
           // Reduce the upward movement to stay aligned with left panel
           transform: showSuggestions ? 'translateY(-20px)' : 'translateY(0)',
         }}
       >
         {/* Quick Suggestions - Now appears above input */}
         {showSuggestions && (
-          <div className="w-full mb-3 order-1">
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          <div className="w-full order-1" style={{ marginBottom: '16px' }}>
+            <div 
+              className="flex gap-2 overflow-x-auto" 
+              style={{ 
+                scrollbarWidth: 'none', 
+                msOverflowStyle: 'none',
+                paddingBottom: '4px'
+              }}
+            >
               {quickSuggestions.map((suggestion, index) => (
                 <button
                   key={index}
                   onClick={() => handleSuggestionClick(suggestion)}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-full transition-colors border border-gray-200 dark:border-slate-600 whitespace-nowrap flex-shrink-0"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors whitespace-nowrap flex-shrink-0"
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '20px',
+                    border: '1px solid #E2E2E2',
+                    background: '#FFF',
+                    boxShadow: '0px 1px 2px 0px rgba(0, 0, 0, 0.05)',
+                  }}
                 >
                   {suggestion.icon && <span className="text-xs">{suggestion.icon}</span>}
                   {suggestion.label}
@@ -161,8 +176,8 @@ export const SimplifiedContextInput = ({
           </div>
         )}
 
-        {/* Buttons - Now first row */}
-        <div className="flex items-center justify-between w-full mb-3 order-2">
+        {/* Buttons - Now second row */}
+        <div className="flex items-center justify-between w-full order-2" style={{ marginBottom: showSuggestions ? '12px' : '8px' }}>
           <button
             onClick={() => setShowSuggestions(!showSuggestions)}
             style={{
