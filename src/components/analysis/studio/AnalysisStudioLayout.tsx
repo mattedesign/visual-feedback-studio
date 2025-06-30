@@ -39,6 +39,8 @@ export const AnalysisStudioLayout = ({
     selectedDevice
   });
 
+  const showChat = workflow.currentStep === 'upload' || workflow.currentStep === 'annotate';
+
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-slate-800 overflow-hidden">
       {/* Left Sidebar - File Management */}
@@ -52,17 +54,23 @@ export const AnalysisStudioLayout = ({
       <div className="flex-1 flex flex-col min-w-0 h-full">
         <StudioToolbar workflow={workflow} />
         
+        {/* Content area - takes remaining space */}
         <div className="flex-1 flex flex-col min-h-0">
-          <StudioCanvas 
-            workflow={workflow}
-            selectedDevice={selectedDevice}
-            activeAnnotation={activeAnnotation}
-            onAnnotationClick={handleAnnotationClick}
-          />
+          {/* Canvas takes available space but leaves room for chat */}
+          <div className={`flex-1 min-h-0 ${showChat ? 'flex-shrink' : ''}`}>
+            <StudioCanvas 
+              workflow={workflow}
+              selectedDevice={selectedDevice}
+              activeAnnotation={activeAnnotation}
+              onAnnotationClick={handleAnnotationClick}
+            />
+          </div>
           
-          {/* Always show chat for upload and annotate steps - positioned at bottom */}
-          {(workflow.currentStep === 'upload' || workflow.currentStep === 'annotate') && (
-            <StudioChat workflow={workflow} />
+          {/* Chat positioned at bottom - always visible when shown */}
+          {showChat && (
+            <div className="flex-shrink-0 border-t border-slate-700">
+              <StudioChat workflow={workflow} />
+            </div>
           )}
         </div>
       </div>
