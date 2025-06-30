@@ -68,7 +68,7 @@ export const AnalysisStudioLayout = ({
           
           {/* Chat - fixed height at bottom */}
           {showChat && (
-            <div className="flex-shrink-0 h-auto max-h-48 overflow-visible">
+            <div className="flex-shrink-0 h-auto max-h-48 overflow-visible" style={{ maxHeight: '13.25rem' }}>
               <StudioChat workflow={workflow} />
             </div>
           )}
