@@ -1,3 +1,4 @@
+
 import { useState, useRef } from 'react';
 import { Upload, Plus, Link, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -205,7 +206,7 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
             accept="image/*"
             multiple
             onChange={handleMultipleFileInputChange}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer hidden"
             disabled={isProcessing || !canUploadMore}
           />
           <Button
