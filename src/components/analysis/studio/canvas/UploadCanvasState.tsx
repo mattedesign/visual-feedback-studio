@@ -15,7 +15,7 @@ export const UploadCanvasState = ({
           padding: '24px 8px'
         }}>
             <div className="text-center">
-              <div className="w-16 h-16 bg-slate-200 rounded-xl mx-auto mb-4 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-xl mx-auto mb-4 flex items-center justify-center bg-transparent">
                 <img src="/lovable-uploads/07aa2ae9-3a56-48e4-83e7-59cc1f9fb2a1.png" alt="Example Prompt Icon" className="w-9 h-9" />
               </div>
               <h2 className="mb-6" style={{
@@ -271,7 +271,7 @@ export const UploadCanvasState = ({
           padding: '24px 8px'
         }}>
             <div className="text-center">
-              <div className="w-16 h-16 bg-slate-200 rounded-xl mx-auto mb-4 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-xl mx-auto mb-4 flex items-center justify-center bg-transparent">
                 <img src="/lovable-uploads/2a192cb1-f415-45fe-869b-baaa75f4cd2f.png" alt="Models Icon" className="w-9 h-9" />
               </div>
               <h2 className="mb-6" style={{
