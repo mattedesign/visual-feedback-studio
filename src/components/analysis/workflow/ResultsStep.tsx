@@ -24,6 +24,7 @@ import { PositiveDesignSummary } from './components/PositiveDesignSummary';
 import { AnnotationDebugger } from '@/components/debug/AnnotationDebugger';
 import { Button } from '@/components/ui/button';
 import { VisualAnalysisModule } from '../modules/VisualAnalysisModule';
+import { ResearchCitationsModule } from '../modules/ResearchCitationsModule';
 
 interface ResultsStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -128,16 +129,7 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
         <ModuleNavigation />
         {activeModule === 'business-impact' && <BusinessImpactDashboard analysisData={businessAnalysisData} />}
         {activeModule === 'visual-analysis' && <VisualAnalysisModule analysisData={businessAnalysisData} />}
-        {activeModule === 'research-citations' && (
-          <div className="p-6 text-center">
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              Research Citations Module
-            </h3>
-            <p className="text-gray-600 dark:text-gray-300">
-              Coming soon... This module will showcase research backing and methodology.
-            </p>
-          </div>
-        )}
+        {activeModule === 'research-citations' && <ResearchCitationsModule analysisData={businessAnalysisData} />}
       </div>
     );
   }
