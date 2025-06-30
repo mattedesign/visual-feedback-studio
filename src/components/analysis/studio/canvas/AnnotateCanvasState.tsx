@@ -64,7 +64,7 @@ export const AnnotateCanvasState = ({ workflow, selectedDevice }: AnnotateCanvas
 
   return (
     <div className="space-y-4 p-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between" style={{ display: 'none' }}>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
           Annotate Image {currentImageIndex + 1}
         </h3>
