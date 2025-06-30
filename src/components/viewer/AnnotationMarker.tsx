@@ -6,9 +6,16 @@ interface AnnotationMarkerProps {
   isActive: boolean;
   onClick: () => void;
   zoom: number;
+  annotationIndex?: number;
 }
 
-export const AnnotationMarker = ({ annotation, isActive, onClick, zoom }: AnnotationMarkerProps) => {
+export const AnnotationMarker = ({ 
+  annotation, 
+  isActive, 
+  onClick, 
+  zoom, 
+  annotationIndex = 0 
+}: AnnotationMarkerProps) => {
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'critical': return 'bg-red-500 border-red-400';
@@ -18,35 +25,53 @@ export const AnnotationMarker = ({ annotation, isActive, onClick, zoom }: Annota
     }
   };
 
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'ux': return '👤';
-      case 'visual': return '🎨';
-      case 'accessibility': return '♿';
-      case 'conversion': return '📈';
-      case 'brand': return '🏷️';
-      default: return '💡';
-    }
+  const handleClick = () => {
+    console.log('🎯 AnnotationMarker clicked:', { annotationId: annotation.id, annotationIndex });
+    onClick();
+    
+    // Scroll to corresponding detail in right panel
+    setTimeout(() => {
+      const detailElement = document.getElementById(`detail-${annotation.id}`);
+      if (detailElement) {
+        detailElement.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+      }
+    }, 100);
   };
 
   return (
     <div
-      className={`absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-200 ${
+      className={`absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-300 ${
         isActive ? 'scale-110 z-20' : 'z-10 hover:scale-105'
       }`}
       style={{
         left: `${annotation.x}%`,
         top: `${annotation.y}%`,
       }}
-      onClick={onClick}
+      onClick={handleClick}
     >
+      {/* Pulsing ring effect for active annotations */}
+      {isActive && (
+        <div className="absolute inset-0 w-8 h-8 rounded-full border-4 border-blue-400 animate-ping opacity-75"></div>
+      )}
+      
       <div
-        className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-white font-bold text-sm shadow-lg ${getSeverityColor(
+        className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-white font-bold text-sm shadow-lg transition-all duration-300 ${getSeverityColor(
           annotation.severity
-        )} ${isActive ? 'ring-4 ring-white/30' : ''}`}
+        )} ${isActive ? 'ring-4 ring-blue-400 ring-offset-2' : ''}`}
       >
-        <span className="text-xs">{getCategoryIcon(annotation.category)}</span>
+        {/* Sequential number instead of category icon */}
+        <span className="text-xs font-bold">{annotationIndex + 1}</span>
       </div>
+      
+      {/* Active state tooltip */}
+      {isActive && (
+        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white text-xs px-2 py-1 rounded whitespace-nowrap animate-fade-in">
+          Detail #{annotationIndex + 1}
+        </div>
+      )}
       
       {/* Content overlay when active */}
       {isActive && (

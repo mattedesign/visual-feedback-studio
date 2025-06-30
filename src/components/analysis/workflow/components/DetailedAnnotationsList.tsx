@@ -1,3 +1,4 @@
+
 import { Annotation } from '@/types/analysis';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,20 +26,9 @@ export const DetailedAnnotationsList = ({
 }: DetailedAnnotationsListProps) => {
   const isMobile = useIsMobile();
 
-  // 🔍 DETAILED ANNOTATIONS LIST DEBUG
   console.log('📝 DETAILED ANNOTATIONS LIST - DEBUG:', {
     componentName: 'DetailedAnnotationsList',
     annotationsCount: annotations.length,
-    annotationsPreview: annotations.slice(0, 3).map((a, i) => ({
-      index: i + 1,
-      id: a.id,
-      feedback: a.feedback,
-      feedbackLength: a.feedback?.length || 0,
-      feedbackPreview: a.feedback?.substring(0, 50) + '...',
-      category: a.category,
-      severity: a.severity,
-      isValidFeedback: !!(a.feedback && a.feedback.trim() && a.feedback !== 'Analysis insight')
-    })),
     activeAnnotation,
     isMultiImage,
     researchCitationsCount: researchCitations.length,
@@ -59,7 +49,7 @@ export const DetailedAnnotationsList = ({
     );
   }
 
-  // Desktop version remains the same but with some enhancements
+  // Desktop version with enhanced highlighting
   if (annotations.length === 0) {
     return (
       <div className="text-center py-8">
@@ -122,32 +112,29 @@ export const DetailedAnnotationsList = ({
         const isActive = activeAnnotation === annotation.id;
         const citation = getCitationForAnnotation(annotation, index);
         
-        console.log(`📝 ANNOTATION ${index + 1} RENDER:`, {
-          id: annotation.id,
-          feedback: annotation.feedback,
-          feedbackLength: annotation.feedback?.length || 0,
-          isActive,
-          category: annotation.category,
-          severity: annotation.severity,
-          citationNumber: citation.number,
-          hasCitation: citation.number > 0
-        });
-
         return (
           <Card
             key={annotation.id}
-            className={`cursor-pointer transition-all duration-200 ${
+            id={`detail-${annotation.id}`}
+            className={`cursor-pointer transition-all duration-300 relative ${
               isActive 
-                ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700 shadow-lg' 
-                : 'hover:bg-gray-50 dark:hover:bg-slate-800 border-gray-200 dark:border-slate-700 hover:shadow-md'
+                ? 'border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/30 shadow-lg transform scale-[1.02] ring-2 ring-blue-400 ring-offset-2' 
+                : 'hover:bg-gray-50 dark:hover:bg-slate-800 border-gray-200 dark:border-slate-700 hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600'
             }`}
             onClick={() => onAnnotationClick(annotation.id)}
           >
+            {/* Connection line for active details */}
+            {isActive && (
+              <div className="absolute left-0 top-0 w-1 h-full bg-blue-500 rounded-r"></div>
+            )}
+            
             <CardContent className="p-5">
               <div className="flex items-start gap-4">
                 <div className="flex-shrink-0">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md ${getSeverityColor(annotation.severity).split(' ')[0]}`}>
-                    {index + 1}
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md transition-all duration-300 ${getSeverityColor(annotation.severity).split(' ')[0]} ${
+                    isActive ? 'ring-4 ring-blue-400 ring-offset-2 scale-110' : ''
+                  }`}>
+                    <span className="text-base">{index + 1}</span>
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
@@ -161,6 +148,12 @@ export const DetailedAnnotationsList = ({
                     {isMultiImage && annotation.imageIndex !== undefined && (
                       <Badge variant="secondary" className="text-xs">
                         Image {annotation.imageIndex + 1}
+                      </Badge>
+                    )}
+                    {/* SELECTED indicator for active items */}
+                    {isActive && (
+                      <Badge className="text-xs bg-blue-500 text-white animate-pulse">
+                        SELECTED
                       </Badge>
                     )}
                     {/* Prominent Citation Indicator */}

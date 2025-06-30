@@ -136,11 +136,12 @@ export const DesignViewer = ({
               onClick={handleImageClick}
             />
             
-            {/* Annotations */}
-            {annotations.map((annotation) => (
+            {/* Annotations with sequential numbering */}
+            {annotations.map((annotation, index) => (
               <AnnotationMarker
                 key={annotation.id}
                 annotation={annotation}
+                annotationIndex={index}
                 isActive={activeAnnotation === annotation.id}
                 onClick={() => onAnnotationClick(annotation.id)}
                 zoom={zoom}
