@@ -148,7 +148,7 @@ export const SimplifiedContextInput = ({
         {/* Quick Suggestions - Integrated into the input bar */}
         {showSuggestions && (
           <div className="w-full mt-3 pt-3 border-t border-gray-100 dark:border-slate-700">
-            <div className="flex gap-2 overflow-x-auto overflow-y-hidden scrollbar-hide">
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               {quickSuggestions.map((suggestion, index) => (
                 <button
                   key={index}
