@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,6 +7,7 @@ import { ChevronDown, ChevronUp, Edit3, Save, X, Sparkles } from 'lucide-react';
 import { SmartContextGuide } from './SmartContextGuide';
 import { ContextHelpTooltip } from './ContextHelpTooltip';
 import { ContextIntelligencePreview } from './ContextIntelligencePreview';
+import { SimplifiedContextInput } from './SimplifiedContextInput';
 
 interface EnhancedAnalysisContextPanelProps {
   analysisContext: string;
@@ -17,6 +17,10 @@ interface EnhancedAnalysisContextPanelProps {
   showAsExpanded?: boolean;
   showAsCard?: boolean;
   className?: string;
+  simplified?: boolean;
+  onAnalyze?: () => void;
+  canAnalyze?: boolean;
+  isAnalyzing?: boolean;
 }
 
 export const EnhancedAnalysisContextPanel = ({
@@ -26,12 +30,32 @@ export const EnhancedAnalysisContextPanel = ({
   detectedDesignType,
   showAsExpanded = false,
   showAsCard = true,
-  className = ""
+  className = "",
+  simplified = false,
+  onAnalyze,
+  canAnalyze = false,
+  isAnalyzing = false
 }: EnhancedAnalysisContextPanelProps) => {
   const [isExpanded, setIsExpanded] = useState(showAsExpanded);
   const [isEditing, setIsEditing] = useState(false);
   const [tempContext, setTempContext] = useState(analysisContext);
-  const [showSmartGuide, setShowSmartGuide] = useState(!analysisContext);
+  const [showSmartGuide, setShowSmartGuide] = useState(!analysisContext && !simplified);
+
+  // Use simplified interface when requested
+  if (simplified && onAnalyze) {
+    return (
+      <div className={className}>
+        <SimplifiedContextInput
+          analysisContext={analysisContext}
+          onAnalysisContextChange={onAnalysisContextChange}
+          onAnalyze={onAnalyze}
+          canAnalyze={canAnalyze}
+          isAnalyzing={isAnalyzing}
+          uploadedImageCount={uploadedImageCount}
+        />
+      </div>
+    );
+  }
 
   const handleSave = () => {
     onAnalysisContextChange(tempContext);
