@@ -32,13 +32,15 @@ export const UploadCanvasState = ({
                 <img src="/lovable-uploads/07aa2ae9-3a56-48e4-83e7-59cc1f9fb2a1.png" alt="Example Prompt Icon" className="w-9 h-9" />
               </div>
               <h2 className="mb-6" style={{
-              color: 'var(--Text-primary, #353535)',
-              fontFamily: '"Creato Display"',
-              fontSize: '16px',
-              fontStyle: 'normal',
-              fontWeight: '500',
-              lineHeight: '135%'
-            }}>
+                color: 'var(--Text-primary, #353535)',
+                fontFamily: '"Instrument Sans"',
+                fontSize: '15px',
+                fontStyle: 'normal',
+                fontWeight: '500',
+                lineHeight: '24px',
+                letterSpacing: '-0.3px',
+                textAlign: 'center'
+              }}>
                 Example Prompt
               </h2>
             </div>
@@ -186,13 +188,15 @@ export const UploadCanvasState = ({
                 <img src="/lovable-uploads/206ecc00-ba29-4e57-a5a6-1b8d2eae20f8.png" alt="Capabilities Icon" className="w-9 h-9" />
               </div>
               <h2 className="mb-6" style={{
-              color: 'var(--Text-primary, #353535)',
-              fontFamily: '"Creato Display"',
-              fontSize: '16px',
-              fontStyle: 'normal',
-              fontWeight: '500',
-              lineHeight: '135%'
-            }}>
+                color: 'var(--Text-primary, #353535)',
+                fontFamily: '"Instrument Sans"',
+                fontSize: '15px',
+                fontStyle: 'normal',
+                fontWeight: '500',
+                lineHeight: '24px',
+                letterSpacing: '-0.3px',
+                textAlign: 'center'
+              }}>
                 Capabilities
               </h2>
             </div>
@@ -339,13 +343,15 @@ export const UploadCanvasState = ({
                 <img src="/lovable-uploads/2a192cb1-f415-45fe-869b-baaa75f4cd2f.png" alt="Models Icon" className="w-9 h-9" />
               </div>
               <h2 className="mb-6" style={{
-              color: 'var(--Text-primary, #353535)',
-              fontFamily: '"Creato Display"',
-              fontSize: '16px',
-              fontStyle: 'normal',
-              fontWeight: '500',
-              lineHeight: '135%'
-            }}>
+                color: 'var(--Text-primary, #353535)',
+                fontFamily: '"Instrument Sans"',
+                fontSize: '15px',
+                fontStyle: 'normal',
+                fontWeight: '500',
+                lineHeight: '24px',
+                letterSpacing: '-0.3px',
+                textAlign: 'center'
+              }}>
                 Models
               </h2>
             </div>
