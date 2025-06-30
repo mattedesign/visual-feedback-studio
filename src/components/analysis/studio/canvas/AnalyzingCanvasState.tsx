@@ -94,8 +94,9 @@ export const AnalyzingCanvasState = ({ workflow }: AnalyzingCanvasStateProps) =>
 
   // Monitor workflow state changes for real data
   useEffect(() => {
-    if (workflow.enhancedContext && workflow.enhancedContext.knowledgeSourcesUsed > 0) {
-      setResearchSourcesFound(workflow.enhancedContext.knowledgeSourcesUsed);
+    // Fix: Check if knowledgeSourcesUsed exists and is a number
+    if (workflow.knowledgeSourcesUsed && workflow.knowledgeSourcesUsed > 0) {
+      setResearchSourcesFound(workflow.knowledgeSourcesUsed);
       completeStep('research');
     }
     
@@ -104,7 +105,7 @@ export const AnalyzingCanvasState = ({ workflow }: AnalyzingCanvasStateProps) =>
       setPhaseProgress(100);
       completeStep('analysis');
     }
-  }, [workflow.enhancedContext, workflow.aiAnnotations]);
+  }, [workflow.knowledgeSourcesUsed, workflow.aiAnnotations]);
 
   return (
     <div className="h-full flex items-center justify-center p-8">

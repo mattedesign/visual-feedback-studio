@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef } from 'react';
 import { useImageProcessing } from './useImageProcessing';
 import { useAnnotationSystem } from './useAnnotationSystem';
@@ -27,8 +28,9 @@ export const useAnalysisWorkflow = () => {
   const [ragEnhanced, setRAGEnhanced] = useState<boolean>(false);
   const [enhancedContext, setEnhancedContext] = useState<string>('');
   const [visionEnhanced, setVisionEnhanced] = useState<boolean>(false);
-	const [visionConfidenceScore, setVisionConfidenceScore] = useState<number>(0);
-	const [visionElementsDetected, setVisionElementsDetected] = useState<string[]>([]);
+  const [visionConfidenceScore, setVisionConfidenceScore] = useState<number>(0);
+  const [visionElementsDetected, setVisionElementsDetected] = useState<string[]>([]);
+  const [activeImageUrl, setActiveImageUrl] = useState<string | null>(null);
 
   const imageProcessing = useImageProcessing();
   const annotationSystem = useAnnotationSystem();
@@ -74,9 +76,10 @@ export const useAnalysisWorkflow = () => {
     setKnowledgeSourcesUsed(0);
     setRAGEnhanced(false);
     setEnhancedContext('');
-		setVisionEnhanced(false);
-		setVisionConfidenceScore(0);
-		setVisionElementsDetected([]);
+    setVisionEnhanced(false);
+    setVisionConfidenceScore(0);
+    setVisionElementsDetected([]);
+    setActiveImageUrl(null);
   }, []);
 
   const addAnnotation = useCallback((imageUrl: string, annotation: Annotation) => {
@@ -109,6 +112,72 @@ export const useAnalysisWorkflow = () => {
     });
     return count;
   };
+
+  // NEW: Add uploaded file method
+  const addUploadedFile = useCallback((imageUrl: string) => {
+    setUploadedFiles(prev => {
+      if (!prev.includes(imageUrl)) {
+        const newFiles = [...prev, imageUrl];
+        // Also add to selected images
+        setSelectedImages(newFiles);
+        return newFiles;
+      }
+      return prev;
+    });
+  }, []);
+
+  // NEW: Set active image method
+  const setActiveImage = useCallback((imageUrl: string | null) => {
+    setActiveImageUrl(imageUrl);
+  }, []);
+
+  // NEW: Select single image method
+  const selectImage = useCallback((imageUrl: string) => {
+    setActiveImageUrl(imageUrl);
+  }, []);
+
+  // NEW: Add user annotation method
+  const addUserAnnotation = useCallback((imageUrl: string, annotation: { x: number; y: number; comment: string }) => {
+    const newAnnotation: Annotation = {
+      id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      x: annotation.x,
+      y: annotation.y,
+      category: 'ux',
+      severity: 'suggested',
+      feedback: annotation.comment,
+      implementationEffort: 'low',
+      businessImpact: 'medium'
+    };
+    
+    setUserAnnotations(prev => ({
+      ...prev,
+      [imageUrl]: [...(prev[imageUrl] || []), newAnnotation]
+    }));
+  }, []);
+
+  // NEW: Convert userAnnotations to imageAnnotations format
+  const imageAnnotations = Object.entries(userAnnotations).map(([imageUrl, annotations]) => ({
+    imageUrl,
+    annotations
+  }));
+
+  // NEW: Get selected image URL (for backward compatibility)
+  const selectedImageUrl = selectedImages[0] || null;
+
+  // NEW: Start analysis method
+  const startAnalysis = useCallback(async () => {
+    if (!currentAnalysis) {
+      // Create analysis if not exists
+      const analysisId = await analysisService.createAnalysis();
+      if (!analysisId) {
+        toast.error('Failed to create analysis');
+        return;
+      }
+      setCurrentAnalysis({ id: analysisId });
+    }
+    
+    await performAnalysis();
+  }, [currentAnalysis]);
 
   const performAnalysis = useCallback(async () => {
     if (!currentAnalysis || selectedImages.length === 0) {
@@ -171,9 +240,12 @@ export const useAnalysisWorkflow = () => {
     knowledgeSourcesUsed,
     ragEnhanced,
     enhancedContext,
-		visionEnhanced,
-		visionConfidenceScore,
-		visionElementsDetected,
+    visionEnhanced,
+    visionConfidenceScore,
+    visionElementsDetected,
+    activeImageUrl,
+    imageAnnotations,
+    selectedImageUrl,
     setUploadedFiles,
     setSelectedImages,
     setCurrentStep,
@@ -184,10 +256,11 @@ export const useAnalysisWorkflow = () => {
     setResearchCitations,
     setKnowledgeSourcesUsed,
     setRAGEnhanced,
-		setEnhancedContext,
-		setVisionEnhanced,
-		setVisionConfidenceScore,
-		setVisionElementsDetected,
+    setEnhancedContext,
+    setVisionEnhanced,
+    setVisionConfidenceScore,
+    setVisionElementsDetected,
+    setActiveImage,
     uploadFiles,
     selectImages,
     proceedFromReview,
@@ -198,8 +271,12 @@ export const useAnalysisWorkflow = () => {
     deleteAnnotation,
     getTotalAnnotationsCount,
     performAnalysis,
+    startAnalysis,
     setCurrentAnalysis,
     aiProviderConfig,
-    setAIProviderConfig
+    setAIProviderConfig,
+    addUploadedFile,
+    selectImage,
+    addUserAnnotation
   };
 };
