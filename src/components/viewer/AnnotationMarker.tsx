@@ -70,8 +70,8 @@ export const AnnotationMarker = ({
           annotation.severity
         )} ${isActive ? 'ring-4 ring-blue-400 ring-offset-2' : ''}`}
       >
-        {/* Sequential number - FORCED display */}
-        <span className="text-xs font-bold leading-none" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+        {/* Sequential number - FORCED display with proper class */}
+        <span className="text-xs font-bold leading-none annotation-marker-number" data-annotation-number={annotationIndex + 1}>
           {annotationIndex + 1}
         </span>
       </div>

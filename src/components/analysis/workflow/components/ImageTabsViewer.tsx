@@ -84,8 +84,21 @@ export const ImageTabsViewer = ({
           </TabsList>
 
           {images.map((imageUrl, index) => {
-            const aiAnnotations = getAnnotationsForImage(index);
+            // Filter annotations specifically for this image index
+            const currentImageIndex = index;
+            const aiAnnotations = getAnnotationsForImage(currentImageIndex);
             const userAnnotations = getUserAnnotationsForImage(imageUrl);
+
+            console.log(`🔍 ImageTabsViewer - Image ${index + 1} annotations:`, {
+              imageIndex: currentImageIndex,
+              aiAnnotationsCount: aiAnnotations.length,
+              userAnnotationsCount: userAnnotations.length,
+              aiAnnotationDetails: aiAnnotations.map(a => ({
+                id: a.id,
+                imageIndex: a.imageIndex,
+                category: a.category
+              }))
+            });
 
             return (
               <TabsContent key={imageUrl} value={imageUrl} className="mt-0 flex-1 flex flex-col">
@@ -114,7 +127,7 @@ export const ImageTabsViewer = ({
                       </div>
                     ))}
 
-                    {/* AI annotations with sequential numbering */}
+                    {/* AI annotations with sequential numbering - FILTERED BY IMAGE INDEX */}
                     {aiAnnotations.map((annotation, annotationIndex) => {
                       const isActive = activeAnnotation === annotation.id;
                       const feedbackContent = annotation.feedback || 'No feedback available';
@@ -139,8 +152,8 @@ export const ImageTabsViewer = ({
                           <div className={`w-12 h-12 rounded-full border-4 border-white flex items-center justify-center text-white font-bold text-lg shadow-xl transition-all duration-300 ${getSeverityColor(annotation.severity)} ${
                             isActive ? 'ring-4 ring-blue-400 ring-offset-2' : ''
                           }`}>
-                            {/* Sequential number instead of category icon */}
-                            <span className="text-base font-bold">{annotationIndex + 1}</span>
+                            {/* Sequential number for this specific image */}
+                            <span className="text-base font-bold annotation-marker-number">{annotationIndex + 1}</span>
                           </div>
                           
                           {/* Active state tooltip */}

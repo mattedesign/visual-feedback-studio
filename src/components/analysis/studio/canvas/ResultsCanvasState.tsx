@@ -57,14 +57,24 @@ export const ResultsCanvasState = ({
 
   // Show the active/selected image with annotations
   const currentImageUrl = workflow.activeImageUrl || workflow.selectedImages[0];
-  const aiAnnotations = workflow.aiAnnotations;
   const currentImageIndex = workflow.uploadedFiles.indexOf(currentImageUrl);
+  
+  // CRITICAL FIX: Filter annotations for the current image only
+  const filteredAiAnnotations = workflow.aiAnnotations.filter(annotation => 
+    (annotation.imageIndex ?? 0) === currentImageIndex
+  );
 
-  console.log('🔢 ResultsCanvasState rendering annotations:', aiAnnotations.map((a, i) => ({
-    id: a.id,
-    index: i,
-    displayNumber: i + 1
-  })));
+  console.log('🔢 ResultsCanvasState rendering filtered annotations:', {
+    currentImageIndex,
+    totalAnnotations: workflow.aiAnnotations.length,
+    filteredAnnotationsCount: filteredAiAnnotations.length,
+    filteredAnnotations: filteredAiAnnotations.map((a, i) => ({
+      id: a.id,
+      index: i,
+      displayNumber: i + 1,
+      imageIndex: a.imageIndex
+    }))
+  });
 
   return (
     <div className="space-y-4 p-4">
@@ -74,7 +84,7 @@ export const ResultsCanvasState = ({
         </h3>
         <div className="flex items-center space-x-4">
           <Badge variant="secondary">
-            {aiAnnotations.length} insights found
+            {filteredAiAnnotations.length} insights found
           </Badge>
           {workflow.uploadedFiles.length > 1 && (
             <div className="text-sm text-gray-500 dark:text-gray-400">
@@ -92,8 +102,8 @@ export const ResultsCanvasState = ({
           style={{ maxHeight: '70vh' }}
         />
         
-        {/* Display AI annotations with sequential numbers */}
-        {aiAnnotations.map((annotation, index) => {
+        {/* Display FILTERED AI annotations with sequential numbers */}
+        {filteredAiAnnotations.map((annotation, index) => {
           const isActive = activeAnnotation === annotation.id;
           
           return (
@@ -110,7 +120,7 @@ export const ResultsCanvasState = ({
               }}
               onClick={() => handleAnnotationClick(annotation, index)}
             >
-              <span className="text-white text-xs font-bold leading-none" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              <span className="text-white text-xs font-bold leading-none annotation-marker-number" data-annotation-number={index + 1}>
                 {index + 1}
               </span>
             </div>
@@ -151,7 +161,7 @@ export const ResultsCanvasState = ({
         </Card>
       )}
 
-      {!selectedFeedback && aiAnnotations.length > 0 && (
+      {!selectedFeedback && filteredAiAnnotations.length > 0 && (
         <Card>
           <CardContent className="pt-4">
             <p className="text-sm text-gray-600 dark:text-gray-400 text-center">

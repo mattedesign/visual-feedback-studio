@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -264,8 +265,21 @@ export const EnhancedImageTabsViewer = ({
             )}
 
             {images.map((imageUrl, index) => {
-              const aiAnnotations = getAnnotationsForImage(index);
+              // CRITICAL FIX: Filter annotations for the current image index
+              const currentImageIndex = index;
+              const aiAnnotations = getAnnotationsForImage(currentImageIndex);
               const userAnnotations = getUserAnnotationsForImage(imageUrl);
+
+              console.log(`🔍 EnhancedImageTabsViewer - Image ${index + 1} annotations:`, {
+                imageIndex: currentImageIndex,
+                aiAnnotationsCount: aiAnnotations.length,
+                userAnnotationsCount: userAnnotations.length,
+                aiAnnotationDetails: aiAnnotations.map(a => ({
+                  id: a.id,
+                  imageIndex: a.imageIndex,
+                  category: a.category
+                }))
+              });
 
               return (
                 <TabsContent key={imageUrl} value={imageUrl} className="mt-0">
@@ -293,7 +307,7 @@ export const EnhancedImageTabsViewer = ({
                       </div>
                     ))}
 
-                    {/* AI annotations with sequential numbering */}
+                    {/* AI annotations with sequential numbering - FILTERED BY IMAGE INDEX */}
                     {aiAnnotations.map((annotation, annotationIndex) => {
                       return (
                         <div
@@ -310,8 +324,8 @@ export const EnhancedImageTabsViewer = ({
                           <div className={`${isMobile ? 'w-10 h-10' : 'w-12 h-12'} rounded-full border-4 border-white flex items-center justify-center text-white font-bold text-lg shadow-xl ${getSeverityColor(annotation.severity)} ${
                             activeAnnotation === annotation.id ? 'ring-4 ring-gray-400' : ''
                           }`}>
-                            {/* Sequential number instead of category icon */}
-                            <span className={`${isMobile ? 'text-sm' : 'text-base'} font-bold`}>{annotationIndex + 1}</span>
+                            {/* Sequential number for this specific image */}
+                            <span className={`${isMobile ? 'text-sm' : 'text-base'} font-bold annotation-marker-number`}>{annotationIndex + 1}</span>
                           </div>
                           
                           {/* Enhanced popup with more details - Hidden on mobile */}
