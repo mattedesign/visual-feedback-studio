@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Annotation } from '@/types/analysis';
 import { MessageSquare, TrendingUp, Eye, Filter, ChevronDown, ChevronUp } from 'lucide-react';
-import { DetailedFeedbackCard } from '../DetailedFeedbackCard';
+import { DetailedFeedbackCard } from './DetailedFeedbackCard';
 
 interface FeedbackPanelProps {
   currentImageAIAnnotations: Annotation[];
