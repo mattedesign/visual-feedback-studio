@@ -46,11 +46,22 @@ const Dashboard = () => {
     return context.length > 50 ? context.substring(0, 50) + '...' : context;
   };
 
+  // Helper function to determine analysis status
+  const getAnalysisStatus = (analysis: AnalysisResultsResponse) => {
+    // Since AnalysisResultsResponse doesn't have analysis_status, 
+    // we'll assume completed if it has annotations and images
+    if (analysis.total_annotations > 0 && analysis.images?.length > 0) {
+      return 'completed';
+    }
+    return 'processing';
+  };
+
   const filteredAnalyses = analyses.filter(analysis => {
     const matchesSearch = analysis.analysis_context?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false;
+    const analysisStatus = getAnalysisStatus(analysis);
     const matchesFilter = filterStatus === 'all' || 
-      (filterStatus === 'completed' && analysis.analysis_status === 'completed') ||
-      (filterStatus === 'processing' && analysis.analysis_status === 'processing');
+      (filterStatus === 'completed' && analysisStatus === 'completed') ||
+      (filterStatus === 'processing' && analysisStatus === 'processing');
     
     return matchesSearch && matchesFilter;
   });
@@ -164,85 +175,89 @@ const Dashboard = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredAnalyses.map((analysis) => (
-              <Card
-                key={analysis.id}
-                className="hover:shadow-lg transition-shadow cursor-pointer border border-gray-200 dark:border-slate-700"
-                onClick={() => handleViewAnalysis(analysis.analysis_id)}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                        {getAnalysisPreview(analysis)}
-                      </CardTitle>
-                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                        <Calendar className="w-4 h-4" />
-                        <span>{formatDate(analysis.created_at)}</span>
+            {filteredAnalyses.map((analysis) => {
+              const analysisStatus = getAnalysisStatus(analysis);
+              
+              return (
+                <Card
+                  key={analysis.id}
+                  className="hover:shadow-lg transition-shadow cursor-pointer border border-gray-200 dark:border-slate-700"
+                  onClick={() => handleViewAnalysis(analysis.analysis_id)}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                          {getAnalysisPreview(analysis)}
+                        </CardTitle>
+                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                          <Calendar className="w-4 h-4" />
+                          <span>{formatDate(analysis.created_at)}</span>
+                        </div>
                       </div>
+                      <Badge
+                        variant={analysisStatus === 'completed' ? 'default' : 'secondary'}
+                        className={analysisStatus === 'completed' ? 'bg-green-100 text-green-800' : ''}
+                      >
+                        {analysisStatus === 'completed' ? 'Complete' : 'Processing'}
+                      </Badge>
                     </div>
-                    <Badge
-                      variant={analysis.analysis_status === 'completed' ? 'default' : 'secondary'}
-                      className={analysis.analysis_status === 'completed' ? 'bg-green-100 text-green-800' : ''}
-                    >
-                      {analysis.analysis_status === 'completed' ? 'Complete' : 'Processing'}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                
-                <CardContent>
-                  {/* Thumbnail */}
-                  {analysis.images && analysis.images.length > 0 && (
-                    <div className="w-full h-32 bg-gray-100 dark:bg-slate-800 rounded-lg mb-4 overflow-hidden">
-                      <img
-                        src={analysis.images[0]}
-                        alt="Analysis preview"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
+                  </CardHeader>
                   
-                  {/* Metrics */}
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600 dark:text-gray-300">Insights Found</span>
-                      <span className="font-semibold text-gray-900 dark:text-white">
-                        {analysis.total_annotations}
-                      </span>
-                    </div>
-                    
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600 dark:text-gray-300">Images Analyzed</span>
-                      <span className="font-semibold text-gray-900 dark:text-white">
-                        {analysis.images?.length || 0}
-                      </span>
-                    </div>
-                    
-                    {analysis.knowledge_sources_used > 0 && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600 dark:text-gray-300">Research Sources</span>
-                        <span className="font-semibold text-blue-600 dark:text-blue-400">
-                          {analysis.knowledge_sources_used}
-                        </span>
+                  <CardContent>
+                    {/* Thumbnail */}
+                    {analysis.images && analysis.images.length > 0 && (
+                      <div className="w-full h-32 bg-gray-100 dark:bg-slate-800 rounded-lg mb-4 overflow-hidden">
+                        <img
+                          src={analysis.images[0]}
+                          alt="Analysis preview"
+                          className="w-full h-full object-cover"
+                        />
                       </div>
                     )}
-                  </div>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full mt-4"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleViewAnalysis(analysis.analysis_id);
-                    }}
-                  >
-                    <Eye className="w-4 h-4 mr-2" />
-                    View Analysis
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+                    
+                    {/* Metrics */}
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600 dark:text-gray-300">Insights Found</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                          {analysis.total_annotations}
+                        </span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600 dark:text-gray-300">Images Analyzed</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                          {analysis.images?.length || 0}
+                        </span>
+                      </div>
+                      
+                      {analysis.knowledge_sources_used && analysis.knowledge_sources_used > 0 && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600 dark:text-gray-300">Research Sources</span>
+                          <span className="font-semibold text-blue-600 dark:text-blue-400">
+                            {analysis.knowledge_sources_used}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-4"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewAnalysis(analysis.analysis_id);
+                      }}
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      View Analysis
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>

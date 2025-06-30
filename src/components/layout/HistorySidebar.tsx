@@ -57,6 +57,16 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = ({ isOpen, onClose 
     onClose();
   };
 
+  // Helper function to determine analysis status
+  const getAnalysisStatus = (analysis: AnalysisResultsResponse) => {
+    // Since AnalysisResultsResponse doesn't have analysis_status, 
+    // we'll assume completed if it has annotations and images
+    if (analysis.total_annotations > 0 && analysis.images?.length > 0) {
+      return 'completed';
+    }
+    return 'processing';
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -118,63 +128,67 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = ({ isOpen, onClose 
               </div>
             ) : (
               <div className="space-y-3">
-                {analyses.map((analysis) => (
-                  <div
-                    key={analysis.id}
-                    className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-                    onClick={() => handleViewAnalysis(analysis.analysis_id)}
-                  >
-                    {/* Thumbnail */}
-                    <div className="w-12 h-12 bg-gray-200 dark:bg-slate-600 rounded-lg overflow-hidden flex-shrink-0">
-                      {analysis.images && analysis.images.length > 0 ? (
-                        <img
-                          src={analysis.images[0]}
-                          alt="Analysis thumbnail"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <BarChart3 className="w-6 h-6 text-gray-400" />
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                        {getAnalysisTitle(analysis)}
-                      </h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-                          <Calendar className="w-3 h-3" />
-                          <span>{formatDate(analysis.created_at)}</span>
-                        </div>
-                        <Badge
-                          variant={analysis.analysis_status === 'completed' ? 'default' : 'secondary'}
-                          className="text-xs py-0 px-2"
-                        >
-                          {analysis.analysis_status === 'completed' ? 'Complete' : 'Processing'}
-                        </Badge>
-                      </div>
-                      <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                        {analysis.total_annotations} insights • {analysis.images?.length || 0} images
-                      </div>
-                    </div>
-                    
-                    {/* View button */}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleViewAnalysis(analysis.analysis_id);
-                      }}
+                {analyses.map((analysis) => {
+                  const analysisStatus = getAnalysisStatus(analysis);
+                  
+                  return (
+                    <div
+                      key={analysis.id}
+                      className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                      onClick={() => handleViewAnalysis(analysis.analysis_id)}
                     >
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))}
+                      {/* Thumbnail */}
+                      <div className="w-12 h-12 bg-gray-200 dark:bg-slate-600 rounded-lg overflow-hidden flex-shrink-0">
+                        {analysis.images && analysis.images.length > 0 ? (
+                          <img
+                            src={analysis.images[0]}
+                            alt="Analysis thumbnail"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <BarChart3 className="w-6 h-6 text-gray-400" />
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                          {getAnalysisTitle(analysis)}
+                        </h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                            <Calendar className="w-3 h-3" />
+                            <span>{formatDate(analysis.created_at)}</span>
+                          </div>
+                          <Badge
+                            variant={analysisStatus === 'completed' ? 'default' : 'secondary'}
+                            className="text-xs py-0 px-2"
+                          >
+                            {analysisStatus === 'completed' ? 'Complete' : 'Processing'}
+                          </Badge>
+                        </div>
+                        <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                          {analysis.total_annotations} insights • {analysis.images?.length || 0} images
+                        </div>
+                      </div>
+                      
+                      {/* View button */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewAnalysis(analysis.analysis_id);
+                        }}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
