@@ -213,16 +213,7 @@ export const SimplifiedContextInput = ({
         )}
       </div>
 
-      {/* Context Preview (when something is entered) */}
-      {analysisContext && !showSuggestions && (
-        <div className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-slate-800 p-3 rounded-lg border border-gray-200 dark:border-slate-700">
-          <div className="flex items-center gap-2 mb-1">
-            <Sparkles className="w-3 h-3 text-blue-500" />
-            <span className="font-medium">Analysis Focus:</span>
-          </div>
-          <p className="text-gray-700 dark:text-gray-300">{analysisContext}</p>
-        </div>
-      )}
+      {/* Context Preview - Hidden */}
     </div>
   );
 };
