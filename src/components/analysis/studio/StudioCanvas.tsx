@@ -1,23 +1,20 @@
-
 import { UploadCanvasState } from './canvas/UploadCanvasState';
 import { ReviewCanvasState } from './canvas/ReviewCanvasState';
 import { AnnotateCanvasState } from './canvas/AnnotateCanvasState';
 import { AnalyzingCanvasState } from './canvas/AnalyzingCanvasState';
 import { ResultsCanvasState } from './canvas/ResultsCanvasState';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
-
 interface StudioCanvasProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
   selectedDevice: 'desktop' | 'tablet' | 'mobile';
   activeAnnotation?: string | null;
   onAnnotationClick?: (annotationId: string) => void;
 }
-
-export const StudioCanvas = ({ 
-  workflow, 
-  selectedDevice, 
-  activeAnnotation, 
-  onAnnotationClick 
+export const StudioCanvas = ({
+  workflow,
+  selectedDevice,
+  activeAnnotation,
+  onAnnotationClick
 }: StudioCanvasProps) => {
   const renderCanvasState = () => {
     switch (workflow.currentStep) {
@@ -30,22 +27,12 @@ export const StudioCanvas = ({
       case 'analyzing':
         return <AnalyzingCanvasState workflow={workflow} />;
       case 'results':
-        return (
-          <ResultsCanvasState 
-            workflow={workflow} 
-            selectedDevice={selectedDevice}
-            activeAnnotation={activeAnnotation}
-            onAnnotationClick={onAnnotationClick}
-          />
-        );
+        return <ResultsCanvasState workflow={workflow} selectedDevice={selectedDevice} activeAnnotation={activeAnnotation} onAnnotationClick={onAnnotationClick} />;
       default:
         return <UploadCanvasState workflow={workflow} />;
     }
   };
-
-  return (
-    <div className="flex-1 bg-slate-800 border-l border-r border-slate-700 overflow-auto">
+  return <div className="flex-1 border-l border-r border-slate-700 overflow-auto bg-transparent">
       {renderCanvasState()}
-    </div>
-  );
+    </div>;
 };
