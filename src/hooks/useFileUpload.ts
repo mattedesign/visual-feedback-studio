@@ -17,9 +17,33 @@ export const useFileUpload = (onImageUpload: (imageUrl: string) => void) => {
         timestamp: new Date().toISOString()
       });
       
-      // Validate file
-      if (!file.type.startsWith('image/')) {
-        console.error('❌ Invalid file type - not an image');
+      // Enhanced file validation for SVG and other image types
+      const isValidImageFile = (file: File): boolean => {
+        // Check MIME type first
+        const validMimeTypes = [
+          'image/png',
+          'image/jpeg', 
+          'image/jpg',
+          'image/gif',
+          'image/webp',
+          'image/svg+xml', // ✅ Explicitly support SVG
+          'image/bmp',
+          'image/tiff'
+        ];
+        
+        if (validMimeTypes.includes(file.type)) {
+          return true;
+        }
+        
+        // Fallback: check file extension (some browsers don't set MIME type correctly for SVG)
+        const fileName = file.name.toLowerCase();
+        const validExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.tiff'];
+        
+        return validExtensions.some(ext => fileName.endsWith(ext));
+      };
+
+      if (!isValidImageFile(file)) {
+        console.error('❌ Invalid file type:', file.type, 'for file:', file.name);
         return;
       }
 

@@ -58,7 +58,7 @@ export const FileUploadTab = ({
     onDragEnter: () => setIsDragActive(true),
     onDragLeave: () => setIsDragActive(false),
     accept: {
-      'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg']
+      'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.tiff']
     },
     maxFiles: 5,
     maxSize: 10 * 1024 * 1024, // 10MB limit
@@ -92,7 +92,7 @@ export const FileUploadTab = ({
               }
             </p>
             <p className="text-sm text-slate-300">
-              Supports PNG, JPG, WebP, SVG • Max 10MB each • Up to 5 images
+              Supports PNG, JPG, WebP, SVG, GIF • Max 10MB each • Up to 5 images
             </p>
           </div>
         )}

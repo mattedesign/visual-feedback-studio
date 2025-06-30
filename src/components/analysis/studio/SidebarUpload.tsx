@@ -34,14 +34,43 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
 
   const { isProcessing, handleFileUpload } = useUploadLogic(handleUploadComplete);
 
+  // Enhanced file validation function
+  const isValidImageFile = (file: File): boolean => {
+    // Check MIME type first
+    const validMimeTypes = [
+      'image/png',
+      'image/jpeg', 
+      'image/jpg',
+      'image/gif',
+      'image/webp',
+      'image/svg+xml', // ✅ Explicitly include SVG MIME type
+      'image/bmp',
+      'image/tiff'
+    ];
+    
+    if (validMimeTypes.includes(file.type)) {
+      return true;
+    }
+    
+    // Fallback: check file extension for SVG files (some browsers don't set MIME type correctly)
+    const fileName = file.name.toLowerCase();
+    const validExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.tiff'];
+    
+    return validExtensions.some(ext => fileName.endsWith(ext));
+  };
+
   const handleMultipleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
-      // Process multiple files with small delays
+      // Process multiple files with small delays, but validate each one
       Array.from(files).forEach((file, index) => {
-        setTimeout(() => {
-          handleFileUpload(file);
-        }, index * 100);
+        if (isValidImageFile(file)) {
+          setTimeout(() => {
+            handleFileUpload(file);
+          }, index * 100);
+        } else {
+          console.warn('Invalid file type:', file.name, file.type);
+        }
       });
     }
     // Reset input
@@ -52,10 +81,12 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
     const files = event.target.files;
     if (files) {
       Array.from(files).forEach((file, index) => {
-        if (file.type.startsWith('image/')) {
+        if (isValidImageFile(file)) {
           setTimeout(() => {
             handleFileUpload(file);
           }, index * 100);
+        } else {
+          console.warn('Invalid file type:', file.name, file.type);
         }
       });
     }
@@ -95,10 +126,12 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
       Array.from(files).forEach((file, index) => {
-        if (file.type.startsWith('image/')) {
+        if (isValidImageFile(file)) {
           setTimeout(() => {
             handleFileUpload(file);
           }, index * 100);
+        } else {
+          console.warn('Invalid file type:', file.name, file.type);
         }
       });
     }
@@ -116,7 +149,7 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
         <div className="relative">
           <input
             type="file"
-            accept="image/*"
+            accept="image/*,.svg"
             multiple
             onChange={handleMultipleFileInputChange}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -143,7 +176,7 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
       <input
         ref={dragAreaFileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,.svg"
         multiple
         onChange={handleDragAreaFileInputChange}
         className="hidden"
@@ -180,7 +213,7 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
           }`}>
             {isDragOver 
               ? 'Drop images here!' 
-              : 'Drop images here or click to select (up to 5)'
+              : 'Drop images here or click to select (PNG, JPG, SVG, WebP - up to 5)'
             }
           </p>
         </div>
