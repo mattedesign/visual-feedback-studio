@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Loader2, Download, Maximize2, Sparkles, TrendingUp } from 'lucide-react';
 import { UpgradeOptionsPanel } from './UpgradeOptionsPanel';
-import { stripeService } from '@/services/stripeService';
+import { toast } from 'sonner';
 import PromptTuner from '../PromptTuner';
 import { TunerSettings, CustomVisualResult } from '../../types/promptTuner';
 
@@ -67,15 +67,13 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
       console.log('🎛️ Generating custom visual with settings:', settings);
       console.log('📝 Enhanced prompt:', enhancedPrompt);
       
-      // Call your existing DALL-E service with the enhanced prompt
-      const { visualSuggestionService } = await import('@/services/design/visualSuggestionService');
+      // Simplified for now - just show a toast
+      toast.info('Custom visual generation coming soon!');
       
-      // Use the existing DALL-E generation method
-      const imageUrl = await visualSuggestionService.callDALLEViaEdgeFunction(enhancedPrompt);
-      
+      // Mock custom result for now
       const customResult: CustomVisualResult = {
         id: `custom_${suggestionId}_${Date.now()}`,
-        imageUrl, // Use the real DALL-E generated image
+        imageUrl: '/placeholder.svg', // Placeholder for now
         settings,
         prompt: enhancedPrompt,
         createdAt: new Date()
@@ -102,16 +100,26 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
     setError('');
     
     try {
-      const { visualSuggestionService } = await import('@/services/design/visualSuggestionService');
+      // Simplified for now - just show a toast
+      toast.info('Visual suggestion generation coming soon!');
       
-      const suggestions = await visualSuggestionService.generateVisualSuggestions({
-        analysisInsights,
-        userContext,
-        focusAreas,
-        designType
-      });
+      // Mock suggestions for now
+      const mockSuggestions: VisualSuggestion[] = [
+        {
+          id: 'mock-1',
+          type: 'smart_before_after',
+          description: 'Enhanced navigation with improved accessibility',
+          imageUrl: '/placeholder.svg',
+          originalIssue: 'Navigation visibility issues',
+          improvement: 'Better contrast and spacing',
+          timestamp: new Date(),
+          confidence: 0.85,
+          style: 'professional',
+          reasoning: 'Based on analysis insights about navigation improvements'
+        }
+      ];
       
-      setSuggestions(suggestions);
+      setSuggestions(mockSuggestions);
     } catch (err) {
       setError('Failed to generate visual suggestions');
       console.error('Visual suggestions error:', err);
@@ -120,70 +128,14 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
     }
   };
 
-  // Add helper function to map upgrade IDs to Stripe price IDs
-  const getStripePriceId = (upgradeOptionId: string): string => {
-    // Map upgrade IDs to actual Stripe price IDs from your enhanced pricing config
-    const priceMappings: Record<string, string> = {
-      'style_variety_pack': 'price_1RehvWB0UJfBqFIHgbpYCfPc',
-      'responsive_design_pack': 'price_1RehvWB0UJfBqFIHbVisazQp', 
-      'ab_test_variants': 'price_1RehvWB0UJfBqFIHSi8pYtMT',
-      'accessibility_focus': 'price_1RehvWB0UJfBqFIHAccessibility'
-    };
-    
-    const priceId = priceMappings[upgradeOptionId];
-    if (!priceId) {
-      throw new Error(`No price ID configured for upgrade: ${upgradeOptionId}`);
-    }
-    
-    return priceId;
-  };
-
-  // Replace mock handleUpgradePurchase with real Stripe integration
+  // Simplified upgrade purchase handler
   const handleUpgradePurchase = async (optionId: string) => {
     setPurchasingUpgrade(true);
     try {
-      console.log('Starting upgrade purchase:', optionId);
-      
-      // Find the upgrade option details
-      const option = suggestions.flatMap(s => s.upgradeOptions || []).find(o => o.id === optionId);
-      if (!option) {
-        throw new Error('Upgrade option not found');
-      }
-
-      // Get the Stripe Price ID for this upgrade
-      const priceId = getStripePriceId(optionId);
-      console.log('Using Stripe Price ID:', priceId);
-
-      // Create Stripe checkout session using existing service
-      const checkoutSession = await stripeService.createCheckoutSession({
-        customerId: '', // This will be handled by the service to create/get customer
-        priceId: priceId,
-        successUrl: `${window.location.origin}/upgrade-success?session_id={CHECKOUT_SESSION_ID}&upgrade=${optionId}`,
-        cancelUrl: window.location.href,
-        metadata: {
-          upgrade_type: optionId,
-          upgrade_name: option.name,
-          credits: option.credits.toString(),
-          analysis_context: JSON.stringify({
-            insights: analysisInsights.slice(0, 2), // Limit to avoid metadata size issues
-            userContext: typeof userContext === 'string' ? userContext.slice(0, 100) : JSON.stringify(userContext).slice(0, 100),
-            designType
-          })
-        }
-      });
-
-      if (checkoutSession?.url) {
-        console.log('Redirecting to Stripe checkout:', checkoutSession.url);
-        // Open Stripe checkout in new tab
-        window.open(checkoutSession.url, '_blank');
-      } else {
-        throw new Error('Failed to create checkout session - no URL returned');
-      }
-      
+      toast.info('Upgrade functionality coming soon!');
     } catch (error) {
       console.error('Upgrade purchase failed:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      setError(`Failed to start upgrade purchase: ${errorMessage}. Please try again.`);
+      setError('Upgrade functionality coming soon!');
     } finally {
       setPurchasingUpgrade(false);
     }
@@ -297,11 +249,20 @@ export const VisualSuggestions: React.FC<VisualSuggestionsProps> = ({
                         <p className="text-sm text-slate-300 mb-2">{suggestion.description}</p>
                         <p className="text-xs text-slate-400 mb-3">{suggestion.improvement}</p>
                         <div className="flex gap-2">
-                          <Button size="sm" variant="outline" className="flex-1">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="flex-1"
+                            onClick={() => toast.info('Download coming soon!')}
+                          >
                             <Download className="w-3 h-3 mr-1" />
                             Download
                           </Button>
-                          <Button size="sm" variant="outline">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => toast.info('Maximize coming soon!')}
+                          >
                             <Maximize2 className="w-3 h-3" />
                           </Button>
                         </div>

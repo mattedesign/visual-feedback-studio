@@ -1,6 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
 import { Eye, ZoomIn, ZoomOut, RotateCcw, Download, Share2, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
-import { visualAnalysisService } from '@/services/visualAnalysisService';
 import { toast } from 'sonner';
 
 // Flexible interface for maximum compatibility
@@ -15,7 +15,6 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
   const [severityFilter, setSeverityFilter] = useState<string>('all');
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
-  const [isExporting, setIsExporting] = useState<boolean>(false);
   
   // Add safety check at the beginning of the component
   if (!analysisData) {
@@ -33,18 +32,10 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
   // Use existing annotation data as-is with proper safety checks
   const processedAnnotations = analysisData?.annotations || [];
   
-  // FIXED: Simplified image data extraction - primary focus on database 'images' array
+  // Simplified image data extraction
   const images = (() => {
-    console.log('🔍 VisualAnalysisModule - Raw analysisData:', {
-      hasImages: !!analysisData?.images,
-      imagesType: typeof analysisData?.images,
-      imagesContent: analysisData?.images,
-      allKeys: Object.keys(analysisData || {})
-    });
-
     // Primary: Direct images array from database
     if (analysisData?.images && Array.isArray(analysisData.images)) {
-      console.log('✅ Using direct images array:', analysisData.images);
       return analysisData.images.map((url: string) => ({ 
         url: url, 
         preview: url 
@@ -56,7 +47,6 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
       try {
         const parsed = JSON.parse(analysisData.images);
         if (Array.isArray(parsed)) {
-          console.log('✅ Using parsed images from JSON string:', parsed);
           return parsed.map((img: any) => ({ 
             url: typeof img === 'string' ? img : img.url, 
             preview: typeof img === 'string' ? img : img.preview || img.url 
@@ -69,11 +59,9 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
 
     // Fallback: Single image URL
     if (analysisData?.imageUrl) {
-      console.log('✅ Using single imageUrl:', analysisData.imageUrl);
       return [{ url: analysisData.imageUrl, preview: analysisData.imageUrl }];
     }
 
-    console.warn('❌ No valid images found, using placeholder');
     return [{ url: '/placeholder.svg', preview: '/placeholder.svg' }];
   })();
   
@@ -173,64 +161,22 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
     setZoomLevel(1);
   };
 
-  // Export handlers
-  const handleDownloadAnnotatedImage = async () => {
-    if (isExporting) return;
-    
-    setIsExporting(true);
-    try {
-      await visualAnalysisService.downloadAnnotatedImage({
-        imageUrl: images[currentImageIndex]?.url || '',
-        annotations: annotationsWithPosition,
-        analysisId: analysisData.id || 'analysis',
-        siteName: analysisData.siteName || 'Image'
-      });
-    } finally {
-      setIsExporting(false);
-    }
+  // Simplified export handlers - just show alerts for now
+  const handleDownloadAnnotatedImage = () => {
+    toast.info('Export functionality coming soon!');
   };
 
-  const handleCopyAnnotationURLs = async () => {
-    if (isExporting) return;
-    
-    setIsExporting(true);
-    try {
-      await visualAnalysisService.copyAnnotationURLs({
-        imageUrl: images[currentImageIndex]?.url || '',
-        annotations: annotationsWithPosition,
-        analysisId: analysisData.id || 'analysis',
-        siteName: analysisData.siteName || 'Image'
-      });
-    } finally {
-      setIsExporting(false);
-    }
+  const handleCopyAnnotationURLs = () => {
+    toast.info('URL sharing coming soon!');
   };
 
-  const handleGenerateTechnicalBrief = async () => {
-    if (isExporting) return;
-    
-    setIsExporting(true);
-    try {
-      await visualAnalysisService.generateTechnicalBrief({
-        imageUrl: images[currentImageIndex]?.url || '',
-        annotations: processedAnnotations,
-        analysisId: analysisData.id || 'analysis',
-        siteName: analysisData.siteName || 'Image'
-      });
-    } finally {
-      setIsExporting(false);
-    }
+  const handleGenerateTechnicalBrief = () => {
+    toast.info('Technical brief generation coming soon!');
   };
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     const target = e.currentTarget;
     const originalSrc = target.src;
-    
-    console.error('❌ Image failed to load:', {
-      originalSrc,
-      imageIndex: currentImageIndex,
-      availableImages: images
-    });
     
     // Only set to placeholder if not already placeholder
     if (!originalSrc.includes('placeholder.svg')) {
@@ -255,12 +201,6 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
                 transformOrigin: 'center center'
               }}
               onError={handleImageError}
-              onLoad={() => {
-                console.log('✅ Image loaded successfully:', {
-                  src: images[currentImageIndex]?.url,
-                  imageIndex: currentImageIndex
-                });
-              }}
             />
             
             {/* Debug info overlay */}
@@ -403,12 +343,6 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
                   {selectedAnnotation?.feedback || selectedAnnotation?.description || 'No detailed feedback available.'}
                 </p>
                 
-                {/* Implementation Effort and Business Impact */}
-                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-3">
-                  <span>Effort: {selectedAnnotation?.implementationEffort || 'medium'}</span>
-                  <span>Impact: {selectedAnnotation?.businessImpact || 'medium'}</span>
-                </div>
-                
                 {/* Research Backing - if available */}
                 {selectedAnnotation?.researchBacking && selectedAnnotation.researchBacking.length > 0 && (
                   <div className="mt-4">
@@ -423,18 +357,6 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
                         </li>
                       ))}
                     </ul>
-                  </div>
-                )}
-                
-                {/* Confidence Level */}
-                {selectedAnnotation?.confidence && (
-                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-slate-600">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-600 dark:text-gray-400">Confidence</span>
-                      <span className="font-medium text-gray-900 dark:text-white">
-                        {Math.round(selectedAnnotation.confidence * 100)}%
-                      </span>
-                    </div>
                   </div>
                 )}
               </div>
@@ -489,7 +411,7 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
           </div>
         </div>
         
-        {/* Enhanced Export Options */}
+        {/* Simplified Export Options */}
         <div className="export-options">
           <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
             Export Options
@@ -497,27 +419,24 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
           <div className="space-y-2">
             <button 
               onClick={handleDownloadAnnotatedImage}
-              disabled={isExporting}
-              className="w-full bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+              className="w-full bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
             >
               <Download className="w-4 h-4" />
-              {isExporting ? 'Generating...' : 'Download Annotated Image'}
+              Download Annotated Image
             </button>
             <button 
               onClick={handleCopyAnnotationURLs}
-              disabled={isExporting || annotationsWithPosition.length === 0}
-              className="w-full border border-gray-300 dark:border-gray-600 px-4 py-2 rounded text-sm hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 transition-colors flex items-center justify-center gap-2"
+              className="w-full border border-gray-300 dark:border-gray-600 px-4 py-2 rounded text-sm hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 transition-colors flex items-center justify-center gap-2"
             >
               <Share2 className="w-4 h-4" />
               Copy Annotation URLs
             </button>
             <button 
               onClick={handleGenerateTechnicalBrief}
-              disabled={isExporting}
-              className="w-full border border-gray-300 dark:border-gray-600 px-4 py-2 rounded text-sm hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 transition-colors flex items-center justify-center gap-2"
+              className="w-full border border-gray-300 dark:border-gray-600 px-4 py-2 rounded text-sm hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 transition-colors flex items-center justify-center gap-2"
             >
               <FileText className="w-4 h-4" />
-              {isExporting ? 'Generating...' : 'Generate Technical Brief'}
+              Generate Technical Brief
             </button>
           </div>
           

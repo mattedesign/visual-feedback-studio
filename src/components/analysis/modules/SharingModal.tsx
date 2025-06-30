@@ -8,7 +8,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Copy, Mail, Share2, ExternalLink, Twitter, Linkedin } from 'lucide-react';
-import { businessImpactService } from '@/services/businessImpactService';
 
 interface SharingModalProps {
   isOpen: boolean;
@@ -31,7 +30,8 @@ export const SharingModal: React.FC<SharingModalProps> = ({
   const generateShareableLink = async () => {
     setIsGeneratingLink(true);
     try {
-      const link = businessImpactService.generateShareableLink(analysisId);
+      // Simplified - just generate a basic link for now
+      const link = `${window.location.origin}/analysis/${analysisId}`;
       setShareableLink(link);
       toast.success('Shareable link generated successfully!');
     } catch (error) {
@@ -42,10 +42,10 @@ export const SharingModal: React.FC<SharingModalProps> = ({
   };
 
   const copyLink = async () => {
-    const success = await businessImpactService.copyToClipboard(shareableLink);
-    if (success) {
+    try {
+      await navigator.clipboard.writeText(shareableLink);
       toast.success('Link copied to clipboard!');
-    } else {
+    } catch (error) {
       toast.error('Failed to copy link');
     }
   };
