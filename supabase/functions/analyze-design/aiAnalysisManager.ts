@@ -1,4 +1,3 @@
-
 import { buildAnalysisPrompt } from './promptBuilder.ts';
 
 interface ProcessedImage {
@@ -71,8 +70,8 @@ class AIAnalysisManager {
         }
       }
 
-      // Build comprehensive analysis prompt
-      console.log('✨ Enhancing prompt for comprehensive analysis');
+      // Build comprehensive analysis prompt with strengthened requirements
+      console.log('✨ Building comprehensive analysis prompt with mandatory 16-19 insights requirement');
       enhancedPrompt = buildAnalysisPrompt(
         analysisPrompt,
         ragContext,
@@ -84,11 +83,12 @@ class AIAnalysisManager {
         enhancedPromptLength: enhancedPrompt.length,
         ragEnhanced: !!ragContext,
         targetInsights: '16-19',
-        comprehensiveScope: true
+        comprehensiveScope: true,
+        mandatoryRequirements: enhancedPrompt.includes('MANDATORY OUTPUT REQUIREMENT')
       });
 
       // Perform AI analysis with comprehensive requirements
-      console.log('🚀 Calling OpenAI API for comprehensive analysis...');
+      console.log('🚀 Calling OpenAI API for comprehensive analysis with 16-19 insights requirement...');
       const response = await this.callOpenAI(processedImages, enhancedPrompt);
 
       if (!response.ok) {
@@ -110,20 +110,32 @@ class AIAnalysisManager {
       const rawContent = data.choices[0].message.content;
       console.log('📝 Raw AI response length:', rawContent.length);
       
-      // Parse comprehensive annotations
+      // Parse comprehensive annotations with validation
       const annotations = this.parseAnnotations(rawContent);
       
       console.log('✅ Comprehensive annotations parsed successfully:', {
         annotationCount: annotations.length,
         targetCount: '16-19',
-        meetsTarget: annotations.length >= 16
+        meetsTarget: annotations.length >= 16,
+        exceedsMinimum: annotations.length >= 12
       });
 
-      if (annotations.length < 10) {
-        console.warn('⚠️ Low annotation count detected:', {
+      // Enhanced validation for comprehensive analysis
+      if (annotations.length < 12) {
+        console.warn('⚠️ INSUFFICIENT ANNOTATION COUNT - Below professional UX audit standards:', {
           received: annotations.length,
           expected: '16-19',
+          minimum: 12,
           rawResponsePreview: rawContent.substring(0, 500)
+        });
+        
+        // Log the categories to understand what's missing
+        const categories = annotations.map(a => a.category);
+        const severities = annotations.map(a => a.severity);
+        console.warn('📊 Analysis distribution check:', {
+          categories: [...new Set(categories)],
+          severities: [...new Set(severities)],
+          totalAnnotations: annotations.length
         });
       }
 
@@ -134,6 +146,7 @@ class AIAnalysisManager {
         processingTimeMs: processingTime,
         ragEnhanced: !!ragContext,
         comprehensiveAnalysis: true,
+        professionalStandard: annotations.length >= 16,
         targetsAchieved: annotations.length >= 16
       });
 
@@ -220,7 +233,7 @@ class AIAnalysisManager {
     }
 
     context += `INDUSTRY CONTEXT: ${ragResult.industryContext}\n\n`;
-    context += 'Use this research context to provide comprehensive, evidence-based recommendations.\n\n';
+    context += 'Use this research context to provide comprehensive, evidence-based recommendations with exactly 16-19 professional insights.\n\n';
     
     return context;
   }
@@ -234,7 +247,7 @@ class AIAnalysisManager {
     const messages = [
       {
         role: 'system',
-        content: 'You are a comprehensive UX analysis expert. Generate detailed, research-backed insights covering all aspects of design quality, usability, and business impact. Always provide exactly 16-19 annotations for thorough professional analysis.'
+        content: 'You are a professional UX analysis expert conducting comprehensive audits. You MUST generate exactly 16-19 detailed, research-backed insights covering all aspects of design quality, usability, and business impact. Balance critical issues, improvements, and positive validations. This is a professional consulting requirement - never provide fewer than 16 insights for a comprehensive analysis.'
       },
       {
         role: 'user',
@@ -269,6 +282,7 @@ class AIAnalysisManager {
       const jsonMatch = rawContent.match(/\[[\s\S]*\]/);
       if (!jsonMatch) {
         console.error('❌ No JSON array found in response');
+        console.error('Raw content preview:', rawContent.substring(0, 1000));
         return [];
       }
 
@@ -280,7 +294,13 @@ class AIAnalysisManager {
         return [];
       }
 
-      console.log('✅ Successfully parsed comprehensive annotations:', annotations.length);
+      console.log('✅ Successfully parsed comprehensive annotations:', {
+        count: annotations.length,
+        target: '16-19',
+        meetsMinimum: annotations.length >= 12,
+        meetsTarget: annotations.length >= 16
+      });
+      
       return annotations;
 
     } catch (error) {
