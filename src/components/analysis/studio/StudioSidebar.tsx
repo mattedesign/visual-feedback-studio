@@ -1,5 +1,5 @@
 
-import { Files, Menu, MessageCircle, Target, Trash2 } from 'lucide-react';
+import { Files, MessageCircle, Target, Trash2 } from 'lucide-react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { SidebarUpload } from './SidebarUpload';
 import { Badge } from '@/components/ui/badge';
@@ -78,7 +78,11 @@ export const StudioSidebar = ({
               className="h-8 mr-3"
             />
             <button onClick={() => setCollapsed(!collapsed)} className="ml-auto p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
-              <Menu className="w-4 h-4 text-gray-500" />
+              <img 
+                src="/lovable-uploads/7d4bfbe9-e4ca-4e8d-9d33-77637e4dcdc6.png" 
+                alt="Menu" 
+                className="w-4 h-4 text-gray-500"
+              />
             </button>
           </div>
 
