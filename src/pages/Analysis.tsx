@@ -1,56 +1,52 @@
 
-import { Header } from '@/components/layout/Header';
-import { AnalysisStudio } from '@/components/analysis/AnalysisStudio';
-import { LoadingSpinner } from '@/components/common/LoadingSpinner';
-import { useAuth } from '@/hooks/useAuth';
-import { useSubscription } from '@/hooks/useSubscription';
-import { useEffect } from 'react';
+import { AnalysisWorkflow } from "@/components/analysis/AnalysisWorkflow";
+import { AnalysisHistory } from "@/components/analysis/AnalysisHistory";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { History, Plus } from "lucide-react";
 
 const Analysis = () => {
-  const { user, loading: authLoading, signOut } = useAuth();
-  const subscriptionData = useSubscription();
+  const [showHistory, setShowHistory] = useState(false);
 
-  // Console log subscription data for debugging
-  useEffect(() => {
-    console.log('🔍 ANALYSIS PAGE - Subscription Data:', {
-      subscription: subscriptionData.subscription,
-      loading: subscriptionData.loading,
-      error: subscriptionData.error,
-      canCreateAnalysis: subscriptionData.canCreateAnalysis(),
-      isActiveSubscriber: subscriptionData.isActiveSubscriber(),
-      isTrialUser: subscriptionData.isTrialUser(),
-      needsSubscription: subscriptionData.needsSubscription(),
-    });
-  }, [subscriptionData]);
-
-  const handleSignOut = async () => {
-    await signOut();
-    // Note: No redirect here - let the auth system handle it naturally
-  };
-
-  // Show loading while checking authentication
-  if (authLoading) {
-    return <LoadingSpinner />;
-  }
-
-  // If no user, show simple message (no redirects)
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Please log in</h1>
-          <p className="text-slate-300">You need to be authenticated to access this page.</p>
-        </div>
-      </div>
-    );
-  }
-
-  // User is authenticated - show the analysis studio (NO subscription checks)
   return (
-    <div className="h-screen bg-slate-900 text-white flex flex-col overflow-hidden">
-      <Header user={user} onSignOut={handleSignOut} />
-      <div className="flex-1 min-h-0">
-        <AnalysisStudio />
+    <div className="min-h-screen bg-slate-900">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold text-white">UX Analysis Studio</h1>
+          <div className="flex items-center gap-4">
+            <Button
+              onClick={() => setShowHistory(!showHistory)}
+              variant="outline"
+              className="border-slate-600 hover:bg-slate-700 text-slate-200"
+            >
+              <History className="w-4 h-4 mr-2" />
+              {showHistory ? 'Hide History' : 'Show History'}
+            </Button>
+            {showHistory && (
+              <Button
+                onClick={() => setShowHistory(false)}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                New Analysis
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Analysis Area */}
+          <div className={showHistory ? "lg:col-span-2" : "lg:col-span-3"}>
+            <AnalysisWorkflow />
+          </div>
+
+          {/* Analysis History Sidebar */}
+          {showHistory && (
+            <div className="lg:col-span-1">
+              <AnalysisHistory />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,9 +1,10 @@
-
 import { useState, useCallback } from 'react';
 import { Annotation } from '@/types/analysis';
 import { useEnhancedAnalysis } from './useEnhancedAnalysis';
 import { toast } from 'sonner';
 import { EnhancedContext } from '@/services/analysis/enhancedRagService';
+import { saveAnalysisResults } from '@/services/analysisResultsService';
+import { analysisService } from '@/services/analysisService';
 
 export type WorkflowStep = 'upload' | 'annotate' | 'review' | 'analyzing' | 'results';
 
@@ -40,7 +41,6 @@ export const useAnalysisWorkflow = () => {
   const [visionConfidenceScore, setVisionConfidenceScore] = useState<number | undefined>(undefined);
   const [visionElementsDetected, setVisionElementsDetected] = useState<number>(0);
 
-  // 🔥 FIXED: Properly integrate enhanced analysis hook
   const enhancedAnalysis = useEnhancedAnalysis({ currentAnalysis });
 
   const resetWorkflow = useCallback(() => {
@@ -63,11 +63,9 @@ export const useAnalysisWorkflow = () => {
     setIsAnalyzing(false);
     setCurrentAnalysis(null);
     
-    // Reset enhanced analysis state
     enhancedAnalysis.resetState();
   }, [enhancedAnalysis]);
 
-  // 🔥 SIMPLIFIED: Single function to add images
   const addImage = useCallback((imageUrl: string) => {
     console.log('📸 ADD IMAGE CALLED:', {
       imageUrl,
@@ -90,13 +88,11 @@ export const useAnalysisWorkflow = () => {
       return newImages;
     });
     
-    // Set as active if it's the first image
     if (images.length === 0) {
       setActiveImageUrl(imageUrl);
     }
   }, [images]);
 
-  // 🔥 SIMPLIFIED: Single function to select multiple images
   const selectImages = useCallback((imageUrls: string[]) => {
     console.log('🖼️ SELECT IMAGES:', {
       newImages: imageUrls,
@@ -193,7 +189,7 @@ export const useAnalysisWorkflow = () => {
     return imageAnnotations.reduce((total, ia) => total + ia.annotations.length, 0);
   }, [imageAnnotations]);
 
-  // 🔥 BYPASS STRATEGY: Modified startAnalysis to route directly to modular interface
+  // 🔥 ENHANCED: Save analysis results to database and route to saved results
   const startAnalysis = useCallback(async () => {
     if (images.length === 0) {
       toast.error('Please select at least one image to analyze');
@@ -210,17 +206,25 @@ export const useAnalysisWorkflow = () => {
       return;
     }
 
-    console.log('🚀 Starting enhanced analysis workflow with bypass strategy:', {
+    console.log('🚀 Starting enhanced analysis workflow with database storage:', {
       imageCount: images.length,
       annotationCount: getTotalAnnotationsCount(),
       contextLength: analysisContext.length,
-      bypassEnabled: true
+      databaseStorage: true
     });
 
     setIsAnalyzing(true);
     setCurrentStep('analyzing');
 
     try {
+      // First, create a permanent analysis record
+      const analysisId = await analysisService.createAnalysis();
+      if (!analysisId) {
+        throw new Error('Failed to create analysis record');
+      }
+
+      console.log('✅ Analysis record created with ID:', analysisId);
+
       const userAnnotationsArray = imageAnnotations.flatMap(imageAnnotation => 
         imageAnnotation.annotations.map(annotation => ({
           imageUrl: imageAnnotation.imageUrl,
@@ -231,7 +235,7 @@ export const useAnalysisWorkflow = () => {
         }))
       );
 
-      // 🔥 FIXED: Use enhanced analysis hook
+      // Run the analysis
       const result = await enhancedAnalysis.analyzeImages({
         imageUrls: images,
         userAnnotations: userAnnotationsArray,
@@ -241,17 +245,17 @@ export const useAnalysisWorkflow = () => {
       });
 
       if (result.success) {
-        console.log('✅ Analysis completed successfully - implementing bypass strategy:', {
+        console.log('✅ Analysis completed successfully - saving to database:', {
           annotationCount: result.annotations.length,
           enhancedContext: !!result.enhancedContext,
           wellDoneReceived: !!result.wellDone,
           wellDoneInsights: result.wellDone?.insights?.length || 0,
-          bypassToModularInterface: true
+          permanentAnalysisId: analysisId
         });
 
         setAiAnnotations(result.annotations);
         
-        // Store analysis results with Well Done data included
+        // Prepare complete analysis results
         const analysisResultsWithWellDone = {
           ...result.analysis,
           wellDone: result.wellDone,
@@ -262,7 +266,7 @@ export const useAnalysisWorkflow = () => {
         };
         setAnalysisResults(analysisResultsWithWellDone);
         
-        // Store enhanced context data properly
+        // Store enhanced context data
         if (result.enhancedContext) {
           setEnhancedContext(result.enhancedContext);
           setRagEnhanced(true);
@@ -273,20 +277,39 @@ export const useAnalysisWorkflow = () => {
           setVisionElementsDetected(result.enhancedContext.visionAnalysis.uiElements.length);
         }
         
-        // 🚀 FIXED ROUTING: Use correct route structure with analysis ID as path parameter
-        console.log('🔄 Implementing bypass strategy - routing to modular interface with correct URL structure');
-        toast.success('Analysis complete! Redirecting to professional dashboard...');
-        
-        // Generate a unique analysis ID for the URL
-        const analysisId = Date.now().toString();
-        
-        // Store the analysis data in sessionStorage for the modular interface
-        sessionStorage.setItem('currentAnalysisData', JSON.stringify(analysisResultsWithWellDone));
-        
-        // 🔥 FIXED: Route with correct structure - ID as path parameter, beta as query parameter
-        setTimeout(() => {
-          window.location.href = `/analysis/${analysisId}?beta=true`;
-        }, 1000);
+        // 🔥 SAVE TO DATABASE: Store analysis results permanently
+        console.log('💾 Saving analysis results to database...');
+        const savedResultId = await saveAnalysisResults({
+          analysisId: analysisId,
+          annotations: result.annotations,
+          images: images,
+          analysisContext: analysisContext,
+          enhancedContext: result.enhancedContext,
+          wellDoneData: result.wellDone,
+          researchCitations: result.enhancedContext?.citations || [],
+          knowledgeSourcesUsed: result.enhancedContext?.knowledgeSourcesUsed || 0,
+          aiModelUsed: 'claude-3-5-sonnet',
+          processingTimeMs: Date.now()
+        });
+
+        if (savedResultId) {
+          console.log('✅ Analysis results saved to database successfully');
+          toast.success('Analysis complete and saved! Redirecting to results...');
+          
+          // 🔥 ROUTE TO SAVED ANALYSIS: Use the permanent analysis ID
+          setTimeout(() => {
+            window.location.href = `/analysis/${analysisId}?beta=true`;
+          }, 1000);
+        } else {
+          console.warn('⚠️ Failed to save to database, but analysis completed');
+          // Store in sessionStorage as fallback
+          sessionStorage.setItem('currentAnalysisData', JSON.stringify(analysisResultsWithWellDone));
+          
+          toast.success('Analysis complete! Redirecting to results...');
+          setTimeout(() => {
+            window.location.href = `/analysis/${analysisId}?beta=true`;
+          }, 1000);
+        }
         
       } else {
         console.error('❌ Enhanced analysis failed:', result);

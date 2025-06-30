@@ -3,39 +3,91 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { ModularAnalysisInterface } from '../components/analysis/modules/ModularAnalysisInterface';
+import { getAnalysisResults } from '../services/analysisResultsService';
 
 const AnalysisResults = () => {
   const useModularInterface = useFeatureFlag('modular-analysis');
   const [analysisData, setAnalysisData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
-  // FIXED: Get analysis ID from route parameters instead of query parameters
+  // Get analysis ID from route parameters
   const { id: analysisId } = useParams();
   
-  // Get URL parameters for beta mode only
+  // Get URL parameters for beta mode
   const urlParams = new URLSearchParams(window.location.search);
   const betaMode = urlParams.get('beta') === 'true';
   
-  // Load analysis data from sessionStorage on component mount
+  // Load analysis data from database or sessionStorage
   useEffect(() => {
-    if (betaMode && analysisId) {
-      const storedData = sessionStorage.getItem('currentAnalysisData');
-      if (storedData) {
-        try {
-          const parsedData = JSON.parse(storedData);
-          console.log('📊 Loading analysis data for modular interface:', {
-            analysisId,
-            annotationCount: parsedData.annotations?.length || 0,
-            hasWellDone: !!parsedData.wellDone,
-            hasEnhancedContext: !!parsedData.enhancedContext,
-            routeStructure: 'CORRECT - ID from route params'
-          });
-          setAnalysisData(parsedData);
-        } catch (error) {
-          console.error('❌ Failed to parse stored analysis data:', error);
-        }
+    const loadAnalysisData = async () => {
+      if (!analysisId) {
+        setError('No analysis ID provided');
+        setIsLoading(false);
+        return;
       }
-    }
-  }, [betaMode, analysisId]);
+
+      console.log('📊 Loading analysis data:', {
+        analysisId,
+        source: 'database',
+        betaMode
+      });
+
+      try {
+        // First try to load from database
+        const dbResults = await getAnalysisResults(analysisId);
+        
+        if (dbResults) {
+          console.log('✅ Analysis data loaded from database:', {
+            annotationCount: dbResults.annotations?.length || 0,
+            hasWellDone: !!dbResults.well_done_data,
+            hasEnhancedContext: !!dbResults.enhanced_context
+          });
+          
+          // Transform database format to component format
+          const transformedData = {
+            annotations: dbResults.annotations,
+            images: dbResults.images,
+            analysisContext: dbResults.analysis_context,
+            enhancedContext: dbResults.enhanced_context,
+            wellDone: dbResults.well_done_data,
+            researchCitations: dbResults.research_citations,
+            knowledgeSourcesUsed: dbResults.knowledge_sources_used,
+          };
+          
+          setAnalysisData(transformedData);
+        } else {
+          // Fallback to sessionStorage for temporary data
+          console.log('📦 Fallback: Trying sessionStorage for temporary data');
+          const storedData = sessionStorage.getItem('currentAnalysisData');
+          
+          if (storedData) {
+            try {
+              const parsedData = JSON.parse(storedData);
+              console.log('✅ Analysis data loaded from sessionStorage:', {
+                annotationCount: parsedData.annotations?.length || 0,
+                hasWellDone: !!parsedData.wellDone,
+                hasEnhancedContext: !!parsedData.enhancedContext
+              });
+              setAnalysisData(parsedData);
+            } catch (parseError) {
+              console.error('❌ Failed to parse sessionStorage data:', parseError);
+              setError('Failed to load analysis data');
+            }
+          } else {
+            setError('Analysis not found');
+          }
+        }
+      } catch (loadError) {
+        console.error('❌ Failed to load analysis data:', loadError);
+        setError('Failed to load analysis data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadAnalysisData();
+  }, [analysisId, betaMode]);
 
   // PRESERVE EXISTING FUNCTIONALITY AS DEFAULT
   if (!useModularInterface && !betaMode) {
@@ -71,7 +123,7 @@ const AnalysisResults = () => {
               </button>
             </div>
             
-            {/* ADD ONLY: Optional "Try New Interface" button */}
+            {/* Optional "Try New Interface" button */}
             <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
               <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">
                 🚀 Try our new professional interface!
@@ -105,21 +157,29 @@ const AnalysisResults = () => {
     );
   }
   
-  // NEW INTERFACE WHEN FLAG IS TRUE OR BETA PARAMETER
-  if (betaMode && analysisData) {
-    return <ModularAnalysisInterface analysisData={analysisData} />;
-  }
-  
-  // Fallback for beta mode without data
-  if (betaMode && !analysisData) {
+  // Loading state for beta mode
+  if (betaMode && isLoading) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-center text-white">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
           <h2 className="text-2xl font-bold mb-4">Loading Analysis Results...</h2>
           <p className="text-slate-300 mb-4">
-            Preparing your professional dashboard
+            Loading your professional dashboard from database
             {analysisId && <span className="block text-sm mt-2">Analysis ID: {analysisId}</span>}
           </p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Error state for beta mode
+  if (betaMode && error) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-center text-white">
+          <h2 className="text-2xl font-bold mb-4">Analysis Not Found</h2>
+          <p className="text-slate-300 mb-4">{error}</p>
           <button 
             onClick={() => window.location.href = '/analysis'}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors"
@@ -131,7 +191,29 @@ const AnalysisResults = () => {
     );
   }
   
-  return <ModularAnalysisInterface analysisData={analysisData} />;
+  // NEW INTERFACE WHEN FLAG IS TRUE OR BETA PARAMETER
+  if (betaMode && analysisData) {
+    return <ModularAnalysisInterface analysisData={analysisData} />;
+  }
+  
+  // Fallback for beta mode without data
+  return (
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div className="text-center text-white">
+        <h2 className="text-2xl font-bold mb-4">Loading Analysis Results...</h2>
+        <p className="text-slate-300 mb-4">
+          Preparing your professional dashboard
+          {analysisId && <span className="block text-sm mt-2">Analysis ID: {analysisId}</span>}
+        </p>
+        <button 
+          onClick={() => window.location.href = '/analysis'}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors"
+        >
+          Back to Analysis
+        </button>
+      </div>
+    );
+  }
 };
 
 export default AnalysisResults;

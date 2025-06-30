@@ -57,6 +57,68 @@ export type Database = {
         }
         Relationships: []
       }
+      analysis_results: {
+        Row: {
+          ai_model_used: string | null
+          analysis_context: string | null
+          analysis_id: string
+          annotations: Json
+          created_at: string
+          enhanced_context: Json | null
+          id: string
+          images: string[]
+          knowledge_sources_used: number | null
+          processing_time_ms: number | null
+          research_citations: string[] | null
+          total_annotations: number | null
+          updated_at: string
+          user_id: string
+          well_done_data: Json | null
+        }
+        Insert: {
+          ai_model_used?: string | null
+          analysis_context?: string | null
+          analysis_id: string
+          annotations?: Json
+          created_at?: string
+          enhanced_context?: Json | null
+          id?: string
+          images?: string[]
+          knowledge_sources_used?: number | null
+          processing_time_ms?: number | null
+          research_citations?: string[] | null
+          total_annotations?: number | null
+          updated_at?: string
+          user_id: string
+          well_done_data?: Json | null
+        }
+        Update: {
+          ai_model_used?: string | null
+          analysis_context?: string | null
+          analysis_id?: string
+          annotations?: Json
+          created_at?: string
+          enhanced_context?: Json | null
+          id?: string
+          images?: string[]
+          knowledge_sources_used?: number | null
+          processing_time_ms?: number | null
+          research_citations?: string[] | null
+          total_annotations?: number | null
+          updated_at?: string
+          user_id?: string
+          well_done_data?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_results_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analyses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       annotations: {
         Row: {
           analysis_id: string
