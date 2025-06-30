@@ -79,97 +79,99 @@ export const SimplifiedContextInput = ({
 
   return (
     <div className="space-y-4 relative">
-      {/* Suggestions Panel - Positioned absolutely above the main container */}
+      {/* Suggestions Panel - Positioned above the main container */}
       {showSuggestions && (
         <div
-          className="absolute bottom-full left-0 right-0 mb-2"
+          className="absolute bottom-full left-0 right-0 mb-2 z-50"
           style={{
-            borderRadius: '24px',
-            border: '1px solid #E2E2E2',
-            background: '#FFF',
-            boxShadow: '0px 32px 67px 0px rgba(0, 0, 0, 0.00), 0px 24px 61px 0px rgba(0, 0, 0, 0.01), 0px 12px 52px 0px rgba(0, 0, 0, 0.04), 0px 12px 38px 0px rgba(0, 0, 0, 0.06), 0px 4px 21px 0px rgba(0, 0, 0, 0.07)',
-            backdropFilter: 'blur(6px)',
-            padding: '20px'
+            borderRadius: '0px',
+            border: 'none',
+            background: '#F8F8F8',
+            padding: '0px'
           }}
         >
           <div 
-            className="flex gap-2 overflow-x-auto" 
-            style={{ 
-              scrollbarWidth: 'none', 
-              msOverflowStyle: 'none'
-            }}
+            className="p-5"
           >
-            {quickSuggestions.map((suggestion, index) => (
-              <button
-                key={index}
-                onClick={() => handleSuggestionClick(suggestion)}
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors whitespace-nowrap flex-shrink-0"
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '20px',
-                  border: '1px solid #E2E2E2',
-                  background: '#FFF',
-                  boxShadow: '0px 1px 2px 0px rgba(0, 0, 0, 0.05)',
-                }}
-              >
-                {suggestion.icon && <span className="text-xs">{suggestion.icon}</span>}
-                {suggestion.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Advanced Toggle */}
-          <div className="mt-3 pt-2 border-t border-gray-100 dark:border-slate-700 hidden">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+            <div 
+              className="flex gap-2 overflow-x-auto" 
+              style={{ 
+                scrollbarWidth: 'none', 
+                msOverflowStyle: 'none'
+              }}
             >
-              {showAdvanced ? (
-                <>
-                  <ChevronUp className="w-3 h-3 mr-1" />
-                  Hide Advanced
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="w-3 h-3 mr-1" />
-                  Show Advanced Options
-                </>
-              )}
-            </Button>
-          </div>
-
-          {/* Advanced Templates */}
-          {showAdvanced && (
-            <div className="space-y-3 pt-2">
-              {Object.entries(advancedTemplates).map(([category, templates]) => (
-                <div key={category} className="space-y-2">
-                  <div className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
-                    {category}
-                  </div>
-                  <div className="space-y-1">
-                    {templates.map((template, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleAdvancedTemplate(template)}
-                        className="text-left text-xs text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-slate-700 p-2 rounded w-full transition-colors"
-                      >
-                        {template.split(' - ')[0]}
-                        <div className="text-gray-500 dark:text-gray-500 mt-1">
-                          {template.split(' - ')[1]}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+              {quickSuggestions.map((suggestion, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors whitespace-nowrap flex-shrink-0"
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '20px',
+                    border: '1px solid #E2E2E2',
+                    background: '#FFF',
+                    boxShadow: '0px 1px 2px 0px rgba(0, 0, 0, 0.05)',
+                  }}
+                >
+                  {suggestion.icon && <span className="text-xs">{suggestion.icon}</span>}
+                  {suggestion.label}
+                </button>
               ))}
             </div>
-          )}
+
+            {/* Advanced Toggle */}
+            <div className="mt-3 pt-2 border-t border-gray-100 dark:border-slate-700 hidden">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              >
+                {showAdvanced ? (
+                  <>
+                    <ChevronUp className="w-3 h-3 mr-1" />
+                    Hide Advanced
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-3 h-3 mr-1" />
+                    Show Advanced Options
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* Advanced Templates */}
+            {showAdvanced && (
+              <div className="space-y-3 pt-2">
+                {Object.entries(advancedTemplates).map(([category, templates]) => (
+                  <div key={category} className="space-y-2">
+                    <div className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                      {category}
+                    </div>
+                    <div className="space-y-1">
+                      {templates.map((template, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleAdvancedTemplate(template)}
+                          className="text-left text-xs text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-slate-700 p-2 rounded w-full transition-colors"
+                        >
+                          {template.split(' - ')[0]}
+                          <div className="text-gray-500 dark:text-gray-500 mt-1">
+                            {template.split(' - ')[1]}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Main Input Container - Always stays in the same position */}
+      {/* Main Input Container */}
       <div 
         className="flex flex-col-reverse transition-all duration-300 ease-in-out"
         style={{
