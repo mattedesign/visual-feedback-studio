@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { MessageSquare, Star, Cpu } from 'lucide-react';
 
@@ -137,8 +136,8 @@ const featureCards: FeatureCard[] = [
 
 export const FeatureCards = () => {
   return (
-    <div className="w-full max-w-[688px] mx-auto">
-      <div className="flex gap-6">
+    <div className="w-full max-w-[688px] mx-auto py-4">
+      <div className="flex gap-6 h-auto min-h-[400px]">
         {featureCards.map((card) => {
           const Icon = card.icon;
           
@@ -149,6 +148,7 @@ export const FeatureCards = () => {
                 group flex-1 bg-white border border-slate-200 rounded-xl p-6 
                 transition-all duration-200 ease-out
                 hover:shadow-lg hover:-translate-y-0.5 hover:shadow-black/8
+                h-auto min-h-[380px] max-h-none
                 ${card.hideOnMobile ? 'hidden min-[400px]:flex flex-col' : 'flex flex-col'}
                 ${card.hideOnTablet ? 'min-[400px]:hidden min-[900px]:flex' : ''}
               `}
@@ -157,7 +157,7 @@ export const FeatureCards = () => {
               }}
             >
               {/* Header */}
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center gap-3 mb-4 flex-shrink-0">
                 <div className="flex-shrink-0">
                   <Icon className="w-5 h-5 text-slate-500 group-hover:text-blue-600 transition-colors duration-200" />
                 </div>
@@ -167,17 +167,17 @@ export const FeatureCards = () => {
               </div>
 
               {/* Feature Items */}
-              <div className="space-y-2 flex-1">
+              <div className="space-y-2 flex-1 overflow-visible">
                 {card.items.map((item, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between p-2 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors duration-200"
+                    className="flex items-center justify-between p-2 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors duration-200 min-h-[44px]"
                   >
-                    <span className="text-sm text-slate-600 leading-relaxed flex-1">
+                    <span className="text-sm text-slate-600 leading-relaxed flex-1 py-1">
                       {item.text}
                     </span>
                     {item.badge && (
-                      <span className={getBadgeStyles(item.badge.variant)}>
+                      <span className={`${getBadgeStyles(item.badge.variant)} ml-2 flex-shrink-0`}>
                         {item.badge.text}
                       </span>
                     )}
