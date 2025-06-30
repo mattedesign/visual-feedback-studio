@@ -28,6 +28,16 @@ interface AnalyzeImagesResponse {
   annotations: Annotation[];
   analysis?: any;
   enhancedContext?: EnhancedContext;
+  // ✅ NEW: Add Well Done data to response
+  wellDone?: {
+    insights: Array<{
+      title: string;
+      description: string;
+      category: string;
+    }>;
+    overallStrengths: string[];
+    categoryHighlights: Record<string, string>;
+  };
 }
 
 export const useEnhancedAnalysis = ({ currentAnalysis }: UseEnhancedAnalysisProps = {}) => {
@@ -165,14 +175,19 @@ export const useEnhancedAnalysis = ({ currentAnalysis }: UseEnhancedAnalysisProp
       console.log('✅ Enhanced Analysis: Analysis completed successfully', {
         annotationCount: analysisResult.annotations?.length || 0,
         researchEnhanced: analysisResult.researchEnhanced,
-        knowledgeSourcesUsed: analysisResult.knowledgeSourcesUsed
+        knowledgeSourcesUsed: analysisResult.knowledgeSourcesUsed,
+        // ✅ NEW: Log Well Done data received
+        wellDoneReceived: !!analysisResult.wellDone,
+        wellDoneInsights: analysisResult.wellDone?.insights?.length || 0
       });
 
       const response: AnalyzeImagesResponse = {
         success: true,
         annotations: analysisResult.annotations || [],
         analysis: analysisResult,
-        enhancedContext: contextData
+        enhancedContext: contextData,
+        // ✅ NEW: Pass through Well Done data
+        wellDone: analysisResult.wellDone
       };
 
       // Show enhanced success message

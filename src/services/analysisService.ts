@@ -21,6 +21,16 @@ interface AnalyzeDesignResponse {
   researchEnhanced?: boolean;
   knowledgeSourcesUsed?: number;
   researchCitations?: string[];
+  // ✅ NEW: Add Well Done data to response interface
+  wellDone?: {
+    insights: Array<{
+      title: string;
+      description: string;
+      category: string;
+    }>;
+    overallStrengths: string[];
+    categoryHighlights: Record<string, string>;
+  };
 }
 
 export const createAnalysis = async () => {
@@ -91,7 +101,10 @@ const analyzeDesign = async (request: AnalyzeDesignRequest): Promise<AnalyzeDesi
       annotationCount: data.annotations?.length || 0,
       ragEnhanced: data.ragEnhanced || false,
       knowledgeSourcesUsed: data.knowledgeSourcesUsed || 0,
-      researchCitations: data.researchCitations?.length || 0
+      researchCitations: data.researchCitations?.length || 0,
+      // ✅ NEW: Log Well Done data presence
+      wellDoneReceived: !!data.wellDone,
+      wellDoneInsights: data.wellDone?.insights?.length || 0
     });
 
     // If analysis was successful, increment usage counter
@@ -108,7 +121,9 @@ const analyzeDesign = async (request: AnalyzeDesignRequest): Promise<AnalyzeDesi
       error: data.error,
       researchEnhanced: data.ragEnhanced || false,
       knowledgeSourcesUsed: data.knowledgeSourcesUsed || 0,
-      researchCitations: data.researchCitations || []
+      researchCitations: data.researchCitations || [],
+      // ✅ NEW: Pass through Well Done data from backend
+      wellDone: data.wellDone
     };
 
   } catch (error) {

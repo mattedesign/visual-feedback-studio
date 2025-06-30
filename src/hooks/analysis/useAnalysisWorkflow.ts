@@ -241,11 +241,20 @@ export const useAnalysisWorkflow = () => {
       if (result.success) {
         console.log('✅ Enhanced analysis completed successfully:', {
           annotationCount: result.annotations.length,
-          enhancedContext: !!result.enhancedContext
+          enhancedContext: !!result.enhancedContext,
+          // ✅ NEW: Log Well Done data received
+          wellDoneReceived: !!result.wellDone,
+          wellDoneInsights: result.wellDone?.insights?.length || 0
         });
 
         setAiAnnotations(result.annotations);
-        setAnalysisResults(result.analysis);
+        
+        // ✅ NEW: Store analysis results with Well Done data included
+        const analysisResultsWithWellDone = {
+          ...result.analysis,
+          wellDone: result.wellDone // This is the key addition
+        };
+        setAnalysisResults(analysisResultsWithWellDone);
         
         // 🔥 FIXED: Store enhanced context data properly
         if (result.enhancedContext) {
