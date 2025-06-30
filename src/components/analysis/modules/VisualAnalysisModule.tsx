@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Eye, ZoomIn, ZoomOut, RotateCcw, Download, Share2, FileText } from 'lucide-react';
 
@@ -29,7 +28,65 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
   
   // Use existing annotation data as-is with proper safety checks
   const processedAnnotations = analysisData?.annotations || [];
-  const images = analysisData?.images || [{ url: '/placeholder.svg', preview: '/placeholder.svg' }];
+  
+  // FIXED: Enhanced image data mapping to handle multiple data sources
+  const images = (() => {
+    // Try multiple data sources for images
+    if (analysisData?.images && Array.isArray(analysisData.images)) {
+      return analysisData.images;
+    }
+    
+    // Check if images are stored as text array in database
+    if (analysisData?.images && typeof analysisData.images === 'string') {
+      try {
+        const parsed = JSON.parse(analysisData.images);
+        if (Array.isArray(parsed)) {
+          return parsed.map(img => ({ 
+            url: typeof img === 'string' ? img : img.url, 
+            preview: typeof img === 'string' ? img : img.preview || img.url 
+          }));
+        }
+      } catch (e) {
+        console.warn('Failed to parse images from analysis data:', e);
+      }
+    }
+    
+    // Check for raw annotation data with image references
+    if (analysisData?.annotations && Array.isArray(analysisData.annotations)) {
+      const imageUrls = [...new Set(
+        analysisData.annotations
+          .map(ann => ann?.imageUrl || ann?.image)
+          .filter(Boolean)
+      )];
+      
+      if (imageUrls.length > 0) {
+        return imageUrls.map(url => ({ url, preview: url }));
+      }
+    }
+    
+    // Check if there's a single image URL stored
+    if (analysisData?.imageUrl) {
+      return [{ url: analysisData.imageUrl, preview: analysisData.imageUrl }];
+    }
+    
+    // Check analysis results table for images array
+    if (analysisData?.images_array && Array.isArray(analysisData.images_array)) {
+      return analysisData.images_array.map(url => ({ url, preview: url }));
+    }
+    
+    // Log available data structure for debugging
+    console.log('VisualAnalysisModule: Available analysisData keys:', Object.keys(analysisData));
+    console.log('VisualAnalysisModule: Analysis data structure:', {
+      hasImages: !!analysisData?.images,
+      hasAnnotations: !!analysisData?.annotations,
+      hasImageUrl: !!analysisData?.imageUrl,
+      annotationCount: analysisData?.annotations?.length || 0,
+      analysisDataKeys: Object.keys(analysisData)
+    });
+    
+    // Fallback to placeholder
+    return [{ url: '/placeholder.svg', preview: '/placeholder.svg' }];
+  })();
   
   // Filter annotations based on severity
   const filteredAnnotations = severityFilter === 'all' 
@@ -77,7 +134,18 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
               src={images[currentImageIndex]?.url || images[currentImageIndex]?.preview || '/placeholder.svg'}
               alt={`Analysis target ${currentImageIndex + 1}`}
               className="max-w-full h-auto rounded-lg shadow-lg"
+              onError={(e) => {
+                console.error('Image failed to load:', images[currentImageIndex]?.url);
+                e.currentTarget.src = '/placeholder.svg';
+              }}
             />
+            
+            {/* Show image URL for debugging */}
+            {images[currentImageIndex]?.url && images[currentImageIndex]?.url !== '/placeholder.svg' && (
+              <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                Image {currentImageIndex + 1}: {images[currentImageIndex]?.url?.substring(0, 30)}...
+              </div>
+            )}
             
             {/* Render annotations with positions over the image */}
             {annotationsWithPosition.map((annotation, index) => (
