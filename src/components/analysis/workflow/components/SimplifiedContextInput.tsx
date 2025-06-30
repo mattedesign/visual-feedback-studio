@@ -85,16 +85,11 @@ export const SimplifiedContextInput = ({
         style={{
           alignItems: 'center',
           alignSelf: 'stretch',
-          borderRadius: showSuggestions ? '10px' : '24px',
-          border: showSuggestions ? '0px 0px 0px 1px #333' : '1px solid var(--Stroke-02, #E2E2E2)',
-          background: showSuggestions 
-            ? 'linear-gradient(180deg, var(--Shade-7-100, #323232) 0%, var(--Shade-8-100, #222) 100%)'
-            : 'var(--Color, #FFF)',
-          boxShadow: showSuggestions
-            ? '0px 0.5px 1px 0px rgba(255, 255, 255, 0.15) inset, 0px 2px 4px -1px rgba(13, 13, 13, 0.50), 0px -1px 1.2px 0.35px #121212 inset, 0px 0px 0px 1px #333'
-            : '0px 32px 67px 0px rgba(0, 0, 0, 0.00), 0px 24px 61px 0px rgba(0, 0, 0, 0.01), 0px 12px 52px 0px rgba(0, 0, 0, 0.04), 0px 12px 38px 0px rgba(0, 0, 0, 0.06), 0px 4px 21px 0px rgba(0, 0, 0, 0.07)',
+          borderRadius: '24px',
+          border: '1px solid var(--Stroke-02, #E2E2E2)',
+          background: 'var(--Color, #FFF)',
+          boxShadow: '0px 32px 67px 0px rgba(0, 0, 0, 0.00), 0px 24px 61px 0px rgba(0, 0, 0, 0.01), 0px 12px 52px 0px rgba(0, 0, 0, 0.04), 0px 12px 38px 0px rgba(0, 0, 0, 0.06), 0px 4px 21px 0px rgba(0, 0, 0, 0.07)',
           backdropFilter: 'blur(6px)',
-          color: showSuggestions ? '#ffffff' : 'inherit',
           // Reduce the upward movement to stay aligned with left panel
           transform: showSuggestions ? 'translateY(-20px)' : 'translateY(0)',
         }}
@@ -178,10 +173,15 @@ export const SimplifiedContextInput = ({
               justifyContent: 'center',
               alignItems: 'center',
               gap: '16px',
-              color: showSuggestions ? '#ffffff' : '#7B7B7B',
               borderRadius: '10px',
-              border: '1px solid var(--Stroke-02, #E2E2E2)',
-              background: 'transparent',
+              border: showSuggestions ? '0px 0px 0px 1px #333' : '1px solid var(--Stroke-02, #E2E2E2)',
+              background: showSuggestions 
+                ? 'linear-gradient(180deg, var(--Shade-7-100, #323232) 0%, var(--Shade-8-100, #222) 100%)'
+                : 'transparent',
+              color: showSuggestions ? '#ffffff' : '#7B7B7B',
+              boxShadow: showSuggestions
+                ? '0px 0.5px 1px 0px rgba(255, 255, 255, 0.15) inset, 0px 2px 4px -1px rgba(13, 13, 13, 0.50), 0px -1px 1.2px 0.35px #121212 inset, 0px 0px 0px 1px #333'
+                : 'none',
               cursor: 'pointer'
             }}
           >
@@ -229,8 +229,7 @@ export const SimplifiedContextInput = ({
             className="border-0 bg-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none text-base text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 w-full"
             style={{ 
               outline: 'none',
-              boxShadow: 'none',
-              color: showSuggestions ? '#ffffff' : 'inherit'
+              boxShadow: 'none'
             }}
           />
         </div>
