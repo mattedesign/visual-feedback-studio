@@ -35,39 +35,33 @@ export const StudioRightPanel = ({
   const [isInsightsOpen, setIsInsightsOpen] = useState(true);
   const [overallView, setOverallView] = useState(true);
   const [filterBy, setFilterBy] = useState('all');
-  // ✅ NEW: Add Well Done state
   const [isWellDoneOpen, setIsWellDoneOpen] = useState(true);
   const [showAllWellDone, setShowAllWellDone] = useState(false);
   
   const hasResults = workflow.currentStep === 'results' && workflow.aiAnnotations.length > 0;
 
-  // ✅ DEBUG: Enhanced logging for both issues
-  console.log('🎛️ STUDIO RIGHT PANEL - COMPLETE DEBUG:', {
-    // Well Done Debug
-    analysisResults: workflow.analysisResults,
-    wellDoneFromResults: workflow.analysisResults?.wellDone,
-    wellDoneExists: !!(workflow.analysisResults?.wellDone?.insights?.length),
-    
-    // Multi-Image Debug
+  // ✅ FIXED: Use the correct active image URL for filtering
+  const activeImageUrl = workflow.activeImageUrl || workflow.selectedImageUrl || workflow.selectedImages[0];
+  
+  console.log('🎛️ STUDIO RIGHT PANEL - ENHANCED DEBUG:', {
+    activeImageUrl,
+    workflowActiveImageUrl: workflow.activeImageUrl,
+    workflowSelectedImageUrl: workflow.selectedImageUrl,
     selectedImages: workflow.selectedImages,
-    selectedImageUrl: workflow.selectedImageUrl,
-    activeImageUrl: workflow.selectedImageUrl,
-    aiAnnotationsTotal: workflow.aiAnnotations.length,
-    aiAnnotationsPreview: workflow.aiAnnotations.slice(0, 3).map(a => ({
-      id: a.id,
-      imageIndex: a.imageIndex,
-      category: a.category,
-      feedbackPreview: a.feedback?.substring(0, 50) + '...'
-    }))
+    aiAnnotationsTotal: workflow.aiAnnotations.length
   });
 
-  // ✅ FIXED: Only use the correct path for Well Done data
   const wellDoneData = workflow.analysisResults?.wellDone;
 
-  // ✅ FIXED: Get current image index for multi-image filtering
+  // ✅ FIXED: Get current image index using the active image URL
   const getCurrentImageIndex = () => {
     if (workflow.selectedImages.length <= 1) return 0;
-    const currentIndex = workflow.selectedImages.indexOf(workflow.selectedImageUrl || '');
+    const currentIndex = workflow.selectedImages.indexOf(activeImageUrl);
+    console.log('🔍 GETTING CURRENT IMAGE INDEX:', {
+      activeImageUrl,
+      selectedImages: workflow.selectedImages,
+      calculatedIndex: currentIndex >= 0 ? currentIndex : 0
+    });
     return currentIndex >= 0 ? currentIndex : 0;
   };
 
@@ -84,11 +78,16 @@ export const StudioRightPanel = ({
         (annotation.imageIndex ?? 0) === currentImageIndex
       );
       
-      console.log('🎯 FILTERING ANNOTATIONS FOR IMAGE:', {
+      console.log('🎯 FILTERING ANNOTATIONS FOR CURRENT IMAGE:', {
         currentImageIndex,
+        activeImageUrl,
         totalAnnotations: workflow.aiAnnotations.length,
         filteredAnnotations: filtered.length,
-        imageUrl: workflow.selectedImageUrl
+        annotationBreakdown: workflow.aiAnnotations.map(a => ({
+          id: a.id,
+          imageIndex: a.imageIndex,
+          matches: (a.imageIndex ?? 0) === currentImageIndex
+        }))
       });
       
       return filtered;
@@ -228,10 +227,10 @@ export const StudioRightPanel = ({
           </div>
         )}
 
-        {/* ✅ FIXED: Multi-Image Indicator */}
+        {/* ✅ FIXED: Multi-Image Indicator with correct image index */}
         {workflow.selectedImages.length > 1 && hasResults && (
           <div className="text-xs text-gray-600 dark:text-gray-400 text-center">
-            Viewing Image {getCurrentImageIndex() + 1} of {workflow.selectedImages.length}
+            Viewing Image {currentImageIndex + 1} of {workflow.selectedImages.length}
           </div>
         )}
       </div>
