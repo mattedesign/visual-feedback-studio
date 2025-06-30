@@ -1,64 +1,69 @@
 
 import React, { useState } from 'react';
-import { useFeatureFlag } from '@/hooks/useFeatureFlag';
-import { BusinessAnalysisData } from '@/types/businessImpact';
+import { Eye, ZoomIn, ZoomOut, RotateCcw, Download, Share2, FileText } from 'lucide-react';
 
-interface AnnotationWithPosition {
-  id: string;
-  x?: number;
-  y?: number;
-  severity: 'critical' | 'suggested' | 'enhancement';
-  title?: string;
-  description?: string;
-  researchBacking?: string[];
-  confidence?: number;
-  category?: string;
-  feedback?: string;
-  implementationEffort?: 'low' | 'medium' | 'high';
-  businessImpact?: 'low' | 'medium' | 'high';
-  researchCitations?: string[];
-}
-
+// Flexible interface for maximum compatibility
 interface VisualAnalysisModuleProps {
-  analysisData: BusinessAnalysisData;
+  analysisData: any; // Use flexible type for compatibility
 }
 
 export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({ 
   analysisData 
 }) => {
-  const [selectedAnnotation, setSelectedAnnotation] = useState<AnnotationWithPosition | null>(null);
+  const [selectedAnnotation, setSelectedAnnotation] = useState<any>(null);
   const [severityFilter, setSeverityFilter] = useState<string>('all');
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
   
   // Add safety check at the beginning of the component
-  if (!analysisData || !analysisData.annotations) {
+  if (!analysisData) {
     return (
       <div className="visual-analysis-module flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
-        No analysis data available
+        <div className="text-center">
+          <Eye className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+          <h3 className="font-medium mb-2">No Analysis Data Available</h3>
+          <p className="text-sm">Unable to load visual analysis data.</p>
+        </div>
       </div>
     );
   }
   
-  // Use existing annotation data as-is with proper typing
-  const processedAnnotations: AnnotationWithPosition[] = analysisData.annotations || [];
+  // Use existing annotation data as-is with proper safety checks
+  const processedAnnotations = analysisData?.annotations || [];
+  const images = analysisData?.images || [{ url: '/placeholder.svg', preview: '/placeholder.svg' }];
   
   // Filter annotations based on severity
   const filteredAnnotations = severityFilter === 'all' 
     ? processedAnnotations 
-    : processedAnnotations.filter(ann => ann.severity === severityFilter);
+    : processedAnnotations.filter(ann => ann?.severity === severityFilter);
   
   // Separate annotations with and without positions
   const annotationsWithPosition = filteredAnnotations.filter(ann => 
-    ann.x !== undefined && ann.y !== undefined
+    ann?.x !== undefined && ann?.y !== undefined
   );
   const annotationsWithoutPosition = filteredAnnotations.filter(ann => 
-    ann.x === undefined || ann.y === undefined
+    ann?.x === undefined || ann?.y === undefined
   );
-  
-  // Mock images data for now - this would come from actual analysis data
-  const images = [
-    { url: '/placeholder.svg', preview: '/placeholder.svg' }
-  ];
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'critical': return 'bg-red-500 hover:bg-red-600 border-red-400';
+      case 'suggested': return 'bg-yellow-500 hover:bg-yellow-600 border-yellow-400';
+      case 'enhancement': return 'bg-blue-500 hover:bg-blue-600 border-blue-400';
+      default: return 'bg-gray-500 hover:bg-gray-600 border-gray-400';
+    }
+  };
+
+  const getSeverityFilterColor = (severity: string, isActive: boolean) => {
+    if (!isActive) return 'hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300';
+    
+    switch (severity) {
+      case 'critical': return 'bg-red-100 dark:bg-red-900 text-red-900 dark:text-red-100';
+      case 'suggested': return 'bg-yellow-100 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100';
+      case 'enhancement': return 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100';
+      case 'all': return 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100';
+      default: return 'bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100';
+    }
+  };
 
   return (
     <div className="visual-analysis-module flex flex-col lg:flex-row h-screen bg-white dark:bg-slate-900">
@@ -66,29 +71,27 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
       <div className="left-panel flex-1 p-4 lg:p-6">
         {/* Image container with annotations */}
         <div className="image-container bg-gray-50 dark:bg-slate-800 rounded-lg p-4 mb-4 relative">
-          <div className="relative inline-block">
+          <div className="relative inline-block max-w-full">
             {/* Display current image */}
             <img 
               src={images[currentImageIndex]?.url || images[currentImageIndex]?.preview || '/placeholder.svg'}
-              alt="Analysis target"
+              alt={`Analysis target ${currentImageIndex + 1}`}
               className="max-w-full h-auto rounded-lg shadow-lg"
             />
             
             {/* Render annotations with positions over the image */}
             {annotationsWithPosition.map((annotation, index) => (
               <div
-                key={annotation.id}
-                className={`absolute w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold cursor-pointer transform -translate-x-1/2 -translate-y-1/2 hover:scale-110 transition-transform duration-200 ${
-                  annotation.severity === 'critical' ? 'bg-red-500 hover:bg-red-600 border-2 border-red-400' :
-                  annotation.severity === 'suggested' ? 'bg-yellow-500 hover:bg-yellow-600 border-2 border-yellow-400' :
-                  'bg-blue-500 hover:bg-blue-600 border-2 border-blue-400'
-                } ${selectedAnnotation?.id === annotation.id ? 'ring-4 ring-white scale-110' : ''}`}
+                key={annotation?.id || `annotation-${index}`}
+                className={`absolute w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold cursor-pointer transform -translate-x-1/2 -translate-y-1/2 hover:scale-110 transition-transform duration-200 border-2 ${
+                  getSeverityColor(annotation?.severity || 'enhancement')
+                } ${selectedAnnotation?.id === annotation?.id ? 'ring-4 ring-white scale-110' : ''}`}
                 style={{
-                  left: `${annotation.x}%`,
-                  top: `${annotation.y}%`
+                  left: `${annotation?.x || 50}%`,
+                  top: `${annotation?.y || 50}%`
                 }}
                 onClick={() => setSelectedAnnotation(annotation)}
-                title={annotation.feedback?.substring(0, 50) + '...' || annotation.title || 'Annotation'}
+                title={(annotation?.feedback || annotation?.title || 'Annotation').substring(0, 50) + '...'}
               >
                 {index + 1}
               </div>
@@ -105,17 +108,17 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
             <div className="space-y-2">
               {annotationsWithoutPosition.map((annotation, index) => (
                 <div 
-                  key={annotation.id}
+                  key={annotation?.id || `no-pos-${index}`}
                   className="flex items-start gap-2 p-2 bg-white dark:bg-slate-600 rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-500"
                   onClick={() => setSelectedAnnotation(annotation)}
                 >
                   <span className={`w-4 h-4 rounded-full flex-shrink-0 mt-0.5 ${
-                    annotation.severity === 'critical' ? 'bg-red-500' :
-                    annotation.severity === 'suggested' ? 'bg-yellow-500' :
+                    annotation?.severity === 'critical' ? 'bg-red-500' :
+                    annotation?.severity === 'suggested' ? 'bg-yellow-500' :
                     'bg-blue-500'
                   }`}></span>
                   <div className="text-sm text-gray-900 dark:text-white">
-                    {annotation.feedback || annotation.title || 'Analysis finding'}
+                    {annotation?.feedback || annotation?.title || 'Analysis finding'}
                   </div>
                 </div>
               ))}
@@ -126,14 +129,17 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
         {/* Image controls */}
         <div className="image-controls flex flex-col sm:flex-row items-center justify-between bg-gray-100 dark:bg-slate-700 rounded-lg p-3 gap-3">
           <div className="zoom-controls flex space-x-2">
-            <button className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+            <button className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm flex items-center gap-1">
+              <ZoomIn className="w-4 h-4" />
               Zoom In
             </button>
-            <button className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+            <button className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm flex items-center gap-1">
+              <ZoomOut className="w-4 h-4" />
               Zoom Out
             </button>
-            <button className="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm">
-              Reset View
+            <button className="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm flex items-center gap-1">
+              <RotateCcw className="w-4 h-4" />
+              Reset
             </button>
           </div>
           
@@ -174,35 +180,35 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
               <div className="bg-white dark:bg-slate-700 p-4 rounded-lg border border-gray-200 dark:border-slate-600">
                 <div className="flex items-center gap-2 mb-2">
                   <span className={`w-3 h-3 rounded-full ${
-                    selectedAnnotation.severity === 'critical' ? 'bg-red-500' :
-                    selectedAnnotation.severity === 'suggested' ? 'bg-yellow-500' :
+                    selectedAnnotation?.severity === 'critical' ? 'bg-red-500' :
+                    selectedAnnotation?.severity === 'suggested' ? 'bg-yellow-500' :
                     'bg-blue-500'
                   }`}></span>
                   <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                    {selectedAnnotation.severity} • {selectedAnnotation.category || 'UX'}
+                    {selectedAnnotation?.severity || 'enhancement'} • {selectedAnnotation?.category || 'UX'}
                   </span>
                 </div>
                 <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                  {selectedAnnotation.title || selectedAnnotation.feedback?.substring(0, 100) || 'Analysis Insight'}
+                  {selectedAnnotation?.title || selectedAnnotation?.feedback?.substring(0, 100) || 'Analysis Insight'}
                 </h4>
                 <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 leading-relaxed">
-                  {selectedAnnotation.feedback || selectedAnnotation.description || 'No detailed feedback available.'}
+                  {selectedAnnotation?.feedback || selectedAnnotation?.description || 'No detailed feedback available.'}
                 </p>
                 
                 {/* Implementation Effort and Business Impact */}
                 <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-3">
-                  <span>Effort: {selectedAnnotation.implementationEffort || 'medium'}</span>
-                  <span>Impact: {selectedAnnotation.businessImpact || 'medium'}</span>
+                  <span>Effort: {selectedAnnotation?.implementationEffort || 'medium'}</span>
+                  <span>Impact: {selectedAnnotation?.businessImpact || 'medium'}</span>
                 </div>
                 
                 {/* Research Backing - if available */}
-                {selectedAnnotation.researchCitations && selectedAnnotation.researchCitations.length > 0 && (
+                {selectedAnnotation?.researchBacking && selectedAnnotation.researchBacking.length > 0 && (
                   <div className="mt-4">
                     <h5 className="font-medium text-gray-900 dark:text-white mb-2 text-sm">
                       Research Backing
                     </h5>
                     <ul className="text-xs text-gray-600 dark:text-gray-300 space-y-1">
-                      {selectedAnnotation.researchCitations.slice(0, 3).map((source: string, index: number) => (
+                      {selectedAnnotation.researchBacking.slice(0, 3).map((source: string, index: number) => (
                         <li key={index} className="flex items-start gap-1">
                           <span className="text-blue-600 dark:text-blue-400">•</span>
                           <span>{source}</span>
@@ -213,7 +219,7 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
                 )}
                 
                 {/* Confidence Level */}
-                {selectedAnnotation.confidence && (
+                {selectedAnnotation?.confidence && (
                   <div className="mt-3 pt-3 border-t border-gray-200 dark:border-slate-600">
                     <div className="flex justify-between text-xs">
                       <span className="text-gray-600 dark:text-gray-400">Confidence</span>
@@ -242,9 +248,7 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
           <div className="space-y-2">
             <button 
               className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
-                severityFilter === 'all' 
-                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100' 
-                  : 'hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300'
+                getSeverityFilterColor('all', severityFilter === 'all')
               }`}
               onClick={() => setSeverityFilter('all')}
             >
@@ -252,33 +256,27 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
             </button>
             <button 
               className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
-                severityFilter === 'critical' 
-                  ? 'bg-red-100 dark:bg-red-900 text-red-900 dark:text-red-100' 
-                  : 'hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300'
+                getSeverityFilterColor('critical', severityFilter === 'critical')
               }`}
               onClick={() => setSeverityFilter('critical')}
             >
-              Critical Only ({processedAnnotations.filter(a => a.severity === 'critical').length})
+              Critical Only ({processedAnnotations.filter(a => a?.severity === 'critical').length})
             </button>
             <button 
               className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
-                severityFilter === 'suggested' 
-                  ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100' 
-                  : 'hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300'
+                getSeverityFilterColor('suggested', severityFilter === 'suggested')
               }`}
               onClick={() => setSeverityFilter('suggested')}
             >
-              Suggested ({processedAnnotations.filter(a => a.severity === 'suggested').length})
+              Suggested ({processedAnnotations.filter(a => a?.severity === 'suggested').length})
             </button>
             <button 
               className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
-                severityFilter === 'enhancement' 
-                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100' 
-                  : 'hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300'
+                getSeverityFilterColor('enhancement', severityFilter === 'enhancement')
               }`}
               onClick={() => setSeverityFilter('enhancement')}
             >
-              Enhancements ({processedAnnotations.filter(a => a.severity === 'enhancement').length})
+              Enhancements ({processedAnnotations.filter(a => a?.severity === 'enhancement').length})
             </button>
           </div>
         </div>
@@ -289,13 +287,16 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
             Export Options
           </h3>
           <div className="space-y-2">
-            <button className="w-full bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 transition-colors">
+            <button className="w-full bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+              <Download className="w-4 h-4" />
               Download Annotated Image
             </button>
-            <button className="w-full border border-gray-300 dark:border-gray-600 px-4 py-2 rounded text-sm hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 transition-colors">
+            <button className="w-full border border-gray-300 dark:border-gray-600 px-4 py-2 rounded text-sm hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 transition-colors flex items-center justify-center gap-2">
+              <Share2 className="w-4 h-4" />
               Copy Annotation URLs
             </button>
-            <button className="w-full border border-gray-300 dark:border-gray-600 px-4 py-2 rounded text-sm hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 transition-colors">
+            <button className="w-full border border-gray-300 dark:border-gray-600 px-4 py-2 rounded text-sm hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 transition-colors flex items-center justify-center gap-2">
+              <FileText className="w-4 h-4" />
               Generate Technical Brief
             </button>
           </div>

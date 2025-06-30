@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,31 +17,34 @@ import {
   Zap,
   Calendar
 } from 'lucide-react';
-import { BusinessAnalysisData, BusinessImpactMetrics, QuickWin, MajorProject } from '@/types/businessImpact';
 
+// Flexible interface for maximum compatibility
 interface BusinessImpactDashboardProps {
-  analysisData: BusinessAnalysisData;
+  analysisData: any; // Use flexible type for compatibility
 }
 
 export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = ({ 
   analysisData 
 }) => {
-  // Calculate business metrics from annotations
-  const calculateBusinessMetrics = (): BusinessImpactMetrics => {
-    const { annotations } = analysisData;
-    
+  // Safety checks and data extraction with fallbacks
+  const annotations = analysisData?.annotations || [];
+  const enhancedContext = analysisData?.enhancedContext || {};
+  const siteName = analysisData?.siteName || 'Website';
+
+  // Calculate business metrics from annotations with safety checks
+  const calculateBusinessMetrics = () => {
     // Calculate impact score
     const severityWeights = { critical: 30, suggested: 20, enhancement: 10 };
     const impactScore = Math.min(100, annotations.reduce((sum, ann) => {
-      const weight = severityWeights[ann.severity] || 10;
-      const confidence = ann.confidence || 0.8;
+      const weight = severityWeights[ann?.severity] || 10;
+      const confidence = ann?.confidence || 0.8;
       return sum + (weight * confidence);
     }, 0));
 
     // Calculate revenue estimate
-    const criticalCount = annotations.filter(a => a.severity === 'critical').length;
-    const suggestedCount = annotations.filter(a => a.severity === 'suggested').length;
-    const enhancementCount = annotations.filter(a => a.severity === 'enhancement').length;
+    const criticalCount = annotations.filter(a => a?.severity === 'critical').length;
+    const suggestedCount = annotations.filter(a => a?.severity === 'suggested').length;
+    const enhancementCount = annotations.filter(a => a?.severity === 'enhancement').length;
     
     const baseRevenue = 10000 * 12 * 0.02 * 150; // 10k visitors/month, 2% conversion, $150 AOV
     const revenueIncrease = (criticalCount * 0.15) + (suggestedCount * 0.08) + (enhancementCount * 0.03);
@@ -48,8 +52,8 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
 
     // Calculate timeline
     const quickWinCount = annotations.filter(a => 
-      a.implementationEffort === 'low' || 
-      (a.feedback && /color|spacing|copy|button|text/i.test(a.feedback))
+      a?.implementationEffort === 'low' || 
+      (a?.feedback && /color|spacing|copy|button|text/i.test(a.feedback))
     ).length;
     const majorProjectCount = annotations.length - quickWinCount;
 
@@ -72,46 +76,46 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
       competitivePosition: {
         score: Math.min(10, Math.max(1, 10 - (criticalCount * 2) - (suggestedCount * 1))),
         strengths: ['User experience focus', 'Research-backed approach'],
-        gaps: annotations.filter(a => a.severity === 'critical').map(a => a.feedback.substring(0, 50) + '...')
+        gaps: annotations.filter(a => a?.severity === 'critical').map(a => (a?.feedback || a?.title || 'Critical issue').substring(0, 50) + '...')
       }
     };
   };
 
-  // Get quick wins
-  const getQuickWins = (): QuickWin[] => {
-    return analysisData.annotations
+  // Get quick wins with safety checks
+  const getQuickWins = () => {
+    return annotations
       .filter(ann => 
-        ann.implementationEffort === 'low' || 
-        (ann.feedback && /color|spacing|copy|button|text|font/i.test(ann.feedback))
+        ann?.implementationEffort === 'low' || 
+        (ann?.feedback && /color|spacing|copy|button|text|font/i.test(ann.feedback))
       )
       .slice(0, 4)
       .map((ann, index) => ({
-        id: ann.id,
-        title: ann.feedback.substring(0, 80) + (ann.feedback.length > 80 ? '...' : ''),
-        impact: ann.businessImpact || 'medium',
+        id: ann?.id || `quick-win-${index}`,
+        title: (ann?.feedback || ann?.title || 'Quick win opportunity').substring(0, 80) + ((ann?.feedback || ann?.title || '').length > 80 ? '...' : ''),
+        impact: ann?.businessImpact || 'medium',
         effort: 'low',
         timeline: '1-2 weeks',
-        category: ann.category || 'UI/UX',
+        category: ann?.category || 'UI/UX',
         priority: index + 1
       }));
   };
 
-  // Get major projects
-  const getMajorProjects = (): MajorProject[] => {
-    return analysisData.annotations
+  // Get major projects with safety checks
+  const getMajorProjects = () => {
+    return annotations
       .filter(ann => 
-        ann.severity === 'critical' && 
-        !(ann.feedback && /color|spacing|copy|button|text/i.test(ann.feedback))
+        ann?.severity === 'critical' && 
+        !(ann?.feedback && /color|spacing|copy|button|text/i.test(ann.feedback))
       )
       .slice(0, 3)
       .map((ann, index) => ({
-        id: ann.id,
-        title: ann.feedback.substring(0, 80) + (ann.feedback.length > 80 ? '...' : ''),
+        id: ann?.id || `major-project-${index}`,
+        title: (ann?.feedback || ann?.title || 'Major improvement opportunity').substring(0, 80) + ((ann?.feedback || ann?.title || '').length > 80 ? '...' : ''),
         impact: 'high',
         resourceRequirements: ['Development team', 'UX designer', 'QA testing'],
         timeline: '4-8 weeks',
         roi: 4.2 + (index * 0.3),
-        category: ann.category || 'Architecture'
+        category: ann?.category || 'Architecture'
       }));
   };
 
@@ -139,13 +143,13 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                {analysisData.siteName || 'Website'} Analysis
+                {siteName} Analysis
               </h1>
               <p className="text-lg text-gray-600 dark:text-gray-300 mt-1">
                 Business Impact Analysis
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                Analysis backed by {analysisData.enhancedContext?.knowledgeSourcesUsed || 23} research sources
+                Analysis backed by {enhancedContext?.knowledgeSourcesUsed || 23} research sources
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -160,10 +164,11 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
               <Button 
                 className="flex items-center gap-2"
                 onClick={() => {
-                  // Navigate to Visual Analysis - this would integrate with router
+                  // Navigate to Visual Analysis
                   const urlParams = new URLSearchParams(window.location.search);
                   urlParams.set('module', 'visual-analysis');
                   window.history.pushState(null, '', `${window.location.pathname}?${urlParams.toString()}`);
+                  window.location.reload();
                 }}
               >
                 <Eye className="w-4 h-4" />
@@ -287,34 +292,42 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
-              {quickWins.map((win, index) => (
-                <div key={win.id} className="border border-gray-200 dark:border-slate-600 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                      {index + 1}
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                        {win.title}
-                      </h4>
-                      <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-                        <span className="flex items-center gap-1">
-                          <TrendingUp className="w-3 h-3" />
-                          High Impact
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {win.timeline}
-                        </span>
+              {quickWins.length > 0 ? (
+                <>
+                  {quickWins.map((win, index) => (
+                    <div key={win.id} className="border border-gray-200 dark:border-slate-600 rounded-lg p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                          {index + 1}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900 dark:text-white mb-2">
+                            {win.title}
+                          </h4>
+                          <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                            <span className="flex items-center gap-1">
+                              <TrendingUp className="w-3 h-3" />
+                              High Impact
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {win.timeline}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  ))}
+                  <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Implement First
+                  </Button>
+                </>
+              ) : (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <p>No quick wins identified in this analysis.</p>
                 </div>
-              ))}
-              <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
-                <CheckCircle className="w-4 h-4 mr-2" />
-                Implement First
-              </Button>
+              )}
             </CardContent>
           </Card>
 
@@ -333,39 +346,47 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
-              {majorProjects.map((project, index) => (
-                <div key={project.id} className="border border-gray-200 dark:border-slate-600 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                      {index + 1}
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                        {project.title}
-                      </h4>
-                      <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-                        <span className="flex items-center gap-1">
-                          <DollarSign className="w-3 h-3" />
-                          ROI: {project.roi}x
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {project.timeline}
-                        </span>
+              {majorProjects.length > 0 ? (
+                <>
+                  {majorProjects.map((project, index) => (
+                    <div key={project.id} className="border border-gray-200 dark:border-slate-600 rounded-lg p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                          {index + 1}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900 dark:text-white mb-2">
+                            {project.title}
+                          </h4>
+                          <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                            <span className="flex items-center gap-1">
+                              <DollarSign className="w-3 h-3" />
+                              ROI: {project.roi}x
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {project.timeline}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  ))}
+                  <Button variant="outline" className="w-full">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Plan for Next Quarter
+                  </Button>
+                </>
+              ) : (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <p>No major projects identified in this analysis.</p>
                 </div>
-              ))}
-              <Button variant="outline" className="w-full">
-                <Calendar className="w-4 h-4 mr-2" />
-                Plan for Next Quarter
-              </Button>
+              )}
             </CardContent>
           </Card>
         </div>
 
-        {/* Action Buttons - Updated with navigation */}
+        {/* Action Buttons */}
         <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -376,6 +397,7 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
                   const urlParams = new URLSearchParams(window.location.search);
                   urlParams.set('module', 'visual-analysis');
                   window.history.pushState(null, '', `${window.location.pathname}?${urlParams.toString()}`);
+                  window.location.reload();
                 }}
               >
                 <Eye className="w-5 h-5" />

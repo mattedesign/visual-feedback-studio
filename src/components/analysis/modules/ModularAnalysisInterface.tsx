@@ -5,37 +5,9 @@ import { BusinessImpactDashboard } from './BusinessImpactDashboard';
 import { VisualAnalysisModule } from './VisualAnalysisModule';
 import { ResearchCitationsModule } from './ResearchCitationsModule';
 
+// Flexible interface that accommodates various data structures
 interface ModularAnalysisInterfaceProps {
-  analysisData: {
-    id?: string;
-    analysisStatus?: 'completed' | 'processing' | 'failed';
-    images?: Array<{ url?: string; preview?: string; name?: string }>;
-    annotations?: Array<{
-      id?: string;
-      x?: number;
-      y?: number;
-      severity: 'critical' | 'suggested' | 'enhancement';
-      title?: string;
-      description?: string;
-      researchBacking?: string[];
-      confidence?: number;
-      category?: string;
-      feedback?: string;
-      implementationEffort?: 'low' | 'medium' | 'high';
-      businessImpact?: 'low' | 'medium' | 'high';
-    }>;
-    analysisContext?: string;
-    enhancedContext?: {
-      knowledgeSourcesUsed?: number;
-      visionAnalysis?: any;
-      researchContext?: string;
-      citations?: string[];
-    };
-    workflow?: any;
-    createdAt?: string;
-    updatedAt?: string;
-    siteName?: string;
-  };
+  analysisData: any; // Use 'any' for maximum compatibility with existing data
 }
 
 export const ModularAnalysisInterface: React.FC<ModularAnalysisInterfaceProps> = ({ analysisData }) => {
@@ -59,6 +31,28 @@ export const ModularAnalysisInterface: React.FC<ModularAnalysisInterfaceProps> =
       setActiveModule(moduleParam);
     }
   }, []);
+
+  // Safety check for analysis data
+  if (!analysisData) {
+    return (
+      <div className="modular-analysis-interface flex items-center justify-center min-h-screen bg-gray-50 dark:bg-slate-900">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            No Analysis Data Available
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            Please go back and run an analysis first.
+          </p>
+          <button 
+            onClick={() => window.history.back()}
+            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const modules = [
     {
@@ -114,20 +108,19 @@ export const ModularAnalysisInterface: React.FC<ModularAnalysisInterfaceProps> =
     }
   };
 
-  if (!analysisData) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-slate-900">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            No Analysis Data Available
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400">
-            Unable to load analysis results.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  // Safely extract metadata with fallbacks
+  const getAnalysisMetadata = () => {
+    return {
+      status: analysisData?.analysisStatus || analysisData?.status || 'completed',
+      imageCount: analysisData?.images?.length || 0,
+      annotationCount: analysisData?.annotations?.length || 0,
+      knowledgeSourcesUsed: analysisData?.enhancedContext?.knowledgeSourcesUsed || 0,
+      createdAt: analysisData?.createdAt || analysisData?.created_at || new Date().toISOString(),
+      analysisContext: analysisData?.analysisContext || analysisData?.context || ''
+    };
+  };
+
+  const metadata = getAnalysisMetadata();
 
   return (
     <div className="modular-analysis-interface min-h-screen bg-gray-50 dark:bg-slate-900">
@@ -155,9 +148,9 @@ export const ModularAnalysisInterface: React.FC<ModularAnalysisInterfaceProps> =
                 <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
                   Analysis Results
                 </h1>
-                {analysisData.analysisContext && (
+                {metadata.analysisContext && (
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {analysisData.analysisContext}
+                    {metadata.analysisContext}
                   </p>
                 )}
               </div>
@@ -253,41 +246,39 @@ export const ModularAnalysisInterface: React.FC<ModularAnalysisInterfaceProps> =
                     <div>
                       <span className="text-gray-500 dark:text-gray-400">Status:</span>
                       <span className="ml-2 text-gray-900 dark:text-white capitalize">
-                        {analysisData.analysisStatus || 'completed'}
+                        {metadata.status}
                       </span>
                     </div>
-                    {analysisData.images && analysisData.images.length > 0 && (
+                    {metadata.imageCount > 0 && (
                       <div>
                         <span className="text-gray-500 dark:text-gray-400">Images:</span>
                         <span className="ml-2 text-gray-900 dark:text-white">
-                          {analysisData.images.length}
+                          {metadata.imageCount}
                         </span>
                       </div>
                     )}
-                    {analysisData.annotations && analysisData.annotations.length > 0 && (
+                    {metadata.annotationCount > 0 && (
                       <div>
                         <span className="text-gray-500 dark:text-gray-400">Issues:</span>
                         <span className="ml-2 text-gray-900 dark:text-white">
-                          {analysisData.annotations.length}
+                          {metadata.annotationCount}
                         </span>
                       </div>
                     )}
-                    {analysisData.enhancedContext?.knowledgeSourcesUsed && (
+                    {metadata.knowledgeSourcesUsed > 0 && (
                       <div>
                         <span className="text-gray-500 dark:text-gray-400">Research Sources:</span>
                         <span className="ml-2 text-gray-900 dark:text-white">
-                          {analysisData.enhancedContext.knowledgeSourcesUsed}
+                          {metadata.knowledgeSourcesUsed}
                         </span>
                       </div>
                     )}
-                    {analysisData.createdAt && (
-                      <div>
-                        <span className="text-gray-500 dark:text-gray-400">Created:</span>
-                        <span className="ml-2 text-gray-900 dark:text-white">
-                          {new Date(analysisData.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                    )}
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400">Created:</span>
+                      <span className="ml-2 text-gray-900 dark:text-white">
+                        {new Date(metadata.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -2,44 +2,36 @@
 import React, { useState } from 'react';
 import { Brain, Search, BookOpen, ExternalLink, Award, CheckCircle } from 'lucide-react';
 
-interface AnnotationData {
-  id?: string;
-  severity: 'critical' | 'suggested' | 'enhancement';
-  title?: string;
-  description?: string;
-  researchBacking?: string[];
-  confidence?: number;
-  category?: string;
-  feedback?: string;
-  implementationEffort?: 'low' | 'medium' | 'high';
-  businessImpact?: 'low' | 'medium' | 'high';
-}
-
+// Flexible interface for maximum compatibility
 interface ResearchCitationsModuleProps {
-  analysisData: {
-    enhancedContext?: {
-      knowledgeSourcesUsed?: number;
-      researchContext?: string;
-      citations?: string[];
-    };
-    annotations?: AnnotationData[];
-    siteName?: string;
-    createdAt?: string;
-    analysisContext?: string;
-  };
+  analysisData: any; // Use flexible type for compatibility
 }
 
 export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = ({ analysisData }) => {
   const [selectedCategory, setSelectedCategory] = useState('overview');
   const [expandedSource, setExpandedSource] = useState<string | null>(null);
 
+  // Add safety check for missing data
+  if (!analysisData) {
+    return (
+      <div className="research-citations-module flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+        <div className="text-center">
+          <Brain className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+          <h3 className="font-medium mb-2">No Analysis Data Available</h3>
+          <p className="text-sm">Unable to load research citations for this analysis.</p>
+        </div>
+      </div>
+    );
+  }
+
   // Safely extract research data with fallbacks
   const knowledgeSourcesUsed = analysisData?.enhancedContext?.knowledgeSourcesUsed || 0;
   const citations = analysisData?.enhancedContext?.citations || [];
   const researchContext = analysisData?.enhancedContext?.researchContext || '';
+  const annotations = analysisData?.annotations || [];
   
   // Safely collect all research backing from annotations
-  const allResearchBacking = (analysisData?.annotations || []).reduce((acc, annotation) => {
+  const allResearchBacking = annotations.reduce((acc, annotation) => {
     if (annotation?.researchBacking && Array.isArray(annotation.researchBacking)) {
       acc.push(...annotation.researchBacking);
     }
@@ -50,7 +42,7 @@ export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = (
   const uniqueResearchSources = [...new Set([...citations, ...allResearchBacking])];
   
   // Calculate research confidence safely
-  const annotationsWithResearch = (analysisData?.annotations || []).filter(ann => 
+  const annotationsWithResearch = annotations.filter(ann => 
     ann?.researchBacking && Array.isArray(ann.researchBacking) && ann.researchBacking.length > 0
   );
   
@@ -95,19 +87,6 @@ export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = (
     return 'Industry Best Practices';
   };
 
-  // Add safety check for missing data
-  if (!analysisData) {
-    return (
-      <div className="research-citations-module flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
-        <div className="text-center">
-          <Brain className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-          <h3 className="font-medium mb-2">No Analysis Data Available</h3>
-          <p className="text-sm">Unable to load research citations for this analysis.</p>
-        </div>
-      </div>
-    );
-  }
-
   // Handle missing research data gracefully
   if (!knowledgeSourcesUsed && uniqueResearchSources.length === 0) {
     return (
@@ -140,7 +119,7 @@ export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = (
             </div>
           </div>
           <p className="text-gray-600 dark:text-gray-300">
-            Analysis enhanced with {knowledgeSourcesUsed} research sources, industry best practices, and competitive intelligence
+            Analysis enhanced with {knowledgeSourcesUsed || uniqueResearchSources.length} research sources, industry best practices, and competitive intelligence
           </p>
         </div>
       </div>
@@ -155,7 +134,7 @@ export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = (
                 <Search className="w-5 h-5 text-blue-600" />
                 <h3 className="font-semibold text-gray-900 dark:text-white">Research Sources</h3>
               </div>
-              <div className="text-3xl font-bold text-blue-600 mb-1">{knowledgeSourcesUsed}</div>
+              <div className="text-3xl font-bold text-blue-600 mb-1">{knowledgeSourcesUsed || uniqueResearchSources.length}</div>
               <p className="text-sm text-gray-600 dark:text-gray-300">Authoritative UX sources</p>
             </div>
 
@@ -242,13 +221,13 @@ export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = (
             )}
 
             {/* Show message when no research context available */}
-            {(!researchContext || researchContext.length === 0) && knowledgeSourcesUsed > 0 && (
+            {(!researchContext || researchContext.length === 0) && (knowledgeSourcesUsed > 0 || uniqueResearchSources.length > 0) && (
               <div className="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
                   Research-Backed Analysis
                 </h3>
                 <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                  This analysis incorporates insights from {knowledgeSourcesUsed} research sources, 
+                  This analysis incorporates insights from {knowledgeSourcesUsed || uniqueResearchSources.length} research sources, 
                   providing evidence-based recommendations backed by industry best practices and 
                   established UX principles.
                 </p>
