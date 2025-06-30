@@ -96,7 +96,7 @@ export const SimplifiedContextInput = ({
       >
         {/* Quick Suggestions - Now appears above input */}
         {showSuggestions && (
-          <div className="w-full mb-3 pb-3 border-b border-gray-100 dark:border-slate-700 order-1">
+          <div className="w-full mb-3 order-1">
             <div className="flex gap-2 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               {quickSuggestions.map((suggestion, index) => (
                 <button
