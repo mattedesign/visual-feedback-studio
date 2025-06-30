@@ -3,6 +3,7 @@ import React from 'react';
 import { Check } from 'lucide-react';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { ModularAnalysisInterface } from '@/components/analysis/modules/ModularAnalysisInterface';
+import SimpleAnalysisResults from '@/components/analysis/SimpleAnalysisResults';
 
 const AnalysisResults = () => {
   const useModularInterface = useFeatureFlag('modular-analysis');
@@ -13,7 +14,13 @@ const AnalysisResults = () => {
   
   // NEW INTERFACE: When feature flag is enabled or beta parameter is present
   if (useModularInterface || betaMode) {
-    return <ModularAnalysisInterface />;
+    try {
+      return <ModularAnalysisInterface />;
+    } catch (error) {
+      console.error('Modular interface failed, falling back to simple results:', error);
+      // Fall back to simple results if modular interface fails
+      return <SimpleAnalysisResults onBack={() => window.location.href = '/analysis'} />;
+    }
   }
   
   // PRESERVE EXISTING FUNCTIONALITY AS DEFAULT
