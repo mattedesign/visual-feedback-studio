@@ -90,7 +90,9 @@ export const SimplifiedContextInput = ({
           background: '#FFF',
           boxShadow: '0px 32px 67px 0px rgba(0, 0, 0, 0.00), 0px 24px 61px 0px rgba(0, 0, 0, 0.01), 0px 12px 52px 0px rgba(0, 0, 0, 0.04), 0px 12px 38px 0px rgba(0, 0, 0, 0.06), 0px 4px 21px 0px rgba(0, 0, 0, 0.07)',
           backdropFilter: 'blur(6px)',
-          padding: showSuggestions ? '0' : '12px',
+          padding: showSuggestions ? '0' : '20px',
+          // Increase minimum height for better spacing
+          minHeight: showSuggestions ? '140px' : '80px',
           // Reduce the upward movement to stay aligned with left panel
           transform: showSuggestions ? 'translateY(-20px)' : 'translateY(0)',
         }}
@@ -104,9 +106,9 @@ export const SimplifiedContextInput = ({
                 scrollbarWidth: 'none', 
                 msOverflowStyle: 'none',
                 paddingBottom: '16px',
-                paddingLeft: '16px',
-                paddingRight: '16px',
-                paddingTop: '16px',
+                paddingLeft: '20px',
+                paddingRight: '20px',
+                paddingTop: '20px',
                 background: '#F8F9FA',
                 marginLeft: '-1px',
                 marginRight: '-1px',
@@ -188,9 +190,9 @@ export const SimplifiedContextInput = ({
         <div 
           className="flex items-center justify-between w-full order-2" 
           style={{ 
-            marginBottom: showSuggestions ? '12px' : '8px',
-            paddingLeft: showSuggestions ? '16px' : '0',
-            paddingRight: showSuggestions ? '16px' : '0'
+            marginBottom: showSuggestions ? '16px' : '16px',
+            paddingLeft: showSuggestions ? '20px' : '0',
+            paddingRight: showSuggestions ? '20px' : '0'
           }}
         >
           <button
@@ -252,8 +254,9 @@ export const SimplifiedContextInput = ({
         <div 
           className="w-full order-3"
           style={{
-            paddingLeft: showSuggestions ? '16px' : '0',
-            paddingRight: showSuggestions ? '16px' : '0'
+            paddingLeft: showSuggestions ? '20px' : '0',
+            paddingRight: showSuggestions ? '20px' : '0',
+            paddingBottom: showSuggestions ? '20px' : '0'
           }}
         >
           <Input
@@ -262,10 +265,13 @@ export const SimplifiedContextInput = ({
             onChange={(e) => onAnalysisContextChange(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="How can I help..."
-            className="border-0 bg-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none text-base text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 w-full"
+            className="border-0 bg-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none text-lg text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 w-full"
             style={{ 
               outline: 'none',
-              boxShadow: 'none'
+              boxShadow: 'none',
+              height: '48px',
+              fontSize: '16px',
+              lineHeight: '1.5'
             }}
           />
         </div>
