@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -105,10 +104,7 @@ export const SimplifiedContextInput = ({
               style={{ 
                 scrollbarWidth: 'none', 
                 msOverflowStyle: 'none',
-                paddingBottom: '16px',
-                paddingLeft: '20px',
-                paddingRight: '20px',
-                paddingTop: '20px',
+                padding: '20px',
                 background: '#F8F9FA',
                 marginLeft: '-1px',
                 marginRight: '-1px',
