@@ -1,6 +1,6 @@
 
 import { User } from '@supabase/supabase-js';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Home } from 'lucide-react';
@@ -12,10 +12,16 @@ interface HeaderProps {
 
 export const Header = ({ user, onSignOut }: HeaderProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogoClick = () => {
     navigate('/');
   };
+
+  // Hide header on /analysis page
+  if (location.pathname === '/analysis') {
+    return null;
+  }
 
   return (
     <header className="border-b border-slate-700 bg-slate-800/50 backdrop-blur-sm">
