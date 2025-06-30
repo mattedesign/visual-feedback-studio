@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { ComparativeAnalysisSummary } from '../ComparativeAnalysisSummary';
-import { ImageTabsViewer } from './components/ImageTabsViewer';
+import { EnhancedImageTabsViewer } from './components/EnhancedImageTabsViewer';
 import { SingleImageViewer } from './components/SingleImageViewer';
 import { FeedbackPanel } from './components/FeedbackPanel';
 import { ResultsActions } from './components/ResultsActions';
@@ -14,6 +14,7 @@ import { AnalysisContextPanel } from './components/AnalysisContextPanel';
 import { EnhancedContextDisplay } from './components/EnhancedContextDisplay';
 import { ResearchBadge } from './components/ResearchBadge';
 import { ResearchSourcesPanel } from './components/ResearchSourcesPanel';
+import { ProminentBusinessImpact } from './components/ProminentBusinessImpact';
 
 interface ResultsStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -238,7 +239,12 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
           </div>
         </CardHeader>
         <CardContent className="space-y-8">
-          {/* Research Sources Panel - Prominent Position */}
+          {/* Prominent Business Impact Summary - First */}
+          {businessImpact && (
+            <ProminentBusinessImpact businessImpact={businessImpact} insights={insights} />
+          )}
+          
+          {/* Research Sources Panel */}
           <ResearchSourcesPanel
             researchCitations={workflow.researchCitations}
             knowledgeSourcesUsed={workflow.knowledgeSourcesUsed}
@@ -269,7 +275,7 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
               {isMultiImage ? (
-                <ImageTabsViewer
+                <EnhancedImageTabsViewer
                   images={workflow.selectedImages}
                   activeImageUrl={activeImageUrl}
                   onImageChange={setActiveImageUrl}
