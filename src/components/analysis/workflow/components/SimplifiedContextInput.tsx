@@ -78,26 +78,42 @@ export const SimplifiedContextInput = ({
   }, [showSuggestions]);
 
   return (
-    <div className="space-y-4 relative">
-      {/* Suggestions Panel - Positioned above the main container */}
-      {showSuggestions && (
-        <div
-          className="absolute bottom-full left-0 right-0 mb-2 z-50"
-          style={{
-            borderRadius: '0px',
-            border: 'none',
-            background: '#F8F8F8',
-            padding: '0px'
-          }}
-        >
-          <div 
-            className="p-5"
-          >
+    <div className="space-y-4">
+      {/* Main Input Container */}
+      <div 
+        className="flex flex-col-reverse transition-transform duration-300 ease-in-out"
+        style={{
+          alignItems: 'center',
+          alignSelf: 'stretch',
+          borderRadius: '24px',
+          border: '1px solid #E2E2E2',
+          background: '#FFF',
+          boxShadow: '0px 32px 67px 0px rgba(0, 0, 0, 0.00), 0px 24px 61px 0px rgba(0, 0, 0, 0.01), 0px 12px 52px 0px rgba(0, 0, 0, 0.04), 0px 12px 38px 0px rgba(0, 0, 0, 0.06), 0px 4px 21px 0px rgba(0, 0, 0, 0.07)',
+          backdropFilter: 'blur(6px)',
+          padding: showSuggestions ? '0' : '20px',
+          // Increase minimum height for better spacing
+          minHeight: showSuggestions ? '140px' : '80px',
+          // Reduce the upward movement to stay aligned with left panel
+          transform: showSuggestions ? 'translateY(-20px)' : 'translateY(0)',
+        }}
+      >
+        {/* Quick Suggestions - Now appears above input */}
+        {showSuggestions && (
+          <div className="w-full order-1">
             <div 
               className="flex gap-2 overflow-x-auto" 
               style={{ 
                 scrollbarWidth: 'none', 
-                msOverflowStyle: 'none'
+                msOverflowStyle: 'none',
+                paddingBottom: '16px',
+                paddingLeft: '20px',
+                paddingRight: '20px',
+                paddingTop: '20px',
+                background: '#F8F9FA',
+                marginLeft: '-1px',
+                marginRight: '-1px',
+                borderBottomLeftRadius: '24px',
+                borderBottomRightRadius: '24px',
               }}
             >
               {quickSuggestions.map((suggestion, index) => (
@@ -168,26 +184,17 @@ export const SimplifiedContextInput = ({
               </div>
             )}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Main Input Container */}
-      <div 
-        className="flex flex-col-reverse transition-all duration-300 ease-in-out"
-        style={{
-          alignItems: 'center',
-          alignSelf: 'stretch',
-          borderRadius: '24px',
-          border: '1px solid #E2E2E2',
-          background: '#FFF',
-          boxShadow: '0px 32px 67px 0px rgba(0, 0, 0, 0.00), 0px 24px 61px 0px rgba(0, 0, 0, 0.01), 0px 12px 52px 0px rgba(0, 0, 0, 0.04), 0px 12px 38px 0px rgba(0, 0, 0, 0.06), 0px 4px 21px 0px rgba(0, 0, 0, 0.07)',
-          backdropFilter: 'blur(6px)',
-          padding: '20px',
-          minHeight: '80px'
-        }}
-      >
-        {/* Buttons - Top row */}
-        <div className="flex items-center justify-between w-full order-2 mb-4">
+        {/* Buttons - Now second row */}
+        <div 
+          className="flex items-center justify-between w-full order-2" 
+          style={{ 
+            marginBottom: showSuggestions ? '16px' : '16px',
+            paddingLeft: showSuggestions ? '20px' : '0',
+            paddingRight: showSuggestions ? '20px' : '0'
+          }}
+        >
           <button
             onClick={() => setShowSuggestions(!showSuggestions)}
             style={{
@@ -243,8 +250,15 @@ export const SimplifiedContextInput = ({
           </Button>
         </div>
 
-        {/* Input Field - Bottom row */}
-        <div className="w-full order-3">
+        {/* Input Field - Now last row */}
+        <div 
+          className="w-full order-3"
+          style={{
+            paddingLeft: showSuggestions ? '20px' : '0',
+            paddingRight: showSuggestions ? '20px' : '0',
+            paddingBottom: showSuggestions ? '20px' : '0'
+          }}
+        >
           <Input
             ref={inputRef}
             value={analysisContext}
