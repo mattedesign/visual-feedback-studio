@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -294,7 +293,7 @@ export const EnhancedImageTabsViewer = ({
                       </div>
                     ))}
 
-                    {/* AI annotations with enhanced markers */}
+                    {/* AI annotations with sequential numbering */}
                     {aiAnnotations.map((annotation, annotationIndex) => {
                       return (
                         <div
@@ -311,7 +310,8 @@ export const EnhancedImageTabsViewer = ({
                           <div className={`${isMobile ? 'w-10 h-10' : 'w-12 h-12'} rounded-full border-4 border-white flex items-center justify-center text-white font-bold text-lg shadow-xl ${getSeverityColor(annotation.severity)} ${
                             activeAnnotation === annotation.id ? 'ring-4 ring-gray-400' : ''
                           }`}>
-                            <span className={`${isMobile ? 'text-sm' : 'text-base'}`}>{getCategoryIcon(annotation.category)}</span>
+                            {/* Sequential number instead of category icon */}
+                            <span className={`${isMobile ? 'text-sm' : 'text-base'} font-bold`}>{annotationIndex + 1}</span>
                           </div>
                           
                           {/* Enhanced popup with more details - Hidden on mobile */}
