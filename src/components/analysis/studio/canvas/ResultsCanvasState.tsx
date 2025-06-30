@@ -20,13 +20,29 @@ export const ResultsCanvasState = ({
 }: ResultsCanvasStateProps) => {
   const [selectedFeedback, setSelectedFeedback] = useState<any>(null);
 
-  // SAFETY CHECK: Ensure annotations exist and are valid
+  // SAFETY CHECK: Ensure annotations exist and are valid with better validation
   const safeAnnotations = Array.isArray(workflow.aiAnnotations) 
-    ? workflow.aiAnnotations.filter(annotation => 
-        annotation && 
-        typeof annotation === 'object' && 
-        annotation.id
-      )
+    ? workflow.aiAnnotations.filter((annotation, index) => {
+        // More comprehensive validation
+        if (!annotation || typeof annotation !== 'object') {
+          console.warn(`Invalid annotation at index ${index}:`, annotation);
+          return false;
+        }
+        
+        // Ensure required properties exist
+        if (!annotation.id && annotation.id !== 0) {
+          console.warn(`Annotation missing ID at index ${index}:`, annotation);
+          return false;
+        }
+        
+        // Ensure position properties are valid numbers
+        if (typeof annotation.x !== 'number' || typeof annotation.y !== 'number') {
+          console.warn(`Annotation has invalid position at index ${index}:`, annotation);
+          return false;
+        }
+        
+        return true;
+      })
     : [];
 
   const handleAnnotationClick = (annotation: any, annotationIndex: number) => {
@@ -136,30 +152,37 @@ export const ResultsCanvasState = ({
           }}
         />
         
-        {/* SAFE ANNOTATION RENDERING: Display FILTERED AI annotations with sequential numbers */}
+        {/* FIXED ANNOTATION RENDERING: More robust key generation and validation */}
         {filteredAiAnnotations.map((annotation, index) => {
-          // SAFETY CHECKS for each annotation
+          // COMPREHENSIVE SAFETY CHECKS for each annotation
           if (!annotation || typeof annotation !== 'object') {
-            console.warn('Invalid annotation detected:', annotation);
+            console.warn('Skipping invalid annotation:', annotation);
             return null;
           }
 
-          const annotationId = annotation.id || `annotation-${index}`;
+          // Generate a more robust key
+          const annotationId = annotation.id || `fallback-${index}-${Date.now()}`;
           const isActive = activeAnnotation === annotationId;
-          const xPosition = typeof annotation.x === 'number' ? annotation.x : 50;
-          const yPosition = typeof annotation.y === 'number' ? annotation.y : 50;
+          
+          // Validate position values with fallbacks
+          const xPosition = (typeof annotation.x === 'number' && !isNaN(annotation.x)) ? annotation.x : 50;
+          const yPosition = (typeof annotation.y === 'number' && !isNaN(annotation.y)) ? annotation.y : 50;
+          
+          // Ensure positions are within reasonable bounds
+          const safeX = Math.max(0, Math.min(100, xPosition));
+          const safeY = Math.max(0, Math.min(100, yPosition));
           
           return (
             <div
-              key={annotationId}
+              key={`annotation-${annotationId}-${index}`}
               className={`absolute w-8 h-8 rounded-full border-2 shadow-lg flex items-center justify-center cursor-pointer transform -translate-x-1/2 -translate-y-1/2 transition-all duration-200 z-10 ${
                 isActive 
                   ? 'bg-blue-500 border-blue-300 scale-125 ring-4 ring-blue-200 dark:ring-blue-800' 
                   : 'bg-red-500 border-white hover:scale-110 hover:ring-2 hover:ring-red-200 dark:hover:ring-red-800'
               }`}
               style={{
-                left: `${xPosition}%`,
-                top: `${yPosition}%`
+                left: `${safeX}%`,
+                top: `${safeY}%`
               }}
               onClick={() => handleAnnotationClick(annotation, index)}
             >
