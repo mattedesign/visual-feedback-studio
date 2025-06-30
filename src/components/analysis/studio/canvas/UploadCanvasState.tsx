@@ -169,7 +169,19 @@ export const UploadCanvasState = ({
               <div className="w-16 h-16 bg-slate-200 rounded-xl mx-auto mb-4 flex items-center justify-center">
                 <Settings className="w-8 h-8 text-slate-600" />
               </div>
-              <h2 className="text-xl font-semibold text-zinc-900 mb-6">Capabilities</h2>
+              <h2 
+                className="mb-6"
+                style={{
+                  color: 'var(--Text-primary, #353535)',
+                  fontFamily: '"Creato Display"',
+                  fontSize: '16px',
+                  fontStyle: 'normal',
+                  fontWeight: '500',
+                  lineHeight: '135%'
+                }}
+              >
+                Capabilities
+              </h2>
             </div>
             
             <div className="space-y-3">
@@ -301,7 +313,19 @@ export const UploadCanvasState = ({
               <div className="w-16 h-16 bg-slate-200 rounded-xl mx-auto mb-4 flex items-center justify-center">
                 <Brain className="w-8 h-8 text-slate-600" />
               </div>
-              <h2 className="text-xl font-semibold text-zinc-900 mb-6">Models</h2>
+              <h2 
+                className="mb-6"
+                style={{
+                  color: 'var(--Text-primary, #353535)',
+                  fontFamily: '"Creato Display"',
+                  fontSize: '16px',
+                  fontStyle: 'normal',
+                  fontWeight: '500',
+                  lineHeight: '135%'
+                }}
+              >
+                Models
+              </h2>
             </div>
             
             <div className="space-y-3">
