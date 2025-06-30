@@ -35,10 +35,10 @@ export const UploadCanvasState = ({
         
         {/* Enhanced Text Content */}
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-white mb-2">
+          <h2 className="text-2xl font-bold mb-2 text-zinc-900">
             Ready to Analyze Your Design?
           </h2>
-          <p className="text-gray-300 text-lg max-w-md mx-auto leading-relaxed">
+          <p className="text-lg max-w-md mx-auto leading-relaxed text-zinc-600">
             Upload your design files to get started with AI-powered insights backed by 272+ UX research studies
           </p>
         </div>
