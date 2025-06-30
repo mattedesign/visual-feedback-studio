@@ -1,9 +1,11 @@
+
 import { buildAnalysisPrompt } from './promptBuilder.ts';
 
 interface ProcessedImage {
-  imageUrl: string;
-  size: number;
-  format: string;
+  base64Data: string;
+  mimeType: string;
+  width?: number;
+  height?: number;
 }
 
 interface AnalysisResult {
@@ -46,26 +48,32 @@ class AIAnalysisManager {
       circuitBreakerCount: this.circuitBreakerCount,
       targetInsights: '16-19',
       primaryModel: 'Claude Sonnet 4',
-      imageDetails: processedImages.map(img => ({
-        hasUrl: !!img.imageUrl,
-        urlPreview: img.imageUrl ? img.imageUrl.substring(0, 50) + '...' : 'UNDEFINED',
-        size: img.size,
-        format: img.format
+      imageDetails: processedImages.map((img, index) => ({
+        index,
+        hasBase64Data: !!img.base64Data,
+        base64Length: img.base64Data?.length || 0,
+        mimeType: img.mimeType,
+        width: img.width,
+        height: img.height
       }))
     });
 
-    // Validate images have URLs
-    const validImages = processedImages.filter(img => img.imageUrl && img.imageUrl !== 'undefined');
+    // Validate images have base64 data
+    const validImages = processedImages.filter(img => img.base64Data && img.base64Data.length > 0);
     if (validImages.length === 0) {
-      console.error('❌ No valid image URLs found:', processedImages);
+      console.error('❌ No valid image data found:', processedImages.map(img => ({
+        hasBase64Data: !!img.base64Data,
+        base64Length: img.base64Data?.length || 0,
+        mimeType: img.mimeType
+      })));
       return {
         success: false,
-        error: 'No valid image URLs provided for analysis'
+        error: 'No valid image data provided for analysis'
       };
     }
 
     if (validImages.length !== processedImages.length) {
-      console.warn('⚠️ Some images have invalid URLs, proceeding with valid ones:', {
+      console.warn('⚠️ Some images have invalid data, proceeding with valid ones:', {
         total: processedImages.length,
         valid: validImages.length,
         invalid: processedImages.length - validImages.length
@@ -232,64 +240,49 @@ class AIAnalysisManager {
     }
   }
 
-  // 🎯 UPDATED: Claude Sonnet 4 Primary Method with Latest Model
+  // 🎯 UPDATED: Claude Sonnet 4 Primary Method - Now uses base64Data directly
   private async callClaude(images: ProcessedImage[], prompt: string): Promise<{annotations: any[]}> {
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
     if (!anthropicApiKey) {
       throw new Error('Anthropic API key not configured');
     }
 
-    console.log('🔍 Claude API Debug - Key status:', {
+    console.log('🔍 Claude API Debug - Processing images:', {
       hasKey: !!anthropicApiKey,
       keyLength: anthropicApiKey.length,
       keyPreview: anthropicApiKey.substring(0, 12) + '...',
       imageCount: images.length,
-      imagesValid: images.every(img => img.imageUrl && img.imageUrl !== 'undefined')
+      imagesValid: images.every(img => img.base64Data && img.base64Data.length > 0)
     });
 
-    // Validate all images have valid URLs
-    const invalidImages = images.filter(img => !img.imageUrl || img.imageUrl === 'undefined');
+    // Validate all images have valid base64 data
+    const invalidImages = images.filter(img => !img.base64Data || img.base64Data.length === 0);
     if (invalidImages.length > 0) {
-      console.error('❌ Invalid image URLs detected:', {
+      console.error('❌ Invalid image data detected:', {
         invalidCount: invalidImages.length,
         totalImages: images.length
       });
-      throw new Error(`${invalidImages.length} images have invalid URLs`);
+      throw new Error(`${invalidImages.length} images have invalid base64 data`);
     }
 
-    // Convert images to base64 for Claude
-    const imageContents = await Promise.all(
-      images.map(async (img, index) => {
-        try {
-          console.log(`🔄 Processing image ${index + 1}/${images.length} for Claude:`, {
-            url: img.imageUrl.substring(0, 50) + '...',
-            size: img.size,
-            format: img.format
-          });
-          
-          const response = await fetch(img.imageUrl);
-          if (!response.ok) {
-            throw new Error(`Failed to fetch image ${index + 1}: ${response.status} ${response.statusText}`);
-          }
-          const arrayBuffer = await response.arrayBuffer();
-          const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-          
-          console.log(`✅ Image ${index + 1} converted to base64, length: ${base64.length}`);
-          
-          return {
-            type: "image",
-            source: {
-              type: "base64",
-              media_type: `image/${img.format}`,
-              data: base64
-            }
-          };
-        } catch (error) {
-          console.error(`❌ Image ${index + 1} processing error:`, error);
-          throw new Error(`Failed to process image ${index + 1}: ${error.message}`);
+    // Prepare image contents for Claude - base64 data is already available
+    const imageContents = images.map((img, index) => {
+      console.log(`✅ Using image ${index + 1}/${images.length} for Claude:`, {
+        base64Length: img.base64Data.length,
+        mimeType: img.mimeType,
+        width: img.width,
+        height: img.height
+      });
+      
+      return {
+        type: "image",
+        source: {
+          type: "base64",
+          media_type: img.mimeType,
+          data: img.base64Data
         }
-      })
-    );
+      };
+    });
 
     const systemPrompt = `You are a professional UX analysis expert conducting comprehensive audits. You MUST generate exactly 16-19 detailed, research-backed insights covering all aspects of design quality, usability, and business impact.
 
@@ -440,28 +433,28 @@ Ensure exactly 16-19 insights for comprehensive professional analysis.`;
     return context;
   }
 
-  // 🔄 KEPT: OpenAI Fallback Method
+  // 🔄 UPDATED: OpenAI Fallback Method - Now uses base64Data directly
   private async callOpenAI(images: ProcessedImage[], prompt: string): Promise<Response> {
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openaiApiKey) {
       throw new Error('OpenAI API key not configured');
     }
 
-    console.log('🔍 OpenAI API Debug - Key status:', {
+    console.log('🔍 OpenAI API Debug - Processing images:', {
       hasKey: !!openaiApiKey,
       keyLength: openaiApiKey.length,
       imageCount: images.length,
-      imagesValid: images.every(img => img.imageUrl && img.imageUrl !== 'undefined')
+      imagesValid: images.every(img => img.base64Data && img.base64Data.length > 0)
     });
 
-    // Validate all images have valid URLs
-    const invalidImages = images.filter(img => !img.imageUrl || img.imageUrl === 'undefined');
+    // Validate all images have valid base64 data
+    const invalidImages = images.filter(img => !img.base64Data || img.base64Data.length === 0);
     if (invalidImages.length > 0) {
-      console.error('❌ Invalid image URLs detected for OpenAI:', {
+      console.error('❌ Invalid image data detected for OpenAI:', {
         invalidCount: invalidImages.length,
         totalImages: images.length
       });
-      throw new Error(`${invalidImages.length} images have invalid URLs for OpenAI`);
+      throw new Error(`${invalidImages.length} images have invalid base64 data for OpenAI`);
     }
 
     const messages = [
@@ -475,7 +468,10 @@ Ensure exactly 16-19 insights for comprehensive professional analysis.`;
           { type: 'text', text: prompt },
           ...images.map(img => ({
             type: 'image_url',
-            image_url: { url: img.imageUrl, detail: 'high' }
+            image_url: { 
+              url: `data:${img.mimeType};base64,${img.base64Data}`, 
+              detail: 'high' 
+            }
           }))
         ]
       }
