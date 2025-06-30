@@ -190,7 +190,7 @@ export const SimplifiedContextInput = ({
         <div 
           className="flex items-center justify-between w-full order-2" 
           style={{ 
-            marginBottom: showSuggestions ? '16px' : '16px',
+            marginBottom: showSuggestions ? '16px' : '0',
             paddingLeft: showSuggestions ? '20px' : '0',
             paddingRight: showSuggestions ? '20px' : '0'
           }}
