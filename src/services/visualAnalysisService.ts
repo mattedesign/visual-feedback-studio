@@ -53,16 +53,19 @@ export const visualAnalysisService = {
       // Draw the original image
       ctx.drawImage(img, 0, 0);
       
-      // Draw annotations
-      data.annotations.forEach((annotation, index) => {
+      // Draw annotations with proper null/undefined checking
+      data.annotations?.forEach((annotation, index) => {
+        // Add safety check for annotation object and its properties
+        if (!annotation || typeof annotation !== 'object') return;
+        
         if (annotation.x !== undefined && annotation.y !== undefined) {
-          const x = (annotation.x / 100) * canvas.width;
-          const y = (annotation.y / 100) * canvas.height;
+          const x = ((annotation.x || 0) / 100) * canvas.width;
+          const y = ((annotation.y || 0) / 100) * canvas.height;
           
           // Draw annotation circle
           ctx.beginPath();
           ctx.arc(x, y, 20, 0, 2 * Math.PI);
-          ctx.fillStyle = this.getSeverityColor(annotation.severity);
+          ctx.fillStyle = this.getSeverityColor(annotation.severity || 'enhancement');
           ctx.fill();
           ctx.strokeStyle = '#ffffff';
           ctx.lineWidth = 4;
@@ -130,8 +133,8 @@ export const visualAnalysisService = {
   copyAnnotationURLs: async (data: VisualAnalysisExportData): Promise<void> => {
     try {
       const baseUrl = window.location.origin;
-      const urls = data.annotations.map((annotation, index) => {
-        const annotationId = annotation.id || `annotation-${index}`;
+      const urls = (data.annotations || []).map((annotation, index) => {
+        const annotationId = annotation?.id || `annotation-${index}`;
         return `${baseUrl}/analysis/${data.analysisId}?annotation=${annotationId}`;
       });
       
@@ -168,7 +171,7 @@ export const visualAnalysisService = {
       pdf.setFontSize(12);
       pdf.text(`Analysis ID: ${data.analysisId}`, 20, 70);
       pdf.text(`Generated: ${new Date().toLocaleDateString()}`, 20, 80);
-      pdf.text(`Total Annotations: ${data.annotations.length}`, 20, 90);
+      pdf.text(`Total Annotations: ${(data.annotations || []).length}`, 20, 90);
       
       // Annotations breakdown
       let yPosition = 110;
@@ -177,7 +180,10 @@ export const visualAnalysisService = {
       pdf.text('Implementation Recommendations', 20, yPosition);
       yPosition += 20;
       
-      data.annotations.forEach((annotation, index) => {
+      (data.annotations || []).forEach((annotation, index) => {
+        // Add safety check for annotation object
+        if (!annotation || typeof annotation !== 'object') return;
+        
         if (yPosition > pageHeight - 60) {
           pdf.addPage();
           yPosition = 30;
@@ -193,7 +199,7 @@ export const visualAnalysisService = {
         // Severity and category
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(10);
-        pdf.text(`Severity: ${annotation.severity?.toUpperCase() || 'MEDIUM'} | Category: ${annotation.category || 'UX'}`, 25, yPosition);
+        pdf.text(`Severity: ${(annotation.severity || 'MEDIUM').toUpperCase()} | Category: ${annotation.category || 'UX'}`, 25, yPosition);
         yPosition += 8;
         
         // Description
@@ -250,9 +256,9 @@ export const visualAnalysisService = {
       pdf.text('Implementation Timeline', 20, yPosition);
       yPosition += 20;
       
-      const criticalCount = data.annotations.filter(a => a.severity === 'critical').length;
-      const suggestedCount = data.annotations.filter(a => a.severity === 'suggested').length;
-      const enhancementCount = data.annotations.filter(a => a.severity === 'enhancement').length;
+      const criticalCount = (data.annotations || []).filter(a => a?.severity === 'critical').length;
+      const suggestedCount = (data.annotations || []).filter(a => a?.severity === 'suggested').length;
+      const enhancementCount = (data.annotations || []).filter(a => a?.severity === 'enhancement').length;
       
       pdf.setFontSize(10);
       pdf.text(`Phase 1 (Week 1-2): Critical Issues (${criticalCount} items)`, 25, yPosition);
