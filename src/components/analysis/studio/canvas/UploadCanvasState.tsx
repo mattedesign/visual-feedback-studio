@@ -59,20 +59,14 @@ export const UploadCanvasState = ({
                 width: '100%'
               }}>
                   <p style={{
-                    display: 'flex',
-                    padding: '24px 8px',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    flex: '1 0 0',
-                    alignSelf: 'stretch',
-                    textAlign: 'left',
                     color: 'var(--Text-primary, #353535)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '500',
                     lineHeight: '16px',
-                    letterSpacing: '-0.12px'
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
                   }}>Example prompt 1</p>
                 </CardContent>
               </Card>
@@ -89,20 +83,14 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    display: 'flex',
-                    padding: '24px 8px',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    flex: '1 0 0',
-                    alignSelf: 'stretch',
-                    textAlign: 'left',
                     color: 'var(--Text-primary, #353535)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '500',
                     lineHeight: '16px',
-                    letterSpacing: '-0.12px'
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
                   }}>Example prompt 2</p>
                 </CardContent>
               </Card>
@@ -119,20 +107,14 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    display: 'flex',
-                    padding: '24px 8px',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    flex: '1 0 0',
-                    alignSelf: 'stretch',
-                    textAlign: 'left',
                     color: 'var(--Text-primary, #353535)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '500',
                     lineHeight: '16px',
-                    letterSpacing: '-0.12px'
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
                   }}>Example prompt 3</p>
                 </CardContent>
               </Card>
@@ -149,20 +131,14 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    display: 'flex',
-                    padding: '24px 8px',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    flex: '1 0 0',
-                    alignSelf: 'stretch',
-                    textAlign: 'left',
                     color: 'var(--Text-primary, #353535)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '500',
                     lineHeight: '16px',
-                    letterSpacing: '-0.12px'
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
                   }}>Example prompt 4</p>
                 </CardContent>
               </Card>
@@ -179,20 +155,14 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    display: 'flex',
-                    padding: '24px 8px',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    flex: '1 0 0',
-                    alignSelf: 'stretch',
-                    textAlign: 'left',
                     color: 'var(--Text-primary, #353535)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '500',
                     lineHeight: '16px',
-                    letterSpacing: '-0.12px'
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
                   }}>Example prompt 5</p>
                 </CardContent>
               </Card>
@@ -244,20 +214,14 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    display: 'flex',
-                    padding: '24px 8px',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    flex: '1 0 0',
-                    alignSelf: 'stretch',
-                    textAlign: 'left',
                     color: 'var(--Text-primary, #353535)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '500',
                     lineHeight: '16px',
-                    letterSpacing: '-0.12px'
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
                   }}>Insights backed by 272+ UX research studies</p>
                 </CardContent>
               </Card>
@@ -274,20 +238,14 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    display: 'flex',
-                    padding: '24px 8px',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    flex: '1 0 0',
-                    alignSelf: 'stretch',
-                    textAlign: 'left',
                     color: 'var(--Text-primary, #353535)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '500',
                     lineHeight: '16px',
-                    letterSpacing: '-0.12px'
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
                   }}>Creates actionable and detailed insights</p>
                 </CardContent>
               </Card>
@@ -304,20 +262,14 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    display: 'flex',
-                    padding: '24px 8px',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    flex: '1 0 0',
-                    alignSelf: 'stretch',
-                    textAlign: 'left',
                     color: 'var(--Text-primary, #353535)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '500',
                     lineHeight: '16px',
-                    letterSpacing: '-0.12px'
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
                   }}>Annotate on specific images</p>
                 </CardContent>
               </Card>
@@ -334,20 +286,14 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    display: 'flex',
-                    padding: '24px 8px',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    flex: '1 0 0',
-                    alignSelf: 'stretch',
-                    textAlign: 'left',
                     color: 'var(--Text-primary, #353535)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '500',
                     lineHeight: '16px',
-                    letterSpacing: '-0.12px'
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
                   }}>Comparative results between designs</p>
                 </CardContent>
               </Card>
@@ -364,20 +310,14 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    display: 'flex',
-                    padding: '24px 8px',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    flex: '1 0 0',
-                    alignSelf: 'stretch',
-                    textAlign: 'left',
                     color: 'var(--Text-primary, #353535)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '500',
                     lineHeight: '16px',
-                    letterSpacing: '-0.12px'
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
                   }}>Extracts information from UI and recommendati...</p>
                 </CardContent>
               </Card>
@@ -429,20 +369,14 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    display: 'flex',
-                    padding: '24px 8px',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    flex: '1 0 0',
-                    alignSelf: 'stretch',
-                    textAlign: 'left',
                     color: 'var(--Text-primary, #353535)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '500',
                     lineHeight: '16px',
-                    letterSpacing: '-0.12px'
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
                   }}>Open AI GPT 4o</p>
                 </CardContent>
               </Card>
@@ -459,20 +393,14 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    display: 'flex',
-                    padding: '24px 8px',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    flex: '1 0 0',
-                    alignSelf: 'stretch',
-                    textAlign: 'left',
                     color: 'var(--Text-primary, #353535)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '500',
                     lineHeight: '16px',
-                    letterSpacing: '-0.12px'
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
                   }}>Claude Sonnet 3.5</p>
                 </CardContent>
               </Card>
@@ -489,20 +417,14 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    display: 'flex',
-                    padding: '24px 8px',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    flex: '1 0 0',
-                    alignSelf: 'stretch',
-                    textAlign: 'left',
                     color: 'var(--Text-primary, #353535)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '500',
                     lineHeight: '16px',
-                    letterSpacing: '-0.12px'
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
                   }}>Claude Sonnet 4</p>
                 </CardContent>
               </Card>
@@ -519,20 +441,14 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    display: 'flex',
-                    padding: '24px 8px',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    flex: '1 0 0',
-                    alignSelf: 'stretch',
-                    textAlign: 'left',
                     color: 'var(--Text-primary, #353535)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '500',
                     lineHeight: '16px',
-                    letterSpacing: '-0.12px'
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
                   }}>Claude Opus</p>
                 </CardContent>
               </Card>
@@ -549,20 +465,14 @@ export const UploadCanvasState = ({
                 flex: '1'
               }}>
                   <p style={{
-                    display: 'flex',
-                    padding: '24px 8px',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    flex: '1 0 0',
-                    alignSelf: 'stretch',
-                    textAlign: 'left',
                     color: 'var(--Text-primary, #353535)',
                     fontFamily: '"Instrument Sans"',
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '500',
                     lineHeight: '16px',
-                    letterSpacing: '-0.12px'
+                    letterSpacing: '-0.12px',
+                    textAlign: 'left'
                   }}>Google Vision</p>
                 </CardContent>
               </Card>
