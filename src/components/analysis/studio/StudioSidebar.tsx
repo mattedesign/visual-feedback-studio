@@ -1,12 +1,15 @@
+
 import { Files, Menu, MessageCircle, Target } from 'lucide-react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { SidebarUpload } from './SidebarUpload';
 import { Badge } from '@/components/ui/badge';
+
 interface StudioSidebarProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
   collapsed: boolean;
   setCollapsed: (collapsed: boolean) => void;
 }
+
 export const StudioSidebar = ({
   workflow,
   collapsed,
@@ -16,6 +19,7 @@ export const StudioSidebar = ({
     const imageAnnotations = workflow.imageAnnotations.find(ia => ia.imageUrl === fileUrl);
     return imageAnnotations?.annotations || [];
   };
+
   const handleImageClick = (imageUrl: string) => {
     console.log('Clicking image in sidebar:', imageUrl);
     if (workflow.currentStep === 'annotate' || workflow.currentStep === 'results') {
@@ -24,10 +28,24 @@ export const StudioSidebar = ({
       workflow.selectImage(imageUrl);
     }
   };
+
   const isImageActive = (imageUrl: string) => {
     return workflow.activeImageUrl === imageUrl || workflow.activeImageUrl === null && workflow.selectedImages[0] === imageUrl;
   };
-  return <div className="display: flex; width: 240px; flex-direction: column; align-items: center; flex-shrink: 0; align-self: -bottom-0; border-radius: 20px;\nborder: 1px solid var(--Stroke-02, #E2E2E2);\nbackground: var(--01-White-01, #FFF);\n\n/* Depth */\nbox-shadow: 0px 2px 0px 0px rgba(255, 255, 255, 0.80) inset, 0px 1px 3.2px -2px rgba(0, 0, 0, 0.99);">
+
+  return (
+    <div style={{
+      borderRadius: '20px',
+      border: '1px solid var(--Stroke-02, #E2E2E2)',
+      background: 'var(--01-White-01, #FFF)',
+      boxShadow: '0px 2px 0px 0px rgba(255, 255, 255, 0.80) inset, 0px 1px 3.2px -2px rgba(0, 0, 0, 0.99)',
+      display: 'flex',
+      width: '240px',
+      flexDirection: 'column',
+      alignItems: 'center',
+      flexShrink: 0,
+      alignSelf: 'stretch'
+    }}>
       <div className="flex flex-col h-full">
         {/* Header */}
         <div className="p-6 border-b border-gray-200 dark:border-slate-700">
@@ -134,5 +152,6 @@ export const StudioSidebar = ({
             </div>}
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
