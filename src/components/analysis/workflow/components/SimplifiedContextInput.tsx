@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -78,9 +79,9 @@ export const SimplifiedContextInput = ({
 
   return (
     <div className="space-y-4">
-      {/* Main Input */}
+      {/* Main Input Container */}
       <div 
-        className="flex items-center space-x-3 p-3"
+        className="p-3"
         style={{
           display: 'flex',
           flexDirection: 'column',
@@ -94,6 +95,23 @@ export const SimplifiedContextInput = ({
           backdropFilter: 'blur(6px)'
         }}
       >
+        {/* Input Field - First Row */}
+        <div className="w-full mb-3">
+          <Input
+            ref={inputRef}
+            value={analysisContext}
+            onChange={(e) => onAnalysisContextChange(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="How can I help..."
+            className="border-0 bg-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none text-base text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 w-full"
+            style={{ 
+              outline: 'none',
+              boxShadow: 'none'
+            }}
+          />
+        </div>
+
+        {/* Buttons - Second Row */}
         <div className="flex items-center space-x-3 w-full">
           <button
             onClick={() => setShowSuggestions(!showSuggestions)}
@@ -115,23 +133,10 @@ export const SimplifiedContextInput = ({
             <Sparkles className="w-4 h-4" />
           </button>
           
-          <Input
-            ref={inputRef}
-            value={analysisContext}
-            onChange={(e) => onAnalysisContextChange(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="How can I help..."
-            className="border-0 bg-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none text-base text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 flex-1"
-            style={{ 
-              outline: 'none',
-              boxShadow: 'none'
-            }}
-          />
-          
           <Button
             onClick={onAnalyze}
             disabled={!canAnalyze}
-            className="text-white font-medium disabled:opacity-50"
+            className="text-white font-medium disabled:opacity-50 flex-1"
             style={{
               display: 'flex',
               padding: '11px 16px',
