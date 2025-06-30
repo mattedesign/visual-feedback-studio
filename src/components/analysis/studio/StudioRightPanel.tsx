@@ -60,8 +60,8 @@ export const StudioRightPanel = ({
     }))
   });
 
-  // ✅ SAFE Well Done data extraction
-  const wellDoneData = workflow.analysisResults?.wellDone || workflow.wellDone;
+  // ✅ FIXED: Only use the correct path for Well Done data
+  const wellDoneData = workflow.analysisResults?.wellDone;
 
   // ✅ FIXED: Get current image index for multi-image filtering
   const getCurrentImageIndex = () => {
@@ -214,7 +214,7 @@ export const StudioRightPanel = ({
         {/* ✅ FIXED: Multi-Image Indicator */}
         {workflow.selectedImages.length > 1 && hasResults && (
           <div className="text-xs text-gray-600 dark:text-gray-400 text-center">
-            Viewing Image {currentImageIndex + 1} of {workflow.selectedImages.length}
+            Viewing Image {getCurrentImageIndex() + 1} of {workflow.selectedImages.length}
           </div>
         )}
       </div>
@@ -296,6 +296,11 @@ export const StudioRightPanel = ({
                         <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
                           {wellDoneData.insights.length}
                         </Badge>
+                        {wellDoneData.insights.length > 3 && (
+                          <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
+                            +{wellDoneData.insights.length - 3}
+                          </Badge>
+                        )}
                         {isWellDoneOpen ? (
                           <ChevronUp className="w-4 h-4" />
                         ) : (
