@@ -1,4 +1,5 @@
 
+
 import { Files, Menu, MessageCircle, Target } from 'lucide-react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { SidebarUpload } from './SidebarUpload';
@@ -141,7 +142,7 @@ export const StudioSidebar = ({ workflow, collapsed, setCollapsed }: StudioSideb
               </div>
               
               {workflow.uploadedFiles.length === 0 && (
-                <div className="text-center py-6">
+                <div className="text-center py-6" style={{ display: 'none' }}>
                   <Files className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">No files uploaded yet</p>
                   <p className="text-xs text-gray-400">Upload your first design to get started</p>
@@ -193,3 +194,4 @@ export const StudioSidebar = ({ workflow, collapsed, setCollapsed }: StudioSideb
     </div>
   );
 };
+
