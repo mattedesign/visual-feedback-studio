@@ -1,4 +1,3 @@
-
 import { Files, MessageCircle, Target, Trash2 } from 'lucide-react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { SidebarUpload } from './SidebarUpload';
@@ -71,7 +70,7 @@ export const StudioSidebar = ({
       <div className="flex flex-col h-full">
         {/* Header */}
         <div className="p-6 border-b border-gray-200 dark:border-slate-700">
-          <div className="flex items-center mb-4">
+          <div className="flex items-center">
             <img 
               src="/lovable-uploads/25ed480c-5313-435c-82db-ccfb1ca20af8.png" 
               alt="Figmant" 
@@ -86,17 +85,17 @@ export const StudioSidebar = ({
             </button>
           </div>
 
-          {!collapsed && <div className="flex items-center justify-between mb-3 hidden">
+          <div className="flex items-center justify-between mb-3 hidden">
               <h4 className="text-sm font-medium text-gray-900 dark:text-white">
                 Images ({workflow.uploadedFiles.length})
               </h4>
               <span className="text-xs text-gray-500 dark:text-gray-400">
                 Step: {workflow.currentStep}
               </span>
-            </div>}
+            </div>
 
           {/* Analysis Context Indicator */}
-          {!collapsed && <div className="mb-2 hidden">
+          <div className="mb-2 hidden">
               <div className="flex items-center space-x-2">
                 <Target className="w-3 h-3 text-gray-500 dark:text-gray-400" />
                 <span className="text-xs text-gray-500 dark:text-gray-400">Analysis Context:</span>
@@ -110,7 +109,7 @@ export const StudioSidebar = ({
                     Not set
                   </Badge>}
               </div>
-            </div>}
+            </div>
         </div>
 
         {/* Upload Section */}
