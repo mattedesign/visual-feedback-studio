@@ -1,38 +1,61 @@
 
 import React, { useState } from 'react';
 import { Brain, Search, BookOpen, ExternalLink, Award, CheckCircle } from 'lucide-react';
-import { BusinessAnalysisData } from '@/types/businessImpact';
+
+interface AnnotationData {
+  id?: string;
+  severity: 'critical' | 'suggested' | 'enhancement';
+  title?: string;
+  description?: string;
+  researchBacking?: string[];
+  confidence?: number;
+  category?: string;
+  feedback?: string;
+  implementationEffort?: 'low' | 'medium' | 'high';
+  businessImpact?: 'low' | 'medium' | 'high';
+}
 
 interface ResearchCitationsModuleProps {
-  analysisData: BusinessAnalysisData;
+  analysisData: {
+    enhancedContext?: {
+      knowledgeSourcesUsed?: number;
+      researchContext?: string;
+      citations?: string[];
+    };
+    annotations?: AnnotationData[];
+    siteName?: string;
+    createdAt?: string;
+    analysisContext?: string;
+  };
 }
 
 export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = ({ analysisData }) => {
   const [selectedCategory, setSelectedCategory] = useState('overview');
   const [expandedSource, setExpandedSource] = useState<string | null>(null);
 
-  // Extract research data from enhancedContext
-  const knowledgeSourcesUsed = analysisData.enhancedContext?.knowledgeSourcesUsed || 0;
-  const citations = analysisData.enhancedContext?.citations || [];
-  const researchContext = analysisData.enhancedContext?.researchContext || '';
+  // Safely extract research data with fallbacks
+  const knowledgeSourcesUsed = analysisData?.enhancedContext?.knowledgeSourcesUsed || 0;
+  const citations = analysisData?.enhancedContext?.citations || [];
+  const researchContext = analysisData?.enhancedContext?.researchContext || '';
   
-  // Collect all research backing from annotations
-  const allResearchBacking = analysisData.annotations?.reduce((acc, annotation) => {
-    if (annotation.researchCitations) {
-      acc.push(...annotation.researchCitations);
+  // Safely collect all research backing from annotations
+  const allResearchBacking = (analysisData?.annotations || []).reduce((acc, annotation) => {
+    if (annotation?.researchBacking && Array.isArray(annotation.researchBacking)) {
+      acc.push(...annotation.researchBacking);
     }
     return acc;
-  }, [] as string[]) || [];
+  }, [] as string[]);
   
   // Remove duplicates and combine with citations
   const uniqueResearchSources = [...new Set([...citations, ...allResearchBacking])];
   
-  // Calculate research confidence
-  const annotationsWithResearch = analysisData.annotations?.filter(ann => 
-    ann.researchCitations && ann.researchCitations.length > 0
-  ) || [];
+  // Calculate research confidence safely
+  const annotationsWithResearch = (analysisData?.annotations || []).filter(ann => 
+    ann?.researchBacking && Array.isArray(ann.researchBacking) && ann.researchBacking.length > 0
+  );
+  
   const averageConfidence = annotationsWithResearch.length > 0 
-    ? annotationsWithResearch.reduce((sum, ann) => sum + (ann.confidence || 0.8), 0) / annotationsWithResearch.length 
+    ? annotationsWithResearch.reduce((sum, ann) => sum + (ann?.confidence || 0.8), 0) / annotationsWithResearch.length 
     : 0.8;
 
   // Categorize research sources
@@ -72,8 +95,21 @@ export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = (
     return 'Industry Best Practices';
   };
 
+  // Add safety check for missing data
+  if (!analysisData) {
+    return (
+      <div className="research-citations-module flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+        <div className="text-center">
+          <Brain className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+          <h3 className="font-medium mb-2">No Analysis Data Available</h3>
+          <p className="text-sm">Unable to load research citations for this analysis.</p>
+        </div>
+      </div>
+    );
+  }
+
   // Handle missing research data gracefully
-  if (!analysisData || (!knowledgeSourcesUsed && uniqueResearchSources.length === 0)) {
+  if (!knowledgeSourcesUsed && uniqueResearchSources.length === 0) {
     return (
       <div className="research-citations-module h-screen bg-white dark:bg-slate-900 flex items-center justify-center">
         <div className="text-center">
@@ -193,7 +229,7 @@ export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = (
               </ul>
             </div>
 
-            {researchContext && (
+            {researchContext && researchContext.length > 0 && (
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
                   Research Context for This Analysis
@@ -201,6 +237,20 @@ export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = (
                 <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                   {researchContext.substring(0, 500)}
                   {researchContext.length > 500 && '...'}
+                </p>
+              </div>
+            )}
+
+            {/* Show message when no research context available */}
+            {(!researchContext || researchContext.length === 0) && knowledgeSourcesUsed > 0 && (
+              <div className="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                  Research-Backed Analysis
+                </h3>
+                <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                  This analysis incorporates insights from {knowledgeSourcesUsed} research sources, 
+                  providing evidence-based recommendations backed by industry best practices and 
+                  established UX principles.
                 </p>
               </div>
             )}
@@ -222,30 +272,40 @@ export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = (
 
         {selectedCategory === 'sources' && (
           <div className="space-y-6">
-            {Object.entries(researchCategories).map(([category, sources]) => {
-              const usedSources = sources.filter(source => 
-                uniqueResearchSources.some(used => used.toLowerCase().includes(source.toLowerCase()))
-              );
-              
-              if (usedSources.length === 0) return null;
-              
-              return (
-                <div key={category} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    {category} ({usedSources.length} used)
-                  </h3>
-                  <div className="grid gap-3">
-                    {usedSources.map((source, index) => (
-                      <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-700 rounded">
-                        <CheckCircle className="w-5 h-5 text-green-500" />
-                        <span className="text-gray-900 dark:text-white font-medium">{source}</span>
-                        <ExternalLink className="w-4 h-4 text-gray-400 ml-auto cursor-pointer hover:text-gray-600" />
-                      </div>
-                    ))}
+            {uniqueResearchSources.length > 0 ? (
+              Object.entries(researchCategories).map(([category, sources]) => {
+                const usedSources = sources.filter(source => 
+                  uniqueResearchSources.some(used => 
+                    used && used.toLowerCase().includes(source.toLowerCase())
+                  )
+                );
+                
+                if (usedSources.length === 0) return null;
+                
+                return (
+                  <div key={category} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                      {category} ({usedSources.length} used)
+                    </h3>
+                    <div className="grid gap-3">
+                      {usedSources.map((source, index) => (
+                        <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-700 rounded">
+                          <CheckCircle className="w-5 h-5 text-green-500" />
+                          <span className="text-gray-900 dark:text-white font-medium">{source}</span>
+                          <ExternalLink className="w-4 h-4 text-gray-400 ml-auto cursor-pointer hover:text-gray-600" />
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <BookOpen className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                <h4 className="font-medium mb-2">No research sources identified</h4>
+                <p className="text-sm">This analysis was completed without enhanced research context.</p>
+              </div>
+            )}
 
             {/* Show uncategorized sources if any */}
             {uniqueResearchSources.filter(source => 
