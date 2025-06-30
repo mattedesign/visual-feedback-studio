@@ -3,6 +3,22 @@ import React, { useState } from 'react';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { BusinessAnalysisData } from '@/types/businessImpact';
 
+interface AnnotationWithPosition {
+  id: string;
+  x?: number;
+  y?: number;
+  severity: 'critical' | 'suggested' | 'enhancement';
+  title?: string;
+  description?: string;
+  researchBacking?: string[];
+  confidence?: number;
+  category?: string;
+  feedback?: string;
+  implementationEffort?: 'low' | 'medium' | 'high';
+  businessImpact?: 'low' | 'medium' | 'high';
+  researchCitations?: string[];
+}
+
 interface VisualAnalysisModuleProps {
   analysisData: BusinessAnalysisData;
 }
@@ -10,17 +26,34 @@ interface VisualAnalysisModuleProps {
 export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({ 
   analysisData 
 }) => {
-  const [selectedAnnotation, setSelectedAnnotation] = useState<any>(null);
+  const [selectedAnnotation, setSelectedAnnotation] = useState<AnnotationWithPosition | null>(null);
   const [severityFilter, setSeverityFilter] = useState<string>('all');
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
   
-  // Use existing annotation data as-is
-  const processedAnnotations = analysisData.annotations || [];
+  // Add safety check at the beginning of the component
+  if (!analysisData || !analysisData.annotations) {
+    return (
+      <div className="visual-analysis-module flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+        No analysis data available
+      </div>
+    );
+  }
+  
+  // Use existing annotation data as-is with proper typing
+  const processedAnnotations: AnnotationWithPosition[] = analysisData.annotations || [];
   
   // Filter annotations based on severity
   const filteredAnnotations = severityFilter === 'all' 
     ? processedAnnotations 
     : processedAnnotations.filter(ann => ann.severity === severityFilter);
+  
+  // Separate annotations with and without positions
+  const annotationsWithPosition = filteredAnnotations.filter(ann => 
+    ann.x !== undefined && ann.y !== undefined
+  );
+  const annotationsWithoutPosition = filteredAnnotations.filter(ann => 
+    ann.x === undefined || ann.y === undefined
+  );
   
   // Mock images data for now - this would come from actual analysis data
   const images = [
@@ -41,8 +74,8 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
               className="max-w-full h-auto rounded-lg shadow-lg"
             />
             
-            {/* Render annotations over the image */}
-            {filteredAnnotations.map((annotation, index) => (
+            {/* Render annotations with positions over the image */}
+            {annotationsWithPosition.map((annotation, index) => (
               <div
                 key={annotation.id}
                 className={`absolute w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold cursor-pointer transform -translate-x-1/2 -translate-y-1/2 hover:scale-110 transition-transform duration-200 ${
@@ -51,17 +84,44 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
                   'bg-blue-500 hover:bg-blue-600 border-2 border-blue-400'
                 } ${selectedAnnotation?.id === annotation.id ? 'ring-4 ring-white scale-110' : ''}`}
                 style={{
-                  left: `${annotation.x || 20 + (index * 10)}%`,
-                  top: `${annotation.y || 30 + (index * 15)}%`
+                  left: `${annotation.x}%`,
+                  top: `${annotation.y}%`
                 }}
                 onClick={() => setSelectedAnnotation(annotation)}
-                title={annotation.feedback?.substring(0, 50) + '...' || 'Annotation'}
+                title={annotation.feedback?.substring(0, 50) + '...' || annotation.title || 'Annotation'}
               >
                 {index + 1}
               </div>
             ))}
           </div>
         </div>
+        
+        {/* Additional Findings - Annotations without positions */}
+        {annotationsWithoutPosition.length > 0 && (
+          <div className="annotations-without-position mb-4 p-4 bg-gray-100 dark:bg-slate-700 rounded-lg">
+            <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+              Additional Findings:
+            </h4>
+            <div className="space-y-2">
+              {annotationsWithoutPosition.map((annotation, index) => (
+                <div 
+                  key={annotation.id}
+                  className="flex items-start gap-2 p-2 bg-white dark:bg-slate-600 rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-500"
+                  onClick={() => setSelectedAnnotation(annotation)}
+                >
+                  <span className={`w-4 h-4 rounded-full flex-shrink-0 mt-0.5 ${
+                    annotation.severity === 'critical' ? 'bg-red-500' :
+                    annotation.severity === 'suggested' ? 'bg-yellow-500' :
+                    'bg-blue-500'
+                  }`}></span>
+                  <div className="text-sm text-gray-900 dark:text-white">
+                    {annotation.feedback || annotation.title || 'Analysis finding'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         
         {/* Image controls */}
         <div className="image-controls flex flex-col sm:flex-row items-center justify-between bg-gray-100 dark:bg-slate-700 rounded-lg p-3 gap-3">
@@ -123,10 +183,10 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
                   </span>
                 </div>
                 <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                  {selectedAnnotation.feedback?.substring(0, 100) || 'Analysis Insight'}
+                  {selectedAnnotation.title || selectedAnnotation.feedback?.substring(0, 100) || 'Analysis Insight'}
                 </h4>
                 <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 leading-relaxed">
-                  {selectedAnnotation.feedback || 'No detailed feedback available.'}
+                  {selectedAnnotation.feedback || selectedAnnotation.description || 'No detailed feedback available.'}
                 </p>
                 
                 {/* Implementation Effort and Business Impact */}
