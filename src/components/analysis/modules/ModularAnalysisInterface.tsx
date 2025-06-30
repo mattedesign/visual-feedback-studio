@@ -1,57 +1,87 @@
+
 import React, { useState, useEffect } from 'react';
-import { BarChart3, Eye, BookOpen, Download, Share, ArrowLeft } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 import { BusinessImpactDashboard } from './BusinessImpactDashboard';
 import { VisualAnalysisModule } from './VisualAnalysisModule';
 import { ResearchCitationsModule } from './ResearchCitationsModule';
+import { getAnalysisResults } from '@/services/analysisResultsService';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, BarChart3, Eye, BookOpen } from 'lucide-react';
 
-// Flexible interface that accommodates various data structures
-interface ModularAnalysisInterfaceProps {
-  analysisData: any; // Use 'any' for maximum compatibility with existing data
-}
+type ModuleType = 'business-impact' | 'visual-analysis' | 'research-citations';
 
-export const ModularAnalysisInterface: React.FC<ModularAnalysisInterfaceProps> = ({ analysisData }) => {
-  const [activeModule, setActiveModule] = useState('business-impact');
-  const [isMobile, setIsMobile] = useState(false);
+export const ModularAnalysisInterface = () => {
+  const { id } = useParams<{ id: string }>();
+  const [currentModule, setCurrentModule] = useState<ModuleType>('business-impact');
+  const [analysisData, setAnalysisData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Handle window resize for responsive behavior
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
+    const loadAnalysisData = async () => {
+      if (!id) {
+        setError('No analysis ID provided');
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        console.log('Loading analysis data for modular interface:', id);
+        
+        const data = await getAnalysisResults(id);
+        if (data) {
+          console.log('Analysis data loaded successfully:', {
+            annotationCount: Array.isArray(data.annotations) ? data.annotations.length : 0,
+            imageCount: data.images?.length || 0,
+            hasEnhancedContext: !!data.enhanced_context,
+            hasWellDone: !!data.well_done_data
+          });
+          setAnalysisData(data);
+        } else {
+          // Fallback to sessionStorage for temp analyses
+          const sessionData = sessionStorage.getItem('currentAnalysisData');
+          if (sessionData) {
+            console.log('Loading analysis data from session storage');
+            setAnalysisData(JSON.parse(sessionData));
+          } else {
+            setError('Analysis not found');
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load analysis data:', error);
+        setError('Failed to load analysis data');
+      } finally {
+        setIsLoading(false);
+      }
     };
-    
-    // Set initial state
-    handleResize();
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
-  // Handle URL parameter for module selection
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const moduleParam = urlParams.get('module');
-    if (moduleParam && ['business-impact', 'visual-analysis', 'research-citations'].includes(moduleParam)) {
-      setActiveModule(moduleParam);
-    }
-  }, []);
+    loadAnalysisData();
+  }, [id]);
 
-  // Safety check for analysis data
-  if (!analysisData) {
+  if (isLoading) {
     return (
-      <div className="modular-analysis-interface flex items-center justify-center min-h-screen bg-gray-50 dark:bg-slate-900">
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (error || !analysisData) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            No Analysis Data Available
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400">
-            Please go back and run an analysis first.
-          </p>
-          <button 
-            onClick={() => window.history.back()}
-            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          <div className="text-red-400 mb-4">
+            {error || 'Analysis data not available'}
+          </div>
+          <Button
+            onClick={() => window.location.href = '/analysis'}
+            className="bg-blue-600 hover:bg-blue-700"
           >
-            Go Back
-          </button>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Analysis
+          </Button>
         </div>
       </div>
     );
@@ -59,239 +89,102 @@ export const ModularAnalysisInterface: React.FC<ModularAnalysisInterfaceProps> =
 
   const modules = [
     {
-      id: 'business-impact',
-      name: 'Business Impact',
+      id: 'business-impact' as ModuleType,
+      label: 'Business Impact',
       icon: BarChart3,
-      description: 'Executive summary with ROI and timeline',
-      component: BusinessImpactDashboard
+      description: 'Executive summary and ROI analysis'
     },
     {
-      id: 'visual-analysis',
-      name: 'Visual Analysis',
+      id: 'visual-analysis' as ModuleType,
+      label: 'Visual Analysis',
       icon: Eye,
-      description: 'Detailed annotation review',
-      component: VisualAnalysisModule
+      description: 'Detailed annotations and insights'
     },
     {
-      id: 'research-citations',
-      name: 'Research Citations',
+      id: 'research-citations' as ModuleType,
+      label: 'Research Citations',
       icon: BookOpen,
-      description: 'Research backing and methodology',
-      component: ResearchCitationsModule
+      description: 'Methodology and sources'
     }
   ];
 
-  const activeModuleData = modules.find(m => m.id === activeModule);
-  const ActiveComponent = activeModuleData?.component;
-
-  const handleModuleChange = (moduleId: string) => {
-    setActiveModule(moduleId);
-    // Update URL without page reload
-    const newParams = new URLSearchParams(window.location.search);
-    newParams.set('module', moduleId);
-    window.history.replaceState(null, '', `${window.location.pathname}?${newParams.toString()}`);
-  };
-
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: 'UX Analysis Results',
-        text: 'Check out these UX analysis results',
-        url: window.location.href
-      });
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-    }
-  };
-
-  // Safely extract metadata with fallbacks
-  const getAnalysisMetadata = () => {
-    return {
-      status: analysisData?.analysisStatus || analysisData?.status || 'completed',
-      imageCount: analysisData?.images?.length || 0,
-      annotationCount: analysisData?.annotations?.length || 0,
-      knowledgeSourcesUsed: analysisData?.enhancedContext?.knowledgeSourcesUsed || 0,
-      createdAt: analysisData?.createdAt || analysisData?.created_at || new Date().toISOString(),
-      analysisContext: analysisData?.analysisContext || analysisData?.context || ''
-    };
-  };
-
-  const metadata = getAnalysisMetadata();
-
   return (
-    <div className="modular-analysis-interface min-h-screen bg-gray-50 dark:bg-slate-900">
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-50 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Left: Breadcrumb and Title */}
+    <div className="min-h-screen bg-slate-900">
+      {/* Header with Navigation */}
+      <div className="bg-slate-800 border-b border-slate-700">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <button 
-                onClick={() => {
-                  const newParams = new URLSearchParams(window.location.search);
-                  newParams.delete('beta');
-                  newParams.delete('module');
-                  window.location.href = `${window.location.pathname}?${newParams.toString()}`;
-                }}
-                className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+              <Button
+                onClick={() => window.location.href = '/analysis'}
+                variant="ghost"
+                size="sm"
+                className="text-slate-300 hover:text-white"
               >
-                <ArrowLeft className="w-4 h-4" />
-                <span className="text-sm">Back to Standard View</span>
-              </button>
-              <div className="hidden sm:block w-px h-6 bg-gray-300 dark:bg-slate-600"></div>
-              <div>
-                <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Analysis Results
-                </h1>
-                {metadata.analysisContext && (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {metadata.analysisContext}
-                  </p>
-                )}
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Analysis
+              </Button>
+              <div className="text-white">
+                <h1 className="text-xl font-semibold">Analysis Results</h1>
+                <p className="text-slate-400 text-sm">
+                  {analysisData.analysis_context || 'UX Analysis Results'}
+                </p>
               </div>
             </div>
-
-            {/* Right: Actions */}
-            <div className="flex items-center gap-3">
-              <button 
-                onClick={handleShare}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-md hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+            
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                onClick={() => window.location.href = `/analysis/${id}`}
               >
-                <Share className="w-4 h-4" />
-                <span className="hidden sm:inline">Share</span>
-              </button>
-              <button className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors">
-                <Download className="w-4 h-4" />
-                <span className="hidden sm:inline">Export</span>
-              </button>
+                Switch to Classic View
+              </Button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto">
-        {/* Mobile Module Selector */}
-        {isMobile && (
-          <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 p-4">
-            <select
-              value={activeModule}
-              onChange={(e) => handleModuleChange(e.target.value)}
-              className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              {modules.map((module) => (
-                <option key={module.id} value={module.id}>
-                  {module.name} - {module.description}
-                </option>
-              ))}
-            </select>
-          </div>
+      {/* Module Navigation */}
+      <div className="bg-slate-800/50 border-b border-slate-700">
+        <div className="container mx-auto px-4">
+          <nav className="flex space-x-1">
+            {modules.map((module) => {
+              const Icon = module.icon;
+              const isActive = currentModule === module.id;
+              
+              return (
+                <button
+                  key={module.id}
+                  onClick={() => setCurrentModule(module.id)}
+                  className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'text-blue-400 border-b-2 border-blue-400 bg-slate-800/50'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{module.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+      </div>
+
+      {/* Module Content */}
+      <div className="container mx-auto px-4 py-6">
+        {currentModule === 'business-impact' && (
+          <BusinessImpactDashboard analysisData={analysisData} />
         )}
-
-        {/* Desktop Layout */}
-        {!isMobile && (
-          <div className="flex">
-            {/* Left Sidebar - Module Navigation */}
-            <div className="w-64 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-700 min-h-screen">
-              <div className="p-6">
-                <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">
-                  Analysis Modules
-                </h2>
-                <nav className="space-y-2">
-                  {modules.map((module) => {
-                    const Icon = module.icon;
-                    const isActive = activeModule === module.id;
-                    
-                    return (
-                      <button
-                        key={module.id}
-                        onClick={() => handleModuleChange(module.id)}
-                        className={`w-full flex items-start gap-3 px-3 py-3 text-left rounded-lg transition-all duration-200 ${
-                          isActive
-                            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shadow-sm'
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800'
-                        }`}
-                      >
-                        <Icon className={`w-5 h-5 mt-0.5 flex-shrink-0 transition-colors ${
-                          isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400'
-                        }`} />
-                        <div className="min-w-0 flex-1">
-                          <div className={`font-medium transition-colors ${
-                            isActive ? 'text-blue-700 dark:text-blue-300' : 'text-gray-900 dark:text-white'
-                          }`}>
-                            {module.name}
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            {module.description}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </nav>
-
-                {/* Analysis Info */}
-                <div className="mt-8 pt-6 border-t border-gray-200 dark:border-slate-700">
-                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
-                    Analysis Info
-                  </h3>
-                  <div className="space-y-3 text-sm">
-                    <div>
-                      <span className="text-gray-500 dark:text-gray-400">Status:</span>
-                      <span className="ml-2 text-gray-900 dark:text-white capitalize">
-                        {metadata.status}
-                      </span>
-                    </div>
-                    {metadata.imageCount > 0 && (
-                      <div>
-                        <span className="text-gray-500 dark:text-gray-400">Images:</span>
-                        <span className="ml-2 text-gray-900 dark:text-white">
-                          {metadata.imageCount}
-                        </span>
-                      </div>
-                    )}
-                    {metadata.annotationCount > 0 && (
-                      <div>
-                        <span className="text-gray-500 dark:text-gray-400">Issues:</span>
-                        <span className="ml-2 text-gray-900 dark:text-white">
-                          {metadata.annotationCount}
-                        </span>
-                      </div>
-                    )}
-                    {metadata.knowledgeSourcesUsed > 0 && (
-                      <div>
-                        <span className="text-gray-500 dark:text-gray-400">Research Sources:</span>
-                        <span className="ml-2 text-gray-900 dark:text-white">
-                          {metadata.knowledgeSourcesUsed}
-                        </span>
-                      </div>
-                    )}
-                    <div>
-                      <span className="text-gray-500 dark:text-gray-400">Created:</span>
-                      <span className="ml-2 text-gray-900 dark:text-white">
-                        {new Date(metadata.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Main Content Area */}
-            <div className="flex-1 overflow-hidden">
-              {ActiveComponent && (
-                <div className="h-full">
-                  <ActiveComponent analysisData={analysisData} />
-                </div>
-              )}
-            </div>
-          </div>
+        
+        {currentModule === 'visual-analysis' && (
+          <VisualAnalysisModule analysisData={analysisData} />
         )}
-
-        {/* Mobile Content */}
-        {isMobile && ActiveComponent && (
-          <div className="min-h-screen">
-            <ActiveComponent analysisData={analysisData} />
-          </div>
+        
+        {currentModule === 'research-citations' && (
+          <ResearchCitationsModule analysisData={analysisData} />
         )}
       </div>
     </div>

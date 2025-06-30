@@ -1,8 +1,22 @@
 
 import React from 'react';
 import { Check } from 'lucide-react';
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
+import { ModularAnalysisInterface } from '@/components/analysis/modules/ModularAnalysisInterface';
 
 const AnalysisResults = () => {
+  const useModularInterface = useFeatureFlag('modular-analysis');
+  
+  // Get URL parameter for testing override
+  const urlParams = new URLSearchParams(window.location.search);
+  const betaMode = urlParams.get('beta') === 'true';
+  
+  // NEW INTERFACE: When feature flag is enabled or beta parameter is present
+  if (useModularInterface || betaMode) {
+    return <ModularAnalysisInterface />;
+  }
+  
+  // PRESERVE EXISTING FUNCTIONALITY AS DEFAULT
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-6">
       <div className="max-w-md text-center">
@@ -39,6 +53,24 @@ const AnalysisResults = () => {
               Including Nielsen Norman Group, Baymard Institute, and other leading UX research sources
             </p>
           </div>
+        </div>
+        
+        {/* ADD ONLY: Optional "Try New Interface" button */}
+        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-6 border border-blue-200 dark:border-blue-800">
+          <div className="flex items-center justify-center mb-3">
+            <span className="text-blue-600 dark:text-blue-400 text-sm font-medium">
+              🚀 New Modular Interface Available!
+            </span>
+          </div>
+          <button 
+            onClick={() => window.location.href += '?beta=true'}
+            className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+          >
+            Try New Professional Dashboard
+          </button>
+          <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+            Executive summary • Visual analysis • Research citations
+          </p>
         </div>
         
         <div className="space-y-3">

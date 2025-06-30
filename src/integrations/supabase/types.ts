@@ -119,59 +119,6 @@ export type Database = {
           },
         ]
       }
-      annotations: {
-        Row: {
-          analysis_id: string
-          business_impact: string
-          category: string
-          created_at: string
-          feedback: string
-          id: string
-          image_index: number | null
-          implementation_effort: string
-          severity: string
-          updated_at: string
-          x: number
-          y: number
-        }
-        Insert: {
-          analysis_id: string
-          business_impact: string
-          category: string
-          created_at?: string
-          feedback: string
-          id?: string
-          image_index?: number | null
-          implementation_effort: string
-          severity: string
-          updated_at?: string
-          x: number
-          y: number
-        }
-        Update: {
-          analysis_id?: string
-          business_impact?: string
-          category?: string
-          created_at?: string
-          feedback?: string
-          id?: string
-          image_index?: number | null
-          implementation_effort?: string
-          severity?: string
-          updated_at?: string
-          x?: number
-          y?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "annotations_analysis_id_fkey"
-            columns: ["analysis_id"]
-            isOneToOne: false
-            referencedRelation: "analyses"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       competitor_patterns: {
         Row: {
           created_at: string
