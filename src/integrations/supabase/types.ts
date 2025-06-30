@@ -15,10 +15,16 @@ export type Database = {
           analysis_completed_at: string | null
           analysis_prompt: string | null
           business_goals: string[] | null
+          business_impact_score: number | null
+          competitive_position_score: number | null
           created_at: string
           description: string | null
           design_type: string | null
           id: string
+          implementation_timeline_weeks: number | null
+          knowledge_sources_used: number | null
+          revenue_confidence_level: number | null
+          revenue_potential_annual: number | null
           status: string
           target_audience: string | null
           title: string
@@ -30,10 +36,16 @@ export type Database = {
           analysis_completed_at?: string | null
           analysis_prompt?: string | null
           business_goals?: string[] | null
+          business_impact_score?: number | null
+          competitive_position_score?: number | null
           created_at?: string
           description?: string | null
           design_type?: string | null
           id?: string
+          implementation_timeline_weeks?: number | null
+          knowledge_sources_used?: number | null
+          revenue_confidence_level?: number | null
+          revenue_potential_annual?: number | null
           status?: string
           target_audience?: string | null
           title?: string
@@ -45,10 +57,16 @@ export type Database = {
           analysis_completed_at?: string | null
           analysis_prompt?: string | null
           business_goals?: string[] | null
+          business_impact_score?: number | null
+          competitive_position_score?: number | null
           created_at?: string
           description?: string | null
           design_type?: string | null
           id?: string
+          implementation_timeline_weeks?: number | null
+          knowledge_sources_used?: number | null
+          revenue_confidence_level?: number | null
+          revenue_potential_annual?: number | null
           status?: string
           target_audience?: string | null
           title?: string
