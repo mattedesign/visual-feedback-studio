@@ -14,12 +14,18 @@ export const UploadCanvasState = ({
         {/* Three-column layout */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Example Prompt Column */}
-          <div className="flex flex-col items-center gap-6 flex-1 self-stretch" style={{
+          <div className="flex flex-col items-flex-start gap-6 flex-1 self-stretch" style={{
+            display: 'flex',
+            padding: '24px 8px',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            flex: '1 0 0',
+            alignSelf: 'stretch',
             borderRadius: '18px',
-            border: '1px solid var(--Stroke-default, rgba(0, 0, 0, 0.06))',
-            background: 'var(--Colors-white-white, #FFF)',
-            boxShadow: '0px 3px 4px -1px rgba(0, 0, 0, 0.08), 0px 1px 0px 0px rgba(255, 255, 255, 0.33) inset, 0px 0px 0px 1px #D4D4D4',
-            padding: '24px 8px'
+            border: '1px solid var(--Stroke-01, #ECECEC)',
+            background: 'var(--Surface-01, #FCFCFC)',
+            boxShadow: '0px 8px 24px -20px rgba(0, 0, 0, 0.04), 0px 2px 0px 0px #FFF inset, 0px 8px 16px -12px rgba(0, 0, 0, 0.01)',
+            backdropFilter: 'blur(6px)'
           }}>
             <div className="text-center">
               <div className="w-9 h-9 mx-auto mb-4 flex items-center justify-center bg-transparent">
@@ -162,12 +168,18 @@ export const UploadCanvasState = ({
           </div>
 
           {/* Capabilities Column */}
-          <div className="flex flex-col items-center gap-6 flex-1 self-stretch" style={{
+          <div className="flex flex-col items-flex-start gap-6 flex-1 self-stretch" style={{
+            display: 'flex',
+            padding: '24px 8px',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            flex: '1 0 0',
+            alignSelf: 'stretch',
             borderRadius: '18px',
-            border: '1px solid var(--Stroke-default, rgba(0, 0, 0, 0.06))',
-            background: 'var(--Colors-white-white, #FFF)',
-            boxShadow: '0px 3px 4px -1px rgba(0, 0, 0, 0.08), 0px 1px 0px 0px rgba(255, 255, 255, 0.33) inset, 0px 0px 0px 1px #D4D4D4',
-            padding: '24px 8px'
+            border: '1px solid var(--Stroke-01, #ECECEC)',
+            background: 'var(--Surface-01, #FCFCFC)',
+            boxShadow: '0px 8px 24px -20px rgba(0, 0, 0, 0.04), 0px 2px 0px 0px #FFF inset, 0px 8px 16px -12px rgba(0, 0, 0, 0.01)',
+            backdropFilter: 'blur(6px)'
           }}>
             <div className="text-center">
               <div className="w-9 h-9 mx-auto mb-4 flex items-center justify-center bg-transparent">
@@ -309,12 +321,18 @@ export const UploadCanvasState = ({
           </div>
 
           {/* Models Column */}
-          <div className="flex flex-col items-center gap-6 flex-1 self-stretch" style={{
+          <div className="flex flex-col items-flex-start gap-6 flex-1 self-stretch" style={{
+            display: 'flex',
+            padding: '24px 8px',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            flex: '1 0 0',
+            alignSelf: 'stretch',
             borderRadius: '18px',
-            border: '1px solid var(--Stroke-default, rgba(0, 0, 0, 0.06))',
-            background: 'var(--Colors-white-white, #FFF)',
-            boxShadow: '0px 3px 4px -1px rgba(0, 0, 0, 0.08), 0px 1px 0px 0px rgba(255, 255, 255, 0.33) inset, 0px 0px 0px 1px #D4D4D4',
-            padding: '24px 8px'
+            border: '1px solid var(--Stroke-01, #ECECEC)',
+            background: 'var(--Surface-01, #FCFCFC)',
+            boxShadow: '0px 8px 24px -20px rgba(0, 0, 0, 0.04), 0px 2px 0px 0px #FFF inset, 0px 8px 16px -12px rgba(0, 0, 0, 0.01)',
+            backdropFilter: 'blur(6px)'
           }}>
             <div className="text-center">
               <div className="w-9 h-9 mx-auto mb-4 flex items-center justify-center bg-transparent">
