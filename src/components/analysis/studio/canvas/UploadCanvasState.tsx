@@ -1,4 +1,3 @@
-
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -55,7 +54,6 @@ export const UploadCanvasState = ({
                 alignSelf: 'stretch',
                 borderRadius: '8px',
                 background: 'var(--Background-secondary, #F5F6FA)',
-                flex: '1',
                 width: '100%'
               }}>
                   <p style={{
@@ -80,8 +78,7 @@ export const UploadCanvasState = ({
                 alignItems: 'center',
                 alignSelf: 'stretch',
                 borderRadius: '8px',
-                background: 'var(--Background-secondary, #F5F6FA)',
-                flex: '1'
+                background: 'var(--Background-secondary, #F5F6FA)'
               }}>
                   <p style={{
                     color: 'var(--Shade-6-100, #7B7B7B)',
@@ -105,8 +102,7 @@ export const UploadCanvasState = ({
                 alignItems: 'center',
                 alignSelf: 'stretch',
                 borderRadius: '8px',
-                background: 'var(--Background-secondary, #F5F6FA)',
-                flex: '1'
+                background: 'var(--Background-secondary, #F5F6FA)'
               }}>
                   <p style={{
                     color: 'var(--Shade-6-100, #7B7B7B)',
@@ -130,8 +126,7 @@ export const UploadCanvasState = ({
                 alignItems: 'center',
                 alignSelf: 'stretch',
                 borderRadius: '8px',
-                background: 'var(--Background-secondary, #F5F6FA)',
-                flex: '1'
+                background: 'var(--Background-secondary, #F5F6FA)'
               }}>
                   <p style={{
                     color: 'var(--Shade-6-100, #7B7B7B)',
@@ -155,8 +150,7 @@ export const UploadCanvasState = ({
                 alignItems: 'center',
                 alignSelf: 'stretch',
                 borderRadius: '8px',
-                background: 'var(--Background-secondary, #F5F6FA)',
-                flex: '1'
+                background: 'var(--Background-secondary, #F5F6FA)'
               }}>
                   <p style={{
                     color: 'var(--Shade-6-100, #7B7B7B)',
@@ -215,8 +209,7 @@ export const UploadCanvasState = ({
                 alignItems: 'center',
                 alignSelf: 'stretch',
                 borderRadius: '8px',
-                background: 'var(--Background-secondary, #F5F6FA)',
-                flex: '1'
+                background: 'var(--Background-secondary, #F5F6FA)'
               }}>
                   <p style={{
                     color: 'var(--Shade-6-100, #7B7B7B)',
@@ -240,8 +233,7 @@ export const UploadCanvasState = ({
                 alignItems: 'center',
                 alignSelf: 'stretch',
                 borderRadius: '8px',
-                background: 'var(--Background-secondary, #F5F6FA)',
-                flex: '1'
+                background: 'var(--Background-secondary, #F5F6FA)'
               }}>
                   <p style={{
                     color: 'var(--Shade-6-100, #7B7B7B)',
@@ -265,8 +257,7 @@ export const UploadCanvasState = ({
                 alignItems: 'center',
                 alignSelf: 'stretch',
                 borderRadius: '8px',
-                background: 'var(--Background-secondary, #F5F6FA)',
-                flex: '1'
+                background: 'var(--Background-secondary, #F5F6FA)'
               }}>
                   <p style={{
                     color: 'var(--Shade-6-100, #7B7B7B)',
@@ -290,8 +281,7 @@ export const UploadCanvasState = ({
                 alignItems: 'center',
                 alignSelf: 'stretch',
                 borderRadius: '8px',
-                background: 'var(--Background-secondary, #F5F6FA)',
-                flex: '1'
+                background: 'var(--Background-secondary, #F5F6FA)'
               }}>
                   <p style={{
                     color: 'var(--Shade-6-100, #7B7B7B)',
@@ -315,8 +305,7 @@ export const UploadCanvasState = ({
                 alignItems: 'center',
                 alignSelf: 'stretch',
                 borderRadius: '8px',
-                background: 'var(--Background-secondary, #F5F6FA)',
-                flex: '1'
+                background: 'var(--Background-secondary, #F5F6FA)'
               }}>
                   <p style={{
                     color: 'var(--Shade-6-100, #7B7B7B)',
@@ -375,8 +364,7 @@ export const UploadCanvasState = ({
                 alignItems: 'center',
                 alignSelf: 'stretch',
                 borderRadius: '8px',
-                background: 'var(--Background-secondary, #F5F6FA)',
-                flex: '1'
+                background: 'var(--Background-secondary, #F5F6FA)'
               }}>
                   <p style={{
                     color: 'var(--Shade-6-100, #7B7B7B)',
@@ -400,8 +388,7 @@ export const UploadCanvasState = ({
                 alignItems: 'center',
                 alignSelf: 'stretch',
                 borderRadius: '8px',
-                background: 'var(--Background-secondary, #F5F6FA)',
-                flex: '1'
+                background: 'var(--Background-secondary, #F5F6FA)'
               }}>
                   <p style={{
                     color: 'var(--Shade-6-100, #7B7B7B)',
@@ -425,8 +412,7 @@ export const UploadCanvasState = ({
                 alignItems: 'center',
                 alignSelf: 'stretch',
                 borderRadius: '8px',
-                background: 'var(--Background-secondary, #F5F6FA)',
-                flex: '1'
+                background: 'var(--Background-secondary, #F5F6FA)'
               }}>
                   <p style={{
                     color: 'var(--Shade-6-100, #7B7B7B)',
@@ -450,8 +436,7 @@ export const UploadCanvasState = ({
                 alignItems: 'center',
                 alignSelf: 'stretch',
                 borderRadius: '8px',
-                background: 'var(--Background-secondary, #F5F6FA)',
-                flex: '1'
+                background: 'var(--Background-secondary, #F5F6FA)'
               }}>
                   <p style={{
                     color: 'var(--Shade-6-100, #7B7B7B)',
@@ -475,8 +460,7 @@ export const UploadCanvasState = ({
                 alignItems: 'center',
                 alignSelf: 'stretch',
                 borderRadius: '8px',
-                background: 'var(--Background-secondary, #F5F6FA)',
-                flex: '1'
+                background: 'var(--Background-secondary, #F5F6FA)'
               }}>
                   <p style={{
                     color: 'var(--Shade-6-100, #7B7B7B)',
