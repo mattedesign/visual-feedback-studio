@@ -1,5 +1,6 @@
+
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
-import { Settings, Brain } from 'lucide-react';
+import { Brain } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 interface UploadCanvasStateProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -145,7 +146,7 @@ export const UploadCanvasState = ({
         }}>
             <div className="text-center">
               <div className="w-16 h-16 rounded-xl mx-auto mb-4 flex items-center justify-center bg-transparent">
-                <Settings className="w-8 h-8 text-slate-600" />
+                <img src="/lovable-uploads/206ecc00-ba29-4e57-a5a6-1b8d2eae20f8.png" alt="Capabilities Icon" className="w-9 h-9" />
               </div>
               <h2 className="mb-6" style={{
               color: 'var(--Text-primary, #353535)',
