@@ -15,7 +15,8 @@ import {
   Share2,
   Eye,
   Zap,
-  Calendar
+  Calendar,
+  BarChart3
 } from 'lucide-react';
 import { useBusinessMetrics } from '../../../hooks/useBusinessMetrics';
 
@@ -354,7 +355,7 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </div>
-          </div>
+          </CardContent>
         </Card>
       </div>
     </div>
