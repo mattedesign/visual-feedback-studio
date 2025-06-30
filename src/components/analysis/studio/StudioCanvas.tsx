@@ -1,15 +1,18 @@
+
 import { UploadCanvasState } from './canvas/UploadCanvasState';
 import { ReviewCanvasState } from './canvas/ReviewCanvasState';
 import { AnnotateCanvasState } from './canvas/AnnotateCanvasState';
 import { AnalyzingCanvasState } from './canvas/AnalyzingCanvasState';
 import { ResultsCanvasState } from './canvas/ResultsCanvasState';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
+
 interface StudioCanvasProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
   selectedDevice: 'desktop' | 'tablet' | 'mobile';
   activeAnnotation?: string | null;
   onAnnotationClick?: (annotationId: string) => void;
 }
+
 export const StudioCanvas = ({
   workflow,
   selectedDevice,
@@ -32,7 +35,10 @@ export const StudioCanvas = ({
         return <UploadCanvasState workflow={workflow} />;
     }
   };
-  return <div className="flex-1 border-l border-r border-slate-700 overflow-auto bg-transparent">
+
+  return (
+    <div className="flex-1 border-l border-r border-slate-700 bg-transparent overflow-auto min-h-0">
       {renderCanvasState()}
-    </div>;
+    </div>
+  );
 };

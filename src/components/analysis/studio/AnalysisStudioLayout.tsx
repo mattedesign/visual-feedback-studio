@@ -40,7 +40,7 @@ export const AnalysisStudioLayout = ({
   });
 
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-slate-800">
+    <div className="flex h-screen bg-gray-100 dark:bg-slate-800 overflow-hidden">
       {/* Left Sidebar - File Management */}
       <StudioSidebar 
         workflow={workflow}
@@ -49,7 +49,7 @@ export const AnalysisStudioLayout = ({
       />
       
       {/* Main Canvas Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-full">
         <StudioToolbar workflow={workflow} />
         
         <div className="flex-1 flex flex-col min-h-0">
