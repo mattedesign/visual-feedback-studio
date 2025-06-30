@@ -72,30 +72,27 @@ export const StudioSidebar = ({
       <div className="flex flex-col h-full w-full">
         {/* Header */}
         <div className={`border-b border-gray-200 dark:border-slate-700 ${collapsed ? 'p-3' : 'p-6'}`}>
-          <div className="flex items-center">
-            <img 
-              src="/lovable-uploads/47930faa-a736-4a3b-a873-e704ca21395f.png" 
-              alt="Figmant" 
-              className="h-6 mr-3"
-            />
+          <div className="flex items-center justify-center">
+            {/* Logo - only show when not collapsed */}
             {!collapsed && (
-              <button onClick={() => setCollapsed(!collapsed)} className="ml-auto p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
-                <img 
-                  src="/lovable-uploads/7d4bfbe9-e4ca-4e8d-9d33-77637e4dcdc6.png" 
-                  alt="Menu" 
-                  className="w-6 h-6 text-gray-500"
-                />
-              </button>
+              <img 
+                src="/lovable-uploads/47930faa-a736-4a3b-a873-e704ca21395f.png" 
+                alt="Figmant" 
+                className="h-6 mr-3"
+              />
             )}
-            {collapsed && (
-              <button onClick={() => setCollapsed(!collapsed)} className="ml-auto p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
-                <img 
-                  src="/lovable-uploads/7d4bfbe9-e4ca-4e8d-9d33-77637e4dcdc6.png" 
-                  alt="Menu" 
-                  className="w-4 h-4 text-gray-500"
-                />
-              </button>
-            )}
+            
+            {/* Expand/Collapse Button - always visible */}
+            <button 
+              onClick={() => setCollapsed(!collapsed)} 
+              className={`p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors ${collapsed ? 'mx-auto' : 'ml-auto'}`}
+            >
+              <img 
+                src="/lovable-uploads/7d4bfbe9-e4ca-4e8d-9d33-77637e4dcdc6.png" 
+                alt="Menu" 
+                className="w-4 h-4 text-gray-500"
+              />
+            </button>
           </div>
 
           {/* Analysis Context Indicator - Hidden when collapsed */}
