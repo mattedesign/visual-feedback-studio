@@ -1,8 +1,10 @@
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { Card, CardContent } from '@/components/ui/card';
+
 interface UploadCanvasStateProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
 }
+
 export const UploadCanvasState = ({
   workflow
 }: UploadCanvasStateProps) => {
@@ -11,9 +13,12 @@ export const UploadCanvasState = ({
         {/* Three-column layout */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Example Prompt Column */}
-          <div className="flex flex-col items-center gap-6 flex-1 self-stretch rounded-[18px] border border-black/6 bg-white" style={{
-          padding: '24px 8px'
-        }}>
+          <div className="flex flex-col items-center gap-6 flex-1 self-stretch" style={{
+            borderRadius: '18px',
+            border: '1px solid var(--Stroke-default, rgba(0, 0, 0, 0.06))',
+            background: 'var(--Colors-white-white, #FFF)',
+            padding: '24px 8px'
+          }}>
             <div className="text-center">
               <div className="w-16 h-16 rounded-xl mx-auto mb-4 flex items-center justify-center bg-transparent">
                 <img src="/lovable-uploads/07aa2ae9-3a56-48e4-83e7-59cc1f9fb2a1.png" alt="Example Prompt Icon" className="w-9 h-9" />
@@ -139,9 +144,12 @@ export const UploadCanvasState = ({
           </div>
 
           {/* Capabilities Column */}
-          <div className="flex flex-col items-center gap-6 flex-1 self-stretch rounded-[18px] border border-black/6 bg-white" style={{
-          padding: '24px 8px'
-        }}>
+          <div className="flex flex-col items-center gap-6 flex-1 self-stretch" style={{
+            borderRadius: '18px',
+            border: '1px solid var(--Stroke-default, rgba(0, 0, 0, 0.06))',
+            background: 'var(--Colors-white-white, #FFF)',
+            padding: '24px 8px'
+          }}>
             <div className="text-center">
               <div className="w-16 h-16 rounded-xl mx-auto mb-4 flex items-center justify-center bg-transparent">
                 <img src="/lovable-uploads/206ecc00-ba29-4e57-a5a6-1b8d2eae20f8.png" alt="Capabilities Icon" className="w-9 h-9" />
@@ -267,9 +275,12 @@ export const UploadCanvasState = ({
           </div>
 
           {/* Models Column */}
-          <div className="flex flex-col items-center gap-6 flex-1 self-stretch rounded-[18px] border border-black/6 bg-white" style={{
-          padding: '24px 8px'
-        }}>
+          <div className="flex flex-col items-center gap-6 flex-1 self-stretch" style={{
+            borderRadius: '18px',
+            border: '1px solid var(--Stroke-default, rgba(0, 0, 0, 0.06))',
+            background: 'var(--Colors-white-white, #FFF)',
+            padding: '24px 8px'
+          }}>
             <div className="text-center">
               <div className="w-16 h-16 rounded-xl mx-auto mb-4 flex items-center justify-center bg-transparent">
                 <img src="/lovable-uploads/2a192cb1-f415-45fe-869b-baaa75f4cd2f.png" alt="Models Icon" className="w-9 h-9" />
