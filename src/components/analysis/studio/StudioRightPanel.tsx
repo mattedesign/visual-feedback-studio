@@ -40,21 +40,67 @@ export const StudioRightPanel = ({
   
   const hasResults = workflow.currentStep === 'results' && workflow.aiAnnotations.length > 0;
 
-  // ✅ NEW: Extract Well Done data from workflow
-  const wellDoneData = workflow.analysisResults?.wellDone;
-  
-  // ✅ NEW: Debug logging for Well Done data
-  console.log('🎛️ STUDIO RIGHT PANEL - Well Done DEBUG:', {
-    wellDoneData,
-    hasWellDoneData: !!(wellDoneData?.insights?.length),
-    insightsCount: wellDoneData?.insights?.length || 0
+  // ✅ DEBUG: Enhanced logging for both issues
+  console.log('🎛️ STUDIO RIGHT PANEL - COMPLETE DEBUG:', {
+    // Well Done Debug
+    analysisResults: workflow.analysisResults,
+    wellDoneFromResults: workflow.analysisResults?.wellDone,
+    wellDoneExists: !!(workflow.analysisResults?.wellDone?.insights?.length),
+    
+    // Multi-Image Debug
+    selectedImages: workflow.selectedImages,
+    selectedImageUrl: workflow.selectedImageUrl,
+    activeImageUrl: workflow.selectedImageUrl,
+    aiAnnotationsTotal: workflow.aiAnnotations.length,
+    aiAnnotationsPreview: workflow.aiAnnotations.slice(0, 3).map(a => ({
+      id: a.id,
+      imageIndex: a.imageIndex,
+      category: a.category,
+      feedbackPreview: a.feedback?.substring(0, 50) + '...'
+    }))
   });
 
-  // Calculate summary metrics
-  const totalAnnotations = workflow.aiAnnotations.length;
-  const criticalCount = workflow.aiAnnotations.filter(a => a.severity === 'critical').length;
-  const suggestedCount = workflow.aiAnnotations.filter(a => a.severity === 'suggested').length;
-  const enhancementCount = workflow.aiAnnotations.filter(a => a.severity === 'enhancement').length;
+  // ✅ SAFE Well Done data extraction
+  const wellDoneData = workflow.analysisResults?.wellDone || workflow.wellDone;
+
+  // ✅ FIXED: Get current image index for multi-image filtering
+  const getCurrentImageIndex = () => {
+    if (workflow.selectedImages.length <= 1) return 0;
+    const currentIndex = workflow.selectedImages.indexOf(workflow.selectedImageUrl || '');
+    return currentIndex >= 0 ? currentIndex : 0;
+  };
+
+  const currentImageIndex = getCurrentImageIndex();
+
+  // ✅ FIXED: Filter annotations for current image only
+  const getFilteredAnnotations = () => {
+    if (workflow.selectedImages.length <= 1) {
+      // Single image - show all annotations
+      return workflow.aiAnnotations;
+    } else {
+      // Multi-image - filter by current image index
+      const filtered = workflow.aiAnnotations.filter(annotation => 
+        (annotation.imageIndex ?? 0) === currentImageIndex
+      );
+      
+      console.log('🎯 FILTERING ANNOTATIONS FOR IMAGE:', {
+        currentImageIndex,
+        totalAnnotations: workflow.aiAnnotations.length,
+        filteredAnnotations: filtered.length,
+        imageUrl: workflow.selectedImageUrl
+      });
+      
+      return filtered;
+    }
+  };
+
+  const filteredAnnotations = getFilteredAnnotations();
+
+  // Calculate summary metrics based on filtered annotations
+  const totalAnnotations = filteredAnnotations.length;
+  const criticalCount = filteredAnnotations.filter(a => a.severity === 'critical').length;
+  const suggestedCount = filteredAnnotations.filter(a => a.severity === 'suggested').length;
+  const enhancementCount = filteredAnnotations.filter(a => a.severity === 'enhancement').length;
 
   // Calculate UX score
   const calculateUXScore = () => {
@@ -76,16 +122,6 @@ export const StudioRightPanel = ({
   };
 
   const scoreStatus = getScoreStatus(uxScore);
-
-  // Helper function to get severity color
-  const getSeverityColor = (severity?: string) => {
-    switch (severity) {
-      case 'critical': return 'bg-red-500';
-      case 'suggested': return 'bg-amber-500';
-      case 'enhancement': return 'bg-blue-500';
-      default: return 'bg-slate-500';
-    }
-  };
 
   // Helper function to get severity badge color
   const getSeverityBadgeColor = (severity?: string) => {
@@ -174,6 +210,13 @@ export const StudioRightPanel = ({
             </Select>
           </div>
         )}
+
+        {/* ✅ FIXED: Multi-Image Indicator */}
+        {workflow.selectedImages.length > 1 && hasResults && (
+          <div className="text-xs text-gray-600 dark:text-gray-400 text-center">
+            Viewing Image {currentImageIndex + 1} of {workflow.selectedImages.length}
+          </div>
+        )}
       </div>
 
       {/* Panel Content */}
@@ -210,7 +253,9 @@ export const StudioRightPanel = ({
                     <div className="grid grid-cols-2 gap-3">
                       <div className="text-center">
                         <div className="text-lg font-bold text-gray-900 dark:text-white">{totalAnnotations}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">Total Issues</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {workflow.selectedImages.length > 1 ? 'Issues (This Image)' : 'Total Issues'}
+                        </div>
                       </div>
                       <div className="text-center">
                         <div className="text-lg font-bold text-red-600">{criticalCount}</div>
@@ -310,7 +355,7 @@ export const StudioRightPanel = ({
                   <Button variant="ghost" className="w-full justify-between p-0 h-auto font-medium text-gray-900 dark:text-white">
                     <span>Detailed Insights</span>
                     <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">{workflow.aiAnnotations.length}</Badge>
+                      <Badge variant="secondary" className="text-xs">{filteredAnnotations.length}</Badge>
                       {isInsightsOpen ? (
                         <ChevronUp className="w-4 h-4" />
                       ) : (
@@ -322,7 +367,7 @@ export const StudioRightPanel = ({
                 
                 <CollapsibleContent className="mt-3">
                   <div className="space-y-2">
-                    {workflow.aiAnnotations.map((annotation: any, index: number) => {
+                    {filteredAnnotations.map((annotation: any, index: number) => {
                       const isActive = activeAnnotation === annotation.id;
                       const isExpanded = expandedInsights.has(annotation.id);
                       const feedback = annotation.feedback || 'No feedback available';
