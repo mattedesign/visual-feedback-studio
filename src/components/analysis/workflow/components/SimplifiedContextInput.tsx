@@ -174,14 +174,14 @@ export const SimplifiedContextInput = ({
               alignItems: 'center',
               gap: '16px',
               borderRadius: '10px',
-              border: showSuggestions ? '0px 0px 0px 1px #333' : '1px solid var(--Stroke-02, #E2E2E2)',
               background: showSuggestions 
                 ? 'linear-gradient(180deg, var(--Shade-7-100, #323232) 0%, var(--Shade-8-100, #222) 100%)'
                 : 'transparent',
-              color: showSuggestions ? '#ffffff' : '#7B7B7B',
               boxShadow: showSuggestions
                 ? '0px 0.5px 1px 0px rgba(255, 255, 255, 0.15) inset, 0px 2px 4px -1px rgba(13, 13, 13, 0.50), 0px -1px 1.2px 0.35px #121212 inset, 0px 0px 0px 1px #333'
                 : 'none',
+              color: showSuggestions ? '#ffffff' : '#7B7B7B',
+              border: showSuggestions ? 'none' : '1px solid var(--Stroke-02, #E2E2E2)',
               cursor: 'pointer'
             }}
           >
