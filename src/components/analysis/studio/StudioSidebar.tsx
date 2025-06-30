@@ -44,7 +44,9 @@ export const StudioSidebar = ({
       flexDirection: 'column',
       alignItems: 'center',
       flexShrink: 0,
-      alignSelf: 'stretch'
+      alignSelf: 'stretch',
+      marginLeft: '12px',
+      marginRight: '12px'
     }}>
       <div className="flex flex-col h-full">
         {/* Header */}

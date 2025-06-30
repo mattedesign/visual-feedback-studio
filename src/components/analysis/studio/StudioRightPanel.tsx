@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { Badge } from '@/components/ui/badge';
@@ -110,7 +109,7 @@ export const StudioRightPanel = ({
   };
 
   return (
-    <div className="w-80 bg-white dark:bg-slate-900 border-l border-gray-200 dark:border-slate-700 flex flex-col">
+    <div className="w-80 bg-white dark:bg-slate-900 border-l border-gray-200 dark:border-slate-700 flex flex-col" style={{ marginLeft: '12px', marginRight: '12px' }}>
       {/* Panel Header with Controls */}
       <div className="p-4 border-b border-gray-200 dark:border-slate-700 space-y-4">
         <div className="flex items-center justify-between">
