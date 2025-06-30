@@ -4,6 +4,12 @@ import { WellDoneInsight, WellDoneData } from '../types.ts';
 export class WellDoneService {
   static extractInsights(content: string): WellDoneInsight[] {
     console.log('🎉 Extracting Well Done insights from Claude response');
+    console.log('📝 Content to analyze length:', content?.length || 0);
+    
+    if (!content || content.length < 50) {
+      console.log('⚠️ Content too short for Well Done analysis, using fallback');
+      return this.getFallbackInsights();
+    }
     
     const insights: WellDoneInsight[] = [];
     const lines = content.split('\n');
@@ -14,17 +20,21 @@ export class WellDoneService {
       /(?:properly|correctly|appropriately|successfully)/i,
       /(?:follows.*best.*practice|adheres.*to.*standard|implements.*well)/i,
       /(?:demonstrates|shows|exhibits|displays).*(?:good|strong|excellent)/i,
-      /(?:nice|smart|clever|thoughtful|professional|clean)/i
+      /(?:nice|smart|clever|thoughtful|professional|clean)/i,
+      /(?:well[\s-]structured|well[\s-]organized|well[\s-]designed)/i,
+      /(?:intuitive|user[\s-]friendly|accessible|readable)/i
     ];
     
     // Categories to look for
     const categoryPatterns = {
-      visual: /(?:color|typography|layout|design|aesthetic|visual|hierarchy|spacing|alignment)/i,
+      visual: /(?:color|typography|layout|design|aesthetic|visual|hierarchy|spacing|alignment|contrast)/i,
       ux: /(?:user.*experience|usability|navigation|flow|interaction|intuitive|user.*friendly)/i,
-      accessibility: /(?:accessibility|contrast|wcag|inclusive|accessible|readable)/i,
-      conversion: /(?:conversion|cta|call.*to.*action|button|form|signup|purchase)/i,
+      accessibility: /(?:accessibility|contrast|wcag|inclusive|accessible|readable|screen.*reader)/i,
+      conversion: /(?:conversion|cta|call.*to.*action|button|form|signup|purchase|revenue)/i,
       mobile: /(?:mobile|responsive|device|touch|tablet|phone|adaptive)/i
     };
+    
+    console.log('🔍 Analyzing', lines.length, 'lines for positive feedback');
     
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
@@ -34,6 +44,8 @@ export class WellDoneService {
       const isPositive = positivePatterns.some(pattern => pattern.test(line));
       
       if (isPositive) {
+        console.log('✅ Found positive feedback:', line.substring(0, 60) + '...');
+        
         // Determine category
         let currentCategory: keyof typeof categoryPatterns | 'overall' = 'overall';
         for (const [cat, pattern] of Object.entries(categoryPatterns)) {
@@ -80,6 +92,8 @@ export class WellDoneService {
             description: description || `Excellent ${currentCategory === 'overall' ? 'design' : currentCategory} implementation that follows best practices.`,
             category: currentCategory
           });
+          
+          console.log('➕ Added insight:', { title: title.substring(0, 40) + '...', category: currentCategory });
         }
       }
       
@@ -89,24 +103,72 @@ export class WellDoneService {
     
     // If no specific insights found, generate generic positive feedback
     if (insights.length === 0) {
-      insights.push({
-        title: "Strong Design Foundation",
-        description: "The design demonstrates solid UX principles and thoughtful consideration for user needs. The overall approach shows attention to detail and user-centered design thinking.",
-        category: 'overall'
-      });
+      console.log('🔄 No specific insights found, using smart fallback');
+      return this.getSmartFallbackInsights(content);
     }
     
     // Limit to top 3-4 insights to avoid overwhelming
     const topInsights = insights.slice(0, 4);
     
     console.log(`🎉 Extracted ${topInsights.length} Well Done insights:`, 
-      topInsights.map(i => ({ title: i.title, category: i.category }))
+      topInsights.map(i => ({ title: i.title.substring(0, 30) + '...', category: i.category }))
     );
     
     return topInsights;
   }
 
+  static getFallbackInsights(): WellDoneInsight[] {
+    return [{
+      title: "Strong Design Foundation",
+      description: "The design demonstrates solid UX principles and thoughtful consideration for user needs. The overall approach shows attention to detail and user-centered design thinking.",
+      category: 'overall'
+    }];
+  }
+
+  static getSmartFallbackInsights(content: string): WellDoneInsight[] {
+    const insights: WellDoneInsight[] = [];
+    
+    // Analyze content for common design elements and create positive feedback
+    if (content.toLowerCase().includes('navigation') || content.toLowerCase().includes('menu')) {
+      insights.push({
+        title: "Clear Navigation Structure",
+        description: "The navigation design shows thoughtful organization that helps users find what they're looking for efficiently.",
+        category: 'ux'
+      });
+    }
+    
+    if (content.toLowerCase().includes('color') || content.toLowerCase().includes('visual')) {
+      insights.push({
+        title: "Thoughtful Visual Design",
+        description: "The visual elements demonstrate good design principles with attention to aesthetics and user experience.",
+        category: 'visual'
+      });
+    }
+    
+    if (content.toLowerCase().includes('mobile') || content.toLowerCase().includes('responsive')) {
+      insights.push({
+        title: "Mobile-Conscious Design",
+        description: "The design shows consideration for mobile users and responsive design principles.",
+        category: 'mobile'
+      });
+    }
+    
+    // Always have at least one insight
+    if (insights.length === 0) {
+      insights.push({
+        title: "Professional Design Approach",
+        description: "The design demonstrates a professional approach with consideration for user experience and business goals.",
+        category: 'overall'
+      });
+    }
+    
+    console.log('🧠 Generated smart fallback insights:', insights.length);
+    return insights.slice(0, 3);
+  }
+
   static processInsights(insights: WellDoneInsight[]): WellDoneData {
+    console.log('🔄 Processing', insights.length, 'insights into Well Done data');
+    
     const categoryHighlights: Record<string, string> = {};
     const overallStrengths: string[] = [];
     
@@ -130,16 +192,18 @@ export class WellDoneService {
       }
     });
     
-    console.log('🎉 Processed Well Done data:', {
-      insightsCount: insights.length,
-      categoriesFound: Object.keys(categoryHighlights),
-      strengthsCount: overallStrengths.length
-    });
-    
-    return {
+    const processedData = {
       insights,
       overallStrengths: overallStrengths.slice(0, 5), // Limit to top 5
       categoryHighlights
     };
+    
+    console.log('✅ Well Done data processed:', {
+      insightsCount: processedData.insights.length,
+      categoriesFound: Object.keys(processedData.categoryHighlights),
+      strengthsCount: processedData.overallStrengths.length
+    });
+    
+    return processedData;
   }
 }
