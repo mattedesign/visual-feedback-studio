@@ -1,3 +1,4 @@
+
 import { buildAnalysisPrompt } from './promptBuilder.ts';
 
 interface ProcessedImage {
@@ -202,31 +203,45 @@ class AIAnalysisManager {
     }
   }
 
-  // 🎯 NEW: Claude Sonnet 4 Primary Method
+  // 🎯 UPDATED: Claude Sonnet 4 Primary Method with Latest Model
   private async callClaude(images: ProcessedImage[], prompt: string): Promise<{annotations: any[]}> {
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
     if (!anthropicApiKey) {
       throw new Error('Anthropic API key not configured');
     }
 
+    console.log('🔍 Claude API Debug - Key status:', {
+      hasKey: !!anthropicApiKey,
+      keyLength: anthropicApiKey.length,
+      keyPreview: anthropicApiKey.substring(0, 12) + '...'
+    });
+
     // Convert images to base64 for Claude
     const imageContents = await Promise.all(
       images.map(async (img) => {
-        const response = await fetch(img.imageUrl);
-        const arrayBuffer = await response.arrayBuffer();
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-        return {
-          type: "image",
-          source: {
-            type: "base64",
-            media_type: `image/${img.format}`,
-            data: base64
+        try {
+          const response = await fetch(img.imageUrl);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch image: ${response.status}`);
           }
-        };
+          const arrayBuffer = await response.arrayBuffer();
+          const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+          return {
+            type: "image",
+            source: {
+              type: "base64",
+              media_type: `image/${img.format}`,
+              data: base64
+            }
+          };
+        } catch (error) {
+          console.error('Image processing error:', error);
+          throw new Error(`Failed to process image: ${error.message}`);
+        }
       })
     );
 
-    const systemPrompt = `You are a professional UX analysis expert conducting comprehensive audits. You MUST generate exactly 16-19 detailed, research-backed insights covering all aspects of design quality, usability, and business impact. 
+    const systemPrompt = `You are a professional UX analysis expert conducting comprehensive audits. You MUST generate exactly 16-19 detailed, research-backed insights covering all aspects of design quality, usability, and business impact.
 
 CRITICAL REQUIREMENTS:
 - Generate EXACTLY 16-19 insights (professional consulting standard)
@@ -250,52 +265,72 @@ RESPONSE FORMAT - Return ONLY a JSON array like this:
 
 Ensure exactly 16-19 insights for comprehensive professional analysis.`;
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${anthropicApiKey}`,
-        'Content-Type': 'application/json',
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 4000,
-        temperature: 0.3,
-        system: systemPrompt,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: prompt },
-              ...imageContents
-            ]
-          }
-        ]
-      })
-    });
+    try {
+      console.log('🚀 Making Claude API request with model claude-3-5-sonnet-20241022');
+      
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${anthropicApiKey}`,
+          'Content-Type': 'application/json',
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-3-5-sonnet-20241022',
+          max_tokens: 4000,
+          temperature: 0.3,
+          system: systemPrompt,
+          messages: [
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: prompt },
+                ...imageContents
+              ]
+            }
+          ]
+        })
+      });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Claude API error: ${response.status} ${response.statusText} - ${errorText}`);
+      console.log('📡 Claude API response status:', response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Claude API error details:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorBody: errorText.substring(0, 500)
+        });
+        throw new Error(`Claude API error: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      
+      if (!data.content || !data.content[0] || !data.content[0].text) {
+        console.error('❌ Invalid Claude response format:', data);
+        throw new Error('Invalid Claude response format');
+      }
+
+      const rawContent = data.content[0].text;
+      console.log('✅ Claude response received, length:', rawContent.length);
+      
+      const annotations = this.parseAnnotations(rawContent);
+      
+      if (annotations.length < 12) {
+        console.warn('⚠️ Claude returned insufficient insights:', annotations.length);
+        throw new Error(`Claude returned insufficient insights: ${annotations.length} (minimum 12 required)`);
+      }
+
+      console.log('✅ Claude analysis successful with', annotations.length, 'insights');
+      return { annotations };
+
+    } catch (error) {
+      console.error('❌ Claude API call failed:', error);
+      throw error;
     }
-
-    const data = await response.json();
-    
-    if (!data.content || !data.content[0] || !data.content[0].text) {
-      throw new Error('Invalid Claude response format');
-    }
-
-    const rawContent = data.content[0].text;
-    const annotations = this.parseAnnotations(rawContent);
-    
-    if (annotations.length < 12) {
-      throw new Error(`Claude returned insufficient insights: ${annotations.length} (minimum 12 required)`);
-    }
-
-    return { annotations };
   }
 
-  private buildRagContext(prompt: string): Promise<RagContext | null> {
+  private async buildRagContext(prompt: string): Promise<RagContext | null> {
     try {
       console.log('🔍 Building RAG context for comprehensive analysis:', prompt.substring(0, 100));
       
@@ -362,6 +397,11 @@ Ensure exactly 16-19 insights for comprehensive professional analysis.`;
       throw new Error('OpenAI API key not configured');
     }
 
+    console.log('🔍 OpenAI API Debug - Key status:', {
+      hasKey: !!openaiApiKey,
+      keyLength: openaiApiKey.length
+    });
+
     const messages = [
       {
         role: 'system',
@@ -379,23 +419,36 @@ Ensure exactly 16-19 insights for comprehensive professional analysis.`;
       }
     ];
 
-    return fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages,
-        max_tokens: 4000,
-        temperature: 0.3
-      }),
-    });
+    try {
+      console.log('🚀 Making OpenAI API request');
+      
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages,
+          max_tokens: 4000,
+          temperature: 0.3
+        }),
+      });
+
+      console.log('📡 OpenAI API response status:', response.status, response.statusText);
+      return response;
+
+    } catch (error) {
+      console.error('❌ OpenAI API call failed:', error);
+      throw error;
+    }
   }
 
   private parseAnnotations(rawContent: string): any[] {
     try {
+      console.log('🔍 Parsing annotations from content length:', rawContent.length);
+      
       // Clean the response to extract JSON
       const jsonMatch = rawContent.match(/\[[\s\S]*\]/);
       if (!jsonMatch) {
@@ -405,6 +458,8 @@ Ensure exactly 16-19 insights for comprehensive professional analysis.`;
       }
 
       const jsonString = jsonMatch[0];
+      console.log('🔍 Found JSON string, length:', jsonString.length);
+      
       const annotations = JSON.parse(jsonString);
 
       if (!Array.isArray(annotations)) {
