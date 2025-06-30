@@ -120,7 +120,7 @@ export const StudioChat = ({ workflow }: StudioChatProps) => {
             {/* Helper text */}
             {!hasImages && (
               <div className="text-center">
-                <p className="text-sm text-gray-600 dark:text-gray-400 bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-700">
+                <p className="hidden text-sm text-gray-600 dark:text-gray-400 bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-700">
                   ⚠️ Please upload and select images first before starting the analysis.
                 </p>
               </div>
