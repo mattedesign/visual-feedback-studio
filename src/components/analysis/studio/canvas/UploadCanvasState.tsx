@@ -44,29 +44,6 @@ export const UploadCanvasState = ({ workflow }: UploadCanvasStateProps) => {
             Upload your design files to get started with AI-powered insights backed by 272+ UX research studies
           </p>
         </div>
-        
-        {/* Enhanced Call-to-Action */}
-        <div className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-2xl p-6 border border-slate-600">
-          <div className="flex items-center justify-center space-x-3 text-blue-400 mb-2">
-            <ArrowLeft className="w-5 h-5" />
-            <span className="font-semibold">Use the upload area in the left sidebar</span>
-          </div>
-          
-          <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-400 mt-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span>Multiple images</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span>URL uploads</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-              <span>Drag & drop</span>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
