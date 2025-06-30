@@ -1,9 +1,10 @@
-
 import { Annotation } from '@/types/analysis';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { MobileOptimizedAnnotationsList } from './MobileOptimizedAnnotationsList';
 import { CitationIndicator } from './CitationIndicator';
 import { BookOpen, Award, Zap } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DetailedAnnotationsListProps {
   annotations: Annotation[];
@@ -22,6 +23,8 @@ export const DetailedAnnotationsList = ({
   isMultiImage,
   researchCitations = []
 }: DetailedAnnotationsListProps) => {
+  const isMobile = useIsMobile();
+
   // 🔍 DETAILED ANNOTATIONS LIST DEBUG
   console.log('📝 DETAILED ANNOTATIONS LIST - DEBUG:', {
     componentName: 'DetailedAnnotationsList',
@@ -38,9 +41,25 @@ export const DetailedAnnotationsList = ({
     })),
     activeAnnotation,
     isMultiImage,
-    researchCitationsCount: researchCitations.length
+    researchCitationsCount: researchCitations.length,
+    isMobile
   });
 
+  // Use mobile-optimized version for mobile devices
+  if (isMobile) {
+    return (
+      <MobileOptimizedAnnotationsList
+        annotations={annotations}
+        activeAnnotation={activeAnnotation}
+        onAnnotationClick={onAnnotationClick}
+        getSeverityColor={getSeverityColor}
+        isMultiImage={isMultiImage}
+        researchCitations={researchCitations}
+      />
+    );
+  }
+
+  // Desktop version remains the same but with some enhancements
   if (annotations.length === 0) {
     return (
       <div className="text-center py-8">

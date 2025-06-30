@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Annotation } from '@/types/analysis';
-import { AlertTriangle, Target, Zap, ArrowRight } from 'lucide-react';
+import { AlertTriangle, Target, Zap, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface EnhancedImageTabsViewerProps {
   images: string[];
@@ -34,6 +36,26 @@ export const EnhancedImageTabsViewer = ({
   getCategoryIcon,
 }: EnhancedImageTabsViewerProps) => {
   const [showCrossImageComparison, setShowCrossImageComparison] = useState(false);
+  const isMobile = useIsMobile();
+  
+  const activeImageIndex = images.indexOf(activeImageUrl);
+
+  // Set up swipe navigation for mobile
+  const swipeRef = useSwipeNavigation({
+    onSwipeLeft: () => {
+      const nextIndex = Math.min(activeImageIndex + 1, images.length - 1);
+      if (nextIndex !== activeImageIndex) {
+        onImageChange(images[nextIndex]);
+      }
+    },
+    onSwipeRight: () => {
+      const prevIndex = Math.max(activeImageIndex - 1, 0);
+      if (prevIndex !== activeImageIndex) {
+        onImageChange(images[prevIndex]);
+      }
+    },
+    enabled: isMobile
+  });
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -98,19 +120,21 @@ export const EnhancedImageTabsViewer = ({
     <div className="space-y-6">
       {/* Cross-Image Analysis Summary */}
       <Card className="bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-800 dark:to-gray-800 border-slate-200 dark:border-slate-600">
-        <CardContent className="p-4">
+        <CardContent className={`${isMobile ? 'p-3' : 'p-4'}`}>
           <div className="flex items-center justify-between mb-4">
-            <h4 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <h4 className={`${isMobile ? 'text-base' : 'text-lg'} font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2`}>
               📊 Multi-Image Analysis Overview
             </h4>
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowCrossImageComparison(!showCrossImageComparison)}
-              >
-                {showCrossImageComparison ? 'Hide' : 'Show'} Comparison
-              </Button>
+              {!isMobile && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowCrossImageComparison(!showCrossImageComparison)}
+                >
+                  {showCrossImageComparison ? 'Hide' : 'Show'} Comparison
+                </Button>
+              )}
               {crossImageInsights.criticalIssues > 0 && (
                 <Button
                   variant="destructive"
@@ -119,13 +143,13 @@ export const EnhancedImageTabsViewer = ({
                   className="bg-red-600 hover:bg-red-700"
                 >
                   <Target className="w-4 h-4 mr-1" />
-                  Jump to Critical Issue
+                  {isMobile ? 'Critical' : 'Jump to Critical Issue'}
                 </Button>
               )}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <div className={`grid gap-4 mb-4 ${isMobile ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-4'}`}>
             <div className="text-center">
               <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{crossImageInsights.totalIssues}</div>
               <div className="text-sm text-slate-600 dark:text-slate-400">Total Insights</div>
@@ -134,19 +158,23 @@ export const EnhancedImageTabsViewer = ({
               <div className="text-2xl font-bold text-red-600">{crossImageInsights.criticalIssues}</div>
               <div className="text-sm text-slate-600 dark:text-slate-400">Critical Issues</div>
             </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-slate-900 dark:text-slate-100 capitalize">
-                {crossImageInsights.mostCommonCategory?.[0] || 'N/A'}
-              </div>
-              <div className="text-sm text-slate-600 dark:text-slate-400">Top Category</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-blue-600">{images.length}</div>
-              <div className="text-sm text-slate-600 dark:text-slate-400">Images Analyzed</div>
-            </div>
+            {!isMobile && (
+              <>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-slate-900 dark:text-slate-100 capitalize">
+                    {crossImageInsights.mostCommonCategory?.[0] || 'N/A'}
+                  </div>
+                  <div className="text-sm text-slate-600 dark:text-slate-400">Top Category</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-blue-600">{images.length}</div>
+                  <div className="text-sm text-slate-600 dark:text-slate-400">Images Analyzed</div>
+                </div>
+              </>
+            )}
           </div>
 
-          {showCrossImageComparison && (
+          {(showCrossImageComparison || isMobile) && (
             <div className="mt-4 p-4 bg-white dark:bg-slate-700 rounded-lg">
               <h5 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">Cross-Image Insights</h5>
               <div className="text-sm text-slate-700 dark:text-slate-300">
@@ -166,37 +194,75 @@ export const EnhancedImageTabsViewer = ({
         </CardContent>
       </Card>
 
-      {/* Enhanced Image Tabs */}
+      {/* Enhanced Image Tabs with Mobile Optimization */}
       <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
-        <CardContent className="p-6">
+        <CardContent className={`${isMobile ? 'p-3' : 'p-6'}`}>
+          {/* Mobile Navigation Header */}
+          {isMobile && (
+            <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 dark:bg-slate-700 rounded-lg">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const prevIndex = Math.max(activeImageIndex - 1, 0);
+                  if (prevIndex !== activeImageIndex) onImageChange(images[prevIndex]);
+                }}
+                disabled={activeImageIndex === 0}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              
+              <div className="text-center">
+                <div className="text-sm font-semibold">Image {activeImageIndex + 1} of {images.length}</div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">
+                  Swipe to navigate
+                </div>
+              </div>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const nextIndex = Math.min(activeImageIndex + 1, images.length - 1);
+                  if (nextIndex !== activeImageIndex) onImageChange(images[nextIndex]);
+                }}
+                disabled={activeImageIndex === images.length - 1}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
+
           <Tabs value={activeImageUrl} onValueChange={onImageChange}>
-            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-6">
-              {images.map((imageUrl, index) => {
-                const aiAnnotations = getAnnotationsForImage(index);
-                const userAnnotations = getUserAnnotationsForImage(imageUrl);
-                const severityIndicator = getTabSeverityIndicator(index);
-                const totalInsights = aiAnnotations.length + userAnnotations.length;
-                
-                return (
-                  <TabsTrigger key={imageUrl} value={imageUrl} className="relative flex items-center gap-2">
-                    <div className="flex items-center gap-2">
-                      Image {index + 1}
-                      {totalInsights > 0 && (
-                        <Badge 
-                          variant="secondary" 
-                          className="h-5 px-2 text-xs font-bold"
-                        >
-                          {totalInsights} insights
-                        </Badge>
+            {!isMobile && (
+              <TabsList className="grid w-full grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-6">
+                {images.map((imageUrl, index) => {
+                  const aiAnnotations = getAnnotationsForImage(index);
+                  const userAnnotations = getUserAnnotationsForImage(imageUrl);
+                  const severityIndicator = getTabSeverityIndicator(index);
+                  const totalInsights = aiAnnotations.length + userAnnotations.length;
+                  
+                  return (
+                    <TabsTrigger key={imageUrl} value={imageUrl} className="relative flex items-center gap-2">
+                      <div className="flex items-center gap-2">
+                        Image {index + 1}
+                        {totalInsights > 0 && (
+                          <Badge 
+                            variant="secondary" 
+                            className="h-5 px-2 text-xs font-bold"
+                          >
+                            {totalInsights} insights
+                          </Badge>
+                        )}
+                      </div>
+                      {severityIndicator.priority !== 'none' && (
+                        <div className={`w-2 h-2 rounded-full ${severityIndicator.color} absolute top-1 right-1`} />
                       )}
-                    </div>
-                    {severityIndicator.priority !== 'none' && (
-                      <div className={`w-2 h-2 rounded-full ${severityIndicator.color} absolute top-1 right-1`} />
-                    )}
-                  </TabsTrigger>
-                );
-              })}
-            </TabsList>
+                    </TabsTrigger>
+                  );
+                })}
+              </TabsList>
+            )}
 
             {images.map((imageUrl, index) => {
               const aiAnnotations = getAnnotationsForImage(index);
@@ -204,12 +270,12 @@ export const EnhancedImageTabsViewer = ({
 
               return (
                 <TabsContent key={imageUrl} value={imageUrl} className="mt-0">
-                  <div className="relative inline-block max-w-full">
+                  <div ref={isMobile ? swipeRef : undefined} className="relative inline-block max-w-full">
                     <img
                       src={imageUrl}
                       alt={`Analysis Image ${index + 1}`}
                       className="max-w-full h-auto rounded-lg shadow-sm border border-gray-200 dark:border-slate-600"
-                      style={{ maxHeight: '70vh' }}
+                      style={{ maxHeight: isMobile ? '50vh' : '70vh' }}
                     />
                     
                     {/* User annotations (blue) */}
@@ -222,8 +288,8 @@ export const EnhancedImageTabsViewer = ({
                           top: `${annotation.y}%`,
                         }}
                       >
-                        <div className="w-10 h-10 bg-blue-600 border-4 border-white rounded-full flex items-center justify-center shadow-xl">
-                          <span className="text-sm text-white font-bold">U</span>
+                        <div className={`${isMobile ? 'w-8 h-8' : 'w-10 h-10'} bg-blue-600 border-4 border-white rounded-full flex items-center justify-center shadow-xl`}>
+                          <span className={`${isMobile ? 'text-xs' : 'text-sm'} text-white font-bold`}>U</span>
                         </div>
                       </div>
                     ))}
@@ -242,14 +308,14 @@ export const EnhancedImageTabsViewer = ({
                           }}
                           onClick={() => onAnnotationClick(annotation.id)}
                         >
-                          <div className={`w-12 h-12 rounded-full border-4 border-white flex items-center justify-center text-white font-bold text-lg shadow-xl ${getSeverityColor(annotation.severity)} ${
+                          <div className={`${isMobile ? 'w-10 h-10' : 'w-12 h-12'} rounded-full border-4 border-white flex items-center justify-center text-white font-bold text-lg shadow-xl ${getSeverityColor(annotation.severity)} ${
                             activeAnnotation === annotation.id ? 'ring-4 ring-gray-400' : ''
                           }`}>
-                            <span className="text-base">{getCategoryIcon(annotation.category)}</span>
+                            <span className={`${isMobile ? 'text-sm' : 'text-base'}`}>{getCategoryIcon(annotation.category)}</span>
                           </div>
                           
-                          {/* Enhanced popup with more details */}
-                          {activeAnnotation === annotation.id && (
+                          {/* Enhanced popup with more details - Hidden on mobile */}
+                          {activeAnnotation === annotation.id && !isMobile && (
                             <div className="absolute top-14 left-1/2 transform -translate-x-1/2 w-80 bg-white dark:bg-slate-800 border-2 border-gray-300 dark:border-slate-600 rounded-lg p-4 shadow-xl z-30">
                               <div className="flex items-center gap-2 mb-3">
                                 <div className={`w-3 h-3 rounded-full ${getSeverityColor(annotation.severity)}`}></div>
@@ -278,12 +344,12 @@ export const EnhancedImageTabsViewer = ({
                   </div>
 
                   {/* Enhanced Summary for this image */}
-                  <div className="mt-4 p-4 bg-gray-50 dark:bg-slate-700 rounded-lg">
+                  <div className={`mt-4 p-4 bg-gray-50 dark:bg-slate-700 rounded-lg ${isMobile ? 'p-3' : ''}`}>
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-medium text-gray-900 dark:text-white">
                         Image {index + 1} Summary
                       </h4>
-                      {index < images.length - 1 && (
+                      {index < images.length - 1 && !isMobile && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -294,7 +360,7 @@ export const EnhancedImageTabsViewer = ({
                         </Button>
                       )}
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div className={`grid gap-4 text-sm ${isMobile ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'}`}>
                       <div className="text-center">
                         <div className="font-bold text-gray-900 dark:text-white">{aiAnnotations.length}</div>
                         <div className="text-gray-600 dark:text-gray-400">AI Insights</div>
@@ -305,18 +371,22 @@ export const EnhancedImageTabsViewer = ({
                         </div>
                         <div className="text-gray-600 dark:text-gray-400">Critical</div>
                       </div>
-                      <div className="text-center">
-                        <div className="font-bold text-yellow-600">
-                          {aiAnnotations.filter(a => a.severity === 'suggested').length}
-                        </div>
-                        <div className="text-gray-600 dark:text-gray-400">Suggested</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="font-bold text-blue-600">
-                          {aiAnnotations.filter(a => a.severity === 'enhancement').length}
-                        </div>
-                        <div className="text-gray-600 dark:text-gray-400">Enhancement</div>
-                      </div>
+                      {!isMobile && (
+                        <>
+                          <div className="text-center">
+                            <div className="font-bold text-yellow-600">
+                              {aiAnnotations.filter(a => a.severity === 'suggested').length}
+                            </div>
+                            <div className="text-gray-600 dark:text-gray-400">Suggested</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="font-bold text-blue-600">
+                              {aiAnnotations.filter(a => a.severity === 'enhancement').length}
+                            </div>
+                            <div className="text-gray-600 dark:text-gray-400">Enhancement</div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 </TabsContent>
