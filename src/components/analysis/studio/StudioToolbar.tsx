@@ -18,7 +18,7 @@ export const StudioToolbar = ({ workflow }: StudioToolbarProps) => {
   };
 
   return (
-    <div className="flex items-center justify-center p-4 bg-slate-700 border-b border-slate-600">
+    <div className="flex items-center justify-center p-4 bg-slate-700 border-b border-slate-600" style={{ display: 'none' }}>
       <h2 className="text-lg font-semibold text-white">
         {getStepTitle()}
       </h2>
