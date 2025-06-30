@@ -1,14 +1,12 @@
-
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { Upload, ArrowLeft, Sparkles, Zap, Brain } from 'lucide-react';
-
 interface UploadCanvasStateProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
 }
-
-export const UploadCanvasState = ({ workflow }: UploadCanvasStateProps) => {
-  return (
-    <div className="flex items-center justify-center h-full bg-slate-900">
+export const UploadCanvasState = ({
+  workflow
+}: UploadCanvasStateProps) => {
+  return <div className="flex items-center justify-center h-full bg-transparent">
       <div className="text-center space-y-6 max-w-2xl px-8">
         {/* Enhanced Visual Design */}
         <div className="relative">
@@ -45,6 +43,5 @@ export const UploadCanvasState = ({ workflow }: UploadCanvasStateProps) => {
           </p>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
