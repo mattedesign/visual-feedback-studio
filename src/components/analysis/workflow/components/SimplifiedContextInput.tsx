@@ -122,7 +122,11 @@ export const SimplifiedContextInput = ({
             onChange={(e) => onAnalysisContextChange(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="How can I help..."
-            className="border-0 bg-transparent focus-visible:ring-0 text-base placeholder:text-gray-500 dark:placeholder:text-gray-400"
+            className="border-0 bg-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none text-base placeholder:text-gray-500 dark:placeholder:text-gray-400 flex-1"
+            style={{ 
+              outline: 'none',
+              boxShadow: 'none'
+            }}
           />
           
           <Button
