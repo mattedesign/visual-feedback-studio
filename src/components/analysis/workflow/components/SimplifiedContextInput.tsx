@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, ChevronDown, ChevronUp, Bot, Shuffle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+
 interface SimplifiedContextInputProps {
   analysisContext: string;
   onAnalysisContextChange: (context: string) => void;
@@ -12,6 +13,7 @@ interface SimplifiedContextInputProps {
   isAnalyzing: boolean;
   uploadedImageCount: number;
 }
+
 export const SimplifiedContextInput = ({
   analysisContext,
   onAnalysisContextChange,
@@ -52,27 +54,32 @@ export const SimplifiedContextInput = ({
     'Accessibility': ['WCAG accessibility audit - check compliance with web accessibility guidelines', 'Color contrast and readability review - ensure text is readable for all users'],
     'Mobile UX': ['Mobile responsiveness review - ensure optimal experience across devices', 'Touch interface optimization - improve tap targets and gestures']
   };
+
   const handleSuggestionClick = (suggestion: typeof quickSuggestions[0]) => {
     onAnalysisContextChange(suggestion.value);
     setShowSuggestions(false);
     inputRef.current?.focus();
   };
+
   const handleAdvancedTemplate = (template: string) => {
     onAnalysisContextChange(template);
     setShowAdvanced(false);
     inputRef.current?.focus();
   };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && canAnalyze) {
       onAnalyze();
     }
   };
+
   useEffect(() => {
     if (showSuggestions && inputRef.current) {
       inputRef.current.focus();
     }
   }, [showSuggestions]);
-  return <div className="space-y-4">
+
+  return <div className="h-full flex flex-col justify-end">
       {/* Main Input Container */}
       <div className="flex flex-col-reverse transition-transform duration-300 ease-in-out" style={{
       alignItems: 'center',
