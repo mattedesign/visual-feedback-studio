@@ -15,6 +15,14 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragAreaFileInputRef = useRef<HTMLInputElement>(null);
 
+  // 🔥 HIDE UPLOAD ON RESULTS STEP
+  const isResultsStep = workflow.currentStep === 'results';
+
+  // Don't render upload section if on results step
+  if (isResultsStep) {
+    return null;
+  }
+
   // 🔥 SIMPLIFIED: Single callback that handles everything
   const handleUploadComplete = (imageUrl: string) => {
     console.log('🔥 UPLOAD COMPLETE - SINGLE HANDLER:', imageUrl);
