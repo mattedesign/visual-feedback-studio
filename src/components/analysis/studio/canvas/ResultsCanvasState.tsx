@@ -128,14 +128,6 @@ export const ResultsCanvasState = ({
         })}
       </div>
 
-      {workflow.uploadedFiles.length > 1 && (
-        <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-          <p className="text-sm text-blue-700 dark:text-blue-300">
-            💡 Use the sidebar to view analysis results for other images
-          </p>
-        </div>
-      )}
-
       {/* Show feedback if available */}
       {selectedFeedback && (
         <Card className="mt-4">
