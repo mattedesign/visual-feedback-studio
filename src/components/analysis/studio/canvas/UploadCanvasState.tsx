@@ -1,6 +1,5 @@
-
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
-import { MessageSquare, Settings, Brain } from 'lucide-react';
+import { Settings, Brain } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 interface UploadCanvasStateProps {
@@ -24,7 +23,11 @@ export const UploadCanvasState = ({
           >
             <div className="text-center">
               <div className="w-16 h-16 bg-slate-200 rounded-xl mx-auto mb-4 flex items-center justify-center">
-                <MessageSquare className="w-8 h-8 text-slate-600" />
+                <img 
+                  src="/lovable-uploads/07aa2ae9-3a56-48e4-83e7-59cc1f9fb2a1.png" 
+                  alt="Example Prompt Icon" 
+                  className="w-9 h-9"
+                />
               </div>
               <h2 
                 className="mb-6"
