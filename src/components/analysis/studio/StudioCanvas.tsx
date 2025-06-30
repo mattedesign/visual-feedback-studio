@@ -3,7 +3,6 @@ import { UploadCanvasState } from './canvas/UploadCanvasState';
 import { ReviewCanvasState } from './canvas/ReviewCanvasState';
 import { AnnotateCanvasState } from './canvas/AnnotateCanvasState';
 import { AnalyzingCanvasState } from './canvas/AnalyzingCanvasState';
-import { ResultsCanvasState } from './canvas/ResultsCanvasState';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 
 interface StudioCanvasProps {
@@ -30,7 +29,16 @@ export const StudioCanvas = ({
       case 'analyzing':
         return <AnalyzingCanvasState workflow={workflow} />;
       case 'results':
-        return <ResultsCanvasState workflow={workflow} selectedDevice={selectedDevice} activeAnnotation={activeAnnotation} onAnnotationClick={onAnnotationClick} />;
+        // 🚀 BYPASS STRATEGY: Results step now handled by direct routing
+        // Users should never see this as they're redirected to ModularAnalysisInterface
+        return (
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center text-white">
+              <h3 className="text-lg font-semibold mb-2">Redirecting to Results...</h3>
+              <p className="text-gray-400">Taking you to the professional dashboard</p>
+            </div>
+          </div>
+        );
       default:
         return <UploadCanvasState workflow={workflow} />;
     }

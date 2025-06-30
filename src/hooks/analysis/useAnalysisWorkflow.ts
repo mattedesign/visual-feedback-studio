@@ -192,7 +192,7 @@ export const useAnalysisWorkflow = () => {
     return imageAnnotations.reduce((total, ia) => total + ia.annotations.length, 0);
   }, [imageAnnotations]);
 
-  // 🔥 FIXED: Use enhanced analysis instead of basic analysis
+  // 🔥 BYPASS STRATEGY: Modified startAnalysis to route directly to modular interface
   const startAnalysis = useCallback(async () => {
     if (images.length === 0) {
       toast.error('Please select at least one image to analyze');
@@ -209,10 +209,11 @@ export const useAnalysisWorkflow = () => {
       return;
     }
 
-    console.log('🚀 Starting enhanced analysis workflow:', {
+    console.log('🚀 Starting enhanced analysis workflow with bypass strategy:', {
       imageCount: images.length,
       annotationCount: getTotalAnnotationsCount(),
-      contextLength: analysisContext.length
+      contextLength: analysisContext.length,
+      bypassEnabled: true
     });
 
     setIsAnalyzing(true);
@@ -239,24 +240,28 @@ export const useAnalysisWorkflow = () => {
       });
 
       if (result.success) {
-        console.log('✅ Enhanced analysis completed successfully:', {
+        console.log('✅ Analysis completed successfully - implementing bypass strategy:', {
           annotationCount: result.annotations.length,
           enhancedContext: !!result.enhancedContext,
-          // ✅ NEW: Log Well Done data received
           wellDoneReceived: !!result.wellDone,
-          wellDoneInsights: result.wellDone?.insights?.length || 0
+          wellDoneInsights: result.wellDone?.insights?.length || 0,
+          bypassToModularInterface: true
         });
 
         setAiAnnotations(result.annotations);
         
-        // ✅ NEW: Store analysis results with Well Done data included
+        // Store analysis results with Well Done data included
         const analysisResultsWithWellDone = {
           ...result.analysis,
-          wellDone: result.wellDone // This is the key addition
+          wellDone: result.wellDone,
+          annotations: result.annotations,
+          images: images,
+          analysisContext: analysisContext,
+          enhancedContext: result.enhancedContext
         };
         setAnalysisResults(analysisResultsWithWellDone);
         
-        // 🔥 FIXED: Store enhanced context data properly
+        // Store enhanced context data properly
         if (result.enhancedContext) {
           setEnhancedContext(result.enhancedContext);
           setRagEnhanced(true);
@@ -267,7 +272,21 @@ export const useAnalysisWorkflow = () => {
           setVisionElementsDetected(result.enhancedContext.visionAnalysis.uiElements.length);
         }
         
-        setCurrentStep('results');
+        // 🚀 BYPASS STRATEGY: Route directly to ModularAnalysisInterface
+        console.log('🔄 Implementing bypass strategy - routing to modular interface');
+        toast.success('Analysis complete! Redirecting to professional dashboard...');
+        
+        // Generate a unique analysis ID for the URL
+        const analysisId = Date.now().toString();
+        
+        // Store the analysis data in sessionStorage for the modular interface
+        sessionStorage.setItem('currentAnalysisData', JSON.stringify(analysisResultsWithWellDone));
+        
+        // Route directly to modular interface with beta parameter
+        setTimeout(() => {
+          window.location.href = `/analysis?beta=true&analysis=${analysisId}`;
+        }, 1000);
+        
       } else {
         console.error('❌ Enhanced analysis failed:', result);
         toast.error('Enhanced analysis failed. Please try again.');
