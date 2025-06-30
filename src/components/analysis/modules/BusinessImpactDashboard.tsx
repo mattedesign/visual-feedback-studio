@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -158,7 +157,15 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
                 <Share2 className="w-4 h-4" />
                 Share Results
               </Button>
-              <Button className="flex items-center gap-2">
+              <Button 
+                className="flex items-center gap-2"
+                onClick={() => {
+                  // Navigate to Visual Analysis - this would integrate with router
+                  const urlParams = new URLSearchParams(window.location.search);
+                  urlParams.set('module', 'visual-analysis');
+                  window.history.pushState(null, '', `${window.location.pathname}?${urlParams.toString()}`);
+                }}
+              >
                 <Eye className="w-4 h-4" />
                 View Details
               </Button>
@@ -358,11 +365,19 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
           </Card>
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons - Updated with navigation */}
         <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button variant="outline" className="flex items-center justify-center gap-2 py-6">
+              <Button 
+                variant="outline" 
+                className="flex items-center justify-center gap-2 py-6"
+                onClick={() => {
+                  const urlParams = new URLSearchParams(window.location.search);
+                  urlParams.set('module', 'visual-analysis');
+                  window.history.pushState(null, '', `${window.location.pathname}?${urlParams.toString()}`);
+                }}
+              >
                 <Eye className="w-5 h-5" />
                 <div className="text-left">
                   <div className="font-medium">View Detailed Analysis</div>

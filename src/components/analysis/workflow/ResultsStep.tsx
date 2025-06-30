@@ -23,6 +23,7 @@ import { EnhancedBusinessImpactCard } from './components/EnhancedBusinessImpactC
 import { PositiveDesignSummary } from './components/PositiveDesignSummary';
 import { AnnotationDebugger } from '@/components/debug/AnnotationDebugger';
 import { Button } from '@/components/ui/button';
+import { VisualAnalysisModule } from '../modules/VisualAnalysisModule';
 
 interface ResultsStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -47,9 +48,10 @@ const parseContextForDisplay = (context: string): string[] => {
 export const ResultsStep = ({ workflow }: ResultsStepProps) => {
   const useModularInterface = useFeatureFlag('modular-analysis');
   
-  // Get URL parameter for testing override
+  // Get URL parameter for testing override and module selection
   const urlParams = new URLSearchParams(window.location.search);
   const betaMode = urlParams.get('beta') === 'true';
+  const activeModule = urlParams.get('module') || 'business-impact';
   
   // NEW INTERFACE ONLY WHEN FLAG IS TRUE OR BETA PARAMETER
   if (useModularInterface || betaMode) {
@@ -61,7 +63,83 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
       siteName: 'Your Website'
     };
     
-    return <BusinessImpactDashboard analysisData={businessAnalysisData} />;
+    // Module Navigation Header
+    const ModuleNavigation = () => (
+      <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 p-4 mb-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center gap-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              Analysis Results
+            </h2>
+            <nav className="flex gap-1">
+              <button
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeModule === 'business-impact'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
+                }`}
+                onClick={() => {
+                  const newParams = new URLSearchParams(window.location.search);
+                  newParams.set('module', 'business-impact');
+                  window.history.pushState(null, '', `${window.location.pathname}?${newParams.toString()}`);
+                  window.location.reload();
+                }}
+              >
+                Business Impact
+              </button>
+              <button
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeModule === 'visual-analysis'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
+                }`}
+                onClick={() => {
+                  const newParams = new URLSearchParams(window.location.search);
+                  newParams.set('module', 'visual-analysis');
+                  window.history.pushState(null, '', `${window.location.pathname}?${newParams.toString()}`);
+                  window.location.reload();
+                }}
+              >
+                Visual Analysis
+              </button>
+              <button
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeModule === 'research-citations'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
+                }`}
+                onClick={() => {
+                  const newParams = new URLSearchParams(window.location.search);
+                  newParams.set('module', 'research-citations');
+                  window.history.pushState(null, '', `${window.location.pathname}?${newParams.toString()}`);
+                  window.location.reload();
+                }}
+              >
+                Research Citations
+              </button>
+            </nav>
+          </div>
+        </div>
+      </div>
+    );
+    
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+        <ModuleNavigation />
+        {activeModule === 'business-impact' && <BusinessImpactDashboard analysisData={businessAnalysisData} />}
+        {activeModule === 'visual-analysis' && <VisualAnalysisModule analysisData={businessAnalysisData} />}
+        {activeModule === 'research-citations' && (
+          <div className="p-6 text-center">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+              Research Citations Module
+            </h3>
+            <p className="text-gray-600 dark:text-gray-300">
+              Coming soon... This module will showcase research backing and methodology.
+            </p>
+          </div>
+        )}
+      </div>
+    );
   }
 
   // PRESERVE EXISTING FUNCTIONALITY AS DEFAULT
