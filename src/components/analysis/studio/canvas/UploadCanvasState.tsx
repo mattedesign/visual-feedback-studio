@@ -17,6 +17,7 @@ export const UploadCanvasState = ({
             borderRadius: '18px',
             border: '1px solid var(--Stroke-default, rgba(0, 0, 0, 0.06))',
             background: 'var(--Colors-white-white, #FFF)',
+            boxShadow: '0px 3px 4px -1px rgba(0, 0, 0, 0.08), 0px 1px 0px 0px rgba(255, 255, 255, 0.33) inset, 0px 0px 0px 1px #D4D4D4',
             padding: '24px 8px'
           }}>
             <div className="text-center">
@@ -149,6 +150,7 @@ export const UploadCanvasState = ({
             borderRadius: '18px',
             border: '1px solid var(--Stroke-default, rgba(0, 0, 0, 0.06))',
             background: 'var(--Colors-white-white, #FFF)',
+            boxShadow: '0px 3px 4px -1px rgba(0, 0, 0, 0.08), 0px 1px 0px 0px rgba(255, 255, 255, 0.33) inset, 0px 0px 0px 1px #D4D4D4',
             padding: '24px 8px'
           }}>
             <div className="text-center">
@@ -280,6 +282,7 @@ export const UploadCanvasState = ({
             borderRadius: '18px',
             border: '1px solid var(--Stroke-default, rgba(0, 0, 0, 0.06))',
             background: 'var(--Colors-white-white, #FFF)',
+            boxShadow: '0px 3px 4px -1px rgba(0, 0, 0, 0.08), 0px 1px 0px 0px rgba(255, 255, 255, 0.33) inset, 0px 0px 0px 1px #D4D4D4',
             padding: '24px 8px'
           }}>
             <div className="text-center">
