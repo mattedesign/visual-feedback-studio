@@ -1,3 +1,4 @@
+
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { MessageSquare, Settings, Brain } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -57,7 +58,8 @@ export const UploadCanvasState = ({
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '400',
-                    lineHeight: '150%'
+                    lineHeight: '150%',
+                    flex: '1'
                   }}
                 >
                   <p>Example prompt 1</p>
@@ -80,7 +82,8 @@ export const UploadCanvasState = ({
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '400',
-                    lineHeight: '150%'
+                    lineHeight: '150%',
+                    flex: '1'
                   }}
                 >
                   <p>Example prompt 2</p>
@@ -103,7 +106,8 @@ export const UploadCanvasState = ({
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '400',
-                    lineHeight: '150%'
+                    lineHeight: '150%',
+                    flex: '1'
                   }}
                 >
                   <p>Example prompt 3</p>
@@ -126,7 +130,8 @@ export const UploadCanvasState = ({
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '400',
-                    lineHeight: '150%'
+                    lineHeight: '150%',
+                    flex: '1'
                   }}
                 >
                   <p>Example prompt 4</p>
@@ -149,7 +154,8 @@ export const UploadCanvasState = ({
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '400',
-                    lineHeight: '150%'
+                    lineHeight: '150%',
+                    flex: '1'
                   }}
                 >
                   <p>Example prompt 5</p>
@@ -201,7 +207,8 @@ export const UploadCanvasState = ({
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '400',
-                    lineHeight: '150%'
+                    lineHeight: '150%',
+                    flex: '1'
                   }}
                 >
                   <p>Insights backed by 272+ UX research studies</p>
@@ -224,7 +231,8 @@ export const UploadCanvasState = ({
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '400',
-                    lineHeight: '150%'
+                    lineHeight: '150%',
+                    flex: '1'
                   }}
                 >
                   <p>Creates actionable and detailed insights</p>
@@ -247,7 +255,8 @@ export const UploadCanvasState = ({
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '400',
-                    lineHeight: '150%'
+                    lineHeight: '150%',
+                    flex: '1'
                   }}
                 >
                   <p>Annotate on specific images</p>
@@ -270,7 +279,8 @@ export const UploadCanvasState = ({
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '400',
-                    lineHeight: '150%'
+                    lineHeight: '150%',
+                    flex: '1'
                   }}
                 >
                   <p>Comparative results between designs</p>
@@ -293,7 +303,8 @@ export const UploadCanvasState = ({
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '400',
-                    lineHeight: '150%'
+                    lineHeight: '150%',
+                    flex: '1'
                   }}
                 >
                   <p>Extracts information from UI and recommendati...</p>
@@ -345,7 +356,8 @@ export const UploadCanvasState = ({
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '400',
-                    lineHeight: '150%'
+                    lineHeight: '150%',
+                    flex: '1'
                   }}
                 >
                   <p>Open AI GPT 4o</p>
@@ -368,7 +380,8 @@ export const UploadCanvasState = ({
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '400',
-                    lineHeight: '150%'
+                    lineHeight: '150%',
+                    flex: '1'
                   }}
                 >
                   <p>Claude Sonnet 3.5</p>
@@ -391,7 +404,8 @@ export const UploadCanvasState = ({
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '400',
-                    lineHeight: '150%'
+                    lineHeight: '150%',
+                    flex: '1'
                   }}
                 >
                   <p>Claude Sonnet 4</p>
@@ -414,7 +428,8 @@ export const UploadCanvasState = ({
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '400',
-                    lineHeight: '150%'
+                    lineHeight: '150%',
+                    flex: '1'
                   }}
                 >
                   <p>Claude Opus</p>
@@ -437,7 +452,8 @@ export const UploadCanvasState = ({
                     fontSize: '12px',
                     fontStyle: 'normal',
                     fontWeight: '400',
-                    lineHeight: '150%'
+                    lineHeight: '150%',
+                    flex: '1'
                   }}
                 >
                   <p>Google Vision</p>
