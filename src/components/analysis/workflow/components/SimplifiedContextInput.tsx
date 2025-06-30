@@ -81,7 +81,7 @@ export const SimplifiedContextInput = ({
     <div className="space-y-4">
       {/* Main Input Container */}
       <div 
-        className="p-3 flex flex-col-reverse"
+        className="p-3 flex flex-col-reverse transition-transform duration-300 ease-in-out"
         style={{
           alignItems: 'center',
           alignSelf: 'stretch',
@@ -89,7 +89,9 @@ export const SimplifiedContextInput = ({
           border: '1px solid var(--Stroke-02, #E2E2E2)',
           background: 'var(--Color, #FFF)',
           boxShadow: '0px 32px 67px 0px rgba(0, 0, 0, 0.00), 0px 24px 61px 0px rgba(0, 0, 0, 0.01), 0px 12px 52px 0px rgba(0, 0, 0, 0.04), 0px 12px 38px 0px rgba(0, 0, 0, 0.06), 0px 4px 21px 0px rgba(0, 0, 0, 0.07)',
-          backdropFilter: 'blur(6px)'
+          backdropFilter: 'blur(6px)',
+          // Shift the container up when suggestions are shown
+          transform: showSuggestions ? 'translateY(-60px)' : 'translateY(0)',
         }}
       >
         {/* Quick Suggestions - Now appears above input */}
