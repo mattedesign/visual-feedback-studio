@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { MessageSquare, Star, Cpu } from 'lucide-react';
 
@@ -150,7 +151,7 @@ export const FeatureCards = () => {
                 hover:shadow-lg hover:-translate-y-0.5 hover:shadow-black/8
                 h-auto min-h-[400px] max-h-none
                 ${card.hideOnMobile ? 'hidden min-[400px]:flex flex-col' : 'flex flex-col'}
-                ${card.hideOnTablet ? 'min-[400px]:hidden min-[900px]:flex' : ''}
+                ${card.hideOnTablet ? 'min-[400px]:hidden max-[1023px]:hidden min-[1200px]:flex' : ''}
               `}
               style={{
                 boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
