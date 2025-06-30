@@ -173,7 +173,7 @@ export const SimplifiedContextInput = ({
             </div>
 
             {/* Advanced Toggle */}
-            <div className="mt-3 pt-2 border-t border-gray-100 dark:border-slate-700">
+            <div className="mt-3 pt-2 border-t border-gray-100 dark:border-slate-700 hidden">
               <Button
                 variant="ghost"
                 size="sm"
