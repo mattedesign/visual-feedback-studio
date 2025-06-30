@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { BusinessImpactDashboard } from './BusinessImpactDashboard';
@@ -6,7 +7,8 @@ import { ResearchCitationsModule } from './ResearchCitationsModule';
 import { getAnalysisResults } from '@/services/analysisResultsService';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, BarChart3, Eye, BookOpen } from 'lucide-react';
+import { BreadcrumbNavigation } from '@/components/layout/BreadcrumbNavigation';
+import { BarChart3, Eye, BookOpen } from 'lucide-react';
 
 type ModuleType = 'business-impact' | 'visual-analysis' | 'research-citations';
 
@@ -69,18 +71,20 @@ export const ModularAnalysisInterface = () => {
 
   if (error || !analysisData) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-red-600 dark:text-red-400 mb-4 text-lg">
-            {error || 'Analysis data not available'}
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
+        <BreadcrumbNavigation />
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="text-red-600 dark:text-red-400 mb-4 text-lg">
+              {error || 'Analysis data not available'}
+            </div>
+            <Button
+              onClick={() => window.location.href = '/'}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Back to Dashboard
+            </Button>
           </div>
-          <Button
-            onClick={() => window.location.href = '/analysis'}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Analysis
-          </Button>
         </div>
       </div>
     );
@@ -109,26 +113,18 @@ export const ModularAnalysisInterface = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
-      {/* Header with Navigation */}
+      {/* Breadcrumb Navigation */}
+      <BreadcrumbNavigation />
+
+      {/* Header */}
       <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 shadow-sm">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <Button
-                onClick={() => window.location.href = '/analysis'}
-                variant="ghost"
-                size="sm"
-                className="text-gray-600 hover:text-gray-900 dark:text-slate-300 dark:hover:text-white"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Analysis
-              </Button>
-              <div className="text-gray-900 dark:text-white">
-                <h1 className="text-2xl font-bold">Analysis Results</h1>
-                <p className="text-gray-600 dark:text-slate-400 text-sm">
-                  {analysisData.analysis_context || 'UX Analysis Results'}
-                </p>
-              </div>
+            <div className="text-gray-900 dark:text-white">
+              <h1 className="text-2xl font-bold">Analysis Results</h1>
+              <p className="text-gray-600 dark:text-slate-400 text-sm">
+                {analysisData.analysis_context || 'UX Analysis Results'}
+              </p>
             </div>
             
             <div className="flex items-center gap-3">

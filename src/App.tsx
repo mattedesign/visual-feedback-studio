@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Suspense, lazy } from "react";
+import Dashboard from "./pages/Dashboard";
 import Analysis from "./pages/Analysis";
 import AnalysisResults from "./pages/AnalysisResults";
 import Auth from "./pages/Auth";
@@ -27,11 +28,10 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* Default route - everything goes to /auth */}
-            <Route path="/" element={<Navigate to="/auth" replace />} />
+            {/* Dashboard as the main route */}
+            <Route path="/" element={<Dashboard />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/analysis" element={<Analysis />} />
-            {/* FIXED: Add route for analysis with ID parameter */}
             <Route path="/analysis/:id" element={<AnalysisResults />} />
             <Route path="/analysis-results" element={<AnalysisResults />} />
             <Route path="/dalle-demo" element={<DALLEDemo />} />
@@ -46,8 +46,8 @@ const App = () => {
                 </Suspense>
               } 
             />
-            {/* Catch all other routes and redirect to /auth */}
-            <Route path="*" element={<Navigate to="/auth" replace />} />
+            {/* Catch all other routes and redirect to dashboard */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
