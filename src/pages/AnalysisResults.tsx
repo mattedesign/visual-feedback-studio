@@ -212,8 +212,8 @@ const AnalysisResults = () => {
           Back to Analysis
         </button>
       </div>
-    );
-  }
+    </div>
+  );
 };
 
 export default AnalysisResults;
