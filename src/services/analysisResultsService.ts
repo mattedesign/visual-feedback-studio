@@ -19,7 +19,7 @@ export interface SaveAnalysisResultsRequest {
 export interface AnalysisResultsResponse {
   id: string;
   analysis_id: string;
-  annotations: Annotation[];
+  annotations: any; // Simplified to any for now to avoid type conflicts
   images: string[];
   analysis_context: string;
   enhanced_context?: any;
@@ -54,7 +54,7 @@ export const saveAnalysisResults = async (request: SaveAnalysisResultsRequest): 
       .insert({
         analysis_id: request.analysisId,
         user_id: user.id,
-        annotations: request.annotations,
+        annotations: request.annotations as any, // Cast to any for now
         images: request.images,
         analysis_context: request.analysisContext,
         enhanced_context: request.enhancedContext,
@@ -107,7 +107,7 @@ export const getAnalysisResults = async (analysisId: string): Promise<AnalysisRe
 
     console.log('✅ Analysis results loaded successfully:', {
       id: data.id,
-      annotationCount: data.annotations?.length || 0,
+      annotationCount: Array.isArray(data.annotations) ? data.annotations.length : 0,
       imageCount: data.images?.length || 0
     });
 
