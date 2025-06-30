@@ -1,8 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
+import { BusinessImpactDashboard } from '../modules/BusinessImpactDashboard';
 import { ComparativeAnalysisSummary } from '../ComparativeAnalysisSummary';
 import { EnhancedImageTabsViewer } from './components/EnhancedImageTabsViewer';
 import { SingleImageViewer } from './components/SingleImageViewer';
@@ -44,6 +45,26 @@ const parseContextForDisplay = (context: string): string[] => {
 };
 
 export const ResultsStep = ({ workflow }: ResultsStepProps) => {
+  const useModularInterface = useFeatureFlag('modular-analysis');
+  
+  // Get URL parameter for testing override
+  const urlParams = new URLSearchParams(window.location.search);
+  const betaMode = urlParams.get('beta') === 'true';
+  
+  // NEW INTERFACE ONLY WHEN FLAG IS TRUE OR BETA PARAMETER
+  if (useModularInterface || betaMode) {
+    const businessAnalysisData = {
+      annotations: workflow.aiAnnotations || [],
+      enhancedContext: workflow.enhancedContext,
+      analysisContext: workflow.analysisContext,
+      createdAt: new Date().toISOString(),
+      siteName: 'Your Website'
+    };
+    
+    return <BusinessImpactDashboard analysisData={businessAnalysisData} />;
+  }
+
+  // PRESERVE EXISTING FUNCTIONALITY AS DEFAULT
   const [activeAnnotation, setActiveAnnotation] = useState<string | null>(null);
   const [activeImageUrl, setActiveImageUrl] = useState(workflow.selectedImages[0] || '');
 
@@ -228,6 +249,22 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
 
   return (
     <div className="min-h-screen bg-slate-900 p-6">
+      {/* ADD ONLY: Optional "Try New Interface" button */}
+      <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-blue-800 dark:text-blue-200 font-medium">🚀 Try our new Business Impact Dashboard!</p>
+            <p className="text-blue-600 dark:text-blue-300 text-sm">Executive-friendly insights and actionable recommendations</p>
+          </div>
+          <Button 
+            onClick={() => window.location.href += (window.location.href.includes('?') ? '&' : '?') + 'beta=true'}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            Try New Interface
+          </Button>
+        </div>
+      </div>
+
       {/* Debug Component */}
       <AnnotationDebugger annotations={workflow.aiAnnotations} componentName="ResultsStep" />
       
