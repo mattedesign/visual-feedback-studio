@@ -1,4 +1,18 @@
 
+// New types that don't modify existing interfaces
+export interface WellDoneInsight {
+  title: string;
+  description: string;
+  category: 'visual' | 'ux' | 'accessibility' | 'conversion' | 'mobile' | 'overall';
+  imageIndex?: number;
+}
+
+export interface WellDoneData {
+  insights: WellDoneInsight[];
+  overallStrengths: string[];
+  categoryHighlights: Record<string, string>;
+}
+
 export interface RAGContext {
   retrievedKnowledge: {
     relevantPatterns: Array<{
@@ -45,6 +59,8 @@ export interface EnhancedAnalysisResponse {
   knowledgeSourcesUsed?: number;
   researchCitations?: string[];
   industryContext?: string;
+  // New well-done data fields:
+  wellDoneData?: WellDoneData;
 }
 
 export interface Annotation {
