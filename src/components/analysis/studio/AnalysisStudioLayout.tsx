@@ -45,7 +45,7 @@ export const AnalysisStudioLayout = ({
       <StudioSidebar 
         workflow={workflow}
         collapsed={sidebarCollapsed}
-        setCollapsed={setSidebarCollapsed}
+        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
       
       {/* Main Canvas Area */}

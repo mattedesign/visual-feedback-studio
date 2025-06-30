@@ -133,7 +133,7 @@ export const StudioSidebar = ({ workflow, collapsed, onToggle }: StudioSidebarPr
             {[
               { id: 'upload', label: 'Upload Images', count: workflow.uploadedFiles.length },
               { id: 'review', label: 'Review & Select', count: workflow.selectedImages.length },
-              { id: 'annotate', label: 'Add Context', count: workflow.getTotalUserAnnotationsCount() },
+              { id: 'annotate', label: 'Add Context', count: workflow.getTotalAnnotationsCount() },
               { id: 'analyzing', label: 'AI Analysis', count: 0 },
               { id: 'results', label: 'View Results', count: workflow.aiAnnotations.length }
             ].map((step) => {
