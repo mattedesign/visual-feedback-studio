@@ -1,3 +1,4 @@
+
 export interface Annotation {
   id: string;
   x: number;
@@ -13,6 +14,13 @@ export interface Annotation {
   implementationEffort: 'low' | 'medium' | 'high';
   businessImpact: 'low' | 'medium' | 'high';
   imageIndex?: number; // For multi-image analysis
+  
+  // NEW: Coordinate validation properties
+  originalCoordinates?: { x: number; y: number };
+  correctionApplied?: boolean;
+  correctionReasoning?: string;
+  validationScore?: number;
+  validationPassed?: boolean;
   
   // Enhanced business impact fields
   enhancedBusinessImpact?: {
