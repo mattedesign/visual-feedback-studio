@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { BusinessImpactDashboard } from './BusinessImpactDashboard';
@@ -8,7 +9,8 @@ import { vectorKnowledgeService } from '@/services/knowledgeBase/vectorService';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { Button } from '@/components/ui/button';
 import { BreadcrumbNavigation } from '@/components/layout/BreadcrumbNavigation';
-import { Eye, BookOpen, BarChart3 } from 'lucide-react';
+import { Eye, BookOpen, BarChart3, AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 type ModuleType = 'ux-insights' | 'research-backing' | 'business-case';
 
@@ -18,19 +20,33 @@ export const ModularAnalysisInterface = () => {
   const [analysisData, setAnalysisData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [knowledgeBaseCount, setKnowledgeBaseCount] = useState<number>(274); // Default fallback
+  const [knowledgeBaseCount, setKnowledgeBaseCount] = useState<number>(0);
+  const [knowledgeBaseError, setKnowledgeBaseError] = useState<boolean>(false);
 
   useEffect(() => {
     const loadKnowledgeBaseStats = async () => {
       try {
+        console.log('🔍 Loading knowledge base stats for modular interface...');
         const stats = await vectorKnowledgeService.getKnowledgeStats();
+        
         if (stats && stats.totalEntries) {
           setKnowledgeBaseCount(stats.totalEntries);
-          console.log('Updated knowledge base count:', stats.totalEntries);
+          console.log('✅ Knowledge base count updated:', stats.totalEntries);
+          
+          // Check if knowledge base seems incomplete
+          if (stats.totalEntries < 200) {
+            console.warn('⚠️ Knowledge base appears incomplete:', stats.totalEntries);
+            setKnowledgeBaseError(true);
+          }
+        } else {
+          console.warn('⚠️ No knowledge base stats returned');
+          setKnowledgeBaseCount(0);
+          setKnowledgeBaseError(true);
         }
       } catch (error) {
-        console.warn('Could not fetch knowledge base stats, using fallback count:', error);
-        // Keep the fallback value of 274
+        console.error('❌ Failed to load knowledge base stats:', error);
+        setKnowledgeBaseCount(0);
+        setKnowledgeBaseError(true);
       }
     };
 
@@ -119,7 +135,9 @@ export const ModularAnalysisInterface = () => {
       id: 'research-backing' as ModuleType,
       label: 'Research Backing',
       icon: BookOpen,
-      description: `Academic sources and methodology (${knowledgeBaseCount} research entries)`
+      description: knowledgeBaseCount > 0 
+        ? `Academic sources and methodology (${knowledgeBaseCount} research entries)`
+        : 'Academic sources and methodology'
     },
     {
       id: 'business-case' as ModuleType,
@@ -133,6 +151,32 @@ export const ModularAnalysisInterface = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       {/* Breadcrumb Navigation */}
       <BreadcrumbNavigation />
+
+      {/* Knowledge Base Warning */}
+      {knowledgeBaseError && (
+        <div className="bg-white dark:bg-slate-800 border-b border-yellow-200 dark:border-yellow-700">
+          <div className="container mx-auto px-6 py-3">
+            <Alert className="border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20">
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+                <strong>Knowledge Base Issue:</strong> Only {knowledgeBaseCount} research entries found. 
+                Expected 274+. This may affect analysis quality.
+                {window.location.search.includes('admin=true') ? (
+                  <Button
+                    variant="link"
+                    className="ml-2 p-0 h-auto text-yellow-800 dark:text-yellow-200 underline"
+                    onClick={() => window.location.href = '/knowledge-manager?admin=true'}
+                  >
+                    Fix Knowledge Base
+                  </Button>
+                ) : (
+                  <span className="ml-2 text-sm">Contact support to resolve this issue.</span>
+                )}
+              </AlertDescription>
+            </Alert>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 shadow-sm">
@@ -198,7 +242,10 @@ export const ModularAnalysisInterface = () => {
         )}
         
         {currentModule === 'research-backing' && (
-          <ResearchCitationsModule analysisData={analysisData} />
+          <ResearchCitationsModule 
+            analysisData={analysisData} 
+            knowledgeBaseCount={knowledgeBaseCount}
+          />
         )}
         
         {currentModule === 'business-case' && (
