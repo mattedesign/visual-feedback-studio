@@ -20,22 +20,19 @@ export const ResultsCanvasState = ({
 }: ResultsCanvasStateProps) => {
   const [selectedFeedback, setSelectedFeedback] = useState<any>(null);
 
-  // FIXED: Enhanced annotation validation with proper type checking
+  // 🔧 ENHANCED: Better annotation validation with correlation checking
   const safeAnnotations = Array.isArray(workflow.aiAnnotations) 
     ? workflow.aiAnnotations.filter((annotation, index) => {
-        // Comprehensive validation with detailed logging
         if (!annotation || typeof annotation !== 'object') {
           console.warn(`🔴 Invalid annotation at index ${index}:`, annotation);
           return false;
         }
         
-        // FIXED: Proper type checking for annotation ID
         if (annotation.id === null || annotation.id === undefined || annotation.id === '') {
           console.warn(`🔴 Annotation missing valid ID at index ${index}:`, annotation);
           return false;
         }
         
-        // Ensure position properties are valid numbers
         if (typeof annotation.x !== 'number' || typeof annotation.y !== 'number' || 
             isNaN(annotation.x) || isNaN(annotation.y)) {
           console.warn(`🔴 Annotation has invalid position at index ${index}:`, { 
@@ -47,7 +44,6 @@ export const ResultsCanvasState = ({
           return false;
         }
         
-        // Validate position bounds
         if (annotation.x < 0 || annotation.x > 100 || annotation.y < 0 || annotation.y > 100) {
           console.warn(`🔴 Annotation position out of bounds at index ${index}:`, { 
             x: annotation.x, 
@@ -59,7 +55,8 @@ export const ResultsCanvasState = ({
         console.log(`✅ Valid annotation at index ${index}:`, { 
           id: annotation.id, 
           x: annotation.x, 
-          y: annotation.y 
+          y: annotation.y,
+          imageIndex: annotation.imageIndex
         });
         return true;
       })
@@ -80,7 +77,6 @@ export const ResultsCanvasState = ({
     }
   };
 
-  // Early return if no valid annotations
   if (safeAnnotations.length === 0) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -104,7 +100,6 @@ export const ResultsCanvasState = ({
     );
   }
 
-  // SAFETY CHECK: Ensure image data exists
   const currentImageUrl = workflow.activeImageUrl || (workflow.selectedImages && workflow.selectedImages[0]) || '';
   const selectedImages = Array.isArray(workflow.selectedImages) ? workflow.selectedImages : [];
   const uploadedFiles = Array.isArray(workflow.uploadedFiles) ? workflow.uploadedFiles : selectedImages;
@@ -129,17 +124,27 @@ export const ResultsCanvasState = ({
   const currentImageIndex = uploadedFiles.indexOf(currentImageUrl);
   const safeCurrentImageIndex = currentImageIndex >= 0 ? currentImageIndex : 0;
   
-  // CRITICAL FIX: Safely filter annotations for the current image only
+  // 🔧 CRITICAL FIX: Properly filter annotations for the current image only
   const filteredAiAnnotations = safeAnnotations.filter(annotation => {
     const annotationImageIndex = annotation.imageIndex ?? 0;
-    return annotationImageIndex === safeCurrentImageIndex;
+    const matches = annotationImageIndex === safeCurrentImageIndex;
+    
+    if (!matches) {
+      console.log(`🔧 FILTERING OUT annotation ${annotation.id} - belongs to image ${annotationImageIndex}, current is ${safeCurrentImageIndex}`);
+    }
+    
+    return matches;
   });
 
-  console.log('🔢 ResultsCanvasState rendering filtered annotations:', {
+  console.log('🔧 RESULTS CANVAS STATE - CORRELATION CHECK:', {
     currentImageIndex: safeCurrentImageIndex,
     totalAnnotations: safeAnnotations.length,
     filteredAnnotationsCount: filteredAiAnnotations.length,
-    imageUrl: currentImageUrl
+    imageUrl: currentImageUrl.substring(currentImageUrl.length - 30),
+    correlationDetails: {
+      allAnnotationsImageIndexes: safeAnnotations.map(a => a.imageIndex ?? 0),
+      filteredAnnotationIds: filteredAiAnnotations.map(a => a.id)
+    }
   });
 
   return (
@@ -172,35 +177,33 @@ export const ResultsCanvasState = ({
           }}
         />
         
-        {/* FIXED ANNOTATION RENDERING: Enhanced error handling and validation */}
+        {/* 🔧 CRITICAL FIX: Only render annotations that belong to current image */}
         {filteredAiAnnotations.map((annotation, index) => {
-          // COMPREHENSIVE SAFETY: Additional validation before rendering
           if (!annotation || typeof annotation !== 'object') {
             console.warn('🔴 Skipping invalid annotation during render:', annotation);
             return null;
           }
 
-          // Generate a more robust key with fallback
           const annotationId = annotation.id || `fallback-${index}-${Date.now()}`;
           const isActive = activeAnnotation === annotationId;
           
-          // Validate and sanitize position values
           const xPosition = (typeof annotation.x === 'number' && !isNaN(annotation.x)) ? annotation.x : 50;
           const yPosition = (typeof annotation.y === 'number' && !isNaN(annotation.y)) ? annotation.y : 50;
           
-          // Ensure positions are within reasonable bounds
           const safeX = Math.max(0, Math.min(100, xPosition));
           const safeY = Math.max(0, Math.min(100, yPosition));
           
-          console.log(`🎨 Rendering annotation ${index + 1}:`, {
+          console.log(`🎨 RESULTS CANVAS - Rendering annotation ${index + 1} for image ${safeCurrentImageIndex + 1}:`, {
             id: annotationId,
             position: { x: safeX, y: safeY },
-            isActive
+            imageIndex: annotation.imageIndex,
+            isActive,
+            belongsToCurrentImage: annotation.imageIndex === safeCurrentImageIndex
           });
           
           return (
             <div
-              key={`annotation-${annotationId}-${index}`}
+              key={`annotation-${annotationId}-${index}-img${safeCurrentImageIndex}`}
               className={`absolute w-8 h-8 rounded-full border-2 shadow-lg flex items-center justify-center cursor-pointer transform -translate-x-1/2 -translate-y-1/2 transition-all duration-200 z-10 ${
                 isActive 
                   ? 'bg-blue-500 border-blue-300 scale-125 ring-4 ring-blue-200 dark:ring-blue-800' 

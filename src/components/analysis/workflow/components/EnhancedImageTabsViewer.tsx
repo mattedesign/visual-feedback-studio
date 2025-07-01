@@ -46,20 +46,52 @@ export const EnhancedImageTabsViewer = ({
     }
   }, [activeImageUrl, selectedTab]);
 
-  // 🔧 FIXED: Get current image index and annotations correctly
+  // 🔧 FIXED: Get current image index and annotations with enhanced validation
   const currentImageIndex = images.indexOf(activeImageUrl);
-  const currentImageAnnotations = getAnnotationsForImage(currentImageIndex);
-
-  console.log('🔧 FIXED IMAGE TABS VIEWER:', {
-    currentImageIndex,
+  const safeCurrentImageIndex = currentImageIndex >= 0 ? currentImageIndex : 0;
+  
+  // 🔧 CRITICAL FIX: Ensure we only get annotations for the current image
+  const currentImageAnnotations = getAnnotationsForImage(safeCurrentImageIndex);
+  
+  // 🔧 ENHANCED DEBUG: More detailed logging for correlation tracking
+  console.log('🔧 ENHANCED IMAGE TABS VIEWER - CORRELATION CHECK:', {
+    currentImageIndex: safeCurrentImageIndex,
     activeImageUrl: activeImageUrl.substring(activeImageUrl.length - 30),
     totalImages: images.length,
     currentImageAnnotationsCount: currentImageAnnotations.length,
-    annotationDetails: currentImageAnnotations.map(a => ({
+    annotationCorrelation: currentImageAnnotations.map(a => ({
       id: a.id,
-      imageIndex: a.imageIndex,
+      annotationImageIndex: a.imageIndex,
+      matchesCurrentImage: a.imageIndex === safeCurrentImageIndex,
       feedback: a.feedback?.substring(0, 40) + '...'
+    })),
+    allAnnotationsForAllImages: images.map((_, index) => ({
+      imageIndex: index,
+      annotationCount: getAnnotationsForImage(index).length
     }))
+  });
+
+  // 🔧 VALIDATION: Ensure all rendered annotations belong to current image
+  const validatedAnnotations = currentImageAnnotations.filter(annotation => {
+    const annotationImageIndex = annotation.imageIndex ?? 0;
+    const isValid = annotationImageIndex === safeCurrentImageIndex;
+    
+    if (!isValid) {
+      console.warn('🔴 CORRELATION ERROR: Annotation does not belong to current image:', {
+        annotationId: annotation.id,
+        annotationImageIndex,
+        currentImageIndex: safeCurrentImageIndex,
+        shouldNotRender: true
+      });
+    }
+    
+    return isValid;
+  });
+
+  console.log('🔧 VALIDATION RESULTS:', {
+    originalCount: currentImageAnnotations.length,
+    validatedCount: validatedAnnotations.length,
+    filteredOut: currentImageAnnotations.length - validatedAnnotations.length
   });
 
   return (
@@ -106,23 +138,24 @@ export const EnhancedImageTabsViewer = ({
         <div className="relative">
           <img
             src={activeImageUrl}
-            alt={`Design ${currentImageIndex + 1}`}
+            alt={`Design ${safeCurrentImageIndex + 1}`}
             className="w-full h-auto max-h-[70vh] object-contain bg-white rounded-b-lg"
             style={{ minHeight: '400px' }}
           />
           
-          {/* 🔧 FIXED: Render only annotations for current image */}
-          {currentImageAnnotations.map((annotation, annotationIndex) => {
-            console.log(`🔧 Rendering annotation ${annotationIndex + 1} for image ${currentImageIndex + 1}:`, {
+          {/* 🔧 CRITICAL FIX: Only render validated annotations for current image */}
+          {validatedAnnotations.map((annotation, annotationIndex) => {
+            console.log(`🔧 RENDERING VALIDATED ANNOTATION ${annotationIndex + 1} for image ${safeCurrentImageIndex + 1}:`, {
               id: annotation.id,
               imageIndex: annotation.imageIndex,
               x: annotation.x,
-              y: annotation.y
+              y: annotation.y,
+              isCorrectImage: annotation.imageIndex === safeCurrentImageIndex
             });
             
             return (
               <div
-                key={`annotation-${annotation.id}-${currentImageIndex}`}
+                key={`annotation-${annotation.id}-${safeCurrentImageIndex}`}
                 className={`absolute w-8 h-8 rounded-full border-2 shadow-lg flex items-center justify-center cursor-pointer transform -translate-x-1/2 -translate-y-1/2 transition-all duration-200 z-10 ${
                   activeAnnotation === annotation.id
                     ? 'bg-blue-500 border-blue-300 scale-125 ring-4 ring-blue-200'
