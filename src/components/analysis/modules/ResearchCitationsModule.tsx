@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Brain, Search, BookOpen, ExternalLink, Award, CheckCircle, Database } from 'lucide-react';
 
-// Flexible interface for maximum compatibility
+// Updated interface to include knowledgeBaseCount prop
 interface ResearchCitationsModuleProps {
   analysisData: any; // Use flexible type for compatibility
+  knowledgeBaseCount?: number; // Optional prop for knowledge base count
 }
 
-export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = ({ analysisData }) => {
+export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = ({ 
+  analysisData, 
+  knowledgeBaseCount: propKnowledgeBaseCount 
+}) => {
   const [selectedCategory, setSelectedCategory] = useState('overview');
   const [expandedSource, setExpandedSource] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<any>(null);
@@ -57,7 +61,7 @@ export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = (
     
     let researchCitations = [];
     let knowledgeSourcesUsed = 0;
-    let knowledgeBaseSize = 274; // Your 274-entry knowledge base
+    let knowledgeBaseSize = propKnowledgeBaseCount || 274; // Use prop or default to 274
     let ragStatus = 'UNKNOWN';
     let confidence = 0;
     
@@ -65,7 +69,7 @@ export const ResearchCitationsModule: React.FC<ResearchCitationsModuleProps> = (
     if (ragContext?.researchCitations && Array.isArray(ragContext.researchCitations)) {
       researchCitations = ragContext.researchCitations;
       knowledgeSourcesUsed = ragContext.knowledgeSourcesUsed || ragContext.retrievalStats?.uniqueResults || 0;
-      knowledgeBaseSize = ragContext.knowledgeBaseSize || 274;
+      knowledgeBaseSize = ragContext.knowledgeBaseSize || propKnowledgeBaseCount || 274;
       ragStatus = ragContext.ragStatus || 'ENABLED';
       
       // Calculate average confidence from citations
