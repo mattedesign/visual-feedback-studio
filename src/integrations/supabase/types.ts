@@ -86,6 +86,10 @@ export type Database = {
           id: string
           images: string[]
           knowledge_sources_used: number | null
+          perplexity_competitive_data: Json | null
+          perplexity_enhanced: boolean | null
+          perplexity_research_data: Json | null
+          perplexity_trend_data: Json | null
           processing_time_ms: number | null
           research_citations: string[] | null
           total_annotations: number | null
@@ -103,6 +107,10 @@ export type Database = {
           id?: string
           images?: string[]
           knowledge_sources_used?: number | null
+          perplexity_competitive_data?: Json | null
+          perplexity_enhanced?: boolean | null
+          perplexity_research_data?: Json | null
+          perplexity_trend_data?: Json | null
           processing_time_ms?: number | null
           research_citations?: string[] | null
           total_annotations?: number | null
@@ -120,6 +128,10 @@ export type Database = {
           id?: string
           images?: string[]
           knowledge_sources_used?: number | null
+          perplexity_competitive_data?: Json | null
+          perplexity_enhanced?: boolean | null
+          perplexity_research_data?: Json | null
+          perplexity_trend_data?: Json | null
           processing_time_ms?: number | null
           research_citations?: string[] | null
           total_annotations?: number | null
@@ -190,6 +202,10 @@ export type Database = {
           industry: string | null
           industry_tags: string[] | null
           metadata: Json | null
+          perplexity_last_validated: string | null
+          perplexity_sources: Json | null
+          perplexity_validated: boolean | null
+          perplexity_validation_score: number | null
           primary_category: string | null
           related_patterns: string[] | null
           secondary_category: string | null
@@ -212,6 +228,10 @@ export type Database = {
           industry?: string | null
           industry_tags?: string[] | null
           metadata?: Json | null
+          perplexity_last_validated?: string | null
+          perplexity_sources?: Json | null
+          perplexity_validated?: boolean | null
+          perplexity_validation_score?: number | null
           primary_category?: string | null
           related_patterns?: string[] | null
           secondary_category?: string | null
@@ -234,6 +254,10 @@ export type Database = {
           industry?: string | null
           industry_tags?: string[] | null
           metadata?: Json | null
+          perplexity_last_validated?: string | null
+          perplexity_sources?: Json | null
+          perplexity_validated?: boolean | null
+          perplexity_validation_score?: number | null
           primary_category?: string | null
           related_patterns?: string[] | null
           secondary_category?: string | null

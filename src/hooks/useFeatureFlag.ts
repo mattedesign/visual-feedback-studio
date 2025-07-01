@@ -5,6 +5,7 @@ export const useFeatureFlag = (flagName: string): boolean => {
     'modular-analysis': false, // SET TO FALSE BY DEFAULT
     'business-dashboard': false,
     'separated-annotation-fields': true, // NEW: Enable separated title/description fields
+    'perplexity-integration': false, // NEW: Enable Perplexity.ai integration
   };
   
   // Testing override via URL

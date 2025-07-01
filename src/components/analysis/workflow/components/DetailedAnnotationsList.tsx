@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { MobileOptimizedAnnotationsList } from './MobileOptimizedAnnotationsList';
 import { CitationIndicator } from './CitationIndicator';
+import { PerplexityIndicator } from './PerplexityIndicator';
 import { BookOpen, Award, Zap } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -222,6 +223,17 @@ export const DetailedAnnotationsList = ({
           </Card>
         );
       })}
+
+      {/* Perplexity Integration Panel */}
+      <PerplexityIndicator 
+        sources={researchCitations.map(cite => ({
+          title: cite,
+          url: '',
+          snippet: cite,
+          domain: 'research'
+        }))}
+        className="mt-6"
+      />
     </div>
   );
 };
