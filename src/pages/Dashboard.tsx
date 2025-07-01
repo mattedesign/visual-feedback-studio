@@ -65,71 +65,39 @@ const Dashboard = () => {
     return 'processing';
   };
 
-  // 🚀 ENHANCED: Comprehensive image count calculation with detailed debugging
-  const calculateImageCount = useMemo(() => {
-    return (analysis: AnalysisResultsResponse): number => {
-      const debugId = `analysis-${analysis.analysis_id}`;
-      
-      console.log(`🔍 ${debugId} - COMPREHENSIVE IMAGE COUNT DEBUG:`, {
-        timestamp: new Date().toISOString(),
-        analysisId: analysis.analysis_id,
-        rawImages: analysis.images,
-        imagesType: typeof analysis.images,
-        isArray: Array.isArray(analysis.images),
-        isString: typeof analysis.images === 'string',
-        isNull: analysis.images === null,
-        isUndefined: analysis.images === undefined,
-        truthyCheck: !!analysis.images,
-        lengthProperty: analysis.images?.length,
-        stringLength: typeof analysis.images === 'string' ? analysis.images.length : 'N/A'
-      });
+  // 🚀 SIMPLIFIED: Fixed image count calculation with proper typing
+  const calculateImageCount = (analysis: AnalysisResultsResponse): number => {
+    const debugId = `analysis-${analysis.analysis_id}`;
+    
+    console.log(`🔍 ${debugId} - IMAGE COUNT DEBUG:`, {
+      analysisId: analysis.analysis_id,
+      rawImages: analysis.images,
+      imagesType: typeof analysis.images,
+      isArray: Array.isArray(analysis.images),
+    });
 
-      // 🎯 STEP 1: Handle null/undefined cases
-      if (!analysis.images) {
-        console.log(`🔍 ${debugId} - No images property, returning 0`);
-        return 0;
-      }
-
-      // 🎯 STEP 2: Handle array cases
-      if (Array.isArray(analysis.images)) {
-        const count = analysis.images.length;
-        console.log(`🔍 ${debugId} - Array detected, count: ${count}`);
-        
-        // Additional validation for array contents
-        const validImages = analysis.images.filter(img => img && typeof img === 'string' && img.trim().length > 0);
-        console.log(`🔍 ${debugId} - Valid images in array: ${validImages.length}`);
-        
-        return count;
-      }
-
-      // 🎯 STEP 3: Handle string cases
-      if (typeof analysis.images === 'string') {
-        const trimmed = analysis.images.trim();
-        const count = trimmed.length > 0 ? 1 : 0;
-        console.log(`🔍 ${debugId} - String detected, length: ${analysis.images.length}, trimmed: "${trimmed}", count: ${count}`);
-        return count;
-      }
-
-      // 🎯 STEP 4: Handle object cases (in case images is stored as object)
-      if (typeof analysis.images === 'object') {
-        console.log(`🔍 ${debugId} - Object detected:`, {
-          keys: Object.keys(analysis.images),
-          values: Object.values(analysis.images)
-        });
-        
-        // If it's an object with numeric keys (array-like)
-        const keys = Object.keys(analysis.images);
-        const numericKeys = keys.filter(key => !isNaN(Number(key)));
-        if (numericKeys.length > 0) {
-          console.log(`🔍 ${debugId} - Array-like object, count: ${numericKeys.length}`);
-          return numericKeys.length;
-        }
-      }
-
-      console.log(`🔍 ${debugId} - Unknown format, defaulting to 0`);
+    // Handle null/undefined cases
+    if (!analysis.images) {
+      console.log(`🔍 ${debugId} - No images property, returning 0`);
       return 0;
-    };
-  }, []);
+    }
+
+    // Handle array cases
+    if (Array.isArray(analysis.images)) {
+      const count = analysis.images.length;
+      console.log(`🔍 ${debugId} - Array detected, count: ${count}`);
+      return count;
+    }
+
+    // Handle string cases - if images is a single URL string
+    if (typeof analysis.images === 'string' && analysis.images.trim().length > 0) {
+      console.log(`🔍 ${debugId} - String detected, count: 1`);
+      return 1;
+    }
+
+    console.log(`🔍 ${debugId} - Unknown format, defaulting to 0`);
+    return 0;
+  };
 
   const filteredAnalyses = analyses.filter(analysis => {
     const matchesSearch = analysis.analysis_context?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false;
@@ -148,74 +116,6 @@ const Dashboard = () => {
   const handleViewAnalysis = (analysisId: string) => {
     navigate(`/analysis/${analysisId}?beta=true`);
   };
-
-  // 🚀 NEW: Enhanced metrics calculation component
-  const AnalysisMetrics = React.memo(({ analysis }: { analysis: AnalysisResultsResponse }) => {
-    const imageCount = calculateImageCount(analysis);
-    const debugId = `metrics-${analysis.analysis_id}`;
-    
-    // 🔍 GRANULAR DEBUGGING: Log every metric calculation
-    console.log(`🎯 ${debugId} - METRICS CALCULATION:`, {
-      analysisId: analysis.analysis_id,
-      imageCount,
-      totalAnnotations: analysis.total_annotations,
-      knowledgeSources: analysis.knowledge_sources_used,
-      calculatedAt: new Date().toISOString()
-    });
-
-    const metrics = [
-      {
-        label: 'Insights Found',
-        value: analysis.total_annotations,
-        key: 'annotations'
-      },
-      {
-        label: 'Images Analyzed', 
-        value: imageCount,
-        key: 'images'
-      }
-    ];
-
-    // Add research sources if available
-    if (analysis.knowledge_sources_used && analysis.knowledge_sources_used > 0) {
-      metrics.push({
-        label: 'Research Sources',
-        value: analysis.knowledge_sources_used,
-        key: 'research'
-      });
-    }
-
-    return (
-      <div className="space-y-3">
-        {metrics.map((metric) => {
-          // 🔍 DEBUG: Log each metric render
-          console.log(`🎯 ${debugId} - Rendering metric:`, {
-            label: metric.label,
-            value: metric.value,
-            key: metric.key,
-            isImagesMetric: metric.key === 'images'
-          });
-
-          return (
-            <div key={`${analysis.analysis_id}-${metric.key}`} className="flex justify-between items-center py-1">
-              <span className="text-sm text-gray-600 dark:text-gray-300">
-                {metric.label}
-              </span>
-              <span 
-                className={`font-semibold text-right ${
-                  metric.key === 'research' 
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : 'text-gray-900 dark:text-white'
-                }`}
-              >
-                {metric.value}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    );
-  });
 
   if (isLoading) {
     return (
@@ -322,13 +222,11 @@ const Dashboard = () => {
               const analysisStatus = getAnalysisStatus(analysis);
               const imageCount = calculateImageCount(analysis);
               
-              // 🔍 FINAL DEBUG: Log card rendering
               console.log('🎯 DASHBOARD CARD RENDER:', {
                 analysisId: analysis.analysis_id,
                 imageCount,
                 totalAnnotations: analysis.total_annotations,
                 status: analysisStatus,
-                renderTime: new Date().toISOString()
               });
               
               return (
@@ -373,8 +271,37 @@ const Dashboard = () => {
                       </div>
                     )}
                     
-                    {/* 🚀 ENHANCED: Use new AnalysisMetrics component */}
-                    <AnalysisMetrics analysis={analysis} />
+                    {/* 🚀 SIMPLIFIED: Clean metrics display */}
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-sm text-gray-600 dark:text-gray-300">
+                          Insights Found
+                        </span>
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                          {analysis.total_annotations}
+                        </span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-sm text-gray-600 dark:text-gray-300">
+                          Images Analyzed
+                        </span>
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                          {imageCount}
+                        </span>
+                      </div>
+                      
+                      {analysis.knowledge_sources_used && analysis.knowledge_sources_used > 0 && (
+                        <div className="flex justify-between items-center py-1">
+                          <span className="text-sm text-gray-600 dark:text-gray-300">
+                            Research Sources
+                          </span>
+                          <span className="font-semibold text-blue-600 dark:text-blue-400">
+                            {analysis.knowledge_sources_used}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                     
                     <Button
                       variant="outline"
