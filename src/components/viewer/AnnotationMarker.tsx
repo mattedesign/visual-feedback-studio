@@ -1,5 +1,6 @@
 
-import { Annotation } from '@/types/analysis';
+import { Annotation, getAnnotationTitle, getAnnotationDescription } from '@/types/analysis';
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 
 interface AnnotationMarkerProps {
   annotation: Annotation;
@@ -16,6 +17,8 @@ export const AnnotationMarker = ({
   zoom, 
   annotationIndex = 0 
 }: AnnotationMarkerProps) => {
+  const useSeparatedFields = useFeatureFlag('separated-annotation-fields');
+  
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'critical': return 'bg-red-500 border-red-400';
@@ -41,13 +44,10 @@ export const AnnotationMarker = ({
     }, 100);
   };
 
-  // Debug logging
-  console.log('🔢 AnnotationMarker rendering:', {
-    annotationId: annotation.id,
-    annotationIndex,
-    displayNumber: annotationIndex + 1,
-    category: annotation.category
-  });
+  // Get title and description for display
+  const title = useSeparatedFields ? getAnnotationTitle(annotation) : annotation.feedback;
+  const description = useSeparatedFields ? getAnnotationDescription(annotation) : null;
+  const displayText = useSeparatedFields && description ? description : annotation.feedback;
 
   return (
     <div
@@ -59,6 +59,7 @@ export const AnnotationMarker = ({
         top: `${annotation.y}%`,
       }}
       onClick={handleClick}
+      title={useSeparatedFields ? title : annotation.feedback}
     >
       {/* Pulsing ring effect for active annotations */}
       {isActive && (
@@ -70,31 +71,39 @@ export const AnnotationMarker = ({
           annotation.severity
         )} ${isActive ? 'ring-4 ring-blue-400 ring-offset-2' : ''}`}
       >
-        {/* Sequential number - FORCED display with proper class */}
         <span className="text-xs font-bold leading-none annotation-marker-number" data-annotation-number={annotationIndex + 1}>
           {annotationIndex + 1}
         </span>
       </div>
       
-      {/* Active state tooltip */}
+      {/* Active state tooltip with title */}
       {isActive && (
         <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white text-xs px-2 py-1 rounded whitespace-nowrap animate-fade-in">
-          Detail #{annotationIndex + 1}
+          {useSeparatedFields ? title : `Detail #${annotationIndex + 1}`}
         </div>
       )}
       
-      {/* Content overlay when active */}
+      {/* Enhanced content overlay when active */}
       {isActive && (
         <div className="absolute top-10 left-1/2 transform -translate-x-1/2 w-80 bg-white border-2 border-gray-300 rounded-lg p-4 shadow-xl z-30">
+          {/* NEW: Display title prominently if using separated fields */}
+          {useSeparatedFields && (
+            <h4 className="text-lg font-bold text-gray-900 mb-2">
+              {title}
+            </h4>
+          )}
+          
           <div className="flex items-center gap-2 mb-3">
             <span className={`w-3 h-3 rounded-full ${getSeverityColor(annotation.severity).split(' ')[0]}`}></span>
             <span className="text-sm font-semibold capitalize text-gray-900">
               {annotation.severity} • {annotation.category}
             </span>
           </div>
+          
           <p className="text-sm text-gray-800 leading-relaxed mb-3 whitespace-pre-wrap">
-            {annotation.feedback}
+            {displayText}
           </p>
+          
           <div className="flex items-center gap-4 text-xs text-gray-600">
             <span>Effort: {annotation.implementationEffort}</span>
             <span>Impact: {annotation.businessImpact}</span>

@@ -1,6 +1,8 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Annotation } from '@/types/analysis';
+import { getAnnotationTitle, getAnnotationDescription } from '@/types/analysis';
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 
 interface DetailedFeedbackCardProps {
   activeAnnotation: string | null;
@@ -15,10 +17,16 @@ export const DetailedFeedbackCard = ({
   isMultiImage,
   getSeverityColor,
 }: DetailedFeedbackCardProps) => {
+  const useSeparatedFields = useFeatureFlag('separated-annotation-fields');
+  
   if (!activeAnnotation) return null;
 
   const annotation = aiAnnotations.find(a => a.id === activeAnnotation);
   if (!annotation) return null;
+
+  // Use new title/description fields or fallback to feedback
+  const title = useSeparatedFields ? getAnnotationTitle(annotation) : annotation.feedback;
+  const description = useSeparatedFields ? getAnnotationDescription(annotation) : null;
 
   return (
     <div className="bg-white border-2 border-gray-200 rounded-xl shadow-lg overflow-hidden">
@@ -26,11 +34,11 @@ export const DetailedFeedbackCard = ({
         <h4 className="text-xl font-bold text-gray-900 flex items-center gap-3">
           <span className="text-xl">💡</span>
           <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-            Detailed Feedback
+            {useSeparatedFields ? title : 'Detailed Feedback'}
           </span>
         </h4>
         <p className="text-sm text-gray-600 font-medium mt-1">
-          In-depth analysis and actionable recommendations
+          {useSeparatedFields ? 'Actionable UX improvement recommendation' : 'In-depth analysis and actionable recommendations'}
         </p>
       </div>
       
@@ -59,7 +67,7 @@ export const DetailedFeedbackCard = ({
         
         <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
           <div className="text-base text-gray-800 leading-relaxed font-medium whitespace-pre-wrap">
-            {annotation.feedback}
+            {useSeparatedFields && description ? description : annotation.feedback}
           </div>
         </div>
         

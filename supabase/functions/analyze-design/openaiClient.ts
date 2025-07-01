@@ -8,7 +8,7 @@ export async function analyzeWithOpenAI(
   apiKey: string,
   model: string = 'gpt-4o-mini'
 ): Promise<AnnotationData[]> {
-  console.log('🚀 Calling OpenAI API for comprehensive analysis with proper image correlation...');
+  console.log('🚀 Calling OpenAI API for comprehensive analysis with separate title/description fields...');
   
   try {
     const messages = [
@@ -18,7 +18,8 @@ export async function analyzeWithOpenAI(
 
 CRITICAL CORRELATION REQUIREMENTS:
 - Each annotation's x,y coordinates MUST point to the exact visual element being analyzed
-- The feedback MUST describe what is specifically located at those coordinates
+- The title should be a concise summary (3-8 words)
+- The description should provide detailed, actionable feedback
 - Never place generic feedback at random coordinates
 - Ensure spatial accuracy between annotation position and described element
 
@@ -28,7 +29,9 @@ MANDATORY JSON STRUCTURE:
     {
       "x": <precise number 0-100 pointing to the exact element>,
       "y": <precise number 0-100 pointing to the exact element>, 
-      "feedback": "<specific feedback about the element at these exact coordinates>",
+      "title": "<concise title describing the issue (3-8 words)>",
+      "description": "<detailed actionable feedback about the element>",
+      "feedback": "<title + description combined for backward compatibility>",
       "category": "<one of: ux, visual, accessibility, conversion, content>",
       "severity": "<one of: critical, suggested, enhancement>",
       "business_impact": "<specific business impact>",
@@ -37,6 +40,15 @@ MANDATORY JSON STRUCTURE:
     }
   ]
 }
+
+TITLE EXAMPLES:
+- "Low Contrast Text"
+- "Missing CTA Button"
+- "Unclear Navigation"
+- "Form Accessibility Issue"
+
+DESCRIPTION EXAMPLES:
+- "The text color has insufficient contrast ratio (2.1:1) against the background. Increase contrast to meet WCAG AA standards (4.5:1 minimum) by darkening the text or lightening the background."
 
 COORDINATE ACCURACY RULES:
 - Header elements: y: 5-15
@@ -102,11 +114,25 @@ IMPORTANT: Your response must be valid JSON only.`
       const parsed = JSON.parse(content);
       const annotations = parsed.annotations || [];
       
-      // Validate each annotation has proper correlation
+      // Validate and process each annotation with title/description separation
       const validatedAnnotations = annotations.map((annotation: any, index: number) => {
         // Ensure coordinates are numbers and within bounds
         const x = Math.max(0, Math.min(100, Number(annotation.x) || 50));
         const y = Math.max(0, Math.min(100, Number(annotation.y) || 50));
+        
+        // Extract or create title and description
+        const title = annotation.title || 
+          (annotation.feedback ? annotation.feedback.split(':')[0]?.trim() || 'UX Issue' : 'UX Issue');
+        
+        const description = annotation.description || 
+          (annotation.feedback ? 
+            (annotation.feedback.includes(':') ? 
+              annotation.feedback.split(':').slice(1).join(':').trim() : 
+              annotation.feedback) : 
+            'Improvement needed');
+        
+        // Create combined feedback for backward compatibility
+        const combinedFeedback = annotation.feedback || `${title}: ${description}`;
         
         return {
           ...annotation,
@@ -114,12 +140,13 @@ IMPORTANT: Your response must be valid JSON only.`
           y,
           id: `ai-${index + 1}`,
           imageIndex: annotation.imageIndex || 0,
-          // Ensure feedback mentions the coordinates for correlation verification
-          feedback: annotation.feedback + ` (Located at ${x.toFixed(1)}%, ${y.toFixed(1)}% in the design)`
+          title,
+          description,
+          feedback: combinedFeedback + ` (Located at ${x.toFixed(1)}%, ${y.toFixed(1)}% in the design)`
         };
       });
 
-      console.log(`✅ Successfully processed ${validatedAnnotations.length} annotations with coordinate validation`);
+      console.log(`✅ Successfully processed ${validatedAnnotations.length} annotations with separate title/description fields`);
       return validatedAnnotations;
       
     } catch (parseError) {

@@ -4,9 +4,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Annotation } from '@/types/analysis';
+import { Annotation, getAnnotationTitle, getAnnotationDescription } from '@/types/analysis';
 import { MessageSquare, TrendingUp, Eye, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import { DetailedFeedbackCard } from './DetailedFeedbackCard';
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 
 interface FeedbackPanelProps {
   currentImageAIAnnotations: Annotation[];
@@ -36,6 +37,7 @@ export const FeedbackPanel = ({
   researchCitations
 }: FeedbackPanelProps) => {
   const [showAllAnnotations, setShowAllAnnotations] = useState(false);
+  const useSeparatedFields = useFeatureFlag('separated-annotation-fields');
 
   // 🚨 CRITICAL DEBUG: Add debugging for FeedbackPanel data
   useEffect(() => {
@@ -175,7 +177,7 @@ export const FeedbackPanel = ({
   };
 
   // 🎯 ENHANCED: Calculate totals based on filtered feedback
-  const totalAnnotations = currentImageFeedback.length + currentImageUserAnnotations.length;
+  const totalAnnotations = currentImageAIAnnotations.length + currentImageUserAnnotations.length;
 
   return (
     <div className="space-y-4">
@@ -250,12 +252,12 @@ export const FeedbackPanel = ({
       {/* 🎯 ENHANCED: Detailed Feedback Card for active annotation using filtered feedback */}
       <DetailedFeedbackCard
         activeAnnotation={activeAnnotation}
-        aiAnnotations={currentImageFeedback} // Use filtered feedback instead of all annotations
+        aiAnnotations={currentImageAIAnnotations} // Use filtered feedback instead of all annotations
         isMultiImage={isMultiImage}
         getSeverityColor={getSeverityColor}
       />
 
-      {/* 🎯 ENHANCED: Annotations List with better filtering and display */}
+      {/* 🎯 ENHANCED: Annotations List with separated title/description display */}
       <Card className="bg-slate-800/50 border-slate-700">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -264,9 +266,9 @@ export const FeedbackPanel = ({
             </CardTitle>
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="text-xs">
-                {currentImageFeedback.length}
+                {currentImageAIAnnotations.length}
               </Badge>
-              {currentImageFeedback.length > 5 && (
+              {currentImageAIAnnotations.length > 5 && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -281,7 +283,7 @@ export const FeedbackPanel = ({
                   ) : (
                     <>
                       <ChevronDown className="w-3 h-3 mr-1" />
-                      Show All ({currentImageFeedback.length})
+                      Show All ({currentImageAIAnnotations.length})
                     </>
                   )}
                 </Button>
@@ -293,7 +295,7 @@ export const FeedbackPanel = ({
         <CardContent>
           <ScrollArea className="h-96">
             <div className="space-y-3">
-              {currentImageFeedback.length === 0 ? (
+              {currentImageAIAnnotations.length === 0 ? (
                 <div className="text-center py-8 text-slate-400">
                   <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
                   <p>No insights for this image</p>
@@ -302,54 +304,70 @@ export const FeedbackPanel = ({
                   )}
                 </div>
               ) : (
-                (showAllAnnotations ? currentImageFeedback : currentImageFeedback.slice(0, 5)).map((annotation, index) => (
-                  <div
-                    key={`feedback-${annotation.id}-${activeImageIndex}`} // Enhanced key with image index
-                    className={`border rounded-lg p-3 cursor-pointer transition-all duration-200 ${
-                      activeAnnotation === annotation.id
-                        ? 'border-blue-500 bg-blue-500/10 ring-1 ring-blue-500/20'
-                        : 'border-slate-600 hover:border-slate-500 bg-slate-800/30 hover:bg-slate-800/50'
-                    }`}
-                    onClick={() => onAnnotationClick(annotation.id)}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                        {index + 1}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-lg">
-                            {getCategoryIcon(annotation.category)}
-                          </span>
-                          <Badge className={`text-xs ${getSeverityColor(annotation.severity)}`}>
-                            {annotation.severity.toUpperCase()}
-                          </Badge>
-                          <Badge variant="outline" className="text-xs capitalize border-slate-600">
-                            {annotation.category}
-                          </Badge>
-                          {/* 🆕 NEW: Show coordinate information for correlation */}
-                          {annotation.x !== undefined && annotation.y !== undefined && (
-                            <Badge variant="outline" className="text-xs text-slate-400">
-                              {annotation.x.toFixed(0)}%, {annotation.y.toFixed(0)}%
-                            </Badge>
-                          )}
+                (showAllAnnotations ? currentImageAIAnnotations : currentImageAIAnnotations.slice(0, 5)).map((annotation, index) => {
+                  // Use new title/description fields with fallback
+                  const title = useSeparatedFields ? getAnnotationTitle(annotation) : annotation.feedback;
+                  const description = useSeparatedFields ? getAnnotationDescription(annotation) : null;
+                  const displayText = useSeparatedFields && description ? description : annotation.feedback;
+                  
+                  return (
+                    <div
+                      key={`feedback-${annotation.id}-${activeImageIndex}`}
+                      className={`border rounded-lg p-3 cursor-pointer transition-all duration-200 ${
+                        activeAnnotation === annotation.id
+                          ? 'border-blue-500 bg-blue-500/10 ring-1 ring-blue-500/20'
+                          : 'border-slate-600 hover:border-slate-500 bg-slate-800/30 hover:bg-slate-800/50'
+                      }`}
+                      onClick={() => onAnnotationClick(annotation.id)}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                          {index + 1}
                         </div>
-                        <p className="text-sm text-slate-300 leading-relaxed">
-                          {annotation.feedback}
-                        </p>
-                        <div className="flex items-center justify-between text-xs text-slate-400 mt-2">
-                          <span>Effort: {annotation.implementationEffort || 'Medium'}</span>
-                          <span>Impact: {annotation.businessImpact || 'Medium'}</span>
-                          {isMultiImage && (
-                            <span className="text-blue-400">
-                              Image {(annotation.imageIndex ?? 0) + 1}
-                            </span>
+                        <div className="flex-1 min-w-0">
+                          {/* NEW: Display title prominently if using separated fields */}
+                          {useSeparatedFields && (
+                            <h4 className="font-semibold text-slate-200 mb-1 text-sm">
+                              {title}
+                            </h4>
                           )}
+                          
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-lg">
+                              {getCategoryIcon(annotation.category)}
+                            </span>
+                            <Badge className={`text-xs ${getSeverityColor(annotation.severity)}`}>
+                              {annotation.severity.toUpperCase()}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs capitalize border-slate-600">
+                              {annotation.category}
+                            </Badge>
+                            {/* Coordinate information for correlation */}
+                            {annotation.x !== undefined && annotation.y !== undefined && (
+                              <Badge variant="outline" className="text-xs text-slate-400">
+                                {annotation.x.toFixed(0)}%, {annotation.y.toFixed(0)}%
+                              </Badge>
+                            )}
+                          </div>
+                          
+                          <p className="text-sm text-slate-300 leading-relaxed">
+                            {displayText}
+                          </p>
+                          
+                          <div className="flex items-center justify-between text-xs text-slate-400 mt-2">
+                            <span>Effort: {annotation.implementationEffort || 'Medium'}</span>
+                            <span>Impact: {annotation.businessImpact || 'Medium'}</span>
+                            {isMultiImage && (
+                              <span className="text-blue-400">
+                                Image {(annotation.imageIndex ?? 0) + 1}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </ScrollArea>

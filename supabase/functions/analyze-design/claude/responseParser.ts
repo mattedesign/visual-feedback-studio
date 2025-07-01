@@ -4,13 +4,9 @@ import { AnnotationData } from '../types.ts';
 export function parseClaudeResponse(aiResponse: any): AnnotationData[] {
   try {
     const content = aiResponse.content[0].text;
-    console.log('=== Parsing Claude Response ===');
+    console.log('=== Parsing Claude Response with Title/Description Separation ===');
     console.log('Raw response length:', content.length);
     console.log('Response preview:', content.substring(0, 200));
-    console.log('Contains research keywords:', {
-      hasResearch: content.includes('research') || content.includes('best practice') || content.includes('methodology'),
-      hasCitations: content.includes('**') || content.includes('according to') || content.includes('studies show')
-    });
     
     // Try to extract JSON array with multiple patterns
     let jsonMatch = content.match(/\[[\s\S]*?\]/);
@@ -34,57 +30,78 @@ export function parseClaudeResponse(aiResponse: any): AnnotationData[] {
         annotations = JSON.parse(jsonMatch[0]);
         console.log('Successfully parsed JSON with', annotations.length, 'annotations');
         
-        // ✅ CRITICAL FIX: Properly map the AI response to annotation properties
+        // ✅ ENHANCED: Process annotations with title/description separation
         const validAnnotations = annotations.filter((ann: any) => {
           return typeof ann.x === 'number' && 
                  typeof ann.y === 'number' && 
                  ann.category && 
                  ann.severity;
         }).map((ann: any) => {
-          // ✅ FIXED: Extract actual feedback content from the AI response
-          const feedbackContent = 
-            ann.description ||     // Primary detailed feedback
-            ann.title ||           // Fallback to title
-            ann.feedback ||        // Direct feedback property
-            ann.content ||         // Alternative content property
-            ann.text ||            // Text property
-            ann.message ||         // Message property
-            ann.quickFix ||        // Quick fix suggestions
-            ann.businessImpact ||  // Business impact description
-            'UX improvement needed'; // Final fallback
+          // ✅ NEW: Extract title and description separately
+          let title = '';
+          let description = '';
           
-          console.log(`✅ Extracted feedback for annotation: "${feedbackContent.substring(0, 100)}..."`);
-          
-          // ✅ ENHANCED: Build comprehensive feedback from multiple properties
-          let enhancedFeedback = '';
-          
+          // Try to get title and description from separate fields first
           if (ann.title && ann.description) {
-            enhancedFeedback = `${ann.title}: ${ann.description}`;
-          } else if (ann.description) {
-            enhancedFeedback = ann.description;
+            title = ann.title;
+            description = ann.description;
           } else if (ann.title) {
-            enhancedFeedback = ann.title;
+            title = ann.title;
+            description = ann.description || ann.feedback || ann.content || 'Improvement needed';
+          } else if (ann.description) {
+            // Extract title from description if no separate title
+            const descLines = ann.description.split(/[:.]/);
+            if (descLines.length > 1 && descLines[0].length < 60) {
+              title = descLines[0].trim();
+              description = descLines.slice(1).join('. ').trim();
+            } else {
+              title = ann.description.length > 50 ? 
+                ann.description.substring(0, 50).trim() + '...' : 
+                ann.description;
+              description = ann.description;
+            }
           } else {
-            enhancedFeedback = feedbackContent;
+            // Fallback: extract from feedback or other fields
+            const feedbackContent = ann.feedback || ann.content || ann.text || ann.message || 'UX Issue';
+            
+            // Try to split feedback into title and description
+            if (feedbackContent.includes(':')) {
+              const parts = feedbackContent.split(':');
+              title = parts[0].trim();
+              description = parts.slice(1).join(':').trim();
+            } else {
+              // Split by sentences or length
+              const sentences = feedbackContent.split(/[.!?]/);
+              if (sentences.length > 1 && sentences[0].length < 80) {
+                title = sentences[0].trim();
+                description = sentences.slice(1).join('. ').trim();
+              } else {
+                title = feedbackContent.length > 50 ? 
+                  feedbackContent.substring(0, 50).trim() + '...' : 
+                  feedbackContent;
+                description = feedbackContent;
+              }
+            }
           }
           
-          // Add business impact and quick fix if available
-          if (ann.businessImpact && !enhancedFeedback.includes(ann.businessImpact)) {
-            enhancedFeedback += ` Business Impact: ${ann.businessImpact}`;
+          // Ensure title is concise (3-8 words ideally)
+          if (title.split(' ').length > 10) {
+            title = title.split(' ').slice(0, 8).join(' ') + '...';
           }
           
-          if (ann.quickFix && !enhancedFeedback.includes(ann.quickFix)) {
-            enhancedFeedback += ` Quick Fix: ${ann.quickFix}`;
-          }
+          // Create combined feedback for backward compatibility
+          const combinedFeedback = `${title}: ${description}`;
           
-          console.log(`✅ Enhanced feedback created: "${enhancedFeedback.substring(0, 150)}..."`);
+          console.log(`✅ Created annotation with title: "${title}" and description: "${description.substring(0, 100)}..."`);
           
           return {
             x: ann.x,
             y: ann.y,
             category: ann.category,
             severity: ann.severity,
-            feedback: enhancedFeedback, // ✅ FIXED: Use the actual content, not placeholder
+            title: title,
+            description: description,
+            feedback: combinedFeedback, // Backward compatibility
             implementationEffort: ann.implementationEffort || 'medium',
             businessImpact: ann.businessImpact || 'medium',
             imageIndex: ann.imageIndex || 0
@@ -96,13 +113,7 @@ export function parseClaudeResponse(aiResponse: any): AnnotationData[] {
           return parseDetailedAnalysis(content);
         }
         
-        console.log(`✅ Returning ${validAnnotations.length} valid annotations with real feedback`);
-        console.log('Sample feedback preview:', validAnnotations.slice(0, 2).map((a, i) => ({
-          index: i + 1,
-          feedbackPreview: a.feedback.substring(0, 100) + '...',
-          feedbackLength: a.feedback.length
-        })));
-        
+        console.log(`✅ Returning ${validAnnotations.length} valid annotations with separate title/description`);
         return validAnnotations;
         
       } catch (parseError) {
@@ -121,11 +132,11 @@ export function parseClaudeResponse(aiResponse: any): AnnotationData[] {
 }
 
 function parseDetailedAnalysis(content: string): AnnotationData[] {
-  console.log('✅ ENHANCED: Parsing detailed analysis into comprehensive UX annotations');
+  console.log('✅ ENHANCED: Parsing detailed analysis with title/description separation');
   
   const annotations: AnnotationData[] = [];
   
-  // ✅ IMPROVED: Extract comprehensive insights from the detailed analysis
+  // ✅ IMPROVED: Extract comprehensive insights with title/description separation
   const sections = content.split(/#{1,3}\s+/);
   let yPosition = 20;
   
@@ -135,37 +146,48 @@ function parseDetailedAnalysis(content: string): AnnotationData[] {
     const lines = section.split('\n').filter(line => line.trim());
     if (lines.length === 0) continue;
     
-    const title = lines[0].replace(/[*#]/g, '').trim();
+    const potentialTitle = lines[0].replace(/[*#]/g, '').trim();
     const sectionContent = lines.slice(1).join(' ').trim();
     
-    if (sectionContent.length < 50) continue; // Skip sections without enough content
+    if (sectionContent.length < 30) continue; // Skip sections without enough content
     
-    // ✅ ENHANCED: Build detailed feedback from analysis content
-    let comprehensiveFeedback = '';
+    // ✅ NEW: Create proper title and description
+    let title = '';
+    let description = '';
     
-    if (title && sectionContent) {
-      comprehensiveFeedback = `${title}: ${sectionContent}`;
-    } else if (sectionContent) {
-      comprehensiveFeedback = sectionContent;
-    } else if (title) {
-      comprehensiveFeedback = `UX Issue: ${title}`;
+    // Clean and process title
+    if (potentialTitle.length > 0) {
+      title = potentialTitle.length > 60 ? 
+        potentialTitle.substring(0, 60).trim() + '...' : 
+        potentialTitle;
+      
+      // Ensure title is concise
+      if (title.split(' ').length > 8) {
+        title = title.split(' ').slice(0, 8).join(' ') + '...';
+      }
+    } else {
+      title = 'UX Improvement Needed';
     }
     
-    // ✅ IMPROVED: Extract actionable insights from content
-    const actionableInsights = [];
+    // Create comprehensive description
+    if (sectionContent.length > 0) {
+      description = sectionContent;
+    } else {
+      description = 'This area requires attention to improve user experience and usability.';
+    }
     
-    // Look for recommendations, suggestions, improvements
+    // ✅ ENHANCED: Extract actionable insights for description
+    const actionableInsights = [];
     const recommendationPatterns = [
       /recommend[s]?\s+([^.]+)/gi,
       /suggest[s]?\s+([^.]+)/gi,
       /should\s+([^.]+)/gi,
       /consider\s+([^.]+)/gi,
       /improve\s+([^.]+)/gi,
-      /enhance\s+([^.]+)/gi
     ];
     
     recommendationPatterns.forEach(pattern => {
-      const matches = comprehensiveFeedback.match(pattern);
+      const matches = description.match(pattern);
       if (matches) {
         matches.forEach(match => {
           actionableInsights.push(match.trim());
@@ -173,99 +195,78 @@ function parseDetailedAnalysis(content: string): AnnotationData[] {
       }
     });
     
-    // If we found actionable insights, include them
+    // Enhance description with actionable insights
     if (actionableInsights.length > 0) {
-      comprehensiveFeedback += ` Key Recommendations: ${actionableInsights.slice(0, 2).join('; ')}`;
+      description += ` Key recommendations: ${actionableInsights.slice(0, 2).join('; ')}`;
     }
+    
+    // Create combined feedback for backward compatibility
+    const combinedFeedback = `${title}: ${description}`;
     
     // Determine category and severity based on keywords
     let category: 'ux' | 'visual' | 'accessibility' | 'conversion' | 'brand' = 'ux';
     let severity: 'critical' | 'suggested' | 'enhancement' = 'suggested';
-    let implementationEffort: 'low' | 'medium' | 'high' = 'medium';
-    let businessImpact: 'low' | 'medium' | 'high' = 'medium';
     
     const titleLower = title.toLowerCase();
-    const contentLower = comprehensiveFeedback.toLowerCase();
+    const contentLower = description.toLowerCase();
     
     // ✅ ENHANCED: Better categorization
-    if (titleLower.includes('accessibility') || contentLower.includes('wcag') || contentLower.includes('contrast') || contentLower.includes('screen reader')) {
+    if (titleLower.includes('accessibility') || contentLower.includes('wcag') || contentLower.includes('contrast')) {
       category = 'accessibility';
       severity = 'critical';
-      businessImpact = 'high';
-    } else if (titleLower.includes('conversion') || contentLower.includes('cta') || contentLower.includes('button') || contentLower.includes('form')) {
+    } else if (titleLower.includes('conversion') || contentLower.includes('cta') || contentLower.includes('button')) {
       category = 'conversion';
-      businessImpact = 'high';
-    } else if (titleLower.includes('visual') || contentLower.includes('color') || contentLower.includes('typography') || contentLower.includes('layout')) {
+    } else if (titleLower.includes('visual') || contentLower.includes('color') || contentLower.includes('typography')) {
       category = 'visual';
-    } else if (titleLower.includes('brand') || contentLower.includes('branding')) {
+    } else if (titleLower.includes('brand')) {
       category = 'brand';
     }
     
-    // ✅ ENHANCED: Better severity assessment
-    if (contentLower.includes('critical') || contentLower.includes('must') || contentLower.includes('required') || contentLower.includes('broken')) {
-      severity = 'critical';
-    } else if (contentLower.includes('important') || contentLower.includes('should') || contentLower.includes('recommend')) {
-      severity = 'suggested';
-    } else if (contentLower.includes('enhance') || contentLower.includes('improve') || contentLower.includes('consider') || contentLower.includes('optional')) {
-      severity = 'enhancement';
-    }
-    
-    console.log(`✅ Created comprehensive annotation: "${title}" with ${comprehensiveFeedback.length} characters of feedback`);
+    console.log(`✅ Created detailed annotation: "${title}" with ${description.length} char description`);
     
     annotations.push({
-      x: 30 + (annotations.length * 15) % 40, // Spread annotations horizontally
+      x: 30 + (annotations.length * 15) % 40,
       y: yPosition,
       category,
       severity,
-      feedback: comprehensiveFeedback, // ✅ FIXED: Real comprehensive feedback
-      implementationEffort,
-      businessImpact,
+      title: title,
+      description: description,
+      feedback: combinedFeedback, // Backward compatibility
+      implementationEffort: 'medium',
+      businessImpact: 'medium',
       imageIndex: 0
     });
     
     yPosition += 20;
-    if (yPosition > 80) yPosition = 20; // Wrap around
+    if (yPosition > 80) yPosition = 20;
     
-    // Limit to 6 annotations to avoid clutter but ensure quality
     if (annotations.length >= 6) break;
   }
   
-  // ✅ ENHANCED: If we couldn't extract any good annotations, create a comprehensive summary
+  // ✅ ENHANCED: Fallback summary annotation with proper title/description
   if (annotations.length === 0) {
-    console.log('✅ Creating comprehensive UX summary annotation from analysis content');
-    
-    // Extract the most meaningful content
     const meaningfulContent = content
-      .replace(/[#*]/g, '') // Remove markdown formatting
+      .replace(/[#*]/g, '')
       .split('\n')
-      .filter(line => line.trim().length > 20) // Keep substantial lines
-      .slice(0, 10) // Take first 10 meaningful lines
+      .filter(line => line.trim().length > 20)
+      .slice(0, 5)
       .join(' ')
-      .substring(0, 500) + '...';
-    
-    const summaryFeedback = `Comprehensive UX Analysis Results: ${meaningfulContent}`;
-    
-    console.log(`✅ Created summary annotation with ${summaryFeedback.length} characters of comprehensive feedback`);
+      .substring(0, 300) + '...';
     
     annotations.push({
       x: 50,
       y: 30,
       category: 'ux',
       severity: 'suggested',
-      feedback: summaryFeedback, // ✅ FIXED: Real comprehensive summary, not placeholder
+      title: 'UX Analysis Summary',
+      description: `Comprehensive analysis results: ${meaningfulContent}`,
+      feedback: `UX Analysis Summary: Comprehensive analysis results: ${meaningfulContent}`,
       implementationEffort: 'medium',
       businessImpact: 'medium',
       imageIndex: 0
     });
   }
   
-  console.log(`✅ Final result: Created ${annotations.length} annotations with comprehensive feedback`);
-  console.log('Feedback quality check:', annotations.map((a, i) => ({
-    index: i + 1,
-    feedbackLength: a.feedback.length,
-    isPlaceholder: a.feedback.includes('Feedback not provided') || a.feedback.includes('Analysis insight'),
-    feedbackPreview: a.feedback.substring(0, 100) + '...'
-  })));
-  
+  console.log(`✅ Final result: Created ${annotations.length} annotations with proper title/description separation`);
   return annotations;
 }
