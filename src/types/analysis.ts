@@ -1,4 +1,3 @@
-
 export interface Annotation {
   id: string;
   x: number;
@@ -66,85 +65,128 @@ export interface Annotation {
   quickWinPotential?: boolean;
 }
 
-// NEW: Utility functions for handling title/description
-export const getAnnotationTitle = (annotation: Annotation): string => {
-  if (annotation.title) {
-    return annotation.title;
+// ENHANCED: Utility functions for handling title/description with better logic
+export const getAnnotationTitle = (annotation: Annotation, imageIndex?: number): string => {
+  // First check if explicit title exists
+  if (annotation.title && annotation.title.trim()) {
+    return annotation.title.trim();
   }
   
-  // Fallback: Extract title from feedback
-  if (annotation.feedback) {
-    // Try to extract title from common patterns
-    const lines = annotation.feedback.split('\n');
-    const firstLine = lines[0]?.trim();
+  // Enhanced category-based title generation
+  const categoryTitles = {
+    'ux': 'User Experience Issue',
+    'visual': 'Visual Design Issue',
+    'accessibility': 'Accessibility Issue',
+    'conversion': 'Conversion Optimization',
+    'brand': 'Brand Consistency Issue'
+  };
+  
+  const severityPrefixes = {
+    'critical': 'Critical',
+    'suggested': 'Suggested',
+    'enhancement': 'Enhancement'
+  };
+  
+  // If we have feedback, try to extract a meaningful title
+  if (annotation.feedback && annotation.feedback.trim()) {
+    const feedback = annotation.feedback.trim();
     
-    // If first line ends with colon, it's likely a title
-    if (firstLine && firstLine.endsWith(':')) {
-      return firstLine.slice(0, -1);
+    // Pattern 1: "Title: Description" format
+    const titleColonMatch = feedback.match(/^([^:]+):\s*(.+)/s);
+    if (titleColonMatch && titleColonMatch[1].length < 80) {
+      return titleColonMatch[1].trim();
     }
     
-    // If first line is short and second line exists, first line might be title
-    if (firstLine && firstLine.length < 100 && lines.length > 1) {
-      return firstLine;
-    }
-    
-    // Extract title from "Title: Description" pattern
-    const titleMatch = annotation.feedback.match(/^([^:]+):\s*(.+)/s);
-    if (titleMatch) {
-      return titleMatch[1].trim();
-    }
-    
-    // Fallback: Use first sentence or truncated feedback
-    const firstSentence = annotation.feedback.split(/[.!?]/)[0];
-    if (firstSentence && firstSentence.length < 100) {
+    // Pattern 2: First sentence as title (if short enough)
+    const firstSentence = feedback.split(/[.!?]/)[0];
+    if (firstSentence && firstSentence.length > 10 && firstSentence.length < 80) {
       return firstSentence.trim();
     }
     
-    // Last resort: truncate feedback
-    return annotation.feedback.length > 60 
-      ? annotation.feedback.substring(0, 60).trim() + '...'
-      : annotation.feedback;
+    // Pattern 3: First line as title (if it's short)
+    const firstLine = feedback.split('\n')[0];
+    if (firstLine && firstLine.length < 80 && feedback.split('\n').length > 1) {
+      return firstLine.trim();
+    }
+    
+    // Pattern 4: Extract action-oriented phrases
+    const actionMatches = feedback.match(/^(Consider|Improve|Add|Remove|Update|Fix|Enhance|Optimize|Replace)\s+[^.!?]*/);
+    if (actionMatches && actionMatches[0].length < 80) {
+      return actionMatches[0].trim();
+    }
+    
+    // Pattern 5: Truncate feedback intelligently
+    if (feedback.length > 60) {
+      const truncated = feedback.substring(0, 60).trim();
+      const lastSpace = truncated.lastIndexOf(' ');
+      return (lastSpace > 30 ? truncated.substring(0, lastSpace) : truncated) + '...';
+    }
+    
+    // Use full feedback if it's short
+    return feedback;
   }
   
-  return 'UX Issue';
+  // Fallback: Create title based on category and severity
+  const categoryTitle = categoryTitles[annotation.category] || 'Design Issue';
+  const severityPrefix = severityPrefixes[annotation.severity] || '';
+  
+  let title = severityPrefix ? `${severityPrefix} ${categoryTitle}` : categoryTitle;
+  
+  // Add image context if available
+  if (typeof imageIndex === 'number' && imageIndex >= 0) {
+    title += ` (Image ${imageIndex + 1})`;
+  } else if (typeof annotation.imageIndex === 'number' && annotation.imageIndex >= 0) {
+    title += ` (Image ${annotation.imageIndex + 1})`;
+  }
+  
+  return title;
 };
 
 export const getAnnotationDescription = (annotation: Annotation): string => {
-  if (annotation.description) {
-    return annotation.description;
+  // First check if explicit description exists
+  if (annotation.description && annotation.description.trim()) {
+    return annotation.description.trim();
   }
   
-  // Fallback: Extract description from feedback
-  if (annotation.feedback) {
-    // Extract description from "Title: Description" pattern
-    const titleMatch = annotation.feedback.match(/^([^:]+):\s*(.+)/s);
-    if (titleMatch) {
-      return titleMatch[2].trim();
+  // Extract description from feedback
+  if (annotation.feedback && annotation.feedback.trim()) {
+    const feedback = annotation.feedback.trim();
+    
+    // Pattern 1: "Title: Description" format
+    const titleColonMatch = feedback.match(/^([^:]+):\s*(.+)/s);
+    if (titleColonMatch && titleColonMatch[1].length < 80) {
+      return titleColonMatch[2].trim();
     }
     
-    // If we extracted a title from first line, use rest as description
-    const lines = annotation.feedback.split('\n');
+    // Pattern 2: If first line was used as title, use rest as description
+    const lines = feedback.split('\n');
     if (lines.length > 1) {
-      const firstLine = lines[0]?.trim();
-      if (firstLine && (firstLine.endsWith(':') || firstLine.length < 100)) {
-        return lines.slice(1).join('\n').trim();
+      const firstLine = lines[0].trim();
+      if (firstLine.length < 80) {
+        const remainingLines = lines.slice(1).join('\n').trim();
+        if (remainingLines) {
+          return remainingLines;
+        }
       }
     }
     
-    // Remove first sentence if it was used as title
-    const firstSentence = annotation.feedback.split(/[.!?]/)[0];
-    if (firstSentence && firstSentence.length < 100) {
-      const remaining = annotation.feedback.substring(firstSentence.length).replace(/^[.!?]\s*/, '');
-      if (remaining.trim()) {
-        return remaining.trim();
+    // Pattern 3: If first sentence was used as title, use rest as description
+    const sentences = feedback.split(/[.!?]/);
+    if (sentences.length > 1) {
+      const firstSentence = sentences[0];
+      if (firstSentence && firstSentence.length > 10 && firstSentence.length < 80) {
+        const remaining = sentences.slice(1).join('.').replace(/^[.!?\s]+/, '').trim();
+        if (remaining && remaining.length > 20) {
+          return remaining;
+        }
       }
     }
     
     // Fallback: return full feedback
-    return annotation.feedback;
+    return feedback;
   }
   
-  return 'No description available';
+  return 'No detailed description available';
 };
 
 export interface AnalysisRequest {

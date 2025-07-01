@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -257,7 +258,7 @@ export const FeedbackPanel = ({
         getSeverityColor={getSeverityColor}
       />
 
-      {/* 🎯 ENHANCED: Annotations List with separated title/description display */}
+      {/* 🎯 ENHANCED: Annotations List with improved title/description display */}
       <Card className="bg-slate-800/50 border-slate-700">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -305,10 +306,12 @@ export const FeedbackPanel = ({
                 </div>
               ) : (
                 (showAllAnnotations ? currentImageAIAnnotations : currentImageAIAnnotations.slice(0, 5)).map((annotation, index) => {
-                  // Use new title/description fields with fallback
-                  const title = useSeparatedFields ? getAnnotationTitle(annotation) : annotation.feedback;
-                  const description = useSeparatedFields ? getAnnotationDescription(annotation) : null;
-                  const displayText = useSeparatedFields && description ? description : annotation.feedback;
+                  // ENHANCED: Use improved title/description extraction
+                  const title = getAnnotationTitle(annotation, activeImageIndex);
+                  const description = getAnnotationDescription(annotation);
+                  
+                  // Show title and description separately when using separated fields feature
+                  const showSeparatedDisplay = useSeparatedFields && title !== description;
                   
                   return (
                     <div
@@ -325,9 +328,9 @@ export const FeedbackPanel = ({
                           {index + 1}
                         </div>
                         <div className="flex-1 min-w-0">
-                          {/* NEW: Display title prominently if using separated fields */}
-                          {useSeparatedFields && (
-                            <h4 className="font-semibold text-slate-200 mb-1 text-sm">
+                          {/* ENHANCED: Display title prominently when separated fields are enabled */}
+                          {showSeparatedDisplay && (
+                            <h4 className="font-semibold text-slate-200 mb-2 text-sm leading-snug">
                               {title}
                             </h4>
                           )}
@@ -350,8 +353,9 @@ export const FeedbackPanel = ({
                             )}
                           </div>
                           
+                          {/* ENHANCED: Display description or full feedback based on separated fields */}
                           <p className="text-sm text-slate-300 leading-relaxed">
-                            {displayText}
+                            {showSeparatedDisplay ? description : title}
                           </p>
                           
                           <div className="flex items-center justify-between text-xs text-slate-400 mt-2">
