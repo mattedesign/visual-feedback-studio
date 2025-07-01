@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge';
-import { Annotation } from '@/types/analysis';
+import { Annotation, getAnnotationTitle, getAnnotationDescription } from '@/types/analysis';
 
 interface AIInsightsListProps {
   currentImageAIAnnotations: Annotation[];
@@ -48,9 +48,10 @@ export const AIInsightsList = ({
                 </Badge>
               )}
             </div>
-            <p className="text-base text-gray-800 leading-relaxed line-clamp-3 font-medium">
-              {annotation.feedback}
-            </p>
+            <div className="text-base text-gray-800 leading-relaxed line-clamp-3 font-medium">
+              <h5 className="font-semibold mb-1">{getAnnotationTitle(annotation)}</h5>
+              <p className="text-sm">{getAnnotationDescription(annotation)}</p>
+            </div>
             <div className="flex gap-4 mt-3 text-sm text-gray-600 font-semibold">
               <span>Effort: {annotation.implementationEffort}</span>
               <span>Impact: {annotation.businessImpact}</span>

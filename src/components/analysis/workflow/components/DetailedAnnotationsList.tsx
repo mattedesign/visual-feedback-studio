@@ -1,5 +1,5 @@
 
-import { Annotation } from '@/types/analysis';
+import { Annotation, getAnnotationTitle, getAnnotationDescription } from '@/types/analysis';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { MobileOptimizedAnnotationsList } from './MobileOptimizedAnnotationsList';
@@ -180,9 +180,10 @@ export const DetailedAnnotationsList = ({
                             <Zap className="w-3 h-3 text-white" />
                           </div>
                         )}
-                        <p className={`text-sm leading-relaxed ${citation.number > 0 ? 'text-emerald-800 dark:text-emerald-200 font-medium' : 'text-gray-800 dark:text-gray-200'}`}>
-                          {annotation.feedback}
-                        </p>
+                        <div className={`text-sm leading-relaxed ${citation.number > 0 ? 'text-emerald-800 dark:text-emerald-200 font-medium' : 'text-gray-800 dark:text-gray-200'}`}>
+                          <h5 className="font-semibold mb-2">{getAnnotationTitle(annotation)}</h5>
+                          <p>{getAnnotationDescription(annotation)}</p>
+                        </div>
                       </div>
                       
                       {citation.number > 0 && (

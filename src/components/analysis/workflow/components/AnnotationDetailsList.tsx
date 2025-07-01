@@ -3,7 +3,7 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Annotation } from '@/types/analysis';
+import { Annotation, getAnnotationTitle, getAnnotationDescription } from '@/types/analysis';
 import { Eye, ExternalLink, AlertCircle, CheckCircle, Info } from 'lucide-react';
 
 interface AnnotationDetailsListProps {
@@ -53,55 +53,7 @@ export const AnnotationDetailsList: React.FC<AnnotationDetailsListProps> = ({
     annotationImageIndices: annotations.map(a => ({ id: a.id, imageIndex: a.imageIndex }))
   });
 
-  const generateAnnotationTitle = (annotation: Annotation): string => {
-    // FIXED: Generate proper titles based on category and content
-    const categoryTitles = {
-      'ux': 'User Experience Issue',
-      'visual': 'Visual Design Improvement',
-      'accessibility': 'Accessibility Enhancement',
-      'conversion': 'Conversion Optimization',
-      'navigation': 'Navigation Improvement',
-      'content': 'Content Strategy',
-      'performance': 'Performance Optimization'
-    };
-
-    // Use annotation.title if it exists and is different from feedback
-    if (annotation.title && annotation.title.trim() !== annotation.feedback?.trim()) {
-      return annotation.title;
-    }
-
-    const baseTitle = categoryTitles[annotation.category] || 'Design Recommendation';
-    
-    // Extract first meaningful sentence for title if feedback is long
-    if (annotation.feedback && annotation.feedback.length > 60) {
-      const firstSentence = annotation.feedback.split('.')[0];
-      if (firstSentence.length <= 50 && firstSentence.length > 10) {
-        return firstSentence.trim();
-      }
-    }
-    
-    return baseTitle;
-  };
-
-  const generateAnnotationDescription = (annotation: Annotation): string => {
-    // FIXED: Ensure description is different from title
-    if (!annotation.feedback) return 'No detailed feedback available.';
-    
-    const title = generateAnnotationTitle(annotation);
-    
-    // If feedback is the same as title, provide more context
-    if (annotation.feedback.trim() === title.trim()) {
-      const severityContext = {
-        'critical': 'This critical issue requires immediate attention to prevent user frustration and potential business impact.',
-        'suggested': 'This improvement suggestion could enhance user experience and interface usability.',
-        'enhancement': 'This enhancement opportunity could further optimize the design and user interaction.'
-      };
-      
-      return `${annotation.feedback} ${severityContext[annotation.severity] || 'This issue should be addressed to improve the overall design quality.'}`;
-    }
-    
-    return annotation.feedback;
-  };
+  // Use centralized title/description functions
 
   const getEffortBadgeColor = (effort: string) => {
     switch (effort?.toLowerCase()) {
@@ -146,8 +98,8 @@ export const AnnotationDetailsList: React.FC<AnnotationDetailsListProps> = ({
 
       {currentImageAnnotations.map((annotation, index) => {
         const isActive = activeAnnotation === annotation.id;
-        const title = generateAnnotationTitle(annotation);
-        const description = generateAnnotationDescription(annotation);
+        const title = getAnnotationTitle(annotation);
+        const description = getAnnotationDescription(annotation);
         const SeverityIcon = getSeverityIcon(annotation.severity);
         
         return (

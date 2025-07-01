@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Annotation } from '@/types/analysis';
+import { Annotation, getAnnotationTitle } from '@/types/analysis';
 
 interface PrioritySummaryProps {
   annotations: Annotation[];
@@ -95,7 +95,7 @@ export const PrioritySummary = ({ annotations }: PrioritySummaryProps) => {
                     <span className="text-white text-sm font-bold">{index + 1}</span>
                   </div>
                   <div className="text-sm text-gray-800 font-medium leading-relaxed">
-                    {annotation.feedback.substring(0, 120)}...
+                    {getAnnotationTitle(annotation)}
                   </div>
                 </div>
               </div>
