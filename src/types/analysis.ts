@@ -65,7 +65,7 @@ export interface Annotation {
   quickWinPotential?: boolean;
 }
 
-// ENHANCED: Utility functions for handling title/description with better logic
+// ENHANCED: Utility functions for handling title/description with improved extraction logic
 export const getAnnotationTitle = (annotation: Annotation, imageIndex?: number): string => {
   // First check if explicit title exists
   if (annotation.title && annotation.title.trim()) {
@@ -91,42 +91,66 @@ export const getAnnotationTitle = (annotation: Annotation, imageIndex?: number):
   if (annotation.feedback && annotation.feedback.trim()) {
     const feedback = annotation.feedback.trim();
     
-    // Pattern 1: "Title: Description" format
-    const titleColonMatch = feedback.match(/^([^:]+):\s*(.+)/s);
-    if (titleColonMatch && titleColonMatch[1].length < 80) {
-      return titleColonMatch[1].trim();
-    }
-    
-    // Pattern 2: First sentence as title (if short enough)
-    const firstSentence = feedback.split(/[.!?]/)[0];
-    if (firstSentence && firstSentence.length > 10 && firstSentence.length < 80) {
-      return firstSentence.trim();
-    }
-    
-    // Pattern 3: First line as title (if it's short)
-    const firstLine = feedback.split('\n')[0];
-    if (firstLine && firstLine.length < 80 && feedback.split('\n').length > 1) {
-      return firstLine.trim();
-    }
-    
-    // Pattern 4: Extract action-oriented phrases
-    const actionMatches = feedback.match(/^(Consider|Improve|Add|Remove|Update|Fix|Enhance|Optimize|Replace)\s+[^.!?]*/);
-    if (actionMatches && actionMatches[0].length < 80) {
+    // Pattern 1: Look for action-oriented opening phrases (most common in AI feedback)
+    const actionMatches = feedback.match(/^(Consider|Improve|Add|Remove|Update|Fix|Enhance|Optimize|Replace|Change|Make|Ensure|Use|Avoid|Include|Implement)\s+([^.!?]*)/i);
+    if (actionMatches && actionMatches[0].length > 10 && actionMatches[0].length < 100) {
       return actionMatches[0].trim();
     }
     
-    // Pattern 5: Truncate feedback intelligently
-    if (feedback.length > 60) {
-      const truncated = feedback.substring(0, 60).trim();
-      const lastSpace = truncated.lastIndexOf(' ');
-      return (lastSpace > 30 ? truncated.substring(0, lastSpace) : truncated) + '...';
+    // Pattern 2: Look for "The [element] should/could/needs" patterns
+    const shouldMatches = feedback.match(/^(The\s+\w+(?:\s+\w+){0,3})\s+(should|could|needs?|must|ought to|requires?)\s+([^.!?]*)/i);
+    if (shouldMatches && shouldMatches[0].length > 15 && shouldMatches[0].length < 100) {
+      return shouldMatches[0].trim();
     }
     
-    // Use full feedback if it's short
-    return feedback;
+    // Pattern 3: Look for issue identification patterns
+    const issueMatches = feedback.match(/^(This\s+\w+(?:\s+\w+){0,2})\s+(is|has|lacks|missing|appears|seems)\s+([^.!?]*)/i);
+    if (issueMatches && issueMatches[0].length > 10 && issueMatches[0].length < 100) {
+      return issueMatches[0].trim();
+    }
+    
+    // Pattern 4: "Title: Description" format
+    const titleColonMatch = feedback.match(/^([^:]+):\s*(.+)/s);
+    if (titleColonMatch && titleColonMatch[1].length > 5 && titleColonMatch[1].length < 100) {
+      return titleColonMatch[1].trim();
+    }
+    
+    // Pattern 5: First sentence as title (if it's a reasonable length)
+    const sentences = feedback.split(/[.!?]/);
+    const firstSentence = sentences[0]?.trim();
+    if (firstSentence && firstSentence.length >= 15 && firstSentence.length <= 120 && sentences.length > 1) {
+      return firstSentence;
+    }
+    
+    // Pattern 6: First line as title (if multi-line and first line is short)
+    const lines = feedback.split('\n');
+    const firstLine = lines[0]?.trim();
+    if (firstLine && firstLine.length >= 10 && firstLine.length <= 100 && lines.length > 1 && lines[1]?.trim()) {
+      return firstLine;
+    }
+    
+    // Pattern 7: Intelligent truncation of long single sentences
+    if (feedback.length > 120) {
+      // Try to find a natural break point
+      const truncated = feedback.substring(0, 100);
+      const lastSpace = truncated.lastIndexOf(' ');
+      const lastComma = truncated.lastIndexOf(',');
+      const breakPoint = Math.max(lastSpace, lastComma);
+      
+      if (breakPoint > 50) {
+        return truncated.substring(0, breakPoint).trim() + '...';
+      } else {
+        return truncated.trim() + '...';
+      }
+    }
+    
+    // Pattern 8: Use full feedback if it's a reasonable title length
+    if (feedback.length >= 10 && feedback.length <= 120) {
+      return feedback;
+    }
   }
   
-  // Fallback: Create title based on category and severity
+  // Fallback: Create contextual title based on category and severity
   const categoryTitle = categoryTitles[annotation.category] || 'Design Issue';
   const severityPrefix = severityPrefixes[annotation.severity] || '';
   
@@ -152,37 +176,47 @@ export const getAnnotationDescription = (annotation: Annotation): string => {
   if (annotation.feedback && annotation.feedback.trim()) {
     const feedback = annotation.feedback.trim();
     
-    // Pattern 1: "Title: Description" format
+    // Pattern 1: "Title: Description" format - return description part
     const titleColonMatch = feedback.match(/^([^:]+):\s*(.+)/s);
-    if (titleColonMatch && titleColonMatch[1].length < 80) {
+    if (titleColonMatch && titleColonMatch[1].length > 5 && titleColonMatch[1].length < 100 && titleColonMatch[2].trim()) {
       return titleColonMatch[2].trim();
     }
     
-    // Pattern 2: If first line was used as title, use rest as description
+    // Pattern 2: Multi-line with first line as title - return remaining lines
     const lines = feedback.split('\n');
-    if (lines.length > 1) {
-      const firstLine = lines[0].trim();
-      if (firstLine.length < 80) {
-        const remainingLines = lines.slice(1).join('\n').trim();
-        if (remainingLines) {
-          return remainingLines;
-        }
+    const firstLine = lines[0]?.trim();
+    if (firstLine && firstLine.length >= 10 && firstLine.length <= 100 && lines.length > 1) {
+      const remainingLines = lines.slice(1).join('\n').trim();
+      if (remainingLines && remainingLines.length > 20) {
+        return remainingLines;
       }
     }
     
-    // Pattern 3: If first sentence was used as title, use rest as description
+    // Pattern 3: Multi-sentence with first sentence as title - return remaining sentences
     const sentences = feedback.split(/[.!?]/);
-    if (sentences.length > 1) {
-      const firstSentence = sentences[0];
-      if (firstSentence && firstSentence.length > 10 && firstSentence.length < 80) {
-        const remaining = sentences.slice(1).join('.').replace(/^[.!?\s]+/, '').trim();
-        if (remaining && remaining.length > 20) {
-          return remaining;
-        }
+    const firstSentence = sentences[0]?.trim();
+    if (firstSentence && firstSentence.length >= 15 && firstSentence.length <= 120 && sentences.length > 1) {
+      const remainingSentences = sentences.slice(1).join('.').replace(/^[.!?\s]+/, '').trim();
+      if (remainingSentences && remainingSentences.length > 30) {
+        return remainingSentences + '.';
       }
     }
     
-    // Fallback: return full feedback
+    // Pattern 4: Action-oriented title extracted - return rest of feedback
+    const actionMatches = feedback.match(/^(Consider|Improve|Add|Remove|Update|Fix|Enhance|Optimize|Replace|Change|Make|Ensure|Use|Avoid|Include|Implement)\s+([^.!?]*)/i);
+    if (actionMatches && actionMatches[0].length > 10 && actionMatches[0].length < 100) {
+      const remaining = feedback.substring(actionMatches[0].length).replace(/^[.!?\s]+/, '').trim();
+      if (remaining && remaining.length > 20) {
+        return remaining;
+      }
+    }
+    
+    // Pattern 5: If feedback is very long, return everything (title extraction would have truncated)
+    if (feedback.length > 120) {
+      return feedback;
+    }
+    
+    // Pattern 6: If feedback is short, return it as description
     return feedback;
   }
   
