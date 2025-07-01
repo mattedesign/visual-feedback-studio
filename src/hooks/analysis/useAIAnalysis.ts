@@ -28,7 +28,103 @@ export const useAIAnalysis = () => {
   const [hasResearchContext, setHasResearchContext] = useState(false);
   const [researchSourcesCount, setResearchSourcesCount] = useState(0);
 
-  // 🔧 NORMALIZE ANNOTATION DATA - Fixed to use correct API response structure
+  // 🔧 FIXED: Enhanced annotation title generation
+  const generateAnnotationTitle = (annotation: any, index: number): string => {
+    const categoryTitles = {
+      'ux': 'User Experience Issue',
+      'visual': 'Visual Design Improvement',
+      'accessibility': 'Accessibility Enhancement',
+      'conversion': 'Conversion Optimization',
+      'navigation': 'Navigation Improvement',
+      'content': 'Content Strategy',
+      'performance': 'Performance Optimization'
+    };
+    
+    // Use annotation.title if it exists and is different from feedback/description
+    if (annotation?.title && 
+        annotation.title.trim() !== annotation?.feedback?.trim() && 
+        annotation.title.trim() !== annotation?.description?.trim()) {
+      return annotation.title;
+    }
+    
+    const baseTitle = categoryTitles[annotation?.category] || 'Design Recommendation';
+    
+    // Extract first meaningful sentence for title if feedback is long
+    const feedbackText = annotation?.feedback || annotation?.description || '';
+    if (feedbackText && feedbackText.length > 60) {
+      const firstSentence = feedbackText.split('.')[0];
+      if (firstSentence.length <= 50 && firstSentence.length > 10) {
+        return firstSentence.trim();
+      }
+    }
+    
+    // Add severity context to make titles more specific
+    if (annotation?.severity === 'critical') {
+      return `Critical ${baseTitle}`;
+    } else if (annotation?.severity === 'enhancement') {
+      return `${baseTitle} Opportunity`;
+    }
+    
+    return baseTitle;
+  };
+
+  // 🔧 FIXED: Enhanced feedback content generation
+  const generateFeedbackContent = (annotation: any, title: string): string => {
+    // Extract feedback text from the correct API response structure
+    const feedbackText = 
+      annotation?.feedback ||     // Primary feedback from API
+      annotation?.description ||  // Secondary detailed feedback
+      annotation?.content || 
+      annotation?.text || 
+      annotation?.message ||
+      'Analysis insight detected at this location.';
+
+    // If feedback is the same as title, enhance it with context
+    if (feedbackText.trim() === title.trim()) {
+      const severityContext = {
+        'critical': 'This critical issue requires immediate attention to prevent user frustration and potential business impact.',
+        'suggested': 'This improvement suggestion could enhance user experience and interface usability.',
+        'enhancement': 'This enhancement opportunity could further optimize the design and user interaction.'
+      };
+      
+      const categoryContext = {
+        'ux': 'Consider user behavior patterns and interaction design principles.',
+        'visual': 'Focus on visual hierarchy, typography, and design consistency.',
+        'accessibility': 'Ensure WCAG compliance and inclusive design practices.',
+        'conversion': 'Optimize for user conversion and business goal achievement.',
+        'navigation': 'Improve site structure and user journey flow.',
+        'content': 'Enhance content strategy and information architecture.',
+        'performance': 'Address technical performance and loading optimization.'
+      };
+      
+      const severity = severityContext[annotation?.severity] || '';
+      const category = categoryContext[annotation?.category] || '';
+      
+      return `${feedbackText} ${severity} ${category}`.trim();
+    }
+    
+    // Enhance brief feedback with additional context
+    if (feedbackText.length < 30) {
+      const businessImpact = annotation?.businessImpact || annotation?.impact;
+      const implementationEffort = annotation?.implementationEffort || annotation?.effort;
+      
+      let enhancement = feedbackText;
+      
+      if (businessImpact && !enhancement.includes(businessImpact)) {
+        enhancement += ` This change has ${businessImpact.toLowerCase()} business impact.`;
+      }
+      
+      if (implementationEffort && !enhancement.includes(implementationEffort)) {
+        enhancement += ` Implementation effort: ${implementationEffort.toLowerCase()}.`;
+      }
+      
+      return enhancement;
+    }
+    
+    return feedbackText;
+  };
+
+  // 🔧 FIXED: Comprehensive annotation normalization with title/description separation
   const normalizeAnnotation = (annotation: any, index: number): Annotation => {
     console.log(`🔧 NORMALIZING ANNOTATION ${index + 1}:`, {
       rawAnnotation: annotation,
@@ -40,27 +136,29 @@ export const useAIAnalysis = () => {
       severityValue: annotation?.severity
     });
 
-    // Extract feedback text from the correct API response structure
-    // Based on edge function logs, the API returns feedback, title, and description
-    const feedbackText = 
-      annotation?.feedback ||     // Primary feedback from API
-      annotation?.description ||  // Secondary detailed feedback
-      annotation?.title ||        // Fallback to title
-      annotation?.content || 
-      annotation?.text || 
-      annotation?.message ||
-      `Analysis insight ${index + 1}`;
+    // Generate proper title
+    const title = generateAnnotationTitle(annotation, index);
+    
+    // Generate enhanced feedback content
+    const feedbackContent = generateFeedbackContent(annotation, title);
 
     const normalizedAnnotation: Annotation = {
       id: annotation?.id || `annotation-${index + 1}-${Date.now()}`,
-      x: typeof annotation?.x === 'number' ? annotation.x : 50,
-      y: typeof annotation?.y === 'number' ? annotation.y : 50,
+      x: typeof annotation?.x === 'number' ? Math.max(0, Math.min(100, annotation.x)) : 50,
+      y: typeof annotation?.y === 'number' ? Math.max(0, Math.min(100, annotation.y)) : 50,
       category: annotation?.category || 'ux',
       severity: annotation?.severity || 'suggested',
-      feedback: feedbackText,
+      
+      // FIXED: Ensure title and feedback are different
+      title: title,
+      feedback: feedbackContent,
+      
       implementationEffort: annotation?.implementationEffort || annotation?.effort || 'medium',
       businessImpact: annotation?.businessImpact || annotation?.impact || 'medium',
+      
+      // FIXED: Ensure imageIndex is properly set and validated
       imageIndex: typeof annotation?.imageIndex === 'number' ? annotation.imageIndex : 0,
+      
       // Enhanced business impact fields
       enhancedBusinessImpact: annotation?.enhancedBusinessImpact,
       researchCitations: annotation?.researchCitations,
@@ -69,13 +167,21 @@ export const useAIAnalysis = () => {
       quickWinPotential: annotation?.quickWinPotential
     };
 
+    // FIXED: Final validation to ensure title != feedback
+    if (normalizedAnnotation.title === normalizedAnnotation.feedback) {
+      normalizedAnnotation.title = generateAnnotationTitle(annotation, index);
+      normalizedAnnotation.feedback = `${normalizedAnnotation.feedback} This ${annotation?.category || 'design'} issue should be addressed to improve the overall user experience.`;
+    }
+
     console.log(`✅ NORMALIZED ANNOTATION ${index + 1}:`, {
       id: normalizedAnnotation.id,
-      feedback: normalizedAnnotation.feedback,
-      feedbackSource: annotation?.feedback ? 'feedback' : annotation?.description ? 'description' : annotation?.title ? 'title' : 'fallback',
+      title: normalizedAnnotation.title,
+      feedback: normalizedAnnotation.feedback.substring(0, 100) + '...',
+      titleEqualsContent: normalizedAnnotation.title === normalizedAnnotation.feedback,
+      feedbackLength: normalizedAnnotation.feedback.length,
       category: normalizedAnnotation.category,
       severity: normalizedAnnotation.severity,
-      feedbackLength: normalizedAnnotation.feedback.length,
+      imageIndex: normalizedAnnotation.imageIndex,
       originalAnnotationStructure: {
         hasFeedback: !!annotation?.feedback,
         hasDescription: !!annotation?.description,
@@ -260,7 +366,7 @@ export const useAIAnalysis = () => {
 
       setBuildingStage('Processing results...');
 
-      // 🔧 NORMALIZE ALL ANNOTATIONS with corrected property mapping
+      // 🔧 NORMALIZE ALL ANNOTATIONS with enhanced processing
       const rawAnnotations = data.annotations || [];
       const normalizedAnnotations = rawAnnotations.map((annotation: any, index: number) => 
         normalizeAnnotation(annotation, index)
@@ -272,11 +378,13 @@ export const useAIAnalysis = () => {
         sampleNormalizedAnnotation: normalizedAnnotations[0],
         researchEnhanced: !!ragContext,
         knowledgeSourcesUsed: ragContext?.retrievedKnowledge?.relevantPatterns?.length || 0,
-        allFeedbackLengths: normalizedAnnotations.map((a: Annotation, i: number) => ({
+        titleDescriptionValidation: normalizedAnnotations.map((a: Annotation, i: number) => ({
           index: i + 1,
+          title: a.title,
+          titleLength: a.title.length,
           feedbackLength: a.feedback.length,
-          hasValidFeedback: a.feedback && a.feedback !== 'Analysis insight' && !a.feedback.startsWith('Analysis insight'),
-          feedbackPreview: a.feedback.substring(0, 100) + '...'
+          areIdentical: a.title === a.feedback,
+          feedbackPreview: a.feedback.substring(0, 50) + '...'
         }))
       });
 
