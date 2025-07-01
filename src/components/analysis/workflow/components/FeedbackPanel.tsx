@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -37,25 +37,79 @@ export const FeedbackPanel = ({
 }: FeedbackPanelProps) => {
   const [showAllAnnotations, setShowAllAnnotations] = useState(false);
 
-  // 🔧 ENHANCED: Log when component receives new data
+  // 🎯 STEP 5: ENHANCED FEEDBACK FILTERING WITH STRICT IMAGE CORRELATION
+  const currentImageFeedback = useMemo(() => {
+    if (!isMultiImage) {
+      // For single image, use all provided annotations
+      console.log('📋 Single image: Using all current annotations:', {
+        annotationCount: currentImageAIAnnotations.length
+      });
+      return currentImageAIAnnotations;
+    }
+    
+    // 🆕 For multi-image, double-check that annotations belong to current image
+    const filtered = currentImageAIAnnotations.filter(annotation => {
+      const annotationImageIndex = annotation.imageIndex ?? 0;
+      const belongsToCurrentImage = annotationImageIndex === activeImageIndex;
+      
+      console.log('📋 Feedback Panel Enhanced Filter:', {
+        annotationId: annotation.id,
+        annotationImageIndex,
+        activeImageIndex,
+        belongsToCurrentImage,
+        feedback: annotation.feedback?.substring(0, 30) + '...'
+      });
+      
+      return belongsToCurrentImage;
+    });
+    
+    console.log('📋 ENHANCED FEEDBACK PANEL - Multi-image filtering:', {
+      originalCount: currentImageAIAnnotations.length,
+      filteredCount: filtered.length,
+      activeImageIndex,
+      filteredAnnotations: filtered.map(a => ({
+        id: a.id,
+        imageIndex: a.imageIndex,
+        feedbackPreview: a.feedback?.substring(0, 30) + '...'
+      }))
+    });
+    
+    return filtered;
+  }, [currentImageAIAnnotations, activeImageIndex, isMultiImage]);
+
+  // 🎯 ENHANCED: Log when component receives new data with better debugging
   useEffect(() => {
-    console.log('🎯 FeedbackPanel - Data Update:', {
+    console.log('🎯 ENHANCED FeedbackPanel - Data Update:', {
       activeImageIndex,
       currentImageAIAnnotationsCount: currentImageAIAnnotations.length,
+      filteredFeedbackCount: currentImageFeedback.length,
       currentImageUserAnnotationsCount: currentImageUserAnnotations.length,
       isMultiImage,
       activeAnnotation,
-      annotationDetails: currentImageAIAnnotations.map((a, i) => ({
+      dataQuality: {
+        allAnnotationsHaveValidFeedback: currentImageFeedback.every(a => a.feedback && a.feedback.length > 10),
+        avgFeedbackLength: currentImageFeedback.length > 0 
+          ? currentImageFeedback.reduce((sum, a) => sum + (a.feedback?.length || 0), 0) / currentImageFeedback.length 
+          : 0,
+        categoriesPresent: [...new Set(currentImageFeedback.map(a => a.category))],
+        severityDistribution: {
+          critical: currentImageFeedback.filter(a => a.severity === 'critical').length,
+          suggested: currentImageFeedback.filter(a => a.severity === 'suggested').length,
+          enhancement: currentImageFeedback.filter(a => a.severity === 'enhancement').length
+        }
+      },
+      annotationDetails: currentImageFeedback.map((a, i) => ({
         index: i + 1,
         id: a.id,
-        feedback: a.feedback,
+        feedback: a.feedback?.substring(0, 50) + '...',
         category: a.category,
         severity: a.severity,
         imageIndex: a.imageIndex
       }))
     });
-  }, [currentImageAIAnnotations, activeImageIndex, activeAnnotation]);
+  }, [currentImageFeedback, activeImageIndex, activeAnnotation, isMultiImage]);
 
+  // 🎯 ENHANCED: Category icon function with content category added
   const getCategoryIcon = (category: string) => {
     switch (category) {
       case 'ux': return '👤';
@@ -63,15 +117,17 @@ export const FeedbackPanel = ({
       case 'accessibility': return '♿';
       case 'conversion': return '📈';
       case 'brand': return '🏷️';
+      case 'content': return '📝';
       default: return '💡';
     }
   };
 
-  const totalAnnotations = currentImageAIAnnotations.length + currentImageUserAnnotations.length;
+  // 🎯 ENHANCED: Calculate totals based on filtered feedback
+  const totalAnnotations = currentImageFeedback.length + currentImageUserAnnotations.length;
 
   return (
     <div className="space-y-4">
-      {/* 🔧 ENHANCED: Header with current image information */}
+      {/* 🎯 ENHANCED: Header with current image information */}
       <Card className="bg-slate-800/50 border-slate-700">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -85,37 +141,39 @@ export const FeedbackPanel = ({
             </Badge>
           </div>
           
-          {/* 🔧 ENHANCED: Show current image information */}
+          {/* 🎯 ENHANCED: Show current image information with better context */}
           <div className="text-sm text-slate-400">
             {isMultiImage ? (
               <div className="flex items-center justify-between">
-                <span>Viewing Image {activeImageIndex + 1} of {aiAnnotations.length > 0 ? Math.max(...aiAnnotations.map(a => (a.imageIndex ?? 0) + 1)) : 1}</span>
-                <span className="text-blue-300">{currentImageAIAnnotations.length} insights for this image</span>
+                <span>Image {activeImageIndex + 1} Analysis</span>
+                <span className="text-blue-300">
+                  {currentImageFeedback.length} insights for this image
+                </span>
               </div>
             ) : (
-              <span>Single image analysis • {currentImageAIAnnotations.length} insights found</span>
+              <span>Single image analysis • {currentImageFeedback.length} insights found</span>
             )}
           </div>
         </CardHeader>
         
         <CardContent className="pt-0">
-          {/* Summary stats for current image */}
+          {/* 🎯 ENHANCED: Summary stats for current image using filtered feedback */}
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-2">
               <div className="text-red-400 font-bold text-lg">
-                {currentImageAIAnnotations.filter(a => a.severity === 'critical').length}
+                {currentImageFeedback.filter(a => a.severity === 'critical').length}
               </div>
               <div className="text-xs text-red-300">Critical</div>
             </div>
             <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-2">
               <div className="text-yellow-400 font-bold text-lg">
-                {currentImageAIAnnotations.filter(a => a.severity === 'suggested').length}
+                {currentImageFeedback.filter(a => a.severity === 'suggested').length}
               </div>
               <div className="text-xs text-yellow-300">Suggested</div>  
             </div>
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-2">
               <div className="text-blue-400 font-bold text-lg">
-                {currentImageAIAnnotations.filter(a => a.severity === 'enhancement').length}
+                {currentImageFeedback.filter(a => a.severity === 'enhancement').length}
               </div>
               <div className="text-xs text-blue-300">Enhance</div>
             </div>
@@ -123,24 +181,26 @@ export const FeedbackPanel = ({
         </CardContent>
       </Card>
 
-      {/* Detailed Feedback Card for active annotation */}
+      {/* 🎯 ENHANCED: Detailed Feedback Card for active annotation using filtered feedback */}
       <DetailedFeedbackCard
         activeAnnotation={activeAnnotation}
-        aiAnnotations={currentImageAIAnnotations}
+        aiAnnotations={currentImageFeedback} // Use filtered feedback instead of all annotations
         isMultiImage={isMultiImage}
         getSeverityColor={getSeverityColor}
       />
 
-      {/* Annotations List */}
+      {/* 🎯 ENHANCED: Annotations List with better filtering and display */}
       <Card className="bg-slate-800/50 border-slate-700">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Detailed Insights</CardTitle>
+            <CardTitle className="text-lg">
+              {isMultiImage ? `Image ${activeImageIndex + 1} Insights` : 'Detailed Insights'}
+            </CardTitle>
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="text-xs">
-                {currentImageAIAnnotations.length}
+                {currentImageFeedback.length}
               </Badge>
-              {currentImageAIAnnotations.length > 5 && (
+              {currentImageFeedback.length > 5 && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -155,7 +215,7 @@ export const FeedbackPanel = ({
                   ) : (
                     <>
                       <ChevronDown className="w-3 h-3 mr-1" />
-                      Show All
+                      Show All ({currentImageFeedback.length})
                     </>
                   )}
                 </Button>
@@ -167,16 +227,18 @@ export const FeedbackPanel = ({
         <CardContent>
           <ScrollArea className="h-96">
             <div className="space-y-3">
-              {currentImageAIAnnotations.length === 0 ? (
+              {currentImageFeedback.length === 0 ? (
                 <div className="text-center py-8 text-slate-400">
                   <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
                   <p>No insights for this image</p>
-                  <p className="text-sm">Switch to another image to see analysis</p>
+                  {isMultiImage && (
+                    <p className="text-sm">Switch to another image to see analysis</p>
+                  )}
                 </div>
               ) : (
-                (showAllAnnotations ? currentImageAIAnnotations : currentImageAIAnnotations.slice(0, 5)).map((annotation, index) => (
+                (showAllAnnotations ? currentImageFeedback : currentImageFeedback.slice(0, 5)).map((annotation, index) => (
                   <div
-                    key={annotation.id}
+                    key={`feedback-${annotation.id}-${activeImageIndex}`} // Enhanced key with image index
                     className={`border rounded-lg p-3 cursor-pointer transition-all duration-200 ${
                       activeAnnotation === annotation.id
                         ? 'border-blue-500 bg-blue-500/10 ring-1 ring-blue-500/20'
@@ -199,13 +261,24 @@ export const FeedbackPanel = ({
                           <Badge variant="outline" className="text-xs capitalize border-slate-600">
                             {annotation.category}
                           </Badge>
+                          {/* 🆕 NEW: Show coordinate information for correlation */}
+                          {annotation.x !== undefined && annotation.y !== undefined && (
+                            <Badge variant="outline" className="text-xs text-slate-400">
+                              {annotation.x.toFixed(0)}%, {annotation.y.toFixed(0)}%
+                            </Badge>
+                          )}
                         </div>
                         <p className="text-sm text-slate-300 leading-relaxed">
                           {annotation.feedback}
                         </p>
                         <div className="flex items-center justify-between text-xs text-slate-400 mt-2">
-                          <span>Effort: {annotation.implementationEffort}</span>
-                          <span>Impact: {annotation.businessImpact}</span>
+                          <span>Effort: {annotation.implementationEffort || 'Medium'}</span>
+                          <span>Impact: {annotation.businessImpact || 'Medium'}</span>
+                          {isMultiImage && (
+                            <span className="text-blue-400">
+                              Image {(annotation.imageIndex ?? 0) + 1}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -216,6 +289,42 @@ export const FeedbackPanel = ({
           </ScrollArea>
         </CardContent>
       </Card>
+
+      {/* 🎯 ENHANCED: User Annotations Section */}
+      {currentImageUserAnnotations.length > 0 && (
+        <Card className="bg-slate-800/50 border-slate-700">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-green-400" />
+              Your Annotations
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {currentImageUserAnnotations.map((annotation, index) => (
+                <div
+                  key={`user-${annotation.id}-${activeImageIndex}`}
+                  className="border border-green-600/30 rounded-lg p-3 bg-green-500/5"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                      U{index + 1}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-slate-300 leading-relaxed">
+                        {annotation.comment}
+                      </p>
+                      <div className="text-xs text-slate-400 mt-1">
+                        Position: {annotation.x?.toFixed(1)}%, {annotation.y?.toFixed(1)}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Business Impact Summary - only if available */}
       {businessImpact && (
@@ -239,6 +348,35 @@ export const FeedbackPanel = ({
               <div className="flex justify-between">
                 <span className="text-slate-300">Critical Issues:</span>
                 <span className="text-red-400 font-semibold">{businessImpact.criticalIssuesCount}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 🆕 NEW: Research Citations Section (if available) */}
+      {researchCitations && researchCitations.length > 0 && (
+        <Card className="bg-slate-800/50 border-slate-700">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-purple-400" />
+              Research Backing
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm text-slate-300">
+              <p className="mb-2">This analysis is backed by {researchCitations.length} research sources:</p>
+              <div className="space-y-1">
+                {researchCitations.slice(0, 3).map((citation, index) => (
+                  <div key={index} className="text-xs text-slate-400">
+                    • {citation}
+                  </div>
+                ))}
+                {researchCitations.length > 3 && (
+                  <div className="text-xs text-slate-400">
+                    ... and {researchCitations.length - 3} more sources
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
