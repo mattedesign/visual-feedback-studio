@@ -1,9 +1,9 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp, BookOpen, ExternalLink, Star, Award, GraduationCap, Zap } from 'lucide-react';
+import { vectorKnowledgeService } from '@/services/knowledgeBase/vectorService';
 
 interface ResearchSource {
   title: string;
@@ -27,6 +27,24 @@ export const ResearchSourcesPanel = ({
   className = ""
 }: ResearchSourcesPanelProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [totalKnowledgeEntries, setTotalKnowledgeEntries] = useState<number>(272); // Default fallback
+
+  useEffect(() => {
+    const loadKnowledgeStats = async () => {
+      try {
+        const stats = await vectorKnowledgeService.getKnowledgeStats();
+        if (stats && stats.totalEntries) {
+          setTotalKnowledgeEntries(stats.totalEntries);
+          console.log('ResearchSourcesPanel: Updated total knowledge entries:', stats.totalEntries);
+        }
+      } catch (error) {
+        console.warn('ResearchSourcesPanel: Could not fetch knowledge stats, using fallback:', error);
+        // Keep the fallback value
+      }
+    };
+
+    loadKnowledgeStats();
+  }, []);
 
   if (!ragEnhanced || researchCitations.length === 0) return null;
 
@@ -62,7 +80,7 @@ export const ResearchSourcesPanel = ({
               </Badge>
             </CardTitle>
             <p className="text-emerald-700 dark:text-emerald-300 text-lg font-semibold mt-1">
-              Based on {knowledgeSourcesUsed} relevant studies from our 272-entry UX research database
+              Based on {knowledgeSourcesUsed} relevant studies from our {totalKnowledgeEntries}+ entry UX research database
             </p>
           </div>
         </div>
@@ -87,7 +105,7 @@ export const ResearchSourcesPanel = ({
             <div className="text-xs text-gray-600 dark:text-gray-400 font-medium">Studies Used</div>
           </div>
           <div className="bg-white dark:bg-slate-800 rounded-lg p-3 text-center border border-emerald-200 dark:border-emerald-700">
-            <div className="text-2xl font-bold text-emerald-600">272+</div>
+            <div className="text-2xl font-bold text-emerald-600">{totalKnowledgeEntries}+</div>
             <div className="text-xs text-gray-600 dark:text-gray-400 font-medium">Total Database</div>
           </div>
           <div className="bg-white dark:bg-slate-800 rounded-lg p-3 text-center border border-emerald-200 dark:border-emerald-700">

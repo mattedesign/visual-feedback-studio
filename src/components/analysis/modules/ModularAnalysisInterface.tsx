@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { BusinessImpactDashboard } from './BusinessImpactDashboard';
 import { VisualAnalysisModule } from './VisualAnalysisModule';
 import { ResearchCitationsModule } from './ResearchCitationsModule';
 import { getAnalysisResults } from '@/services/analysisResultsService';
+import { vectorKnowledgeService } from '@/services/knowledgeBase/vectorService';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { Button } from '@/components/ui/button';
 import { BreadcrumbNavigation } from '@/components/layout/BreadcrumbNavigation';
@@ -14,10 +14,28 @@ type ModuleType = 'ux-insights' | 'research-backing' | 'business-case';
 
 export const ModularAnalysisInterface = () => {
   const { id } = useParams<{ id: string }>();
-  const [currentModule, setCurrentModule] = useState<ModuleType>('ux-insights'); // Changed default to UX insights
+  const [currentModule, setCurrentModule] = useState<ModuleType>('ux-insights');
   const [analysisData, setAnalysisData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [knowledgeBaseCount, setKnowledgeBaseCount] = useState<number>(274); // Default fallback
+
+  useEffect(() => {
+    const loadKnowledgeBaseStats = async () => {
+      try {
+        const stats = await vectorKnowledgeService.getKnowledgeStats();
+        if (stats && stats.totalEntries) {
+          setKnowledgeBaseCount(stats.totalEntries);
+          console.log('Updated knowledge base count:', stats.totalEntries);
+        }
+      } catch (error) {
+        console.warn('Could not fetch knowledge base stats, using fallback count:', error);
+        // Keep the fallback value of 274
+      }
+    };
+
+    loadKnowledgeBaseStats();
+  }, []);
 
   useEffect(() => {
     const loadAnalysisData = async () => {
@@ -101,7 +119,7 @@ export const ModularAnalysisInterface = () => {
       id: 'research-backing' as ModuleType,
       label: 'Research Backing',
       icon: BookOpen,
-      description: 'Academic sources and methodology (274 research entries)'
+      description: `Academic sources and methodology (${knowledgeBaseCount} research entries)`
     },
     {
       id: 'business-case' as ModuleType,
