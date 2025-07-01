@@ -37,44 +37,96 @@ export const FeedbackPanel = ({
 }: FeedbackPanelProps) => {
   const [showAllAnnotations, setShowAllAnnotations] = useState(false);
 
+  // 🚨 CRITICAL DEBUG: Add debugging for FeedbackPanel data
+  useEffect(() => {
+    console.log('🚨 FEEDBACK PANEL - CRITICAL DATA DEBUG:', {
+      timestamp: new Date().toISOString(),
+      component: 'FeedbackPanel',
+      receivedData: {
+        currentImageAIAnnotationsCount: currentImageAIAnnotations?.length || 0,
+        currentImageUserAnnotationsCount: currentImageUserAnnotations?.length || 0,
+        activeImageIndex,
+        isMultiImage,
+        activeAnnotation,
+        totalAIAnnotations: aiAnnotations?.length || 0
+      },
+      annotationQuality: {
+        hasValidAnnotations: currentImageAIAnnotations?.length > 0,
+        allHaveValidFeedback: currentImageAIAnnotations?.every(a => a.feedback && a.feedback.length > 20),
+        allHaveValidCoordinates: currentImageAIAnnotations?.every(a => 
+          typeof a.x === 'number' && typeof a.y === 'number' && 
+          a.x >= 0 && a.x <= 100 && a.y >= 0 && a.y <= 100
+        ),
+        avgFeedbackLength: currentImageAIAnnotations?.length > 0 
+          ? currentImageAIAnnotations.reduce((sum, a) => sum + (a.feedback?.length || 0), 0) / currentImageAIAnnotations.length 
+          : 0
+      },
+      correlationCheck: {
+        annotationsClaimCurrentImage: currentImageAIAnnotations?.map(a => ({
+          id: a.id,
+          imageIndex: a.imageIndex,
+          matchesActiveIndex: a.imageIndex === activeImageIndex,
+          feedback: a.feedback?.substring(0, 40) + '...'
+        }))
+      },
+      potentialIssues: {
+        noAnnotationsForCurrentImage: (currentImageAIAnnotations?.length || 0) === 0,
+        mismatchedImageIndexes: currentImageAIAnnotations?.some(a => a.imageIndex !== activeImageIndex),
+        genericFeedback: currentImageAIAnnotations?.some(a => 
+          !a.feedback || 
+          a.feedback.length < 20 || 
+          a.feedback.includes('Analysis insight')
+        )
+      }
+    });
+  }, [currentImageAIAnnotations, activeImageIndex, activeAnnotation, isMultiImage]);
+
   // 🎯 STEP 5: ENHANCED FEEDBACK FILTERING WITH STRICT IMAGE CORRELATION
   const currentImageFeedback = useMemo(() => {
+    console.log('🎯 FEEDBACK PANEL - Enhanced Filtering Logic:', {
+      inputAnnotationsCount: currentImageAIAnnotations?.length || 0,
+      activeImageIndex,
+      isMultiImage,
+      processingTimestamp: new Date().toISOString()
+    });
+
+    if (!currentImageAIAnnotations || currentImageAIAnnotations.length === 0) {
+      console.warn('⚠️ No annotations provided to FeedbackPanel');
+      return [];
+    }
+    
     if (!isMultiImage) {
-      // For single image, use all provided annotations
-      console.log('📋 Single image: Using all current annotations:', {
+      console.log('📋 Single image: Using all provided annotations:', {
         annotationCount: currentImageAIAnnotations.length
       });
       return currentImageAIAnnotations;
     }
     
-    // 🆕 For multi-image, double-check that annotations belong to current image
-    const filtered = currentImageAIAnnotations.filter(annotation => {
+    // 🆕 For multi-image, verify annotations are already filtered correctly
+    const verified = currentImageAIAnnotations.filter(annotation => {
       const annotationImageIndex = annotation.imageIndex ?? 0;
       const belongsToCurrentImage = annotationImageIndex === activeImageIndex;
       
-      console.log('📋 Feedback Panel Enhanced Filter:', {
-        annotationId: annotation.id,
-        annotationImageIndex,
-        activeImageIndex,
-        belongsToCurrentImage,
-        feedback: annotation.feedback?.substring(0, 30) + '...'
-      });
+      if (!belongsToCurrentImage) {
+        console.error('🚨 FILTERING ERROR: Annotation does not belong to current image:', {
+          annotationId: annotation.id,
+          annotationImageIndex,
+          activeImageIndex,
+          shouldNotBeHere: true
+        });
+      }
       
       return belongsToCurrentImage;
     });
     
-    console.log('📋 ENHANCED FEEDBACK PANEL - Multi-image filtering:', {
+    console.log('🎯 FEEDBACK PANEL - Final verification:', {
       originalCount: currentImageAIAnnotations.length,
-      filteredCount: filtered.length,
-      activeImageIndex,
-      filteredAnnotations: filtered.map(a => ({
-        id: a.id,
-        imageIndex: a.imageIndex,
-        feedbackPreview: a.feedback?.substring(0, 30) + '...'
-      }))
+      verifiedCount: verified.length,
+      allCorrectlyFiltered: verified.length === currentImageAIAnnotations.length,
+      activeImageIndex
     });
     
-    return filtered;
+    return verified;
   }, [currentImageAIAnnotations, activeImageIndex, isMultiImage]);
 
   // 🎯 ENHANCED: Log when component receives new data with better debugging
@@ -127,6 +179,20 @@ export const FeedbackPanel = ({
 
   return (
     <div className="space-y-4">
+      {/* 🚨 DEBUG: Add debugging info to the UI for immediate visibility */}
+      {process.env.NODE_ENV === 'development' && (
+        <Card className="bg-red-900/20 border-red-500/30">
+          <CardContent className="p-3">
+            <div className="text-xs text-red-300 space-y-1">
+              <div>🚨 DEBUG INFO:</div>
+              <div>Active Image: {activeImageIndex + 1} | Annotations: {currentImageFeedback.length}</div>
+              <div>Multi-image: {isMultiImage ? 'Yes' : 'No'} | Total AI: {aiAnnotations?.length}</div>
+              <div>Image Indexes: {currentImageFeedback.map(a => a.imageIndex).join(', ')}</div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* 🎯 ENHANCED: Header with current image information */}
       <Card className="bg-slate-800/50 border-slate-700">
         <CardHeader className="pb-3">

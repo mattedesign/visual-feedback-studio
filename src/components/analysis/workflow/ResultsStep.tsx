@@ -22,6 +22,7 @@ import { PositiveLanguageWrapper } from './components/PositiveLanguageWrapper';
 import { EnhancedBusinessImpactCard } from './components/EnhancedBusinessImpactCard';
 import { PositiveDesignSummary } from './components/PositiveDesignSummary';
 import { AnnotationDebugger } from '@/components/debug/AnnotationDebugger';
+import { AnnotationCorrelationDebugger } from '@/components/debug/AnnotationCorrelationDebugger';
 import { Button } from '@/components/ui/button';
 import { VisualAnalysisModule } from '../modules/VisualAnalysisModule';
 import { ResearchCitationsModule } from '../modules/ResearchCitationsModule';
@@ -52,7 +53,7 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
   // Get URL parameter for testing override and module selection
   const urlParams = new URLSearchParams(window.location.search);
   const betaMode = urlParams.get('beta') === 'true';
-  const activeModule = urlParams.get('module') || 'ux-insights'; // Changed default to UX insights
+  const activeModule = urlParams.get('module') || 'ux-insights';
   
   // NEW INTERFACE ONLY WHEN FLAG IS TRUE OR BETA PARAMETER
   if (useModularInterface || betaMode) {
@@ -146,31 +147,47 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
         newActiveImageUrl: workflow.activeImageUrl
       });
       setActiveImageUrl(workflow.activeImageUrl);
-      // Clear active annotation when switching images
       setActiveAnnotation(null);
     }
   }, [workflow.activeImageUrl, activeImageUrl]);
 
-  // 🔍 COMPREHENSIVE WORKFLOW DATA DEBUG
-  console.log('📊 RESULTS STEP - COMPLETE WORKFLOW DEBUG:', {
-    workflowKeys: Object.keys(workflow),
-    currentStep: workflow.currentStep,
-    aiAnnotationsCount: workflow.aiAnnotations?.length || 0,
-    activeImageUrl: activeImageUrl,
-    workflowActiveImageUrl: workflow.activeImageUrl,
-    selectedImages: workflow.selectedImages,
-    aiAnnotationsStructure: workflow.aiAnnotations?.map((a, i) => ({
-      index: i + 1,
-      id: a.id,
-      category: a.category,
-      severity: a.severity,
-      imageIndex: a.imageIndex,
-      feedback: a.feedback,
-      feedbackLength: a.feedback?.length || 0,
-      feedbackPreview: a.feedback?.substring(0, 100) + '...',
-      allProperties: Object.keys(a)
-    }))
-  });
+  // 🚨 CRITICAL DEBUG: Add comprehensive debugging at the top level
+  useEffect(() => {
+    console.log('🚨 RESULTS STEP - CRITICAL ANNOTATION DEBUG:', {
+      timestamp: new Date().toISOString(),
+      workflowData: {
+        currentStep: workflow.currentStep,
+        selectedImagesCount: workflow.selectedImages?.length || 0,
+        aiAnnotationsCount: workflow.aiAnnotations?.length || 0,
+        activeImageUrl: activeImageUrl,
+        workflowActiveImageUrl: workflow.activeImageUrl
+      },
+      annotationStructure: workflow.aiAnnotations?.map((a, i) => ({
+        index: i + 1,
+        id: a.id,
+        imageIndex: a.imageIndex,
+        hasImageIndex: a.imageIndex !== undefined,
+        feedback: a.feedback?.substring(0, 80) + '...',
+        feedbackLength: a.feedback?.length || 0,
+        coordinates: { x: a.x, y: a.y },
+        category: a.category,
+        severity: a.severity
+      })),
+      imageIndexDistribution: workflow.aiAnnotations?.reduce((acc, ann) => {
+        const index = ann.imageIndex ?? 'undefined';
+        acc[index] = (acc[index] || 0) + 1;
+        return acc;
+      }, {} as Record<string | number, number>),
+      correlationStatus: {
+        totalImages: workflow.selectedImages?.length || 0,
+        annotationsPerImage: workflow.selectedImages?.map((img, idx) => ({
+          imageIndex: idx,
+          imageUrl: img.substring(img.length - 30),
+          annotationCount: workflow.aiAnnotations?.filter(a => (a.imageIndex ?? 0) === idx).length || 0
+        }))
+      }
+    });
+  }, [workflow.aiAnnotations, workflow.selectedImages, activeImageUrl]);
 
   // 🚨 FORCE CACHE REFRESH FUNCTION
   const forceCacheRefresh = () => {
@@ -215,6 +232,13 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
 
   // 🎯 STEP 3: ENHANCED ANNOTATION FILTERING WITH STRICT IMAGE CORRELATION
   const getAnnotationsForImage = (imageIndex: number) => {
+    console.log('🎯 getAnnotationsForImage - ENHANCED DEBUG:', {
+      requestedImageIndex: imageIndex,
+      totalAnnotations: workflow.aiAnnotations?.length || 0,
+      annotationsWithImageIndex: workflow.aiAnnotations?.filter(a => a.imageIndex !== undefined).length || 0,
+      annotationsForThisImage: workflow.aiAnnotations?.filter(a => (a.imageIndex ?? 0) === imageIndex).length || 0
+    });
+
     // Filter annotations that belong to this specific image
     const filteredAnnotations = workflow.aiAnnotations.filter(annotation => {
       const annotationImageIndex = annotation.imageIndex ?? 0;
@@ -242,7 +266,6 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
         coordinates: { x: annotation.x, y: annotation.y }
       });
       
-      // 🚨 CRITICAL: Only include annotations that belong to this image AND have valid data
       return belongsToImage && hasValidFeedback && hasValidCoordinates;
     });
     
@@ -251,11 +274,6 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
       filteredCount: filteredAnnotations.length,
       activeImageUrl: activeImageUrl,
       activeImageIndex: activeImageIndex,
-      qualityFiltering: {
-        validFeedback: true,
-        validCoordinates: true,
-        imageIndexMatch: true
-      },
       filteredDetails: filteredAnnotations.map((a, i) => ({
         index: i + 1,
         id: a.id,
@@ -329,40 +347,11 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
     const imageIndex = activeImageIndex >= 0 ? activeImageIndex : 0;
     const filteredAnnotations = getAnnotationsForImage(imageIndex);
     
-    // 🆕 NEW: Additional quality check for annotations
-    const qualityFilteredAnnotations = filteredAnnotations.filter(annotation => {
-      // Ensure annotation has all required fields
-      const isComplete = annotation.id && 
-                        annotation.feedback && 
-                        annotation.category && 
-                        annotation.severity &&
-                        typeof annotation.x === 'number' &&
-                        typeof annotation.y === 'number';
-      
-      // Ensure feedback is meaningful and not just a placeholder
-      const feedbackText = annotation.feedback.split('Located at')[0].trim(); // Remove coordinate additions
-      const isMeaningful = feedbackText.length > 20 &&
-                          !annotation.feedback.includes('Analysis insight detected') &&
-                          !annotation.feedback.includes('placeholder');
-      
-      if (!isComplete || !isMeaningful) {
-        console.warn('🔍 Filtering out low-quality annotation:', {
-          id: annotation.id,
-          isComplete,
-          isMeaningful,
-          feedback: annotation.feedback?.substring(0, 50) + '...'
-        });
-      }
-      
-      return isComplete && isMeaningful;
-    });
-    
-    console.log('🎯 FINAL ENHANCED CURRENT IMAGE AI ANNOTATIONS:', {
+    console.log('🎯 CURRENT IMAGE AI ANNOTATIONS - FINAL PROCESSING:', {
       activeImageIndex: imageIndex,
       activeImageUrl: activeImageUrl,
       originalCount: filteredAnnotations.length,
-      qualityFilteredCount: qualityFilteredAnnotations.length,
-      finalAnnotations: qualityFilteredAnnotations.map((a, i) => ({
+      finalAnnotations: filteredAnnotations.map((a, i) => ({
         index: i + 1,
         id: a.id,
         feedback: a.feedback?.substring(0, 50) + '...',
@@ -374,49 +363,10 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
       }))
     });
     
-    return qualityFilteredAnnotations;
+    return filteredAnnotations;
   })();
 
   const currentImageUserAnnotations = getUserAnnotationsForImage(activeImageUrl);
-
-  // 🎯 ENHANCED FINAL DEBUG LOG
-  console.log('🎯 ENHANCED FINAL DATA BEING PASSED TO FEEDBACK PANEL:', {
-    currentImageAIAnnotationsCount: currentImageAIAnnotations.length,
-    currentImageUserAnnotationsCount: currentImageUserAnnotations.length,
-    totalAIAnnotations: workflow.aiAnnotations.length,
-    activeImageIndex: activeImageIndex,
-    activeImageUrl: activeImageUrl,
-    isMultiImage: isMultiImage,
-    dataQuality: {
-      hasValidAIAnnotations: currentImageAIAnnotations.length > 0,
-      hasValidUserAnnotations: currentImageUserAnnotations.length > 0,
-      allAnnotationsHaveValidFeedback: currentImageAIAnnotations.every(a => a.feedback && a.feedback.length > 20),
-      allAnnotationsHaveValidCoordinates: currentImageAIAnnotations.every(a => 
-        typeof a.x === 'number' && typeof a.y === 'number' && 
-        a.x >= 0 && a.x <= 100 && a.y >= 0 && a.y <= 100
-      ),
-      annotationQualityStats: {
-        avgFeedbackLength: currentImageAIAnnotations.length > 0 
-          ? currentImageAIAnnotations.reduce((sum, a) => sum + (a.feedback?.length || 0), 0) / currentImageAIAnnotations.length 
-          : 0,
-        categoriesUsed: [...new Set(currentImageAIAnnotations.map(a => a.category))],
-        severityDistribution: {
-          critical: currentImageAIAnnotations.filter(a => a.severity === 'critical').length,
-          suggested: currentImageAIAnnotations.filter(a => a.severity === 'suggested').length,
-          enhancement: currentImageAIAnnotations.filter(a => a.severity === 'enhancement').length
-        }
-      }
-    },
-    firstAnnotationDetails: currentImageAIAnnotations[0] ? {
-      id: currentImageAIAnnotations[0].id,
-      feedback: currentImageAIAnnotations[0].feedback?.substring(0, 100) + '...',
-      feedbackLength: currentImageAIAnnotations[0].feedback?.length || 0,
-      coordinates: { x: currentImageAIAnnotations[0].x, y: currentImageAIAnnotations[0].y },
-      imageIndex: currentImageAIAnnotations[0].imageIndex,
-      category: currentImageAIAnnotations[0].category,
-      severity: currentImageAIAnnotations[0].severity
-    } : 'No valid annotations found'
-  });
 
   // Extract business impact and insights
   const businessImpact = workflow.aiAnnotations.length > 0 ? {
@@ -441,6 +391,17 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
 
   return (
     <div className="min-h-screen bg-slate-900 p-6">
+      {/* Debug Components */}
+      <AnnotationDebugger annotations={workflow.aiAnnotations} componentName="ResultsStep" />
+      <AnnotationCorrelationDebugger
+        annotations={workflow.aiAnnotations}
+        activeImageIndex={activeImageIndex}
+        selectedImages={workflow.selectedImages}
+        activeImageUrl={activeImageUrl}
+        componentName="ResultsStep"
+        currentImageAnnotations={currentImageAIAnnotations}
+      />
+      
       {/* ADD ONLY: Optional "Try New Interface" button */}
       <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
         <div className="flex items-center justify-between">
@@ -457,9 +418,6 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
         </div>
       </div>
 
-      {/* Debug Component */}
-      <AnnotationDebugger annotations={workflow.aiAnnotations} componentName="ResultsStep" />
-      
       <Card className="bg-slate-800 border-slate-700 text-white">
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -595,7 +553,6 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
               )}
             </div>
             
-            {/* 🔧 ENHANCED: Pass activeImageUrl as key to force re-render when image changes */}
             <PositiveLanguageWrapper annotations={workflow.aiAnnotations}>
               <FeedbackPanel
                 key={`feedback-${activeImageUrl}-${activeImageIndex}`}
