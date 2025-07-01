@@ -1,13 +1,10 @@
 
 import { AnalysisWorkflow } from "@/components/analysis/AnalysisWorkflow";
-import { useState } from "react";
 
 const Analysis = () => {
   return (
-    <div className="min-h-screen bg-transparent">
-      <div className="w-full">
-        <AnalysisWorkflow />
-      </div>
+    <div className="min-h-screen bg-transparent p-0 m-0">
+      <AnalysisWorkflow />
     </div>
   );
 };
