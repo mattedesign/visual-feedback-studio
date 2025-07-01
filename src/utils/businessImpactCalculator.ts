@@ -97,7 +97,8 @@ export class BusinessImpactCalculator {
     let totalDeduction = 0;
     Object.entries(severityCounts).forEach(([severity, count]) => {
       const weight = this.severityWeights[severity as keyof typeof this.severityWeights] || 5;
-      totalDeduction += weight * count;
+      const numericCount = Number(count) || 0;
+      totalDeduction += weight * numericCount;
     });
 
     // Factor in research backing
@@ -105,7 +106,7 @@ export class BusinessImpactCalculator {
       a?.researchBacking?.length > 0 || 
       a?.confidence > 0.8
     ).length;
-    const researchBonus = Math.min(15, researchBacked * 2);
+    const researchBonus = Math.min(15, Number(researchBacked) * 2);
 
     const finalScore = Math.max(20, Math.min(100, 100 - totalDeduction + researchBonus));
     
@@ -125,14 +126,14 @@ export class BusinessImpactCalculator {
     const issueTypes = this.categorizeIssues(annotations);
     
     // Base calculation - opportunity gap from perfect score
-    const opportunityGap = 100 - impactScore;
+    const opportunityGap = Number(100 - impactScore) || 0;
     const baseRevenue = opportunityGap * 1200; // $1.2K per point below 100
 
     // Category-specific bonuses
-    const conversionRevenue = issueTypes.conversion * 15000; // $15K per conversion issue
-    const accessibilityRevenue = issueTypes.accessibility * 10000; // $10K per accessibility issue
-    const uxRevenue = issueTypes.ux * 8000; // $8K per UX issue
-    const visualRevenue = issueTypes.visual * 4000; // $4K per visual issue
+    const conversionRevenue = Number(issueTypes.conversion) * 15000; // $15K per conversion issue
+    const accessibilityRevenue = Number(issueTypes.accessibility) * 10000; // $10K per accessibility issue
+    const uxRevenue = Number(issueTypes.ux) * 8000; // $8K per UX issue
+    const visualRevenue = Number(issueTypes.visual) * 4000; // $4K per visual issue
 
     const totalRevenue = baseRevenue + conversionRevenue + accessibilityRevenue + uxRevenue + visualRevenue;
     
@@ -142,7 +143,7 @@ export class BusinessImpactCalculator {
     ).length;
     const researchBacked = annotations.filter(a => a?.researchBacking?.length > 0).length;
     
-    const confidence = Math.min(95, 65 + (criticalIssues * 5) + (researchBacked * 3));
+    const confidence = Math.min(95, 65 + (Number(criticalIssues) * 5) + (Number(researchBacked) * 3));
 
     const assumptions = [
       `Based on ${annotations.length} identified improvement opportunities`,
@@ -221,9 +222,9 @@ export class BusinessImpactCalculator {
       }
     });
 
-    const quickWinWeeks = Math.ceil(quickWinTasks * 0.4); // 0.4 weeks per quick win
-    const moderateWeeks = Math.ceil(moderateTasks * 1.2); // 1.2 weeks per moderate task
-    const majorWeeks = Math.ceil(majorTasks * 2.5); // 2.5 weeks per major task
+    const quickWinWeeks = Math.ceil(Number(quickWinTasks) * 0.4); // 0.4 weeks per quick win
+    const moderateWeeks = Math.ceil(Number(moderateTasks) * 1.2); // 1.2 weeks per moderate task
+    const majorWeeks = Math.ceil(Number(majorTasks) * 2.5); // 2.5 weeks per major task
 
     return {
       quickWins: Math.max(1, quickWinWeeks),
@@ -238,18 +239,18 @@ export class BusinessImpactCalculator {
     ).length;
     
     // Score based on impact score and critical issues
-    let score = Math.floor(impactScore / 10); // Convert 100-point scale to 10-point scale
-    if (criticalCount > 3) score = Math.max(1, score - 2);
-    if (criticalCount === 0 && impactScore > 85) score = Math.min(10, score + 1);
+    let score = Math.floor(Number(impactScore) / 10); // Convert 100-point scale to 10-point scale
+    if (Number(criticalCount) > 3) score = Math.max(1, score - 2);
+    if (Number(criticalCount) === 0 && Number(impactScore) > 85) score = Math.min(10, score + 1);
     
     const strengths = [];
     const gaps = [];
 
     // Dynamic strengths based on analysis
-    if (criticalCount === 0) {
+    if (Number(criticalCount) === 0) {
       strengths.push('No critical usability issues identified');
     }
-    if (impactScore > 80) {
+    if (Number(impactScore) > 80) {
       strengths.push('Strong foundational user experience');
     }
     if (annotations.some(a => a?.researchBacking?.length > 0)) {
@@ -260,7 +261,7 @@ export class BusinessImpactCalculator {
     }
 
     // Dynamic gaps based on issues found
-    if (criticalCount > 2) {
+    if (Number(criticalCount) > 2) {
       gaps.push(`${criticalCount} critical issues requiring immediate attention`);
     }
     if (annotations.filter(a => a?.severity === 'suggested').length > 3) {
@@ -268,10 +269,10 @@ export class BusinessImpactCalculator {
     }
     
     const issueTypes = this.categorizeIssues(annotations);
-    if (issueTypes.conversion > 0) {
+    if (Number(issueTypes.conversion) > 0) {
       gaps.push('Conversion optimization opportunities available');
     }
-    if (issueTypes.accessibility > 1) {
+    if (Number(issueTypes.accessibility) > 1) {
       gaps.push('Accessibility improvements needed for broader reach');
     }
 
