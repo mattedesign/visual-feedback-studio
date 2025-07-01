@@ -24,6 +24,17 @@ const Dashboard = () => {
     try {
       setIsLoading(true);
       const history = await getUserAnalysisHistory();
+      console.log('🔍 DASHBOARD DEBUG - Analysis history loaded:', {
+        count: history.length,
+        sampleData: history.slice(0, 3).map(item => ({
+          id: item.id,
+          analysis_id: item.analysis_id,
+          images: item.images,
+          imagesLength: item.images?.length,
+          imagesType: typeof item.images,
+          total_annotations: item.total_annotations
+        }))
+      });
       setAnalyses(history);
     } catch (error) {
       console.error('Failed to load analysis history:', error);
@@ -48,12 +59,40 @@ const Dashboard = () => {
 
   // Helper function to determine analysis status
   const getAnalysisStatus = (analysis: AnalysisResultsResponse) => {
-    // Since AnalysisResultsResponse doesn't have analysis_status, 
-    // we'll assume completed if it has annotations and images
     if (analysis.total_annotations > 0 && analysis.images?.length > 0) {
       return 'completed';
     }
     return 'processing';
+  };
+
+  // 🔧 ENHANCED: Safe image count calculation with debugging
+  const getImageCount = (analysis: AnalysisResultsResponse) => {
+    console.log('🔍 DASHBOARD DEBUG - Image count calculation:', {
+      analysisId: analysis.analysis_id,
+      images: analysis.images,
+      imagesType: typeof analysis.images,
+      isArray: Array.isArray(analysis.images),
+      length: analysis.images?.length
+    });
+
+    // Handle different possible image data structures
+    if (!analysis.images) {
+      console.log('🔍 No images property found');
+      return 0;
+    }
+
+    if (Array.isArray(analysis.images)) {
+      console.log('🔍 Images is array, length:', analysis.images.length);
+      return analysis.images.length;
+    }
+
+    if (typeof analysis.images === 'string') {
+      console.log('🔍 Images is string, treating as single image');
+      return 1;
+    }
+
+    console.log('🔍 Unknown images format, defaulting to 0');
+    return 0;
   };
 
   const filteredAnalyses = analyses.filter(analysis => {
@@ -177,6 +216,14 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredAnalyses.map((analysis) => {
               const analysisStatus = getAnalysisStatus(analysis);
+              const imageCount = getImageCount(analysis);
+              
+              console.log('🔍 DASHBOARD DEBUG - Rendering analysis card:', {
+                analysisId: analysis.analysis_id,
+                imageCount,
+                totalAnnotations: analysis.total_annotations,
+                status: analysisStatus
+              });
               
               return (
                 <Card
@@ -205,37 +252,41 @@ const Dashboard = () => {
                   </CardHeader>
                   
                   <CardContent>
-                    {/* Thumbnail */}
-                    {analysis.images && analysis.images.length > 0 && (
+                    {/* Thumbnail - Only show if we have images */}
+                    {imageCount > 0 && analysis.images && Array.isArray(analysis.images) && analysis.images[0] && (
                       <div className="w-full h-32 bg-gray-100 dark:bg-slate-800 rounded-lg mb-4 overflow-hidden">
                         <img
                           src={analysis.images[0]}
                           alt="Analysis preview"
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            console.log('🔍 Image failed to load:', analysis.images?.[0]);
+                            e.currentTarget.style.display = 'none';
+                          }}
                         />
                       </div>
                     )}
                     
-                    {/* Metrics */}
+                    {/* 🔧 FIXED: Cleaner metrics display with proper spacing and single value display */}
                     <div className="space-y-3">
-                      <div className="flex justify-between items-center">
+                      <div className="flex justify-between items-center py-1">
                         <span className="text-sm text-gray-600 dark:text-gray-300">Insights Found</span>
-                        <span className="font-semibold text-gray-900 dark:text-white">
+                        <span className="font-semibold text-gray-900 dark:text-white text-right">
                           {analysis.total_annotations}
                         </span>
                       </div>
                       
-                      <div className="flex justify-between items-center">
+                      <div className="flex justify-between items-center py-1">
                         <span className="text-sm text-gray-600 dark:text-gray-300">Images Analyzed</span>
-                        <span className="font-semibold text-gray-900 dark:text-white">
-                          {analysis.images?.length || 0}
+                        <span className="font-semibold text-gray-900 dark:text-white text-right">
+                          {imageCount}
                         </span>
                       </div>
                       
                       {analysis.knowledge_sources_used && analysis.knowledge_sources_used > 0 && (
-                        <div className="flex justify-between items-center">
+                        <div className="flex justify-between items-center py-1">
                           <span className="text-sm text-gray-600 dark:text-gray-300">Research Sources</span>
-                          <span className="font-semibold text-blue-600 dark:text-blue-400">
+                          <span className="font-semibold text-blue-600 dark:text-blue-400 text-right">
                             {analysis.knowledge_sources_used}
                           </span>
                         </div>
