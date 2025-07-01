@@ -31,7 +31,6 @@ export const useAnnotationHandlers = ({
 
     // 🎯 ENHANCED: Determine which image this annotation belongs to
     const targetImageIndex = imageIndex ?? 0;
-    const targetImageUrl = imageUrl || currentAnalysis.files?.[0] || '';
     
     // 🎯 ENHANCED: Validate coordinates are within bounds
     const safeX = Math.max(0, Math.min(100, coordinates.x));
@@ -61,7 +60,7 @@ export const useAnnotationHandlers = ({
       return `User annotation in the ${locationContext}${imageText} at ${safeX.toFixed(1)}%, ${safeY.toFixed(1)}%. Consider reviewing the user experience and design elements in this section for potential improvements.`;
     };
 
-    // 🎯 ENHANCED: Create annotation with proper image correlation
+    // 🎯 ENHANCED: Create annotation with proper image correlation (removed imageUrl since it's not in type)
     const newAnnotationData: Omit<Annotation, 'id'> = {
       x: safeX,
       y: safeY,
@@ -70,14 +69,13 @@ export const useAnnotationHandlers = ({
       feedback: generateContextualFeedback(safeX, safeY, targetImageIndex),
       implementationEffort: 'medium',
       businessImpact: 'medium',
-      imageIndex: targetImageIndex, // 🆕 NEW: Proper image correlation
-      imageUrl: targetImageUrl // 🆕 NEW: Image URL for correlation
+      imageIndex: targetImageIndex // 🆕 NEW: Proper image correlation
     };
 
     console.log('🎯 Enhanced Annotation Creation:', {
       coordinates: { x: safeX, y: safeY },
       targetImageIndex,
-      targetImageUrl,
+      imageUrl,
       annotationData: newAnnotationData
     });
 
@@ -131,8 +129,7 @@ export const useAnnotationHandlers = ({
     console.log('📝 Updating annotation:', { annotationId, updates });
     
     try {
-      // Here you would call an update service if available
-      // For now, update locally
+      // Update locally (since we don't have an update service)
       setAnnotations(prev => prev.map(ann => 
         ann.id === annotationId 
           ? { ...ann, ...updates }
@@ -151,19 +148,16 @@ export const useAnnotationHandlers = ({
   // 🆕 NEW: Move annotation to different image
   const handleMoveAnnotationToImage = useCallback(async (
     annotationId: string,
-    newImageIndex: number,
-    newImageUrl: string
+    newImageIndex: number
   ) => {
     console.log('🔄 Moving annotation to different image:', {
       annotationId,
-      newImageIndex,
-      newImageUrl
+      newImageIndex
     });
     
     try {
       const updates = {
-        imageIndex: newImageIndex,
-        imageUrl: newImageUrl
+        imageIndex: newImageIndex
       };
       
       await handleUpdateAnnotation(annotationId, updates);
@@ -171,8 +165,7 @@ export const useAnnotationHandlers = ({
       
       console.log('✅ Annotation successfully moved:', {
         annotationId,
-        newImageIndex,
-        newImageUrl
+        newImageIndex
       });
     } catch (error) {
       console.error('❌ Failed to move annotation:', error);
@@ -213,13 +206,6 @@ export const useAnnotationHandlers = ({
     }
   }, [setAnnotations, activeAnnotation, setActiveAnnotation]);
 
-  // 🆕 NEW: Get annotations for specific image
-  const getAnnotationsForImage = useCallback((imageIndex: number) => {
-    return currentAnalysis?.annotations?.filter(
-      annotation => (annotation.imageIndex ?? 0) === imageIndex
-    ) || [];
-  }, [currentAnalysis]);
-
   // 🆕 NEW: Validate annotation coordinates
   const validateAnnotationCoordinates = useCallback((x: number, y: number) => {
     const isValid = 
@@ -250,7 +236,6 @@ export const useAnnotationHandlers = ({
     handleBulkDeleteAnnotations,
     
     // Utility functions
-    getAnnotationsForImage,
     validateAnnotationCoordinates,
   };
 };
