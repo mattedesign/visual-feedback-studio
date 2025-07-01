@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -150,56 +151,6 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
     }
   }, [workflow.activeImageUrl, activeImageUrl]);
 
-  // COMPREHENSIVE DATA DEBUGGING
-  useEffect(() => {
-    console.log('🚨 EMERGENCY DEBUG - COMPLETE WORKFLOW DATA:', {
-      workflowKeys: Object.keys(workflow),
-      currentStep: workflow.currentStep,
-      aiAnnotationsCount: workflow.aiAnnotations?.length || 0,
-      activeImageUrl: activeImageUrl,
-      workflowActiveImageUrl: workflow.activeImageUrl,
-      selectedImages: workflow.selectedImages,
-      imageIndexDistribution: workflow.aiAnnotations?.reduce((acc, ann) => {
-        const idx = ann.imageIndex ?? 0;
-        acc[idx] = (acc[idx] || 0) + 1;
-        return acc;
-      }, {} as Record<number, number>),
-      annotationSamplesByImage: Object.entries(workflow.aiAnnotations?.reduce((acc, ann) => {
-        const idx = ann.imageIndex ?? 0;
-        if (!acc[idx]) acc[idx] = [];
-        acc[idx].push({
-          id: ann.id,
-          feedback: ann.feedback?.substring(0, 50) + '...',
-          coordinates: { x: ann.x, y: ann.y }
-        });
-        return acc;
-      }, {} as Record<number, any[]>) || {}).map(([idx, anns]) => ({
-        imageIndex: idx,
-        count: anns.length,
-        samples: anns.slice(0, 2)
-      }))
-    });
-
-    // Make data available globally for debugging
-    (window as any).debugWorkflow = workflow;
-    (window as any).debugActiveImageIndex = workflow.selectedImages.indexOf(activeImageUrl);
-  }, [workflow, activeImageUrl]);
-
-  // FORCE CACHE REFRESH FUNCTION
-  const forceCacheRefresh = () => {
-    console.log('🔄 Forcing cache refresh...');
-    setActiveAnnotation(null);
-    setTimeout(() => setActiveAnnotation(activeAnnotation), 100);
-    
-    if ('fonts' in document) {
-      document.fonts.clear();
-    }
-  };
-
-  useEffect(() => {
-    forceCacheRefresh();
-  }, []);
-
   const getSeverityColor = (severity: string) =>  {
     switch (severity) {
       case 'critical': return 'bg-red-600 text-white border-red-500';
@@ -222,66 +173,55 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
   const activeImageIndex = workflow.selectedImages.indexOf(activeImageUrl);
   const detectedFocusAreas = parseContextForDisplay(workflow.analysisContext);
 
-  // 🚨 EMERGENCY FIX: FORCE DIFFERENT ANNOTATIONS PER IMAGE
+  // 🔧 FIXED: Proper annotation filtering for current image
   const getAnnotationsForImage = (imageIndex: number) => {
-    console.log('🚨 EMERGENCY CORRELATION FIX - Input:', {
+    console.log('🔧 FIXED FILTERING - getAnnotationsForImage called:', {
       requestedImageIndex: imageIndex,
       totalAnnotations: workflow.aiAnnotations?.length || 0,
-      totalImages: workflow.selectedImages.length,
-      activeImageUrl: activeImageUrl,
-      activeImageIndex: activeImageIndex
+      totalImages: workflow.selectedImages.length
     });
 
     if (!workflow.aiAnnotations || workflow.aiAnnotations.length === 0) {
-      console.warn('🚨 NO ANNOTATIONS AVAILABLE');
+      console.warn('🔧 No annotations available');
       return [];
     }
 
-    // 🚨 STEP 1: Try normal filtering first
-    const normalFiltered = workflow.aiAnnotations.filter(annotation => {
+    // 🔧 STEP 1: Filter annotations that specifically belong to this image
+    const exactMatch = workflow.aiAnnotations.filter(annotation => {
       const annotationImageIndex = annotation.imageIndex ?? 0;
-      return annotationImageIndex === imageIndex;
-    });
-    
-    console.log('🚨 Normal filtering result:', {
-      imageIndex,
-      normalFilteredCount: normalFiltered.length,
-      allImageIndexes: workflow.aiAnnotations.map(a => a.imageIndex),
-      imageIndexDistribution: workflow.aiAnnotations.reduce((acc, ann) => {
-        const idx = ann.imageIndex ?? 0;
-        acc[idx] = (acc[idx] || 0) + 1;
-        return acc;
-      }, {} as Record<number, number>)
+      const matches = annotationImageIndex === imageIndex;
+      
+      if (matches) {
+        console.log(`✅ Annotation ${annotation.id} belongs to image ${imageIndex}:`, {
+          annotationImageIndex,
+          feedback: annotation.feedback?.substring(0, 50) + '...'
+        });
+      }
+      
+      return matches;
     });
 
-    // 🚨 STEP 2: If normal filtering works, use it
-    if (normalFiltered.length > 0) {
-      console.log('✅ Normal filtering worked for image', imageIndex, 'with', normalFiltered.length, 'annotations');
-      return normalFiltered;
+    console.log('🔧 EXACT MATCH RESULTS:', {
+      imageIndex,
+      exactMatchCount: exactMatch.length,
+      totalAnnotations: workflow.aiAnnotations.length
+    });
+
+    // 🔧 STEP 2: If we have exact matches, use them (no fallback needed)
+    if (exactMatch.length > 0) {
+      console.log(`✅ Using ${exactMatch.length} exact matches for image ${imageIndex}`);
+      return exactMatch;
     }
 
-    // 🚨 STEP 3: FORCE DISTRIBUTION - Divide annotations equally across images
-    const totalAnnotations = workflow.aiAnnotations.length;
-    const totalImages = workflow.selectedImages.length;
-    const annotationsPerImage = Math.ceil(totalAnnotations / totalImages);
-    
-    const startIndex = imageIndex * annotationsPerImage;
-    const endIndex = Math.min(startIndex + annotationsPerImage, totalAnnotations);
-    
-    const forcedAnnotations = workflow.aiAnnotations.slice(startIndex, endIndex);
-    
-    console.log('🚨 FORCE DISTRIBUTION for image', imageIndex, ':', {
-      totalAnnotations,
-      totalImages,
-      annotationsPerImage,
-      startIndex,
-      endIndex,
-      forcedCount: forcedAnnotations.length,
-      forcedIds: forcedAnnotations.map(a => a.id),
-      forcedFeedback: forcedAnnotations.map(a => a.feedback?.substring(0, 30) + '...')
-    });
-    
-    return forcedAnnotations;
+    // 🔧 STEP 3: If no exact matches AND we're dealing with single image, return all annotations
+    if (workflow.selectedImages.length === 1) {
+      console.log('🔧 Single image detected, returning all annotations');
+      return workflow.aiAnnotations;
+    }
+
+    // 🔧 STEP 4: For multi-image with no matches, return empty array (no forced distribution)
+    console.log(`🔧 Multi-image mode: No annotations found for image ${imageIndex}`);
+    return [];
   };
 
   const getUserAnnotationsForImage = (imageUrl: string) => {
@@ -300,105 +240,37 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
   const handleImageSwitch = useCallback((newImageUrl: string) => {
     const newImageIndex = workflow.selectedImages.indexOf(newImageUrl);
     
-    console.log('🚨 EMERGENCY IMAGE SWITCH DEBUG:', {
+    console.log('🔄 IMAGE SWITCH:', {
       from: { url: activeImageUrl, index: activeImageIndex },
       to: { url: newImageUrl, index: newImageIndex },
-      selectedImages: workflow.selectedImages,
-      annotationsPerImage: workflow.aiAnnotations?.reduce((acc, ann) => {
-        const idx = ann.imageIndex ?? 0;
-        acc[idx] = (acc[idx] || 0) + 1;
-        return acc;
-      }, {} as Record<number, number>)
+      selectedImages: workflow.selectedImages
     });
     
     setActiveAnnotation(null);
     setActiveImageUrl(newImageUrl);
-    
-    setTimeout(() => {
-      console.log('✅ Emergency image switch complete');
-      forceCacheRefresh();
-    }, 100);
-  }, [activeImageUrl, activeImageIndex, workflow.selectedImages, workflow.aiAnnotations, forceCacheRefresh]);
+  }, [activeImageUrl, activeImageIndex, workflow.selectedImages]);
 
-  // CURRENT IMAGE ANNOTATIONS WITH FORCED DISTRIBUTION
+  // 🔧 FIXED: Current image annotations with proper filtering
   const currentImageAIAnnotations = (() => {
     const imageIndex = activeImageIndex >= 0 ? activeImageIndex : 0;
     const filteredAnnotations = getAnnotationsForImage(imageIndex);
     
-    const qualityFilteredAnnotations = filteredAnnotations.filter(annotation => {
-      const isComplete = annotation.id && 
-                        annotation.feedback && 
-                        annotation.category && 
-                        annotation.severity &&
-                        typeof annotation.x === 'number' &&
-                        typeof annotation.y === 'number';
-      
-      const feedbackText = annotation.feedback?.split('Located at')[0]?.trim() || annotation.feedback || '';
-      const isMeaningful = feedbackText.length > 20 &&
-                          !annotation.feedback?.includes('Analysis insight detected') &&
-                          !annotation.feedback?.includes('placeholder');
-      
-      if (!isComplete || !isMeaningful) {
-        console.warn('🚨 Filtering out low-quality annotation:', {
-          id: annotation.id,
-          isComplete,
-          isMeaningful,
-          feedback: annotation.feedback?.substring(0, 50) + '...'
-        });
-      }
-      
-      return isComplete && isMeaningful;
-    });
-    
-    console.log('🚨 EMERGENCY FINAL CURRENT IMAGE AI ANNOTATIONS:', {
+    console.log('🔧 CURRENT IMAGE AI ANNOTATIONS:', {
       activeImageIndex: imageIndex,
       activeImageUrl: activeImageUrl,
-      originalCount: filteredAnnotations.length,
-      qualityFilteredCount: qualityFilteredAnnotations.length,
-      finalAnnotations: qualityFilteredAnnotations.map((a, i) => ({
+      filteredCount: filteredAnnotations.length,
+      annotations: filteredAnnotations.map((a, i) => ({
         index: i + 1,
         id: a.id,
-        feedback: a.feedback?.substring(0, 50) + '...',
-        feedbackLength: a.feedback?.length || 0,
-        coordinates: { x: a.x, y: a.y },
-        category: a.category,
-        severity: a.severity,
-        imageIndex: a.imageIndex
+        imageIndex: a.imageIndex,
+        feedback: a.feedback?.substring(0, 50) + '...'
       }))
     });
     
-    return qualityFilteredAnnotations;
+    return filteredAnnotations;
   })();
 
   const currentImageUserAnnotations = getUserAnnotationsForImage(activeImageUrl);
-
-  console.log('🚨 EMERGENCY FINAL DATA BEING PASSED TO FEEDBACK PANEL:', {
-    currentImageAIAnnotationsCount: currentImageAIAnnotations.length,
-    currentImageUserAnnotationsCount: currentImageUserAnnotations.length,
-    totalAIAnnotations: workflow.aiAnnotations?.length || 0,
-    activeImageIndex: activeImageIndex,
-    activeImageUrl: activeImageUrl,
-    isMultiImage: isMultiImage,
-    forcedDistribution: !workflow.aiAnnotations?.some(a => (a.imageIndex ?? 0) === activeImageIndex),
-    dataQuality: {
-      hasValidAIAnnotations: currentImageAIAnnotations.length > 0,
-      hasValidUserAnnotations: currentImageUserAnnotations.length > 0,
-      allAnnotationsHaveValidFeedback: currentImageAIAnnotations.every(a => a.feedback && a.feedback.length > 20),
-      allAnnotationsHaveValidCoordinates: currentImageAIAnnotations.every(a => 
-        typeof a.x === 'number' && typeof a.y === 'number' && 
-        a.x >= 0 && a.x <= 100 && a.y >= 0 && a.y <= 100
-      ),
-      firstAnnotationSample: currentImageAIAnnotations[0] ? {
-        id: currentImageAIAnnotations[0].id,
-        feedback: currentImageAIAnnotations[0].feedback?.substring(0, 100) + '...',
-        feedbackLength: currentImageAIAnnotations[0].feedback?.length || 0,
-        coordinates: { x: currentImageAIAnnotations[0].x, y: currentImageAIAnnotations[0].y },
-        imageIndex: currentImageAIAnnotations[0].imageIndex,
-        category: currentImageAIAnnotations[0].category,
-        severity: currentImageAIAnnotations[0].severity
-      } : 'No valid annotations found'
-    }
-  });
 
   // Extract business impact and insights
   const businessImpact = workflow.aiAnnotations && workflow.aiAnnotations.length > 0 ? {
@@ -423,24 +295,17 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
 
   return (
     <div className="min-h-screen bg-slate-900 p-6">
-      {/* EMERGENCY: Debug Panel */}
-      <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+      {/* Fixed correlation status */}
+      <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-red-800 dark:text-red-200 font-medium">🚨 EMERGENCY MODE: Forced Distribution Active</p>
-            <p className="text-red-600 dark:text-red-300 text-sm">
+            <p className="text-green-800 dark:text-green-200 font-medium">✅ FIXED: Annotation Correlation Restored</p>
+            <p className="text-green-600 dark:text-green-300 text-sm">
               Active Image: {activeImageIndex + 1} of {workflow.selectedImages.length} | 
-              AI Annotations: {currentImageAIAnnotations.length} | 
-              Total: {workflow.aiAnnotations?.length || 0} |
-              Using: {workflow.aiAnnotations?.some(a => (a.imageIndex ?? 0) === activeImageIndex) ? 'Normal Filter' : 'Forced Distribution'}
+              Current Image Annotations: {currentImageAIAnnotations.length} | 
+              Total Annotations: {workflow.aiAnnotations?.length || 0}
             </p>
           </div>
-          <Button 
-            onClick={() => console.log('🚨 EMERGENCY DEBUG:', { workflow, activeImageIndex, currentImageAIAnnotations })}
-            className="bg-red-600 hover:bg-red-700 text-white text-xs"
-          >
-            Log Debug Data
-          </Button>
         </div>
       </div>
 
@@ -475,14 +340,6 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
               )}
             </div>
             <div className="flex gap-2">
-              <Button 
-                onClick={forceCacheRefresh} 
-                variant="outline" 
-                size="sm"
-                className="text-xs bg-orange-600 hover:bg-orange-700 border-orange-500"
-              >
-                🔄 Force Refresh
-              </Button>
               {isMultiImage && (
                 <Badge className="bg-gradient-to-r from-purple-600 to-violet-600 text-white border-purple-500 px-3 py-1 text-xs font-semibold shadow-md">
                   🔍 Multi-image insights
@@ -521,7 +378,7 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
           </div>
         </CardHeader>
         <CardContent className="space-y-8">
-          {/* Rest of your existing content components */}
+          {/* Rest of existing content components */}
           <PositiveDesignSummary
             imageCount={workflow.selectedImages.length}
             context={workflow.analysisContext || ''}

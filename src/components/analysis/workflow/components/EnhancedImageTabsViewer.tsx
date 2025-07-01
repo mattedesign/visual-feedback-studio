@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -45,30 +46,21 @@ export const EnhancedImageTabsViewer = ({
     }
   }, [activeImageUrl, selectedTab]);
 
-  // 🚨 CRITICAL DEBUG: Add debugging for image tabs viewer
-  useEffect(() => {
-    const currentIndex = images.indexOf(activeImageUrl);
-    const currentAnnotations = getAnnotationsForImage(currentIndex);
-    
-    console.log('🚨 ENHANCED IMAGE TABS VIEWER - DEBUG:', {
-      timestamp: new Date().toISOString(),
-      component: 'EnhancedImageTabsViewer',
-      currentIndex,
-      activeImageUrl: activeImageUrl.substring(activeImageUrl.length - 30),
-      totalImages: images.length,
-      currentAnnotationsCount: currentAnnotations.length,
-      annotationSample: currentAnnotations.slice(0, 3).map(a => ({
-        id: a.id,
-        imageIndex: a.imageIndex,
-        feedback: a.feedback?.substring(0, 40) + '...'
-      })),
-      allImageAnnotationCounts: images.map((img, idx) => ({
-        imageIndex: idx,
-        annotationCount: getAnnotationsForImage(idx).length,
-        isActive: idx === currentIndex
-      }))
-    });
-  }, [activeImageUrl, images, getAnnotationsForImage]);
+  // 🔧 FIXED: Get current image index and annotations correctly
+  const currentImageIndex = images.indexOf(activeImageUrl);
+  const currentImageAnnotations = getAnnotationsForImage(currentImageIndex);
+
+  console.log('🔧 FIXED IMAGE TABS VIEWER:', {
+    currentImageIndex,
+    activeImageUrl: activeImageUrl.substring(activeImageUrl.length - 30),
+    totalImages: images.length,
+    currentImageAnnotationsCount: currentImageAnnotations.length,
+    annotationDetails: currentImageAnnotations.map(a => ({
+      id: a.id,
+      imageIndex: a.imageIndex,
+      feedback: a.feedback?.substring(0, 40) + '...'
+    }))
+  });
 
   return (
     <Card className="bg-slate-800/50 border-slate-700">
@@ -83,14 +75,6 @@ export const EnhancedImageTabsViewer = ({
             const annotationCount = getAnnotationsForImage(index).length;
             const userAnnotationCount = getUserAnnotationsForImage(imageUrl).length;
             const isActive = imageUrl === activeImageUrl;
-            
-            // 🚨 DEBUG: Log tab rendering
-            console.log(`🎨 Rendering tab ${index + 1}:`, {
-              isActive,
-              annotationCount,
-              userAnnotationCount,
-              imageUrl: imageUrl.substring(imageUrl.length - 30)
-            });
             
             return (
               <button
@@ -122,21 +106,23 @@ export const EnhancedImageTabsViewer = ({
         <div className="relative">
           <img
             src={activeImageUrl}
-            alt={`Design ${images.indexOf(activeImageUrl) + 1}`}
+            alt={`Design ${currentImageIndex + 1}`}
             className="w-full h-auto max-h-[70vh] object-contain bg-white rounded-b-lg"
             style={{ minHeight: '400px' }}
           />
           
-          {/* Render annotations for current image */}
-          {(() => {
-            const currentIndex = images.indexOf(activeImageUrl);
-            const annotations = getAnnotationsForImage(currentIndex);
+          {/* 🔧 FIXED: Render only annotations for current image */}
+          {currentImageAnnotations.map((annotation, annotationIndex) => {
+            console.log(`🔧 Rendering annotation ${annotationIndex + 1} for image ${currentImageIndex + 1}:`, {
+              id: annotation.id,
+              imageIndex: annotation.imageIndex,
+              x: annotation.x,
+              y: annotation.y
+            });
             
-            console.log(`🎯 Rendering ${annotations.length} annotations for image ${currentIndex + 1}`);
-            
-            return annotations.map((annotation, annotationIndex) => (
+            return (
               <div
-                key={`annotation-${annotation.id}-${currentIndex}`}
+                key={`annotation-${annotation.id}-${currentImageIndex}`}
                 className={`absolute w-8 h-8 rounded-full border-2 shadow-lg flex items-center justify-center cursor-pointer transform -translate-x-1/2 -translate-y-1/2 transition-all duration-200 z-10 ${
                   activeAnnotation === annotation.id
                     ? 'bg-blue-500 border-blue-300 scale-125 ring-4 ring-blue-200'
@@ -153,8 +139,8 @@ export const EnhancedImageTabsViewer = ({
                   {annotationIndex + 1}
                 </span>
               </div>
-            ));
-          })()}
+            );
+          })}
           
           {/* User annotations */}
           {getUserAnnotationsForImage(activeImageUrl).map((annotation, index) => (
