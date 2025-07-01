@@ -25,6 +25,8 @@ import { AnnotationDebugger } from '@/components/debug/AnnotationDebugger';
 import { Button } from '@/components/ui/button';
 import { VisualAnalysisModule } from '../modules/VisualAnalysisModule';
 import { ResearchCitationsModule } from '../modules/ResearchCitationsModule';
+import { CoordinateQualityAssurance } from '@/components/debug/CoordinateQualityAssurance';
+import { AnnotationPostProcessor } from '@/utils/annotationPostProcessor';
 
 interface ResultsStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -54,10 +56,21 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
   const betaMode = urlParams.get('beta') === 'true';
   const activeModule = urlParams.get('module') || 'ux-insights';
   
+  // NEW: Post-process annotations for coordinate accuracy
+  const { processedAnnotations, stats: processingStats } = workflow.aiAnnotations 
+    ? AnnotationPostProcessor.processAnnotations(workflow.aiAnnotations)
+    : { processedAnnotations: [], stats: undefined };
+
+  // Use processed annotations instead of raw annotations
+  const enhancedWorkflow = {
+    ...workflow,
+    aiAnnotations: processedAnnotations
+  };
+  
   // NEW INTERFACE ONLY WHEN FLAG IS TRUE OR BETA PARAMETER
   if (useModularInterface || betaMode) {
     const businessAnalysisData = {
-      annotations: workflow.aiAnnotations || [],
+      annotations: enhancedWorkflow.aiAnnotations || [],
       enhancedContext: workflow.enhancedContext,
       analysisContext: workflow.analysisContext,
       createdAt: new Date().toISOString(),
@@ -314,15 +327,24 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
       <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-green-800 dark:text-green-200 font-medium">✅ FIXED: Annotation Correlation Restored</p>
+            <p className="text-green-800 dark:text-green-200 font-medium">✅ ENHANCED: Coordinate Accuracy System Active</p>
             <p className="text-green-600 dark:text-green-300 text-sm">
               Active Image: {activeImageIndex + 1} of {workflow.selectedImages.length} | 
               Current Image Annotations: {currentImageAIAnnotations.length} | 
-              Total Annotations: {workflow.aiAnnotations?.length || 0}
+              Total Annotations: {enhancedWorkflow.aiAnnotations?.length || 0} |
+              {processingStats && ` Coordinate Quality: ${Math.round(((processingStats.validationResults.filter(r => r.isValid).length + processingStats.correctedAnnotations) / processingStats.totalAnnotations) * 100)}%`}
             </p>
           </div>
         </div>
       </div>
+
+      {/* NEW: Coordinate Quality Assurance Display */}
+      {processingStats && (
+        <CoordinateQualityAssurance 
+          annotations={enhancedWorkflow.aiAnnotations || []}
+          processingStats={processingStats}
+        />
+      )}
 
       {/* Optional "Try New Interface" button */}
       <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
@@ -341,7 +363,7 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
       </div>
 
       {/* Debug Component */}
-      <AnnotationDebugger annotations={workflow.aiAnnotations} componentName="ResultsStep" />
+      <AnnotationDebugger annotations={enhancedWorkflow.aiAnnotations} componentName="ResultsStep" />
       
       <Card className="bg-slate-800 border-slate-700 text-white">
         <CardHeader>
@@ -459,7 +481,7 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
                 <SingleImageViewer
                   imageUrl={workflow.selectedImages[0]}
                   userAnnotations={workflow.userAnnotations[workflow.selectedImages[0]] || []}
-                  aiAnnotations={workflow.aiAnnotations}
+                  aiAnnotations={enhancedWorkflow.aiAnnotations} // Use enhanced annotations
                   onAnnotationClick={setActiveAnnotation}
                   activeAnnotation={activeAnnotation}
                   getCategoryIcon={getCategoryIcon}
@@ -467,7 +489,7 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
               )}
             </div>
             
-            <PositiveLanguageWrapper annotations={workflow.aiAnnotations}>
+            <PositiveLanguageWrapper annotations={enhancedWorkflow.aiAnnotations}>
               <FeedbackPanel
                 key={`feedback-${activeImageUrl}-${activeImageIndex}`}
                 currentImageAIAnnotations={currentImageAIAnnotations}
@@ -476,7 +498,7 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
                 isMultiImage={isMultiImage}
                 activeAnnotation={activeAnnotation}
                 onAnnotationClick={setActiveAnnotation}
-                aiAnnotations={workflow.aiAnnotations}
+                aiAnnotations={enhancedWorkflow.aiAnnotations} // Use enhanced annotations
                 getSeverityColor={getSeverityColor}
                 businessImpact={businessImpact}
                 insights={insights}
