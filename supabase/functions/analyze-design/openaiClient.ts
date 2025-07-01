@@ -8,38 +8,46 @@ export async function analyzeWithOpenAI(
   apiKey: string,
   model: string = 'gpt-4o-mini'
 ): Promise<AnnotationData[]> {
-  console.log('🚀 Calling OpenAI API for comprehensive analysis with 16-19 insights requirement...');
+  console.log('🚀 Calling OpenAI API for comprehensive analysis with proper image correlation...');
   
   try {
-    // Build the messages array with the enhanced prompt
     const messages = [
       {
         role: 'system',
-        content: `You are a UX/UI design expert. Analyze the provided design and return 16-19 specific, actionable insights in JSON format. Each insight must be a precise annotation with screen coordinates.
+        content: `You are a UX/UI design expert. Analyze the provided design and return 12-16 specific, actionable insights in JSON format. Each insight must be a precise annotation with screen coordinates that EXACTLY correspond to the visual element being analyzed.
 
-CRITICAL: You must return exactly this JSON structure:
+CRITICAL CORRELATION REQUIREMENTS:
+- Each annotation's x,y coordinates MUST point to the exact visual element being analyzed
+- The feedback MUST describe what is specifically located at those coordinates
+- Never place generic feedback at random coordinates
+- Ensure spatial accuracy between annotation position and described element
+
+MANDATORY JSON STRUCTURE:
 {
   "annotations": [
     {
-      "x": <number between 0-100>,
-      "y": <number between 0-100>, 
-      "feedback": "<specific actionable feedback>",
-      "category": "<one of: usability, accessibility, visual-design, conversion, content, navigation, mobile>",
-      "severity": "<one of: high, medium, low>",
+      "x": <precise number 0-100 pointing to the exact element>,
+      "y": <precise number 0-100 pointing to the exact element>, 
+      "feedback": "<specific feedback about the element at these exact coordinates>",
+      "category": "<one of: ux, visual, accessibility, conversion, content>",
+      "severity": "<one of: critical, suggested, enhancement>",
       "business_impact": "<specific business impact>",
-      "implementation_effort": "<one of: low, medium, high>"
+      "implementation_effort": "<one of: low, medium, high>",
+      "imageIndex": 0
     }
   ]
 }
 
-Requirements:
-- Return 16-19 annotations minimum
-- Each annotation must have valid x,y coordinates (0-100)
-- Feedback must be specific and actionable
-- Categories must match the exact list provided
-- Focus on practical, implementable improvements
+COORDINATE ACCURACY RULES:
+- Header elements: y: 5-15
+- Navigation: y: 15-25  
+- Main content: y: 25-75
+- Footer: y: 75-95
+- Left sidebar: x: 5-25
+- Center content: x: 25-75
+- Right sidebar: x: 75-95
 
-IMPORTANT: Your response must be valid JSON only. Do not include any other text or explanation outside the JSON structure.`
+IMPORTANT: Your response must be valid JSON only.`
       },
       {
         role: 'user',
@@ -59,8 +67,6 @@ IMPORTANT: Your response must be valid JSON only. Do not include any other text 
       }
     ];
 
-    console.log('🔄 Making OpenAI API request...');
-    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -68,73 +74,62 @@ IMPORTANT: Your response must be valid JSON only. Do not include any other text 
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: model,
-        messages: messages,
+        model,
+        messages,
         max_tokens: 4000,
-        temperature: 0.1,
+        temperature: 0.1, // Lower temperature for more consistent positioning
         response_format: { type: 'json_object' }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`❌ OpenAI API error: ${response.status} ${response.statusText}`, errorText);
-      
-      // Log detailed error information for debugging
-      console.error('❌ OpenAI Request Details:', {
-        model,
-        messageCount: messages.length,
-        hasSystemMessage: messages.some(m => m.role === 'system'),
-        hasUserMessage: messages.some(m => m.role === 'user'),
-        responseFormat: 'json_object',
-        temperature: 0.1,
-        maxTokens: 4000
-      });
-      
-      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+      console.error('❌ OpenAI API Error:', response.status, errorText);
+      throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
     }
 
     const data = await response.json();
-    console.log('✅ OpenAI API response received');
+    const content = data.choices[0]?.message?.content;
 
-    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-      console.error('❌ Invalid OpenAI response structure:', data);
-      throw new Error('Invalid response structure from OpenAI');
+    if (!content) {
+      console.error('❌ No content received from OpenAI');
+      throw new Error('No content received from OpenAI API');
     }
 
-    const content = data.choices[0].message.content;
-    console.log('📝 OpenAI response content length:', content.length);
-
+    console.log('✅ Raw OpenAI response received, parsing...');
+    
     try {
-      const parsedResponse = JSON.parse(content);
-      console.log('✅ Successfully parsed OpenAI JSON response');
+      const parsed = JSON.parse(content);
+      const annotations = parsed.annotations || [];
       
-      if (!parsedResponse.annotations || !Array.isArray(parsedResponse.annotations)) {
-        console.error('❌ Response missing annotations array:', parsedResponse);
-        throw new Error('Response missing annotations array');
-      }
+      // Validate each annotation has proper correlation
+      const validatedAnnotations = annotations.map((annotation: any, index: number) => {
+        // Ensure coordinates are numbers and within bounds
+        const x = Math.max(0, Math.min(100, Number(annotation.x) || 50));
+        const y = Math.max(0, Math.min(100, Number(annotation.y) || 50));
+        
+        return {
+          ...annotation,
+          x,
+          y,
+          id: `ai-${index + 1}`,
+          imageIndex: annotation.imageIndex || 0,
+          // Ensure feedback mentions the coordinates for correlation verification
+          feedback: annotation.feedback + ` (Located at ${x.toFixed(1)}%, ${y.toFixed(1)}% in the design)`
+        };
+      });
 
-      const annotations = parsedResponse.annotations.map((annotation: any, index: number) => ({
-        x: typeof annotation.x === 'number' ? annotation.x : 50,
-        y: typeof annotation.y === 'number' ? annotation.y : 10 + (index * 5),
-        feedback: annotation.feedback || `Insight ${index + 1}`,
-        category: annotation.category || 'usability',
-        severity: annotation.severity || 'medium',
-        business_impact: annotation.business_impact || 'Moderate impact on user experience',
-        implementation_effort: annotation.implementation_effort || 'medium'
-      }));
-
-      console.log(`✅ OpenAI analysis completed: ${annotations.length} annotations extracted`);
-      return annotations;
-
+      console.log(`✅ Successfully processed ${validatedAnnotations.length} annotations with coordinate validation`);
+      return validatedAnnotations;
+      
     } catch (parseError) {
-      console.error('❌ Failed to parse OpenAI JSON response:', parseError);
-      console.error('Raw content:', content);
-      throw new Error(`Failed to parse OpenAI response: ${parseError.message}`);
+      console.error('❌ Error parsing OpenAI JSON response:', parseError);
+      console.error('❌ Raw content:', content);
+      throw new Error('Failed to parse OpenAI JSON response');
     }
-
+    
   } catch (error) {
-    console.error('❌ OpenAI client error:', error);
+    console.error('❌ OpenAI analysis failed:', error);
     throw error;
   }
 }
