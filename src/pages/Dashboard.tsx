@@ -65,38 +65,21 @@ const Dashboard = () => {
     return 'processing';
   };
 
-  // 🚀 SIMPLIFIED: Fixed image count calculation with proper typing
+  // 🚀 FIXED: Simplified image count calculation with proper TypeScript handling
   const calculateImageCount = (analysis: AnalysisResultsResponse): number => {
-    const debugId = `analysis-${analysis.analysis_id}`;
-    
-    console.log(`🔍 ${debugId} - IMAGE COUNT DEBUG:`, {
-      analysisId: analysis.analysis_id,
-      rawImages: analysis.images,
+    console.log(`🔍 IMAGE COUNT - Analysis ${analysis.analysis_id}:`, {
+      images: analysis.images,
       imagesType: typeof analysis.images,
       isArray: Array.isArray(analysis.images),
+      length: analysis.images?.length
     });
 
-    // Handle null/undefined cases
-    if (!analysis.images) {
-      console.log(`🔍 ${debugId} - No images property, returning 0`);
+    // Since images is typed as string[] | null, handle accordingly
+    if (!analysis.images || !Array.isArray(analysis.images)) {
       return 0;
     }
 
-    // Handle array cases
-    if (Array.isArray(analysis.images)) {
-      const count = analysis.images.length;
-      console.log(`🔍 ${debugId} - Array detected, count: ${count}`);
-      return count;
-    }
-
-    // Handle string cases - if images is a single URL string
-    if (typeof analysis.images === 'string' && analysis.images.trim().length > 0) {
-      console.log(`🔍 ${debugId} - String detected, count: 1`);
-      return 1;
-    }
-
-    console.log(`🔍 ${debugId} - Unknown format, defaulting to 0`);
-    return 0;
+    return analysis.images.length;
   };
 
   const filteredAnalyses = analyses.filter(analysis => {
@@ -257,7 +240,7 @@ const Dashboard = () => {
                   
                   <CardContent>
                     {/* Thumbnail - Only show if we have images */}
-                    {imageCount > 0 && analysis.images && Array.isArray(analysis.images) && analysis.images[0] && (
+                    {imageCount > 0 && analysis.images && analysis.images[0] && (
                       <div className="w-full h-32 bg-gray-100 dark:bg-slate-800 rounded-lg mb-4 overflow-hidden">
                         <img
                           src={analysis.images[0]}
@@ -271,7 +254,7 @@ const Dashboard = () => {
                       </div>
                     )}
                     
-                    {/* 🚀 SIMPLIFIED: Clean metrics display */}
+                    {/* 🚀 FIXED: Clean metrics display */}
                     <div className="space-y-3">
                       <div className="flex justify-between items-center py-1">
                         <span className="text-sm text-gray-600 dark:text-gray-300">
