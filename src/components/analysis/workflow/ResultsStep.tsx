@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -173,9 +172,9 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
   const activeImageIndex = workflow.selectedImages.indexOf(activeImageUrl);
   const detectedFocusAreas = parseContextForDisplay(workflow.analysisContext);
 
-  // 🔧 FIXED: Proper annotation filtering for current image
+  // 🔧 FIXED: Enhanced annotation filtering with detailed logging
   const getAnnotationsForImage = (imageIndex: number) => {
-    console.log('🔧 FIXED FILTERING - getAnnotationsForImage called:', {
+    console.log('🔧 ENHANCED FILTERING - getAnnotationsForImage called:', {
       requestedImageIndex: imageIndex,
       totalAnnotations: workflow.aiAnnotations?.length || 0,
       totalImages: workflow.selectedImages.length
@@ -186,43 +185,54 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
       return [];
     }
 
-    // 🔧 STEP 1: Filter annotations that specifically belong to this image
-    const exactMatch = workflow.aiAnnotations.filter(annotation => {
+    // 🔧 CRITICAL FIX: Strict filtering by imageIndex
+    const filteredAnnotations = workflow.aiAnnotations.filter(annotation => {
       const annotationImageIndex = annotation.imageIndex ?? 0;
       const matches = annotationImageIndex === imageIndex;
       
-      if (matches) {
-        console.log(`✅ Annotation ${annotation.id} belongs to image ${imageIndex}:`, {
-          annotationImageIndex,
-          feedback: annotation.feedback?.substring(0, 50) + '...'
-        });
-      }
+      console.log(`🔍 Annotation ${annotation.id}:`, {
+        annotationImageIndex,
+        requestedImageIndex: imageIndex,
+        matches,
+        feedback: annotation.feedback?.substring(0, 30) + '...'
+      });
       
       return matches;
     });
 
-    console.log('🔧 EXACT MATCH RESULTS:', {
+    console.log('🔧 FILTERING RESULTS:', {
       imageIndex,
-      exactMatchCount: exactMatch.length,
-      totalAnnotations: workflow.aiAnnotations.length
+      inputAnnotations: workflow.aiAnnotations.length,
+      filteredAnnotations: filteredAnnotations.length,
+      percentageFiltered: Math.round((filteredAnnotations.length / workflow.aiAnnotations.length) * 100) + '%'
     });
 
-    // 🔧 STEP 2: If we have exact matches, use them (no fallback needed)
-    if (exactMatch.length > 0) {
-      console.log(`✅ Using ${exactMatch.length} exact matches for image ${imageIndex}`);
-      return exactMatch;
-    }
-
-    // 🔧 STEP 3: If no exact matches AND we're dealing with single image, return all annotations
-    if (workflow.selectedImages.length === 1) {
-      console.log('🔧 Single image detected, returning all annotations');
-      return workflow.aiAnnotations;
-    }
-
-    // 🔧 STEP 4: For multi-image with no matches, return empty array (no forced distribution)
-    console.log(`🔧 Multi-image mode: No annotations found for image ${imageIndex}`);
-    return [];
+    return filteredAnnotations;
   };
+
+  // 🔧 NEW: Annotation validation function
+  const validateAnnotationImageIndices = () => {
+    if (!workflow.aiAnnotations) return;
+    
+    console.log('🔍 ANNOTATION IMAGE INDEX VALIDATION:', {
+      totalAnnotations: workflow.aiAnnotations.length,
+      totalImages: workflow.selectedImages.length,
+      imageIndexDistribution: workflow.aiAnnotations.reduce((acc, annotation) => {
+        const imageIndex = annotation.imageIndex ?? 0;
+        acc[imageIndex] = (acc[imageIndex] || 0) + 1;
+        return acc;
+      }, {} as Record<number, number>),
+      annotationsWithoutImageIndex: workflow.aiAnnotations.filter(a => a.imageIndex === undefined).length,
+      annotationsWithInvalidImageIndex: workflow.aiAnnotations.filter(a => 
+        (a.imageIndex ?? 0) >= workflow.selectedImages.length
+      ).length
+    });
+  };
+
+  // 🔧 NEW: Validation effect
+  useEffect(() => {
+    validateAnnotationImageIndices();
+  }, [workflow.aiAnnotations, workflow.selectedImages]);
 
   const getUserAnnotationsForImage = (imageUrl: string) => {
     const userAnnotations = workflow.userAnnotations[imageUrl] || [];
@@ -250,20 +260,25 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
     setActiveImageUrl(newImageUrl);
   }, [activeImageUrl, activeImageIndex, workflow.selectedImages]);
 
-  // 🔧 FIXED: Current image annotations with proper filtering
+  // 🔧 ENHANCED: Current image annotations with title/description tracking
   const currentImageAIAnnotations = (() => {
     const imageIndex = activeImageIndex >= 0 ? activeImageIndex : 0;
     const filteredAnnotations = getAnnotationsForImage(imageIndex);
     
-    console.log('🔧 CURRENT IMAGE AI ANNOTATIONS:', {
+    console.log('🎯 FINAL CURRENT IMAGE ANNOTATIONS:', {
       activeImageIndex: imageIndex,
       activeImageUrl: activeImageUrl,
       filteredCount: filteredAnnotations.length,
-      annotations: filteredAnnotations.map((a, i) => ({
+      expectedImageIndex: imageIndex,
+      allAnnotationsMatchImageIndex: filteredAnnotations.every(a => (a.imageIndex ?? 0) === imageIndex),
+      annotationSummary: filteredAnnotations.map((a, i) => ({
         index: i + 1,
         id: a.id,
         imageIndex: a.imageIndex,
-        feedback: a.feedback?.substring(0, 50) + '...'
+        title: a.title || 'No title',
+        hasTitle: !!a.title,
+        hasFeedback: !!a.feedback,
+        titleEqualsFeedback: a.title === a.feedback
       }))
     });
     
