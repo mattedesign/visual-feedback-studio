@@ -8,13 +8,13 @@ import { getAnalysisResults } from '@/services/analysisResultsService';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { Button } from '@/components/ui/button';
 import { BreadcrumbNavigation } from '@/components/layout/BreadcrumbNavigation';
-import { BarChart3, Eye, BookOpen } from 'lucide-react';
+import { Eye, BookOpen, BarChart3 } from 'lucide-react';
 
-type ModuleType = 'business-impact' | 'visual-analysis' | 'research-citations';
+type ModuleType = 'ux-insights' | 'research-backing' | 'business-case';
 
 export const ModularAnalysisInterface = () => {
   const { id } = useParams<{ id: string }>();
-  const [currentModule, setCurrentModule] = useState<ModuleType>('business-impact');
+  const [currentModule, setCurrentModule] = useState<ModuleType>('ux-insights'); // Changed default to UX insights
   const [analysisData, setAnalysisData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -92,22 +92,22 @@ export const ModularAnalysisInterface = () => {
 
   const modules = [
     {
-      id: 'business-impact' as ModuleType,
-      label: 'Business Impact',
-      icon: BarChart3,
-      description: 'Executive summary and ROI analysis'
-    },
-    {
-      id: 'visual-analysis' as ModuleType,
-      label: 'Visual Analysis',
+      id: 'ux-insights' as ModuleType,
+      label: 'UX Insights',
       icon: Eye,
-      description: 'Detailed annotations and insights'
+      description: 'Visual annotations and usability findings'
     },
     {
-      id: 'research-citations' as ModuleType,
-      label: 'Research Citations',
+      id: 'research-backing' as ModuleType,
+      label: 'Research Backing',
       icon: BookOpen,
-      description: 'Methodology and sources'
+      description: 'Academic sources and methodology (274 research entries)'
+    },
+    {
+      id: 'business-case' as ModuleType,
+      label: 'Business Case',
+      icon: BarChart3,
+      description: 'ROI projections and implementation timeline'
     }
   ];
 
@@ -175,16 +175,16 @@ export const ModularAnalysisInterface = () => {
 
       {/* Module Content */}
       <div className="bg-gray-50 dark:bg-slate-900">
-        {currentModule === 'business-impact' && (
-          <BusinessImpactDashboard analysisData={analysisData} />
-        )}
-        
-        {currentModule === 'visual-analysis' && (
+        {currentModule === 'ux-insights' && (
           <VisualAnalysisModule analysisData={analysisData} />
         )}
         
-        {currentModule === 'research-citations' && (
+        {currentModule === 'research-backing' && (
           <ResearchCitationsModule analysisData={analysisData} />
+        )}
+        
+        {currentModule === 'business-case' && (
+          <BusinessImpactDashboard analysisData={analysisData} />
         )}
       </div>
     </div>

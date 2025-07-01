@@ -52,7 +52,7 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
   // Get URL parameter for testing override and module selection
   const urlParams = new URLSearchParams(window.location.search);
   const betaMode = urlParams.get('beta') === 'true';
-  const activeModule = urlParams.get('module') || 'business-impact';
+  const activeModule = urlParams.get('module') || 'ux-insights'; // Changed default to UX insights
   
   // NEW INTERFACE ONLY WHEN FLAG IS TRUE OR BETA PARAMETER
   if (useModularInterface || betaMode) {
@@ -75,48 +75,48 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
             <nav className="flex gap-1">
               <button
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeModule === 'business-impact'
+                  activeModule === 'ux-insights'
                     ? 'bg-blue-600 text-white'
                     : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
                 }`}
                 onClick={() => {
                   const newParams = new URLSearchParams(window.location.search);
-                  newParams.set('module', 'business-impact');
+                  newParams.set('module', 'ux-insights');
                   window.history.pushState(null, '', `${window.location.pathname}?${newParams.toString()}`);
                   window.location.reload();
                 }}
               >
-                Business Impact
+                UX Insights
               </button>
               <button
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeModule === 'visual-analysis'
+                  activeModule === 'research-backing'
                     ? 'bg-blue-600 text-white'
                     : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
                 }`}
                 onClick={() => {
                   const newParams = new URLSearchParams(window.location.search);
-                  newParams.set('module', 'visual-analysis');
+                  newParams.set('module', 'research-backing');
                   window.history.pushState(null, '', `${window.location.pathname}?${newParams.toString()}`);
                   window.location.reload();
                 }}
               >
-                Visual Analysis
+                Research Backing
               </button>
               <button
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeModule === 'research-citations'
+                  activeModule === 'business-case'
                     ? 'bg-blue-600 text-white'
                     : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
                 }`}
                 onClick={() => {
                   const newParams = new URLSearchParams(window.location.search);
-                  newParams.set('module', 'research-citations');
+                  newParams.set('module', 'business-case');
                   window.history.pushState(null, '', `${window.location.pathname}?${newParams.toString()}`);
                   window.location.reload();
                 }}
               >
-                Research Citations
+                Business Case
               </button>
             </nav>
           </div>
@@ -127,9 +127,9 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
         <ModuleNavigation />
-        {activeModule === 'business-impact' && <BusinessImpactDashboard analysisData={businessAnalysisData} />}
-        {activeModule === 'visual-analysis' && <VisualAnalysisModule analysisData={businessAnalysisData} />}
-        {activeModule === 'research-citations' && <ResearchCitationsModule analysisData={businessAnalysisData} />}
+        {activeModule === 'ux-insights' && <VisualAnalysisModule analysisData={businessAnalysisData} />}
+        {activeModule === 'research-backing' && <ResearchCitationsModule analysisData={businessAnalysisData} />}
+        {activeModule === 'business-case' && <BusinessImpactDashboard analysisData={businessAnalysisData} />}
       </div>
     );
   }
@@ -323,8 +323,8 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
       <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-blue-800 dark:text-blue-200 font-medium">🚀 Try our new Business Impact Dashboard!</p>
-            <p className="text-blue-600 dark:text-blue-300 text-sm">Executive-friendly insights and actionable recommendations</p>
+            <p className="text-blue-800 dark:text-blue-200 font-medium">🚀 Try our new UX-first Analysis Dashboard!</p>
+            <p className="text-blue-600 dark:text-blue-300 text-sm">Now leading with UX insights, research backing, and business case</p>
           </div>
           <Button 
             onClick={() => window.location.href += (window.location.href.includes('?') ? '&' : '?') + 'beta=true'}
