@@ -40,6 +40,19 @@ export const AnnotationDetailsList: React.FC<AnnotationDetailsListProps> = ({
     }
   };
 
+  // 🔧 FIXED: Filter annotations by current image index
+  const currentImageAnnotations = annotations.filter(annotation => {
+    const annotationImageIndex = annotation.imageIndex ?? 0;
+    return annotationImageIndex === currentImageIndex;
+  });
+
+  console.log('🔍 AnnotationDetailsList - Filtering Debug:', {
+    totalAnnotations: annotations.length,
+    currentImageIndex,
+    filteredAnnotations: currentImageAnnotations.length,
+    annotationImageIndices: annotations.map(a => ({ id: a.id, imageIndex: a.imageIndex }))
+  });
+
   const generateAnnotationTitle = (annotation: Annotation): string => {
     // FIXED: Generate proper titles based on category and content
     const categoryTitles = {
@@ -108,12 +121,12 @@ export const AnnotationDetailsList: React.FC<AnnotationDetailsListProps> = ({
     }
   };
 
-  if (annotations.length === 0) {
+  if (currentImageAnnotations.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500 dark:text-gray-400">
         <Info className="w-12 h-12 mx-auto mb-4 opacity-50" />
-        <p>No annotations available for this image.</p>
-        <p className="text-sm mt-2">Upload an image and run analysis to see insights.</p>
+        <p>No annotations available for Image {currentImageIndex + 1}.</p>
+        <p className="text-sm mt-2">This image may not have any UX insights or the analysis is still processing.</p>
       </div>
     );
   }
@@ -126,12 +139,12 @@ export const AnnotationDetailsList: React.FC<AnnotationDetailsListProps> = ({
             Viewing Image {currentImageIndex + 1} Insights
           </h3>
           <p className="text-sm text-blue-700 dark:text-blue-300">
-            {annotations.length} annotation{annotations.length !== 1 ? 's' : ''} found for this image
+            {currentImageAnnotations.length} annotation{currentImageAnnotations.length !== 1 ? 's' : ''} found for this image
           </p>
         </div>
       )}
 
-      {annotations.map((annotation, index) => {
+      {currentImageAnnotations.map((annotation, index) => {
         const isActive = activeAnnotation === annotation.id;
         const title = generateAnnotationTitle(annotation);
         const description = generateAnnotationDescription(annotation);
@@ -204,9 +217,7 @@ export const AnnotationDetailsList: React.FC<AnnotationDetailsListProps> = ({
                       {Math.round(annotation.x)}%, {Math.round(annotation.y)}%
                     </code>
                   </span>
-                  {annotation.imageIndex !== undefined && (
-                    <span><strong>Image:</strong> {annotation.imageIndex + 1}</span>
-                  )}
+                  <span><strong>Image:</strong> {(annotation.imageIndex ?? 0) + 1}</span>
                 </div>
                 <Button 
                   variant="ghost"
@@ -236,31 +247,31 @@ export const AnnotationDetailsList: React.FC<AnnotationDetailsListProps> = ({
         );
       })}
       
-      {/* Summary statistics */}
+      {/* Summary statistics for current image */}
       <div className="mt-6 p-4 bg-gray-50 dark:bg-slate-800 rounded-lg border">
-        <h4 className="font-medium text-gray-900 dark:text-white mb-3">Analysis Summary</h4>
+        <h4 className="font-medium text-gray-900 dark:text-white mb-3">Image {currentImageIndex + 1} Summary</h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
           <div className="text-center p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800">
             <div className="font-bold text-red-700 dark:text-red-300 text-lg">
-              {annotations.filter(a => a.severity === 'critical').length}
+              {currentImageAnnotations.filter(a => a.severity === 'critical').length}
             </div>
             <div className="text-red-600 dark:text-red-400">Critical</div>
           </div>
           <div className="text-center p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded border border-yellow-200 dark:border-yellow-800">
             <div className="font-bold text-yellow-700 dark:text-yellow-300 text-lg">
-              {annotations.filter(a => a.severity === 'suggested').length}
+              {currentImageAnnotations.filter(a => a.severity === 'suggested').length}
             </div>
             <div className="text-yellow-600 dark:text-yellow-400">Suggested</div>
           </div>
           <div className="text-center p-2 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
             <div className="font-bold text-blue-700 dark:text-blue-300 text-lg">
-              {annotations.filter(a => a.severity === 'enhancement').length}
+              {currentImageAnnotations.filter(a => a.severity === 'enhancement').length}
             </div>
             <div className="text-blue-600 dark:text-blue-400">Enhancement</div>
           </div>
           <div className="text-center p-2 bg-green-50 dark:bg-green-900/20 rounded border border-green-200 dark:border-green-800">
             <div className="font-bold text-green-700 dark:text-green-300 text-lg">
-              {annotations.length}
+              {currentImageAnnotations.length}
             </div>
             <div className="text-green-600 dark:text-green-400">Total</div>
           </div>

@@ -32,6 +32,16 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
   // Use existing annotation data as-is with proper safety checks
   const processedAnnotations = analysisData?.annotations || [];
   
+  console.log('🔍 VisualAnalysisModule - Debug Info:', {
+    totalAnnotations: processedAnnotations.length,
+    currentImageIndex,
+    annotationDistribution: processedAnnotations.reduce((acc, ann) => {
+      const imgIndex = ann?.imageIndex ?? 0;
+      acc[imgIndex] = (acc[imgIndex] || 0) + 1;
+      return acc;
+    }, {} as Record<number, number>)
+  });
+  
   // Simplified image data extraction
   const images = (() => {
     // Primary: Direct images array from database
@@ -64,19 +74,43 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
 
     return [{ url: '/placeholder.svg', preview: '/placeholder.svg' }];
   })();
+
+  // 🔧 FIXED: Filter annotations by current image index
+  const getCurrentImageAnnotations = () => {
+    return processedAnnotations.filter(ann => {
+      const annotationImageIndex = ann?.imageIndex ?? 0;
+      return annotationImageIndex === currentImageIndex;
+    });
+  };
+
+  const currentImageAnnotations = getCurrentImageAnnotations();
   
-  // Filter annotations based on severity
+  // Filter annotations based on severity for current image only
   const filteredAnnotations = severityFilter === 'all' 
-    ? processedAnnotations 
-    : processedAnnotations.filter(ann => ann?.severity === severityFilter);
+    ? currentImageAnnotations 
+    : currentImageAnnotations.filter(ann => ann?.severity === severityFilter);
   
-  // Separate annotations with and without positions
+  // Separate annotations with and without positions for current image
   const annotationsWithPosition = filteredAnnotations.filter(ann => 
     ann?.x !== undefined && ann?.y !== undefined
   );
   const annotationsWithoutPosition = filteredAnnotations.filter(ann => 
     ann?.x === undefined || ann?.y === undefined
   );
+
+  console.log('🎯 VisualAnalysisModule - Current Image Filtering:', {
+    currentImageIndex,
+    totalAnnotations: processedAnnotations.length,
+    currentImageAnnotations: currentImageAnnotations.length,
+    filteredAnnotations: filteredAnnotations.length,
+    withPosition: annotationsWithPosition.length,
+    withoutPosition: annotationsWithoutPosition.length
+  });
+
+  // Reset selected annotation when switching images
+  useEffect(() => {
+    setSelectedAnnotation(null);
+  }, [currentImageIndex]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -167,11 +201,11 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
       const currentImageUrl = images[currentImageIndex]?.url || '/placeholder.svg';
       const link = document.createElement('a');
       link.href = currentImageUrl;
-      link.download = `Figmant_Analysis_${Date.now()}.jpg`;
+      link.download = `Figmant_Analysis_Image_${currentImageIndex + 1}_${Date.now()}.jpg`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      toast.success("🖼️ Image download started");
+      toast.success(`🖼️ Image ${currentImageIndex + 1} download started`);
     } catch (error) {
       console.error('Download error:', error);
       toast.error("Failed to download image");
@@ -181,12 +215,12 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
   const handleCopyAnnotationURLs = () => {
     try {
       const currentUrl = window.location.href;
-      const annotationUrls = filteredAnnotations.map((annotation, index) => 
-        `${currentUrl}#annotation-${annotation?.id || index + 1}`
+      const annotationUrls = currentImageAnnotations.map((annotation, index) => 
+        `${currentUrl}#image-${currentImageIndex + 1}-annotation-${annotation?.id || index + 1}`
       ).join('\n');
       
       navigator.clipboard.writeText(annotationUrls);
-      toast.success("🔗 Annotation URLs copied to clipboard");
+      toast.success(`🔗 ${currentImageAnnotations.length} annotation URLs copied for Image ${currentImageIndex + 1}`);
     } catch (error) {
       console.error('Copy URLs error:', error);
       toast.error("Failed to copy URLs");
@@ -195,21 +229,21 @@ export const VisualAnalysisModule: React.FC<VisualAnalysisModuleProps> = ({
 
   const handleGenerateTechnicalBrief = () => {
     try {
-      const criticalCount = processedAnnotations.filter(a => a?.severity === 'critical').length;
-      const suggestedCount = processedAnnotations.filter(a => a?.severity === 'suggested').length;
-      const enhancementCount = processedAnnotations.filter(a => a?.severity === 'enhancement').length;
+      const currentImageCritical = currentImageAnnotations.filter(a => a?.severity === 'critical').length;
+      const currentImageSuggested = currentImageAnnotations.filter(a => a?.severity === 'suggested').length;
+      const currentImageEnhancement = currentImageAnnotations.filter(a => a?.severity === 'enhancement').length;
       
-      const briefText = `TECHNICAL BRIEF - UX Analysis
+      const briefText = `TECHNICAL BRIEF - Image ${currentImageIndex + 1} Analysis
 Generated: ${new Date().toLocaleDateString()}
 
-EXECUTIVE SUMMARY
-Total Issues Found: ${processedAnnotations.length}
-• Critical Issues: ${criticalCount}
-• Suggested Improvements: ${suggestedCount}
-• Enhancements: ${enhancementCount}
+IMAGE ${currentImageIndex + 1} SUMMARY
+Total Issues Found: ${currentImageAnnotations.length}
+• Critical Issues: ${currentImageCritical}
+• Suggested Improvements: ${currentImageSuggested}
+• Enhancements: ${currentImageEnhancement}
 
-IMPLEMENTATION PRIORITIES
-${processedAnnotations.slice(0, 10).map((annotation, index) => 
+IMPLEMENTATION PRIORITIES FOR IMAGE ${currentImageIndex + 1}
+${currentImageAnnotations.slice(0, 10).map((annotation, index) => 
   `${index + 1}. [${(annotation?.severity || 'enhancement').toUpperCase()}] ${
     (annotation?.feedback || annotation?.title || 'Analysis finding').substring(0, 100)
   }...`
@@ -222,13 +256,13 @@ Research Sources: Nielsen Norman Group, Baymard Institute, Google UX Research
 
 TECHNICAL IMPLEMENTATION
 Estimated Timeline: 2-8 weeks
-Quick Wins Available: ${criticalCount + suggestedCount} items
+Quick Wins Available: ${currentImageCritical + currentImageSuggested} items
 Resource Requirements: Frontend development team
 
 Generated by Figmant UX Analysis Platform`;
 
       navigator.clipboard.writeText(briefText);
-      toast.success("📋 Technical brief copied to clipboard");
+      toast.success(`📋 Technical brief for Image ${currentImageIndex + 1} copied to clipboard`);
     } catch (error) {
       console.error('Technical brief error:', error);
       toast.error("Failed to generate technical brief");
@@ -266,13 +300,13 @@ Generated by Figmant UX Analysis Platform`;
             
             {/* Debug info overlay */}
             <div className="absolute top-2 left-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded max-w-xs">
-              <div>Image {currentImageIndex + 1}/{images.length} • Zoom: {Math.round(zoomLevel * 100)}%</div>
+              <div>Image {currentImageIndex + 1}/{images.length} • Zoom: {Math.round(zoomLevel * 100)}% • Annotations: {currentImageAnnotations.length}</div>
             </div>
             
-            {/* Render annotations with positions over the image */}
+            {/* Render annotations with positions over the image - FILTERED BY CURRENT IMAGE */}
             {annotationsWithPosition.map((annotation, index) => (
               <div
-                key={annotation?.id || `annotation-${index}`}
+                key={annotation?.id || `annotation-${currentImageIndex}-${index}`}
                 className={`absolute w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold cursor-pointer transform -translate-x-1/2 -translate-y-1/2 hover:scale-110 transition-transform duration-200 border-2 ${
                   getSeverityColor(annotation?.severity || 'enhancement')
                 } ${selectedAnnotation?.id === annotation?.id ? 'ring-4 ring-white scale-110' : ''}`}
@@ -281,7 +315,14 @@ Generated by Figmant UX Analysis Platform`;
                   top: `${annotation?.y || 50}%`,
                   transform: `translate(-50%, -50%) scale(${1 / zoomLevel})`
                 }}
-                onClick={() => setSelectedAnnotation(annotation)}
+                onClick={() => {
+                  console.log('🎯 Annotation clicked:', {
+                    annotationId: annotation?.id,
+                    imageIndex: currentImageIndex,
+                    annotationImageIndex: annotation?.imageIndex
+                  });
+                  setSelectedAnnotation(annotation);
+                }}
                 title={(annotation?.feedback || annotation?.title || 'Annotation').substring(0, 50) + '...'}
               >
                 {index + 1}
@@ -290,16 +331,16 @@ Generated by Figmant UX Analysis Platform`;
           </div>
         </div>
         
-        {/* Additional Findings - Annotations without positions */}
+        {/* Additional Findings - Annotations without positions for current image */}
         {annotationsWithoutPosition.length > 0 && (
           <div className="annotations-without-position mb-4 p-4 bg-gray-100 dark:bg-slate-700 rounded-lg">
             <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-              Additional Findings:
+              Additional Findings for Image {currentImageIndex + 1}:
             </h4>
             <div className="space-y-2">
               {annotationsWithoutPosition.map((annotation, index) => (
                 <div 
-                  key={annotation?.id || `no-pos-${index}`}
+                  key={annotation?.id || `no-pos-${currentImageIndex}-${index}`}
                   className="flex items-start gap-2 p-2 bg-white dark:bg-slate-600 rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-500"
                   onClick={() => setSelectedAnnotation(annotation)}
                 >
@@ -361,7 +402,7 @@ Generated by Figmant UX Analysis Platform`;
                 Previous
               </button>
               <span className="text-sm text-gray-600 dark:text-gray-300 px-2">
-                {currentImageIndex + 1} of {images.length}
+                Image {currentImageIndex + 1} of {images.length}
               </span>
               <button 
                 onClick={handleNextImage}
@@ -379,6 +420,16 @@ Generated by Figmant UX Analysis Platform`;
       
       {/* Right Panel - Annotation Details and Controls */}
       <div className="right-panel w-full lg:w-80 bg-gray-50 dark:bg-slate-800 p-4 lg:p-6 border-t lg:border-t-0 lg:border-l border-gray-200 dark:border-slate-600 overflow-y-auto">
+        {/* Image Context Header */}
+        <div className="mb-4 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100">
+            Viewing Image {currentImageIndex + 1} of {images.length}
+          </h4>
+          <p className="text-xs text-blue-700 dark:text-blue-300">
+            {currentImageAnnotations.length} annotation{currentImageAnnotations.length !== 1 ? 's' : ''} found
+          </p>
+        </div>
+
         {/* Annotation Details */}
         <div className="annotation-details mb-6">
           <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
@@ -425,13 +476,13 @@ Generated by Figmant UX Analysis Platform`;
           ) : (
             <div className="bg-white dark:bg-slate-700 p-4 rounded-lg border border-gray-200 dark:border-slate-600 text-center">
               <p className="text-sm text-gray-500 dark:text-gray-400 italic">
-                Click on an annotation number to view details
+                Click on an annotation number to view details for Image {currentImageIndex + 1}
               </p>
             </div>
           )}
         </div>
         
-        {/* Annotation Filters */}
+        {/* Annotation Filters - Updated to show current image counts */}
         <div className="annotation-filters mb-6">
           <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
             Filter Annotations
@@ -443,7 +494,7 @@ Generated by Figmant UX Analysis Platform`;
               }`}
               onClick={() => setSeverityFilter('all')}
             >
-              All Issues ({processedAnnotations.length})
+              All Issues ({currentImageAnnotations.length})
             </button>
             <button 
               className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
@@ -451,7 +502,7 @@ Generated by Figmant UX Analysis Platform`;
               }`}
               onClick={() => setSeverityFilter('critical')}
             >
-              Critical Only ({processedAnnotations.filter(a => a?.severity === 'critical').length})
+              Critical Only ({currentImageAnnotations.filter(a => a?.severity === 'critical').length})
             </button>
             <button 
               className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
@@ -459,7 +510,7 @@ Generated by Figmant UX Analysis Platform`;
               }`}
               onClick={() => setSeverityFilter('suggested')}
             >
-              Suggested ({processedAnnotations.filter(a => a?.severity === 'suggested').length})
+              Suggested ({currentImageAnnotations.filter(a => a?.severity === 'suggested').length})
             </button>
             <button 
               className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
@@ -467,12 +518,12 @@ Generated by Figmant UX Analysis Platform`;
               }`}
               onClick={() => setSeverityFilter('enhancement')}
             >
-              Enhancements ({processedAnnotations.filter(a => a?.severity === 'enhancement').length})
+              Enhancements ({currentImageAnnotations.filter(a => a?.severity === 'enhancement').length})
             </button>
           </div>
         </div>
         
-        {/* Working Export Options with Real Functionality */}
+        {/* Working Export Options with Real Functionality - Updated for current image */}
         <div className="export-options">
           <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
             Export Options
@@ -483,21 +534,21 @@ Generated by Figmant UX Analysis Platform`;
               className="w-full bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
             >
               <Download className="w-4 h-4" />
-              Download Annotated Image
+              Download Image {currentImageIndex + 1}
             </button>
             <button 
               onClick={handleCopyAnnotationURLs}
               className="w-full border border-gray-300 dark:border-gray-600 px-4 py-2 rounded text-sm hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 transition-colors flex items-center justify-center gap-2"
             >
               <Share2 className="w-4 h-4" />
-              Copy Annotation URLs
+              Copy Image {currentImageIndex + 1} URLs
             </button>
             <button 
               onClick={handleGenerateTechnicalBrief}
               className="w-full border border-gray-300 dark:border-gray-600 px-4 py-2 rounded text-sm hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 transition-colors flex items-center justify-center gap-2"
             >
               <FileText className="w-4 h-4" />
-              Generate Technical Brief
+              Generate Brief for Image {currentImageIndex + 1}
             </button>
           </div>
           
