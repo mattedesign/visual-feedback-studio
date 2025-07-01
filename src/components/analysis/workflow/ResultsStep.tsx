@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
@@ -214,86 +213,209 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
   const activeImageIndex = workflow.selectedImages.indexOf(activeImageUrl);
   const detectedFocusAreas = parseContextForDisplay(workflow.analysisContext);
 
-  // 🔧 ENHANCED ANNOTATION FILTERING WITH STRICT IMAGE CORRELATION
+  // 🎯 STEP 3: ENHANCED ANNOTATION FILTERING WITH STRICT IMAGE CORRELATION
   const getAnnotationsForImage = (imageIndex: number) => {
     // Filter annotations that belong to this specific image
     const filteredAnnotations = workflow.aiAnnotations.filter(annotation => {
       const annotationImageIndex = annotation.imageIndex ?? 0;
       const belongsToImage = annotationImageIndex === imageIndex;
       
-      console.log('🎯 Annotation Filter Check:', {
+      // 🆕 NEW: Enhanced validation for annotation quality
+      const hasValidFeedback = annotation.feedback && 
+                              annotation.feedback.trim() !== '' && 
+                              annotation.feedback !== 'Analysis insight' &&
+                              annotation.feedback.length > 10;
+      
+      const hasValidCoordinates = typeof annotation.x === 'number' && 
+                                 typeof annotation.y === 'number' &&
+                                 annotation.x >= 0 && annotation.x <= 100 &&
+                                 annotation.y >= 0 && annotation.y <= 100;
+      
+      console.log('🎯 Enhanced Annotation Filter Check:', {
         annotationId: annotation.id,
         annotationImageIndex,
         requestedImageIndex: imageIndex,
         belongsToImage,
-        feedback: annotation.feedback?.substring(0, 50) + '...'
+        hasValidFeedback,
+        hasValidCoordinates,
+        feedback: annotation.feedback?.substring(0, 50) + '...',
+        coordinates: { x: annotation.x, y: annotation.y }
       });
       
-      return belongsToImage;
+      // 🚨 CRITICAL: Only include annotations that belong to this image AND have valid data
+      return belongsToImage && hasValidFeedback && hasValidCoordinates;
     });
     
-    console.log('🎯 FILTERED ANNOTATIONS FOR IMAGE', imageIndex, ':', {
+    console.log('🎯 ENHANCED FILTERED ANNOTATIONS FOR IMAGE', imageIndex, ':', {
       totalAnnotations: workflow.aiAnnotations.length,
       filteredCount: filteredAnnotations.length,
       activeImageUrl: activeImageUrl,
       activeImageIndex: activeImageIndex,
-      filteredIds: filteredAnnotations.map(a => a.id)
+      qualityFiltering: {
+        validFeedback: true,
+        validCoordinates: true,
+        imageIndexMatch: true
+      },
+      filteredDetails: filteredAnnotations.map((a, i) => ({
+        index: i + 1,
+        id: a.id,
+        imageIndex: a.imageIndex,
+        coordinates: { x: a.x, y: a.y },
+        feedbackLength: a.feedback?.length || 0,
+        category: a.category,
+        severity: a.severity
+      }))
     });
     
     return filteredAnnotations;
   };
 
+  // 🎯 ENHANCED USER ANNOTATIONS FILTERING
   const getUserAnnotationsForImage = (imageUrl: string) => {
     const userAnnotations = workflow.userAnnotations[imageUrl] || [];
     
-    console.log('👤 RESULTS STEP - USER ANNOTATIONS DEBUG:', {
-      imageUrl: imageUrl,
-      userAnnotationsCount: userAnnotations.length,
-      userAnnotationIds: userAnnotations.map(a => a.id)
+    // 🆕 NEW: Validate user annotations for this specific image
+    const validUserAnnotations = userAnnotations.filter(annotation => {
+      const hasValidData = annotation.comment && 
+                          annotation.comment.trim() !== '' &&
+                          typeof annotation.x === 'number' && 
+                          typeof annotation.y === 'number';
+      
+      console.log('👤 Enhanced User Annotation Validation:', {
+        annotationId: annotation.id,
+        imageUrl: imageUrl,
+        hasValidData,
+        comment: annotation.comment?.substring(0, 30) + '...',
+        coordinates: { x: annotation.x, y: annotation.y }
+      });
+      
+      return hasValidData;
     });
     
-    return userAnnotations;
+    console.log('👤 ENHANCED USER ANNOTATIONS FOR IMAGE:', {
+      imageUrl: imageUrl,
+      totalUserAnnotations: userAnnotations.length,
+      validUserAnnotations: validUserAnnotations.length,
+      userAnnotationIds: validUserAnnotations.map(a => a.id)
+    });
+    
+    return validUserAnnotations;
   };
 
-  // 🎯 CURRENT IMAGE ANNOTATIONS WITH ENHANCED DEBUGGING - FIXED
+  // 🎯 NEW: Enhanced image switching handler
+  const handleImageSwitch = useCallback((newImageUrl: string) => {
+    console.log('🔄 ENHANCED IMAGE SWITCH HANDLING:', {
+      from: activeImageUrl,
+      to: newImageUrl,
+      activeAnnotation: activeAnnotation,
+      currentImageIndex: activeImageIndex
+    });
+    
+    // Clear active annotation when switching images
+    setActiveAnnotation(null);
+    
+    // Update active image URL
+    setActiveImageUrl(newImageUrl);
+    
+    // Force component refresh to clear any cached annotation states
+    setTimeout(() => {
+      console.log('✅ Enhanced image switch complete, clearing annotation cache');
+      forceCacheRefresh();
+    }, 100);
+  }, [activeImageUrl, activeAnnotation, setActiveAnnotation, setActiveImageUrl, activeImageIndex, forceCacheRefresh]);
+
+  // 🎯 ENHANCED CURRENT IMAGE ANNOTATIONS WITH QUALITY FILTERING
   const currentImageAIAnnotations = (() => {
     const imageIndex = activeImageIndex >= 0 ? activeImageIndex : 0;
     const filteredAnnotations = getAnnotationsForImage(imageIndex);
     
-    console.log('🎯 CURRENT IMAGE AI ANNOTATIONS - FINAL RESULT:', {
+    // 🆕 NEW: Additional quality check for annotations
+    const qualityFilteredAnnotations = filteredAnnotations.filter(annotation => {
+      // Ensure annotation has all required fields
+      const isComplete = annotation.id && 
+                        annotation.feedback && 
+                        annotation.category && 
+                        annotation.severity &&
+                        typeof annotation.x === 'number' &&
+                        typeof annotation.y === 'number';
+      
+      // Ensure feedback is meaningful and not just a placeholder
+      const feedbackText = annotation.feedback.split('Located at')[0].trim(); // Remove coordinate additions
+      const isMeaningful = feedbackText.length > 20 &&
+                          !annotation.feedback.includes('Analysis insight detected') &&
+                          !annotation.feedback.includes('placeholder');
+      
+      if (!isComplete || !isMeaningful) {
+        console.warn('🔍 Filtering out low-quality annotation:', {
+          id: annotation.id,
+          isComplete,
+          isMeaningful,
+          feedback: annotation.feedback?.substring(0, 50) + '...'
+        });
+      }
+      
+      return isComplete && isMeaningful;
+    });
+    
+    console.log('🎯 FINAL ENHANCED CURRENT IMAGE AI ANNOTATIONS:', {
       activeImageIndex: imageIndex,
       activeImageUrl: activeImageUrl,
-      currentImageAIAnnotationsCount: filteredAnnotations.length,
-      annotationsData: filteredAnnotations.map((a, i) => ({
+      originalCount: filteredAnnotations.length,
+      qualityFilteredCount: qualityFilteredAnnotations.length,
+      finalAnnotations: qualityFilteredAnnotations.map((a, i) => ({
         index: i + 1,
         id: a.id,
-        feedback: a.feedback,
+        feedback: a.feedback?.substring(0, 50) + '...',
         feedbackLength: a.feedback?.length || 0,
-        isValidFeedback: !!(a.feedback && a.feedback.trim() && a.feedback !== 'Analysis insight'),
+        coordinates: { x: a.x, y: a.y },
         category: a.category,
         severity: a.severity,
         imageIndex: a.imageIndex
       }))
     });
     
-    return filteredAnnotations;
+    return qualityFilteredAnnotations;
   })();
 
   const currentImageUserAnnotations = getUserAnnotationsForImage(activeImageUrl);
 
-  console.log('🎯 FINAL DATA BEING PASSED TO FEEDBACK PANEL:', {
+  // 🎯 ENHANCED FINAL DEBUG LOG
+  console.log('🎯 ENHANCED FINAL DATA BEING PASSED TO FEEDBACK PANEL:', {
     currentImageAIAnnotationsCount: currentImageAIAnnotations.length,
     currentImageUserAnnotationsCount: currentImageUserAnnotations.length,
     totalAIAnnotations: workflow.aiAnnotations.length,
     activeImageIndex: activeImageIndex,
     activeImageUrl: activeImageUrl,
     isMultiImage: isMultiImage,
-    firstAnnotationPreview: currentImageAIAnnotations[0] ? {
+    dataQuality: {
+      hasValidAIAnnotations: currentImageAIAnnotations.length > 0,
+      hasValidUserAnnotations: currentImageUserAnnotations.length > 0,
+      allAnnotationsHaveValidFeedback: currentImageAIAnnotations.every(a => a.feedback && a.feedback.length > 20),
+      allAnnotationsHaveValidCoordinates: currentImageAIAnnotations.every(a => 
+        typeof a.x === 'number' && typeof a.y === 'number' && 
+        a.x >= 0 && a.x <= 100 && a.y >= 0 && a.y <= 100
+      ),
+      annotationQualityStats: {
+        avgFeedbackLength: currentImageAIAnnotations.length > 0 
+          ? currentImageAIAnnotations.reduce((sum, a) => sum + (a.feedback?.length || 0), 0) / currentImageAIAnnotations.length 
+          : 0,
+        categoriesUsed: [...new Set(currentImageAIAnnotations.map(a => a.category))],
+        severityDistribution: {
+          critical: currentImageAIAnnotations.filter(a => a.severity === 'critical').length,
+          suggested: currentImageAIAnnotations.filter(a => a.severity === 'suggested').length,
+          enhancement: currentImageAIAnnotations.filter(a => a.severity === 'enhancement').length
+        }
+      }
+    },
+    firstAnnotationDetails: currentImageAIAnnotations[0] ? {
       id: currentImageAIAnnotations[0].id,
-      feedback: currentImageAIAnnotations[0].feedback,
+      feedback: currentImageAIAnnotations[0].feedback?.substring(0, 100) + '...',
       feedbackLength: currentImageAIAnnotations[0].feedback?.length || 0,
-      imageIndex: currentImageAIAnnotations[0].imageIndex
-    } : 'No annotations'
+      coordinates: { x: currentImageAIAnnotations[0].x, y: currentImageAIAnnotations[0].y },
+      imageIndex: currentImageAIAnnotations[0].imageIndex,
+      category: currentImageAIAnnotations[0].category,
+      severity: currentImageAIAnnotations[0].severity
+    } : 'No valid annotations found'
   });
 
   // Extract business impact and insights
@@ -454,7 +576,7 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
                 <EnhancedImageTabsViewer
                   images={workflow.selectedImages}
                   activeImageUrl={activeImageUrl}
-                  onImageChange={setActiveImageUrl}
+                  onImageChange={handleImageSwitch}
                   getAnnotationsForImage={getAnnotationsForImage}
                   getUserAnnotationsForImage={(imageUrl: string) => workflow.userAnnotations[imageUrl] || []}
                   onAnnotationClick={setActiveAnnotation}
@@ -473,7 +595,7 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
               )}
             </div>
             
-            {/* 🔧 FIXED: Pass activeImageUrl as key to force re-render when image changes */}
+            {/* 🔧 ENHANCED: Pass activeImageUrl as key to force re-render when image changes */}
             <PositiveLanguageWrapper annotations={workflow.aiAnnotations}>
               <FeedbackPanel
                 key={`feedback-${activeImageUrl}-${activeImageIndex}`}
