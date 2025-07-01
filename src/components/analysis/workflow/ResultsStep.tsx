@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -213,31 +214,30 @@ export const ResultsStep = ({ workflow }: ResultsStepProps) => {
   const activeImageIndex = workflow.selectedImages.indexOf(activeImageUrl);
   const detectedFocusAreas = parseContextForDisplay(workflow.analysisContext);
 
-  // 🔧 ENHANCED ANNOTATION FILTERING WITH DEBUGGING
+  // 🔧 ENHANCED ANNOTATION FILTERING WITH STRICT IMAGE CORRELATION
   const getAnnotationsForImage = (imageIndex: number) => {
-    const filteredAnnotations = workflow.aiAnnotations.filter(annotation => 
-      (annotation.imageIndex ?? 0) === imageIndex
-    );
+    // Filter annotations that belong to this specific image
+    const filteredAnnotations = workflow.aiAnnotations.filter(annotation => {
+      const annotationImageIndex = annotation.imageIndex ?? 0;
+      const belongsToImage = annotationImageIndex === imageIndex;
+      
+      console.log('🎯 Annotation Filter Check:', {
+        annotationId: annotation.id,
+        annotationImageIndex,
+        requestedImageIndex: imageIndex,
+        belongsToImage,
+        feedback: annotation.feedback?.substring(0, 50) + '...'
+      });
+      
+      return belongsToImage;
+    });
     
-    console.log('🎯 RESULTS STEP - ANNOTATION FILTERING DEBUG:', {
-      requestedImageIndex: imageIndex,
+    console.log('🎯 FILTERED ANNOTATIONS FOR IMAGE', imageIndex, ':', {
       totalAnnotations: workflow.aiAnnotations.length,
-      annotationsForThisImage: filteredAnnotations.length,
+      filteredCount: filteredAnnotations.length,
       activeImageUrl: activeImageUrl,
       activeImageIndex: activeImageIndex,
-      filteringLogic: workflow.aiAnnotations.map(a => ({
-        id: a.id,
-        imageIndex: a.imageIndex,
-        imageIndexType: typeof a.imageIndex,
-        matches: (a.imageIndex ?? 0) === imageIndex,
-        feedback: a.feedback,
-        feedbackLength: a.feedback?.length || 0
-      })),
-      filteredResults: filteredAnnotations.map(a => ({
-        id: a.id,
-        feedback: a.feedback,
-        feedbackLength: a.feedback?.length || 0
-      }))
+      filteredIds: filteredAnnotations.map(a => a.id)
     });
     
     return filteredAnnotations;
