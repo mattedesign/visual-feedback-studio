@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -56,7 +55,7 @@ export const EnhancedImageTabsViewer = ({
   // 🔧 ENHANCED DEBUG: More detailed logging for correlation tracking
   console.log('🔧 ENHANCED IMAGE TABS VIEWER - CORRELATION CHECK:', {
     currentImageIndex: safeCurrentImageIndex,
-    activeImageUrl: activeImageUrl.substring(activeImageUrl.length - 30),
+    activeImageUrl: activeImageUrl.substring(Math.max(0, activeImageUrl.length - 30)),
     totalImages: images.length,
     currentImageAnnotationsCount: currentImageAnnotations.length,
     annotationCorrelation: currentImageAnnotations.map(a => ({
@@ -93,6 +92,36 @@ export const EnhancedImageTabsViewer = ({
     validatedCount: validatedAnnotations.length,
     filteredOut: currentImageAnnotations.length - validatedAnnotations.length
   });
+
+  // 🔧 FIXED: Generate proper titles for annotations
+  const generateAnnotationTitle = (annotation: Annotation): string => {
+    const categoryTitles = {
+      'ux': 'UX Enhancement',
+      'visual': 'Visual Improvement',
+      'accessibility': 'Accessibility Fix',
+      'conversion': 'Conversion Optimization',
+      'navigation': 'Navigation Update',
+      'content': 'Content Enhancement',
+      'performance': 'Performance Boost'
+    };
+    
+    // Use annotation.title if it exists and is different from feedback
+    if (annotation.title && annotation.title.trim() !== annotation.feedback?.trim()) {
+      return annotation.title;
+    }
+    
+    const baseTitle = categoryTitles[annotation.category] || 'Design Recommendation';
+    
+    // Extract first meaningful sentence for title if feedback is long
+    if (annotation.feedback && annotation.feedback.length > 60) {
+      const firstSentence = annotation.feedback.split('.')[0];
+      if (firstSentence.length <= 50 && firstSentence.length > 10) {
+        return firstSentence.trim();
+      }
+    }
+    
+    return baseTitle;
+  };
 
   return (
     <Card className="bg-slate-800/50 border-slate-700">
@@ -141,12 +170,19 @@ export const EnhancedImageTabsViewer = ({
             alt={`Design ${safeCurrentImageIndex + 1}`}
             className="w-full h-auto max-h-[70vh] object-contain bg-white rounded-b-lg"
             style={{ minHeight: '400px' }}
+            onError={(e) => {
+              console.error('🔴 Image failed to load:', activeImageUrl);
+              e.currentTarget.style.display = 'none';
+            }}
           />
           
           {/* 🔧 CRITICAL FIX: Only render validated annotations for current image */}
           {validatedAnnotations.map((annotation, annotationIndex) => {
+            const annotationTitle = generateAnnotationTitle(annotation);
+            
             console.log(`🔧 RENDERING VALIDATED ANNOTATION ${annotationIndex + 1} for image ${safeCurrentImageIndex + 1}:`, {
               id: annotation.id,
+              title: annotationTitle,
               imageIndex: annotation.imageIndex,
               x: annotation.x,
               y: annotation.y,
@@ -166,7 +202,7 @@ export const EnhancedImageTabsViewer = ({
                   top: `${annotation.y}%`
                 }}
                 onClick={() => onAnnotationClick(annotation.id)}
-                title={annotation.feedback}
+                title={`${annotationTitle}: ${annotation.feedback}`}
               >
                 <span className="text-white text-xs font-bold leading-none">
                   {annotationIndex + 1}
@@ -179,7 +215,7 @@ export const EnhancedImageTabsViewer = ({
           {getUserAnnotationsForImage(activeImageUrl).map((annotation, index) => (
             <div
               key={`user-annotation-${annotation.id}`}
-              className="absolute w-6 h-6 rounded-full bg-green-500 border-2 border-white shadow-lg flex items-center justify-center cursor-pointer transform -translate-x-1/2 -translate-y-1/2 z-10"
+              className="absolute w-6 h-6 rounded-full bg-green-500 border-2 border-white shadow-lg flex items-center justify-center cursor-pointer transform -translate-x-1/2 -translate-y-1/2 z-10 hover:scale-110 transition-transform"
               style={{
                 left: `${annotation.x}%`,
                 top: `${annotation.y}%`
@@ -189,6 +225,54 @@ export const EnhancedImageTabsViewer = ({
               <span className="text-white text-xs font-bold">U</span>
             </div>
           ))}
+        </div>
+        
+        {/* 🔧 ENHANCED: Summary section for current image */}
+        <div className="p-4 bg-slate-700/30 border-t border-slate-600">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-semibold text-white">
+              Image {safeCurrentImageIndex + 1} Analysis Summary
+            </h4>
+            <div className="flex items-center gap-2">
+              {validatedAnnotations.length > 0 && (
+                <Badge variant="secondary" className="bg-blue-600 text-white">
+                  {validatedAnnotations.length} AI insights
+                </Badge>
+              )}
+              {getUserAnnotationsForImage(activeImageUrl).length > 0 && (
+                <Badge variant="outline" className="border-green-500 text-green-300">
+                  {getUserAnnotationsForImage(activeImageUrl).length} user notes
+                </Badge>
+              )}
+            </div>
+          </div>
+          
+          {validatedAnnotations.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+              <div className="text-center p-2 bg-red-500/20 border border-red-500/30 rounded">
+                <div className="font-bold text-red-300 text-lg">
+                  {validatedAnnotations.filter(a => a.severity === 'critical').length}
+                </div>
+                <div className="text-red-400 text-xs">Critical Issues</div>
+              </div>
+              <div className="text-center p-2 bg-yellow-500/20 border border-yellow-500/30 rounded">
+                <div className="font-bold text-yellow-300 text-lg">
+                  {validatedAnnotations.filter(a => a.severity === 'suggested').length}
+                </div>
+                <div className="text-yellow-400 text-xs">Suggestions</div>
+              </div>
+              <div className="text-center p-2 bg-blue-500/20 border border-blue-500/30 rounded">
+                <div className="font-bold text-blue-300 text-lg">
+                  {validatedAnnotations.filter(a => a.severity === 'enhancement').length}
+                </div>
+                <div className="text-blue-400 text-xs">Enhancements</div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-slate-400 text-center py-2 text-sm">
+              No AI insights available for this image
+            </p>
+          )}
         </div>
       </CardContent>
     </Card>
