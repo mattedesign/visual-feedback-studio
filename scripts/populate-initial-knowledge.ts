@@ -1,7 +1,7 @@
 import { vectorKnowledgeService } from '../src/services/knowledgeBase/vectorService';
 import { KnowledgeEntry } from '../src/types/vectorDatabase';
 
-// Keep existing core UX knowledge entries
+// Keep existing core UX knowledge entries and add 25 new professional entries
 const CORE_UX_KNOWLEDGE: Partial<KnowledgeEntry>[] = [
   {
     title: "Fitts' Law for Touch Interfaces",
@@ -101,6 +101,607 @@ const CORE_UX_KNOWLEDGE: Partial<KnowledgeEntry>[] = [
       testing_tools: "WebAIM Contrast Checker, Stark plugin",
       compliance_level: "AA standard recommended",
       color_blindness_types: "protanopia, deuteranopia, tritanopia"
+    }
+  },
+  // 25 new professional UX research entries
+  {
+    id: "entry-auto-001",
+    title: "CTA Clarity Over Creativity",
+    content: "Clear, descriptive CTAs like 'Start Free Trial' convert better than vague ones like 'Get Started'. Users hesitate when they don't understand the result of their action.",
+    source: "https://www.generated-insights.ai/rag-bank",
+    category: "ux-patterns",
+    primary_category: "optimization",
+    secondary_category: "conversion-cta",
+    industry_tags: ["SaaS", "ecommerce"],
+    element_type: "CTA",
+    tags: ["clarity", "conversion", "CTA copy"],
+    complexity_level: "basic",
+    use_cases: ["Landing page CTAs", "Pricing pages", "Signup modals"],
+    related_patterns: [],
+    freshness_score: 0.96,
+    application_context: {
+      cta_copy_examples: ["Start Free Trial", "Schedule a Demo", "Download Guide"],
+      example_components: ["Hero CTA", "Sticky button", "Pricing toggle"]
+    },
+    metadata: {
+      failure_risk: "ambiguous intent",
+      recommended_length: "2–4 words"
+    }
+  },
+  {
+    id: "entry-auto-002",
+    title: "Use Urgency Without Manipulation",
+    content: "Effective urgency cues like 'Limited time offer' increase action but must be truthful. False urgency (timers that reset) erodes trust and creates legal risk.",
+    source: "https://www.generated-insights.ai/rag-bank",
+    category: "ux-patterns",
+    primary_category: "optimization",
+    secondary_category: "conversion-psychology",
+    industry_tags: ["retail", "ecommerce", "events"],
+    element_type: "banner",
+    tags: ["urgency", "trust", "scarcity"],
+    complexity_level: "intermediate",
+    use_cases: ["Flash sales", "Event registration", "Product launches"],
+    related_patterns: [],
+    freshness_score: 0.96,
+    application_context: {
+      ethical_urgency: "Use real deadlines or limited inventory language",
+      example_components: ["Timer bar", "Stock indicator", "Event CTA"]
+    },
+    metadata: {
+      risk_factor: "legal",
+      ethical_guideline: "no false scarcity"
+    }
+  },
+  {
+    id: "entry-auto-003",
+    title: "Optimize Button Contrast for Conversion",
+    content: "High-contrast buttons (visually and contextually) outperform muted or ghost buttons in most A/B tests. Ensure CTA is visually distinct and contrasts from other actions.",
+    source: "https://www.generated-insights.ai/rag-bank",
+    category: "ux-patterns",
+    primary_category: "optimization",
+    secondary_category: "visual-priority",
+    industry_tags: ["SaaS", "ecommerce"],
+    element_type: "button",
+    tags: ["contrast", "CTA", "visual salience"],
+    complexity_level: "basic",
+    use_cases: ["Signup forms", "Checkout", "Product pages"],
+    related_patterns: [],
+    freshness_score: 0.96,
+    application_context: {
+      button_styling: "Use brand accent color and ensure >3:1 contrast ratio vs background",
+      example_components: ["Primary CTA", "Ghost button", "Color token"]
+    },
+    metadata: {
+      contrast_ratio: ">= 3:1",
+      failure_mode: "visual blending"
+    }
+  },
+  {
+    id: "entry-auto-004",
+    title: "Avoid Multiple Competing CTAs",
+    content: "Multiple primary CTAs (e.g., 'Get Quote' and 'Contact Sales') create decision paralysis. Always prioritize one action per screen or module.",
+    source: "https://www.generated-insights.ai/rag-bank",
+    category: "ux-patterns",
+    primary_category: "optimization",
+    secondary_category: "choice-architecture",
+    industry_tags: ["finance", "SaaS", "real estate"],
+    element_type: "section",
+    tags: ["decision fatigue", "conversion", "choice minimization"],
+    complexity_level: "intermediate",
+    use_cases: ["Homepages", "Pricing", "Hero sections"],
+    related_patterns: [],
+    freshness_score: 0.96,
+    application_context: {
+      cta_hierarchy: "Use primary + ghost button structure, avoid 2 same-weight CTAs",
+      example_components: ["Hero", "Pricing tier", "CTA card"]
+    },
+    metadata: {
+      cognitive_bias: "paradox of choice",
+      recommendation: "1 clear primary CTA"
+    }
+  },
+  {
+    id: "entry-auto-005",
+    title: "Trust Signals Boost Signup Flow Conversion",
+    content: "Adding client logos, testimonials, or third-party security badges near a signup CTA increases conversions by up to 42%, especially for first-time visitors.",
+    source: "https://www.generated-insights.ai/rag-bank",
+    category: "ux-patterns",
+    primary_category: "optimization",
+    secondary_category: "social-proof",
+    industry_tags: ["B2B", "enterprise", "ecommerce"],
+    element_type: "form",
+    tags: ["social proof", "trust", "conversion"],
+    complexity_level: "intermediate",
+    use_cases: ["Signup forms", "Landing pages", "Free trial pages"],
+    related_patterns: [],
+    freshness_score: 0.96,
+    application_context: {
+      trust_boosters: "Show logos of known clients, 3rd-party badges, or brief testimonials",
+      example_components: ["Signup box", "Footer area", "Sidebar trust block"]
+    },
+    metadata: {
+      conversion_lift: "10–42%",
+      trust_type: "third-party endorsement"
+    }
+  },
+  {
+    id: "entry-auto-006",
+    title: "Immediate Feedback in Button Interactions",
+    content: "Buttons should offer immediate visual feedback when clicked—like color change or loading spinners—to signal system response. Delays create confusion and increase bounce.",
+    source: "https://www.generated-insights.ai/rag-bank",
+    category: "ux-patterns",
+    primary_category: "patterns",
+    secondary_category: "interaction-feedback",
+    industry_tags: ["SaaS", "commerce", "mobile"],
+    element_type: "button",
+    tags: ["feedback", "response time", "button state"],
+    complexity_level: "basic",
+    use_cases: ["Form submission", "Navigation buttons", "Async triggers"],
+    related_patterns: [],
+    freshness_score: 0.96,
+    application_context: {
+      feedback_modes: "Use pressed state and spinner within 150ms of action",
+      example_components: ["Submit button", "Next button", "Login action"]
+    },
+    metadata: {
+      acceptable_delay: "< 200ms",
+      failure_risk: "perceived lag"
+    }
+  },
+  {
+    id: "entry-auto-007",
+    title: "Avoid Dead Taps in Mobile Interfaces",
+    content: "Mobile users expect every visual element to be tappable. Elements that look like buttons or cards but aren't interactive create frustration. Ensure visual affordance matches behavior.",
+    source: "https://www.generated-insights.ai/rag-bank",
+    category: "ux-patterns",
+    primary_category: "patterns",
+    secondary_category: "interaction-mobile",
+    industry_tags: ["mobile", "social", "news"],
+    element_type: "card",
+    tags: ["affordance", "tap area", "mobile UX"],
+    complexity_level: "intermediate",
+    use_cases: ["Feed cards", "Profile elements", "Image galleries"],
+    related_patterns: [],
+    freshness_score: 0.96,
+    application_context: {
+      interaction_tip: "Only style elements as buttons if they are actionable.",
+      example_components: ["Profile tile", "Content card", "Product preview"]
+    },
+    metadata: {
+      usability_heuristic: "match between design and system behavior",
+      tap_target_guideline: "44px minimum"
+    }
+  },
+  {
+    id: "entry-auto-008",
+    title: "Progress Indicators for Long Tasks",
+    content: "Use progress bars or loaders for actions taking more than 1 second. For multi-step processes, show a visible step indicator to reduce abandonment and build trust.",
+    source: "https://www.generated-insights.ai/rag-bank",
+    category: "ux-patterns",
+    primary_category: "patterns",
+    secondary_category: "interaction-feedback",
+    industry_tags: ["SaaS", "enterprise", "legal"],
+    element_type: "loader",
+    tags: ["progress indicator", "loading", "trust"],
+    complexity_level: "intermediate",
+    use_cases: ["File uploads", "Form wizards", "Data sync"],
+    related_patterns: [],
+    freshness_score: 0.96,
+    application_context: {
+      feedback_timing: "Display a loader if delay > 1000ms",
+      example_components: ["Progress bar", "Step tracker", "Spinner"]
+    },
+    metadata: {
+      threshold: "1s for loader, 3s for percent bar",
+      user_emotion: "anxiety when blind wait"
+    }
+  },
+  {
+    id: "entry-auto-009",
+    title: "Hover States Should Offer Preview or Context",
+    content: "Hover states shouldn't just be cosmetic. Use them to reveal tooltips, previews, or confirm interactivity. Avoid using hover-only actions for critical features on touch devices.",
+    source: "https://www.generated-insights.ai/rag-bank",
+    category: "ux-patterns",
+    primary_category: "patterns",
+    secondary_category: "interaction-desktop",
+    industry_tags: ["dashboards", "tools", "data platforms"],
+    element_type: "hover",
+    tags: ["hover state", "desktop UX", "context"],
+    complexity_level: "intermediate",
+    use_cases: ["Table rows", "Tooltips", "Menus"],
+    related_patterns: [],
+    freshness_score: 0.96,
+    application_context: {
+      preview_examples: "Show file info, action menu, or extended labels on hover",
+      example_components: ["Row hover", "Tooltip trigger", "Card preview"]
+    },
+    metadata: {
+      device_limit: "not available on mobile",
+      tooltip_timing: "< 300ms"
+    }
+  },
+  {
+    id: "entry-auto-010",
+    title: "Don't Overload Gestures on Mobile",
+    content: "Avoid hiding core functionality behind unfamiliar gestures like long-press or multi-swipe. Mobile interfaces should prioritize visible buttons over gesture reliance for key actions.",
+    source: "https://www.generated-insights.ai/rag-bank",
+    category: "ux-patterns",
+    primary_category: "patterns",
+    secondary_category: "gesture-ux",
+    industry_tags: ["mobile", "social", "productivity"],
+    element_type: "gesture",
+    tags: ["gesture", "discoverability", "mobile UX"],
+    complexity_level: "advanced",
+    use_cases: ["Messaging apps", "Dashboards", "Content actions"],
+    related_patterns: [],
+    freshness_score: 0.96,
+    application_context: {
+      gesture_guidelines: "Keep core actions visible, use gestures for secondary/advanced tools",
+      example_components: ["Swipe card", "Long-press menu", "Drag area"]
+    },
+    metadata: {
+      discoverability_risk: "high with invisible gestures",
+      gesture_category: "secondary only"
+    }
+  },
+  {
+    id: "entry-auto-011",
+    title: "Group Related Items for Visual Scan Efficiency",
+    content: "Users scan pages in chunks. Group related actions, filters, or menu items together using proximity, whitespace, and heading cues. Random placement increases time to comprehension.",
+    source: "https://www.generated-insights.ai/rag-bank",
+    category: "ux-patterns",
+    primary_category: "patterns",
+    secondary_category: "information-architecture",
+    industry_tags: ["ecommerce", "SaaS", "enterprise"],
+    element_type: "menu",
+    tags: ["grouping", "chunking", "scanability"],
+    complexity_level: "basic",
+    use_cases: ["Nav menus", "Product filters", "Toolbar UI"],
+    related_patterns: [],
+    freshness_score: 0.96,
+    application_context: {
+      grouping_tip: "Visually separate sections with whitespace or heading labels.",
+      example_components: ["Sidebar menu", "Settings panel", "Filter block"]
+    },
+    metadata: {
+      IA_principle: "proximity and grouping",
+      scan_mode: "F-pattern or Z-pattern"
+    }
+  },
+  {
+    id: "entry-auto-012",
+    title: "Label Navigation Clearly for Recognition",
+    content: "Avoid vague or branded terms in nav menus. Use labels users can predict. Test with first-click studies or tree testing to validate label clarity.",
+    source: "https://www.generated-insights.ai/rag-bank",
+    category: "ux-patterns",
+    primary_category: "patterns",
+    secondary_category: "information-architecture",
+    industry_tags: ["news", "ecommerce", "education"],
+    element_type: "navigation",
+    tags: ["labeling", "nav clarity", "tree testing"],
+    complexity_level: "intermediate",
+    use_cases: ["Global navigation", "Account settings", "Mobile menu"],
+    related_patterns: [],
+    freshness_score: 0.96,
+    application_context: {
+      labeling_rules: "Favor utility over creativity in nav. E.g. 'Pricing' over 'The Deal'.",
+      example_components: ["Nav bar", "Footer nav", "Account dropdown"]
+    },
+    metadata: {
+      UX_validation: "tree testing or card sorting",
+      recall_reduction: "lowers friction"
+    }
+  },
+  {
+    id: "entry-auto-013",
+    title: "Use Breadcrumbs for Deep Information Structures",
+    content: "Breadcrumbs help users understand where they are and how to navigate up. Use in systems with more than two levels of hierarchy, especially in content-heavy experiences.",
+    source: "https://www.generated-insights.ai/rag-bank",
+    category: "ux-patterns",
+    primary_category: "patterns",
+    secondary_category: "navigation",
+    industry_tags: ["ecommerce", "B2B", "CMS"],
+    element_type: "breadcrumb",
+    tags: ["navigation", "location awareness", "hierarchy"],
+    complexity_level: "intermediate",
+    use_cases: ["Product pages", "Knowledge base", "Course modules"],
+    related_patterns: [],
+    freshness_score: 0.96,
+    application_context: {
+      breadcrumb_usage: "Show path from root to current page; make all levels clickable.",
+      example_components: ["Breadcrumb bar", "Secondary nav", "Page header"]
+    },
+    metadata: {
+      when_to_use: "3+ page hierarchy",
+      failure_case: "user disorientation"
+    }
+  },
+  {
+    id: "entry-auto-014",
+    title: "Avoid Excessive Nesting in Menus",
+    content: "Excessively nested menus increase cognitive load. Flatten IA where possible, especially on mobile. Keep hierarchy to 2–3 levels max for optimal usability.",
+    source: "https://www.generated-insights.ai/rag-bank",
+    category: "ux-patterns",
+    primary_category: "patterns",
+    secondary_category: "menu-structure",
+    industry_tags: ["enterprise", "education", "platforms"],
+    element_type: "menu",
+    tags: ["navigation", "hierarchy depth", "cognitive load"],
+    complexity_level: "advanced",
+    use_cases: ["SaaS platforms", "CMS menus", "Settings panels"],
+    related_patterns: [],
+    freshness_score: 0.96,
+    application_context: {
+      flattening_tip: "Use mega menus or grouped sections instead of 4+ deep nesting.",
+      example_components: ["Dropdown menu", "Sidebar", "Accordion"]
+    },
+    metadata: {
+      depth_limit: "2 levels on mobile, 3 on desktop",
+      IA_risk: "user confusion"
+    }
+  },
+  {
+    id: "entry-auto-015",
+    title: "Structure Dashboards with Task-Based Zones",
+    content: "Dashboards should reflect user workflows. Organize content into zones: overview (top), actions (middle), and deeper detail (bottom or right). This supports scan-first behavior.",
+    source: "https://www.generated-insights.ai/rag-bank",
+    category: "ux-patterns",
+    primary_category: "patterns",
+    secondary_category: "dashboard-ia",
+    industry_tags: ["analytics", "enterprise", "admin tools"],
+    element_type: "layout",
+    tags: ["dashboard", "IA", "task flow"],
+    complexity_level: "advanced",
+    use_cases: ["Admin panels", "Analytics dashboards", "CRM tools"],
+    related_patterns: [],
+    freshness_score: 0.96,
+    application_context: {
+      zoning_guidelines: "Use top-left for most-used info, right edge for contextual tools.",
+      example_components: ["KPI header", "Graph area", "Activity feed"]
+    },
+    metadata: {
+      workflow_alignment: "task-based zoning",
+      IA_strategy: "top-down priority"
+    }
+  },
+  {
+    id: "entry-auto-016",
+    title: "Ensure Sufficient Color Contrast for Text",
+    content: "Text must have sufficient contrast against its background to be readable by users with low vision. For normal text, WCAG requires a 4.5:1 contrast ratio minimum.",
+    source: "https://www.generated-insights.ai/rag-bank",
+    category: "ux-patterns",
+    primary_category: "compliance",
+    secondary_category: "accessibility-color",
+    industry_tags: ["all"],
+    element_type: "text",
+    tags: ["color contrast", "legibility", "WCAG"],
+    complexity_level: "basic",
+    use_cases: ["Body text", "Button labels", "Captions"],
+    related_patterns: [],
+    freshness_score: 0.96,
+    application_context: {
+      contrast_check_tool: "Use tools like Stark or WebAIM to check ratios.",
+      example_components: ["Text blocks", "Form labels", "Card titles"]
+    },
+    metadata: {
+      wcag_level: "AA",
+      contrast_requirement: "4.5:1 normal text, 3:1 large text"
+    }
+  },
+  {
+    id: "entry-auto-017",
+    title: "Use ARIA Labels for Screen Reader Navigation",
+    content: "Accessible Rich Internet Applications (ARIA) labels help screen readers interpret components that aren't native HTML, such as custom dropdowns or modals.",
+    source: "https://www.generated-insights.ai/rag-bank",
+    category: "ux-patterns",
+    primary_category: "compliance",
+    secondary_category: "accessibility-aria",
+    industry_tags: ["SaaS", "tools", "dashboards"],
+    element_type: "form",
+    tags: ["ARIA", "screen reader", "accessibility"],
+    complexity_level: "advanced",
+    use_cases: ["Custom UI components", "Form helpers", "Dialog modals"],
+    related_patterns: [],
+    freshness_score: 0.96,
+    application_context: {
+      aria_usage: "Use aria-label, aria-labelledby, and role attributes where needed.",
+      example_components: ["Custom dropdown", "Accordion", "Dialog"]
+    },
+    metadata: {
+      screen_reader_support: "JAWS, NVDA",
+      semantic_enhancement: "required for non-semantic HTML"
+    }
+  },
+  {
+    id: "entry-auto-018",
+    title: "Support Keyboard-Only Navigation",
+    content: "Users must be able to navigate and operate all site functions using only the keyboard. This means managing focus states, skip links, and logical tab order.",
+    source: "https://www.generated-insights.ai/rag-bank",
+    category: "ux-patterns",
+    primary_category: "compliance",
+    secondary_category: "accessibility-keyboard",
+    industry_tags: ["government", "legal", "education"],
+    element_type: "navigation",
+    tags: ["keyboard nav", "tab order", "focus state"],
+    complexity_level: "intermediate",
+    use_cases: ["Menus", "Forms", "Interactive UI"],
+    related_patterns: [],
+    freshness_score: 0.96,
+    application_context: {
+      keyboard_rules: "Use tabindex, ensure skip links, highlight active focus.",
+      example_components: ["Tab nav", "Search bar", "Modal"]
+    },
+    metadata: {
+      usability_mode: "keyboard-only users",
+      WCAG_guideline: "2.1.1"
+    }
+  },
+  {
+    id: "entry-auto-019",
+    title: "Label All Form Inputs Clearly",
+    content: "Every form input should have a visible label associated with it for accessibility and clarity. Placeholder text is not a replacement for a proper label.",
+    source: "https://www.generated-insights.ai/rag-bank",
+    category: "ux-patterns",
+    primary_category: "compliance",
+    secondary_category: "accessibility-forms",
+    industry_tags: ["finance", "health", "education"],
+    element_type: "form",
+    tags: ["form label", "input clarity", "accessibility"],
+    complexity_level: "basic",
+    use_cases: ["Signup", "Survey", "Checkout"],
+    related_patterns: [],
+    freshness_score: 0.96,
+    application_context: {
+      label_rule: "Use <label> with for= attribute or aria-label for clarity.",
+      example_components: ["Text input", "Dropdown", "Radio group"]
+    },
+    metadata: {
+      label_vs_placeholder: "label required, placeholder optional",
+      form_pattern: "explicit field labeling"
+    }
+  },
+  {
+    id: "entry-auto-020",
+    title: "Avoid Auto-Playing Content Without Controls",
+    content: "Auto-playing media (audio, video, carousels) must have pause/stop controls and should not disrupt keyboard focus. WCAG guidelines prohibit uncontrolled motion/audio.",
+    source: "https://www.generated-insights.ai/rag-bank",
+    category: "ux-patterns",
+    primary_category: "compliance",
+    secondary_category: "accessibility-motion",
+    industry_tags: ["media", "commerce", "education"],
+    element_type: "media",
+    tags: ["auto-play", "motion control", "audio accessibility"],
+    complexity_level: "advanced",
+    use_cases: ["Home banners", "Product tours", "Video embeds"],
+    related_patterns: [],
+    freshness_score: 0.96,
+    application_context: {
+      media_rule: "Provide stop/pause controls and avoid stealing focus.",
+      example_components: ["Video player", "Auto slider", "Hero animation"]
+    },
+    metadata: {
+      WCAG_rule: "2.2.2 Pause, Stop, Hide",
+      user_disruption: "high for screen readers"
+    }
+  },
+  {
+    id: "entry-auto-021",
+    title: "Use Easing for Natural Motion",
+    content: "Linear animations feel robotic. Use easing functions (ease-in, ease-out, ease-in-out) to mimic real-world acceleration and deceleration. Default to 'ease-out' for UI entrances.",
+    source: "https://www.generated-insights.ai/rag-bank",
+    category: "ux-patterns",
+    primary_category: "patterns",
+    secondary_category: "motion-principles",
+    industry_tags: ["tools", "mobile", "commerce"],
+    element_type: "animation",
+    tags: ["easing", "motion design", "natural animation"],
+    complexity_level: "intermediate",
+    use_cases: ["Modal transitions", "Page load", "Element entrance"],
+    related_patterns: [],
+    freshness_score: 0.96,
+    application_context: {
+      recommended_easing: "ease-out for entering, ease-in for exiting",
+      example_components: ["Modal", "Drawer", "Toast"]
+    },
+    metadata: {
+      animation_style: "ease-in-out",
+      motion_library: "Material, Framer, Apple HIG"
+    }
+  },
+  {
+    id: "entry-auto-022",
+    title: "Keep Motion Duration Between 200–500ms",
+    content: "UI animations should be fast enough to feel responsive but slow enough to be seen. Recommended durations are 200–300ms for microinteractions, 300–500ms for larger UI shifts.",
+    source: "https://www.generated-insights.ai/rag-bank",
+    category: "ux-patterns",
+    primary_category: "patterns",
+    secondary_category: "motion-duration",
+    industry_tags: ["all"],
+    element_type: "transition",
+    tags: ["animation speed", "feedback timing", "motion duration"],
+    complexity_level: "basic",
+    use_cases: ["Page transitions", "Hover effects", "Swipe actions"],
+    related_patterns: [],
+    freshness_score: 0.96,
+    application_context: {
+      duration_ranges: "Use 200ms for button presses, 400ms for overlays",
+      example_components: ["Button tap", "Card expand", "Modal open"]
+    },
+    metadata: {
+      duration_range: "200–500ms",
+      user_perception: "too slow = lag, too fast = missed"
+    }
+  },
+  {
+    id: "entry-auto-023",
+    title: "Avoid Non-Essential Motion for Cognitive Disabilities",
+    content: "Motion can distract or harm users with vestibular or cognitive disabilities. Allow reduced motion preferences and avoid gratuitous animation for aesthetic only.",
+    source: "https://www.generated-insights.ai/rag-bank",
+    category: "ux-patterns",
+    primary_category: "compliance",
+    secondary_category: "motion-accessibility",
+    industry_tags: ["education", "health", "apps"],
+    element_type: "animation",
+    tags: ["reduced motion", "vestibular accessibility", "animation toggles"],
+    complexity_level: "advanced",
+    use_cases: ["Intro animations", "Background movement", "Page transitions"],
+    related_patterns: [],
+    freshness_score: 0.96,
+    application_context: {
+      reduced_motion_support: "Respect prefers-reduced-motion media query.",
+      example_components: ["Hero banner", "Animated background", "Intro screen"]
+    },
+    metadata: {
+      WCAG_compatibility: "prefers-reduced-motion",
+      risk: "vestibular disruption"
+    }
+  },
+  {
+    id: "entry-auto-024",
+    title: "Use Motion to Reinforce Spatial Metaphors",
+    content: "Slide-in and fade transitions help users understand spatial relationships between UI layers (e.g., side panels, nested modals). This aids orientation and reduces disorientation.",
+    source: "https://www.generated-insights.ai/rag-bank",
+    category: "ux-patterns",
+    primary_category: "patterns",
+    secondary_category: "motion-meaning",
+    industry_tags: ["SaaS", "tools", "mobile"],
+    element_type: "overlay",
+    tags: ["spatial design", "UI layering", "motion hierarchy"],
+    complexity_level: "advanced",
+    use_cases: ["Drawer menus", "Side panels", "Dialog stacks"],
+    related_patterns: [],
+    freshness_score: 0.96,
+    application_context: {
+      motion_hierarchy: "Use directional slide for nesting; fade for overlays.",
+      example_components: ["Sidebar", "Sheet", "Full-screen modal"]
+    },
+    metadata: {
+      spatial_rule: "direction = hierarchy",
+      disorientation_fix: "motion context"
+    }
+  },
+  {
+    id: "entry-auto-025",
+    title: "Avoid Animating Layout Shifts Without Context",
+    content: "When elements move or resize without user interaction (e.g., carousels or loaders), it can confuse users. Use fade or highlight transitions, not layout jumps, for updates.",
+    source: "https://www.generated-insights.ai/rag-bank",
+    category: "ux-patterns",
+    primary_category: "patterns",
+    secondary_category: "motion-anti-patterns",
+    industry_tags: ["commerce", "news", "apps"],
+    element_type: "content",
+    tags: ["layout shift", "motion anti-pattern", "UX stability"],
+    complexity_level: "intermediate",
+    use_cases: ["Auto sliders", "News feeds", "Live dashboards"],
+    related_patterns: [],
+    freshness_score: 0.96,
+    application_context: {
+      anti_pattern_fix: "Use position anchoring or subtle crossfade instead of jumps.",
+      example_components: ["Carousel", "Live card", "Score update"]
+    },
+    metadata: {
+      core_concern: "motion-induced confusion",
+      stability_goal: "predictable content"
     }
   }
 ];
