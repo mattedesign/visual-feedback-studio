@@ -20,7 +20,7 @@ import {
   BarChart3,
   FileText,
   Users,
-  Loader2
+  Copy
 } from 'lucide-react';
 import { useBusinessMetrics } from '../../../hooks/useBusinessMetrics';
 import { businessImpactService, BusinessImpactData } from '@/services/businessImpactService';
@@ -38,7 +38,6 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
   const { businessMetrics, enhanced, original } = useBusinessMetrics(analysisData);
   const [isSharingModalOpen, setIsSharingModalOpen] = useState(false);
   const [showDetailedBreakdown, setShowDetailedBreakdown] = useState(false);
-  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
   // Safety check for enhanced data
   if (!enhanced || !businessMetrics) {
@@ -62,7 +61,7 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
   const siteName = original?.siteName || original?.analysisContext || 'Website Analysis';
   const { impactScore, revenueEstimate, implementationTimeline, competitivePosition, prioritizedRecommendations } = businessMetrics;
   
-  // Prepare data for enhanced executive report
+  // Prepare data for executive report
   const executiveReportData: ExecutiveReportData = {
     siteName,
     impactScore,
@@ -94,27 +93,51 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
     return 'Needs Work';
   };
 
-  // Enhanced button handlers
+  // Simple, working button handlers
   const handleGenerateExecutiveReport = async () => {
-    setIsGeneratingReport(true);
     try {
-      await executiveReportService.generateExecutiveReport(executiveReportData);
-      toast.success('Executive report generated successfully!', {
-        description: 'Professional PDF report with business insights has been downloaded.',
-        duration: 5000,
+      await executiveReportService.copyExecutiveSummaryToClipboard(executiveReportData);
+      toast.success('Executive summary copied to clipboard!', {
+        description: 'Paste into your document or email to share insights.',
+        duration: 4000,
       });
     } catch (error) {
-      console.error('Executive report generation failed:', error);
-      toast.error('Failed to generate executive report', {
-        description: 'Please try again or contact support if the issue persists.',
+      console.error('Failed to copy executive summary:', error);
+      toast.error('Failed to copy executive summary', {
+        description: 'Please try again or check your browser permissions.',
       });
-    } finally {
-      setIsGeneratingReport(false);
     }
   };
 
-  const handleShareWithTeam = () => {
-    setIsSharingModalOpen(true);
+  const handleShareWithTeam = async () => {
+    try {
+      const shareableUrl = executiveReportService.generateShareableUrl(executiveReportData.analysisId);
+      await navigator.clipboard.writeText(shareableUrl);
+      toast.success('Shareable link copied to clipboard!', {
+        description: 'Anyone with this link can view the analysis results.',
+        duration: 4000,
+      });
+    } catch (error) {
+      console.error('Failed to copy shareable link:', error);
+      toast.error('Failed to generate shareable link', {
+        description: 'Please try again or check your browser permissions.',
+      });
+    }
+  };
+
+  const handleDownloadResearchCitations = async () => {
+    try {
+      await executiveReportService.downloadResearchCitations(executiveReportData);
+      toast.success('Research citations downloaded!', {
+        description: 'Bibliography file saved to your downloads folder.',
+        duration: 4000,
+      });
+    } catch (error) {
+      console.error('Failed to download research citations:', error);
+      toast.error('Failed to download research citations', {
+        description: 'Please try again or check your browser permissions.',
+      });
+    }
   };
 
   const handleViewDetails = () => {
@@ -175,19 +198,9 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
                 variant="outline" 
                 className="flex items-center gap-2"
                 onClick={handleGenerateExecutiveReport}
-                disabled={isGeneratingReport}
               >
-                {isGeneratingReport ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4" />
-                    Export Report
-                  </>
-                )}
+                <Copy className="w-4 h-4" />
+                Copy Summary
               </Button>
               <Button 
                 variant="outline" 
@@ -195,7 +208,7 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
                 onClick={handleShareWithTeam}
               >
                 <Share2 className="w-4 h-4" />
-                Share Results
+                Share Link
               </Button>
               <Button 
                 className="flex items-center gap-2"
@@ -444,18 +457,11 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
                 variant="outline" 
                 className="flex items-center justify-center gap-2 py-6"
                 onClick={handleGenerateExecutiveReport}
-                disabled={isGeneratingReport}
               >
-                {isGeneratingReport ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <Download className="w-5 h-5" />
-                )}
+                <Copy className="w-5 h-5" />
                 <div className="text-left">
-                  <div className="font-medium">
-                    {isGeneratingReport ? 'Generating...' : 'Generate Executive Report'}
-                  </div>
-                  <div className="text-xs text-gray-500">Professional PDF with insights</div>
+                  <div className="font-medium">Copy Executive Summary</div>
+                  <div className="text-xs text-gray-500">Formatted text to clipboard</div>
                 </div>
                 <ArrowRight className="w-4 h-4" />
               </Button>
@@ -463,12 +469,12 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
               <Button 
                 variant="outline" 
                 className="flex items-center justify-center gap-2 py-6"
-                onClick={handleShareWithTeam}
+                onClick={handleDownloadResearchCitations}
               >
-                <Share2 className="w-5 h-5" />
+                <Download className="w-5 h-5" />
                 <div className="text-left">
-                  <div className="font-medium">Share with Team</div>
-                  <div className="text-xs text-gray-500">Collaborate & discuss</div>
+                  <div className="font-medium">Download Citations</div>
+                  <div className="text-xs text-gray-500">Research bibliography (.txt)</div>
                 </div>
                 <ArrowRight className="w-4 h-4" />
               </Button>
