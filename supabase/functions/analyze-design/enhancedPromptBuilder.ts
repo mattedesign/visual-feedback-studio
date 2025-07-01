@@ -80,27 +80,26 @@ CRITICAL: You MUST respond with a valid JSON array of annotation objects only. D
 ${imageCount > 1 ? `
 🚨🚨🚨 MULTI-IMAGE ANALYSIS CRITICAL INSTRUCTIONS 🚨🚨🚨
 
-YOU ARE ANALYZING ${imageCount} DIFFERENT IMAGES. Each annotation MUST specify the correct imageIndex (0 to ${imageCount - 1}) to indicate which image the annotation belongs to.
+YOU ARE ANALYZING ${imageCount} DIFFERENT IMAGES. Each annotation MUST specify the correct imageIndex AND be spatially accurate to that specific image.
 
-MANDATORY IMAGE INDEX ASSIGNMENT:
-- Image 1 = imageIndex: 0
-- Image 2 = imageIndex: 1
-${imageCount > 2 ? '- Image 3 = imageIndex: 2' : ''}
-${imageCount > 3 ? '- Image 4 = imageIndex: 3' : ''}
-${imageCount > 4 ? `- Image ${imageCount} = imageIndex: ${imageCount - 1}` : ''}
+MANDATORY IMAGE-SPECIFIC DISTRIBUTION:
+- Image 1 (imageIndex: 0): 4-5 annotations analyzing ONLY elements visible in this image
+- Image 2 (imageIndex: 1): 4-5 annotations analyzing ONLY elements visible in this image  
+${imageCount > 2 ? '- Image 3 (imageIndex: 2): 4-5 annotations analyzing ONLY elements visible in this image' : ''}
+${imageCount > 3 ? '- Image 4 (imageIndex: 3): 3-4 annotations analyzing ONLY elements visible in this image' : ''}
 
-🚨 CRITICAL DISTRIBUTION REQUIREMENT 🚨
-- You MUST distribute annotations across ALL ${imageCount} images
-- Each image should receive 2-3 specific annotations analyzing its unique design aspects
-- DO NOT assign all annotations to imageIndex: 0
-- Each imageIndex (0, 1, 2, etc.) must be used for multiple annotations
-- Analyze each image individually and assign the correct imageIndex based on which specific image you are analyzing
+🚨 SPATIAL ACCURACY REQUIREMENT 🚨
+- Each annotation's coordinates must point to actual elements in the specified image
+- Do not copy annotations between images - analyze each image individually
+- Verify coordinates make sense for the specific image being analyzed
+- Each imageIndex must receive dedicated analysis of its unique content
 
 VERIFICATION CHECKLIST BEFORE RESPONDING:
 ✓ Are annotations distributed across imageIndex 0, 1, ${imageCount > 2 ? '2' : '1'}${imageCount > 3 ? ', 3' : ''}?
-✓ Does each image receive 2-3 annotations?
+✓ Does each image receive 4-5 annotations?
 ✓ Are imageIndex values correct for each specific image analysis?
 ✓ Did I avoid assigning all annotations to imageIndex: 0?
+✓ Are coordinates spatially accurate for each specific image?
 ` : ''}
 
 Required JSON format:
@@ -128,7 +127,7 @@ Rules:
 
 ${imageCount > 1 ? `
 🚨 FINAL MULTI-IMAGE REQUIREMENTS 🚨
-- For multi-image analysis, provide 2-3 annotations per image, ensuring each image receives individual attention
+- For multi-image analysis, provide 4-5 annotations per image, ensuring each image receives individual attention
 - Each annotation must have the correct imageIndex (0, 1, 2, etc.)
 - Analyze each image's unique design elements, don't just copy annotations across images
 - Consider how different images work together in the overall user experience
@@ -156,7 +155,7 @@ You are analyzing ${imageCount} different design images. Each annotation must sp
 - Continue this pattern for all ${imageCount} images
 
 🚨 DISTRIBUTION REQUIREMENT 🚨
-Ensure annotations are distributed across ALL ${imageCount} images. Each image should receive 2-3 specific annotations with competitive benchmarks analyzing its unique design aspects. DO NOT assign all annotations to imageIndex: 0.
+Ensure annotations are distributed across ALL ${imageCount} images. Each image should receive 4-5 specific annotations with competitive benchmarks analyzing its unique design aspects. DO NOT assign all annotations to imageIndex: 0.
 
 ${jsonInstructions}`;
     
@@ -181,7 +180,7 @@ CRITICAL IMAGEINDEX ASSIGNMENT: Each annotation must specify the correct imageIn
 - Continue for all ${imageCount} images
 
 🚨 DISTRIBUTION REQUIREMENT 🚨
-Ensure annotations are distributed across ALL ${imageCount} images based on their individual content and design elements. Each image should receive 2-3 specific annotations with competitive benchmarks. DO NOT assign all annotations to the first image (imageIndex: 0).
+Ensure annotations are distributed across ALL ${imageCount} images based on their individual content and design elements. Each image should receive 4-5 specific annotations with competitive benchmarks. DO NOT assign all annotations to the first image (imageIndex: 0).
 
 ${jsonInstructions}`;
 
@@ -225,7 +224,7 @@ ${jsonInstructions}`;
     distributionRequirement: finalPrompt.includes('DISTRIBUTION REQUIREMENT'),
     structureSections: {
       hasBasePrompt: finalPrompt.includes(basePrompt),
-      hasResearchSection: finalPrompt.includes('RESEARCH-ENHANCED ANALYSIS'),
+      hasResearchSection: finalPrompt.includes('RESOURCE-ENHANCED ANALYSIS'),
       hasCompetitiveSection: finalPrompt.includes('COMPETITIVE INTELLIGENCE & BENCHMARKING'),
       hasJSONInstructions: finalPrompt.includes('CRITICAL: You MUST respond'),
       hasImageIndexGuidance: finalPrompt.includes('imageIndex'),
