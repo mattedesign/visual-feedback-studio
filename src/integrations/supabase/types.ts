@@ -274,6 +274,54 @@ export type Database = {
         }
         Relationships: []
       }
+      contextual_solutions: {
+        Row: {
+          context_adapted_implementation: Json
+          created_at: string | null
+          expected_impact: Json
+          id: string
+          last_updated: string | null
+          problem_specific_guidance: Json
+          problem_statement_ids: string[]
+          recommendation: string
+          stakeholder_communication: Json
+          success_rate: number | null
+          title: string
+          traditional_ux_issues: string[] | null
+          usage_count: number | null
+        }
+        Insert: {
+          context_adapted_implementation?: Json
+          created_at?: string | null
+          expected_impact?: Json
+          id?: string
+          last_updated?: string | null
+          problem_specific_guidance?: Json
+          problem_statement_ids: string[]
+          recommendation: string
+          stakeholder_communication?: Json
+          success_rate?: number | null
+          title: string
+          traditional_ux_issues?: string[] | null
+          usage_count?: number | null
+        }
+        Update: {
+          context_adapted_implementation?: Json
+          created_at?: string | null
+          expected_impact?: Json
+          id?: string
+          last_updated?: string | null
+          problem_specific_guidance?: Json
+          problem_statement_ids?: string[]
+          recommendation?: string
+          stakeholder_communication?: Json
+          success_rate?: number | null
+          title?: string
+          traditional_ux_issues?: string[] | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       knowledge_entries: {
         Row: {
           application_context: Json | null
@@ -394,6 +442,45 @@ export type Database = {
         }
         Relationships: []
       }
+      problem_statements: {
+        Row: {
+          category: string
+          context_refinement_questions: string[]
+          created_at: string | null
+          id: string
+          implied_context: Json
+          last_updated: string | null
+          statement: string
+          targeted_solutions: string[]
+          traditional_ux_issues: string[] | null
+          usage_count: number | null
+        }
+        Insert: {
+          category: string
+          context_refinement_questions?: string[]
+          created_at?: string | null
+          id?: string
+          implied_context?: Json
+          last_updated?: string | null
+          statement: string
+          targeted_solutions?: string[]
+          traditional_ux_issues?: string[] | null
+          usage_count?: number | null
+        }
+        Update: {
+          category?: string
+          context_refinement_questions?: string[]
+          created_at?: string | null
+          id?: string
+          implied_context?: Json
+          last_updated?: string | null
+          statement?: string
+          targeted_solutions?: string[]
+          traditional_ux_issues?: string[] | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       uploaded_files: {
         Row: {
           analysis_id: string
@@ -446,6 +533,60 @@ export type Database = {
             columns: ["analysis_id"]
             isOneToOne: false
             referencedRelation: "analyses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_problem_statements: {
+        Row: {
+          analysis_id: string | null
+          created_at: string | null
+          extracted_context: Json | null
+          id: string
+          implementation_feedback: string | null
+          matched_problem_statement_id: string | null
+          original_statement: string
+          refinement_answers: Json | null
+          satisfaction_score: number | null
+          user_id: string | null
+        }
+        Insert: {
+          analysis_id?: string | null
+          created_at?: string | null
+          extracted_context?: Json | null
+          id?: string
+          implementation_feedback?: string | null
+          matched_problem_statement_id?: string | null
+          original_statement: string
+          refinement_answers?: Json | null
+          satisfaction_score?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          analysis_id?: string | null
+          created_at?: string | null
+          extracted_context?: Json | null
+          id?: string
+          implementation_feedback?: string | null
+          matched_problem_statement_id?: string | null
+          original_statement?: string
+          refinement_answers?: Json | null
+          satisfaction_score?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_problem_statements_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analyses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_problem_statements_matched_problem_statement_id_fkey"
+            columns: ["matched_problem_statement_id"]
+            isOneToOne: false
+            referencedRelation: "problem_statements"
             referencedColumns: ["id"]
           },
         ]
