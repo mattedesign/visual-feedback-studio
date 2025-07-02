@@ -120,13 +120,13 @@ class AIAnalysisManager {
         mandatoryRequirements: enhancedPrompt.includes('MANDATORY OUTPUT REQUIREMENT')
       });
 
-      // 🚀 TRY CLAUDE FIRST (Primary Model)
-      console.log('🎯 Attempting Claude Sonnet 4 analysis (Primary)...');
+      // 🚀 TRY CLAUDE FIRST (Primary Model - Now uses model manager)
+      console.log('🎯 Attempting Claude 4 analysis (Primary)...');
       try {
-        const claudeResult = await this.callClaude(validImages, enhancedPrompt);
+        const claudeResult = await this.callClaudeWithModelManager(validImages, enhancedPrompt);
         console.log('✅ Claude analysis successful:', {
           annotationCount: claudeResult.annotations.length,
-          modelUsed: 'Claude Sonnet 4',
+          modelUsed: claudeResult.modelUsed || 'Claude 4',
           targetAchieved: claudeResult.annotations.length >= 16
         });
         
@@ -134,7 +134,7 @@ class AIAnalysisManager {
         return {
           success: true,
           annotations: claudeResult.annotations,
-          modelUsed: 'Claude Sonnet 4',
+          modelUsed: claudeResult.modelUsed || 'Claude 4',
           processingTime,
           ragEnhanced: !!ragContext
         };
@@ -209,13 +209,13 @@ class AIAnalysisManager {
         comprehensiveAnalysis: true,
         professionalStandard: annotations.length >= 16,
         targetsAchieved: annotations.length >= 16,
-        modelUsed: 'OpenAI GPT-4o-mini (fallback)'
+        modelUsed: 'OpenAI GPT-4o-mini (fallback after Claude 4.0)'
       });
 
       return {
         success: true,
         annotations,
-        modelUsed: 'OpenAI GPT-4o-mini (fallback)',
+        modelUsed: 'OpenAI GPT-4o-mini (fallback after Claude 4.0)',
         processingTime,
         ragEnhanced: !!ragContext
       };
@@ -240,17 +240,17 @@ class AIAnalysisManager {
     }
   }
 
-  // 🎯 UPDATED: Claude Sonnet 4 Primary Method - Now uses base64Data directly
-  private async callClaude(images: ProcessedImage[], prompt: string): Promise<{annotations: any[]}> {
+  // 🎯 NEW: Claude Model Manager Integration - Uses the robust model manager
+  private async callClaudeWithModelManager(images: ProcessedImage[], prompt: string): Promise<{annotations: any[], modelUsed?: string}> {
+    const { analyzeWithClaudeModels } = await import('./claude/modelManager.ts');
+    
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
     if (!anthropicApiKey) {
       throw new Error('Anthropic API key not configured');
     }
 
-    console.log('🔍 Claude API Debug - Processing images:', {
+    console.log('🔍 Claude Model Manager Debug - Processing images:', {
       hasKey: !!anthropicApiKey,
-      keyLength: anthropicApiKey.length,
-      keyPreview: anthropicApiKey.substring(0, 12) + '...',
       imageCount: images.length,
       imagesValid: images.every(img => img.base64Data && img.base64Data.length > 0)
     });
@@ -265,24 +265,11 @@ class AIAnalysisManager {
       throw new Error(`${invalidImages.length} images have invalid base64 data`);
     }
 
-    // Prepare image contents for Claude - base64 data is already available
-    const imageContents = images.map((img, index) => {
-      console.log(`✅ Using image ${index + 1}/${images.length} for Claude:`, {
-        base64Length: img.base64Data.length,
-        mimeType: img.mimeType,
-        width: img.width,
-        height: img.height
-      });
-      
-      return {
-        type: "image",
-        source: {
-          type: "base64",
-          media_type: img.mimeType,
-          data: img.base64Data
-        }
-      };
-    });
+    // Use first image for analysis (model manager handles single image)
+    const primaryImage = images[0];
+    if (!primaryImage) {
+      throw new Error('No valid image provided for analysis');
+    }
 
     const systemPrompt = `You are a professional UX analysis expert conducting comprehensive audits. You MUST generate exactly 16-19 detailed, research-backed insights covering all aspects of design quality, usability, and business impact.
 
@@ -306,69 +293,34 @@ RESPONSE FORMAT - Return ONLY a JSON array like this:
   }
 ]
 
-Ensure exactly 16-19 insights for comprehensive professional analysis.`;
+Ensure exactly 16-19 insights for comprehensive professional analysis.
+
+ANALYSIS CONTEXT: ${prompt}`;
 
     try {
-      console.log('🚀 Making Claude API request with model claude-3-5-sonnet-20241022');
+      console.log('🚀 Using Claude Model Manager for analysis with Claude 4.0 priority');
       
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${anthropicApiKey}`,
-          'Content-Type': 'application/json',
-          'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify({
-          model: 'claude-3-5-sonnet-20241022',
-          max_tokens: 4000,
-          temperature: 0.3,
-          system: systemPrompt,
-          messages: [
-            {
-              role: 'user',
-              content: [
-                { type: 'text', text: prompt },
-                ...imageContents
-              ]
-            }
-          ]
-        })
-      });
-
-      console.log('📡 Claude API response status:', response.status, response.statusText);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Claude API error details:', {
-          status: response.status,
-          statusText: response.statusText,
-          errorBody: errorText.substring(0, 500)
-        });
-        throw new Error(`Claude API error: ${response.status} ${response.statusText} - ${errorText}`);
-      }
-
-      const data = await response.json();
-      
-      if (!data.content || !data.content[0] || !data.content[0].text) {
-        console.error('❌ Invalid Claude response format:', data);
-        throw new Error('Invalid Claude response format');
-      }
-
-      const rawContent = data.content[0].text;
-      console.log('✅ Claude response received, length:', rawContent.length);
-      
-      const annotations = this.parseAnnotations(rawContent);
+      // Use the model manager which automatically tries Claude 4.0 models first
+      const annotations = await analyzeWithClaudeModels(
+        primaryImage.base64Data,
+        primaryImage.mimeType,
+        systemPrompt,
+        anthropicApiKey
+      );
       
       if (annotations.length < 12) {
         console.warn('⚠️ Claude returned insufficient insights:', annotations.length);
         throw new Error(`Claude returned insufficient insights: ${annotations.length} (minimum 12 required)`);
       }
 
-      console.log('✅ Claude analysis successful with', annotations.length, 'insights');
-      return { annotations };
+      console.log('✅ Claude Model Manager analysis successful with', annotations.length, 'insights');
+      return { 
+        annotations,
+        modelUsed: 'Claude 4.0 (via Model Manager)'
+      };
 
     } catch (error) {
-      console.error('❌ Claude API call failed:', error);
+      console.error('❌ Claude Model Manager call failed:', error);
       throw error;
     }
   }

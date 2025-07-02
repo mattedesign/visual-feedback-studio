@@ -71,7 +71,7 @@ export const saveAnalysisResults = async (request: SaveAnalysisResultsRequest): 
         well_done_data: request.wellDoneData,
         research_citations: request.researchCitations || [],
         knowledge_sources_used: request.knowledgeSourcesUsed || 0,
-        ai_model_used: request.aiModelUsed || 'claude-3-5-sonnet',
+        ai_model_used: request.aiModelUsed || 'claude-opus-4-20250514',
         processing_time_ms: request.processingTimeMs,
         total_annotations: request.annotations.length,
         // Multi-stage pipeline fields

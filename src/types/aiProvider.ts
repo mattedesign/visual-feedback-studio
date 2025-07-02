@@ -2,7 +2,7 @@
 export type AIProvider = 'openai' | 'claude' | 'google';
 
 export type OpenAIModel = 'gpt-4o' | 'gpt-4o-mini' | 'gpt-4-turbo';
-export type ClaudeModel = 'claude-3-5-sonnet-20241022' | 'claude-3-5-haiku-20241022' | 'claude-3-opus-20240229';
+export type ClaudeModel = 'claude-opus-4-20250514' | 'claude-sonnet-4-20250514' | 'claude-3-5-sonnet-20241022' | 'claude-3-5-haiku-20241022' | 'claude-3-opus-20240229';
 export type GoogleModel = 'gemini-1.5-pro' | 'gemini-1.5-flash';
 
 export interface ModelInfo {
@@ -44,14 +44,31 @@ export const OPENAI_MODELS: Record<OpenAIModel, ModelInfo> = {
 };
 
 export const CLAUDE_MODELS: Record<ClaudeModel, ModelInfo> = {
-  'claude-3-5-sonnet-20241022': {
-    id: 'claude-3-5-sonnet-20241022',
-    name: 'Claude 3.5 Sonnet',
-    description: 'Best balance of intelligence and speed',
-    capabilities: ['Vision', 'Reasoning', 'Analysis'],
+  'claude-opus-4-20250514': {
+    id: 'claude-opus-4-20250514',
+    name: 'Claude 4 Opus',
+    description: 'Most advanced and capable Claude model for complex analysis',
+    capabilities: ['Vision', 'Advanced Reasoning', 'Complex Analysis', 'Research Integration'],
     speed: 'medium',
     quality: 'excellent',
     recommended: true
+  },
+  'claude-sonnet-4-20250514': {
+    id: 'claude-sonnet-4-20250514',
+    name: 'Claude 4 Sonnet',
+    description: 'High-performance Claude 4 model with excellent efficiency',
+    capabilities: ['Vision', 'Reasoning', 'Fast Analysis', 'Code Generation'],
+    speed: 'fast',
+    quality: 'excellent',
+    recommended: true
+  },
+  'claude-3-5-sonnet-20241022': {
+    id: 'claude-3-5-sonnet-20241022',
+    name: 'Claude 3.5 Sonnet',
+    description: 'Previous generation - reliable fallback option',
+    capabilities: ['Vision', 'Reasoning', 'Analysis'],
+    speed: 'medium',
+    quality: 'excellent'
   },
   'claude-3-5-haiku-20241022': {
     id: 'claude-3-5-haiku-20241022',
@@ -64,7 +81,7 @@ export const CLAUDE_MODELS: Record<ClaudeModel, ModelInfo> = {
   'claude-3-opus-20240229': {
     id: 'claude-3-opus-20240229',
     name: 'Claude 3 Opus',
-    description: 'Most powerful model for complex tasks',
+    description: 'Legacy model for compatibility',
     capabilities: ['Vision', 'Deep Analysis', 'Complex Reasoning'],
     speed: 'slow',
     quality: 'excellent'
