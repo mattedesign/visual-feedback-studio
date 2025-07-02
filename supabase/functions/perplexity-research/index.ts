@@ -3,7 +3,9 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, accept',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+  'Content-Type': 'application/json'
 };
 
 console.log('🔬 Perplexity Research Function - Starting up');
@@ -44,8 +46,22 @@ serve(async (req) => {
       });
     }
 
-    // Parse request body
-    const { type, query, domain, industry, recencyFilter = 'month', maxSources = 5 } = await req.json();
+    // Parse request body with error handling
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (parseError) {
+      console.error('❌ Failed to parse request body:', parseError);
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Invalid JSON in request body'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const { type, query, domain, industry, recencyFilter = 'month', maxSources = 5 } = requestBody;
     
     console.log('🔍 Processing Perplexity request:', {
       type,
@@ -85,12 +101,14 @@ serve(async (req) => {
 
     console.log('🚀 Calling Perplexity API...');
 
-    // Call Perplexity API
+    // Call Perplexity API with enhanced error handling
     const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${perplexityApiKey}`,
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'Figmant/1.0'
       },
       body: JSON.stringify({
         model: 'llama-3.1-sonar-large-128k-online',
@@ -106,7 +124,7 @@ serve(async (req) => {
         ],
         temperature: 0.2,
         top_p: 0.9,
-        max_tokens: 2000,
+        max_tokens: 1500, // Reduced to avoid 406 errors
         return_images: false,
         return_related_questions: true,
         search_domain_filter: searchDomainFilter,
@@ -117,8 +135,20 @@ serve(async (req) => {
     });
 
     if (!perplexityResponse.ok) {
-      console.error('❌ Perplexity API error:', await perplexityResponse.text());
-      throw new Error(`Perplexity API error: ${perplexityResponse.status}`);
+      const errorText = await perplexityResponse.text();
+      console.error('❌ Perplexity API error:', {
+        status: perplexityResponse.status,
+        statusText: perplexityResponse.statusText,
+        headers: Object.fromEntries(perplexityResponse.headers.entries()),
+        body: errorText
+      });
+      
+      // Handle specific 406 errors
+      if (perplexityResponse.status === 406) {
+        throw new Error('Perplexity API rejected request - content format issue');
+      }
+      
+      throw new Error(`Perplexity API error ${perplexityResponse.status}: ${errorText || perplexityResponse.statusText}`);
     }
 
     const perplexityData = await perplexityResponse.json();

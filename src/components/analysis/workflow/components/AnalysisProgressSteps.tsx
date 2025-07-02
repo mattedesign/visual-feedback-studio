@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle, Clock, Loader2, Brain, Search, Lightbulb, Upload, Zap, Star, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle, Clock, Loader2, Brain, Search, Lightbulb, Upload, Zap, Star, ChevronDown, ChevronUp, CheckSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ProgressStep {
@@ -21,45 +21,61 @@ interface AnalysisProgressStepsProps {
   totalImages?: number;
   completedSteps?: string[];
   onStepComplete?: (stepId: string) => void;
+  usePerplexityIntegration?: boolean;
 }
 
-const PROGRESS_STEPS: ProgressStep[] = [
-  {
-    id: 'uploading',
-    title: 'Uploading Images',
-    description: 'Preparing design files...',
-    estimatedTime: 5,
-    icon: <Upload className="w-4 h-4" />
-  },
-  {
-    id: 'processing',
-    title: 'Processing Elements',
-    description: 'Detecting UI components...',
-    estimatedTime: 10,
-    icon: <Search className="w-4 h-4" />
-  },
-  {
-    id: 'research',
-    title: 'Research Context',
-    description: 'Searching UX studies database...',
-    estimatedTime: 15,
-    icon: <Brain className="w-4 h-4" />
-  },
-  {
-    id: 'analysis',
-    title: 'AI Analysis',
-    description: 'Analyzing against best practices...',
-    estimatedTime: 30,
-    icon: <Zap className="w-4 h-4" />
-  },
-  {
+const getProgressSteps = (usePerplexityIntegration: boolean): ProgressStep[] => {
+  const baseSteps = [
+    {
+      id: 'uploading',
+      title: 'Uploading Images',
+      description: 'Preparing design files...',
+      estimatedTime: 5,
+      icon: <Upload className="w-4 h-4" />
+    },
+    {
+      id: 'processing',
+      title: 'Processing Elements',
+      description: 'Detecting UI components...',
+      estimatedTime: 10,
+      icon: <Search className="w-4 h-4" />
+    },
+    {
+      id: 'research',
+      title: 'Research Context',
+      description: 'Searching UX studies database...',
+      estimatedTime: usePerplexityIntegration ? 18 : 15,
+      icon: <Brain className="w-4 h-4" />
+    },
+    {
+      id: 'analysis',
+      title: 'AI Analysis',
+      description: 'Analyzing against best practices...',
+      estimatedTime: 30,
+      icon: <Zap className="w-4 h-4" />
+    }
+  ];
+
+  if (usePerplexityIntegration) {
+    baseSteps.push({
+      id: 'validation',
+      title: 'Perplexity Validation',
+      description: 'Validating insights with current research...',
+      estimatedTime: 12,
+      icon: <CheckSquare className="w-4 h-4" />
+    });
+  }
+
+  baseSteps.push({
     id: 'recommendations',
     title: 'Recommendations',
-    description: 'Generating suggestions...',
+    description: usePerplexityIntegration ? 'Synthesizing validated insights...' : 'Generating suggestions...',
     estimatedTime: 10,
     icon: <Lightbulb className="w-4 h-4" />
-  }
-];
+  });
+
+  return baseSteps;
+};
 
 export const AnalysisProgressSteps = ({
   currentStep,
@@ -67,8 +83,10 @@ export const AnalysisProgressSteps = ({
   researchSourcesFound = 0,
   totalImages = 1,
   completedSteps = [],
-  onStepComplete
+  onStepComplete,
+  usePerplexityIntegration = false
 }: AnalysisProgressStepsProps) => {
+  const PROGRESS_STEPS = getProgressSteps(usePerplexityIntegration);
   const [startTime] = useState(Date.now());
   const [elapsedTime, setElapsedTime] = useState(0);
   const [showDetails, setShowDetails] = useState(false);

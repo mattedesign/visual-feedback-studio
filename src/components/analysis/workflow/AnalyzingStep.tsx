@@ -10,7 +10,7 @@ interface AnalyzingStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
 }
 
-type AnalysisPhase = 'uploading' | 'processing' | 'research' | 'analysis' | 'recommendations';
+type AnalysisPhase = 'uploading' | 'processing' | 'research' | 'analysis' | 'validation' | 'recommendations';
 
 export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
   const [currentPhase, setCurrentPhase] = useState<AnalysisPhase>('uploading');
@@ -25,6 +25,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
   
   // ✅ NEW: Multi-stage pipeline monitoring
   const useMultiStagePipeline = useFeatureFlag('multi-stage-pipeline');
+  const usePerplexityIntegration = useFeatureFlag('perplexity-integration');
 
   // Complete a step and add it to completed steps
   const completeStep = useCallback((stepId: string) => {
@@ -38,7 +39,14 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
   }, []);
 
   // 🎯 PHASE MANAGEMENT WITH REALISTIC TIMING AND PROPER COMPLETION TRACKING
-  const progressPhases = [
+  const progressPhases = usePerplexityIntegration ? [
+    { phase: 'uploading', duration: 4000, progressStart: 0, progressEnd: 10 },
+    { phase: 'processing', duration: 6000, progressStart: 10, progressEnd: 22 },
+    { phase: 'research', duration: 12000, progressStart: 22, progressEnd: 40 },
+    { phase: 'analysis', duration: 18000, progressStart: 40, progressEnd: 65 },
+    { phase: 'validation', duration: 10000, progressStart: 65, progressEnd: 85 },
+    { phase: 'recommendations', duration: 6000, progressStart: 85, progressEnd: 100 }
+  ] : [
     { phase: 'uploading', duration: 5000, progressStart: 0, progressEnd: 15 },
     { phase: 'processing', duration: 8000, progressStart: 15, progressEnd: 35 },
     { phase: 'research', duration: 12000, progressStart: 35, progressEnd: 60 },
@@ -124,7 +132,13 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       // Wait for both to complete
       await Promise.all([analysisPromise, progressPromise]);
       
-      // Phase 5: Generating recommendations
+      // Phase 5: Perplexity Validation (if enabled)
+      if (usePerplexityIntegration) {
+        await simulatePhaseProgress('validation');
+        completeStep('validation');
+      }
+      
+      // Phase 6: Generating recommendations
       await simulatePhaseProgress('recommendations');
       
       console.log('✅ Enhanced analysis completed successfully', {
@@ -218,6 +232,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
           totalImages={workflow.selectedImages.length}
           completedSteps={completedSteps}
           onStepComplete={completeStep}
+          usePerplexityIntegration={usePerplexityIntegration}
         />
         
         {/* ✅ NEW: Multi-Stage Pipeline Health Indicator */}
