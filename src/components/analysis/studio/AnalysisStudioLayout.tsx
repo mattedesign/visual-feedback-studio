@@ -42,7 +42,7 @@ export const AnalysisStudioLayout = ({
   const showChat = workflow.currentStep === 'upload' || workflow.currentStep === 'annotate';
 
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-slate-800 overflow-hidden">
+    <div className="flex h-full bg-gray-100 dark:bg-slate-800 overflow-hidden">
       {/* Left Sidebar - File Management - Full height */}
       <StudioSidebar 
         workflow={workflow}
@@ -54,10 +54,10 @@ export const AnalysisStudioLayout = ({
       <div className="flex-1 flex flex-col min-w-0 h-full">
         <StudioToolbar workflow={workflow} />
         
-        {/* Main content area - fixed viewport relationship */}
-        <div className="flex-1 flex flex-col min-h-0 relative">
-          {/* Canvas area - takes remaining space */}
-          <div className={`flex-1 overflow-auto ${showChat ? 'pb-4' : ''}`}>
+        {/* Main content area - calculate height based on chat visibility */}
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          {/* Canvas area - scrollable */}
+          <div className={`flex-1 overflow-auto ${showChat ? 'pb-0' : ''}`}>
             <StudioCanvas 
               workflow={workflow}
               selectedDevice={selectedDevice}
@@ -66,9 +66,9 @@ export const AnalysisStudioLayout = ({
             />
           </div>
           
-          {/* Chat - fixed position at bottom */}
+          {/* Chat - fixed height at bottom */}
           {showChat && (
-            <div className="absolute bottom-0 left-0 right-0 z-10 bg-gray-100 dark:bg-slate-800">
+            <div className="flex-shrink-0 h-auto max-h-64 overflow-visible" style={{ maxHeight: '14.5rem' }}>
               <StudioChat workflow={workflow} />
             </div>
           )}

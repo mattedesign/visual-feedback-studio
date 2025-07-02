@@ -80,21 +80,21 @@ export const SimplifiedContextInput = ({
     }
   }, [showSuggestions]);
 
-  return <div className="w-full">
-      {/* Main Input Container - Fixed positioning */}
-      <div className="flex flex-col-reverse transition-all duration-200 ease-in-out" style={{
+  return <div className="h-full flex flex-col justify-end">
+      {/* Main Input Container */}
+      <div className="flex flex-col-reverse transition-transform duration-300 ease-in-out" style={{
       alignItems: 'center',
       alignSelf: 'stretch',
       borderRadius: '24px',
       border: '1px solid #E2E2E2',
       background: '#FFF',
-      boxShadow: '0px 4px 21px 0px rgba(0, 0, 0, 0.07)',
+      boxShadow: '0px 32px 67px 0px rgba(0, 0, 0, 0.00), 0px 24px 61px 0px rgba(0, 0, 0, 0.01), 0px 12px 52px 0px rgba(0, 0, 0, 0.04), 0px 12px 38px 0px rgba(0, 0, 0, 0.06), 0px 4px 21px 0px rgba(0, 0, 0, 0.07)',
       backdropFilter: 'blur(6px)',
       padding: showSuggestions ? '0' : '20px',
-      // Fixed height instead of dynamic transform
-      height: showSuggestions ? 'auto' : '80px',
-      // Remove transform to prevent movement
-      position: 'relative'
+      // Increase minimum height for better spacing
+      minHeight: showSuggestions ? '140px' : '80px',
+      // Reduce the upward movement to stay aligned with left panel
+      transform: showSuggestions ? 'translateY(-20px)' : 'translateY(0)'
     }}>
         {/* Quick Suggestions - Now appears above input */}
         {showSuggestions && <div className="w-full order-1">
