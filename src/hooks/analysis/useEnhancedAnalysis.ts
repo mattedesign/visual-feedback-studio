@@ -120,6 +120,31 @@ export const useEnhancedAnalysis = ({ currentAnalysis }: UseEnhancedAnalysisProp
             }
             
             console.log('✅ Created valid analysis ID for pipeline:', validAnalysisId);
+
+            // ✅ FIX: Create the analysis_results record early to prevent 406 errors in stage logging
+            try {
+              console.log('🔧 Creating analysis_results record early to prevent 406 errors...');
+              const { error: createError } = await supabase
+                .from('analysis_results')
+                .insert({
+                  analysis_id: validAnalysisId,
+                  user_id: validUserId,
+                  images: request.imageUrls,
+                  annotations: [],
+                  pipeline_stage: 'initializing',
+                  processing_stages: [],
+                  stage_timing: {}
+                });
+
+              if (createError) {
+                console.warn('⚠️ Failed to create early analysis_results record (non-critical):', createError.message);
+              } else {
+                console.log('✅ Early analysis_results record created successfully');
+              }
+            } catch (earlyCreateError) {
+              console.warn('⚠️ Failed to create early analysis_results record (non-critical):', earlyCreateError);
+            }
+
           } catch (error) {
             console.error('❌ Failed to create analysis ID:', error);
             throw new Error(`Could not initialize analysis for pipeline: ${error.message}`);

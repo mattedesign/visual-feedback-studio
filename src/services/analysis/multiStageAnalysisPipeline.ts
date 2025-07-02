@@ -792,22 +792,33 @@ class MultiStageAnalysisPipeline {
    */
   private async logStageStart(analysisId: string, stageName: string): Promise<void> {
     try {
-      // Get the analysis_result record to get the correct ID
-      const { data: analysisResult } = await supabase
+      // ✅ FIX: Use maybeSingle() to handle cases where analysis_results doesn't exist yet
+      const { data: analysisResult, error } = await supabase
         .from('analysis_results')
         .select('id')
         .eq('analysis_id', analysisId)
-        .single();
+        .maybeSingle();
 
-      if (analysisResult) {
-        await supabase.from('analysis_stage_logs').insert({
+      if (error) {
+        console.warn(`⚠️ Could not find analysis_results for ${analysisId}, skipping stage logging:`, error.message);
+        return;
+      }
+
+      if (analysisResult?.id) {
+        const { error: insertError } = await supabase.from('analysis_stage_logs').insert({
           analysis_result_id: analysisResult.id,
           stage_name: stageName,
           stage_status: 'running'
         });
+
+        if (insertError) {
+          console.warn(`⚠️ Failed to insert stage log for ${stageName}:`, insertError.message);
+        }
+      } else {
+        console.warn(`⚠️ No analysis_results record found for ${analysisId}, stage logging skipped`);
       }
     } catch (error) {
-      console.error('Failed to log stage start:', error);
+      console.warn(`⚠️ Failed to log stage start for ${stageName} (non-critical):`, error);
     }
   }
 
@@ -823,28 +834,56 @@ class MultiStageAnalysisPipeline {
     error?: string
   ): Promise<void> {
     try {
-      // Get the analysis_result record to get the correct ID
-      const { data: analysisResult } = await supabase
+      // ✅ FIX: Use maybeSingle() to handle cases where analysis_results doesn't exist yet
+      const { data: analysisResult, error: queryError } = await supabase
         .from('analysis_results')
         .select('id')
         .eq('analysis_id', analysisId)
-        .single();
+        .maybeSingle();
 
-      if (analysisResult) {
-        await supabase
+      if (queryError) {
+        console.warn(`⚠️ Could not find analysis_results for ${analysisId}, skipping stage completion logging:`, queryError.message);
+        return;
+      }
+
+      if (analysisResult?.id) {
+        // Try to update existing log entry
+        const { error: updateError, count } = await supabase
           .from('analysis_stage_logs')
           .update({
             stage_status: status,
             completed_at: new Date().toISOString(),
-            output_data: data ? JSON.stringify(data) : null,
-            error_data: error ? JSON.stringify({ error }) : null
+            duration_ms: duration,
+            output_data: data ? JSON.stringify(data).substring(0, 10000) : null, // ✅ FIX: Limit output size
+            error_data: error ? JSON.stringify({ error: error.substring(0, 1000) }) : null // ✅ FIX: Limit error size
           })
           .eq('analysis_result_id', analysisResult.id)
           .eq('stage_name', stageName)
           .eq('stage_status', 'running');
+
+        if (updateError) {
+          console.warn(`⚠️ Failed to update stage log for ${stageName}:`, updateError.message);
+        } else if (count === 0) {
+          // No running stage found, create a new log entry
+          const { error: insertError } = await supabase.from('analysis_stage_logs').insert({
+            analysis_result_id: analysisResult.id,
+            stage_name: stageName,
+            stage_status: status,
+            completed_at: new Date().toISOString(),
+            duration_ms: duration,
+            output_data: data ? JSON.stringify(data).substring(0, 10000) : null,
+            error_data: error ? JSON.stringify({ error: error.substring(0, 1000) }) : null
+          });
+
+          if (insertError) {
+            console.warn(`⚠️ Failed to insert completion log for ${stageName}:`, insertError.message);
+          }
+        }
+      } else {
+        console.warn(`⚠️ No analysis_results record found for ${analysisId}, stage completion logging skipped`);
       }
     } catch (error) {
-      console.error('Failed to log stage completion:', error);
+      console.warn(`⚠️ Failed to log stage completion for ${stageName} (non-critical):`, error);
     }
   }
 
