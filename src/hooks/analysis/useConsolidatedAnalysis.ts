@@ -288,58 +288,98 @@ export const useConsolidatedAnalysis = () => {
       analysisId
     };
 
-    // NEW: Add problem statement matching using seeded database
+    // Enhanced problem statement matching using seeded database
     if (result.success && result.analysisId) {
-      console.log('🎯 Starting problem statement matching with seeded data...');
+      console.log('🎯 Starting enhanced problem statement matching...');
       
-      setTimeout(async () => {
-        const userChallenge = prompt(`🧪 TEST YOUR PROBLEM STATEMENT SYSTEM
+      // Use a more elegant approach than setTimeout for better UX
+      const initiateProblemStatementMatching = async () => {
+        try {
+          const userChallenge = prompt(`🎯 BUSINESS CHALLENGE ANALYZER
 
-Your database has 10 problem statement templates ready.
+Your analysis is complete! To provide targeted business solutions, please describe your specific challenge:
 
-Describe your business challenge:`);
+Examples:
+• "Our checkout conversion dropped 30% after redesign"
+• "Users can't find our pricing page" 
+• "Mobile users are bouncing at 80%"
 
-        if (userChallenge?.trim()) {
-          try {
-            // Query your seeded problem_statements table
-            const { data: templates, error } = await supabase
-              .from('problem_statements')
-              .select('*');
-            
-            if (error) {
-              console.error('Error fetching problem statements:', error);
-              return;
-            }
+Your challenge:`);
 
-            if (templates && templates.length > 0) {
-              const match = await matchUserToProblemStatement(userChallenge, templates);
-              console.log('🎯 MATCH RESULT:', match);
-              
-              // Store in user_problem_statements table
-              const { error: insertError } = await supabase
-                .from('user_problem_statements')
-                .insert({
-                  user_id: user.id,
-                  analysis_id: result.analysisId,
-                  original_statement: userChallenge,
-                  matched_problem_statement_id: match.templateId,
-                  extracted_context: match.context
-                });
-
-              if (insertError) {
-                console.error('Error storing problem statement:', insertError);
-              }
-              
-              alert(`✅ MATCHED: ${match.category} (${Math.round(match.confidence * 100)}% confidence)`);
-            } else {
-              alert('❌ No problem statement templates found in database');
-            }
-          } catch (error) {
-            console.error('Error in problem statement matching:', error);
-            alert('❌ Error matching problem statement');
+          if (!userChallenge?.trim()) {
+            console.log('👤 User skipped problem statement input');
+            return;
           }
+
+          console.log('🔍 Fetching problem statement templates...');
+          
+          // Query seeded problem_statements table with error handling
+          const { data: templates, error } = await supabase
+            .from('problem_statements')
+            .select('*')
+            .order('usage_count', { ascending: false });
+          
+          if (error) {
+            console.error('❌ Database error fetching templates:', error);
+            alert('Sorry, there was an issue accessing the problem statement database. Your analysis is still complete.');
+            return;
+          }
+
+          if (!templates || templates.length === 0) {
+            console.warn('⚠️ No problem statement templates found');
+            alert('Problem statement templates are not yet available. Your analysis is complete.');
+            return;
+          }
+
+          console.log(`📊 Found ${templates.length} problem statement templates`);
+          
+          // Enhanced matching with better algorithms
+          const match = await enhancedMatchUserToProblemStatement(userChallenge, templates);
+          console.log('🎯 ENHANCED MATCH RESULT:', match);
+          
+          // Store with comprehensive error handling
+          const { data: stored, error: insertError } = await supabase
+            .from('user_problem_statements')
+            .insert({
+              user_id: user.id,
+              analysis_id: result.analysisId,
+              original_statement: userChallenge,
+              matched_problem_statement_id: match.templateId,
+              extracted_context: match.context
+            })
+            .select()
+            .single();
+
+          if (insertError) {
+            console.error('❌ Error storing problem statement:', insertError);
+            alert('Your analysis is complete, but we couldn\'t save your business challenge. Please try again later.');
+            return;
+          }
+
+          console.log('✅ Problem statement successfully stored:', stored.id);
+          
+          // Enhanced user feedback with actionable information
+          const confidenceText = match.confidence > 0.75 ? 'High' : 
+                                match.confidence > 0.5 ? 'Medium' : 'Low';
+          
+          alert(`🎯 BUSINESS CHALLENGE MATCHED!
+
+Category: ${match.category}
+Confidence: ${confidenceText} (${Math.round(match.confidence * 100)}%)
+
+Your challenge has been analyzed and will provide targeted business solutions in future features.`);
+
+        } catch (error) {
+          console.error('💥 Unexpected error in problem statement matching:', error);
+          alert('Your analysis is complete. There was an issue with the business challenge matcher, but your results are saved.');
         }
-      }, 2000);
+      };
+
+      // Defer execution to avoid blocking navigation
+      Promise.resolve().then(() => {
+        // Small delay to ensure UI has updated
+        setTimeout(initiateProblemStatementMatching, 1500);
+      });
     }
     
     return result;
@@ -375,9 +415,9 @@ Describe your business challenge:`);
   };
 };
 
-// Simple problem statement matching logic
-async function matchUserToProblemStatement(userStatement: string, templates: any[]) {
-  console.log('🔍 Matching user statement against templates:', {
+// Enhanced problem statement matching with category-specific keywords
+async function enhancedMatchUserToProblemStatement(userStatement: string, templates: any[]) {
+  console.log('🔍 Enhanced matching user statement against templates:', {
     userStatement,
     templateCount: templates.length
   });
@@ -390,14 +430,14 @@ async function matchUserToProblemStatement(userStatement: string, templates: any
   };
 
   for (const template of templates) {
-    const confidence = calculateMatchingScore(userStatement, template.statement);
+    const confidence = enhancedCalculateMatchingScore(userStatement, template);
     
     if (confidence > bestMatch.confidence) {
       bestMatch = {
         templateId: template.id,
         category: template.category,
         confidence,
-        context: extractBusinessContext(userStatement, template.implied_context)
+        context: enhancedExtractBusinessContext(userStatement, template.implied_context, template.category)
       };
     }
   }
@@ -405,48 +445,145 @@ async function matchUserToProblemStatement(userStatement: string, templates: any
   return bestMatch;
 }
 
-// Calculate how well the user statement matches a template
-function calculateMatchingScore(userStatement: string, templateStatement: string): number {
-  const userWords = userStatement.toLowerCase().split(/\s+/);
-  const templateWords = templateStatement.toLowerCase().split(/\s+/);
+// Enhanced matching with category-specific keyword weighting
+function enhancedCalculateMatchingScore(userStatement: string, template: any): number {
+  const userLower = userStatement.toLowerCase();
+  const templateLower = template.statement.toLowerCase();
   
-  let matches = 0;
+  // Base word matching score
+  const userWords = userLower.split(/\s+/).filter(word => word.length > 2);
+  const templateWords = templateLower.split(/\s+/).filter(word => word.length > 2);
+  
+  let baseScore = 0;
   const totalWords = Math.max(userWords.length, templateWords.length);
   
   for (const word of userWords) {
-    if (word.length > 3 && templateWords.some(tw => tw.includes(word) || word.includes(tw))) {
-      matches++;
+    if (templateWords.some(tw => tw.includes(word) || word.includes(tw))) {
+      baseScore++;
     }
   }
   
-  return matches / totalWords;
-}
+  const wordMatchScore = baseScore / totalWords;
 
-// Extract business context from user statement
-function extractBusinessContext(statement: string, templateContext: any) {
-  const lowercaseStatement = statement.toLowerCase();
+  // Category-specific keyword boosting
+  const categoryKeywords = getCategoryKeywords(template.category);
+  let categoryBoost = 0;
   
-  // Extract urgency from keywords
-  let urgency = 'medium';
-  if (lowercaseStatement.includes('urgent') || lowercaseStatement.includes('immediately')) {
-    urgency = 'high';
-  } else if (lowercaseStatement.includes('eventually') || lowercaseStatement.includes('when possible')) {
-    urgency = 'low';
+  for (const keyword of categoryKeywords) {
+    if (userLower.includes(keyword)) {
+      categoryBoost += 0.2; // Each matching category keyword adds 20%
+    }
   }
 
-  // Extract stakeholders
+  // Urgency and business impact detection
+  const urgencyBoost = detectUrgencyKeywords(userLower) ? 0.1 : 0;
+  const businessImpactBoost = detectBusinessImpactKeywords(userLower) ? 0.15 : 0;
+
+  // Combine scores with weighting
+  const finalScore = Math.min(1.0, (wordMatchScore * 0.6) + categoryBoost + urgencyBoost + businessImpactBoost);
+  
+  console.log(`📊 Scoring "${template.statement.substring(0, 50)}...": ${Math.round(finalScore * 100)}%`);
+  
+  return finalScore;
+}
+
+// Category-specific keywords for better matching
+function getCategoryKeywords(category: string): string[] {
+  const keywordMap: Record<string, string[]> = {
+    'conversion_decline': ['conversion', 'signup', 'checkout', 'purchase', 'cart', 'abandon', 'drop', 'decline', 'sales', 'revenue'],
+    'competitive_pressure': ['competitor', 'alternative', 'market', 'losing users', 'switch', 'outdated', 'behind'],
+    'user_confusion': ['confused', 'lost', 'find', 'navigate', 'understand', 'unclear', 'complex', 'difficult'],
+    'technical_constraints': ['slow', 'performance', 'load', 'mobile', 'browser', 'compatibility', 'technical'],
+    'stakeholder_demands': ['executive', 'ceo', 'board', 'deadline', 'urgent', 'priority', 'stakeholder']
+  };
+  
+  return keywordMap[category] || [];
+}
+
+// Detect urgency indicators
+function detectUrgencyKeywords(statement: string): boolean {
+  const urgencyKeywords = ['urgent', 'immediately', 'asap', 'critical', 'emergency', 'deadline', 'priority'];
+  return urgencyKeywords.some(keyword => statement.includes(keyword));
+}
+
+// Detect business impact indicators
+function detectBusinessImpactKeywords(statement: string): boolean {
+  const impactKeywords = ['revenue', 'sales', 'conversion', 'users', 'customers', 'growth', 'profit', 'loss', 'churn'];
+  return impactKeywords.some(keyword => statement.includes(keyword));
+}
+
+// Enhanced business context extraction
+function enhancedExtractBusinessContext(statement: string, templateContext: any, category: string) {
+  const lowercaseStatement = statement.toLowerCase();
+  
+  // Enhanced urgency detection with more nuanced levels
+  let urgency = 'medium';
+  if (lowercaseStatement.includes('urgent') || lowercaseStatement.includes('immediately') || lowercaseStatement.includes('asap') || lowercaseStatement.includes('critical')) {
+    urgency = 'high';
+  } else if (lowercaseStatement.includes('eventually') || lowercaseStatement.includes('when possible') || lowercaseStatement.includes('nice to have')) {
+    urgency = 'low';
+  } else if (lowercaseStatement.includes('soon') || lowercaseStatement.includes('priority')) {
+    urgency = 'medium-high';
+  }
+
+  // Enhanced stakeholder detection
   const stakeholders = [];
-  if (lowercaseStatement.includes('ceo') || lowercaseStatement.includes('executive')) stakeholders.push('executives');
-  if (lowercaseStatement.includes('customer') || lowercaseStatement.includes('user')) stakeholders.push('customers');
-  if (lowercaseStatement.includes('team') || lowercaseStatement.includes('developer')) stakeholders.push('development_team');
+  if (lowercaseStatement.includes('ceo') || lowercaseStatement.includes('executive') || lowercaseStatement.includes('board')) stakeholders.push('executives');
+  if (lowercaseStatement.includes('customer') || lowercaseStatement.includes('user') || lowercaseStatement.includes('client')) stakeholders.push('customers');
+  if (lowercaseStatement.includes('team') || lowercaseStatement.includes('developer') || lowercaseStatement.includes('engineering')) stakeholders.push('development_team');
+  if (lowercaseStatement.includes('marketing') || lowercaseStatement.includes('sales')) stakeholders.push('marketing');
+  if (lowercaseStatement.includes('design') || lowercaseStatement.includes('ux')) stakeholders.push('design_team');
   if (stakeholders.length === 0) stakeholders.push('product_team');
+
+  // Timeline detection
+  let timeline = 'within_quarter';
+  if (lowercaseStatement.includes('week') || lowercaseStatement.includes('days')) timeline = 'within_month';
+  if (lowercaseStatement.includes('month') || lowercaseStatement.includes('sprint')) timeline = 'within_quarter';
+  if (lowercaseStatement.includes('year') || lowercaseStatement.includes('long term') || lowercaseStatement.includes('roadmap')) timeline = 'within_year';
+
+  // Business impact estimation
+  let estimatedImpact = 'medium';
+  if (lowercaseStatement.includes('revenue') || lowercaseStatement.includes('conversion') || lowercaseStatement.includes('sales')) {
+    estimatedImpact = 'high';
+  } else if (lowercaseStatement.includes('nice to have') || lowercaseStatement.includes('polish')) {
+    estimatedImpact = 'low';
+  }
 
   return {
     urgency,
     stakeholders,
+    timeline,
+    estimatedImpact,
+    category,
     businessType: templateContext?.businessType || 'saas',
-    userSegment: templateContext?.userSegment || 'general'
+    userSegment: templateContext?.userSegment || 'general',
+    extractedMetrics: extractMetrics(statement)
   };
+}
+
+// Extract numerical metrics from user statements
+function extractMetrics(statement: string): Record<string, any> {
+  const metrics: Record<string, any> = {};
+  
+  // Look for percentage drops/increases
+  const percentageMatch = statement.match(/(\d+)%/g);
+  if (percentageMatch) {
+    metrics.percentages = percentageMatch;
+  }
+  
+  // Look for user counts
+  const userCountMatch = statement.match(/(\d+)\s*(users?|customers?)/gi);
+  if (userCountMatch) {
+    metrics.userCounts = userCountMatch;
+  }
+  
+  // Look for time periods
+  const timeMatch = statement.match(/(\d+)\s*(days?|weeks?|months?)/gi);
+  if (timeMatch) {
+    metrics.timePeriods = timeMatch;
+  }
+  
+  return metrics;
 }
 
 function getPhaseMessage(phase: AnalysisProgress['phase']): string {
