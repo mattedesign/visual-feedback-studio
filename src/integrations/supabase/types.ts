@@ -81,8 +81,11 @@ export type Database = {
           analysis_context: string | null
           analysis_id: string
           annotations: Json
+          confidence_weights: Json | null
           created_at: string
           enhanced_context: Json | null
+          enhanced_prompt_data: Json | null
+          google_vision_data: Json | null
           id: string
           images: string[]
           knowledge_sources_used: number | null
@@ -90,11 +93,18 @@ export type Database = {
           perplexity_enhanced: boolean | null
           perplexity_research_data: Json | null
           perplexity_trend_data: Json | null
+          pipeline_stage: string | null
+          processing_stages: Json | null
           processing_time_ms: number | null
+          quality_scores: Json | null
           research_citations: string[] | null
+          stage_timing: Json | null
+          synthesis_metadata: Json | null
           total_annotations: number | null
           updated_at: string
           user_id: string
+          validation_status: string | null
+          visual_intelligence: Json | null
           well_done_data: Json | null
         }
         Insert: {
@@ -102,8 +112,11 @@ export type Database = {
           analysis_context?: string | null
           analysis_id: string
           annotations?: Json
+          confidence_weights?: Json | null
           created_at?: string
           enhanced_context?: Json | null
+          enhanced_prompt_data?: Json | null
+          google_vision_data?: Json | null
           id?: string
           images?: string[]
           knowledge_sources_used?: number | null
@@ -111,11 +124,18 @@ export type Database = {
           perplexity_enhanced?: boolean | null
           perplexity_research_data?: Json | null
           perplexity_trend_data?: Json | null
+          pipeline_stage?: string | null
+          processing_stages?: Json | null
           processing_time_ms?: number | null
+          quality_scores?: Json | null
           research_citations?: string[] | null
+          stage_timing?: Json | null
+          synthesis_metadata?: Json | null
           total_annotations?: number | null
           updated_at?: string
           user_id: string
+          validation_status?: string | null
+          visual_intelligence?: Json | null
           well_done_data?: Json | null
         }
         Update: {
@@ -123,8 +143,11 @@ export type Database = {
           analysis_context?: string | null
           analysis_id?: string
           annotations?: Json
+          confidence_weights?: Json | null
           created_at?: string
           enhanced_context?: Json | null
+          enhanced_prompt_data?: Json | null
+          google_vision_data?: Json | null
           id?: string
           images?: string[]
           knowledge_sources_used?: number | null
@@ -132,11 +155,18 @@ export type Database = {
           perplexity_enhanced?: boolean | null
           perplexity_research_data?: Json | null
           perplexity_trend_data?: Json | null
+          pipeline_stage?: string | null
+          processing_stages?: Json | null
           processing_time_ms?: number | null
+          quality_scores?: Json | null
           research_citations?: string[] | null
+          stage_timing?: Json | null
+          synthesis_metadata?: Json | null
           total_annotations?: number | null
           updated_at?: string
           user_id?: string
+          validation_status?: string | null
+          visual_intelligence?: Json | null
           well_done_data?: Json | null
         }
         Relationships: [
@@ -145,6 +175,62 @@ export type Database = {
             columns: ["analysis_id"]
             isOneToOne: false
             referencedRelation: "analyses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      analysis_stage_logs: {
+        Row: {
+          analysis_result_id: string
+          completed_at: string | null
+          created_at: string
+          duration_ms: number | null
+          error_data: Json | null
+          id: string
+          input_data: Json | null
+          metadata: Json | null
+          output_data: Json | null
+          stage_name: string
+          stage_status: string
+          started_at: string
+          updated_at: string
+        }
+        Insert: {
+          analysis_result_id: string
+          completed_at?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error_data?: Json | null
+          id?: string
+          input_data?: Json | null
+          metadata?: Json | null
+          output_data?: Json | null
+          stage_name: string
+          stage_status?: string
+          started_at?: string
+          updated_at?: string
+        }
+        Update: {
+          analysis_result_id?: string
+          completed_at?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error_data?: Json | null
+          id?: string
+          input_data?: Json | null
+          metadata?: Json | null
+          output_data?: Json | null
+          stage_name?: string
+          stage_status?: string
+          started_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_stage_logs_analysis_result_id_fkey"
+            columns: ["analysis_result_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_results"
             referencedColumns: ["id"]
           },
         ]
@@ -266,6 +352,45 @@ export type Database = {
           title?: string
           updated_at?: string
           use_cases?: string[] | null
+        }
+        Relationships: []
+      }
+      pipeline_configurations: {
+        Row: {
+          created_at: string
+          description: string | null
+          enabled: boolean
+          id: string
+          name: string
+          stages: Json
+          thresholds: Json
+          updated_at: string
+          version: number
+          weights: Json
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          name: string
+          stages?: Json
+          thresholds?: Json
+          updated_at?: string
+          version?: number
+          weights?: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          name?: string
+          stages?: Json
+          thresholds?: Json
+          updated_at?: string
+          version?: number
+          weights?: Json
         }
         Relationships: []
       }
