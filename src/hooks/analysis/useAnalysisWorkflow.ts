@@ -4,6 +4,7 @@ import { useEnhancedAnalysis } from './useEnhancedAnalysis';
 import { toast } from 'sonner';
 import { EnhancedContext } from '@/services/analysis/enhancedRagService';
 import { saveAnalysisResults } from '@/services/analysisResultsService';
+import { aiEnhancedSolutionEngine } from '@/services/solutions/aiEnhancedSolutionEngine';
 import { analysisService } from '@/services/analysisService';
 
 export type WorkflowStep = 'upload' | 'annotate' | 'review' | 'analyzing' | 'results';
@@ -29,6 +30,7 @@ export const useAnalysisWorkflow = () => {
   const [analysisContext, setAnalysisContext] = useState<string>('');
   const [aiAnnotations, setAiAnnotations] = useState<Annotation[]>([]);
   const [analysisResults, setAnalysisResults] = useState<any>(null);
+  const [consultationResults, setConsultationResults] = useState<any>(null);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [currentAnalysis, setCurrentAnalysis] = useState<any>(null);
   
@@ -53,6 +55,7 @@ export const useAnalysisWorkflow = () => {
     setAnalysisContext('');
     setAiAnnotations([]);
     setAnalysisResults(null);
+    setConsultationResults(null);
     setEnhancedContext(null);
     setRagEnhanced(false);
     setKnowledgeSourcesUsed(0);
@@ -309,6 +312,33 @@ export const useAnalysisWorkflow = () => {
 
         if (savedResultId) {
           console.log('✅ Analysis results saved to database successfully');
+          
+          // 🤖 GENERATE AI-ENHANCED SOLUTIONS: Integrate the new solution engine
+          console.log('🤖 Generating AI-enhanced solutions...');
+          try {
+            const consultation = await aiEnhancedSolutionEngine.provideConsultation({
+              analysisResults: result.annotations,
+              userProblemStatement: undefined, // Can be added later via user input
+              analysisContext: analysisContext,
+              analysisId: analysisId,
+              userId: user?.id
+            });
+            
+            console.log('✅ AI-enhanced consultation completed:', {
+              approach: consultation.approach,
+              confidence: consultation.confidence,
+              solutionCount: consultation.solutions.length
+            });
+            
+            setConsultationResults(consultation);
+            
+            // Store consultation in session for results page
+            sessionStorage.setItem('consultationResults', JSON.stringify(consultation));
+            
+          } catch (consultationError) {
+            console.error('⚠️ AI consultation failed, continuing without:', consultationError);
+          }
+          
           toast.success('Analysis complete and saved! Redirecting to results...');
           
           // 🔥 ROUTE TO SAVED ANALYSIS: Use the permanent analysis ID
@@ -395,6 +425,7 @@ export const useAnalysisWorkflow = () => {
     analysisContext,
     aiAnnotations,
     analysisResults,
+    consultationResults,
     enhancedContext,
     ragEnhanced,
     knowledgeSourcesUsed,
