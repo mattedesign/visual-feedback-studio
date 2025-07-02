@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { perplexityEnhancer } from './perplexityEnhancer';
+import { dynamicSolutionGenerator } from './dynamicSolutionGenerator';
 
 interface ProblemStatement {
   id: string;
@@ -46,6 +47,12 @@ interface ProblemMatchResult {
     confidenceAdjustment: number;
     currentExamples: string[];
     marketValidation: any;
+  };
+  dynamicSolution?: {
+    generatedSolution: ContextualSolution;
+    confidence: number;
+    researchBacking: string[];
+    recommendForTemplateCreation: boolean;
   };
   fallbackReason?: string;
   alternativeMatches?: Array<{
@@ -112,8 +119,11 @@ export class IntelligentProblemMatcher {
       // Step 4: If we have a high-confidence match, get contextual solution
       let contextualizedSolution: ContextualSolution | null = null;
       let enhancedSolution: any = null;
+      let dynamicSolution: any = null;
       
       if (matchingResults.bestMatch && matchingResults.bestMatch.confidence >= this.CONFIDENCE_THRESHOLD) {
+        console.log('✅ High-confidence template match found, using contextual solution...');
+        
         contextualizedSolution = await this.getContextualizedSolution(
           matchingResults.bestMatch.template,
           extractedContext
@@ -148,27 +158,56 @@ export class IntelligentProblemMatcher {
 
         // Update usage count for matched template
         await this.updateTemplateUsage(matchingResults.bestMatch.template.id);
+        
+      } else {
+        console.log('⚡ No high-confidence template match, generating dynamic solution...');
+        
+        // Step 6: Generate dynamic solution for novel problems
+        try {
+          const dynamicResult = await dynamicSolutionGenerator.generateSolution({
+            userProblemStatement: userStatement,
+            extractedContext,
+            analysisContext: 'Novel problem requiring custom solution generation'
+          });
+          
+          dynamicSolution = dynamicResult;
+          contextualizedSolution = dynamicResult.generatedSolution;
+          
+          console.log('✅ Dynamic solution generated:', {
+            confidence: dynamicResult.confidence,
+            recommendForTemplateCreation: dynamicResult.recommendForTemplateCreation,
+            researchSourcesCount: dynamicResult.researchBacking.length
+          });
+          
+        } catch (error) {
+          console.error('❌ Dynamic solution generation failed:', error);
+          // Continue without dynamic solution - will trigger fallback reason
+        }
       }
 
       const result: ProblemMatchResult = {
         matchedTemplate: matchingResults.bestMatch?.template || null,
-        confidence: matchingResults.bestMatch?.confidence || 0,
+        confidence: matchingResults.bestMatch?.confidence || dynamicSolution?.confidence || 0,
         extractedContext,
         contextualizedSolution,
         enhancedSolution,
+        dynamicSolution,
         alternativeMatches: matchingResults.alternatives
       };
 
-      // Add fallback reason if confidence is too low
+      // Add fallback reason if no solution found
       if (!matchingResults.bestMatch || matchingResults.bestMatch.confidence < this.CONFIDENCE_THRESHOLD) {
-        result.fallbackReason = this.generateFallbackReason(matchingResults.bestMatch?.confidence || 0);
+        if (!dynamicSolution) {
+          result.fallbackReason = this.generateFallbackReason(matchingResults.bestMatch?.confidence || 0);
+        }
       }
 
       console.log('✅ Problem statement interpretation completed:', {
-        hasMatch: !!result.matchedTemplate,
-        confidence: result.confidence,
+        hasTemplateMatch: !!result.matchedTemplate,
+        templateConfidence: matchingResults.bestMatch?.confidence || 0,
         hasSolution: !!result.contextualizedSolution,
         hasEnhancement: !!result.enhancedSolution,
+        hasDynamicSolution: !!result.dynamicSolution,
         hasFallback: !!result.fallbackReason
       });
 
