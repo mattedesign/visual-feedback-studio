@@ -31,8 +31,8 @@ export const StudioChat = ({
   }
 
   return (
-    <div className="bg-transparent">
-      <div className="px-4 pt-4 pb-0">
+    <div className="bg-gray-100 dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700">
+      <div className="px-4 py-4">
         <div className="max-w-4xl mx-auto">
           {/* Simplified Context Input */}
           <SimplifiedContextInput 
