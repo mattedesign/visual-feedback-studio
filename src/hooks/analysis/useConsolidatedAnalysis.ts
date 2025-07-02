@@ -288,98 +288,58 @@ export const useConsolidatedAnalysis = () => {
       analysisId
     };
 
-    // Enhanced problem statement matching using seeded database
+    // 🎯 STRATEGIST CONTEXT INTEGRATION (IMMEDIATE FIX)
+    // Replace existing problem statement logic with strategist enhancement
     if (result.success && result.analysisId) {
-      console.log('🎯 Starting enhanced problem statement matching...');
+      console.log('🎯 Starting UX Strategist enhancement...');
       
-      // Use a more elegant approach than setTimeout for better UX
-      const initiateProblemStatementMatching = async () => {
-        try {
-          const userChallenge = prompt(`🎯 BUSINESS CHALLENGE ANALYZER
+      const analysisId = result.analysisId;
+      
+      // IMMEDIATE context collection (no setTimeout)
+      try {
+        const strategistContext = prompt(`🧠 UX STRATEGIST CONSULTATION
 
-Your analysis is complete! To provide targeted business solutions, please describe your specific challenge:
+I'm your 20-year Principal UX strategist. For expert-level recommendations, I need business context:
+
+What specific design challenge are you facing?
 
 Examples:
-• "Our checkout conversion dropped 30% after redesign"
-• "Users can't find our pricing page" 
-• "Mobile users are bouncing at 80%"
+• "Users abandon checkout at payment step - 60% drop-off rate"
+• "Mobile users can't find our main CTA - conversion down 40%" 
+• "Dashboard overwhelming new users - activation down to 25%"
+• "Form completion dropped from 80% to 30% after redesign"
 
-Your challenge:`);
+Be specific about metrics, user behavior, and business impact.`);
 
-          if (!userChallenge?.trim()) {
-            console.log('👤 User skipped problem statement input');
-            return;
-          }
-
-          console.log('🔍 Fetching problem statement templates...');
+        if (strategistContext?.trim()) {
+          // Store for enhanced analysis
+          localStorage.setItem(`strategist_context_${analysisId}`, JSON.stringify({
+            userChallenge: strategistContext.trim(),
+            timestamp: Date.now(),
+            analysisType: 'strategist_enhanced',
+            expectationLevel: 'principal_designer'
+          }));
           
-          // Query seeded problem_statements table with error handling
-          const { data: templates, error } = await supabase
-            .from('problem_statements')
-            .select('*')
-            .order('usage_count', { ascending: false });
-          
-          if (error) {
-            console.error('❌ Database error fetching templates:', error);
-            alert('Sorry, there was an issue accessing the problem statement database. Your analysis is still complete.');
-            return;
-          }
-
-          if (!templates || templates.length === 0) {
-            console.warn('⚠️ No problem statement templates found');
-            alert('Problem statement templates are not yet available. Your analysis is complete.');
-            return;
-          }
-
-          console.log(`📊 Found ${templates.length} problem statement templates`);
-          
-          // Enhanced matching with better algorithms
-          const match = await enhancedMatchUserToProblemStatement(userChallenge, templates);
-          console.log('🎯 ENHANCED MATCH RESULT:', match);
-          
-          // Store with comprehensive error handling
-          const { data: stored, error: insertError } = await supabase
-            .from('user_problem_statements')
-            .insert({
-              user_id: user.id,
-              analysis_id: result.analysisId,
-              original_statement: userChallenge,
-              matched_problem_statement_id: match.templateId,
-              extracted_context: match.context
-            })
-            .select()
-            .single();
-
-          if (insertError) {
-            console.error('❌ Error storing problem statement:', insertError);
-            alert('Your analysis is complete, but we couldn\'t save your business challenge. Please try again later.');
-            return;
-          }
-
-          console.log('✅ Problem statement successfully stored:', stored.id);
-          
-          // Enhanced user feedback with actionable information
-          const confidenceText = match.confidence > 0.75 ? 'High' : 
-                                match.confidence > 0.5 ? 'Medium' : 'Low';
-          
-          alert(`🎯 BUSINESS CHALLENGE MATCHED!
-
-Category: ${match.category}
-Confidence: ${confidenceText} (${Math.round(match.confidence * 100)}%)
-
-Your challenge has been analyzed and will provide targeted business solutions in future features.`);
-
-        } catch (error) {
-          console.error('💥 Unexpected error in problem statement matching:', error);
-          alert('Your analysis is complete. There was an issue with the business challenge matcher, but your results are saved.');
+          console.log('✅ Strategist context captured:', strategistContext.trim());
+          toast.success('🎭 UX Strategist analysis starting...');
+        } else {
+          console.log('ℹ️ No strategist context provided, using traditional analysis');
+          toast.success('Analysis complete! Redirecting to results...');
         }
-      };
-
-      // Defer execution to avoid blocking navigation
-      Promise.resolve().then(() => {
-        // Small delay to ensure UI has updated
-        setTimeout(initiateProblemStatementMatching, 1500);
-      });
+      } catch (error) {
+        console.error('❌ Strategist context collection error:', error);
+        toast.success('Analysis complete! Redirecting to results...');
+      }
+      
+      // Navigate with strategist flag if context was provided
+      const hasStrategistContext = localStorage.getItem(`strategist_context_${analysisId}`);
+      const redirectUrl = hasStrategistContext 
+        ? `/analysis/${analysisId}?strategist=true&beta=true`
+        : `/analysis/${analysisId}?beta=true`;
+      
+      setTimeout(() => {
+        window.location.href = redirectUrl;
+      }, 2000); // Slightly longer delay for better UX
     }
     
     return result;
@@ -414,177 +374,6 @@ Your challenge has been analyzed and will provide targeted business solutions in
     resetState
   };
 };
-
-// Enhanced problem statement matching with category-specific keywords
-async function enhancedMatchUserToProblemStatement(userStatement: string, templates: any[]) {
-  console.log('🔍 Enhanced matching user statement against templates:', {
-    userStatement,
-    templateCount: templates.length
-  });
-
-  let bestMatch = {
-    templateId: null,
-    category: 'general',
-    confidence: 0,
-    context: {}
-  };
-
-  for (const template of templates) {
-    const confidence = enhancedCalculateMatchingScore(userStatement, template);
-    
-    if (confidence > bestMatch.confidence) {
-      bestMatch = {
-        templateId: template.id,
-        category: template.category,
-        confidence,
-        context: enhancedExtractBusinessContext(userStatement, template.implied_context, template.category)
-      };
-    }
-  }
-
-  return bestMatch;
-}
-
-// Enhanced matching with category-specific keyword weighting
-function enhancedCalculateMatchingScore(userStatement: string, template: any): number {
-  const userLower = userStatement.toLowerCase();
-  const templateLower = template.statement.toLowerCase();
-  
-  // Base word matching score
-  const userWords = userLower.split(/\s+/).filter(word => word.length > 2);
-  const templateWords = templateLower.split(/\s+/).filter(word => word.length > 2);
-  
-  let baseScore = 0;
-  const totalWords = Math.max(userWords.length, templateWords.length);
-  
-  for (const word of userWords) {
-    if (templateWords.some(tw => tw.includes(word) || word.includes(tw))) {
-      baseScore++;
-    }
-  }
-  
-  const wordMatchScore = baseScore / totalWords;
-
-  // Category-specific keyword boosting
-  const categoryKeywords = getCategoryKeywords(template.category);
-  let categoryBoost = 0;
-  
-  for (const keyword of categoryKeywords) {
-    if (userLower.includes(keyword)) {
-      categoryBoost += 0.2; // Each matching category keyword adds 20%
-    }
-  }
-
-  // Urgency and business impact detection
-  const urgencyBoost = detectUrgencyKeywords(userLower) ? 0.1 : 0;
-  const businessImpactBoost = detectBusinessImpactKeywords(userLower) ? 0.15 : 0;
-
-  // Combine scores with weighting
-  const finalScore = Math.min(1.0, (wordMatchScore * 0.6) + categoryBoost + urgencyBoost + businessImpactBoost);
-  
-  console.log(`📊 Scoring "${template.statement.substring(0, 50)}...": ${Math.round(finalScore * 100)}%`);
-  
-  return finalScore;
-}
-
-// Category-specific keywords for better matching
-function getCategoryKeywords(category: string): string[] {
-  const keywordMap: Record<string, string[]> = {
-    'conversion_decline': ['conversion', 'signup', 'checkout', 'purchase', 'cart', 'abandon', 'drop', 'decline', 'sales', 'revenue'],
-    'competitive_pressure': ['competitor', 'alternative', 'market', 'losing users', 'switch', 'outdated', 'behind'],
-    'user_confusion': ['confused', 'lost', 'find', 'navigate', 'understand', 'unclear', 'complex', 'difficult'],
-    'technical_constraints': ['slow', 'performance', 'load', 'mobile', 'browser', 'compatibility', 'technical'],
-    'stakeholder_demands': ['executive', 'ceo', 'board', 'deadline', 'urgent', 'priority', 'stakeholder']
-  };
-  
-  return keywordMap[category] || [];
-}
-
-// Detect urgency indicators
-function detectUrgencyKeywords(statement: string): boolean {
-  const urgencyKeywords = ['urgent', 'immediately', 'asap', 'critical', 'emergency', 'deadline', 'priority'];
-  return urgencyKeywords.some(keyword => statement.includes(keyword));
-}
-
-// Detect business impact indicators
-function detectBusinessImpactKeywords(statement: string): boolean {
-  const impactKeywords = ['revenue', 'sales', 'conversion', 'users', 'customers', 'growth', 'profit', 'loss', 'churn'];
-  return impactKeywords.some(keyword => statement.includes(keyword));
-}
-
-// Enhanced business context extraction
-function enhancedExtractBusinessContext(statement: string, templateContext: any, category: string) {
-  const lowercaseStatement = statement.toLowerCase();
-  
-  // Enhanced urgency detection with more nuanced levels
-  let urgency = 'medium';
-  if (lowercaseStatement.includes('urgent') || lowercaseStatement.includes('immediately') || lowercaseStatement.includes('asap') || lowercaseStatement.includes('critical')) {
-    urgency = 'high';
-  } else if (lowercaseStatement.includes('eventually') || lowercaseStatement.includes('when possible') || lowercaseStatement.includes('nice to have')) {
-    urgency = 'low';
-  } else if (lowercaseStatement.includes('soon') || lowercaseStatement.includes('priority')) {
-    urgency = 'medium-high';
-  }
-
-  // Enhanced stakeholder detection
-  const stakeholders = [];
-  if (lowercaseStatement.includes('ceo') || lowercaseStatement.includes('executive') || lowercaseStatement.includes('board')) stakeholders.push('executives');
-  if (lowercaseStatement.includes('customer') || lowercaseStatement.includes('user') || lowercaseStatement.includes('client')) stakeholders.push('customers');
-  if (lowercaseStatement.includes('team') || lowercaseStatement.includes('developer') || lowercaseStatement.includes('engineering')) stakeholders.push('development_team');
-  if (lowercaseStatement.includes('marketing') || lowercaseStatement.includes('sales')) stakeholders.push('marketing');
-  if (lowercaseStatement.includes('design') || lowercaseStatement.includes('ux')) stakeholders.push('design_team');
-  if (stakeholders.length === 0) stakeholders.push('product_team');
-
-  // Timeline detection
-  let timeline = 'within_quarter';
-  if (lowercaseStatement.includes('week') || lowercaseStatement.includes('days')) timeline = 'within_month';
-  if (lowercaseStatement.includes('month') || lowercaseStatement.includes('sprint')) timeline = 'within_quarter';
-  if (lowercaseStatement.includes('year') || lowercaseStatement.includes('long term') || lowercaseStatement.includes('roadmap')) timeline = 'within_year';
-
-  // Business impact estimation
-  let estimatedImpact = 'medium';
-  if (lowercaseStatement.includes('revenue') || lowercaseStatement.includes('conversion') || lowercaseStatement.includes('sales')) {
-    estimatedImpact = 'high';
-  } else if (lowercaseStatement.includes('nice to have') || lowercaseStatement.includes('polish')) {
-    estimatedImpact = 'low';
-  }
-
-  return {
-    urgency,
-    stakeholders,
-    timeline,
-    estimatedImpact,
-    category,
-    businessType: templateContext?.businessType || 'saas',
-    userSegment: templateContext?.userSegment || 'general',
-    extractedMetrics: extractMetrics(statement)
-  };
-}
-
-// Extract numerical metrics from user statements
-function extractMetrics(statement: string): Record<string, any> {
-  const metrics: Record<string, any> = {};
-  
-  // Look for percentage drops/increases
-  const percentageMatch = statement.match(/(\d+)%/g);
-  if (percentageMatch) {
-    metrics.percentages = percentageMatch;
-  }
-  
-  // Look for user counts
-  const userCountMatch = statement.match(/(\d+)\s*(users?|customers?)/gi);
-  if (userCountMatch) {
-    metrics.userCounts = userCountMatch;
-  }
-  
-  // Look for time periods
-  const timeMatch = statement.match(/(\d+)\s*(days?|weeks?|months?)/gi);
-  if (timeMatch) {
-    metrics.timePeriods = timeMatch;
-  }
-  
-  return metrics;
-}
 
 function getPhaseMessage(phase: AnalysisProgress['phase']): string {
   switch (phase) {
