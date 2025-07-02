@@ -8,9 +8,16 @@ export const useFeatureFlag = (flagName: string): boolean => {
     'perplexity-integration': false, // NEW: Enable Perplexity.ai integration
   };
   
-  // Testing override via URL
+  // Check for specific flag activation via URL parameters
   const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('beta') === 'true') {
+  
+  // Individual flag activation (e.g., ?perplexity=true)
+  if (urlParams.get(flagName.replace('-', '')) === 'true') {
+    return true;
+  }
+  
+  // Legacy beta mode enables modular analysis only
+  if (urlParams.get('beta') === 'true' && flagName === 'modular-analysis') {
     return true;
   }
   
