@@ -129,14 +129,25 @@ const Dashboard = () => {
             </p>
           </div>
           
-          <Button
-            onClick={handleNewAnalysis}
-            className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
-            size="lg"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            New Analysis
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              onClick={() => navigate('/hybrid-engine-test')}
+              variant="outline"
+              size="lg"
+              className="border-purple-300 text-purple-700 hover:bg-purple-50"
+            >
+              🧪 Test Hybrid Engine
+            </Button>
+            
+            <Button
+              onClick={handleNewAnalysis}
+              className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
+              size="lg"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              New Analysis
+            </Button>
+          </div>
         </div>
 
         {/* Search and Filter */}

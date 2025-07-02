@@ -13,6 +13,7 @@ import DALLEDemo from "./pages/DalleDemo";
 import UpgradeSuccess from "./pages/UpgradeSuccess";
 import MigrationPage from "./pages/MigrationPage";
 import VectorTest from "./pages/VectorTest";
+import HybridEngineTest from "./pages/HybridEngineTest";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { DatabaseSeeder } from "@/components/admin/DatabaseSeeder";
 
@@ -39,6 +40,7 @@ const App = () => {
             <Route path="/upgrade-success" element={<UpgradeSuccess />} />
             <Route path="/migration-page" element={<MigrationPage />} />
             <Route path="/vector-test" element={<VectorTest />} />
+            <Route path="/hybrid-engine-test" element={<HybridEngineTest />} />
             <Route path="/database-seeder" element={<DatabaseSeeder />} />
             <Route 
               path="/knowledge-population" 
