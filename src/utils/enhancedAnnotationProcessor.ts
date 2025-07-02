@@ -1,5 +1,6 @@
 import { Annotation } from '@/types/analysis';
 import { ImprovedCoordinateValidator, CoordinateValidationResult, ValidationMetrics } from './improvedCoordinateValidator';
+import { PerplexityEnhancedValidator, PerplexityValidationResult, PerplexityValidationMetrics } from './perplexityEnhancedValidator';
 
 export interface ProcessingOptions {
   enableValidation: boolean;
@@ -11,10 +12,11 @@ export interface ProcessingOptions {
 
 export interface ProcessingResult {
   processedAnnotations: Annotation[];
-  validationResults: CoordinateValidationResult[];
-  metrics: ValidationMetrics;
+  validationResults: PerplexityValidationResult[];
+  metrics: PerplexityValidationMetrics;
   filteredAnnotations: Annotation[];
   processingLog: string[];
+  researchPreserved: Annotation[];
 }
 
 /**
@@ -47,21 +49,22 @@ export class EnhancedAnnotationProcessor {
 
     processingLog.push(`Starting processing of ${annotations.length} annotations`);
 
-    // Step 1: Validate all annotations
-    let validationResults: CoordinateValidationResult[] = [];
+    // Step 1: Validate all annotations with Perplexity enhancement
+    let validationResults: PerplexityValidationResult[] = [];
     if (opts.enableValidation) {
-      validationResults = this.validateAnnotations(annotations, processingLog);
+      validationResults = this.validateAnnotationsWithPerplexity(annotations, processingLog);
     }
 
     // Step 2: Generate metrics
     const metrics = this.generateProcessingMetrics(annotations, validationResults, processingLog);
 
-    // Step 3: Filter annotations if enabled
+    // Step 3: Filter annotations if enabled with research priority
     let processedAnnotations = [...annotations];
     let filteredAnnotations: Annotation[] = [];
+    let researchPreserved: Annotation[] = [];
     
     if (opts.enableFiltering) {
-      const filterResult = this.filterAnnotations(
+      const filterResult = this.filterAnnotationsWithResearchPriority(
         annotations,
         validationResults,
         opts,
@@ -69,6 +72,7 @@ export class EnhancedAnnotationProcessor {
       );
       processedAnnotations = filterResult.kept;
       filteredAnnotations = filterResult.filtered;
+      researchPreserved = filterResult.researchPreserved;
     }
 
     // Step 4: Add validation metadata to processed annotations
@@ -86,108 +90,114 @@ export class EnhancedAnnotationProcessor {
       validationResults,
       metrics,
       filteredAnnotations,
-      processingLog
+      processingLog,
+      researchPreserved
     };
   }
 
   /**
-   * Validate all annotations using improved validator
+   * Validate all annotations using Perplexity-enhanced validator
    */
-  private static validateAnnotations(
+  private static validateAnnotationsWithPerplexity(
     annotations: Annotation[],
     log: string[]
-  ): CoordinateValidationResult[] {
-    log.push('🔍 Validating annotations with evidence-based approach');
+  ): PerplexityValidationResult[] {
+    log.push('🔬 Validating annotations with Perplexity-enhanced approach');
 
     const results = annotations.map((annotation, index) => {
-      const result = ImprovedCoordinateValidator.validateAnnotation(annotation);
+      const result = PerplexityEnhancedValidator.validateAnnotation(annotation);
       
       if (result.evidenceLevel === 'weak' || !result.isValid) {
         log.push(`⚠️ Annotation ${index + 1} (${annotation.id}): ${result.reasoning}`);
       }
       
+      if (result.hasPerplexityResearch) {
+        log.push(`🔬 Research annotation ${index + 1}: ${result.researchIndicators.length} indicators, quality: ${Math.round(result.researchQualityScore * 100)}%`);
+      }
+      
       return result;
     });
 
-    log.push(`✅ Validation complete: ${results.filter(r => r.isValid).length}/${results.length} valid`);
+    const researchCount = results.filter(r => r.hasPerplexityResearch).length;
+    log.push(`✅ Validation complete: ${results.filter(r => r.isValid).length}/${results.length} valid, ${researchCount} research-backed`);
     return results;
   }
 
   /**
-   * Generate comprehensive processing metrics
+   * Generate comprehensive processing metrics with Perplexity research tracking
    */
   private static generateProcessingMetrics(
     annotations: Annotation[],
-    validationResults: CoordinateValidationResult[],
+    validationResults: PerplexityValidationResult[],
     log: string[]
-  ): ValidationMetrics {
-    const metrics = ImprovedCoordinateValidator.generateValidationMetrics(
+  ): PerplexityValidationMetrics {
+    const metrics = PerplexityEnhancedValidator.generateValidationMetrics(
       annotations,
       validationResults
     );
 
     log.push(`📊 Quality Metrics: ${metrics.validCount}/${metrics.totalAnnotations} valid (${Math.round((metrics.validCount / metrics.totalAnnotations) * 100)}%)`);
     log.push(`📊 Average Confidence: ${Math.round(metrics.averageConfidence * 100)}%`);
+    log.push(`📊 Research Metrics: ${metrics.researchBackedCount} research-backed, ${metrics.preservedResearchAnnotations} preserved`);
     log.push(`📊 Evidence Distribution: ${JSON.stringify(metrics.evidenceLevels)}`);
 
     return metrics;
   }
 
   /**
-   * Filter annotations based on validation results and options
+   * Filter annotations with research priority preservation
    */
-  private static filterAnnotations(
+  private static filterAnnotationsWithResearchPriority(
     annotations: Annotation[],
-    validationResults: CoordinateValidationResult[],
+    validationResults: PerplexityValidationResult[],
     options: ProcessingOptions,
     log: string[]
-  ): { kept: Annotation[]; filtered: Annotation[] } {
-    log.push(`🔍 Filtering annotations with confidence threshold: ${options.minConfidenceThreshold}`);
+  ): { kept: Annotation[]; filtered: Annotation[]; researchPreserved: Annotation[] } {
+    log.push(`🔬 Filtering annotations with research priority (threshold: ${options.minConfidenceThreshold})`);
 
-    const kept: Annotation[] = [];
-    const filtered: Annotation[] = [];
-
-    annotations.forEach((annotation, index) => {
-      const validation = validationResults[index];
-      
-      if (!validation) {
-        kept.push(annotation);
-        return;
+    // Use the Perplexity-enhanced validator's filtering method
+    const filterResult = PerplexityEnhancedValidator.filterWithResearchPriority(
+      annotations,
+      validationResults,
+      {
+        standardThreshold: options.minConfidenceThreshold,
+        researchThreshold: 0.45, // Lower threshold for research content
+        preserveHighQualityResearch: true
       }
+    );
 
-      // Filter based on confidence and evidence
-      if (validation.confidence >= options.minConfidenceThreshold && validation.isValid) {
-        kept.push(annotation);
-      } else {
-        filtered.push(annotation);
-        log.push(`🗑️ Filtered annotation ${index + 1}: ${validation.reasoning}`);
-      }
-    });
-
-    // Check if too many annotations were filtered
-    if (filtered.length > options.maxInvalidAnnotations) {
-      log.push(`⚠️ Warning: ${filtered.length} annotations filtered (max: ${options.maxInvalidAnnotations})`);
+    // Log research preservation details
+    log.push(`🔬 Research preservation: ${filterResult.researchPreserved.length} research annotations preserved`);
+    
+    // Handle over-filtering protection
+    if (filterResult.filteredAnnotations.length > options.maxInvalidAnnotations) {
+      log.push(`⚠️ Warning: ${filterResult.filteredAnnotations.length} annotations filtered (max: ${options.maxInvalidAnnotations})`);
       
       // Keep the best filtered annotations to avoid over-filtering
-      const sortedFiltered = filtered
+      const sortedFiltered = filterResult.filteredAnnotations
         .map((ann, idx) => ({ 
           annotation: ann, 
           validation: validationResults[annotations.indexOf(ann)] 
         }))
         .sort((a, b) => (b.validation?.confidence || 0) - (a.validation?.confidence || 0));
 
-      const toRestore = sortedFiltered.slice(0, filtered.length - options.maxInvalidAnnotations);
+      const toRestore = sortedFiltered.slice(0, filterResult.filteredAnnotations.length - options.maxInvalidAnnotations);
       toRestore.forEach(({ annotation }) => {
-        kept.push(annotation);
-        const index = filtered.indexOf(annotation);
-        if (index > -1) filtered.splice(index, 1);
+        filterResult.validAnnotations.push(annotation);
+        const index = filterResult.filteredAnnotations.indexOf(annotation);
+        if (index > -1) filterResult.filteredAnnotations.splice(index, 1);
       });
 
       log.push(`🔄 Restored ${toRestore.length} best annotations to avoid over-filtering`);
     }
 
-    log.push(`✅ Filtering complete: ${kept.length} kept, ${filtered.length} filtered`);
-    return { kept, filtered };
+    log.push(`✅ Enhanced filtering complete: ${filterResult.validAnnotations.length} kept, ${filterResult.filteredAnnotations.length} filtered, ${filterResult.researchPreserved.length} research preserved`);
+    
+    return { 
+      kept: filterResult.validAnnotations, 
+      filtered: filterResult.filteredAnnotations,
+      researchPreserved: filterResult.researchPreserved
+    };
   }
 
   /**
@@ -195,7 +205,7 @@ export class EnhancedAnnotationProcessor {
    */
   private static addValidationMetadata(
     annotations: Annotation[],
-    validationResults: CoordinateValidationResult[],
+    validationResults: PerplexityValidationResult[],
     log: string[]
   ): Annotation[] {
     log.push('📝 Adding validation metadata to annotations');
@@ -225,7 +235,7 @@ export class EnhancedAnnotationProcessor {
   private static logFinalResults(
     processedAnnotations: Annotation[],
     filteredAnnotations: Annotation[],
-    metrics: ValidationMetrics,
+    metrics: PerplexityValidationMetrics,
     options: ProcessingOptions,
     log: string[]
   ): void {
