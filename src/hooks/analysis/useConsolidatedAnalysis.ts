@@ -276,7 +276,7 @@ export const useConsolidatedAnalysis = () => {
     // Complete
     updateProgress({ phase: 'complete', progress: 100, message: 'Analysis complete!' });
     
-    return {
+    const result = {
       success: true,
       annotations: analysisResult.annotations,
       enhancedContext: analysisResult.researchEnhanced ? {
@@ -287,6 +287,41 @@ export const useConsolidatedAnalysis = () => {
       consultationResults,
       analysisId
     };
+
+    // NEW: Add problem statement matching after traditional analysis
+    if (result.success && result.analysisId) {
+      console.log('✅ Analysis completed, starting problem statement matching...');
+      
+      // Check if hybrid solution engine exists
+      try {
+        // Prompt user for problem statement
+        const userProblemStatement = await promptUserForProblemStatement();
+        
+        if (userProblemStatement) {
+          console.log('🤖 Processing problem statement:', userProblemStatement);
+          
+          const solutionResult = await aiEnhancedSolutionEngine.provideConsultation({
+            analysisResults: result.annotations || [],
+            analysisContext: `${input.analysisContext}\n\nUser Problem Statement: ${userProblemStatement}`,
+            analysisId: result.analysisId,
+            userId: user.id
+          });
+          
+          console.log('🎯 Problem statement result:', {
+            approach: solutionResult.approach,
+            confidence: solutionResult.confidence,
+            solutionCount: solutionResult.solutions.length
+          });
+          
+          // Store enhanced results for display
+          localStorage.setItem(`enhanced_solutions_${result.analysisId}`, JSON.stringify(solutionResult));
+        }
+      } catch (error) {
+        console.log('⚠️ Problem statement logic not available yet:', error);
+      }
+    }
+    
+    return result;
   };
 
   const cancelAnalysis = useCallback(() => {
@@ -318,6 +353,23 @@ export const useConsolidatedAnalysis = () => {
     resetState
   };
 };
+
+async function promptUserForProblemStatement(): Promise<string | null> {
+  return new Promise((resolve) => {
+    const statement = prompt(`🎯 TESTING PROBLEM STATEMENT MATCHING
+
+Describe the main business challenge you're trying to solve:
+
+Examples:
+- "Our signup conversion dropped 40% after adding credit card requirements"
+- "A competitor launched a feature our customers are asking for"  
+- "Users get confused in our checkout and abandon carts"
+
+Your challenge:`);
+    
+    resolve(statement?.trim() || null);
+  });
+}
 
 function getPhaseMessage(phase: AnalysisProgress['phase']): string {
   switch (phase) {
