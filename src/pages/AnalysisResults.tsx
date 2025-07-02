@@ -84,22 +84,58 @@ const AnalysisResults = () => {
           </div>
 
           {/* Perplexity Integration */}
-          <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
-            <div className="flex items-center justify-center mb-3">
-              <span className="text-green-600 dark:text-green-400 text-sm font-medium">
-                🔬 Real-time Research Validation Available!
-              </span>
+          {!perplexityEnabled ? (
+            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
+              <div className="flex items-center justify-center mb-3">
+                <span className="text-green-600 dark:text-green-400 text-sm font-medium">
+                  🔬 Real-time Research Validation Available!
+                </span>
+              </div>
+              <button 
+                onClick={() => {
+                  // Enable Perplexity and persist the choice
+                  localStorage.setItem('perplexity-enabled', 'true');
+                  window.location.href += '?perplexity=true';
+                }}
+                className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+              >
+                Enable Perplexity Integration
+              </button>
+              <p className="text-xs text-green-600 dark:text-green-400 mt-2">
+                Current research validation • Industry trends • Competitive insights
+              </p>
             </div>
-            <button 
-              onClick={() => window.location.href += '?perplexity=true'}
-              className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-            >
-              Enable Perplexity Integration
-            </button>
-            <p className="text-xs text-green-600 dark:text-green-400 mt-2">
-              Current research validation • Industry trends • Competitive insights
-            </p>
-          </div>
+          ) : (
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-lg p-4 border-2 border-green-300 dark:border-green-600">
+              <div className="flex items-center justify-center mb-3">
+                <span className="text-green-700 dark:text-green-300 text-sm font-bold">
+                  ✅ Perplexity Integration Active!
+                </span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-center gap-4 text-xs">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-green-700 dark:text-green-300">Real-time Research</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    <span className="text-blue-700 dark:text-blue-300">Trend Analysis</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                    <span className="text-purple-700 dark:text-purple-300">Validation</span>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => window.location.href = '/analysis'}
+                  className="w-full bg-gradient-to-r from-green-600 to-blue-600 text-white px-4 py-2 rounded-lg hover:from-green-700 hover:to-blue-700 transition-all text-sm font-medium"
+                >
+                  Start Enhanced Analysis
+                </button>
+              </div>
+            </div>
+          )}
         </div>
         
         <div className="space-y-3">

@@ -5,8 +5,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { MobileOptimizedAnnotationsList } from './MobileOptimizedAnnotationsList';
 import { CitationIndicator } from './CitationIndicator';
 import { PerplexityIndicator } from './PerplexityIndicator';
+import { PerplexityStatusBanner } from './PerplexityStatusBanner';
 import { BookOpen, Award, Zap } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 
 interface DetailedAnnotationsListProps {
   annotations: Annotation[];
@@ -26,6 +28,7 @@ export const DetailedAnnotationsList = ({
   researchCitations = []
 }: DetailedAnnotationsListProps) => {
   const isMobile = useIsMobile();
+  const isPerplexityEnabled = useFeatureFlag('perplexity-integration');
 
   console.log('📝 DETAILED ANNOTATIONS LIST - DEBUG:', {
     componentName: 'DetailedAnnotationsList',
@@ -90,6 +93,15 @@ export const DetailedAnnotationsList = ({
 
   return (
     <div className="space-y-4">
+      {/* Perplexity Status Banner */}
+      {isPerplexityEnabled && (
+        <PerplexityStatusBanner 
+          sourcesCount={researchCitations.length}
+          validationScore={0.85} // Could be calculated from annotation confidence
+          className="mb-6"
+        />
+      )}
+
       {/* Research-Backed Header */}
       {researchCitations.length > 0 && (
         <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border-2 border-emerald-200 dark:border-emerald-700 rounded-lg p-4 mb-6">

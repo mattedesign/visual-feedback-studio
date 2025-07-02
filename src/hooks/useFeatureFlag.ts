@@ -12,6 +12,18 @@ export const useFeatureFlag = (flagName: string): boolean => {
   // Check for specific flag activation via URL parameters
   const urlParams = new URLSearchParams(window.location.search);
   
+  // Enhanced Perplexity activation
+  if (flagName === 'perplexity-integration') {
+    // Activate via URL parameter
+    if (urlParams.get('perplexity') === 'true') {
+      return true;
+    }
+    // Auto-activate if user enables it via the interface
+    if (localStorage.getItem('perplexity-enabled') === 'true') {
+      return true;
+    }
+  }
+  
   // Individual flag activation (e.g., ?perplexity=true)
   if (urlParams.get(flagName.replace('-', '')) === 'true') {
     return true;

@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Eye, X, Sparkles } from 'lucide-react';
 import { ContextIntelligenceDisplay } from './ContextIntelligenceDisplay';
+import { PerplexityPanel } from './PerplexityPanel';
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 
 interface Annotation {
   id: string;
@@ -48,6 +50,8 @@ export const AnalysisSidebar = ({
   onAnalysisContextChange,
   onDeleteAnnotation,
 }: AnalysisSidebarProps) => {
+  const isPerplexityEnabled = useFeatureFlag('perplexity-integration');
+  
   // Ensure we're working with clean user input
   const userContext = typeof analysisContext === 'string' ? analysisContext : '';
   const detectedFocusAreas = parseContextForDisplay(userContext);
@@ -80,6 +84,14 @@ export const AnalysisSidebar = ({
           analysisContext={userContext}
           focusAreas={detectedFocusAreas}
           researchSourcesCount={detectedFocusAreas.length > 0 ? 5 : undefined}
+        />
+      )}
+
+      {/* Perplexity Real-Time Research Panel */}
+      {isPerplexityEnabled && (
+        <PerplexityPanel 
+          designContext={userContext}
+          className="border-purple-200 dark:border-purple-700"
         />
       )}
 

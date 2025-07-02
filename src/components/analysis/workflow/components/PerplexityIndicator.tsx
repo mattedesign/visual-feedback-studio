@@ -43,28 +43,49 @@ export const PerplexityIndicator = ({
     : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
 
   return (
-    <Card className={`border-l-4 border-l-blue-500 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-900/10 dark:to-indigo-900/10 ${className}`}>
+    <Card className={`border-l-4 border-l-purple-500 bg-gradient-to-r from-purple-50/80 to-pink-50/80 dark:from-purple-900/20 dark:to-pink-900/20 shadow-lg ${className}`}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
-              <Globe className="w-4 h-4 text-white" />
+            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+              <Globe className="w-5 h-5 text-white" />
             </div>
             <div>
-              <CardTitle className="text-lg font-bold text-blue-900 dark:text-blue-100 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5" />
+              <CardTitle className="text-xl font-bold text-purple-900 dark:text-purple-100 flex items-center gap-2">
+                <TrendingUp className="w-6 h-6" />
                 Real-Time Research Validation
+                <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2 py-0.5 text-xs font-bold animate-pulse">
+                  LIVE
+                </Badge>
               </CardTitle>
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                Enhanced with current industry insights
+              <p className="text-sm text-purple-700 dark:text-purple-300 font-medium">
+                Enhanced with current industry insights • Powered by Perplexity.ai
               </p>
             </div>
           </div>
           
           {validation && (
-            <Badge className={`${confidenceColor} font-bold text-sm px-3 py-1`}>
+            <Badge className={`${confidenceColor} font-bold text-sm px-3 py-1 shadow-sm`}>
               {Math.round((validation.confidence || 0) * 100)}% Confidence
             </Badge>
+          )}
+        </div>
+        
+        {/* Active Status Indicators */}
+        <div className="flex items-center gap-4 mt-4 bg-white/60 dark:bg-slate-800/60 rounded-lg p-3">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Research Active</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Sources: {sources.length}</span>
+          </div>
+          {validation && (
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Validated</span>
+            </div>
           )}
         </div>
       </CardHeader>
