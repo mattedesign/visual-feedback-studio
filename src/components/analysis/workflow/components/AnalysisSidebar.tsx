@@ -89,10 +89,19 @@ export const AnalysisSidebar = ({
 
       {/* Perplexity Real-Time Research Panel */}
       {isPerplexityEnabled && (
-        <PerplexityPanel 
-          designContext={userContext}
-          className="border-purple-200 dark:border-purple-700"
-        />
+        <>
+          <PerplexityPanel 
+            designContext={userContext}
+            className="border-purple-200 dark:border-purple-700"
+          />
+          {/* Debug: Log Perplexity status */}
+          {console.log('🔬 Perplexity Integration Status:', {
+            isEnabled: true,
+            contextLength: userContext.length,
+            detectedFocusAreas: detectedFocusAreas,
+            annotationsCount: totalAnnotations
+          })}
+        </>
       )}
 
       <div>

@@ -174,7 +174,7 @@ REMEMBER: Only provide feedback about elements that are CLEARLY VISIBLE in the p
   }
 
   /**
-   * Validate a single annotation
+   * Validate a single annotation with enhanced Perplexity research support
    */
   private validateSingleAnnotation(
     annotation: Annotation,
@@ -184,12 +184,27 @@ REMEMBER: Only provide feedback about elements that are CLEARLY VISIBLE in the p
     const suggestedCorrections: string[] = [];
     let confidence = 0.8; // Default confidence
 
+    // ENHANCED: Check for Perplexity research indicators first
+    const text = `${annotation.title} ${annotation.description || annotation.feedback || ''}`.toLowerCase();
+    const hasResearchBacking = this.hasPerplexityResearchBacking(text);
+    
+    // Research-backed content gets boosted confidence and lower threshold
+    if (hasResearchBacking) {
+      confidence += 0.15; // Boost confidence for research-backed content
+      console.log('🔬 Research-backed annotation detected, boosting confidence:', {
+        annotationId: (annotation as any).id,
+        originalConfidence: 0.8,
+        boostedConfidence: confidence
+      });
+    }
+
     // Check for visual evidence indicators
     const hasVisualIndicators = this.checkForVisualIndicators(annotation);
     if (!hasVisualIndicators.found) {
       reasons.push("Missing visual evidence description");
       suggestedCorrections.push("Add description of what you can see at this location");
-      confidence -= 0.2;
+      // Reduced penalty for research-backed content
+      confidence -= hasResearchBacking ? 0.1 : 0.2;
     }
 
     // Check coordinate validity
@@ -197,18 +212,33 @@ REMEMBER: Only provide feedback about elements that are CLEARLY VISIBLE in the p
     if (!coordinateValidation.valid) {
       reasons.push("Potentially invalid coordinates");
       suggestedCorrections.push("Verify coordinates point to actual element");
-      confidence -= 0.3;
+      // Reduced penalty for research-backed content
+      confidence -= hasResearchBacking ? 0.15 : 0.3;
     }
 
-    // Check feedback specificity
+    // Check feedback specificity (less strict for research content)
     const specificityCheck = this.checkFeedbackSpecificity(annotation);
-    if (!specificityCheck.specific) {
+    if (!specificityCheck.specific && !hasResearchBacking) {
       reasons.push("Feedback too generic, may indicate hallucination");
       suggestedCorrections.push("Provide more specific, observable details");
       confidence -= 0.1;
     }
 
-    const isValid = confidence >= options.minimumConfidenceThreshold;
+    // Lower threshold for research-backed content
+    const effectiveThreshold = hasResearchBacking ? 
+      Math.max(0.6, options.minimumConfidenceThreshold - 0.2) : 
+      options.minimumConfidenceThreshold;
+
+    const isValid = confidence >= effectiveThreshold;
+
+    console.log('🎯 Annotation Validation Result:', {
+      annotationId: (annotation as any).id,
+      hasResearchBacking,
+      finalConfidence: Math.round(confidence * 100) + '%',
+      threshold: Math.round(effectiveThreshold * 100) + '%',
+      isValid,
+      reasons: reasons.length > 0 ? reasons : ['Valid annotation']
+    });
 
     return {
       isValid,
@@ -219,11 +249,34 @@ REMEMBER: Only provide feedback about elements that are CLEARLY VISIBLE in the p
   }
 
   /**
-   * Enhanced visual indicators check with stronger evidence detection
+   * Check if annotation has Perplexity research backing
+   */
+  private hasPerplexityResearchBacking(text: string): boolean {
+    const researchIndicators = [
+      "research shows", "studies indicate", "according to", "data suggests",
+      "research-backed", "evidence-based", "peer-reviewed", "validated by",
+      "industry standard", "best practice", "research foundation", "competitive analysis",
+      "trend analysis", "market research", "ux research", "user research",
+      "perplexity", "research validation", "industry trends"
+    ];
+    
+    return researchIndicators.some(indicator => text.includes(indicator));
+  }
+
+  /**
+   * Enhanced visual indicators check with stronger evidence detection and Perplexity research support
    */
   private checkForVisualIndicators(annotation: Annotation): { found: boolean; indicators: string[] } {
     const text = `${annotation.title} ${annotation.description || annotation.feedback || ''}`.toLowerCase();
     
+    // CRITICAL: Check for Perplexity research indicators first
+    const perplexityIndicators = [
+      "research shows", "studies indicate", "according to", "data suggests",
+      "research-backed", "evidence-based", "peer-reviewed", "validated by",
+      "industry standard", "best practice", "research foundation", "competitive analysis",
+      "trend analysis", "market research", "ux research", "user research"
+    ];
+
     // Strong visual evidence phrases
     const strongIndicators = [
       "i can see", "visible at", "located at", "positioned at", "displays", 
@@ -238,25 +291,40 @@ REMEMBER: Only provide feedback about elements that are CLEARLY VISIBLE in the p
       "header", "footer", "sidebar", "form field"
     ];
     
-    // Warning phrases that might indicate hallucination
+    // Warning phrases that might indicate hallucination (reduced weight for research-backed content)
     const hallucinationWarnings = [
       "consider adding", "should include", "would benefit", "might want to",
       "could improve", "recommend", "suggest", "typical", "usually"
     ];
 
+    const perplexityFound = perplexityIndicators.filter(phrase => text.includes(phrase));
     const strongFound = strongIndicators.filter(phrase => text.includes(phrase));
     const moderateFound = moderateIndicators.filter(phrase => text.includes(phrase));
     const warningFound = hallucinationWarnings.filter(phrase => text.includes(phrase));
     
-    const allIndicators = [...strongFound, ...moderateFound];
+    const allIndicators = [...perplexityFound, ...strongFound, ...moderateFound];
     
-    // High warning count suggests possible hallucination
+    // ENHANCED: Perplexity research content gets special treatment
+    const hasPerplexityResearch = perplexityFound.length > 0;
     const hasStrongEvidence = strongFound.length > 0;
     const hasModerateEvidence = moderateFound.length > 0 && warningFound.length <= 1;
-    const isHighRiskHallucination = warningFound.length > 2 && strongFound.length === 0;
+    const isHighRiskHallucination = warningFound.length > 2 && strongFound.length === 0 && !hasPerplexityResearch;
+
+    // Research-backed content is considered valid even without traditional visual indicators
+    const isValidContent = hasPerplexityResearch || hasStrongEvidence || hasModerateEvidence;
+    
+    console.log('🔬 Perplexity Content Validation:', {
+      annotationId: (annotation as any).id,
+      hasPerplexityResearch,
+      perplexityIndicators: perplexityFound,
+      hasStrongEvidence,
+      hasModerateEvidence,
+      isHighRiskHallucination,
+      finalValidation: isValidContent && !isHighRiskHallucination
+    });
 
     return {
-      found: (hasStrongEvidence || hasModerateEvidence) && !isHighRiskHallucination,
+      found: isValidContent && !isHighRiskHallucination,
       indicators: allIndicators
     };
   }

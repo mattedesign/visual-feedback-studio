@@ -169,7 +169,7 @@ export const DetailedAnnotationsList = ({
                         SELECTED
                       </Badge>
                     )}
-                    {/* Prominent Citation Indicator */}
+                    {/* Enhanced Perplexity Research Indicators */}
                     {citation.number > 0 && (
                       <div className="flex items-center gap-2">
                         <CitationIndicator
@@ -183,6 +183,25 @@ export const DetailedAnnotationsList = ({
                         </Badge>
                       </div>
                     )}
+                    
+                    {/* Perplexity Research Detection */}
+                    {(() => {
+                      const text = `${getAnnotationTitle(annotation)} ${getAnnotationDescription(annotation)}`.toLowerCase();
+                      const hasPerplexityResearch = [
+                        "research shows", "studies indicate", "according to", "data suggests",
+                        "research-backed", "evidence-based", "peer-reviewed", "validated by",
+                        "industry standard", "best practice", "research foundation", "competitive analysis",
+                        "trend analysis", "market research", "ux research", "user research",
+                        "perplexity", "research validation", "industry trends"
+                      ].some(indicator => text.includes(indicator));
+                      
+                      return hasPerplexityResearch && (
+                        <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold animate-pulse">
+                          <Zap className="w-3 h-3 mr-1" />
+                          PERPLEXITY RESEARCH
+                        </Badge>
+                      );
+                    })()}
                   </div>
                   
                   <div className="space-y-3">

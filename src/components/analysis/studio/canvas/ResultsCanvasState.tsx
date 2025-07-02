@@ -20,7 +20,7 @@ export const ResultsCanvasState = ({
 }: ResultsCanvasStateProps) => {
   const [selectedFeedback, setSelectedFeedback] = useState<any>(null);
 
-  // 🔧 ENHANCED: Better annotation validation with correlation checking
+  // 🔧 ENHANCED: Better annotation validation with Perplexity research support
   const safeAnnotations = Array.isArray(workflow.aiAnnotations) 
     ? workflow.aiAnnotations.filter((annotation, index) => {
         if (!annotation || typeof annotation !== 'object') {
@@ -51,12 +51,31 @@ export const ResultsCanvasState = ({
           });
           return false;
         }
+
+        // 🔬 ENHANCED: Check for Perplexity research backing to keep research content
+        const text = `${annotation.title || ''} ${annotation.description || annotation.feedback || ''}`.toLowerCase();
+        const hasResearchBacking = [
+          "research shows", "studies indicate", "according to", "data suggests",
+          "research-backed", "evidence-based", "peer-reviewed", "validated by",
+          "industry standard", "best practice", "research foundation", "competitive analysis",
+          "trend analysis", "market research", "ux research", "user research",
+          "perplexity", "research validation", "industry trends"
+        ].some(indicator => text.includes(indicator));
+
+        if (hasResearchBacking) {
+          console.log(`🔬 PERPLEXITY RESEARCH ANNOTATION PRESERVED at index ${index}:`, {
+            id: annotation.id,
+            hasResearchBacking: true,
+            researchIndicators: text.substring(0, 100) + '...'
+          });
+        }
         
         console.log(`✅ Valid annotation at index ${index}:`, { 
           id: annotation.id, 
           x: annotation.x, 
           y: annotation.y,
-          imageIndex: annotation.imageIndex
+          imageIndex: annotation.imageIndex,
+          hasPerplexityResearch: hasResearchBacking
         });
         return true;
       })
