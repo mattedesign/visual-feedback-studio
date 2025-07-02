@@ -34,7 +34,7 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
+          <div className="min-h-screen bg-gray-50">
             <TopNavigation user={user} onSignOut={signOut} />
             <Routes>
               {/* Public routes */}

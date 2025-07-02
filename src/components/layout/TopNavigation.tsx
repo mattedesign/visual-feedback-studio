@@ -36,7 +36,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ user, onSignOut })
 
   return (
     <>
-      <header className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 shadow-sm">
+      <header className="bg-white border-b border-gray-200 shadow-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Left side - Logo and Navigation */}
@@ -46,7 +46,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ user, onSignOut })
                   variant="ghost"
                   size="sm"
                   onClick={handleBackToDashboard}
-                  className="text-gray-600 hover:text-gray-900 dark:text-slate-300 dark:hover:text-white"
+                  className="text-gray-600 hover:text-gray-900"
                 >
                   <ChevronLeft className="w-4 h-4 mr-1" />
                   Dashboard
@@ -60,7 +60,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ user, onSignOut })
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-sm">UX</span>
                 </div>
-                <span className="font-semibold text-gray-900 dark:text-white text-xl">
+                <span className="font-semibold text-gray-900 text-xl">
                   UX Analysis Studio
                 </span>
               </button>
@@ -74,7 +74,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ user, onSignOut })
                   variant="ghost"
                   size="sm"
                   onClick={() => setIsHistorySidebarOpen(true)}
-                  className="text-gray-600 hover:text-gray-900 dark:text-slate-300 dark:hover:text-white"
+                  className="text-gray-600 hover:text-gray-900"
                 >
                   <History className="w-4 h-4" />
                 </Button>
@@ -83,12 +83,12 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ user, onSignOut })
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2">
                     <Avatar className="w-8 h-8">
-                      <AvatarFallback className="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 text-sm">
+                      <AvatarFallback className="bg-blue-100 text-blue-600 text-sm">
                         {user.email?.[0]?.toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div className="hidden sm:block">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                      <div className="text-sm font-medium text-gray-900">
                         {user.email}
                       </div>
                       <Badge variant="secondary" className="text-xs">
@@ -102,7 +102,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ user, onSignOut })
                       variant="outline" 
                       size="sm" 
                       onClick={onSignOut}
-                      className="border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700"
+                      className="border-gray-300 text-gray-700 hover:bg-gray-50"
                     >
                       Sign Out
                     </Button>

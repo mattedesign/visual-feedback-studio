@@ -115,10 +115,10 @@ const Auth = () => {
   // The useEffect will handle the redirect
   if (user && session) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <LoadingSpinner />
-          <p className="text-white mt-4">Redirecting to analysis...</p>
+          <p className="text-gray-600 mt-4">Redirecting to analysis...</p>
         </div>
       </div>
     );
@@ -126,13 +126,13 @@ const Auth = () => {
 
   // Only show auth form for non-authenticated users
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-slate-800 border-slate-700">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md bg-white border-gray-200 shadow-lg">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl text-white">
+          <CardTitle className="text-2xl text-gray-900">
             {isSignUp ? 'Create Account' : 'Welcome Back'}
           </CardTitle>
-          <CardDescription className="text-slate-400">
+          <CardDescription className="text-gray-600">
             {isSignUp 
               ? 'Sign up to start analyzing your designs' 
               : 'Sign in to your account'
@@ -157,7 +157,7 @@ const Auth = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+                className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
             <div>
@@ -168,13 +168,13 @@ const Auth = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+                className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
             >
               {loading ? 'Loading...' : (isSignUp ? 'Create Account' : 'Sign In')}
             </Button>
@@ -185,7 +185,7 @@ const Auth = () => {
               onClick={handleMagicLink}
               disabled={loading}
               variant="outline"
-              className="w-full border-slate-600 text-slate-300 hover:bg-slate-700"
+              className="w-full border-gray-300 text-gray-700 hover:bg-gray-50"
             >
               {loading ? 'Sending...' : 'Send Magic Link'}
             </Button>
@@ -197,7 +197,7 @@ const Auth = () => {
                 setIsSignUp(!isSignUp);
                 setAuthError('');
               }}
-              className="text-blue-400 hover:text-blue-300 text-sm"
+              className="text-blue-600 hover:text-blue-700 text-sm font-medium"
             >
               {isSignUp 
                 ? 'Already have an account? Sign in' 

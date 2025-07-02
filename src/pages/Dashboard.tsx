@@ -120,8 +120,8 @@ const Dashboard = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Analysis Dashboard</h1>
-          <p className="text-gray-600 dark:text-gray-300 mt-2">
+          <h1 className="text-3xl font-bold text-gray-900">Analysis Dashboard</h1>
+          <p className="text-gray-600 mt-2">
             Manage and review your UX analysis history
           </p>
         </div>
@@ -188,10 +188,10 @@ const Dashboard = () => {
       {filteredAnalyses.length === 0 ? (
         <div className="text-center py-12">
           <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
             {analyses.length === 0 ? 'No analyses yet' : 'No matching analyses'}
           </h3>
-          <p className="text-gray-600 dark:text-gray-300 mb-6">
+          <p className="text-gray-600 mb-6">
             {analyses.length === 0 
               ? 'Start your first UX analysis to see results here'
               : 'Try adjusting your search or filter criteria'
@@ -223,16 +223,16 @@ const Dashboard = () => {
             return (
               <Card
                 key={analysis.id}
-                className="hover:shadow-lg transition-shadow cursor-pointer border border-gray-200 dark:border-slate-700"
+                className="hover:shadow-lg transition-shadow cursor-pointer border border-gray-200"
                 onClick={() => handleViewAnalysis(analysis.analysis_id)}
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                      <CardTitle className="text-lg font-semibold text-gray-900 mb-2">
                         {getAnalysisPreview(analysis)}
                       </CardTitle>
-                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Calendar className="w-4 h-4" />
                         <span>{formatDate(analysis.created_at)}</span>
                       </div>
@@ -249,7 +249,7 @@ const Dashboard = () => {
                 <CardContent>
                   {/* Thumbnail - Only show if we have images */}
                   {imageCount > 0 && analysis.images && analysis.images[0] && (
-                    <div className="w-full h-32 bg-gray-100 dark:bg-slate-800 rounded-lg mb-4 overflow-hidden">
+                    <div className="w-full h-32 bg-gray-100 rounded-lg mb-4 overflow-hidden">
                       <img
                         src={analysis.images[0]}
                         alt="Analysis preview"
@@ -265,29 +265,29 @@ const Dashboard = () => {
                   {/* 🚀 FIXED: Clean metrics display */}
                   <div className="space-y-3">
                     <div className="flex justify-between items-center py-1">
-                      <span className="text-sm text-gray-600 dark:text-gray-300">
+                      <span className="text-sm text-gray-600">
                         Insights Found
                       </span>
-                      <span className="font-semibold text-gray-900 dark:text-white">
+                      <span className="font-semibold text-gray-900">
                         {analysis.total_annotations}
                       </span>
                     </div>
                     
                     <div className="flex justify-between items-center py-1">
-                      <span className="text-sm text-gray-600 dark:text-gray-300">
+                      <span className="text-sm text-gray-600">
                         Images Analyzed
                       </span>
-                      <span className="font-semibold text-gray-900 dark:text-white">
+                      <span className="font-semibold text-gray-900">
                         {imageCount}
                       </span>
                     </div>
                     
                     {analysis.knowledge_sources_used && analysis.knowledge_sources_used > 0 && (
                       <div className="flex justify-between items-center py-1">
-                        <span className="text-sm text-gray-600 dark:text-gray-300">
+                        <span className="text-sm text-gray-600">
                           Research Sources
                         </span>
-                        <span className="font-semibold text-blue-600 dark:text-blue-400">
+                        <span className="font-semibold text-blue-600">
                           {analysis.knowledge_sources_used}
                         </span>
                       </div>
