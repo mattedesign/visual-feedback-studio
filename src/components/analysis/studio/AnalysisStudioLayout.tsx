@@ -67,7 +67,7 @@ export const AnalysisStudioLayout = ({
           </div>
           
           {/* Chat - positioned within main content area */}
-          {showChat && <StudioChat workflow={workflow} />}
+          {showChat && <StudioChat workflow={workflow} sidebarCollapsed={sidebarCollapsed} />}
         </div>
       </div>
 
