@@ -1,8 +1,10 @@
 
-import { Files, MessageCircle, Target, Trash2 } from 'lucide-react';
+import { Files, MessageCircle, Target, Trash2, LogOut } from 'lucide-react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { SidebarUpload } from './SidebarUpload';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 interface StudioSidebarProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -15,6 +17,18 @@ export const StudioSidebar = ({
   collapsed,
   setCollapsed
 }: StudioSidebarProps) => {
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
+  };
+
   const getFileAnnotations = (fileUrl: string) => {
     const imageAnnotations = workflow.imageAnnotations.find(ia => ia.imageUrl === fileUrl);
     return imageAnnotations?.annotations || [];
@@ -199,6 +213,27 @@ export const StudioSidebar = ({
                   <span className="text-xs text-gray-500 dark:text-gray-400">+{workflow.uploadedFiles.length - 6}</span>
                 </div>}
             </div>}
+        </div>
+
+        {/* Sign Out Section - Always at bottom */}
+        <div className={`border-t border-gray-200 ${collapsed ? 'p-2' : 'p-4'}`}>
+          {!collapsed ? (
+            <button
+              onClick={handleSignOut}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Sign Out</span>
+            </button>
+          ) : (
+            <button
+              onClick={handleSignOut}
+              className="w-full flex items-center justify-center p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Sign Out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
     </div>
