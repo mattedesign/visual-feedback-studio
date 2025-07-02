@@ -65,14 +65,38 @@ export interface Annotation {
   quickWinPotential?: boolean;
 }
 
-// ENHANCED: Utility functions for handling title/description with improved extraction logic
+// 🚀 OPTION 3: IMMEDIATE FIX - Force Category-Based Titles (Simple & Reliable)
 export const getAnnotationTitle = (annotation: Annotation, imageIndex?: number): string => {
-  // First check if explicit title exists
+  console.log('🏷️ DEBUG - Getting title for annotation:', {
+    id: annotation.id,
+    hasTitle: !!annotation.title,
+    titleLength: annotation.title?.length,
+    titleContent: annotation.title?.substring(0, 50) + '...',
+    category: annotation.category,
+    severity: annotation.severity
+  });
+
+  // First check if explicit title exists and is reasonable (not content preview)
   if (annotation.title && annotation.title.trim()) {
-    return annotation.title.trim();
+    const explicitTitle = annotation.title.trim();
+    
+    // ✅ ENHANCED: Validate explicit title isn't content preview
+    if (explicitTitle.length <= 80 && 
+        !explicitTitle.includes('...') && 
+        !explicitTitle.startsWith('The form fields lack') && // Your specific issue
+        !explicitTitle.startsWith('The ') && 
+        !explicitTitle.startsWith('This ') && 
+        !explicitTitle.includes('real-time validation') &&
+        !explicitTitle.includes('which can lead to')) {
+      
+      console.log('✅ Using explicit title:', explicitTitle);
+      return addImageContext(explicitTitle, imageIndex, annotation);
+    } else {
+      console.log('⚠️ Rejecting problematic title, using category fallback');
+    }
   }
-  
-  // Enhanced category-based title generation
+
+  // ✅ FALLBACK: Category-based titles (ALWAYS WORKS)
   const categoryTitles = {
     'ux': 'User Experience Issue',
     'visual': 'Visual Design Issue',
@@ -80,89 +104,32 @@ export const getAnnotationTitle = (annotation: Annotation, imageIndex?: number):
     'conversion': 'Conversion Optimization',
     'brand': 'Brand Consistency Issue'
   };
-  
+
   const severityPrefixes = {
     'critical': 'Critical',
     'suggested': 'Suggested',
     'enhancement': 'Enhancement'
   };
+
+  const category = annotation.category?.toLowerCase() || 'ux';
+  const severity = annotation.severity?.toLowerCase() || 'suggested';
   
-  // If we have feedback, try to extract a meaningful title
-  if (annotation.feedback && annotation.feedback.trim()) {
-    const feedback = annotation.feedback.trim();
-    
-    // Pattern 1: Look for action-oriented opening phrases (most common in AI feedback)
-    const actionMatches = feedback.match(/^(Consider|Improve|Add|Remove|Update|Fix|Enhance|Optimize|Replace|Change|Make|Ensure|Use|Avoid|Include|Implement)\s+([^.!?]*)/i);
-    if (actionMatches && actionMatches[0].length > 10 && actionMatches[0].length < 100) {
-      return actionMatches[0].trim();
-    }
-    
-    // Pattern 2: Look for "The [element] should/could/needs" patterns
-    const shouldMatches = feedback.match(/^(The\s+\w+(?:\s+\w+){0,3})\s+(should|could|needs?|must|ought to|requires?)\s+([^.!?]*)/i);
-    if (shouldMatches && shouldMatches[0].length > 15 && shouldMatches[0].length < 100) {
-      return shouldMatches[0].trim();
-    }
-    
-    // Pattern 3: Look for issue identification patterns
-    const issueMatches = feedback.match(/^(This\s+\w+(?:\s+\w+){0,2})\s+(is|has|lacks|missing|appears|seems)\s+([^.!?]*)/i);
-    if (issueMatches && issueMatches[0].length > 10 && issueMatches[0].length < 100) {
-      return issueMatches[0].trim();
-    }
-    
-    // Pattern 4: "Title: Description" format
-    const titleColonMatch = feedback.match(/^([^:]+):\s*(.+)/s);
-    if (titleColonMatch && titleColonMatch[1].length > 5 && titleColonMatch[1].length < 100) {
-      return titleColonMatch[1].trim();
-    }
-    
-    // Pattern 5: First sentence as title (if it's a reasonable length)
-    const sentences = feedback.split(/[.!?]/);
-    const firstSentence = sentences[0]?.trim();
-    if (firstSentence && firstSentence.length >= 15 && firstSentence.length <= 120 && sentences.length > 1) {
-      return firstSentence;
-    }
-    
-    // Pattern 6: First line as title (if multi-line and first line is short)
-    const lines = feedback.split('\n');
-    const firstLine = lines[0]?.trim();
-    if (firstLine && firstLine.length >= 10 && firstLine.length <= 100 && lines.length > 1 && lines[1]?.trim()) {
-      return firstLine;
-    }
-    
-    // Pattern 7: Intelligent truncation of long single sentences
-    if (feedback.length > 120) {
-      // Try to find a natural break point
-      const truncated = feedback.substring(0, 100);
-      const lastSpace = truncated.lastIndexOf(' ');
-      const lastComma = truncated.lastIndexOf(',');
-      const breakPoint = Math.max(lastSpace, lastComma);
-      
-      if (breakPoint > 50) {
-        return truncated.substring(0, breakPoint).trim() + '...';
-      } else {
-        return truncated.trim() + '...';
-      }
-    }
-    
-    // Pattern 8: Use full feedback if it's a reasonable title length
-    if (feedback.length >= 10 && feedback.length <= 120) {
-      return feedback;
-    }
-  }
+  const baseTitle = categoryTitles[category] || 'Design Issue';
+  const prefix = severityPrefixes[severity] || '';
   
-  // Fallback: Create contextual title based on category and severity
-  const categoryTitle = categoryTitles[annotation.category] || 'Design Issue';
-  const severityPrefix = severityPrefixes[annotation.severity] || '';
+  const finalTitle = prefix ? `${prefix} ${baseTitle}` : baseTitle;
   
-  let title = severityPrefix ? `${severityPrefix} ${categoryTitle}` : categoryTitle;
-  
-  // Add image context if available
+  console.log('✅ Generated category-based title:', finalTitle);
+  return addImageContext(finalTitle, imageIndex, annotation);
+};
+
+// Helper function to add image context
+const addImageContext = (title: string, imageIndex?: number, annotation?: Annotation): string => {
   if (typeof imageIndex === 'number' && imageIndex >= 0) {
-    title += ` (Image ${imageIndex + 1})`;
-  } else if (typeof annotation.imageIndex === 'number' && annotation.imageIndex >= 0) {
-    title += ` (Image ${annotation.imageIndex + 1})`;
+    return `${title} (Image ${imageIndex + 1})`;
+  } else if (typeof annotation?.imageIndex === 'number' && annotation.imageIndex >= 0) {
+    return `${title} (Image ${annotation.imageIndex + 1})`;
   }
-  
   return title;
 };
 
