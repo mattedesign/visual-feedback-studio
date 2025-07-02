@@ -288,39 +288,58 @@ export const useConsolidatedAnalysis = () => {
       analysisId
     };
 
-    // NEW: Add problem statement matching after traditional analysis
+    // NEW: Add problem statement matching using seeded database
     if (result.success && result.analysisId) {
-      console.log('✅ Analysis completed, starting problem statement matching...');
+      console.log('🎯 Starting problem statement matching with seeded data...');
       
-      // Check if hybrid solution engine exists
-      try {
-        const { HybridSolutionEngine } = await import('@/services/solutions/hybridSolutionEngine');
-        const hybridEngine = new HybridSolutionEngine();
-        
-        // Prompt user for problem statement
-        const userProblemStatement = await promptUserForProblemStatement();
-        
-        if (userProblemStatement) {
-          console.log('🤖 Processing problem statement:', userProblemStatement);
-          
-          const solutionResult = await hybridEngine.findSolutions({
-            annotations: result.annotations || [],
-            userProblemStatement,
-            analysisContext: input.analysisContext
-          });
-          
-          console.log('🎯 Problem statement result:', {
-            approach: solutionResult.approach,
-            confidence: solutionResult.confidence,
-            solutionCount: solutionResult.solutions.length
-          });
-          
-          // Store enhanced results for display
-          localStorage.setItem(`enhanced_solutions_${result.analysisId}`, JSON.stringify(solutionResult));
+      setTimeout(async () => {
+        const userChallenge = prompt(`🧪 TEST YOUR PROBLEM STATEMENT SYSTEM
+
+Your database has 10 problem statement templates ready.
+
+Describe your business challenge:`);
+
+        if (userChallenge?.trim()) {
+          try {
+            // Query your seeded problem_statements table
+            const { data: templates, error } = await supabase
+              .from('problem_statements')
+              .select('*');
+            
+            if (error) {
+              console.error('Error fetching problem statements:', error);
+              return;
+            }
+
+            if (templates && templates.length > 0) {
+              const match = await matchUserToProblemStatement(userChallenge, templates);
+              console.log('🎯 MATCH RESULT:', match);
+              
+              // Store in user_problem_statements table
+              const { error: insertError } = await supabase
+                .from('user_problem_statements')
+                .insert({
+                  user_id: user.id,
+                  analysis_id: result.analysisId,
+                  original_statement: userChallenge,
+                  matched_problem_statement_id: match.templateId,
+                  extracted_context: match.context
+                });
+
+              if (insertError) {
+                console.error('Error storing problem statement:', insertError);
+              }
+              
+              alert(`✅ MATCHED: ${match.category} (${Math.round(match.confidence * 100)}% confidence)`);
+            } else {
+              alert('❌ No problem statement templates found in database');
+            }
+          } catch (error) {
+            console.error('Error in problem statement matching:', error);
+            alert('❌ Error matching problem statement');
+          }
         }
-      } catch (error) {
-        console.log('⚠️ Problem statement logic not available yet:', error);
-      }
+      }, 2000);
     }
     
     return result;
@@ -356,21 +375,78 @@ export const useConsolidatedAnalysis = () => {
   };
 };
 
-async function promptUserForProblemStatement(): Promise<string | null> {
-  return new Promise((resolve) => {
-    const statement = prompt(`🎯 TESTING PROBLEM STATEMENT MATCHING
-
-Describe the main business challenge you're trying to solve:
-
-Examples:
-- "Our signup conversion dropped 40% after adding credit card requirements"
-- "A competitor launched a feature our customers are asking for"  
-- "Users get confused in our checkout and abandon carts"
-
-Your challenge:`);
-    
-    resolve(statement?.trim() || null);
+// Simple problem statement matching logic
+async function matchUserToProblemStatement(userStatement: string, templates: any[]) {
+  console.log('🔍 Matching user statement against templates:', {
+    userStatement,
+    templateCount: templates.length
   });
+
+  let bestMatch = {
+    templateId: null,
+    category: 'general',
+    confidence: 0,
+    context: {}
+  };
+
+  for (const template of templates) {
+    const confidence = calculateMatchingScore(userStatement, template.statement);
+    
+    if (confidence > bestMatch.confidence) {
+      bestMatch = {
+        templateId: template.id,
+        category: template.category,
+        confidence,
+        context: extractBusinessContext(userStatement, template.implied_context)
+      };
+    }
+  }
+
+  return bestMatch;
+}
+
+// Calculate how well the user statement matches a template
+function calculateMatchingScore(userStatement: string, templateStatement: string): number {
+  const userWords = userStatement.toLowerCase().split(/\s+/);
+  const templateWords = templateStatement.toLowerCase().split(/\s+/);
+  
+  let matches = 0;
+  const totalWords = Math.max(userWords.length, templateWords.length);
+  
+  for (const word of userWords) {
+    if (word.length > 3 && templateWords.some(tw => tw.includes(word) || word.includes(tw))) {
+      matches++;
+    }
+  }
+  
+  return matches / totalWords;
+}
+
+// Extract business context from user statement
+function extractBusinessContext(statement: string, templateContext: any) {
+  const lowercaseStatement = statement.toLowerCase();
+  
+  // Extract urgency from keywords
+  let urgency = 'medium';
+  if (lowercaseStatement.includes('urgent') || lowercaseStatement.includes('immediately')) {
+    urgency = 'high';
+  } else if (lowercaseStatement.includes('eventually') || lowercaseStatement.includes('when possible')) {
+    urgency = 'low';
+  }
+
+  // Extract stakeholders
+  const stakeholders = [];
+  if (lowercaseStatement.includes('ceo') || lowercaseStatement.includes('executive')) stakeholders.push('executives');
+  if (lowercaseStatement.includes('customer') || lowercaseStatement.includes('user')) stakeholders.push('customers');
+  if (lowercaseStatement.includes('team') || lowercaseStatement.includes('developer')) stakeholders.push('development_team');
+  if (stakeholders.length === 0) stakeholders.push('product_team');
+
+  return {
+    urgency,
+    stakeholders,
+    businessType: templateContext?.businessType || 'saas',
+    userSegment: templateContext?.userSegment || 'general'
+  };
 }
 
 function getPhaseMessage(phase: AnalysisProgress['phase']): string {
