@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { perplexityEnhancer } from './perplexityEnhancer';
 
 interface ProblemStatement {
   id: string;
@@ -40,6 +41,12 @@ interface ProblemMatchResult {
   confidence: number;
   extractedContext: ExtractedContext;
   contextualizedSolution: ContextualSolution | null;
+  enhancedSolution?: {
+    researchBacking: string[];
+    confidenceAdjustment: number;
+    currentExamples: string[];
+    marketValidation: any;
+  };
   fallbackReason?: string;
   alternativeMatches?: Array<{
     template: ProblemStatement;
@@ -104,11 +111,40 @@ export class IntelligentProblemMatcher {
 
       // Step 4: If we have a high-confidence match, get contextual solution
       let contextualizedSolution: ContextualSolution | null = null;
+      let enhancedSolution: any = null;
+      
       if (matchingResults.bestMatch && matchingResults.bestMatch.confidence >= this.CONFIDENCE_THRESHOLD) {
         contextualizedSolution = await this.getContextualizedSolution(
           matchingResults.bestMatch.template,
           extractedContext
         );
+
+        // Step 5: Enhance with Perplexity research if solution found
+        if (contextualizedSolution) {
+          console.log('🔍 Enhancing solution with Perplexity research...');
+          try {
+            const enhancement = await perplexityEnhancer.enhanceWithCurrentResearch(
+              contextualizedSolution,
+              userStatement
+            );
+            
+            contextualizedSolution = enhancement.updatedSolution;
+            enhancedSolution = {
+              researchBacking: enhancement.researchBacking,
+              confidenceAdjustment: enhancement.confidenceAdjustment,
+              currentExamples: enhancement.currentExamples,
+              marketValidation: enhancement.marketValidation
+            };
+            
+            console.log('✅ Perplexity enhancement completed:', {
+              confidenceAdjustment: enhancement.confidenceAdjustment,
+              researchSourcesCount: enhancement.researchBacking.length,
+              currentExamplesCount: enhancement.currentExamples.length
+            });
+          } catch (error) {
+            console.error('⚠️ Perplexity enhancement failed, continuing without:', error);
+          }
+        }
 
         // Update usage count for matched template
         await this.updateTemplateUsage(matchingResults.bestMatch.template.id);
@@ -119,6 +155,7 @@ export class IntelligentProblemMatcher {
         confidence: matchingResults.bestMatch?.confidence || 0,
         extractedContext,
         contextualizedSolution,
+        enhancedSolution,
         alternativeMatches: matchingResults.alternatives
       };
 
@@ -131,6 +168,7 @@ export class IntelligentProblemMatcher {
         hasMatch: !!result.matchedTemplate,
         confidence: result.confidence,
         hasSolution: !!result.contextualizedSolution,
+        hasEnhancement: !!result.enhancedSolution,
         hasFallback: !!result.fallbackReason
       });
 
