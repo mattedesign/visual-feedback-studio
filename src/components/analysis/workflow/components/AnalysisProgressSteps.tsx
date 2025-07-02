@@ -230,6 +230,18 @@ export const AnalysisProgressSteps = ({
           </div>
         )}
 
+        {/* ✅ NEW: Perplexity Validation Status */}
+        {currentStep === 'validation' && usePerplexityIntegration && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3 mb-4">
+            <div className="flex items-center gap-2">
+              <CheckSquare className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                Validating insights with current UX research and industry trends
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Details Toggle */}
         <div className="text-center">
           <Button

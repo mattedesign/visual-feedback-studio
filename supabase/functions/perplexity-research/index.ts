@@ -111,25 +111,25 @@ serve(async (req) => {
         'User-Agent': 'Figmant/1.0'
       },
       body: JSON.stringify({
-        model: 'llama-3.1-sonar-large-128k-online',
+        model: 'llama-3.1-sonar-small-128k-online', // ✅ FIX: Use smaller model to reduce 406 errors
         messages: [
           {
             role: 'system',
-            content: systemPrompt
+            content: systemPrompt.substring(0, 200) // ✅ FIX: Shorter system prompt
           },
           {
             role: 'user',
-            content: perplexityQuery
+            content: perplexityQuery.substring(0, 300) // ✅ FIX: Shorter query to avoid 406
           }
         ],
         temperature: 0.2,
         top_p: 0.9,
-        max_tokens: 1500, // Reduced to avoid 406 errors
+        max_tokens: 800, // ✅ FIX: Reduced tokens to avoid 406 errors
         return_images: false,
-        return_related_questions: true,
-        search_domain_filter: searchDomainFilter,
+        return_related_questions: false, // ✅ FIX: Disable to reduce response size
+        search_domain_filter: searchDomainFilter?.slice(0, 2), // ✅ FIX: Limit domains
         search_recency_filter: recencyFilter,
-        frequency_penalty: 1,
+        frequency_penalty: 0.5, // ✅ FIX: Reduced to allow more natural responses
         presence_penalty: 0
       }),
     });

@@ -9,11 +9,34 @@ import {
 import { Annotation } from '@/types/analysis';
 
 class PerplexityService {
+  // ✅ FIX: Rate limiting to prevent 406 errors
+  private lastRequestTime = 0;
+  private readonly MIN_REQUEST_INTERVAL = 1500; // 1.5 seconds between requests
+
+  /**
+   * ✅ FIX: Rate limiting wrapper for API calls
+   */
+  private async waitForRateLimit(): Promise<void> {
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+    
+    if (timeSinceLastRequest < this.MIN_REQUEST_INTERVAL) {
+      const waitTime = this.MIN_REQUEST_INTERVAL - timeSinceLastRequest;
+      console.log(`⏱️ Rate limiting: waiting ${waitTime}ms`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    
+    this.lastRequestTime = Date.now();
+  }
+
   /**
    * Research UX topics and validate insights using Perplexity.ai
    */
   async researchTopic(request: PerplexityResearchRequest): Promise<PerplexityResearchResponse> {
     try {
+      // ✅ FIX: Apply rate limiting before making request
+      await this.waitForRateLimit();
+      
       console.log('🔍 Perplexity Research: Starting topic research', {
         query: request.query.substring(0, 100),
         domain: request.domain,

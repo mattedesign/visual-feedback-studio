@@ -412,7 +412,7 @@ class MultiStageAnalysisPipeline {
   }
 
   /**
-   * Execute Perplexity validation stage
+   * Execute Perplexity validation stage with improved rate limiting and error handling
    */
   private async executePerplexityValidationStage(data: any): Promise<PerplexityValidationResult> {
     const { aiAnalysisData, analysisPrompt, imageUrls } = data;
@@ -438,91 +438,112 @@ class MultiStageAnalysisPipeline {
       // Import perplexity service
       const { perplexityService } = await import('@/services/perplexityService');
       
-      // Validate top annotations with Perplexity research
-      const topAnnotations = annotations.slice(0, 8); // Validate top 8 to avoid rate limits
+      // ✅ FIX: Validate only top 5 annotations to reduce API load and 406 errors
+      const topAnnotations = annotations.slice(0, 5);
       const validatedAnnotations: any[] = [];
       const allSources: any[] = [];
       const industryContext: any[] = [];
       const trendInsights: any[] = [];
       const competitiveContext: any[] = [];
 
-      // Process annotations in smaller batches to avoid 406 errors
-      const batchSize = 3;
-      for (let i = 0; i < topAnnotations.length; i += batchSize) {
-        const batch = topAnnotations.slice(i, i + batchSize);
+      console.log('🔄 Processing annotations for validation:', {
+        total: annotations.length,
+        processing: topAnnotations.length,
+        strategy: 'sequential-with-delays'
+      });
+
+      // ✅ FIX: Process annotations sequentially with delays to avoid rate limits
+      for (let i = 0; i < topAnnotations.length; i++) {
+        const annotation = topAnnotations[i];
         
-        for (const annotation of batch) {
-          try {
-            // Create validation query for this annotation
-            const validationQuery = `UX research validation: "${annotation.title || annotation.feedback || 'Design recommendation'}". 
-                                   Context: ${annotation.description || annotation.comment || 'UI/UX recommendation'}.
-                                   Analysis prompt: ${analysisPrompt?.substring(0, 200) || 'web design analysis'}`;
+        try {
+          // ✅ FIX: Shorter, more focused validation queries to avoid 406 errors
+          const validationQuery = `UX validation: "${annotation.title || annotation.feedback || 'Design recommendation'}". Industry best practices?`;
 
-            // Research the annotation with Perplexity
-            const research = await perplexityService.researchTopic({
-              query: validationQuery,
-              domain: 'ux',
-              recencyFilter: 'year',
-              maxSources: 3
-            });
+          console.log(`🔍 Validating annotation ${i + 1}/${topAnnotations.length}:`, {
+            title: annotation.title?.substring(0, 50) || 'Untitled',
+            queryLength: validationQuery.length
+          });
 
-            if (research.success && research.content) {
-              // Analyze if the research supports the annotation
-              const isSupported = this.analyzeResearchSupport(research.content, annotation);
-              
-              const validatedAnnotation = {
-                ...annotation,
-                perplexityValidated: true,
-                perplexitySupport: isSupported,
-                confidence: isSupported ? 
-                  Math.min((annotation.confidence || 0.8) * 1.15, 1.0) : 
-                  Math.max((annotation.confidence || 0.8) * 0.9, 0.5),
-                researchContext: research.content.substring(0, 300),
-                validationSources: research.sources?.slice(0, 2) || []
-              };
-              
-              validatedAnnotations.push(validatedAnnotation);
-              allSources.push(...(research.sources || []));
-              
-              console.log(`✅ Validated annotation: ${annotation.title || 'Untitled'} - Supported: ${isSupported}`);
-            } else {
-              // Add annotation without validation if research failed
-              validatedAnnotations.push({
-                ...annotation,
-                perplexityValidated: false,
-                validationSources: []
-              });
-              console.warn(`⚠️ Failed to validate annotation: ${annotation.title || 'Untitled'}`);
+          // Research the annotation with Perplexity
+          const research = await perplexityService.researchTopic({
+            query: validationQuery,
+            domain: 'ux',
+            recencyFilter: 'year',
+            maxSources: 2 // ✅ FIX: Reduce sources to minimize response size
+          });
+
+          if (research.success && research.content) {
+            // Analyze if the research supports the annotation
+            const isSupported = this.analyzeResearchSupport(research.content, annotation);
+            
+            const validatedAnnotation = {
+              ...annotation,
+              perplexityValidated: true,
+              perplexitySupport: isSupported,
+              confidence: isSupported ? 
+                Math.min((annotation.confidence || 0.8) * 1.1, 1.0) : 
+                Math.max((annotation.confidence || 0.8) * 0.95, 0.6),
+              researchContext: research.content.substring(0, 200), // ✅ FIX: Shorter context
+              validationSources: research.sources?.slice(0, 1) || [] // ✅ FIX: Only 1 source per annotation
+            };
+            
+            validatedAnnotations.push(validatedAnnotation);
+            if (research.sources && research.sources.length > 0) {
+              allSources.push(research.sources[0]); // ✅ FIX: Add only first source
             }
-          } catch (annotationError) {
-            console.error('❌ Error validating individual annotation:', annotationError);
-            // Add annotation without validation if error occurred
+            
+            console.log(`✅ Validated annotation ${i + 1}: ${annotation.title?.substring(0, 30) || 'Untitled'} - Supported: ${isSupported}`);
+          } else {
+            // Add annotation without validation if research failed
             validatedAnnotations.push({
               ...annotation,
               perplexityValidated: false,
               validationSources: []
             });
+            console.warn(`⚠️ Failed to validate annotation ${i + 1}: ${annotation.title?.substring(0, 30) || 'Untitled'}`);
           }
-        }
-        
-        // Add delay between batches to avoid rate limits and 406 errors
-        if (i + batchSize < topAnnotations.length) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
+
+          // ✅ FIX: Add delay between requests to respect rate limits (only if not last item)
+          if (i < topAnnotations.length - 1) {
+            console.log('⏱️ Rate limit delay: 2 seconds');
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+
+        } catch (annotationError) {
+          console.error(`❌ Error validating annotation ${i + 1}:`, annotationError);
+          // Add annotation without validation if error occurred
+          validatedAnnotations.push({
+            ...annotation,
+            perplexityValidated: false,
+            validationSources: []
+          });
         }
       }
 
-      // Get competitive analysis for the design category
-      try {
-        const competitiveAnalysis = await perplexityService.getCompetitiveAnalysis(
-          'web design',
-          this.extractIndustryFromPrompt(analysisPrompt)
-        );
-        
-        competitiveContext.push(...competitiveAnalysis.competitors || []);
-        trendInsights.push(...competitiveAnalysis.industryTrends || []);
-        industryContext.push(...competitiveAnalysis.benchmarks || []);
-      } catch (competitiveError) {
-        console.warn('⚠️ Competitive analysis failed (non-critical):', competitiveError);
+      // ✅ FIX: Improved competitive analysis with better error handling
+      if (validatedAnnotations.length > 0) {
+        try {
+          console.log('🏢 Getting competitive analysis context...');
+          const competitiveAnalysis = await perplexityService.getCompetitiveAnalysis(
+            'web design',
+            'technology' // ✅ FIX: Use static industry to avoid method dependency
+          );
+          
+          competitiveContext.push(...(competitiveAnalysis.competitors || []).slice(0, 3));
+          trendInsights.push(...(competitiveAnalysis.industryTrends || []).slice(0, 3));
+          industryContext.push(...(competitiveAnalysis.benchmarks || []).slice(0, 3));
+          
+          console.log('✅ Competitive analysis completed:', {
+            competitors: competitiveContext.length,
+            trends: trendInsights.length,
+            benchmarks: industryContext.length
+          });
+        } catch (competitiveError) {
+          console.warn('⚠️ Competitive analysis failed (non-critical):', competitiveError);
+        }
+      } else {
+        console.log('⚠️ Skipping competitive analysis - no validated annotations');
       }
 
       console.log('✅ Perplexity validation completed:', {

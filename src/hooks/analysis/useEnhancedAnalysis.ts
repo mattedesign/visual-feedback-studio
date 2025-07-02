@@ -84,7 +84,9 @@ export const useEnhancedAnalysis = ({ currentAnalysis }: UseEnhancedAnalysisProp
         console.log('🔄 Using Multi-Stage Analysis Pipeline');
         setBuildingStage('Running multi-stage analysis...');
         
-        // ✅ FIX: Validate current analysis context and create if needed
+        // ✅ FIX: Enhanced UUID validation for analysis context
+        const isValidUUID = (uuid: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(uuid);
+        
         let validAnalysisId = currentAnalysis?.id;
         let validUserId = currentAnalysis?.user_id;
         
@@ -92,35 +94,35 @@ export const useEnhancedAnalysis = ({ currentAnalysis }: UseEnhancedAnalysisProp
           hasCurrentAnalysis: !!currentAnalysis,
           currentAnalysisId: currentAnalysis?.id,
           currentUserId: currentAnalysis?.user_id,
-          isValidUUID: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(currentAnalysis?.id || '')
+          isValidAnalysisUUID: validAnalysisId ? isValidUUID(validAnalysisId) : false,
+          isValidUserUUID: validUserId ? isValidUUID(validUserId) : false
         });
         
-        // If no current analysis or invalid ID, create a new one first
-        if (!validAnalysisId || validAnalysisId === 'temp-analysis' || !(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(validAnalysisId))) {
+        // Get user ID from auth first (needed for analysis creation)
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user?.id) {
+          throw new Error('User authentication required for multi-stage analysis');
+        }
+        
+        validUserId = user.id;
+        
+        // ✅ FIX: Always create a new analysis for multi-stage pipeline if current one is invalid
+        if (!validAnalysisId || !isValidUUID(validAnalysisId) || validAnalysisId === 'temp-analysis') {
           console.log('🔧 Creating new analysis for multi-stage pipeline...');
           try {
             const { analysisService } = await import('@/services/analysisService');
             validAnalysisId = await analysisService.createAnalysis();
             
-            if (!validAnalysisId) {
-              throw new Error('Failed to create analysis record for pipeline');
+            if (!validAnalysisId || !isValidUUID(validAnalysisId)) {
+              throw new Error('Failed to create valid analysis record for pipeline');
             }
             
-            console.log('✅ Created analysis ID for pipeline:', validAnalysisId);
+            console.log('✅ Created valid analysis ID for pipeline:', validAnalysisId);
           } catch (error) {
             console.error('❌ Failed to create analysis ID:', error);
-            throw new Error('Could not initialize analysis for pipeline: ' + error.message);
-          }
-        }
-        
-        // Get user ID from auth if not available
-        if (!validUserId || validUserId === 'temp-user') {
-          const { supabase } = await import('@/integrations/supabase/client');
-          const { data: { user } } = await supabase.auth.getUser();
-          validUserId = user?.id;
-          
-          if (!validUserId) {
-            throw new Error('User authentication required for multi-stage analysis');
+            throw new Error(`Could not initialize analysis for pipeline: ${error.message}`);
           }
         }
         

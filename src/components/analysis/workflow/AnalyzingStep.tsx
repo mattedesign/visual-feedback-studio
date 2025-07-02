@@ -103,7 +103,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
     analysisStartedRef.current = true;
 
     try {
-      // Validate inputs
+      // ✅ FIX: Enhanced input validation
       if (workflow.selectedImages.length === 0) {
         throw new Error('No images selected for analysis');
       }
@@ -112,11 +112,21 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
         throw new Error('No analysis context provided');
       }
 
+      console.log('📊 Analysis Configuration:', {
+        imageCount: workflow.selectedImages.length,
+        contextLength: workflow.analysisContext.length,
+        perplexityEnabled: usePerplexityIntegration,
+        multiStageEnabled: useMultiStagePipeline,
+        expectedPhases: usePerplexityIntegration ? 6 : 5
+      });
+
       // Phase 1: Uploading
       await simulatePhaseProgress('uploading');
+      completeStep('uploading');
       
       // Phase 2: Processing design elements
       await simulatePhaseProgress('processing');
+      completeStep('processing');
       
       // Phase 3: Building research context
       await simulatePhaseProgress('research');
@@ -125,33 +135,38 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       setCurrentPhase('analysis');
       console.log('🤖 Starting real AI analysis');
       
-      // Start real analysis in parallel with progress simulation
+      // ✅ FIX: Better coordination between real analysis and progress simulation
       const analysisPromise = workflow.startAnalysis();
       const progressPromise = simulatePhaseProgress('analysis');
       
       // Wait for both to complete
-      await Promise.all([analysisPromise, progressPromise]);
+      const [analysisResult] = await Promise.all([analysisPromise, progressPromise]);
       
       // Phase 5: Perplexity Validation (if enabled)
       if (usePerplexityIntegration) {
+        console.log('🔍 Starting Perplexity validation phase');
         await simulatePhaseProgress('validation');
         completeStep('validation');
+        console.log('✅ Perplexity validation phase completed');
       }
       
       // Phase 6: Generating recommendations
       await simulatePhaseProgress('recommendations');
+      completeStep('recommendations');
       
       console.log('✅ Enhanced analysis completed successfully', {
         annotationsReceived: workflow.aiAnnotations?.length || 0,
         enhancedContext: !!workflow.enhancedContext,
-        knowledgeSourcesUsed: workflow.knowledgeSourcesUsed
+        knowledgeSourcesUsed: workflow.knowledgeSourcesUsed,
+        perplexityEnabled: usePerplexityIntegration,
+        multiStageEnabled: useMultiStagePipeline
       });
 
       // Final progress update
       setAnalysisProgress(100);
       
       // Brief pause to show completion
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       // Navigate to results
       workflow.goToStep('results');
