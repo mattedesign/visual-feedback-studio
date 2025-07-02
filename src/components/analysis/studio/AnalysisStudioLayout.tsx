@@ -54,8 +54,8 @@ export const AnalysisStudioLayout = ({
       <div className="flex-1 flex flex-col min-w-0 h-full">
         <StudioToolbar workflow={workflow} />
         
-        {/* Main content area - full height since chat is now fixed */}
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        {/* Main content area - full height with relative positioning for chat */}
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
           {/* Canvas area - scrollable with bottom padding for fixed chat */}
           <div className={`flex-1 overflow-auto ${showChat ? 'pb-32' : ''}`}>
             <StudioCanvas 
@@ -65,10 +65,10 @@ export const AnalysisStudioLayout = ({
               onAnnotationClick={handleAnnotationClick}
             />
           </div>
+          
+          {/* Chat - positioned within main content area */}
+          {showChat && <StudioChat workflow={workflow} />}
         </div>
-        
-        {/* Chat - now fixed to viewport bottom */}
-        {showChat && <StudioChat workflow={workflow} />}
       </div>
 
       {/* Right Panel - Results & Actions - Show for results step */}

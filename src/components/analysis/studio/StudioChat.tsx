@@ -31,7 +31,7 @@ export const StudioChat = ({
   }
 
   return (
-    <div className="fixed bottom-3 left-0 right-0 z-50 bg-transparent pointer-events-none">
+    <div className="absolute bottom-3 left-0 right-0 z-50 bg-transparent pointer-events-none">
       <div className="px-4 pt-4 pb-0 pointer-events-auto">
         <div className="max-w-4xl mx-auto">
           {/* Simplified Context Input */}
