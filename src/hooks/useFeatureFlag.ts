@@ -7,6 +7,7 @@ export const useFeatureFlag = (flagName: string): boolean => {
     'separated-annotation-fields': true, // NEW: Enable separated title/description fields
     'perplexity-integration': true, // NEW: Enable Perplexity.ai integration
     'multi-stage-pipeline': true, // NEW: Enable multi-stage analysis pipeline by default
+    'consolidated-analysis-pipeline': true, // NEW: Enable consolidated analysis system
   };
   
   // Check for specific flag activation via URL parameters
