@@ -216,10 +216,12 @@ export const useSubscription = () => {
   const getRemainingAnalyses = () => {
     if (!subscription) return 0;
     
-    // Active subscribers have unlimited
-    if (isActiveSubscriber()) return 999999;
+    // Active monthly/yearly subscribers have 25 per month
+    if (isActiveSubscriber()) {
+      return Math.max(0, subscription.analyses_limit - subscription.analyses_used);
+    }
     
-    // Trial users have limited
+    // Trial users have 3 total
     if (isTrialUser()) {
       return Math.max(0, subscription.analyses_limit - subscription.analyses_used);
     }
@@ -230,11 +232,8 @@ export const useSubscription = () => {
   const getUsagePercentage = () => {
     if (!subscription) return 0;
     
-    // Active subscribers show 0% (unlimited)
-    if (isActiveSubscriber()) return 0;
-    
-    // Trial users show actual percentage
-    if (isTrialUser() && subscription.analyses_limit > 0) {
+    // All users (trial and paid) show actual percentage now
+    if (subscription.analyses_limit > 0) {
       return (subscription.analyses_used / subscription.analyses_limit) * 100;
     }
     

@@ -44,7 +44,7 @@ export const UpgradeModal = ({ isOpen, onClose }: UpgradeModalProps) => {
       // Create checkout session
       const session = await stripeService.createCheckoutSession({
         customerId: customer.id,
-        priceId,
+        planType: 'monthly', // Default to monthly for upgrades
         successUrl: `${window.location.origin}/analysis`,
         cancelUrl: `${window.location.origin}/analysis`,
         metadata: {

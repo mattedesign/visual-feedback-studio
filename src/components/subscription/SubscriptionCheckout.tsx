@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,13 +11,13 @@ export const SubscriptionCheckout = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState<string | null>(null);
 
-  const handleSubscribe = async (priceId: string, planName: string) => {
+  const handleSubscribe = async (planType: 'monthly' | 'yearly', planName: string) => {
     if (!user) {
       toast.error('Please sign in to subscribe');
       return;
     }
 
-    setLoading(priceId);
+    setLoading(planType);
     
     try {
       // Create or get Stripe customer
@@ -30,8 +29,8 @@ export const SubscriptionCheckout = () => {
       // Create checkout session
       const session = await stripeService.createCheckoutSession({
         customerId: customer.id,
-        priceId,
-        successUrl: `${window.location.origin}/subscription/success`,
+        planType,
+        successUrl: `${window.location.origin}/?subscription_success=true`,
         cancelUrl: `${window.location.origin}/subscription`,
         metadata: {
           plan_name: planName,
@@ -53,105 +52,132 @@ export const SubscriptionCheckout = () => {
     }
   };
 
-  const config = stripeService.getPricingConfig();
-
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold mb-4">Choose Your Plan</h1>
-        <p className="text-gray-600">Upgrade to unlock unlimited design analyses</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">
+          Choose Your Plan
+        </h1>
+        <p className="text-lg text-gray-600">
+          Upgrade to get 25 professional UX analyses per month
+        </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 gap-8">
         {/* Monthly Plan */}
-        <Card className="relative">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-blue-500" />
-              Pro Monthly
+        <Card className="relative border-2 border-blue-200 shadow-lg">
+          <CardHeader className="text-center pb-4">
+            <Badge className="mx-auto mb-2 bg-blue-100 text-blue-700">
+              Most Popular
+            </Badge>
+            <CardTitle className="text-2xl font-bold text-gray-900">
+              Monthly Pro
             </CardTitle>
-            <div className="text-3xl font-bold">
-              ${(config.monthlyAmount / 100).toFixed(2)}
-              <span className="text-base font-normal text-gray-500">/month</span>
+            <div className="text-center">
+              <span className="text-4xl font-bold text-gray-900">$29</span>
+              <span className="text-gray-600">/month</span>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <ul className="space-y-3">
-              <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500" />
-                Unlimited design analyses
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500" />
-                Advanced AI insights
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500" />
-                Priority support
-              </li>
-            </ul>
-            <Button 
-              className="w-full"
-              onClick={() => handleSubscribe(config.monthlyPriceId, 'Pro Monthly')}
-              disabled={!!loading}
-            >
-              {loading === config.monthlyPriceId ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : null}
-              Get Started
-            </Button>
+
+          <CardContent className="space-y-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                <span className="text-gray-700">25 UX analyses per month</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                <span className="text-gray-700">Research-backed insights</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                <span className="text-gray-700">Business impact analysis</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                <span className="text-gray-700">Professional reports</span>
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <Button
+                onClick={() => handleSubscribe('monthly', 'Monthly Pro')}
+                disabled={loading === 'monthly'}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {loading === 'monthly' ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <Crown className="w-4 h-4 mr-2" />
+                )}
+                Start Monthly Plan
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
         {/* Yearly Plan */}
-        <Card className="relative border-2 border-purple-200">
-          <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-purple-600">
-            Best Value
-          </Badge>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Crown className="h-5 w-5 text-purple-500" />
-              Enterprise Yearly
+        <Card className="relative border-2 border-gray-200 shadow-lg">
+          <CardHeader className="text-center pb-4">
+            <Badge className="mx-auto mb-2 bg-green-100 text-green-700">
+              Save 16%
+            </Badge>
+            <CardTitle className="text-2xl font-bold text-gray-900">
+              Yearly Pro
             </CardTitle>
-            <div className="text-3xl font-bold">
-              ${(config.yearlyAmount / 100).toFixed(2)}
-              <span className="text-base font-normal text-gray-500">/year</span>
+            <div className="text-center">
+              <span className="text-4xl font-bold text-gray-900">$290</span>
+              <span className="text-gray-600">/year</span>
+              <div className="text-sm text-gray-500 mt-1">
+                <span className="line-through">$348</span> Save $58
+              </div>
             </div>
-            <p className="text-sm text-green-600 font-medium">
-              Save 31% compared to monthly
-            </p>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <ul className="space-y-3">
-              <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500" />
-                Everything in Pro
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500" />
-                Team collaboration features
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500" />
-                Advanced analytics
-              </li>
-            </ul>
-            <Button 
-              className="w-full bg-purple-600 hover:bg-purple-700"
-              onClick={() => handleSubscribe(config.yearlyPriceId, 'Enterprise Yearly')}
-              disabled={!!loading}
-            >
-              {loading === config.yearlyPriceId ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : null}
-              Get Started
-            </Button>
+
+          <CardContent className="space-y-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                <span className="text-gray-700">25 UX analyses per month</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                <span className="text-gray-700">Research-backed insights</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                <span className="text-gray-700">Business impact analysis</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                <span className="text-gray-700">Professional reports</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                <span className="text-gray-700">Priority support</span>
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <Button
+                onClick={() => handleSubscribe('yearly', 'Yearly Pro')}
+                disabled={loading === 'yearly'}
+                className="w-full bg-green-600 hover:bg-green-700 text-white"
+              >
+                {loading === 'yearly' ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <Zap className="w-4 h-4 mr-2" />
+                )}
+                Start Yearly Plan
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="text-center mt-8 text-sm text-gray-500">
-        <p>30-day money-back guarantee • Cancel anytime</p>
+      <div className="mt-8 text-center text-sm text-gray-500">
+        <p>All plans include secure payment processing via Stripe</p>
       </div>
     </div>
   );

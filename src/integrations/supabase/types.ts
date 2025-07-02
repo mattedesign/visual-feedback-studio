@@ -489,6 +489,7 @@ export type Database = {
           id: string
           onboarding_completed: boolean | null
           role: Database["public"]["Enums"]["user_role"] | null
+          super_admin: boolean | null
           updated_at: string | null
           user_id: string
         }
@@ -499,6 +500,7 @@ export type Database = {
           id?: string
           onboarding_completed?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          super_admin?: boolean | null
           updated_at?: string | null
           user_id: string
         }
@@ -509,6 +511,7 @@ export type Database = {
           id?: string
           onboarding_completed?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          super_admin?: boolean | null
           updated_at?: string | null
           user_id?: string
         }

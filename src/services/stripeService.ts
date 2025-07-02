@@ -34,7 +34,7 @@ export interface SubscriptionStatus {
 
 export interface CreateCheckoutSessionParams {
   customerId: string;
-  priceId: string;
+  planType: 'monthly' | 'yearly';
   successUrl: string;
   cancelUrl: string;
   metadata?: Record<string, string>;
@@ -99,7 +99,7 @@ export const stripeService = {
       const { data, error } = await supabase.functions.invoke('create-checkout-session', {
         body: {
           customerId: params.customerId,
-          priceId: params.priceId,
+          planType: params.planType,
           successUrl: params.successUrl,
           cancelUrl: params.cancelUrl,
           metadata: params.metadata || {}

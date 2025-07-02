@@ -6,6 +6,8 @@ import { EnhancedContext } from '@/services/analysis/enhancedRagService';
 import { saveAnalysisResults } from '@/services/analysisResultsService';
 import { aiEnhancedSolutionEngine } from '@/services/solutions/aiEnhancedSolutionEngine';
 import { analysisService } from '@/services/analysisService';
+import { subscriptionService } from '@/services/subscriptionService';
+import { useNavigate } from 'react-router-dom';
 
 export type WorkflowStep = 'upload' | 'annotate' | 'review' | 'analyzing' | 'results';
 
@@ -22,6 +24,7 @@ interface ImageAnnotations {
 }
 
 export const useAnalysisWorkflow = () => {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('upload');
   const [images, setImages] = useState<string[]>([]);
   const [activeImageUrl, setActiveImageUrl] = useState<string | null>(null);
@@ -206,6 +209,19 @@ export const useAnalysisWorkflow = () => {
 
     if (isAnalyzing || enhancedAnalysis.isAnalyzing) {
       console.log('⚠️ Analysis already in progress, skipping');
+      return;
+    }
+
+    // 🔒 CHECK SUBSCRIPTION LIMITS BEFORE ANALYSIS
+    console.log('🔒 Checking subscription limits...');
+    const subscriptionCheck = await subscriptionService.checkCanCreateAnalysis();
+    
+    if (!subscriptionCheck.canCreate) {
+      if (subscriptionCheck.shouldRedirect) {
+        console.log('🔀 Redirecting to subscription page');
+        navigate('/subscription');
+        return;
+      }
       return;
     }
 

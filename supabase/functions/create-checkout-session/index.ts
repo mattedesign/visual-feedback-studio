@@ -42,28 +42,57 @@ serve(async (req) => {
     logStep("User authenticated", { userId: user.id, email: user.email });
 
     const requestBody = await req.json();
-    const { priceId, customerId, successUrl, cancelUrl, metadata } = requestBody;
+    const { planType, customerId, successUrl, cancelUrl, metadata } = requestBody;
     
-    if (!priceId) throw new Error("Price ID is required");
-    logStep("Request validated", { priceId, customerId });
+    if (!planType) throw new Error("Plan type is required");
+    logStep("Request validated", { planType, customerId });
     
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     
+    // Define plan pricing and analysis limits
+    const planConfig = {
+      monthly: {
+        price: 2900, // $29/month
+        analyses: 25,
+        interval: 'month'
+      },
+      yearly: {
+        price: 29000, // $290/year (save ~$58)
+        analyses: 25,
+        interval: 'year'
+      }
+    };
+
+    const config = planConfig[planType as keyof typeof planConfig];
+    if (!config) throw new Error("Invalid plan type");
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
+      customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price: priceId, // Using Stripe Price ID directly
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: `Figmant ${planType.charAt(0).toUpperCase() + planType.slice(1)} Plan`,
+              description: `${config.analyses} UX analyses per ${config.interval}`
+            },
+            unit_amount: config.price,
+            recurring: {
+              interval: config.interval as 'month' | 'year'
+            }
+          },
           quantity: 1,
         },
       ],
-      mode: "payment", // One-time payment for upgrade packs
-      success_url: successUrl || `${req.headers.get("origin")}/analysis?upgrade_success=true`,
-      cancel_url: cancelUrl || `${req.headers.get("origin")}/analysis`,
+      mode: "subscription",
+      success_url: successUrl || `${req.headers.get("origin")}/?subscription_success=true`,
+      cancel_url: cancelUrl || `${req.headers.get("origin")}/subscription`,
       metadata: {
         ...metadata,
         user_id: user.id,
-        upgrade_purchase: 'true'
+        plan_type: planType,
+        analyses_limit: config.analyses.toString()
       },
     });
 

@@ -80,10 +80,10 @@ export const UpgradeOptionsPanel: React.FC<UpgradeOptionsPanelProps> = ({
 
       console.log('✅ Stripe customer ready:', customer.id);
 
-      // Create checkout session using Price ID
+      // Create checkout session using plan type
       const session = await stripeService.createCheckoutSession({
         customerId: customer.id,
-        priceId: upgradePack.stripe_price_id,
+        planType: 'monthly', // Default to monthly for upgrade packs
         successUrl: `${window.location.origin}/analysis?upgrade_success=true&upgrade_id=${optionId}`,
         cancelUrl: `${window.location.origin}/analysis`,
         metadata: {
