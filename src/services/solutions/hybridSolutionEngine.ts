@@ -49,7 +49,7 @@ export interface SolutionResult {
 }
 
 export class HybridSolutionEngine {
-  private readonly CONFIDENCE_THRESHOLD = 0.75;
+  private readonly CONFIDENCE_THRESHOLD = 0.4; // Lowered for better matching
 
   async findSolutions(input: {
     annotations: Annotation[];
@@ -157,12 +157,15 @@ export class HybridSolutionEngine {
       let bestScore = 0;
 
       for (const template of templates) {
-        const score = this.calculateMatchingScore(statement, template.statement);
+        const score = this.calculateMatchingScore(statement, template.statement, template.category);
+        console.log(`🎯 Template "${template.statement.substring(0, 40)}..." scored: ${Math.round(score * 100)}%`);
         if (score > bestScore) {
           bestScore = score;
           bestMatch = template as ProblemStatement;
         }
       }
+
+      console.log(`🏆 Best match: "${bestMatch?.statement.substring(0, 50)}..." with ${Math.round(bestScore * 100)}% confidence`);
 
       if (!bestMatch || bestScore < 0.3) {
         return this.getDefaultResponse(statement);
@@ -193,20 +196,70 @@ export class HybridSolutionEngine {
     }
   }
 
-  private calculateMatchingScore(userStatement: string, templateStatement: string): number {
-    const userWords = userStatement.toLowerCase().split(/\s+/);
-    const templateWords = templateStatement.toLowerCase().split(/\s+/);
+  private calculateMatchingScore(userStatement: string, templateStatement: string, category?: string): number {
+    const userLower = userStatement.toLowerCase();
+    const templateLower = templateStatement.toLowerCase();
     
-    let matches = 0;
+    // Base word matching score
+    const userWords = userLower.split(/\s+/).filter(word => word.length > 2);
+    const templateWords = templateLower.split(/\s+/).filter(word => word.length > 2);
+    
+    let baseScore = 0;
     const totalWords = Math.max(userWords.length, templateWords.length);
     
     for (const word of userWords) {
-      if (word.length > 3 && templateWords.some(tw => tw.includes(word) || word.includes(tw))) {
-        matches++;
+      if (templateWords.some(tw => tw.includes(word) || word.includes(tw))) {
+        baseScore++;
       }
     }
     
-    return matches / totalWords;
+    const wordMatchScore = baseScore / totalWords;
+
+    // Category-specific keyword boosting
+    const categoryKeywords = this.getCategoryKeywords(category || 'general');
+    let categoryBoost = 0;
+    
+    for (const keyword of categoryKeywords) {
+      if (userLower.includes(keyword)) {
+        categoryBoost += 0.2; // Each matching category keyword adds 20%
+      }
+    }
+
+    // Urgency and business impact detection
+    const urgencyBoost = this.detectUrgencyKeywords(userLower) ? 0.1 : 0;
+    const businessImpactBoost = this.detectBusinessImpactKeywords(userLower) ? 0.15 : 0;
+
+    // Combine scores with weighting
+    const finalScore = Math.min(1.0, (wordMatchScore * 0.6) + categoryBoost + urgencyBoost + businessImpactBoost);
+    
+    console.log(`📊 Scoring "${templateStatement.substring(0, 50)}...": ${Math.round(finalScore * 100)}%`);
+    
+    return finalScore;
+  }
+
+  // Category-specific keywords for better matching
+  private getCategoryKeywords(category: string): string[] {
+    const keywordMap: Record<string, string[]> = {
+      'conversion_decline': ['conversion', 'signup', 'checkout', 'purchase', 'cart', 'abandon', 'drop', 'decline', 'sales', 'revenue'],
+      'competitive_pressure': ['competitor', 'alternative', 'market', 'losing users', 'switch', 'outdated', 'behind'],
+      'user_confusion': ['confused', 'lost', 'find', 'navigate', 'understand', 'unclear', 'complex', 'difficult'],
+      'technical_constraints': ['slow', 'performance', 'load', 'mobile', 'browser', 'compatibility', 'technical'],
+      'stakeholder_demands': ['executive', 'ceo', 'board', 'deadline', 'urgent', 'priority', 'stakeholder']
+    };
+    
+    return keywordMap[category] || [];
+  }
+
+  // Detect urgency indicators
+  private detectUrgencyKeywords(statement: string): boolean {
+    const urgencyKeywords = ['urgent', 'immediately', 'asap', 'critical', 'emergency', 'deadline', 'priority'];
+    return urgencyKeywords.some(keyword => statement.includes(keyword));
+  }
+
+  // Detect business impact indicators
+  private detectBusinessImpactKeywords(statement: string): boolean {
+    const impactKeywords = ['revenue', 'sales', 'conversion', 'users', 'customers', 'growth', 'profit', 'loss', 'churn'];
+    return impactKeywords.some(keyword => statement.includes(keyword));
   }
 
   private extractBusinessContext(statement: string, templateContext: any): BusinessContext {

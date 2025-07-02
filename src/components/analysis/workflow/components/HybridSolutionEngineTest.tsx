@@ -117,10 +117,10 @@ export const HybridSolutionEngineTest = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Testing Data */}
+            {/* Enhanced Testing Data with Debug Info */}
             <div className="bg-blue-50 p-4 rounded-lg">
-              <h4 className="font-semibold text-blue-900 mb-2">Testing Analytics</h4>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <h4 className="font-semibold text-blue-900 mb-2">Testing Analytics & Debug Info</h4>
+              <div className="grid grid-cols-2 gap-4 text-sm mb-3">
                 <div>
                   <span className="text-blue-700">Traditional Solutions:</span>
                   <span className="font-semibold ml-2">{result.testingData.traditionalCount}</span>
@@ -129,14 +129,40 @@ export const HybridSolutionEngineTest = () => {
                   <span className="text-blue-700">Contextual Solutions:</span>
                   <span className="font-semibold ml-2">{result.testingData.contextualCount}</span>
                 </div>
+                <div>
+                  <span className="text-blue-700">Final Approach:</span>
+                  <span className="font-semibold ml-2 capitalize">{result.approach.replace('_', ' ')}</span>
+                </div>
+                <div>
+                  <span className="text-blue-700">Overall Confidence:</span>
+                  <span className="font-semibold ml-2">{Math.round(result.confidence * 100)}%</span>
+                </div>
               </div>
               
               {result.testingData.matchingDetails && (
-                <div className="mt-3 p-3 bg-white rounded border">
-                  <div className="text-sm">
-                    <div><strong>Matched Template:</strong> {result.testingData.matchingDetails.matchedTemplate?.statement.substring(0, 60)}...</div>
-                    <div><strong>Matching Confidence:</strong> {Math.round(result.testingData.matchingDetails.matchingConfidence * 100)}%</div>
+                <div className="mt-3 space-y-3">
+                  <div className="p-3 bg-white rounded border">
+                    <div className="text-sm space-y-1">
+                      <div><strong>Matched Template:</strong> {result.testingData.matchingDetails.matchedTemplate?.statement || 'None'}</div>
+                      <div><strong>Template Category:</strong> {result.testingData.matchingDetails.matchedTemplate?.category || 'N/A'}</div>
+                      <div><strong>Matching Confidence:</strong> {Math.round(result.testingData.matchingDetails.matchingConfidence * 100)}%</div>
+                      <div><strong>Threshold Met:</strong> {result.testingData.matchingDetails.matchingConfidence >= 0.4 ? '✅ Yes' : '❌ No (< 40%)'}</div>
+                    </div>
                   </div>
+                  
+                  {result.testingData.matchingDetails.extractedContext && (
+                    <div className="p-3 bg-green-50 rounded border">
+                      <div className="text-sm">
+                        <h5 className="font-semibold mb-2">Extracted Business Context:</h5>
+                        <div className="space-y-1">
+                          <div><strong>Urgency:</strong> {result.testingData.matchingDetails.extractedContext.urgency}</div>
+                          <div><strong>Stakeholders:</strong> {result.testingData.matchingDetails.extractedContext.stakeholders.join(', ')}</div>
+                          <div><strong>Timeline:</strong> {result.testingData.matchingDetails.extractedContext.timeline}</div>
+                          <div><strong>Business Type:</strong> {result.testingData.matchingDetails.extractedContext.businessType}</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
