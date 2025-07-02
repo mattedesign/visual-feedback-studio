@@ -38,7 +38,7 @@ export const CoordinateQualityAssurance: React.FC<CoordinateQualityAssuranceProp
   };
 
   return (
-    <Card className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 mb-4">
+    <Card className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 mb-4 hidden">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2 text-blue-900 dark:text-blue-100">
           <Target className="w-5 h-5" />
