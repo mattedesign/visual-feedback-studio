@@ -154,7 +154,7 @@ const Auth = () => {
         <CardHeader className="text-center space-y-2">
           <div className="flex items-center justify-center gap-2 text-blue-600 mb-2">
             <Sparkles className="w-5 h-5" />
-            <span className="font-semibold">UX Analysis Studio</span>
+            <span className="font-semibold">Figmant</span>
           </div>
           <CardTitle className="text-2xl text-gray-900">
             {isSignUp ? 'Join Our Community' : 'Welcome Back'}

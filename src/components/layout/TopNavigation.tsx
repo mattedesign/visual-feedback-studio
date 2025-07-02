@@ -58,10 +58,10 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({ user, onSignOut })
                 className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer"
               >
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">UX</span>
+                  <span className="text-white font-bold text-sm">F</span>
                 </div>
                 <span className="font-semibold text-gray-900 text-xl">
-                  UX Analysis Studio
+                  Figmant
                 </span>
               </button>
             </div>
