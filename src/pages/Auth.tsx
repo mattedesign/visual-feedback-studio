@@ -27,10 +27,10 @@ const Auth = () => {
   useEffect(() => {
     // Only redirect if we have both user and session, and auth is not loading
     if (!authLoading && user && session) {
-      console.log('✅ User already authenticated, redirecting to analysis...');
+      console.log('✅ User already authenticated, redirecting to dashboard...');
       
       // Use replace to avoid adding to browser history (prevents back button loops)
-      navigate('/analysis', { replace: true });
+      navigate('/', { replace: true });
     }
   }, [user, session, authLoading, navigate]);
 
@@ -45,7 +45,7 @@ const Auth = () => {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/analysis`
+            emailRedirectTo: `${window.location.origin}/`
           }
         });
         if (error) throw error;
@@ -92,7 +92,7 @@ const Auth = () => {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/analysis`
+          emailRedirectTo: `${window.location.origin}/`
         }
       });
 
@@ -118,7 +118,7 @@ const Auth = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <LoadingSpinner />
-          <p className="text-gray-600 mt-4">Redirecting to analysis...</p>
+          <p className="text-gray-600 mt-4">Redirecting to dashboard...</p>
         </div>
       </div>
     );
