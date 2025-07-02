@@ -255,16 +255,30 @@ class MultiStageAnalysisPipeline {
     const startTime = Date.now();
     
     try {
-      console.log(`🔄 Executing stage: ${stageName}`);
+      console.log(`🔄 Executing stage: ${stageName} for analysis: ${analysisId}`);
       
-      // Log stage start
-      await this.logStageStart(analysisId, stageName);
+      // ✅ FIX: Validate UUID before database operations
+      if (!this.isValidUUID(analysisId)) {
+        console.error(`❌ Invalid UUID for analysis ID: ${analysisId}`);
+        throw new Error(`Invalid analysis ID format: ${analysisId}`);
+      }
+      
+      // Log stage start with error handling
+      try {
+        await this.logStageStart(analysisId, stageName);
+      } catch (logError) {
+        console.warn(`⚠️ Failed to log stage start (non-critical): ${logError.message}`);
+      }
       
       const result = await stageFunction();
       const duration = Date.now() - startTime;
       
-      // Log stage completion
-      await this.logStageCompletion(analysisId, stageName, 'success', result, duration);
+      // Log stage completion with error handling
+      try {
+        await this.logStageCompletion(analysisId, stageName, 'success', result, duration);
+      } catch (logError) {
+        console.warn(`⚠️ Failed to log stage completion (non-critical): ${logError.message}`);
+      }
       
       console.log(`✅ Stage completed: ${stageName} (${duration}ms)`);
       
@@ -278,8 +292,12 @@ class MultiStageAnalysisPipeline {
     } catch (error) {
       const duration = Date.now() - startTime;
       
-      // Log stage error
-      await this.logStageCompletion(analysisId, stageName, 'error', null, duration, error.message);
+      // Log stage error with error handling
+      try {
+        await this.logStageCompletion(analysisId, stageName, 'error', null, duration, error.message);
+      } catch (logError) {
+        console.warn(`⚠️ Failed to log stage error (non-critical): ${logError.message}`);
+      }
       
       console.error(`❌ Stage failed: ${stageName} (${duration}ms):`, error);
       
@@ -290,6 +308,14 @@ class MultiStageAnalysisPipeline {
         duration_ms: duration
       };
     }
+  }
+
+  /**
+   * ✅ NEW: Validate UUID format
+   */
+  private isValidUUID(uuid: string): boolean {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid);
   }
 
   /**
@@ -322,33 +348,67 @@ class MultiStageAnalysisPipeline {
    */
   private async executeEnhancedAIStage(data: any): Promise<EnhancedAIResult> {
     // This would call the enhanced analyze-design function
-    const { imageUrls, analysisPrompt, googleVisionData } = data;
+    const { imageUrls, analysisPrompt, googleVisionData, analysisId } = data;
+    
+    console.log('🤖 Starting enhanced AI analysis stage with Claude 4.0:', { 
+      imageCount: imageUrls.length, 
+      hasVisionData: !!googleVisionData,
+      analysisId 
+    });
     
     // Build enhanced prompt with Google Vision context
     const enhancedPrompt = this.buildEnhancedPrompt(analysisPrompt, googleVisionData);
     
-    // Call existing analyze-design function with enhanced prompt
-    const { data: result, error } = await supabase.functions.invoke('analyze-design', {
-      body: {
-        imageUrls,
-        analysisPrompt: enhancedPrompt,
-        ragEnhanced: true,
-        designType: 'web',
-        isComparative: false
+    try {
+      // ✅ FIX: Call existing analyze-design function with proper error handling and logging
+      const { data: result, error } = await supabase.functions.invoke('analyze-design', {
+        body: {
+          imageUrls,
+          analysisId: analysisId, // Pass the real analysis ID
+          analysisPrompt: enhancedPrompt,
+          ragEnhanced: true,
+          ragEnabled: true, // Ensure RAG is enabled
+          designType: 'web',
+          isComparative: imageUrls.length > 1
+        }
+      });
+
+      if (error) {
+        console.error('❌ analyze-design function error:', error);
+        throw new Error(`AI analysis failed: ${error.message || 'Unknown analyze-design error'}`);
       }
-    });
 
-    if (error) {
-      throw new Error(`AI analysis failed: ${error.message}`);
+      if (!result) {
+        throw new Error('No result returned from analyze-design function');
+      }
+
+      if (!result.success) {
+        throw new Error(`AI analysis unsuccessful: ${result.error || 'Unknown analysis error'}`);
+      }
+
+      console.log('✅ Enhanced AI analysis completed:', {
+        annotationCount: result.annotations?.length || 0,
+        modelUsed: result.modelUsed,
+        ragEnhanced: result.ragEnhanced,
+        wellDoneGenerated: !!result.wellDone
+      });
+
+      return {
+        annotations: result.annotations || [],
+        rawContent: result.rawContent || '',
+        modelUsed: result.modelUsed || 'claude-opus-4-20250514',
+        confidence: 0.85,
+        contextData: {
+          googleVision: googleVisionData,
+          ragContext: result.ragEnhanced,
+          wellDone: result.wellDone
+        }
+      };
+      
+    } catch (error) {
+      console.error('❌ Enhanced AI stage failed:', error);
+      throw new Error(`Enhanced AI analysis failed: ${error.message}`);
     }
-
-    return {
-      annotations: result.annotations || [],
-      rawContent: result.rawContent || '',
-      modelUsed: result.modelUsed || 'claude-3-5-sonnet',
-      confidence: 0.85,
-      contextData: googleVisionData
-    };
   }
 
   /**

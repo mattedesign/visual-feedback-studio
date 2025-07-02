@@ -2,6 +2,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { AnalysisProgressSteps } from './components/AnalysisProgressSteps';
+import { PipelineHealthIndicator } from './components/PipelineHealthIndicator';
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { toast } from 'sonner';
 
 interface AnalyzingStepProps {
@@ -16,8 +18,13 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
   const [retryCount, setRetryCount] = useState(0);
   const [researchSourcesFound, setResearchSourcesFound] = useState(0);
+  const [pipelineStages, setPipelineStages] = useState<any[]>([]);
+  const [showPipelineHealth, setShowPipelineHealth] = useState(false);
   const maxRetries = 1;
   const analysisStartedRef = useRef(false);
+  
+  // ✅ NEW: Multi-stage pipeline monitoring
+  const useMultiStagePipeline = useFeatureFlag('multi-stage-pipeline');
 
   // Complete a step and add it to completed steps
   const completeStep = useCallback((stepId: string) => {
@@ -203,7 +210,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
 
   return (
     <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl">
+      <div className="w-full max-w-4xl space-y-6">
         <AnalysisProgressSteps
           currentStep={currentPhase}
           progress={analysisProgress}
@@ -213,10 +220,28 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
           onStepComplete={completeStep}
         />
         
+        {/* ✅ NEW: Multi-Stage Pipeline Health Indicator */}
+        {useMultiStagePipeline && (showPipelineHealth || pipelineStages.length > 0) && (
+          <PipelineHealthIndicator
+            stages={pipelineStages}
+            isRunning={workflow.isAnalyzing}
+            currentStage={currentPhase}
+          />
+        )}
+        
         {retryCount > 0 && (
           <div className="mt-4 text-center">
             <p className="text-yellow-400 text-sm">
               Retry attempt {retryCount} of {maxRetries}
+            </p>
+          </div>
+        )}
+        
+        {/* ✅ NEW: Enhanced Error Display */}
+        {workflow.buildingStage && (
+          <div className="text-center">
+            <p className="text-blue-400 text-sm animate-pulse">
+              {workflow.buildingStage}
             </p>
           </div>
         )}

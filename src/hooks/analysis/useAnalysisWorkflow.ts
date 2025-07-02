@@ -224,6 +224,21 @@ export const useAnalysisWorkflow = () => {
       }
 
       console.log('✅ Analysis record created with ID:', analysisId);
+      
+      // ✅ FIX: Store the analysis ID and user info for pipeline use
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      setCurrentAnalysis({
+        id: analysisId,
+        user_id: user?.id
+      });
+      
+      console.log('💾 Current analysis context set:', { 
+        analysisId, 
+        userId: user?.id,
+        hasValidIds: !!(analysisId && user?.id)
+      });
 
       const userAnnotationsArray = imageAnnotations.flatMap(imageAnnotation => 
         imageAnnotation.annotations.map(annotation => ({

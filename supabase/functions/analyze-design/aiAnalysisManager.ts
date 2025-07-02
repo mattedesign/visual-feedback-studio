@@ -240,38 +240,56 @@ class AIAnalysisManager {
     }
   }
 
-  // 🎯 NEW: Claude Model Manager Integration - Uses the robust model manager
+  // 🎯 ENHANCED: Claude Model Manager Integration with comprehensive error handling
   private async callClaudeWithModelManager(images: ProcessedImage[], prompt: string): Promise<{annotations: any[], modelUsed?: string}> {
-    const { analyzeWithClaudeModels } = await import('./claude/modelManager.ts');
+    console.log('🤖 Starting Claude 4.0 analysis with enhanced error handling...');
     
-    const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
-    if (!anthropicApiKey) {
-      throw new Error('Anthropic API key not configured');
-    }
+    try {
+      const { analyzeWithClaudeModels } = await import('./claude/modelManager.ts');
+      
+      const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
+      if (!anthropicApiKey) {
+        console.error('❌ ANTHROPIC_API_KEY not found in environment');
+        throw new Error('Anthropic API key not configured - check Supabase secrets');
+      }
 
-    console.log('🔍 Claude Model Manager Debug - Processing images:', {
-      hasKey: !!anthropicApiKey,
-      imageCount: images.length,
-      imagesValid: images.every(img => img.base64Data && img.base64Data.length > 0)
-    });
-
-    // Validate all images have valid base64 data
-    const invalidImages = images.filter(img => !img.base64Data || img.base64Data.length === 0);
-    if (invalidImages.length > 0) {
-      console.error('❌ Invalid image data detected:', {
-        invalidCount: invalidImages.length,
-        totalImages: images.length
+      // ✅ FIX: Enhanced validation and debugging
+      console.log('🔍 Claude Model Manager Debug - Processing images:', {
+        hasKey: !!anthropicApiKey,
+        keyLength: anthropicApiKey.length,
+        imageCount: images.length,
+        imagesValid: images.every(img => img.base64Data && img.base64Data.length > 0),
+        imageDetails: images.map((img, i) => ({
+          index: i,
+          base64Length: img.base64Data?.length || 0,
+          mimeType: img.mimeType,
+          hasValidData: !!(img.base64Data && img.base64Data.length > 0)
+        }))
       });
-      throw new Error(`${invalidImages.length} images have invalid base64 data`);
-    }
 
-    // Use first image for analysis (model manager handles single image)
-    const primaryImage = images[0];
-    if (!primaryImage) {
-      throw new Error('No valid image provided for analysis');
-    }
+      // Validate all images have valid base64 data
+      const invalidImages = images.filter(img => !img.base64Data || img.base64Data.length === 0);
+      if (invalidImages.length > 0) {
+        console.error('❌ Invalid image data detected:', {
+          invalidCount: invalidImages.length,
+          totalImages: images.length,
+          invalidDetails: invalidImages.map((img, i) => ({
+            index: i,
+            mimeType: img.mimeType,
+            hasBase64: !!img.base64Data,
+            base64Length: img.base64Data?.length || 0
+          }))
+        });
+        throw new Error(`${invalidImages.length} images have invalid base64 data`);
+      }
 
-    const systemPrompt = `You are a professional UX analysis expert conducting comprehensive audits. You MUST generate exactly 16-19 detailed, research-backed insights covering all aspects of design quality, usability, and business impact.
+      // Use first image for analysis (model manager handles single image)
+      const primaryImage = images[0];
+      if (!primaryImage) {
+        throw new Error('No valid image provided for analysis');
+      }
+
+      const systemPrompt = `You are a professional UX analysis expert conducting comprehensive audits. You MUST generate exactly 16-19 detailed, research-backed insights covering all aspects of design quality, usability, and business impact.
 
 CRITICAL REQUIREMENTS:
 - Generate EXACTLY 16-19 insights (professional consulting standard)
@@ -297,10 +315,15 @@ Ensure exactly 16-19 insights for comprehensive professional analysis.
 
 ANALYSIS CONTEXT: ${prompt}`;
 
-    try {
-      console.log('🚀 Using Claude Model Manager for analysis with Claude 4.0 priority');
+      console.log('🚀 Calling Claude Model Manager for analysis with Claude 4.0 priority');
+      console.log('📋 Analysis request details:', {
+        primaryImageBase64Length: primaryImage.base64Data.length,
+        primaryImageMimeType: primaryImage.mimeType,
+        systemPromptLength: systemPrompt.length,
+        targetInsights: '16-19'
+      });
       
-      // Use the model manager which automatically tries Claude 4.0 models first
+      // ✅ FIX: Enhanced model manager call with comprehensive error handling
       const annotations = await analyzeWithClaudeModels(
         primaryImage.base64Data,
         primaryImage.mimeType,
@@ -308,20 +331,66 @@ ANALYSIS CONTEXT: ${prompt}`;
         anthropicApiKey
       );
       
+      console.log('📊 Claude Model Manager response received:', {
+        annotationCount: annotations?.length || 0,
+        annotationsValid: Array.isArray(annotations),
+        firstAnnotationSample: annotations?.[0] ? {
+          hasId: !!annotations[0].id,
+          hasFeedback: !!annotations[0].feedback,
+          hasSeverity: !!annotations[0].severity,
+          hasCoordinates: !!(annotations[0].x && annotations[0].y)
+        } : null
+      });
+      
+      if (!Array.isArray(annotations)) {
+        console.error('❌ Claude returned non-array result:', typeof annotations);
+        throw new Error('Claude Model Manager returned invalid data structure (not an array)');
+      }
+      
+      if (annotations.length === 0) {
+        console.error('❌ Claude returned empty annotations array');
+        throw new Error('Claude Model Manager returned empty annotations array');
+      }
+      
       if (annotations.length < 12) {
-        console.warn('⚠️ Claude returned insufficient insights:', annotations.length);
-        throw new Error(`Claude returned insufficient insights: ${annotations.length} (minimum 12 required)`);
+        console.warn('⚠️ Claude returned insufficient insights:', {
+          received: annotations.length,
+          minimum: 12,
+          target: '16-19'
+        });
+        throw new Error(`Claude returned insufficient insights: ${annotations.length} (minimum 12 required for professional analysis)`);
       }
 
-      console.log('✅ Claude Model Manager analysis successful with', annotations.length, 'insights');
+      console.log('✅ Claude Model Manager analysis successful:', {
+        annotationCount: annotations.length,
+        targetRange: '16-19',
+        meetsMinimum: annotations.length >= 12,
+        meetsTarget: annotations.length >= 16,
+        modelUsed: 'Claude 4.0'
+      });
+      
       return { 
         annotations,
-        modelUsed: 'Claude 4.0 (via Model Manager)'
+        modelUsed: 'Claude 4.0 Opus (via Model Manager)'
       };
 
     } catch (error) {
-      console.error('❌ Claude Model Manager call failed:', error);
-      throw error;
+      console.error('❌ Claude Model Manager call failed:', {
+        errorMessage: error.message,
+        errorStack: error.stack,
+        errorType: error.constructor.name
+      });
+      
+      // ✅ FIX: Provide detailed error information for debugging
+      if (error.message?.includes('API key')) {
+        throw new Error('Claude API authentication failed - verify ANTHROPIC_API_KEY is correctly set in Supabase secrets');
+      } else if (error.message?.includes('insufficient insights')) {
+        throw new Error(`Claude 4.0 analysis quality issue: ${error.message}`);
+      } else if (error.message?.includes('Model Manager')) {
+        throw new Error(`Claude Model Manager error: ${error.message}`);
+      } else {
+        throw new Error(`Claude 4.0 analysis failed: ${error.message || 'Unknown Claude error'}`);
+      }
     }
   }
 
