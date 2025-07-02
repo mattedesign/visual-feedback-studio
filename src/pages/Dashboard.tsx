@@ -100,6 +100,9 @@ const Dashboard = () => {
     navigate(`/analysis/${analysisId}?beta=true`);
   };
 
+  // Future: Use role information for personalized content
+  // const { profile } = useAuth(); // This will include role information
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-6 py-8">

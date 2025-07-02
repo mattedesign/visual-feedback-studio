@@ -2,10 +2,13 @@
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { UserProfile } from '@/types/profiles';
+import { ProfileService } from '@/services/profileService';
 
 interface AuthState {
   user: User | null;
   session: Session | null;
+  profile: UserProfile | null;
   loading: boolean;
   error: string | null;
 }
@@ -14,6 +17,7 @@ export const useAuth = () => {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     session: null,
+    profile: null,
     loading: true,
     error: null
   });
@@ -26,13 +30,31 @@ export const useAuth = () => {
       async (event, session) => {
         if (!mounted) return;
         
-        setAuthState(prev => ({
-          ...prev,
-          session,
-          user: session?.user ?? null,
-          loading: false,
-          error: null
-        }));
+        if (session?.user) {
+          // Fetch profile information after successful auth
+          setTimeout(async () => {
+            const profile = await ProfileService.getProfile(session.user.id);
+            if (mounted) {
+              setAuthState(prev => ({
+                ...prev,
+                session,
+                user: session.user,
+                profile,
+                loading: false,
+                error: null
+              }));
+            }
+          }, 0);
+        } else {
+          setAuthState(prev => ({
+            ...prev,
+            session: null,
+            user: null,
+            profile: null,
+            loading: false,
+            error: null
+          }));
+        }
       }
     );
 
@@ -48,11 +70,22 @@ export const useAuth = () => {
               error: error.message,
               loading: false
             }));
-          } else {
+          } else if (session?.user) {
+            const profile = await ProfileService.getProfile(session.user.id);
             setAuthState(prev => ({
               ...prev,
               session,
-              user: session?.user ?? null,
+              user: session.user,
+              profile,
+              loading: false,
+              error: null
+            }));
+          } else {
+            setAuthState(prev => ({
+              ...prev,
+              session: null,
+              user: null,
+              profile: null,
               loading: false,
               error: null
             }));

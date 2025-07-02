@@ -8,14 +8,19 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
-import { AlertTriangle, ArrowRight } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { AlertTriangle, ArrowRight, Users, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { UserRole, ROLE_OPTIONS } from '@/types/profiles';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [selectedRole, setSelectedRole] = useState<UserRole | ''>('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState('');
@@ -39,13 +44,31 @@ const Auth = () => {
     setLoading(true);
     setAuthError('');
 
+    // Validation for sign-up
+    if (isSignUp) {
+      if (!fullName.trim()) {
+        setAuthError('Please enter your full name.');
+        setLoading(false);
+        return;
+      }
+      if (!selectedRole) {
+        setAuthError('Please select your role to personalize your experience.');
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
       if (isSignUp) {
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/`
+            emailRedirectTo: `${window.location.origin}/`,
+            data: {
+              full_name: fullName,
+              role: selectedRole
+            }
           }
         });
         if (error) throw error;
@@ -128,16 +151,26 @@ const Auth = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-white border-gray-200 shadow-lg">
-        <CardHeader className="text-center">
+        <CardHeader className="text-center space-y-2">
+          <div className="flex items-center justify-center gap-2 text-blue-600 mb-2">
+            <Sparkles className="w-5 h-5" />
+            <span className="font-semibold">UX Analysis Studio</span>
+          </div>
           <CardTitle className="text-2xl text-gray-900">
-            {isSignUp ? 'Create Account' : 'Welcome Back'}
+            {isSignUp ? 'Join Our Community' : 'Welcome Back'}
           </CardTitle>
           <CardDescription className="text-gray-600">
             {isSignUp 
-              ? 'Sign up to start analyzing your designs' 
-              : 'Sign in to your account'
+              ? 'Get personalized UX insights tailored to your role' 
+              : 'Sign in to continue your UX analysis journey'
             }
           </CardDescription>
+          {isSignUp && (
+            <div className="flex items-center justify-center gap-2 text-sm text-gray-500 bg-blue-50 p-2 rounded-lg mt-3">
+              <Users className="w-4 h-4" />
+              <span>We'll customize your experience based on your role</span>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           {authError && (
@@ -150,6 +183,23 @@ const Auth = () => {
           )}
 
           <form onSubmit={handleAuth} className="space-y-4">
+            {isSignUp && (
+              <div>
+                <Label htmlFor="fullName" className="text-sm font-medium text-gray-700">
+                  Full Name
+                </Label>
+                <Input
+                  id="fullName"
+                  type="text"
+                  placeholder="Enter your full name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                  className="mt-1 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+            )}
+            
             <div>
               <Input
                 type="email"
@@ -160,6 +210,7 @@ const Auth = () => {
                 className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
+            
             <div>
               <Input
                 type="password"
@@ -171,6 +222,32 @@ const Auth = () => {
                 className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
+
+            {isSignUp && (
+              <div>
+                <Label htmlFor="role" className="text-sm font-medium text-gray-700">
+                  What's your role?
+                </Label>
+                <Select value={selectedRole} onValueChange={(value: UserRole) => setSelectedRole(value)}>
+                  <SelectTrigger className="mt-1 bg-white border-gray-300 text-gray-900 focus:border-blue-500 focus:ring-blue-500">
+                    <SelectValue placeholder="Select your primary role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ROLE_OPTIONS.map((role) => (
+                      <SelectItem key={role.value} value={role.value}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{role.label}</span>
+                          <span className="text-xs text-gray-500">{role.description}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500 mt-1">
+                  This helps us personalize your UX analysis experience
+                </p>
+              </div>
+            )}
             <Button
               type="submit"
               disabled={loading}
@@ -196,6 +273,8 @@ const Auth = () => {
               onClick={() => {
                 setIsSignUp(!isSignUp);
                 setAuthError('');
+                setFullName('');
+                setSelectedRole('');
               }}
               className="text-blue-600 hover:text-blue-700 text-sm font-medium"
             >
