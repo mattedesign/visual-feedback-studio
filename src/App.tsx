@@ -14,6 +14,7 @@ import UpgradeSuccess from "./pages/UpgradeSuccess";
 import MigrationPage from "./pages/MigrationPage";
 import VectorTest from "./pages/VectorTest";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
+import { DatabaseSeeder } from "@/components/admin/DatabaseSeeder";
 
 // Lazy load the knowledge base population page to prevent initialization on app load
 const KnowledgeBasePopulation = lazy(() => import("./pages/KnowledgeBasePopulation"));
@@ -38,6 +39,7 @@ const App = () => {
             <Route path="/upgrade-success" element={<UpgradeSuccess />} />
             <Route path="/migration-page" element={<MigrationPage />} />
             <Route path="/vector-test" element={<VectorTest />} />
+            <Route path="/database-seeder" element={<DatabaseSeeder />} />
             <Route 
               path="/knowledge-population" 
               element={
