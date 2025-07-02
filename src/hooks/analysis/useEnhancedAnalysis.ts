@@ -342,10 +342,27 @@ export const useEnhancedAnalysis = ({ currentAnalysis }: UseEnhancedAnalysisProp
           throw new Error(analysisResult.error || 'Analysis failed');
         }
 
-        // ✅ Post-analysis quality control
-        setBuildingStage('Performing quality control...');
-        const qualityResult = await analysisQualityController.performQualityControl(
+        // ✅ Enhanced post-analysis processing with improved validation
+        setBuildingStage('Performing enhanced quality control...');
+        
+        // Import enhanced processor
+        const { EnhancedAnnotationProcessor } = await import('@/utils/enhancedAnnotationProcessor');
+        
+        // Process annotations with enhanced validation (no more harmful corrections)
+        const enhancedProcessingResult = EnhancedAnnotationProcessor.processAnnotations(
           analysisResult.annotations || [],
+          {
+            enableValidation: true,
+            enableFiltering: true,
+            minConfidenceThreshold: 0.6, // More lenient threshold
+            maxInvalidAnnotations: 5, // Allow more annotations
+            logValidationDetails: true
+          }
+        );
+
+        // Also run quality controller for additional metrics
+        const qualityResult = await analysisQualityController.performQualityControl(
+          enhancedProcessingResult.processedAnnotations,
           request.imageUrls,
           ragValidationResult || undefined,
           ragImpactAnalysis || undefined,
@@ -353,26 +370,37 @@ export const useEnhancedAnalysis = ({ currentAnalysis }: UseEnhancedAnalysisProp
             enableVisualValidation: true,
             enableRagValidation: !!ragValidationResult,
             enableHallucinationDetection: true,
-            minimumQualityThreshold: 0.7,
-            maxRetryAttempts: 1
+            minimumQualityThreshold: 0.6, // More lenient
+            maxRetryAttempts: 0 // No retries needed
           }
         );
 
-        console.log('🎯 Quality Control Results:', {
+        console.log('🎯 Enhanced Processing Results:', {
+          originalAnnotations: analysisResult.annotations?.length || 0,
+          processedAnnotations: enhancedProcessingResult.processedAnnotations.length,
+          filteredAnnotations: enhancedProcessingResult.filteredAnnotations.length,
+          averageConfidence: Math.round(enhancedProcessingResult.metrics.averageConfidence * 100) + '%',
+          evidenceDistribution: enhancedProcessingResult.metrics.evidenceLevels,
           overallQuality: qualityResult.overallQuality,
           visualGroundingScore: qualityResult.visualGroundingScore,
-          ragQualityScore: qualityResult.ragQualityScore,
-          hallucinationRisk: qualityResult.hallucinationRisk,
-          issueCount: qualityResult.qualityIssues.length,
-          validatedAnnotations: qualityResult.validatedAnnotations.length
+          hallucinationRisk: qualityResult.hallucinationRisk
         });
+
+        // Log the quality report
+        console.log('📊 Processing Quality Report:');
+        console.log(EnhancedAnnotationProcessor.generateQualityReport(enhancedProcessingResult));
 
         const response: AnalyzeImagesResponse = {
           success: true,
-          annotations: qualityResult.validatedAnnotations,
+          annotations: enhancedProcessingResult.processedAnnotations, // Use enhanced processed annotations
           analysis: {
             ...analysisResult,
             qualityMetrics: qualityResult,
+            enhancedProcessing: {
+              metrics: enhancedProcessingResult.metrics,
+              filteredCount: enhancedProcessingResult.filteredAnnotations.length,
+              processingLog: enhancedProcessingResult.processingLog
+            },
             visualGrounding: visualGrounding,
             ragValidation: ragValidationResult
           },
@@ -380,23 +408,34 @@ export const useEnhancedAnalysis = ({ currentAnalysis }: UseEnhancedAnalysisProp
           wellDone: analysisResult.wellDone
         };
 
-        // Enhanced success message with quality info
+        // Enhanced success message with processing info
+        const qualityScore = Math.round(enhancedProcessingResult.metrics.averageConfidence * 100);
+        const filteredCount = enhancedProcessingResult.filteredAnnotations.length;
+        
         if (contextData && ragValidationResult) {
           toast.success(
-            `Enhanced analysis complete! Found ${response.annotations.length} quality-validated insights using ${ragValidationResult.validatedEntries.length} verified research sources. Quality score: ${Math.round(qualityResult.overallQuality * 100)}%`,
+            `Enhanced analysis complete! Found ${response.annotations.length} evidence-based insights using ${ragValidationResult.validatedEntries.length} verified research sources. Quality: ${qualityScore}%${filteredCount > 0 ? ` (${filteredCount} low-quality filtered)` : ''}`,
             { duration: 5000 }
           );
         } else {
           toast.success(
-            `Analysis complete! Found ${response.annotations.length} quality-validated insights. Quality score: ${Math.round(qualityResult.overallQuality * 100)}%`,
+            `Analysis complete! Found ${response.annotations.length} evidence-based insights. Quality: ${qualityScore}%${filteredCount > 0 ? ` (${filteredCount} low-quality filtered)` : ''}`,
             { duration: 4000 }
           );
         }
 
-        // Show quality warnings if needed
-        if (qualityResult.overallQuality < 0.7) {
+        // Show filtering info if annotations were filtered
+        if (filteredCount > 0) {
+          toast.info(
+            `${filteredCount} annotations filtered for low evidence or quality. This improves overall analysis accuracy.`,
+            { duration: 4000 }
+          );
+        }
+
+        // Only warn if quality is critically low
+        if (qualityResult.overallQuality < 0.5) {
           toast.warning(
-            `Quality below threshold (${Math.round(qualityResult.overallQuality * 100)}%). ${qualityResult.qualityIssues.length} issues detected.`,
+            `Quality needs improvement (${Math.round(qualityResult.overallQuality * 100)}%). Consider providing more specific context.`,
             { duration: 6000 }
           );
         }

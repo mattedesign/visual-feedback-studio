@@ -83,7 +83,26 @@ REMEMBER: Only provide feedback about elements that are CLEARLY VISIBLE in the p
   ): GroundingValidationResult[] {
     const opts = { ...this.DEFAULT_OPTIONS, ...options };
     
-    return annotations.map(annotation => this.validateSingleAnnotation(annotation, opts));
+    console.log('🎯 Visual Grounding: Validating annotations with enhanced evidence checking', {
+      annotationCount: annotations.length,
+      imageCount: imageUrls.length,
+      requireVisualEvidence: opts.requireVisualEvidence
+    });
+    
+    const results = annotations.map(annotation => this.validateSingleAnnotation(annotation, opts));
+    
+    // Log validation summary
+    const validCount = results.filter(r => r.isValid).length;
+    const averageConfidence = results.reduce((sum, r) => sum + r.confidence, 0) / results.length;
+    
+    console.log('✅ Visual Grounding: Validation complete', {
+      validAnnotations: validCount,
+      totalAnnotations: annotations.length,
+      averageConfidence: Math.round(averageConfidence * 100) + '%',
+      qualityThreshold: opts.minimumConfidenceThreshold
+    });
+    
+    return results;
   }
 
   /**
@@ -200,20 +219,45 @@ REMEMBER: Only provide feedback about elements that are CLEARLY VISIBLE in the p
   }
 
   /**
-   * Check for visual indicators in annotation
+   * Enhanced visual indicators check with stronger evidence detection
    */
   private checkForVisualIndicators(annotation: Annotation): { found: boolean; indicators: string[] } {
-    const visualPhrases = [
-      "I can see", "visible", "displays", "shows", "appears", "located at",
-      "positioned", "contains text", "has color", "features"
+    const text = `${annotation.title} ${annotation.description || annotation.feedback || ''}`.toLowerCase();
+    
+    // Strong visual evidence phrases
+    const strongIndicators = [
+      "i can see", "visible at", "located at", "positioned at", "displays", 
+      "shows the", "contains text", "has color", "image shows", "screenshot shows",
+      "at coordinates", "in the image", "on the screen"
+    ];
+    
+    // Moderate visual evidence phrases
+    const moderateIndicators = [
+      "the button", "the link", "the text", "the image", "the menu",
+      "top left", "bottom right", "center of", "corner", "navigation",
+      "header", "footer", "sidebar", "form field"
+    ];
+    
+    // Warning phrases that might indicate hallucination
+    const hallucinationWarnings = [
+      "consider adding", "should include", "would benefit", "might want to",
+      "could improve", "recommend", "suggest", "typical", "usually"
     ];
 
-    const text = `${annotation.title} ${annotation.description || annotation.feedback || ''}`.toLowerCase();
-    const foundIndicators = visualPhrases.filter(phrase => text.includes(phrase));
+    const strongFound = strongIndicators.filter(phrase => text.includes(phrase));
+    const moderateFound = moderateIndicators.filter(phrase => text.includes(phrase));
+    const warningFound = hallucinationWarnings.filter(phrase => text.includes(phrase));
+    
+    const allIndicators = [...strongFound, ...moderateFound];
+    
+    // High warning count suggests possible hallucination
+    const hasStrongEvidence = strongFound.length > 0;
+    const hasModerateEvidence = moderateFound.length > 0 && warningFound.length <= 1;
+    const isHighRiskHallucination = warningFound.length > 2 && strongFound.length === 0;
 
     return {
-      found: foundIndicators.length > 0,
-      indicators: foundIndicators
+      found: (hasStrongEvidence || hasModerateEvidence) && !isHighRiskHallucination,
+      indicators: allIndicators
     };
   }
 

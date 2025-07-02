@@ -1,8 +1,8 @@
 
 import { Annotation } from '@/types/analysis';
-import { CoordinateValidator } from './coordinateValidation';
+import { EnhancedAnnotationProcessor, ProcessingOptions, ProcessingResult } from './enhancedAnnotationProcessor';
 
-interface ProcessingStats {
+interface LegacyProcessingStats {
   totalAnnotations: number;
   correctedAnnotations: number;
   validationResults: Array<{
@@ -13,97 +13,81 @@ interface ProcessingStats {
   }>;
 }
 
+/**
+ * Annotation Post Processor - Updated to use enhanced validation
+ * NO MORE AUTOMATIC CORRECTIONS - Focus on validation and filtering only
+ */
 export class AnnotationPostProcessor {
-  static processAnnotations(annotations: Annotation[]): {
+  static processAnnotations(
+    annotations: Annotation[],
+    options: Partial<ProcessingOptions> = {}
+  ): {
     processedAnnotations: Annotation[];
-    stats: ProcessingStats;
+    stats: LegacyProcessingStats;
   } {
-    console.log('🔧 ANNOTATION POST-PROCESSING START:', {
+    console.log('🔧 ANNOTATION POST-PROCESSING (Enhanced):', {
       totalAnnotations: annotations.length,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      mode: 'validation_only'
     });
 
-    const stats: ProcessingStats = {
+    // Use enhanced processor instead of old validation logic
+    const enhancedResult = EnhancedAnnotationProcessor.processAnnotations(annotations, {
+      enableValidation: true,
+      enableFiltering: true,
+      minConfidenceThreshold: options.minConfidenceThreshold || 0.6,
+      maxInvalidAnnotations: 5, // Allow more annotations but filter poor quality ones
+      logValidationDetails: true,
+      ...options
+    });
+
+    // Convert to legacy stats format for backward compatibility
+    const legacyStats: LegacyProcessingStats = {
       totalAnnotations: annotations.length,
-      correctedAnnotations: 0,
-      validationResults: []
+      correctedAnnotations: 0, // No more corrections!
+      validationResults: enhancedResult.validationResults.map((validation, index) => ({
+        id: annotations[index]?.id || `annotation-${index}`,
+        isValid: validation.isValid,
+        correctionApplied: false, // Never apply corrections anymore
+        reasoning: validation.reasoning
+      }))
     };
 
-    const processedAnnotations = annotations.map(annotation => {
-      // Validate the annotation
-      const validation = CoordinateValidator.validateAnnotation(annotation);
-      
-      stats.validationResults.push({
-        id: annotation.id,
-        isValid: validation.isValid,
-        correctionApplied: false,
-        reasoning: validation.reasoning
-      });
-
-      // Apply correction if needed and confidence is low
-      if (!validation.isValid && validation.suggestedCorrection && validation.confidence < 0.5) {
-        stats.correctedAnnotations++;
-        
-        const correctedAnnotation = {
-          ...annotation,
-          x: validation.suggestedCorrection.x,
-          y: validation.suggestedCorrection.y,
-          originalCoordinates: { x: annotation.x, y: annotation.y },
-          correctionApplied: true,
-          correctionReasoning: validation.reasoning,
-          validationScore: validation.confidence
-        };
-
-        // Update stats
-        const statEntry = stats.validationResults.find(s => s.id === annotation.id);
-        if (statEntry) {
-          statEntry.correctionApplied = true;
-        }
-
-        console.log(`🔧 COORDINATE CORRECTION APPLIED for ${annotation.id}:`, {
-          feedback: annotation.feedback?.substring(0, 50) + '...',
-          originalCoordinates: { x: annotation.x, y: annotation.y },
-          correctedCoordinates: validation.suggestedCorrection,
-          reasoning: validation.reasoning,
-          confidence: validation.confidence
-        });
-
-        return correctedAnnotation;
-      }
-
-      // Add validation info even if no correction applied
-      return {
-        ...annotation,
-        validationScore: validation.confidence,
-        validationPassed: validation.isValid
-      };
+    console.log('🔧 ENHANCED POST-PROCESSING COMPLETE:', {
+      totalProcessed: enhancedResult.processedAnnotations.length,
+      totalFiltered: enhancedResult.filteredAnnotations.length,
+      averageQuality: Math.round(enhancedResult.metrics.averageConfidence * 100) + '%',
+      correctionsMade: 0, // No more corrections!
+      qualityImprovement: 'validation_and_filtering'
     });
 
-    console.log('🔧 ANNOTATION POST-PROCESSING COMPLETE:', {
-      totalProcessed: processedAnnotations.length,
-      correctionsMade: stats.correctedAnnotations,
-      correctionRate: `${Math.round((stats.correctedAnnotations / annotations.length) * 100)}%`
-    });
+    // Log the enhanced quality report
+    console.log(EnhancedAnnotationProcessor.generateQualityReport(enhancedResult));
 
     return {
-      processedAnnotations,
-      stats
+      processedAnnotations: enhancedResult.processedAnnotations,
+      stats: legacyStats
     };
   }
 
-  static generateQualityReport(stats: ProcessingStats): string {
+  /**
+   * Generate quality report using enhanced metrics
+   */
+  static generateQualityReport(stats: LegacyProcessingStats): string {
     const validCount = stats.validationResults.filter(r => r.isValid).length;
-    const correctedCount = stats.validationResults.filter(r => r.correctionApplied).length;
+    const correctedCount = 0; // No more corrections
     
     return `
-📊 ANNOTATION QUALITY REPORT
-─────────────────────────────
+📊 ENHANCED ANNOTATION QUALITY REPORT
+────────────────────────────────────────
 Total Annotations: ${stats.totalAnnotations}
 Valid Coordinates: ${validCount} (${Math.round((validCount / stats.totalAnnotations) * 100)}%)
-Auto-Corrections: ${correctedCount} (${Math.round((correctedCount / stats.totalAnnotations) * 100)}%)
-Quality Score: ${Math.round(((validCount + correctedCount) / stats.totalAnnotations) * 100)}%
+Evidence-Based Validation: ✅ Enabled
+Auto-Corrections: ${correctedCount} (DISABLED for quality)
+Quality Score: ${Math.round((validCount / stats.totalAnnotations) * 100)}%
 
-${correctedCount > 0 ? '⚠️ Coordinate corrections were applied to improve accuracy' : '✅ All coordinates passed validation'}
+✅ Quality-focused processing: Validation without harmful corrections
+🎯 Evidence-based approach: Only high-confidence annotations retained
     `.trim();
   }
 }
