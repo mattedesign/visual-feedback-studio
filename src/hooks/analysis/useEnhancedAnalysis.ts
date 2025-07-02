@@ -5,6 +5,9 @@ import { enhancedRagService, EnhancedContext } from '@/services/analysis/enhance
 import { analysisService } from '@/services/analysisService';
 import { multiStageAnalysisPipeline } from '@/services/analysis/multiStageAnalysisPipeline';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
+import { visualGroundingService } from '@/services/analysis/visualGroundingService';
+import { ragContentValidator } from '@/services/analysis/ragContentValidator';
+import { analysisQualityController } from '@/services/analysis/analysisQualityController';
 import { Annotation } from '@/types/analysis';
 
 interface UseEnhancedAnalysisProps {
@@ -204,13 +207,29 @@ export const useEnhancedAnalysis = ({ currentAnalysis }: UseEnhancedAnalysisProp
         return response;
 
       } else {
-        // Standard enhanced analysis flow
+        // ✅ Enhanced standard analysis flow with quality control
         let enhancedPrompt = request.analysisPrompt;
         let contextData: EnhancedContext | null = null;
+        let ragValidationResult = null;
+        let ragImpactAnalysis = null;
+
+        // 1. Enhanced visual grounding for prompt
+        setBuildingStage('Enhancing visual grounding...');
+        const visualGrounding = visualGroundingService.buildVisuallyGroundedPrompt(
+          request.analysisPrompt,
+          request.imageUrls,
+          {
+            requireVisualEvidence: true,
+            minimumConfidenceThreshold: 0.8,
+            enableCoordinateValidation: true,
+            maxAnnotationsPerImage: 15
+          }
+        );
+        enhancedPrompt = visualGrounding.enhancedPrompt;
 
         if (request.useEnhancedRag) {
-          setBuildingStage('Building enhanced context...');
-          console.log('📚 Enhanced Analysis: Building RAG context');
+          setBuildingStage('Building validated RAG context...');
+          console.log('📚 Enhanced Analysis: Building validated RAG context');
 
           try {
             const workflowState = {
@@ -249,27 +268,64 @@ export const useEnhancedAnalysis = ({ currentAnalysis }: UseEnhancedAnalysisProp
               }>)
             };
 
+            // Get raw RAG context first
             contextData = await enhancedRagService.enhanceAnalysisWithWorkflow(
               workflowState,
               request.analysisPrompt,
               {
-                maxKnowledgeEntries: 12,
-                minConfidenceThreshold: 0.7,
+                maxKnowledgeEntries: 15, // Get more initially for validation
+                minConfidenceThreshold: 0.6, // Lower threshold for initial retrieval
                 includeIndustrySpecific: true
               }
             );
 
-            enhancedPrompt = contextData.enhancedPrompt;
+            // Validate and filter RAG content
+            if (contextData && contextData.retrievedKnowledge.length > 0) {
+              setBuildingStage('Validating RAG content...');
+              
+              ragValidationResult = await ragContentValidator.validateRagContent(
+                contextData.retrievedKnowledge,
+                request.analysisPrompt,
+                request.imageUrls,
+                {
+                  maxKnowledgeEntries: 8, // Reduced final count
+                  minRelevanceScore: 0.75,
+                  requireImageRelevance: true,
+                  enableContentFiltering: true,
+                  maxContentLength: 400
+                }
+              );
+
+              ragImpactAnalysis = ragContentValidator.analyzeRagImpact(
+                ragValidationResult.validatedEntries,
+                request.analysisPrompt
+              );
+
+              // Build safe RAG prompt
+              enhancedPrompt = ragContentValidator.buildSafeRagPrompt(
+                visualGrounding.enhancedPrompt,
+                ragValidationResult.validatedEntries,
+                ragValidationResult
+              );
+
+              console.log('✅ RAG Validation Complete:', {
+                originalEntries: contextData.retrievedKnowledge.length,
+                validatedEntries: ragValidationResult.validatedEntries.length,
+                filteredCount: ragValidationResult.filteredCount,
+                hallucinationRisk: ragImpactAnalysis.hallucinationRisk
+              });
+            }
+
             setEnhancedContext(contextData);
             setHasResearchContext(true);
-            setResearchSourcesCount(contextData.knowledgeSourcesUsed);
+            setResearchSourcesCount(ragValidationResult?.validatedEntries.length || 0);
 
           } catch (ragError) {
-            console.warn('⚠️ Enhanced Analysis: RAG enhancement failed, falling back to standard analysis:', ragError);
+            console.warn('⚠️ Enhanced Analysis: RAG enhancement failed, falling back to visual grounding only:', ragError);
           }
         }
 
-        setBuildingStage('Running AI analysis...');
+        setBuildingStage('Running quality-controlled AI analysis...');
         setIsBuilding(false);
 
         const analysisResult = await analysisService.analyzeDesign({
@@ -279,28 +335,70 @@ export const useEnhancedAnalysis = ({ currentAnalysis }: UseEnhancedAnalysisProp
           designType: 'web',
           isComparative: request.imageUrls.length > 1,
           ragEnhanced: !!contextData,
-          researchSourceCount: contextData?.knowledgeSourcesUsed || 0
+          researchSourceCount: ragValidationResult?.validatedEntries.length || 0
         });
 
         if (!analysisResult.success) {
           throw new Error(analysisResult.error || 'Analysis failed');
         }
 
+        // ✅ Post-analysis quality control
+        setBuildingStage('Performing quality control...');
+        const qualityResult = await analysisQualityController.performQualityControl(
+          analysisResult.annotations || [],
+          request.imageUrls,
+          ragValidationResult || undefined,
+          ragImpactAnalysis || undefined,
+          {
+            enableVisualValidation: true,
+            enableRagValidation: !!ragValidationResult,
+            enableHallucinationDetection: true,
+            minimumQualityThreshold: 0.7,
+            maxRetryAttempts: 1
+          }
+        );
+
+        console.log('🎯 Quality Control Results:', {
+          overallQuality: qualityResult.overallQuality,
+          visualGroundingScore: qualityResult.visualGroundingScore,
+          ragQualityScore: qualityResult.ragQualityScore,
+          hallucinationRisk: qualityResult.hallucinationRisk,
+          issueCount: qualityResult.qualityIssues.length,
+          validatedAnnotations: qualityResult.validatedAnnotations.length
+        });
+
         const response: AnalyzeImagesResponse = {
           success: true,
-          annotations: analysisResult.annotations || [],
-          analysis: analysisResult,
+          annotations: qualityResult.validatedAnnotations,
+          analysis: {
+            ...analysisResult,
+            qualityMetrics: qualityResult,
+            visualGrounding: visualGrounding,
+            ragValidation: ragValidationResult
+          },
           enhancedContext: contextData,
           wellDone: analysisResult.wellDone
         };
 
-        if (contextData) {
+        // Enhanced success message with quality info
+        if (contextData && ragValidationResult) {
           toast.success(
-            `Enhanced analysis complete! Found ${response.annotations.length} insights using ${contextData.knowledgeSourcesUsed} research sources.`,
-            { duration: 4000 }
+            `Enhanced analysis complete! Found ${response.annotations.length} quality-validated insights using ${ragValidationResult.validatedEntries.length} verified research sources. Quality score: ${Math.round(qualityResult.overallQuality * 100)}%`,
+            { duration: 5000 }
           );
         } else {
-          toast.success(`Analysis complete! Found ${response.annotations.length} insights.`);
+          toast.success(
+            `Analysis complete! Found ${response.annotations.length} quality-validated insights. Quality score: ${Math.round(qualityResult.overallQuality * 100)}%`,
+            { duration: 4000 }
+          );
+        }
+
+        // Show quality warnings if needed
+        if (qualityResult.overallQuality < 0.7) {
+          toast.warning(
+            `Quality below threshold (${Math.round(qualityResult.overallQuality * 100)}%). ${qualityResult.qualityIssues.length} issues detected.`,
+            { duration: 6000 }
+          );
         }
 
         return response;
