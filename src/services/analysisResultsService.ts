@@ -14,6 +14,16 @@ export interface SaveAnalysisResultsRequest {
   knowledgeSourcesUsed?: number;
   aiModelUsed?: string;
   processingTimeMs?: number;
+  // Multi-stage pipeline data
+  pipelineStage?: string;
+  googleVisionData?: any;
+  visualIntelligence?: any;
+  enhancedPromptData?: any;
+  synthesisMetadata?: any;
+  qualityScores?: any;
+  processingStages?: any;
+  stageTimings?: any;
+  confidenceWeights?: any;
 }
 
 export interface AnalysisResultsResponse {
@@ -63,7 +73,17 @@ export const saveAnalysisResults = async (request: SaveAnalysisResultsRequest): 
         knowledge_sources_used: request.knowledgeSourcesUsed || 0,
         ai_model_used: request.aiModelUsed || 'claude-3-5-sonnet',
         processing_time_ms: request.processingTimeMs,
-        total_annotations: request.annotations.length
+        total_annotations: request.annotations.length,
+        // Multi-stage pipeline fields
+        pipeline_stage: request.pipelineStage || 'single_stage',
+        google_vision_data: request.googleVisionData,
+        visual_intelligence: request.visualIntelligence,
+        enhanced_prompt_data: request.enhancedPromptData,
+        synthesis_metadata: request.synthesisMetadata,
+        quality_scores: request.qualityScores,
+        processing_stages: request.processingStages,
+        stage_timing: request.stageTimings,
+        confidence_weights: request.confidenceWeights
       })
       .select('id')
       .single();

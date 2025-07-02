@@ -6,7 +6,7 @@ export const useFeatureFlag = (flagName: string): boolean => {
     'business-dashboard': false,
     'separated-annotation-fields': true, // NEW: Enable separated title/description fields
     'perplexity-integration': false, // NEW: Enable Perplexity.ai integration
-    'multi-stage-pipeline': false, // NEW: Enable multi-stage analysis pipeline
+    'multi-stage-pipeline': true, // NEW: Enable multi-stage analysis pipeline by default
   };
   
   // Check for specific flag activation via URL parameters
