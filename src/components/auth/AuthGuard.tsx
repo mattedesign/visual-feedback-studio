@@ -1,21 +1,30 @@
 
-import { useNavigate } from 'react-router-dom';
+import { ReactNode } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 
-export const AuthGuard = () => {
-  const navigate = useNavigate();
+interface AuthGuardProps {
+  children: ReactNode;
+  requireAuth?: boolean;
+}
 
-  return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-white mb-4">Please Sign In</h1>
-        <p className="text-slate-400 mb-6">You need to be signed in to use the design analysis tool.</p>
-        <button
-          onClick={() => navigate('/auth')}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
-        >
-          Go to Sign In
-        </button>
-      </div>
-    </div>
-  );
+export const AuthGuard = ({ children, requireAuth = true }: AuthGuardProps) => {
+  const { user, session, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  const isAuthenticated = !!(user && session);
+
+  // If auth is required but user is not authenticated, redirect to auth page
+  if (requireAuth && !isAuthenticated) {
+    return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  // If auth is not required but user is authenticated, allow access
+  // If auth is required and user is authenticated, allow access
+  return <>{children}</>;
 };
