@@ -294,17 +294,19 @@ export const useConsolidatedAnalysis = () => {
       
       // Check if hybrid solution engine exists
       try {
+        const { HybridSolutionEngine } = await import('@/services/solutions/hybridSolutionEngine');
+        const hybridEngine = new HybridSolutionEngine();
+        
         // Prompt user for problem statement
         const userProblemStatement = await promptUserForProblemStatement();
         
         if (userProblemStatement) {
           console.log('🤖 Processing problem statement:', userProblemStatement);
           
-          const solutionResult = await aiEnhancedSolutionEngine.provideConsultation({
-            analysisResults: result.annotations || [],
-            analysisContext: `${input.analysisContext}\n\nUser Problem Statement: ${userProblemStatement}`,
-            analysisId: result.analysisId,
-            userId: user.id
+          const solutionResult = await hybridEngine.findSolutions({
+            annotations: result.annotations || [],
+            userProblemStatement,
+            analysisContext: input.analysisContext
           });
           
           console.log('🎯 Problem statement result:', {
