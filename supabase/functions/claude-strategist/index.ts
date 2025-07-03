@@ -51,21 +51,25 @@ serve(async (req) => {
   }
 
   try {
-    const { systemPrompt, model = 'claude-sonnet-4-20250514' } = await req.json();
+    const { userChallenge, traditionalAnnotations, model = 'claude-sonnet-4-20250514' } = await req.json();
 
-    if (!systemPrompt) {
+    if (!userChallenge) {
       return new Response(JSON.stringify({
         success: false,
-        error: 'Missing systemPrompt'
+        error: 'Missing userChallenge parameter'
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
+    // Build strategist-specific prompt
+    const strategistPrompt = buildStrategistPrompt(userChallenge, traditionalAnnotations || []);
+
     console.log('🤖 Starting Claude strategist analysis:', {
       model,
-      promptLength: systemPrompt.length
+      userChallenge: userChallenge.substring(0, 100) + '...',
+      annotationsCount: traditionalAnnotations?.length || 0
     });
 
     // Get Claude API key from environment
@@ -82,7 +86,7 @@ serve(async (req) => {
     }
 
     // Call Claude API
-    const claudeResponse = await callClaudeAPI(systemPrompt, model, anthropicApiKey);
+    const claudeResponse = await callClaudeAPI(strategistPrompt, model, anthropicApiKey);
 
     if (!claudeResponse.success) {
       console.error('❌ Claude API failed:', claudeResponse.error);
@@ -117,6 +121,59 @@ serve(async (req) => {
     });
   }
 });
+
+function buildStrategistPrompt(userChallenge: string, traditionalAnnotations: any[]): string {
+  return `
+You are a 20-year Principal UX Designer with experience in SaaS, mobile-first, and enterprise systems.
+Your role is to identify UX frictions, diagnose problems, and recommend pattern-backed solutions with measurable business impact.
+
+INPUTS:
+- User Challenge: "${userChallenge}"
+- Current Analysis: ${JSON.stringify(traditionalAnnotations.slice(0, 8))}
+
+USER EXPECTATION: They want to feel like they're consulting with a 20-year veteran, not getting AI-generated observations.
+
+YOUR STRATEGIST MINDSET:
+- Think diagnostically: identify root causes, not symptoms
+- Reference specific UX principles (Fitts' Law, progressive disclosure, etc.)
+- Quantify business impact wherever possible ("25-40% improvement")
+- Consider user emotional state and constraints
+- Provide testable hypotheses for validation
+- Balance quick wins vs. strategic improvements
+
+ANTI-PATTERN DETECTION:
+- "cta_hidden" → "CTA below fold violates Fitts' Law, reduces mobile conversion"
+- "layout_density: high" → "Cognitive overload triggers attention tunneling"
+- "form_fields: >8" → "Progressive disclosure needed for mobile completion"
+
+OUTPUT FORMAT:
+Return ONLY valid JSON matching this exact structure:
+{
+  "diagnosis": "Root cause analysis of the UX challenges...",
+  "strategicRationale": "Strategic approach explanation...",
+  "expertRecommendations": [
+    {
+      "title": "Specific recommendation title",
+      "recommendation": "Detailed actionable recommendation",
+      "confidence": 0.85,
+      "expectedImpact": "Quantified business impact",
+      "implementationEffort": "Low|Medium|High",
+      "timeline": "Time estimate",
+      "reasoning": "UX principle-based reasoning",
+      "source": "Research backing"
+    }
+  ],
+  "abTestHypothesis": "Testable hypothesis for validation",
+  "successMetrics": ["metric1", "metric2", "metric3"],
+  "confidenceAssessment": {
+    "overallConfidence": 0.78,
+    "reasoning": "Confidence reasoning"
+  }
+}
+
+IMPORTANT: Respond with ONLY the JSON object, no additional text or explanation.
+`;
+}
 
 async function callClaudeAPI(
   systemPrompt: string,

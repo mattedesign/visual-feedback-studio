@@ -90,7 +90,7 @@ IMPORTANT: Respond with ONLY the JSON object, no additional text or explanation.
       console.log('🎭 Starting real Claude strategist analysis...');
       
       // Call real Claude API
-      const claudeResponse = await this.callClaudeAPI(strategistPrompt);
+      const claudeResponse = await this.callClaudeAPI(input);
       
       if (claudeResponse) {
         console.log('✅ Claude strategist analysis successful');
@@ -109,7 +109,7 @@ IMPORTANT: Respond with ONLY the JSON object, no additional text or explanation.
     }
   }
 
-  private async callClaudeAPI(systemPrompt: string): Promise<StrategistOutput | null> {
+  private async callClaudeAPI(input: StrategistInput): Promise<StrategistOutput | null> {
     try {
       console.log('🚀 Calling Claude API for strategist analysis...');
       
@@ -123,7 +123,8 @@ IMPORTANT: Respond with ONLY the JSON object, no additional text or explanation.
       // Call a custom edge function for strategist analysis
       const { data, error } = await supabase.functions.invoke('claude-strategist', {
         body: {
-          systemPrompt: systemPrompt,
+          userChallenge: input.userChallenge,
+          traditionalAnnotations: input.traditionalAnnotations,
           model: 'claude-sonnet-4-20250514' // Use latest Claude 4 model
         }
       });
