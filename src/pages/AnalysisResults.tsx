@@ -6,6 +6,7 @@ import { ModularAnalysisInterface } from '@/components/analysis/modules/ModularA
 import SimpleAnalysisResults from '@/components/analysis/SimpleAnalysisResults';
 import { claude20YearStrategistEngine, StrategistOutput } from '@/services/ai/claudeUXStrategistEngine';
 import { StrategistResultsDisplay } from '@/components/analysis/results/StrategistResultsDisplay';
+import { FigmaInspiredAnalysisLayout } from '@/components/analysis/figma/FigmaInspiredAnalysisLayout';
 import { toast } from 'sonner';
 
 const AnalysisResults = () => {
@@ -161,9 +162,6 @@ const AnalysisResults = () => {
   console.log('🎨 Figma UI Check:', { figmaUIEnabled, figmaMode, currentURL: window.location.href });
   
   if (figmaUIEnabled || figmaMode) {
-    // Use static import - import at top of file
-    const { FigmaInspiredAnalysisLayout } = require('@/components/analysis/figma/FigmaInspiredAnalysisLayout');
-    
     // Get stored context for user challenge
     const contextKey = `strategist_context_${id}`;
     const storedContext = localStorage.getItem(contextKey);
