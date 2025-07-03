@@ -10,14 +10,14 @@ export const useFeatureFlag = (flagName: string): boolean => {
     'consolidated-analysis-pipeline': true, // Enable consolidated analysis system
     
     // Phase 2: New Figma-Inspired UI Architecture
-    'figma-inspired-ui': false, // NEW: Figma-style panels and layout
+    'figma-inspired-ui': true, // ENABLED: Figma-style panels and layout
     'advanced-strategist': false, // NEW: Enhanced Claude integration
     'multi-model-orchestration': false, // NEW: Parallel AI processing
     
     // Phase 3: Enhanced Features
-    'interactive-annotations': false, // NEW: Figma-style annotation overlay
-    'resizable-panels': false, // NEW: Resizable panel system
-    'keyboard-shortcuts': false, // NEW: Figma-style shortcuts
+    'interactive-annotations': true, // ENABLED: Figma-style annotation overlay
+    'resizable-panels': true, // ENABLED: Resizable panel system
+    'keyboard-shortcuts': true, // ENABLED: Figma-style shortcuts
     'export-options': false, // NEW: PDF, image, and data export
   };
   

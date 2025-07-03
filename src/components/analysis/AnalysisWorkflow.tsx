@@ -5,7 +5,9 @@ import { AnalyzingStep } from './workflow/AnalyzingStep';
 import { ResultsStep } from './workflow/ResultsStep';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { useAuth } from '@/hooks/useAuth';
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { AnalysisStudioLayout } from './studio/AnalysisStudioLayout';
+import { FigmaUploadLayout } from './figma/FigmaUploadLayout';
 import { useState } from 'react';
 
 export const AnalysisWorkflow = () => {
@@ -19,9 +21,27 @@ export const AnalysisWorkflow = () => {
   const workflow = useAnalysisWorkflow();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
+  
+  // Check for Figma UI feature flag
+  const figmaUIEnabled = useFeatureFlag('figma-inspired-ui');
+  const urlParams = new URLSearchParams(window.location.search);
+  const figmaMode = urlParams.get('figma') === 'true';
+  
+  console.log('🎨 AnalysisWorkflow Figma Check:', { 
+    figmaUIEnabled, 
+    figmaMode, 
+    currentStep: workflow.currentStep,
+    currentURL: window.location.href 
+  });
 
   if (!user) {
     return null;
+  }
+
+  // NEW: Use Figma layout for upload step when feature flag is enabled
+  if ((figmaUIEnabled || figmaMode) && workflow.currentStep === 'upload') {
+    console.log('✅ Using Figma Upload Layout');
+    return <FigmaUploadLayout workflow={workflow} />;
   }
 
   // For upload and annotate steps, use the studio layout

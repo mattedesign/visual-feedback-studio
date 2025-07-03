@@ -158,15 +158,22 @@ const AnalysisResults = () => {
   const figmaUIEnabled = useFeatureFlag('figma-inspired-ui');
   const figmaMode = urlParams.get('figma') === 'true';
   
+  console.log('🎨 Figma UI Check:', { figmaUIEnabled, figmaMode, currentURL: window.location.href });
+  
   if (figmaUIEnabled || figmaMode) {
-    // Import and use Figma-inspired layout
-    const { FigmaInspiredAnalysisLayout } = require('@/components/analysis/figma/FigmaInspiredAnalysisLayout');
+    // Use proper import instead of require()
+    import('@/components/analysis/figma/FigmaInspiredAnalysisLayout').then(({ FigmaInspiredAnalysisLayout }) => {
+      console.log('✅ Figma layout loaded successfully');
+    });
+    
+    // For now, show a loading state until we can implement proper dynamic import
     return (
-      <FigmaInspiredAnalysisLayout 
-        analysisData={{ annotations: [] }} // Mock data for now
-        strategistAnalysis={strategistAnalysis}
-        userChallenge={id ? localStorage.getItem(`strategist_context_${id}`) : undefined}
-      />
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading Figma-inspired interface...</p>
+        </div>
+      </div>
     );
   }
 
