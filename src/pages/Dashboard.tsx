@@ -112,26 +112,8 @@ const Dashboard = () => {
     navigate(`/analysis/${analysisId}?beta=true`);
   };
 
-  // Check for Figma UI feature flag
-  const figmaUIEnabled = useFeatureFlag('figma-inspired-ui');
-  const urlParams = new URLSearchParams(window.location.search);
-  const figmaMode = urlParams.get('figma') === 'true';
-
-  // Use Figma layout when feature flag is enabled
-  if (figmaUIEnabled || figmaMode) {
-    return (
-      <FigmaDashboardLayout
-        analyses={analyses}
-        isLoading={isLoading}
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        filterStatus={filterStatus}
-        setFilterStatus={setFilterStatus}
-        onNewAnalysis={handleNewAnalysis}
-        onViewAnalysis={handleViewAnalysis}
-      />
-    );
-  }
+  // Always use simple card layout for Dashboard
+  // Figma layout is only for Analysis and Results pages
 
   // Future: Use role information for personalized content
   // const { profile } = useAuth(); // This will include role information

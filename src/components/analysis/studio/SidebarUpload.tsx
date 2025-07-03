@@ -23,21 +23,15 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
     return null;
   }
 
-  // 🔥 SIMPLIFIED: Single callback that handles everything
+  // Enhanced file upload handler with proper validation
   const handleUploadComplete = (imageUrl: string) => {
     console.log('🔥 UPLOAD COMPLETE - SINGLE HANDLER:', imageUrl);
     
     // Add to workflow using the simplified interface
     workflow.addUploadedFile(imageUrl);
     
-    // Handle navigation - only if this is the first image
-    if (workflow.selectedImages.length === 0) {
-      console.log('🔥 FIRST IMAGE - GOING TO ANNOTATE');
-      workflow.goToStep('annotate');
-    } else if (workflow.currentStep === 'annotate') {
-      // If already in annotate, set as active
-      workflow.setActiveImage(imageUrl);
-    }
+    // Handle navigation - stay on upload step to allow adding context
+    console.log('🔥 IMAGE ADDED - STAYING ON UPLOAD FOR CONTEXT');
   };
 
   const { isProcessing, handleFileUpload } = useUploadLogic(handleUploadComplete);
@@ -70,11 +64,12 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
   const handleMultipleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
-      // Process multiple files with small delays, but validate each one
+      // Process multiple files with validation
       Array.from(files).forEach((file, index) => {
         if (isValidImageFile(file)) {
+          const objectUrl = URL.createObjectURL(file);
           setTimeout(() => {
-            handleFileUpload(file);
+            handleUploadComplete(objectUrl);
           }, index * 100);
         } else {
           console.warn('Invalid file type:', file.name, file.type);
@@ -90,8 +85,9 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
     if (files) {
       Array.from(files).forEach((file, index) => {
         if (isValidImageFile(file)) {
+          const objectUrl = URL.createObjectURL(file);
           setTimeout(() => {
-            handleFileUpload(file);
+            handleUploadComplete(objectUrl);
           }, index * 100);
         } else {
           console.warn('Invalid file type:', file.name, file.type);
@@ -135,8 +131,9 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
     if (files && files.length > 0) {
       Array.from(files).forEach((file, index) => {
         if (isValidImageFile(file)) {
+          const objectUrl = URL.createObjectURL(file);
           setTimeout(() => {
-            handleFileUpload(file);
+            handleUploadComplete(objectUrl);
           }, index * 100);
         } else {
           console.warn('Invalid file type:', file.name, file.type);
