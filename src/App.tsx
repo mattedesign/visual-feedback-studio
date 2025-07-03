@@ -61,6 +61,11 @@ const App = () => {
                   <AnalysisResults />
                 </AuthGuard>
               } />
+              <Route path="/analysis-results/:id" element={
+                <AuthGuard>
+                  <AnalysisResults />
+                </AuthGuard>
+              } />
               <Route path="/dalle-demo" element={
                 <AuthGuard>
                   <DALLEDemo />
