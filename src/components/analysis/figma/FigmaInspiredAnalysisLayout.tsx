@@ -27,6 +27,8 @@ export const FigmaInspiredAnalysisLayout: React.FC<FigmaInspiredAnalysisLayoutPr
   const [selectedAnnotation, setSelectedAnnotation] = useState<string | null>(null);
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
+  const [bottomStatusCollapsed, setBottomStatusCollapsed] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(100);
   
   // Analysis workflow
   const workflow = useAnalysisWorkflow();
@@ -166,8 +168,13 @@ export const FigmaInspiredAnalysisLayout: React.FC<FigmaInspiredAnalysisLayoutPr
         analysisData={analysisData}
         strategistAnalysis={strategistAnalysis}
         activeModule={activeModule}
-        selectedAnnotation={selectedAnnotation}
-        keyboardShortcutsEnabled={keyboardShortcutsEnabled}
+        zoomLevel={zoomLevel}
+        onZoomChange={setZoomLevel}
+        collapsed={bottomStatusCollapsed}
+        onToggleCollapse={() => setBottomStatusCollapsed(!bottomStatusCollapsed)}
+        isAnalyzing={workflow?.isAnalyzing || false}
+        onExport={() => console.log('Export clicked')}
+        onShare={() => console.log('Share clicked')}
       />
     </div>
   );
