@@ -203,20 +203,24 @@ serve(async (req) => {
     // Save to database with enhanced data
     console.log('💾 Saving comprehensive analysis results...');
     try {
-      await databaseManager.saveAnalysisResults(analysisId, {
+      const saveResult = await databaseManager.saveAnalysisResults(analysisId, {
+        analysisId,
         annotations: enhancedAnnotations,
         imageCount: imageUrls.length,
         designType,
         isComparative,
         ragEnhanced: useRAG,
         researchSourceCount: useRAG ? 2 : 0,
-        // ✅ NEW: Save Well Done data (safe addition)
         wellDone: wellDoneData
       });
-      console.log('✅ Comprehensive analysis results saved successfully');
+      
+      if (saveResult.success) {
+        console.log('✅ Analysis results saved to database successfully');
+      } else {
+        console.error('❌ Database save failed:', saveResult.error);
+      }
     } catch (dbError) {
-      console.error('⚠️ Database save failed (non-critical):', dbError);
-      console.log('🔄 Continuing with comprehensive analysis despite database save failure');
+      console.error('❌ Database save error:', dbError);
     }
 
     // ✅ NEW: Prepare comprehensive response with Well Done data (safe addition)
