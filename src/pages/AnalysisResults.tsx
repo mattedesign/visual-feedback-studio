@@ -1,19 +1,160 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Check } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { ModularAnalysisInterface } from '@/components/analysis/modules/ModularAnalysisInterface';
 import SimpleAnalysisResults from '@/components/analysis/SimpleAnalysisResults';
+import { claude20YearStrategistEngine, StrategistOutput } from '@/services/ai/claudeUXStrategistEngine';
+import { StrategistResultsDisplay } from '@/components/analysis/results/StrategistResultsDisplay';
+import { toast } from 'sonner';
 
 const AnalysisResults = () => {
+  // Existing functionality
   const useModularInterface = useFeatureFlag('modular-analysis');
-  
-  // Get URL parameter for testing override
-  const urlParams = new URLSearchParams(window.location.search);
-  const betaMode = urlParams.get('beta') === 'true';
   const perplexityEnabled = useFeatureFlag('perplexity-integration');
   
-  // NEW INTERFACE: When feature flag is enabled or beta parameter is present
+  // URL parameters
+  const urlParams = new URLSearchParams(window.location.search);
+  const betaMode = urlParams.get('beta') === 'true';
+  const isStrategistMode = urlParams.get('strategist') === 'true';
+  
+  // Strategist enhancement state
+  const [strategistAnalysis, setStrategistAnalysis] = useState<StrategistOutput | null>(null);
+  const [strategistLoading, setStrategistLoading] = useState(false);
+  const [analysisData, setAnalysisData] = useState<any>(null);
+  
+  // Get analysis ID from URL
+  const { id } = useParams<{id: string}>();
+
+  // Load analysis data when strategist mode is enabled
+  useEffect(() => {
+    if (isStrategistMode && id && !strategistAnalysis) {
+      loadAnalysisAndEnhance();
+    }
+  }, [isStrategistMode, id]);
+
+  const loadAnalysisAndEnhance = async () => {
+    if (!id) return;
+
+    try {
+      setStrategistLoading(true);
+      console.log('🎭 Loading analysis data for strategist enhancement:', id);
+      
+      // Get stored strategist context
+      const contextKey = `strategist_context_${id}`;
+      const storedContext = localStorage.getItem(contextKey);
+      
+      if (!storedContext) {
+        console.warn('❌ No strategist context found');
+        toast.error('Strategist context not found. Redirecting to traditional results.');
+        // Redirect to traditional results
+        window.location.href = window.location.href.replace('strategist=true', 'beta=true');
+        return;
+      }
+
+      const context = JSON.parse(storedContext);
+      console.log('🎭 Found strategist context:', context.userChallenge);
+      
+      toast.info('🎭 UX Strategist analyzing your design challenge...');
+
+      // For this demo, we'll create mock analysis data
+      // In a real implementation, you'd fetch from your API
+      const mockAnalysisData = {
+        annotations: [
+          {
+            title: "Checkout Form Complexity",
+            feedback: "Multiple form fields create cognitive overload during payment",
+            severity: "critical",
+            category: "Forms"
+          },
+          {
+            title: "Trust Signal Placement",
+            feedback: "Security badges not visible at payment step",
+            severity: "important", 
+            category: "Trust"
+          },
+          {
+            title: "Payment Options Clarity",
+            feedback: "Available payment methods unclear until final step",
+            severity: "important",
+            category: "Payment"
+          },
+          {
+            title: "Mobile Checkout Flow",
+            feedback: "Form layout breaks on mobile devices",
+            severity: "critical",
+            category: "Mobile"
+          },
+          {
+            title: "Error Handling",
+            feedback: "Payment errors not clearly communicated",
+            severity: "important",
+            category: "Errors"
+          }
+        ]
+      };
+
+      setAnalysisData(mockAnalysisData);
+
+      // Call strategist enhancement
+      const strategistResult = await claude20YearStrategistEngine.enhanceAsStrategist({
+        userChallenge: context.userChallenge,
+        traditionalAnnotations: mockAnalysisData.annotations,
+        visionAnalysis: {},
+        ragKnowledge: {},
+        imageContext: {}
+      });
+      
+      setStrategistAnalysis(strategistResult);
+      console.log('✅ Strategist enhancement complete:', strategistResult);
+      toast.success('🎭 UX Strategist analysis complete!');
+      
+    } catch (error) {
+      console.error('❌ Strategist enhancement failed:', error);
+      toast.error('Strategist analysis failed. Redirecting to traditional results.');
+      // Redirect to traditional results on error
+      window.location.href = window.location.href.replace('strategist=true', 'beta=true');
+    } finally {
+      setStrategistLoading(false);
+    }
+  };
+
+  // STRATEGIST MODE: Loading state
+  if (isStrategistMode && strategistLoading) {
+    return (
+      <div className="strategist-loading bg-slate-900 text-white min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold mb-2">🎭 UX Strategist Analyzing...</h2>
+          <p className="text-slate-400">Applying 20 years of UX expertise to your design challenge</p>
+          <div className="mt-4 text-sm text-slate-500 max-w-md">
+            <strong>Challenge:</strong> "{(() => {
+              const contextKey = `strategist_context_${id}`;
+              const stored = localStorage.getItem(contextKey);
+              return stored ? JSON.parse(stored).userChallenge : 'Analyzing design...';
+            })()}"
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // STRATEGIST MODE: Results display
+  if (isStrategistMode && strategistAnalysis && analysisData) {
+    const contextKey = `strategist_context_${id}`;
+    const storedContext = localStorage.getItem(contextKey);
+    const userChallenge = storedContext ? JSON.parse(storedContext).userChallenge : "Design challenge analysis";
+
+    return (
+      <StrategistResultsDisplay 
+        traditionalAnnotations={analysisData.annotations || []}
+        strategistAnalysis={strategistAnalysis}
+        userChallenge={userChallenge}
+      />
+    );
+  }
+
+  // EXISTING FUNCTIONALITY: Modular interface when feature flag is enabled or beta parameter is present
   if (useModularInterface || betaMode) {
     try {
       return <ModularAnalysisInterface />;
@@ -65,6 +206,35 @@ const AnalysisResults = () => {
         
         {/* Testing Options */}
         <div className="space-y-3 mb-6">
+          {/* NEW: UX Strategist Option */}
+          <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
+            <div className="flex items-center justify-center mb-3">
+              <span className="text-purple-600 dark:text-purple-400 text-sm font-medium">
+                🎭 20-Year UX Strategist Available!
+              </span>
+            </div>
+            <button 
+              onClick={() => {
+                // Check if we have any analysis to enhance
+                const currentUrl = window.location.href;
+                if (currentUrl.includes('/analysis/')) {
+                  // We're on a results page, enable strategist mode
+                  window.location.href = currentUrl.replace(/[?&]beta=true/, '') + 
+                    (currentUrl.includes('?') ? '&' : '?') + 'strategist=true&beta=true';
+                } else {
+                  // We're on the completion page, go to new analysis
+                  window.location.href = '/analysis';
+                }
+              }}
+              className="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+            >
+              Get Expert UX Strategy
+            </button>
+            <p className="text-xs text-purple-600 dark:text-purple-400 mt-2">
+              Business-focused recommendations • Confidence scores • Implementation roadmap
+            </p>
+          </div>
+
           {/* Modular Interface */}
           <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
             <div className="flex items-center justify-center mb-3">
