@@ -10,6 +10,7 @@ import { AnalysisStudioLayout } from './studio/AnalysisStudioLayout';
 import { FigmaUploadLayout } from './figma/FigmaUploadLayout';
 import { SimplifiedContextInput } from './workflow/components/SimplifiedContextInput';
 import { TabBasedResultsLayout } from './workflow/components/TabBasedResultsLayout';
+import { FigmaInspiredUploadInterface } from './workflow/components/FigmaInspiredUploadInterface';
 import { useState } from 'react';
 
 export const AnalysisWorkflow = () => {
@@ -42,36 +43,7 @@ export const AnalysisWorkflow = () => {
 
   // Use enhanced upload layout for upload step when feature flag is enabled
   if ((figmaUIEnabled || figmaMode) && workflow.currentStep === 'upload') {
-    return (
-      <div className="h-full flex flex-col">
-        <div className="flex-1 flex items-center justify-center p-6">
-          <div className="max-w-2xl w-full space-y-6">
-            <div className="text-center space-y-4">
-              <h1 className="text-3xl font-bold">Start Your UX Analysis</h1>
-              <p className="text-muted-foreground text-lg">
-                Upload your design images and provide context to get AI-powered insights
-              </p>
-            </div>
-            
-            {/* Integrated Chat for Context */}
-            <div className="bg-background border rounded-lg p-6">
-              <SimplifiedContextInput 
-                analysisContext={workflow.analysisContext}
-                onAnalysisContextChange={workflow.setAnalysisContext}
-                onAnalyze={async () => {
-                  if (workflow.selectedImages.length > 0 && workflow.analysisContext.trim()) {
-                    workflow.goToStep('analyzing');
-                  }
-                }}
-                canAnalyze={workflow.selectedImages.length > 0 && workflow.analysisContext.trim().length > 0}
-                isAnalyzing={workflow.isAnalyzing}
-                uploadedImageCount={workflow.selectedImages.length}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <FigmaInspiredUploadInterface workflow={workflow} />;
   }
 
   // Use Figma layout for annotate step when feature flag is enabled
