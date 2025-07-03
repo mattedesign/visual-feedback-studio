@@ -23,7 +23,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
-import { GlobalChatBar } from "@/components/layout/GlobalChatBar";
+
 
 // Lazy load the knowledge base population page to prevent initialization on app load
 const KnowledgeBasePopulation = lazy(() => import("./pages/KnowledgeBasePopulation"));
@@ -86,8 +86,6 @@ const App = () => {
                         </div>
                       </SidebarInset>
                       
-                      {/* Global Chat Component */}
-                      <GlobalChatBar />
                     </>
                   </AuthGuard>
                 } />

@@ -1,12 +1,10 @@
 import React, { useState, useRef } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Upload, File, MessageSquare, X, Image as ImageIcon } from 'lucide-react';
-import { SimplifiedContextInput } from './SimplifiedContextInput';
+import { Upload, X, Image as ImageIcon, Plus, Send, Sparkles, Zap, Brain } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { useUploadLogic } from '@/hooks/useUploadLogic';
-import { UploadTestHelper } from './UploadTestHelper';
 
 interface FigmaInspiredUploadInterfaceProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -15,8 +13,8 @@ interface FigmaInspiredUploadInterfaceProps {
 export const FigmaInspiredUploadInterface: React.FC<FigmaInspiredUploadInterfaceProps> = ({
   workflow
 }) => {
-  const [activeTab, setActiveTab] = useState('files');
   const [isDragOver, setIsDragOver] = useState(false);
+  const [message, setMessage] = useState(workflow.analysisContext || '');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Enhanced file upload handler
@@ -99,188 +97,253 @@ export const FigmaInspiredUploadInterface: React.FC<FigmaInspiredUploadInterface
     workflow.selectImages(newImages);
   };
 
-  const canAnalyze = workflow.selectedImages.length > 0 && workflow.analysisContext.trim().length > 0;
+  const handleSendMessage = () => {
+    if (!message.trim() || workflow.selectedImages.length === 0) return;
+    
+    workflow.setAnalysisContext(message);
+    workflow.goToStep('analyzing');
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const canAnalyze = workflow.selectedImages.length > 0 && message.trim().length > 0;
 
   return (
-    <div className="h-full flex flex-col bg-background">
-      {/* Header */}
-      <div className="border-b border-border p-6">
-        <h1 className="text-2xl font-bold">Start Your Analysis</h1>
-        <p className="text-muted-foreground mt-1">
-          Upload your design files and add context to get AI-powered insights
-        </p>
-      </div>
+    <div className="h-full flex bg-background">
+      {/* Left Panel - Image Grid */}
+      <div className="w-80 border-r border-border flex flex-col">
+        {/* Header */}
+        <div className="p-4 border-b border-border">
+          <h2 className="font-semibold text-lg">Design Files</h2>
+          <p className="text-sm text-muted-foreground">
+            {workflow.selectedImages.length}/5 uploaded
+          </p>
+        </div>
 
-      {/* Main Content */}
-      <div className="flex-1 p-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="files" className="flex items-center gap-2">
-              <File className="w-4 h-4" />
-              Files
-            </TabsTrigger>
-            <TabsTrigger value="annotations" className="flex items-center gap-2">
-              <ImageIcon className="w-4 h-4" />
-              Annotations
-            </TabsTrigger>
-            <TabsTrigger value="context" className="flex items-center gap-2">
-              <MessageSquare className="w-4 h-4" />
-              Add Context
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Files Tab */}
-          <TabsContent value="files" className="mt-6 space-y-6">
-            {/* Test Helper */}
-            <UploadTestHelper />
+        {/* Upload Area */}
+        <div className="p-4">
+          <div
+            className={`border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer ${
+              isDragOver
+                ? 'border-primary bg-primary/5 scale-[1.02]'
+                : 'border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/30'
+            } ${
+              isProcessing ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => !isProcessing && fileInputRef.current?.click()}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,.svg"
+              multiple
+              onChange={handleFileInputChange}
+              className="hidden"
+              disabled={isProcessing}
+            />
             
-            {/* Drag and Drop Area */}
-            <Card>
-              <CardContent className="p-8">
-                <div
-                  className={`border-2 border-dashed rounded-lg p-8 text-center transition-all cursor-pointer ${
-                    isDragOver
-                      ? 'border-primary bg-primary/5 scale-[1.02]'
-                      : 'border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/30'
-                  } ${
-                    isProcessing ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  onClick={() => !isProcessing && fileInputRef.current?.click()}
-                >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*,.svg"
-                    multiple
-                    onChange={handleFileInputChange}
-                    className="hidden"
-                    disabled={isProcessing}
-                  />
-                  
-                  <Upload className={`w-12 h-12 mx-auto mb-4 ${
-                    isDragOver ? 'text-primary' : 'text-muted-foreground'
-                  }`} />
-                  
-                  <h3 className="text-lg font-semibold mb-2">
-                    {isDragOver ? 'Drop files here!' : 'Upload Design Files'}
-                  </h3>
-                  
-                  <p className="text-muted-foreground mb-4">
-                    Drag and drop your images here, or click to browse
-                  </p>
-                  
-                  <p className="text-sm text-muted-foreground">
-                    Supports PNG, JPG, SVG, WebP • Up to 5 files
-                  </p>
-                  
-                  {isProcessing && (
-                    <p className="text-sm text-primary mt-2">Processing upload...</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Uploaded Files Preview */}
-            {workflow.selectedImages.length > 0 && (
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="font-semibold mb-4">
-                    Uploaded Files ({workflow.selectedImages.length}/5)
-                  </h3>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {workflow.selectedImages.map((image, index) => (
-                      <div key={index} className="relative group">
-                        <div className="aspect-square bg-muted rounded-lg overflow-hidden">
-                          <img
-                            src={image}
-                            alt={`Uploaded file ${index + 1}`}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
-                        </div>
-                        
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          className="absolute top-2 right-2 w-6 h-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => removeImage(index)}
-                        >
-                          <X className="w-3 h-3" />
-                        </Button>
-                        
-                        <p className="text-xs text-muted-foreground mt-2 truncate">
-                          Image {index + 1}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          {/* Annotations Tab */}
-          <TabsContent value="annotations" className="mt-6">
-            <Card>
-              <CardContent className="p-8 text-center">
-                <ImageIcon className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-semibold mb-2">Annotations Preview</h3>
-                <p className="text-muted-foreground">
-                  Upload files and start analysis to see annotations here
-                </p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Add Context Tab */}
-          <TabsContent value="context" className="mt-6">
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="font-semibold mb-4">Analysis Context</h3>
-                <SimplifiedContextInput 
-                  analysisContext={workflow.analysisContext}
-                  onAnalysisContextChange={workflow.setAnalysisContext}
-                  onAnalyze={async () => {
-                    if (canAnalyze) {
-                      workflow.goToStep('analyzing');
-                    }
-                  }}
-                  canAnalyze={canAnalyze}
-                  isAnalyzing={workflow.isAnalyzing}
-                  uploadedImageCount={workflow.selectedImages.length}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-
-      {/* Bottom Action Bar */}
-      <div className="border-t border-border p-6">
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            {workflow.selectedImages.length > 0 && (
-              <span>{workflow.selectedImages.length} file(s) uploaded</span>
+            <Upload className={`w-8 h-8 mx-auto mb-2 ${
+              isDragOver ? 'text-primary' : 'text-muted-foreground'
+            }`} />
+            
+            <p className="text-sm font-medium mb-1">
+              {isDragOver ? 'Drop here!' : 'Upload Files'}
+            </p>
+            
+            <p className="text-xs text-muted-foreground">
+              PNG, JPG, SVG, WebP
+            </p>
+            
+            {isProcessing && (
+              <p className="text-xs text-primary mt-2">Processing...</p>
             )}
           </div>
-          
-          <Button
-            onClick={() => {
-              if (canAnalyze) {
-                workflow.goToStep('analyzing');
-              }
-            }}
-            disabled={!canAnalyze || workflow.isAnalyzing}
-            size="lg"
-          >
-            {workflow.isAnalyzing ? 'Analyzing...' : 'Start Analysis'}
-          </Button>
+        </div>
+
+        {/* Image Grid */}
+        <div className="flex-1 p-4 overflow-y-auto">
+          {workflow.selectedImages.length > 0 ? (
+            <div className="grid grid-cols-2 gap-3">
+              {workflow.selectedImages.map((image, index) => (
+                <div key={index} className="relative group">
+                  <div className="aspect-square bg-muted rounded-lg overflow-hidden border-2 border-transparent hover:border-primary/20 transition-colors">
+                    <img
+                      src={image}
+                      alt={`Design ${index + 1}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                  
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="absolute top-1 right-1 w-5 h-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => removeImage(index)}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                  
+                  <p className="text-xs text-muted-foreground mt-1 text-center">
+                    Design {index + 1}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-muted-foreground py-8">
+              <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p className="text-sm">No files uploaded yet</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Main Canvas Area */}
+      <div className="flex-1 flex flex-col">
+        {/* Canvas Header */}
+        <div className="p-6 border-b border-border">
+          <h1 className="text-2xl font-bold">Design Analysis Studio</h1>
+          <p className="text-muted-foreground mt-1">
+            Upload your designs and describe what you'd like to analyze
+          </p>
+        </div>
+
+        {/* Canvas Content */}
+        <div className="flex-1 flex items-center justify-center p-8">
+          {workflow.selectedImages.length > 0 ? (
+            <div className="w-full max-w-4xl">
+              {/* Preview of first image */}
+              <div className="relative bg-muted/30 rounded-xl p-8 mb-6">
+                <div className="aspect-video bg-white rounded-lg shadow-lg overflow-hidden max-w-2xl mx-auto">
+                  <img
+                    src={workflow.selectedImages[0]}
+                    alt="Primary design"
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                </div>
+                
+                {workflow.selectedImages.length > 1 && (
+                  <div className="absolute bottom-4 right-4">
+                    <div className="bg-background/80 backdrop-blur-sm rounded-lg px-3 py-1 text-sm text-muted-foreground">
+                      +{workflow.selectedImages.length - 1} more
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Analysis Ready State */}
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full mb-4">
+                  <Sparkles className="w-8 h-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Ready for Analysis</h3>
+                <p className="text-muted-foreground mb-6">
+                  Your designs are uploaded. Add context below to start the AI analysis.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center max-w-md">
+              {/* Empty State */}
+              <div className="relative mb-6">
+                <div className="w-32 h-32 bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 rounded-full mx-auto flex items-center justify-center relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse"></div>
+                  
+                  <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center relative z-10">
+                    <Upload className="w-10 h-10 text-primary drop-shadow-lg" />
+                  </div>
+                  
+                  <div className="absolute top-2 right-6 w-6 h-6 bg-white/30 rounded-full flex items-center justify-center">
+                    <Sparkles className="w-3 h-3 text-primary" />
+                  </div>
+                  <div className="absolute bottom-4 left-4 w-5 h-5 bg-white/30 rounded-full flex items-center justify-center">
+                    <Zap className="w-2.5 h-2.5 text-primary" />
+                  </div>
+                  <div className="absolute top-6 left-2 w-4 h-4 bg-white/30 rounded-full flex items-center justify-center">
+                    <Brain className="w-2 h-2 text-primary" />
+                  </div>
+                </div>
+              </div>
+              
+              <h3 className="text-2xl font-bold mb-2">Upload Your Designs</h3>
+              <p className="text-muted-foreground mb-6">
+                Start by uploading your design files using the panel on the left. 
+                Then describe what you'd like to analyze.
+              </p>
+              
+              <div className="bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl p-4 border border-primary/10">
+                <p className="text-sm text-muted-foreground">
+                  💡 Tip: Upload 2-5 images for the best analysis results
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Bottom Chat Bar */}
+      <div className="absolute bottom-0 left-80 right-0 p-6 bg-background/95 backdrop-blur-sm border-t border-border">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex gap-3 items-end">
+            <div className="flex-1">
+              <Input
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder={
+                  workflow.selectedImages.length > 0 
+                    ? "Describe what you'd like to analyze about these designs..."
+                    : "Upload designs first, then describe your analysis goals..."
+                }
+                className="min-h-[3rem] text-base resize-none"
+                disabled={workflow.selectedImages.length === 0 || workflow.isAnalyzing}
+              />
+              
+              {workflow.selectedImages.length > 0 && (
+                <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span>{workflow.selectedImages.length} design{workflow.selectedImages.length !== 1 ? 's' : ''} ready</span>
+                  </div>
+                  <span>•</span>
+                  <span>AI-powered analysis with 272+ UX research studies</span>
+                </div>
+              )}
+            </div>
+            
+            <Button
+              onClick={handleSendMessage}
+              disabled={!canAnalyze || workflow.isAnalyzing}
+              size="lg"
+              className="px-6"
+            >
+              {workflow.isAnalyzing ? (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2 animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4 mr-2" />
+                  Analyze
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
