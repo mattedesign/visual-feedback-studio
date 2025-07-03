@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { FullScreenAnnotationModal } from './FullScreenAnnotationModal';
 import { 
   Upload, 
   Filter, 
@@ -17,7 +18,9 @@ import {
   RotateCcw,
   Camera,
   ArrowLeft,
-  ArrowRight
+  ArrowRight,
+  Eye,
+  X
 } from 'lucide-react';
 
 interface CenteredAnalysisInterfaceProps {
@@ -29,6 +32,8 @@ export const CenteredAnalysisInterface: React.FC<CenteredAnalysisInterfaceProps>
 }) => {
   const [analysisMessage, setAnalysisMessage] = useState(workflow.analysisContext || '');
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -79,6 +84,17 @@ export const CenteredAnalysisInterface: React.FC<CenteredAnalysisInterfaceProps>
 
   const canAnalyze = workflow.selectedImages.length > 0 && analysisMessage.trim().length > 0;
 
+  const openAnnotationModal = (imageIndex: number) => {
+    setCurrentImageIndex(imageIndex);
+    setIsModalOpen(true);
+  };
+
+  const removeImage = (index: number) => {
+    const newImages = [...workflow.selectedImages];
+    newImages.splice(index, 1);
+    workflow.selectImages(newImages);
+  };
+
   return (
     <div className="h-full flex flex-col bg-background">
       {/* Header */}
@@ -124,50 +140,122 @@ export const CenteredAnalysisInterface: React.FC<CenteredAnalysisInterfaceProps>
           </div>
         </div>
 
-        {/* Upload Area */}
+        {/* Content Area */}
         <div className="flex-1 flex items-center justify-center p-12">
-          <div 
-            className={`w-full max-w-2xl border-2 border-dashed rounded-xl p-16 text-center transition-all cursor-pointer ${
-              isDragOver 
-                ? 'border-primary bg-primary/5' 
-                : 'border-muted-foreground/25 hover:border-muted-foreground/50'
-            }`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onClick={() => document.getElementById('file-upload')?.click()}
-          >
-            <input
-              id="file-upload"
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleFileUpload}
-              className="hidden"
-            />
-            
-            <div className="w-16 h-16 bg-muted/50 rounded-xl mx-auto mb-6 flex items-center justify-center">
-              <Upload className="w-8 h-8 text-muted-foreground" />
+          {workflow.selectedImages.length === 0 ? (
+            <div 
+              className={`w-full max-w-2xl border-2 border-dashed rounded-xl p-16 text-center transition-all cursor-pointer ${
+                isDragOver 
+                  ? 'border-primary bg-primary/5' 
+                  : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => document.getElementById('file-upload')?.click()}
+            >
+              <input
+                id="file-upload"
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+              
+              <div className="w-16 h-16 bg-muted/50 rounded-xl mx-auto mb-6 flex items-center justify-center">
+                <Upload className="w-8 h-8 text-muted-foreground" />
+              </div>
+              
+              <h3 className="text-lg font-medium mb-2">Upload your designs</h3>
+              <p className="text-muted-foreground">
+                Drop your design files here or click to browse
+              </p>
             </div>
-            
-            {workflow.selectedImages.length === 0 ? (
-              <>
-                <h3 className="text-lg font-medium mb-2">Upload your designs</h3>
-                <p className="text-muted-foreground">
-                  Drop your design files here or click to browse
-                </p>
-              </>
-            ) : (
-              <>
+          ) : (
+            <div className="w-full max-w-4xl">
+              {/* Image Thumbnails Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+                {workflow.selectedImages.map((image, index) => (
+                  <div key={index} className="group relative">
+                    <div 
+                      className="aspect-video bg-muted/50 rounded-xl overflow-hidden border border-border hover:border-primary/50 cursor-pointer transition-all hover:shadow-lg"
+                      onClick={() => openAnnotationModal(index)}
+                    >
+                      <img
+                        src={image}
+                        alt={`Design ${index + 1}`}
+                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                      />
+                      
+                      {/* Overlay */}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="bg-white rounded-full p-2 shadow-lg">
+                            <Eye className="w-4 h-4 text-primary" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Remove Button */}
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="absolute -top-2 -right-2 w-6 h-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity rounded-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeImage(index);
+                      }}
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                    
+                    {/* Image Number */}
+                    <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-medium">
+                      {index + 1}
+                    </div>
+                  </div>
+                ))}
+                
+                {/* Add More Button */}
+                <div
+                  className={`aspect-video border-2 border-dashed rounded-xl flex items-center justify-center cursor-pointer transition-all ${
+                    isDragOver 
+                      ? 'border-primary bg-primary/5' 
+                      : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30'
+                  }`}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => document.getElementById('file-upload-add')?.click()}
+                >
+                  <input
+                    id="file-upload-add"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <div className="text-center">
+                    <Upload className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">Add more</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Upload Summary */}
+              <div className="text-center">
                 <h3 className="text-lg font-medium mb-2">
-                  {workflow.selectedImages.length} file{workflow.selectedImages.length !== 1 ? 's' : ''} uploaded
+                  {workflow.selectedImages.length} design{workflow.selectedImages.length !== 1 ? 's' : ''} ready for analysis
                 </h3>
                 <p className="text-muted-foreground">
-                  Add more files or start your analysis below
+                  Click on any image to add annotations, or start your analysis below
                 </p>
-              </>
-            )}
-          </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Bottom Chat Area */}
@@ -224,6 +312,16 @@ export const CenteredAnalysisInterface: React.FC<CenteredAnalysisInterfaceProps>
           </div>
         </div>
       </div>
+
+      {/* Full Screen Annotation Modal */}
+      <FullScreenAnnotationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        images={workflow.selectedImages}
+        currentImageIndex={currentImageIndex}
+        onImageChange={setCurrentImageIndex}
+        workflow={workflow}
+      />
     </div>
   );
 };
