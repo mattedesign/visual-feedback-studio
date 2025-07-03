@@ -1,5 +1,6 @@
 // Enhanced Claude UX Strategist Engine with Multi-Model Orchestration
 import { ClaudeStrategistInput, EnhancedStrategistOutput, EnhancedRecommendation, VisionSummary, RAGMatch } from '@/types/strategistInput';
+import { multiModelOrchestrator, SynthesisResult } from './multiModelOrchestrator';
 
 // Legacy interface for backward compatibility
 interface StrategistInput {
@@ -34,6 +35,42 @@ export interface StrategistOutput {
 }
 
 class Claude20YearUXStrategistEngine {
+  // NEW: Multi-model orchestrated analysis
+  async enhanceWithMultiModelOrchestration(input: ClaudeStrategistInput): Promise<SynthesisResult> {
+    try {
+      console.log('🎭 Starting multi-model orchestrated analysis...');
+      
+      // Use the multi-model orchestrator for parallel AI processing
+      const orchestrationResult = await multiModelOrchestrator.orchestrateAnalysis(input);
+      
+      console.log('✅ Multi-model orchestration completed:', {
+        successfulModels: orchestrationResult.processingMetrics.successfulModels,
+        overallConfidence: orchestrationResult.overallConfidence,
+        totalTime: orchestrationResult.processingMetrics.totalTime
+      });
+      
+      return orchestrationResult;
+      
+    } catch (error) {
+      console.error('❌ Multi-model orchestration failed:', error);
+      
+      // Fallback to single enhanced analysis
+      const fallbackResult = await this.enhanceWithAdvancedInput(input);
+      
+      return {
+        synthesizedOutput: fallbackResult,
+        modelContributions: { claude: 1.0, gpt4o: 0, perplexity: 0, googleVision: 0 },
+        overallConfidence: fallbackResult.confidenceAssessment.overallConfidence,
+        processingMetrics: {
+          totalTime: Date.now(),
+          successfulModels: 1,
+          failedModels: ['gpt-4o', 'perplexity', 'google-vision'],
+          fallbacksUsed: ['single-model-fallback']
+        }
+      };
+    }
+  }
+
   // Enhanced strategist method with new input structure
   async enhanceWithAdvancedInput(input: ClaudeStrategistInput): Promise<EnhancedStrategistOutput> {
     try {
