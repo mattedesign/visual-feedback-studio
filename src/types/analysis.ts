@@ -258,6 +258,6 @@ export interface Analysis {
   businessGoals?: string[];
   targetAudience?: string;
   analysisPrompt?: string;
-  aiModelUsed?: string;
+  ai_model_used?: string;
   analysisCompletedAt?: string;
 }

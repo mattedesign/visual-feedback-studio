@@ -125,7 +125,7 @@ IMPORTANT: Respond with ONLY the JSON object, no additional text or explanation.
         body: {
           userChallenge: input.userChallenge,
           traditionalAnnotations: input.traditionalAnnotations,
-          model: 'claude-sonnet-4-20250514' // Use latest Claude 4 model
+          model: 'claude-opus-4-20250514' // Use latest Claude 4 model
         }
       });
 

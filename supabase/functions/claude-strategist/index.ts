@@ -51,7 +51,7 @@ serve(async (req) => {
   }
 
   try {
-    const { userChallenge, traditionalAnnotations, model = 'claude-sonnet-4-20250514' } = await req.json();
+    const { userChallenge, traditionalAnnotations, model = 'claude-opus-4-20250514' } = await req.json();
 
     if (!userChallenge) {
       return new Response(JSON.stringify({
@@ -218,6 +218,14 @@ async function callClaudeAPI(
       ]
     };
 
+    console.log('🔧 Request payload details:', {
+      model,
+      maxTokens: requestPayload.max_tokens,
+      messageCount: requestPayload.messages.length,
+      systemLength: requestPayload.system.length,
+      contentLength: systemPrompt.length
+    });
+
     // Enhanced API key debugging (copied from working analyze-design function)
     const originalLength = apiKey.length;
     const cleanApiKey = apiKey.trim().replace(/[\r\n\t]/g, '');
@@ -261,23 +269,35 @@ async function callClaudeAPI(
     const responseText = await response.text();
 
     if (!response.ok) {
-      console.error('❌ Claude API error:', {
+      console.error('❌ Claude API error details:', {
         status: response.status,
         statusText: response.statusText,
-        response: responseText.substring(0, 500)
+        headers: Object.fromEntries(response.headers.entries()),
+        responseLength: responseText.length,
+        responsePreview: responseText.substring(0, 1000)
       });
 
       let errorMessage = 'Claude API error';
+      let errorType = 'unknown';
+      
       try {
         const errorData = JSON.parse(responseText);
-        errorMessage = errorData.error?.message || errorMessage;
-      } catch {
+        errorMessage = errorData.error?.message || errorData.message || errorMessage;
+        errorType = errorData.error?.type || errorData.type || 'unknown';
+        
+        console.error('❌ Parsed error data:', {
+          type: errorType,
+          message: errorMessage,
+          fullError: errorData
+        });
+      } catch (parseError) {
+        console.error('❌ Failed to parse error response:', parseError);
         errorMessage = responseText.substring(0, 200);
       }
 
       return {
         success: false,
-        error: `Claude API failed (${response.status}): ${errorMessage}`
+        error: `Claude API failed (${response.status}): ${errorType} - ${errorMessage}`
       };
     }
 

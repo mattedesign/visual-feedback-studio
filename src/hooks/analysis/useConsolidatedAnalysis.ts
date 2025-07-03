@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { analysisErrorHandler } from '@/utils/analysisErrorHandler';
 import { analysisService } from '@/services/analysisService';
-import { saveAnalysisResults } from '@/services/analysisResultsService';
+// import { saveAnalysisResults } from '@/services/analysisResultsService'; // No longer needed - edge function handles saving
 import { aiEnhancedSolutionEngine } from '@/services/solutions/aiEnhancedSolutionEngine';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -214,32 +214,11 @@ export const useConsolidatedAnalysis = () => {
     // Phase 6: Progress to recommendations
     await simulatePhaseProgress('recommendations', 6000, 75, 90);
     
-    // Phase 7: Save results to database
-    updateProgress({ message: 'Saving results...' });
+    // Phase 7: Analysis results already saved by edge function
+    updateProgress({ message: 'Finalizing analysis...' });
     
-    const savedResultId = await analysisErrorHandler.withRetry(
-      () => saveAnalysisResults({
-        analysisId,
-        annotations: analysisResult.annotations || [],
-        images: input.imageUrls,
-        analysisContext: input.analysisContext,
-        enhancedContext: analysisResult.researchEnhanced ? {
-          knowledgeSourcesUsed: analysisResult.knowledgeSourcesUsed || 0,
-          citations: analysisResult.researchCitations || []
-        } : null,
-        wellDoneData: analysisResult.wellDone,
-        researchCitations: analysisResult.researchCitations || [],
-        knowledgeSourcesUsed: analysisResult.knowledgeSourcesUsed || 0,
-        aiModelUsed: 'claude-3-5-sonnet',
-        processingTimeMs: Date.now() - (analysisStartTime?.getTime() || Date.now())
-      }),
-      { maxRetries: 2, baseDelay: 1000, maxDelay: 3000, exponentialBackoff: true },
-      {
-        component: 'ConsolidatedAnalysis',
-        operation: 'saveResults',
-        analysisId
-      }
-    );
+    // Edge function already saved the results, just simulate completion
+    const savedResultId = analysisId; // Use analysisId as confirmation
 
     if (!savedResultId) {
       console.warn('⚠️ Failed to save to database, but analysis completed');

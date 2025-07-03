@@ -3,7 +3,7 @@ import { Annotation } from '@/types/analysis';
 import { useEnhancedAnalysis } from './useEnhancedAnalysis';
 import { toast } from 'sonner';
 import { EnhancedContext } from '@/services/analysis/enhancedRagService';
-import { saveAnalysisResults } from '@/services/analysisResultsService';
+// import { saveAnalysisResults } from '@/services/analysisResultsService'; // No longer needed - edge function handles saving
 import { aiEnhancedSolutionEngine } from '@/services/solutions/aiEnhancedSolutionEngine';
 import { analysisService } from '@/services/analysisService';
 import { subscriptionService } from '@/services/subscriptionService';
@@ -311,66 +311,41 @@ export const useAnalysisWorkflow = () => {
           setVisionElementsDetected(result.enhancedContext.visionAnalysis.uiElements.length);
         }
         
-        // 🔥 SAVE TO DATABASE: Store analysis results permanently
-        console.log('💾 Saving analysis results to database...');
-        const savedResultId = await saveAnalysisResults({
-          analysisId: analysisId,
-          annotations: result.annotations,
-          images: images,
-          analysisContext: analysisContext,
-          enhancedContext: result.enhancedContext,
-          wellDoneData: result.wellDone,
-          researchCitations: result.enhancedContext?.citations || [],
-          knowledgeSourcesUsed: result.enhancedContext?.knowledgeSourcesUsed || 0,
-          aiModelUsed: 'claude-3-5-sonnet',
-          processingTimeMs: Date.now()
-        });
-
-        if (savedResultId) {
-          console.log('✅ Analysis results saved to database successfully');
+        // 🔥 ANALYSIS RESULTS ALREADY SAVED: The edge function handles database storage
+        console.log('✅ Analysis results already saved by edge function');
+        
+        // 🤖 GENERATE AI-ENHANCED SOLUTIONS: Integrate the new solution engine
+        console.log('🤖 Generating AI-enhanced solutions...');
+        try {
+          const consultation = await aiEnhancedSolutionEngine.provideConsultation({
+            analysisResults: result.annotations,
+            userProblemStatement: undefined, // Can be added later via user input
+            analysisContext: analysisContext,
+            analysisId: analysisId,
+            userId: user?.id
+          });
           
-          // 🤖 GENERATE AI-ENHANCED SOLUTIONS: Integrate the new solution engine
-          console.log('🤖 Generating AI-enhanced solutions...');
-          try {
-            const consultation = await aiEnhancedSolutionEngine.provideConsultation({
-              analysisResults: result.annotations,
-              userProblemStatement: undefined, // Can be added later via user input
-              analysisContext: analysisContext,
-              analysisId: analysisId,
-              userId: user?.id
-            });
-            
-            console.log('✅ AI-enhanced consultation completed:', {
-              approach: consultation.approach,
-              confidence: consultation.confidence,
-              solutionCount: consultation.solutions.length
-            });
-            
-            setConsultationResults(consultation);
-            
-            // Store consultation in session for results page
-            sessionStorage.setItem('consultationResults', JSON.stringify(consultation));
-            
-          } catch (consultationError) {
-            console.error('⚠️ AI consultation failed, continuing without:', consultationError);
-          }
+          console.log('✅ AI-enhanced consultation completed:', {
+            approach: consultation.approach,
+            confidence: consultation.confidence,
+            solutionCount: consultation.solutions.length
+          });
           
-          toast.success('Analysis complete and saved! Redirecting to results...');
+          setConsultationResults(consultation);
           
-          // 🔥 ROUTE TO SAVED ANALYSIS: Use the permanent analysis ID
-          setTimeout(() => {
-            window.location.href = `/analysis/${analysisId}?beta=true`;
-          }, 1000);
-        } else {
-          console.warn('⚠️ Failed to save to database, but analysis completed');
-          // Store in sessionStorage as fallback
-          sessionStorage.setItem('currentAnalysisData', JSON.stringify(analysisResultsWithWellDone));
+          // Store consultation in session for results page
+          sessionStorage.setItem('consultationResults', JSON.stringify(consultation));
           
-          toast.success('Analysis complete! Redirecting to results...');
-          setTimeout(() => {
-            window.location.href = `/analysis/${analysisId}?beta=true`;
-          }, 1000);
+        } catch (consultationError) {
+          console.error('⚠️ AI consultation failed, continuing without:', consultationError);
         }
+        
+        toast.success('Analysis complete and saved! Redirecting to results...');
+        
+        // 🔥 ROUTE TO SAVED ANALYSIS: Use the permanent analysis ID
+        setTimeout(() => {
+          window.location.href = `/analysis/${analysisId}?beta=true`;
+        }, 1000);
         
       } else {
         console.error('❌ Enhanced analysis failed:', result);

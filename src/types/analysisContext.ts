@@ -7,7 +7,7 @@ export interface UserAnalysisContext {
 }
 
 export interface TechnicalAnalysisContext {
-  aiModelUsed?: string;
+  ai_model_used?: string;
   providerUsed?: string;
   analysisCompletedAt?: string;
   processingMetadata?: Record<string, any>;
