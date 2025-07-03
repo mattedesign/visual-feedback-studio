@@ -23,6 +23,39 @@ interface ImageAnnotations {
   annotations: UserAnnotation[];
 }
 
+// Helper function to save image URLs to uploaded_files table
+const saveImagesToUploadedFiles = async (imageUrls: string[], analysisId: string, userId?: string) => {
+  if (!userId) return;
+  
+  const { supabase } = await import('@/integrations/supabase/client');
+  
+  try {
+    const uploadRecords = imageUrls.map((url, index) => ({
+      analysis_id: analysisId,
+      user_id: userId,
+      file_name: `analysis-image-${index + 1}.jpg`,
+      file_type: 'image/jpeg',
+      file_size: 0, // Unknown for external URLs
+      storage_path: url,
+      upload_type: 'url',
+      public_url: url,
+      original_url: url
+    }));
+
+    const { error } = await supabase
+      .from('uploaded_files')
+      .insert(uploadRecords);
+
+    if (error) {
+      console.error('Error saving images to uploaded_files:', error);
+    } else {
+      console.log(`✅ Saved ${imageUrls.length} images to uploaded_files table`);
+    }
+  } catch (error) {
+    console.error('Error in saveImagesToUploadedFiles:', error);
+  }
+};
+
 export const useAnalysisWorkflow = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('upload');
@@ -258,6 +291,10 @@ export const useAnalysisWorkflow = () => {
         userId: user?.id,
         hasValidIds: !!(analysisId && user?.id)
       });
+
+      // ✅ NEW: Save image URLs to uploaded_files table for proper dashboard display
+      await saveImagesToUploadedFiles(images, analysisId, user?.id);
+      console.log('📁 Images saved to uploaded_files table for dashboard display');
 
       const userAnnotationsArray = imageAnnotations.flatMap(imageAnnotation => 
         imageAnnotation.annotations.map(annotation => ({

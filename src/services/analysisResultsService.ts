@@ -127,29 +127,42 @@ export const getUserAnalysisHistory = async (userId?: string): Promise<AnalysisR
       return [];
     }
 
-    // For each analysis result, fetch the associated uploaded files to get image URLs
+    // For each analysis result, fetch images from both sources (uploaded_files and analysis_results)
     const resultsWithImages = await Promise.all(
       analysisResults.map(async (result) => {
-        const { data: uploadedFiles, error: filesError } = await supabase
-          .from('uploaded_files')
-          .select('public_url')
-          .eq('analysis_id', result.analysis_id)
-          .eq('user_id', userId);
-
-        if (filesError) {
-          console.error('Error fetching uploaded files for analysis:', result.analysis_id, filesError);
-          // Return result with empty images array if file fetch fails
-          return { ...result, images: [] };
-        }
-
-        // Extract public URLs from uploaded files
-        const imageUrls = uploadedFiles?.map(file => file.public_url).filter(Boolean) || [];
+        let finalImages: string[] = [];
         
-        console.log(`🔍 Analysis ${result.analysis_id}: Found ${imageUrls.length} images`);
+        // First: Try to get images from uploaded_files table (new pattern)
+        try {
+          const { data: uploadedFiles, error: filesError } = await supabase
+            .from('uploaded_files')
+            .select('public_url')
+            .eq('analysis_id', result.analysis_id)
+            .eq('user_id', userId);
+
+          if (!filesError && uploadedFiles?.length > 0) {
+            const fileImages = uploadedFiles
+              .map(file => file.public_url)
+              .filter(Boolean);
+            finalImages.push(...fileImages);
+            console.log(`📁 Analysis ${result.analysis_id}: Found ${fileImages.length} images from uploaded_files`);
+          }
+        } catch (error) {
+          console.error('Error fetching uploaded files for analysis:', result.analysis_id, error);
+        }
+        
+        // Second: Fall back to images from analysis_results table (legacy pattern)
+        if (finalImages.length === 0 && result.images && Array.isArray(result.images)) {
+          const legacyImages = result.images.filter(Boolean);
+          finalImages.push(...legacyImages);
+          console.log(`📊 Analysis ${result.analysis_id}: Found ${legacyImages.length} images from analysis_results`);
+        }
+        
+        console.log(`🎯 Analysis ${result.analysis_id}: Total ${finalImages.length} images resolved`);
         
         return {
           ...result,
-          images: imageUrls
+          images: finalImages
         };
       })
     );
