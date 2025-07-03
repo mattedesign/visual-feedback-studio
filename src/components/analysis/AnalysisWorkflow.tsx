@@ -11,7 +11,7 @@ import { FigmaUploadLayout } from './figma/FigmaUploadLayout';
 import { SimplifiedContextInput } from './workflow/components/SimplifiedContextInput';
 import { TabBasedResultsLayout } from './workflow/components/TabBasedResultsLayout';
 import { FigmaInspiredUploadInterface } from './workflow/components/FigmaInspiredUploadInterface';
-import { EnhancedFigmaInterface } from './figma/EnhancedFigmaInterface';
+import { CenteredAnalysisInterface } from './figma/CenteredAnalysisInterface';
 import { useState } from 'react';
 
 export const AnalysisWorkflow = () => {
@@ -42,9 +42,9 @@ export const AnalysisWorkflow = () => {
     return null;
   }
 
-  // Use enhanced upload layout for upload step when feature flag is enabled
+  // Use centered interface for upload step when feature flag is enabled
   if ((figmaUIEnabled || figmaMode) && workflow.currentStep === 'upload') {
-    return <EnhancedFigmaInterface workflow={workflow} />;
+    return <CenteredAnalysisInterface workflow={workflow} />;
   }
 
   // Use Figma layout for annotate step when feature flag is enabled
