@@ -38,14 +38,14 @@ export const AnalysisWorkflow = () => {
     return null;
   }
 
-  // NEW: Use Figma layout for upload step when feature flag is enabled
-  if ((figmaUIEnabled || figmaMode) && workflow.currentStep === 'upload') {
-    console.log('✅ Using Figma Upload Layout');
+  // NEW: Use Figma layout for upload AND annotate steps when feature flag is enabled
+  if ((figmaUIEnabled || figmaMode) && (workflow.currentStep === 'upload' || workflow.currentStep === 'annotate')) {
+    console.log('✅ Using Figma Upload Layout for step:', workflow.currentStep);
     return <FigmaUploadLayout workflow={workflow} />;
   }
 
-  // For upload and annotate steps, use the studio layout
-  if (workflow.currentStep === 'upload' || workflow.currentStep === 'annotate') {
+  // For upload and annotate steps, use the studio layout (only when Figma is NOT enabled)
+  if ((workflow.currentStep === 'upload' || workflow.currentStep === 'annotate') && !(figmaUIEnabled || figmaMode)) {
     return (
       <AnalysisStudioLayout 
         workflow={workflow}
