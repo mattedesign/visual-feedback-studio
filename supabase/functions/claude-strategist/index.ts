@@ -72,13 +72,19 @@ serve(async (req) => {
       annotationsCount: traditionalAnnotations?.length || 0
     });
 
-    // Get Claude API key from environment
+    // Get Claude API key from environment with enhanced debugging
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
+    console.log('🔍 CLAUDE API KEY DEBUG:');
+    console.log('========================');
+    console.log('API key exists:', !!anthropicApiKey);
+    console.log('API key length:', anthropicApiKey?.length || 0);
+    console.log('API key starts with:', anthropicApiKey?.substring(0, 10));
+    
     if (!anthropicApiKey) {
-      console.error('❌ ANTHROPIC_API_KEY not found');
+      console.error('❌ ANTHROPIC_API_KEY not found in environment');
       return new Response(JSON.stringify({
         success: false,
-        error: 'Claude API key not configured'
+        error: 'Anthropic API key not configured - check Supabase secrets'
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -200,11 +206,36 @@ async function callClaudeAPI(
       ]
     };
 
+    // Enhanced API key debugging (copied from working analyze-design function)
+    const originalLength = apiKey.length;
+    const cleanApiKey = apiKey.trim().replace(/[\r\n\t]/g, '');
+    const preview = cleanApiKey.substring(0, 15);
+    const hasWhitespace = apiKey !== cleanApiKey || /\s/.test(apiKey);
+    const hasSpecialChars = /[\r\n\t\f\v]/.test(apiKey);
+    const startsCorrectly = cleanApiKey.startsWith('sk-ant-');
+    
+    console.log('🔍 DETAILED CLAUDE API KEY DEBUG:');
+    console.log('=================================');
+    console.log(`   Original length: ${originalLength}`);
+    console.log(`   Clean length: ${cleanApiKey.length}`);
+    console.log(`   Preview: "${preview}..."`);
+    console.log(`   Starts with 'sk-ant-': ${startsCorrectly ? '✅' : '❌'}`);
+    console.log(`   Has whitespace: ${hasWhitespace ? '⚠️  YES' : '✅ NO'}`);
+    console.log(`   Has special chars: ${hasSpecialChars ? '⚠️  YES' : '✅ NO'}`);
+    
+    if (!startsCorrectly) {
+      console.error(`   ❌ INVALID FORMAT - key should start with 'sk-ant-' but starts with '${cleanApiKey.substring(0, 8)}'`);
+      return {
+        success: false,
+        error: 'Invalid Claude API key format. Must start with "sk-ant-"'
+      };
+    }
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey.trim()}`,
+        'Authorization': `Bearer ${cleanApiKey}`,
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify(requestPayload)
