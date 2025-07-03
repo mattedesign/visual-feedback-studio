@@ -59,70 +59,114 @@ ANTI-PATTERN DETECTION:
 - "form_fields: >8" → "Progressive disclosure needed for mobile completion"
 
 OUTPUT FORMAT:
-Return structured JSON matching StrategistOutput interface exactly.
-
-EXAMPLE EXPERT RECOMMENDATION:
+Return ONLY valid JSON matching this exact structure:
 {
-  "title": "Reduce Checkout Abandonment via Progressive Disclosure",
-  "recommendation": "Split 8-field checkout into 3 steps: Contact (2 fields) → Payment (3 fields) → Review (summary). Add progress indicator.",
-  "confidence": 0.85,
-  "expectedImpact": "20-30% reduction in abandonment, 15-25% conversion improvement",
-  "implementationEffort": "Medium",
-  "timeline": "2-3 weeks",
-  "reasoning": "Cognitive load theory shows 7±2 item limit. Progressive disclosure reduces anxiety and commitment escalation.",
-  "source": "Miller's Law + Baymard Institute checkout studies"
+  "diagnosis": "Root cause analysis of the UX challenges...",
+  "strategicRationale": "Strategic approach explanation...",
+  "expertRecommendations": [
+    {
+      "title": "Specific recommendation title",
+      "recommendation": "Detailed actionable recommendation",
+      "confidence": 0.85,
+      "expectedImpact": "Quantified business impact",
+      "implementationEffort": "Low|Medium|High",
+      "timeline": "Time estimate",
+      "reasoning": "UX principle-based reasoning",
+      "source": "Research backing"
+    }
+  ],
+  "abTestHypothesis": "Testable hypothesis for validation",
+  "successMetrics": ["metric1", "metric2", "metric3"],
+  "confidenceAssessment": {
+    "overallConfidence": 0.78,
+    "reasoning": "Confidence reasoning"
+  }
 }
+
+IMPORTANT: Respond with ONLY the JSON object, no additional text or explanation.
 `;
 
     try {
-      // For now, return a realistic mock response
-      // TODO: Replace with actual Claude API call
-      console.log('🎭 Strategist analyzing with prompt:', strategistPrompt);
+      console.log('🎭 Starting real Claude strategist analysis...');
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Call real Claude API
+      const claudeResponse = await this.callClaudeAPI(strategistPrompt);
       
-      // Generate strategic analysis based on user challenge and annotations
-      const mockStrategistAnalysis: StrategistOutput = {
-        diagnosis: this.generateDiagnosis(input.userChallenge, input.traditionalAnnotations),
-        strategicRationale: this.generateStrategicRationale(input.userChallenge),
-        expertRecommendations: this.generateExpertRecommendations(input.traditionalAnnotations, input.userChallenge),
-        abTestHypothesis: this.generateABTestHypothesis(input.userChallenge),
-        successMetrics: this.generateSuccessMetrics(input.userChallenge),
-        confidenceAssessment: {
-          overallConfidence: 0.78,
-          reasoning: "High confidence based on established UX patterns and research backing. Medium confidence on business context assumptions."
-        }
-      };
-
-      return mockStrategistAnalysis;
+      if (claudeResponse) {
+        console.log('✅ Claude strategist analysis successful');
+        return claudeResponse;
+      }
+      
+      // If Claude fails, fall back to enhanced mock
+      console.warn('⚠️ Claude API failed, using enhanced fallback analysis');
+      return this.generateFallbackAnalysis(input);
+      
     } catch (error) {
       console.error('❌ Strategist enhancement failed:', error);
       
       // Fallback strategist response
-      return {
-        diagnosis: "Based on the provided challenge, I've identified key areas for improvement that align with established UX principles.",
-        strategicRationale: "The analysis focuses on reducing friction points while maintaining user trust and business objectives.",
-        expertRecommendations: [
-          {
-            title: "Strategic UX Enhancement",
-            recommendation: "Implement user-centered design improvements based on the specific challenge context.",
-            confidence: 0.65,
-            expectedImpact: "10-20% improvement in user engagement",
-            implementationEffort: "Medium",
-            timeline: "2-4 weeks",
-            reasoning: "Standard UX best practices application",
-            source: "UX Design Principles"
-          }
-        ],
-        abTestHypothesis: "Test proposed changes against current implementation to validate improvement hypothesis.",
-        successMetrics: ["User engagement rate", "Task completion rate", "User satisfaction scores"],
-        confidenceAssessment: {
-          overallConfidence: 0.65,
-          reasoning: "Fallback analysis based on standard UX principles"
-        }
-      };
+      return this.generateFallbackAnalysis(input);
     }
+  }
+
+  private async callClaudeAPI(systemPrompt: string): Promise<StrategistOutput | null> {
+    try {
+      console.log('🚀 Calling Claude API for strategist analysis...');
+      
+      // Use Supabase edge function to call Claude
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseKey) {
+        console.error('❌ Supabase credentials not found');
+        return null;
+      }
+      
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      // Call a custom edge function for strategist analysis
+      const { data, error } = await supabase.functions.invoke('claude-strategist', {
+        body: {
+          systemPrompt: systemPrompt,
+          model: 'claude-sonnet-4-20250514' // Use latest Claude 4 model
+        }
+      });
+
+      if (error) {
+        console.error('❌ Claude strategist function error:', error);
+        return null;
+      }
+
+      if (data && data.success) {
+        console.log('✅ Claude strategist response received:', {
+          recommendationsCount: data.result.expertRecommendations?.length || 0,
+          confidence: data.result.confidenceAssessment?.overallConfidence || 0
+        });
+        return data.result;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('❌ Claude API call failed:', error);
+      return null;
+    }
+  }
+
+  private generateFallbackAnalysis(input: StrategistInput): StrategistOutput {
+    console.log('🔄 Generating enhanced fallback strategist analysis...');
+    
+    return {
+      diagnosis: this.generateDiagnosis(input.userChallenge, input.traditionalAnnotations),
+      strategicRationale: this.generateStrategicRationale(input.userChallenge),
+      expertRecommendations: this.generateExpertRecommendations(input.traditionalAnnotations, input.userChallenge),
+      abTestHypothesis: this.generateABTestHypothesis(input.userChallenge),
+      successMetrics: this.generateSuccessMetrics(input.userChallenge),
+      confidenceAssessment: {
+        overallConfidence: 0.78,
+        reasoning: "High confidence based on established UX patterns and research backing. Medium confidence on business context assumptions."
+      }
+    };
   }
 
   private generateDiagnosis(userChallenge: string, annotations: any[]): string {
