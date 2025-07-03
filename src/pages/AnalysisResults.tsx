@@ -7,6 +7,7 @@ import SimpleAnalysisResults from '@/components/analysis/SimpleAnalysisResults';
 import { claude20YearStrategistEngine, StrategistOutput } from '@/services/ai/claudeUXStrategistEngine';
 import { StrategistResultsDisplay } from '@/components/analysis/results/StrategistResultsDisplay';
 import { FigmaInspiredAnalysisLayout } from '@/components/analysis/figma/FigmaInspiredAnalysisLayout';
+import { getAnalysisResults } from '@/services/analysisResultsService';
 import { toast } from 'sonner';
 
 const AnalysisResults = () => {
@@ -36,52 +37,43 @@ const AnalysisResults = () => {
     try {
       console.log('🎨 Loading analysis data for Figma UI:', id);
       
-      // For now, create mock data - in a real implementation, you'd fetch from Supabase
-      const mockAnalysisData = {
-        annotations: [
-          {
-            id: '1',
-            title: "Checkout Form Complexity",
-            feedback: "Multiple form fields create cognitive overload during payment",
-            severity: "critical",
-            category: "Forms"
-          },
-          {
-            id: '2',
-            title: "Trust Signal Placement",
-            feedback: "Security badges not visible at payment step",
-            severity: "important", 
-            category: "Trust"
-          },
-          {
-            id: '3',
-            title: "Payment Options Clarity",
-            feedback: "Available payment methods unclear until final step",
-            severity: "important",
-            category: "Payment"
-          },
-          {
-            id: '4',
-            title: "Mobile Checkout Flow",
-            feedback: "Form layout breaks on mobile devices",
-            severity: "critical",
-            category: "Mobile"
-          },
-          {
-            id: '5',
-            title: "Error Handling",
-            feedback: "Payment errors not clearly communicated",
-            severity: "important",
-            category: "Errors"
-          }
-        ]
+      // Fetch real analysis results from Supabase
+      const analysisResult = await getAnalysisResults(id);
+      
+      if (!analysisResult) {
+        console.warn('❌ No analysis results found for ID:', id);
+        toast.error('Analysis results not found');
+        return;
+      }
+
+      // Transform the Supabase data to match the Figma UI format
+      const transformedData = {
+        annotations: Array.isArray(analysisResult.annotations) 
+          ? analysisResult.annotations.map((annotation: any, index: number) => ({
+              id: annotation.id || `annotation-${index}`,
+              title: annotation.title || annotation.feedback?.substring(0, 50) || 'Analysis Issue',
+              feedback: annotation.feedback || annotation.description || 'No description available',
+              severity: annotation.severity || annotation.priority || 'medium',
+              category: annotation.category || annotation.type || 'General'
+            }))
+          : [],
+        images: analysisResult.images || [],
+        totalAnnotations: analysisResult.total_annotations || 0,
+        processingTime: analysisResult.processing_time_ms,
+        knowledgeSourcesUsed: analysisResult.knowledge_sources_used,
+        aiModel: analysisResult.ai_model_used,
+        createdAt: analysisResult.created_at
       };
 
-      setAnalysisData(mockAnalysisData);
-      console.log('✅ Analysis data loaded for Figma UI');
+      setAnalysisData(transformedData);
+      console.log('✅ Real analysis data loaded for Figma UI:', {
+        annotationCount: transformedData.annotations.length,
+        totalAnnotations: transformedData.totalAnnotations
+      });
       
     } catch (error) {
       console.error('❌ Failed to load analysis data:', error);
+      toast.error('Failed to load analysis data');
     }
   };
 
