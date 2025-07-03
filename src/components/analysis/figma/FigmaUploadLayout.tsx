@@ -55,16 +55,16 @@ export const FigmaUploadLayout: React.FC<FigmaUploadLayoutProps> = ({ workflow }
   });
 
   return (
-    <div className="h-screen bg-background text-foreground flex flex-col overflow-hidden">
+    <div className="h-full bg-background text-foreground flex flex-col overflow-hidden">
       {/* Top Navigation Bar */}
-      <div className="h-12 bg-sidebar border-b border-sidebar-border flex items-center justify-between px-4">
+      <div className="h-12 bg-muted border-b border-border flex items-center justify-between px-4">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <Brain className="h-5 w-5 text-primary" />
-            <span className="font-semibold">UX Analysis Studio</span>
+            <span className="font-semibold">Analysis Mode</span>
           </div>
           <Badge variant="outline" className="text-xs">
-            Figma Mode
+            Figma UI
           </Badge>
         </div>
         
@@ -72,9 +72,6 @@ export const FigmaUploadLayout: React.FC<FigmaUploadLayoutProps> = ({ workflow }
           <Button variant="ghost" size="sm" className="text-xs">
             <Settings className="h-4 w-4 mr-1" />
             Settings
-          </Button>
-          <Button variant="ghost" size="sm" className="text-xs">
-            <Menu className="h-4 w-4" />
           </Button>
         </div>
       </div>

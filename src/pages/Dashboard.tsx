@@ -129,12 +129,12 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="container mx-auto px-6 py-8">
+    <div className="p-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Analysis Dashboard</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-3xl font-bold tracking-tight">Analysis Dashboard</h1>
+          <p className="text-muted-foreground mt-2">
             Manage and review your UX analysis history
           </p>
         </div>
@@ -144,14 +144,12 @@ const Dashboard = () => {
             onClick={() => navigate('/hybrid-engine-test')}
             variant="outline"
             size="lg"
-            className="border-purple-300 text-purple-700 hover:bg-purple-50"
           >
             🧪 Test Hybrid Engine
           </Button>
           
           <Button
             onClick={handleNewAnalysis}
-            className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
             size="lg"
           >
             <Plus className="w-5 h-5 mr-2" />

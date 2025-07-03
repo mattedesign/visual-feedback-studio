@@ -79,10 +79,8 @@ export const AnalysisWorkflow = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
-      <div className="container mx-auto px-4 py-8">
-        {renderCurrentStep()}
-      </div>
+    <div className="h-full">
+      {renderCurrentStep()}
     </div>
   );
 };
