@@ -91,14 +91,26 @@ serve(async (req) => {
       });
     }
 
-    // Call Claude API
+    // Call Claude API with enhanced error logging
+    console.log('🔧 About to call Claude API with:', {
+      model,
+      promptLength: strategistPrompt.length,
+      apiKeyLength: anthropicApiKey.length,
+      apiKeyPreview: anthropicApiKey.substring(0, 15) + '...'
+    });
+    
     const claudeResponse = await callClaudeAPI(strategistPrompt, model, anthropicApiKey);
 
     if (!claudeResponse.success) {
-      console.error('❌ Claude API failed:', claudeResponse.error);
+      console.error('❌ Claude API failed with details:', {
+        error: claudeResponse.error,
+        model: model,
+        requestId: req.headers.get('x-request-id'),
+        timestamp: new Date().toISOString()
+      });
       return new Response(JSON.stringify({
         success: false,
-        error: claudeResponse.error
+        error: `Claude API Error: ${claudeResponse.error}`
       }), {
         status: 422,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
