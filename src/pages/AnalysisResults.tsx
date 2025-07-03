@@ -13,11 +13,13 @@ const AnalysisResults = () => {
   // Existing functionality
   const useModularInterface = useFeatureFlag('modular-analysis');
   const perplexityEnabled = useFeatureFlag('perplexity-integration');
+  const figmaUIEnabled = useFeatureFlag('figma-inspired-ui');
   
   // URL parameters
   const urlParams = new URLSearchParams(window.location.search);
   const betaMode = urlParams.get('beta') === 'true';
   const isStrategistMode = urlParams.get('strategist') === 'true';
+  const figmaMode = urlParams.get('figma') === 'true';
   
   // Strategist enhancement state
   const [strategistAnalysis, setStrategistAnalysis] = useState<StrategistOutput | null>(null);
@@ -27,12 +29,70 @@ const AnalysisResults = () => {
   // Get analysis ID from URL
   const { id } = useParams<{id: string}>();
 
-  // Load analysis data when strategist mode is enabled
+  // Load analysis data function for Figma mode
+  const loadAnalysisData = async () => {
+    if (!id) return;
+
+    try {
+      console.log('🎨 Loading analysis data for Figma UI:', id);
+      
+      // For now, create mock data - in a real implementation, you'd fetch from Supabase
+      const mockAnalysisData = {
+        annotations: [
+          {
+            id: '1',
+            title: "Checkout Form Complexity",
+            feedback: "Multiple form fields create cognitive overload during payment",
+            severity: "critical",
+            category: "Forms"
+          },
+          {
+            id: '2',
+            title: "Trust Signal Placement",
+            feedback: "Security badges not visible at payment step",
+            severity: "important", 
+            category: "Trust"
+          },
+          {
+            id: '3',
+            title: "Payment Options Clarity",
+            feedback: "Available payment methods unclear until final step",
+            severity: "important",
+            category: "Payment"
+          },
+          {
+            id: '4',
+            title: "Mobile Checkout Flow",
+            feedback: "Form layout breaks on mobile devices",
+            severity: "critical",
+            category: "Mobile"
+          },
+          {
+            id: '5',
+            title: "Error Handling",
+            feedback: "Payment errors not clearly communicated",
+            severity: "important",
+            category: "Errors"
+          }
+        ]
+      };
+
+      setAnalysisData(mockAnalysisData);
+      console.log('✅ Analysis data loaded for Figma UI');
+      
+    } catch (error) {
+      console.error('❌ Failed to load analysis data:', error);
+    }
+  };
+
+  // Load analysis data when strategist mode is enabled OR Figma mode is enabled
   useEffect(() => {
     if (isStrategistMode && id && !strategistAnalysis) {
       loadAnalysisAndEnhance();
+    } else if ((figmaUIEnabled || figmaMode) && id && !analysisData) {
+      loadAnalysisData();
     }
-  }, [isStrategistMode, id]);
+  }, [isStrategistMode, figmaUIEnabled, figmaMode, id]);
 
   const loadAnalysisAndEnhance = async () => {
     if (!id) return;
@@ -156,9 +216,6 @@ const AnalysisResults = () => {
   }
 
   // NEW: Figma-inspired UI with feature flag
-  const figmaUIEnabled = useFeatureFlag('figma-inspired-ui');
-  const figmaMode = urlParams.get('figma') === 'true';
-  
   console.log('🎨 Figma UI Check:', { figmaUIEnabled, figmaMode, currentURL: window.location.href });
   
   if (figmaUIEnabled || figmaMode) {
