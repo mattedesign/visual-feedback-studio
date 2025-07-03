@@ -154,6 +154,22 @@ const AnalysisResults = () => {
     );
   }
 
+  // NEW: Figma-inspired UI with feature flag
+  const figmaUIEnabled = useFeatureFlag('figma-inspired-ui');
+  const figmaMode = urlParams.get('figma') === 'true';
+  
+  if (figmaUIEnabled || figmaMode) {
+    // Import and use Figma-inspired layout
+    const { FigmaInspiredAnalysisLayout } = require('@/components/analysis/figma/FigmaInspiredAnalysisLayout');
+    return (
+      <FigmaInspiredAnalysisLayout 
+        analysisData={{ annotations: [] }} // Mock data for now
+        strategistAnalysis={strategistAnalysis}
+        userChallenge={id ? localStorage.getItem(`strategist_context_${id}`) : undefined}
+      />
+    );
+  }
+
   // EXISTING FUNCTIONALITY: Modular interface when feature flag is enabled or beta parameter is present
   if (useModularInterface || betaMode) {
     try {
