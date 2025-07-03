@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { SidebarUpload } from '../studio/SidebarUpload';
+import { StudioChat } from '../studio/StudioChat';
 import { 
   Upload, 
   FileImage, 
@@ -163,99 +164,131 @@ export const FigmaUploadLayout: React.FC<FigmaUploadLayoutProps> = ({ workflow }
                 </div>
                 
                 {/* Canvas Content */}
-                <div className="flex-1 flex items-center justify-center p-8">
+                <div className="flex-1 overflow-hidden">
                   {workflow.selectedImages.length > 0 ? (
-                    <Card className="w-full max-w-2xl">
-                      <CardHeader>
-                        <CardTitle className="text-center flex items-center justify-center gap-2">
-                          <Sparkles className="h-5 w-5 text-primary" />
-                          Ready to Analyze
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="text-center space-y-6">
-                        <p className="text-muted-foreground">
-                          {workflow.selectedImages.length} image{workflow.selectedImages.length !== 1 ? 's' : ''} uploaded and ready for AI analysis
-                        </p>
-                        
-                        <div className="grid grid-cols-3 gap-4 text-sm">
-                          <div className="flex flex-col items-center gap-2">
-                            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                              <Brain className="h-6 w-6 text-primary" />
+                    <div className="h-full flex flex-col">
+                      {/* Image Preview Grid */}
+                      <div className="flex-1 overflow-auto p-6">
+                        <div className="grid grid-cols-2 gap-4 max-w-4xl mx-auto">
+                          {workflow.selectedImages.slice(0, 4).map((image, index) => (
+                            <div 
+                              key={index}
+                              className={`relative bg-muted rounded-lg overflow-hidden border-2 transition-colors cursor-pointer ${
+                                workflow.activeImageUrl === image 
+                                  ? 'border-primary ring-2 ring-primary/20' 
+                                  : 'border-border hover:border-primary/50'
+                              }`}
+                              onClick={() => workflow.setActiveImage(image)}
+                            >
+                              <div className="aspect-video">
+                                <img
+                                  src={image}
+                                  alt={`Design ${index + 1}`}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    console.log('🔍 Image failed to load:', image);
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                              </div>
+                              <div className="absolute top-2 left-2">
+                                <Badge variant="secondary" className="text-xs">
+                                  Image {index + 1}
+                                </Badge>
+                              </div>
+                              {workflow.activeImageUrl === image && (
+                                <div className="absolute top-2 right-2">
+                                  <Badge variant="default" className="text-xs">
+                                    Active
+                                  </Badge>
+                                </div>
+                              )}
                             </div>
-                            <span>AI Analysis</span>
-                          </div>
-                          <div className="flex flex-col items-center gap-2">
-                            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                              <Zap className="h-6 w-6 text-primary" />
-                            </div>
-                            <span>Research-Backed</span>
-                          </div>
-                          <div className="flex flex-col items-center gap-2">
-                            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                              <Sparkles className="h-6 w-6 text-primary" />
-                            </div>
-                            <span>Expert Insights</span>
-                          </div>
+                          ))}
                         </div>
                         
-                        <Button 
-                          onClick={() => workflow.goToStep('annotate')}
-                          className="w-full"
-                          size="lg"
-                        >
-                          Start Analysis
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    <Card className="w-full max-w-2xl">
-                      <CardHeader>
-                        <CardTitle className="text-center flex items-center justify-center gap-2">
-                          <Upload className="h-5 w-5 text-muted-foreground" />
-                          Upload Your Designs
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="text-center space-y-6">
-                        <div className="relative">
-                          <div className="w-32 h-32 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent rounded-full mx-auto flex items-center justify-center relative overflow-hidden">
-                            <div className="w-20 h-20 bg-primary/10 backdrop-blur-sm rounded-full flex items-center justify-center">
-                              <Upload className="w-10 h-10 text-primary" />
-                            </div>
+                        {workflow.selectedImages.length > 4 && (
+                          <div className="text-center mt-4">
+                            <Badge variant="outline" className="text-xs">
+                              +{workflow.selectedImages.length - 4} more images
+                            </Badge>
                           </div>
-                        </div>
-                        
-                        <div className="space-y-4">
-                          <h3 className="text-xl font-semibold">
-                            Ready to Analyze Your Design?
-                          </h3>
-                          <p className="text-muted-foreground max-w-md mx-auto">
-                            Upload 2-5 design images to get AI-powered insights backed by 272+ UX research studies
-                          </p>
-                        </div>
-                        
-                        <div className="bg-muted rounded-xl p-4">
-                          <div className="flex items-center justify-center space-x-3 text-primary mb-2">
-                            <ChevronLeft className="w-4 h-4" />
-                            <span className="font-medium text-sm">Use the upload area in the left panel</span>
+                        )}
+                      </div>
+                      
+                      {/* Analysis Status */}
+                      <div className="p-6 border-t border-border bg-muted/50">
+                        <div className="max-w-4xl mx-auto flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-success rounded-full" />
+                              <span className="text-sm font-medium">
+                                {workflow.selectedImages.length} image{workflow.selectedImages.length !== 1 ? 's' : ''} ready
+                              </span>
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              Click images to select • Add context below to start analysis
+                            </div>
                           </div>
                           
-                          <div className="flex flex-wrap justify-center gap-3 text-xs text-muted-foreground mt-3">
-                            <div className="flex items-center space-x-1">
-                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                              <span>Multiple images</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                              <span>Drag & drop</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                              <span>PNG, JPG, SVG</span>
-                            </div>
+                          <div className="flex items-center gap-2">
+                            <Brain className="h-4 w-4 text-primary" />
+                            <span className="text-sm text-primary">AI Analysis Ready</span>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="h-full flex items-center justify-center p-8">
+                      <Card className="w-full max-w-2xl">
+                        <CardHeader>
+                          <CardTitle className="text-center flex items-center justify-center gap-2">
+                            <Upload className="h-5 w-5 text-muted-foreground" />
+                            Upload Your Designs
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="text-center space-y-6">
+                          <div className="relative">
+                            <div className="w-32 h-32 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent rounded-full mx-auto flex items-center justify-center relative overflow-hidden">
+                              <div className="w-20 h-20 bg-primary/10 backdrop-blur-sm rounded-full flex items-center justify-center">
+                                <Upload className="w-10 h-10 text-primary" />
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-4">
+                            <h3 className="text-xl font-semibold">
+                              Ready to Analyze Your Design?
+                            </h3>
+                            <p className="text-muted-foreground max-w-md mx-auto">
+                              Upload 2-5 design images to get AI-powered insights backed by 272+ UX research studies
+                            </p>
+                          </div>
+                          
+                          <div className="bg-muted rounded-xl p-4">
+                            <div className="flex items-center justify-center space-x-3 text-primary mb-2">
+                              <ChevronLeft className="w-4 h-4" />
+                              <span className="font-medium text-sm">Use the upload area in the left panel</span>
+                            </div>
+                            
+                            <div className="flex flex-wrap justify-center gap-3 text-xs text-muted-foreground mt-3">
+                              <div className="flex items-center space-x-1">
+                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <span>Multiple images</span>
+                              </div>
+                              <div className="flex items-center space-x-1">
+                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                <span>Drag & drop</span>
+                              </div>
+                              <div className="flex items-center space-x-1">
+                                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                                <span>PNG, JPG, SVG</span>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
                   )}
                 </div>
               </div>
@@ -350,6 +383,12 @@ export const FigmaUploadLayout: React.FC<FigmaUploadLayoutProps> = ({ workflow }
           </div>
         )}
       </div>
+      
+      {/* Studio Chat - Bottom Chat Bar */}
+      <StudioChat 
+        workflow={workflow}
+        sidebarCollapsed={leftPanelCollapsed}
+      />
       
       {/* Bottom Status Bar */}
       <div className="h-8 bg-muted/50 border-t border-border flex items-center justify-between px-4 text-xs text-muted-foreground">
