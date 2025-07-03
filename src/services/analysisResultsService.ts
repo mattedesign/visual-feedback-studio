@@ -97,7 +97,7 @@ export const getAnalysisWithResults = async (analysisId: string): Promise<Analys
 };
 
 /**
- * Fetch user's analysis history - returns analysis results
+ * Fetch user's analysis history - returns analysis results with image URLs
  */
 export const getUserAnalysisHistory = async (userId?: string): Promise<AnalysisResult[]> => {
   try {
@@ -111,18 +111,52 @@ export const getUserAnalysisHistory = async (userId?: string): Promise<AnalysisR
       userId = user.id;
     }
 
-    const { data, error } = await supabase
+    // Fetch analysis results and their associated uploaded files
+    const { data: analysisResults, error: analysisError } = await supabase
       .from('analysis_results')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching user analysis history:', error);
+    if (analysisError) {
+      console.error('Error fetching user analysis history:', analysisError);
       return [];
     }
 
-    return data || [];
+    if (!analysisResults || analysisResults.length === 0) {
+      return [];
+    }
+
+    // For each analysis result, fetch the associated uploaded files to get image URLs
+    const resultsWithImages = await Promise.all(
+      analysisResults.map(async (result) => {
+        const { data: uploadedFiles, error: filesError } = await supabase
+          .from('uploaded_files')
+          .select('public_url')
+          .eq('analysis_id', result.analysis_id)
+          .eq('user_id', userId);
+
+        if (filesError) {
+          console.error('Error fetching uploaded files for analysis:', result.analysis_id, filesError);
+          // Return result with empty images array if file fetch fails
+          return { ...result, images: [] };
+        }
+
+        // Extract public URLs from uploaded files
+        const imageUrls = uploadedFiles?.map(file => file.public_url).filter(Boolean) || [];
+        
+        console.log(`🔍 Analysis ${result.analysis_id}: Found ${imageUrls.length} images`);
+        
+        return {
+          ...result,
+          images: imageUrls
+        };
+      })
+    );
+
+    console.log(`📊 Retrieved ${resultsWithImages.length} analysis results with images populated`);
+    return resultsWithImages;
+
   } catch (error) {
     console.error('Error in getUserAnalysisHistory:', error);
     return [];
