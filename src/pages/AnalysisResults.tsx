@@ -10,6 +10,25 @@ import { FigmaInspiredAnalysisLayout } from '@/components/analysis/figma/FigmaIn
 import { getAnalysisResults } from '@/services/analysisResultsService';
 import { toast } from 'sonner';
 
+// 🔧 FIX: Utility function to clear persistent state and navigate to clean analysis
+const navigateToNewAnalysis = () => {
+  console.log('🔄 CLEAR STATE: Clearing all persistent analysis state');
+  // Clear session storage
+  sessionStorage.removeItem('consultationResults');
+  sessionStorage.removeItem('userProblemStatement');
+  sessionStorage.removeItem('currentAnalysisData');
+  
+  // Clear strategist context from localStorage
+  Object.keys(localStorage).forEach(key => {
+    if (key.startsWith('strategist_context_') || key.startsWith('share_')) {
+      localStorage.removeItem(key);
+    }
+  });
+  
+  // Navigate to clean analysis page
+  window.location.href = '/analysis';
+};
+
 const AnalysisResults = () => {
   // Existing functionality
   const useModularInterface = useFeatureFlag('modular-analysis');
@@ -231,7 +250,7 @@ const AnalysisResults = () => {
     } catch (error) {
       console.error('Modular interface failed, falling back to simple results:', error);
       // Fall back to simple results if modular interface fails
-      return <SimpleAnalysisResults onBack={() => window.location.href = '/analysis'} />;
+      return <SimpleAnalysisResults onBack={navigateToNewAnalysis} />;
     }
   }
   
@@ -293,7 +312,7 @@ const AnalysisResults = () => {
                     (currentUrl.includes('?') ? '&' : '?') + 'strategist=true&beta=true';
                 } else {
                   // We're on the completion page, go to new analysis
-                  window.location.href = '/analysis';
+                  navigateToNewAnalysis();
                 }
               }}
               className="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
@@ -368,7 +387,7 @@ const AnalysisResults = () => {
                   </div>
                 </div>
                 <button 
-                  onClick={() => window.location.href = '/analysis'}
+                  onClick={navigateToNewAnalysis}
                   className="w-full bg-gradient-to-r from-green-600 to-blue-600 text-white px-4 py-2 rounded-lg hover:from-green-700 hover:to-blue-700 transition-all text-sm font-medium"
                 >
                   Start Enhanced Analysis
@@ -380,13 +399,13 @@ const AnalysisResults = () => {
         
         <div className="space-y-3">
           <button 
-            onClick={() => window.location.href = '/analysis'}
+            onClick={navigateToNewAnalysis}
             className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
           >
             Start New Analysis
           </button>
           <button 
-            onClick={() => window.location.href = '/analysis'}
+            onClick={navigateToNewAnalysis}
             className="w-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
           >
             Back to Analysis

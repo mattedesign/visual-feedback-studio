@@ -117,6 +117,15 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = ({ isOpen, onClose 
                 <p className="text-gray-600 dark:text-gray-300 mb-4">No analyses yet</p>
                 <Button
                   onClick={() => {
+                    // 🔧 FIX: Clear persistent state before new analysis
+                    sessionStorage.removeItem('consultationResults');
+                    sessionStorage.removeItem('userProblemStatement');
+                    Object.keys(localStorage).forEach(key => {
+                      if (key.startsWith('strategist_context_')) {
+                        localStorage.removeItem(key);
+                      }
+                    });
+                    console.log('🔄 NEW ANALYSIS: Cleared state from history sidebar');
                     navigate('/analysis');
                     onClose();
                   }}

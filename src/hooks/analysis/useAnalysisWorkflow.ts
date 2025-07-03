@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Annotation } from '@/types/analysis';
 import { useEnhancedAnalysis } from './useEnhancedAnalysis';
 import { toast } from 'sonner';
@@ -78,6 +78,29 @@ export const useAnalysisWorkflow = () => {
   const [visionEnhanced, setVisionEnhanced] = useState<boolean>(false);
   const [visionConfidenceScore, setVisionConfidenceScore] = useState<number | undefined>(undefined);
   const [visionElementsDetected, setVisionElementsDetected] = useState<number>(0);
+  
+  // 🔧 FIX: Reset workflow state when component mounts (user navigates to analysis page)
+  useEffect(() => {
+    console.log('🔄 WORKFLOW INITIALIZATION: Ensuring clean state for new analysis');
+    setCurrentStep('upload');
+    setImages([]);
+    setActiveImageUrl(null);
+    setUserAnnotations({});
+    setImageAnnotations([]);
+    setAnalysisContext('');
+    setAiAnnotations([]);
+    setAnalysisResults(null);
+    setConsultationResults(null);
+    setEnhancedContext(null);
+    setRagEnhanced(false);
+    setKnowledgeSourcesUsed(0);
+    setResearchCitations([]);
+    setVisionEnhanced(false);
+    setVisionConfidenceScore(undefined);
+    setVisionElementsDetected(0);
+    setIsAnalyzing(false);
+    setCurrentAnalysis(null);
+  }, []); // Only run on mount
 
   const enhancedAnalysis = useEnhancedAnalysis({ currentAnalysis });
 

@@ -93,6 +93,16 @@ const Dashboard = () => {
   });
 
   const handleNewAnalysis = () => {
+    // 🔧 FIX: Clear any persistent analysis state before starting new analysis
+    sessionStorage.removeItem('consultationResults');
+    sessionStorage.removeItem('userProblemStatement');
+    // Clear any strategist context from localStorage
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('strategist_context_')) {
+        localStorage.removeItem(key);
+      }
+    });
+    console.log('🔄 NEW ANALYSIS: Cleared persistent state, navigating to clean upload interface');
     navigate('/analysis');
   };
 
