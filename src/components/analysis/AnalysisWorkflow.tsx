@@ -11,6 +11,7 @@ import { FigmaUploadLayout } from './figma/FigmaUploadLayout';
 import { SimplifiedContextInput } from './workflow/components/SimplifiedContextInput';
 import { TabBasedResultsLayout } from './workflow/components/TabBasedResultsLayout';
 import { FigmaInspiredUploadInterface } from './workflow/components/FigmaInspiredUploadInterface';
+import { EnhancedFigmaInterface } from './figma/EnhancedFigmaInterface';
 import { useState } from 'react';
 
 export const AnalysisWorkflow = () => {
@@ -43,7 +44,7 @@ export const AnalysisWorkflow = () => {
 
   // Use enhanced upload layout for upload step when feature flag is enabled
   if ((figmaUIEnabled || figmaMode) && workflow.currentStep === 'upload') {
-    return <FigmaInspiredUploadInterface workflow={workflow} />;
+    return <EnhancedFigmaInterface workflow={workflow} />;
   }
 
   // Use Figma layout for annotate step when feature flag is enabled
