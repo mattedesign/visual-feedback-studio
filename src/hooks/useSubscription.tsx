@@ -4,7 +4,7 @@ import { useAuth } from './useAuth';
 
 interface Subscription {
   id: string;
-  plan_type: 'trial' | 'monthly' | 'yearly';
+  plan_type: 'trial' | 'monthly' | 'yearly' | 'unlimited_admin';
   status: 'active' | 'canceled' | 'past_due' | 'trialing' | 'incomplete';
   analyses_used: number;
   analyses_limit: number;
@@ -66,7 +66,7 @@ export const useSubscription = () => {
       if (data) {
         const subscriptionData: Subscription = {
           id: data.id,
-          plan_type: data.plan_type as 'trial' | 'monthly' | 'yearly',
+          plan_type: data.plan_type as 'trial' | 'monthly' | 'yearly' | 'unlimited_admin',
           status: data.status as 'active' | 'canceled' | 'past_due' | 'trialing' | 'incomplete',
           analyses_used: data.analyses_used,
           analyses_limit: data.analyses_limit,
@@ -99,6 +99,11 @@ export const useSubscription = () => {
       return false;
     }
     
+    // Handle unlimited admin plan - they are always active
+    if (subscription.plan_type === 'unlimited_admin') {
+      return true;
+    }
+    
     const isActive = (subscription.plan_type === 'yearly' || subscription.plan_type === 'monthly') && 
                      subscription.status === 'active';
     
@@ -122,6 +127,11 @@ export const useSubscription = () => {
     if (!subscription) {
       console.log('useSubscription.needsSubscription: No subscription, needs subscription');
       return true;
+    }
+    
+    // Unlimited admin users never need subscription upgrade
+    if (subscription.plan_type === 'unlimited_admin') {
+      return false;
     }
     
     if (isActiveSubscriber()) {
@@ -156,6 +166,12 @@ export const useSubscription = () => {
       analyses_used: subscription.analyses_used,
       analyses_limit: subscription.analyses_limit
     });
+    
+    // Unlimited admin users can always create analyses
+    if (subscription.plan_type === 'unlimited_admin') {
+      console.log('useSubscription.canCreateAnalysis: Unlimited admin, returning true');
+      return true;
+    }
     
     // Active yearly or monthly subscribers can always create analyses
     if ((subscription.plan_type === 'yearly' || subscription.plan_type === 'monthly') && 
@@ -216,6 +232,11 @@ export const useSubscription = () => {
   const getRemainingAnalyses = () => {
     if (!subscription) return 0;
     
+    // Unlimited admin users have unlimited analyses
+    if (subscription.plan_type === 'unlimited_admin') {
+      return 999999; // Show a very high number
+    }
+    
     // Active monthly/yearly subscribers have 25 per month
     if (isActiveSubscriber()) {
       return Math.max(0, subscription.analyses_limit - subscription.analyses_used);
@@ -231,6 +252,11 @@ export const useSubscription = () => {
 
   const getUsagePercentage = () => {
     if (!subscription) return 0;
+    
+    // Unlimited admin users show 0% usage
+    if (subscription.plan_type === 'unlimited_admin') {
+      return 0;
+    }
     
     // All users (trial and paid) show actual percentage now
     if (subscription.analyses_limit > 0) {
