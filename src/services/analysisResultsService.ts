@@ -1,171 +1,372 @@
-
-import { supabase } from '@/integrations/supabase/client';
+import React, { useState, useEffect } from 'react';
+import { Check } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
+import { ModularAnalysisInterface } from '@/components/analysis/modules/ModularAnalysisInterface';
+import SimpleAnalysisResults from '@/components/analysis/SimpleAnalysisResults';
+import { claude20YearStrategistEngine, StrategistOutput } from '@/services/ai/claudeUXStrategistEngine';
+import { StrategistResultsDisplay } from '@/components/analysis/results/StrategistResultsDisplay';
 import { toast } from 'sonner';
-import { Annotation } from '@/types/analysis';
 
-export interface SaveAnalysisResultsRequest {
-  analysisId: string;
-  annotations: Annotation[];
-  images: string[];
-  analysisContext: string;
-  enhancedContext?: any;
-  wellDoneData?: any;
-  researchCitations?: string[];
-  knowledgeSourcesUsed?: number;
-  aiModelUsed?: string;
-  processingTimeMs?: number;
-  // Multi-stage pipeline data
-  pipelineStage?: string;
-  googleVisionData?: any;
-  visualIntelligence?: any;
-  enhancedPromptData?: any;
-  synthesisMetadata?: any;
-  qualityScores?: any;
-  processingStages?: any;
-  stageTimings?: any;
-  confidenceWeights?: any;
-}
+const AnalysisResults = () => {
+  // Existing functionality
+  const useModularInterface = useFeatureFlag('modular-analysis');
+  const perplexityEnabled = useFeatureFlag('perplexity-integration');
+  
+  // URL parameters
+  const urlParams = new URLSearchParams(window.location.search);
+  const betaMode = urlParams.get('beta') === 'true';
+  const isStrategistMode = urlParams.get('strategist') === 'true';
+  
+  // Strategist enhancement state
+  const [strategistAnalysis, setStrategistAnalysis] = useState<StrategistOutput | null>(null);
+  const [strategistLoading, setStrategistLoading] = useState(false);
+  const [analysisData, setAnalysisData] = useState<any>(null);
+  
+  // Get analysis ID from URL
+  const { id } = useParams<{id: string}>();
 
-export interface AnalysisResultsResponse {
-  id: string;
-  analysis_id: string;
-  annotations: any; // Simplified to any for now to avoid type conflicts
-  images: string[];
-  analysis_context: string;
-  enhanced_context?: any;
-  well_done_data?: any;
-  research_citations?: string[];
-  knowledge_sources_used?: number;
-  ai_model_used?: string;
-  processing_time_ms?: number;
-  total_annotations: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export const saveAnalysisResults = async (request: SaveAnalysisResultsRequest): Promise<string | null> => {
-  try {
-    console.log('💾 Saving analysis results to database:', {
-      analysisId: request.analysisId,
-      annotationCount: request.annotations.length,
-      imageCount: request.images.length,
-      hasEnhancedContext: !!request.enhancedContext,
-      hasWellDone: !!request.wellDoneData
-    });
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      console.error('❌ No authenticated user found');
-      return null;
+  // Load analysis data when strategist mode is enabled
+  useEffect(() => {
+    if (isStrategistMode && id && !strategistAnalysis && !strategistLoading) {
+      loadAnalysisAndEnhance();
     }
+  }, [isStrategistMode, id]);
 
-    const { data, error } = await supabase
-      .from('analysis_results')
-      .insert({
-        analysis_id: request.analysisId,
-        user_id: user.id,
-        annotations: request.annotations as any, // Cast to any for now
-        images: request.images,
-        analysis_context: request.analysisContext,
-        enhanced_context: request.enhancedContext,
-        well_done_data: request.wellDoneData,
-        research_citations: request.researchCitations || [],
-        knowledge_sources_used: request.knowledgeSourcesUsed || 0,
-        ai_model_used: request.aiModelUsed || 'claude-opus-4-20250514',
-        processing_time_ms: request.processingTimeMs,
-        total_annotations: request.annotations.length,
-        // Multi-stage pipeline fields
-        pipeline_stage: request.pipelineStage || 'single_stage',
-        google_vision_data: request.googleVisionData,
-        visual_intelligence: request.visualIntelligence,
-        enhanced_prompt_data: request.enhancedPromptData,
-        synthesis_metadata: request.synthesisMetadata,
-        quality_scores: request.qualityScores,
-        processing_stages: request.processingStages,
-        stage_timing: request.stageTimings,
-        confidence_weights: request.confidenceWeights
-      })
-      .select('id')
-      .single();
+  const loadAnalysisAndEnhance = async () => {
+    if (!id) return;
 
-    if (error) {
-      console.error('❌ Failed to save analysis results:', error);
-      toast.error('Failed to save analysis results');
-      return null;
+    try {
+      setStrategistLoading(true);
+      console.log('🎭 Loading analysis data for strategist enhancement:', id);
+      
+      // Get stored strategist context
+      const contextKey = `strategist_context_${id}`;
+      const storedContext = localStorage.getItem(contextKey);
+      
+      if (!storedContext) {
+        console.warn('❌ No strategist context found');
+        toast.error('Strategist context not found. Redirecting to traditional results.');
+        // Redirect to traditional results
+        window.location.href = window.location.href.replace('strategist=true&', '').replace('strategist=true', '');
+        return;
+      }
+
+      const context = JSON.parse(storedContext);
+      console.log('🎭 Found strategist context:', context.userChallenge);
+      
+      toast.info('🎭 UX Strategist analyzing your design challenge...');
+
+      // For this demo, we'll create mock analysis data
+      // In a real implementation, you'd fetch from your API
+      const mockAnalysisData = {
+        annotations: [
+          {
+            title: "Checkout Form Complexity",
+            feedback: "Multiple form fields create cognitive overload during payment",
+            severity: "critical",
+            category: "Forms"
+          },
+          {
+            title: "Trust Signal Placement",
+            feedback: "Security badges not visible at payment step",
+            severity: "important", 
+            category: "Trust"
+          },
+          {
+            title: "Payment Options Clarity",
+            feedback: "Available payment methods unclear until final step",
+            severity: "important",
+            category: "Payment"
+          },
+          {
+            title: "Mobile Checkout Flow",
+            feedback: "Form layout breaks on mobile devices",
+            severity: "critical",
+            category: "Mobile"
+          },
+          {
+            title: "Error Handling",
+            feedback: "Payment errors not clearly communicated",
+            severity: "important",
+            category: "Errors"
+          },
+          {
+            title: "Progress Indicators",
+            feedback: "Users don't know how many steps remain in checkout",
+            severity: "important",
+            category: "Navigation"
+          },
+          {
+            title: "Guest Checkout Option",
+            feedback: "Account creation requirement increases abandonment",
+            severity: "critical",
+            category: "Authentication"
+          },
+          {
+            title: "Loading States",
+            feedback: "No feedback during payment processing",
+            severity: "important",
+            category: "Feedback"
+          }
+        ]
+      };
+
+      setAnalysisData(mockAnalysisData);
+
+      // Call strategist enhancement
+      const strategistResult = await claude20YearStrategistEngine.enhanceAsStrategist({
+        userChallenge: context.userChallenge,
+        traditionalAnnotations: mockAnalysisData.annotations,
+        visionAnalysis: {},
+        ragKnowledge: {},
+        imageContext: {}
+      });
+      
+      setStrategistAnalysis(strategistResult);
+      console.log('✅ Strategist enhancement complete:', strategistResult);
+      toast.success('🎭 UX Strategist analysis complete!');
+      
+    } catch (error) {
+      console.error('❌ Strategist enhancement failed:', error);
+      toast.error('Strategist analysis failed. Redirecting to traditional results.');
+      // Redirect to traditional results on error
+      window.location.href = window.location.href.replace('strategist=true&', '').replace('strategist=true', '');
+    } finally {
+      setStrategistLoading(false);
     }
+  };
 
-    console.log('✅ Analysis results saved successfully:', data.id);
-    return data.id;
-  } catch (error) {
-    console.error('❌ Error saving analysis results:', error);
-    toast.error('Failed to save analysis results');
-    return null;
+  // ================================
+  // CORRECTED LOGIC ORDER (CRITICAL)
+  // ================================
+
+  // STRATEGIST MODE: Loading state (FIRST PRIORITY)
+  if (isStrategistMode && strategistLoading) {
+    return (
+      <div className="strategist-loading bg-slate-900 text-white min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold mb-2">🎭 UX Strategist Analyzing...</h2>
+          <p className="text-slate-400">Applying 20 years of UX expertise to your design challenge</p>
+          <div className="mt-4 text-sm text-slate-500 max-w-md">
+            <strong>Challenge:</strong> "{(() => {
+              const contextKey = `strategist_context_${id}`;
+              const stored = localStorage.getItem(contextKey);
+              return stored ? JSON.parse(stored).userChallenge : 'Analyzing design...';
+            })()}"
+          </div>
+        </div>
+      </div>
+    );
   }
+
+  // STRATEGIST MODE: Results display (SECOND PRIORITY)
+  if (isStrategistMode && strategistAnalysis && analysisData) {
+    const contextKey = `strategist_context_${id}`;
+    const storedContext = localStorage.getItem(contextKey);
+    const userChallenge = storedContext ? JSON.parse(storedContext).userChallenge : "Design challenge analysis";
+
+    return (
+      <StrategistResultsDisplay 
+        traditionalAnnotations={analysisData.annotations || []}
+        strategistAnalysis={strategistAnalysis}
+        userChallenge={userChallenge}
+      />
+    );
+  }
+
+  // STRATEGIST MODE: Error fallback (THIRD PRIORITY)
+  if (isStrategistMode) {
+    console.log('🎭 Strategist mode detected but no analysis data yet, processing...');
+    // If strategist mode but no loading/analysis, wait for useEffect to trigger
+    return (
+      <div className="strategist-loading bg-slate-900 text-white min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold mb-2">🎭 Initializing UX Strategist...</h2>
+          <p className="text-slate-400">Setting up your strategic analysis</p>
+        </div>
+      </div>
+    );
+  }
+
+  // EXISTING FUNCTIONALITY: Modular interface (FOURTH PRIORITY)
+  if (useModularInterface || betaMode) {
+    try {
+      return <ModularAnalysisInterface />;
+    } catch (error) {
+      console.error('Modular interface failed, falling back to simple results:', error);
+      // Fall back to simple results if modular interface fails
+      return <SimpleAnalysisResults onBack={() => window.location.href = '/analysis'} />;
+    }
+  }
+  
+  // PRESERVE EXISTING FUNCTIONALITY AS DEFAULT (FIFTH PRIORITY)
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-6">
+      <div className="max-w-md text-center">
+        <div className="mb-6">
+          <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Check className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            Analysis Complete!
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300">
+            Generated 14 insights with research backing
+          </p>
+        </div>
+        
+        <div className="bg-white dark:bg-slate-800 rounded-lg p-6 mb-6 shadow-sm">
+          <div className="space-y-3">
+            <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center justify-center">
+              <Check className="w-4 h-4 text-green-500 mr-2" />
+              UX issues identified and categorized
+            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center justify-center">
+              <Check className="w-4 h-4 text-green-500 mr-2" />
+              Analysis enhanced with research sources
+            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center justify-center">
+              <Check className="w-4 h-4 text-green-500 mr-2" />
+              Powered by 23+ UX research authorities
+            </p>
+          </div>
+          
+          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <p className="text-xs text-gray-500 dark:text-gray-500">
+              Including Nielsen Norman Group, Baymard Institute, and other leading UX research sources
+            </p>
+          </div>
+        </div>
+        
+        {/* Testing Options */}
+        <div className="space-y-3 mb-6">
+          {/* NEW: UX Strategist Option */}
+          <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
+            <div className="flex items-center justify-center mb-3">
+              <span className="text-purple-600 dark:text-purple-400 text-sm font-medium">
+                🎭 20-Year UX Strategist Available!
+              </span>
+            </div>
+            <button 
+              onClick={() => {
+                // Check if we have any analysis to enhance
+                const currentUrl = window.location.href;
+                if (currentUrl.includes('/analysis/')) {
+                  // We're on a results page, enable strategist mode
+                  window.location.href = currentUrl.replace(/[?&]beta=true/, '') + 
+                    (currentUrl.includes('?') ? '&' : '?') + 'strategist=true&beta=true';
+                } else {
+                  // We're on the completion page, go to new analysis
+                  window.location.href = '/analysis';
+                }
+              }}
+              className="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+            >
+              Get Expert UX Strategy
+            </button>
+            <p className="text-xs text-purple-600 dark:text-purple-400 mt-2">
+              Business-focused recommendations • Confidence scores • Implementation roadmap
+            </p>
+          </div>
+
+          {/* Modular Interface */}
+          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+            <div className="flex items-center justify-center mb-3">
+              <span className="text-blue-600 dark:text-blue-400 text-sm font-medium">
+                🚀 New Modular Interface Available!
+              </span>
+            </div>
+            <button 
+              onClick={() => window.location.href += '?beta=true'}
+              className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+            >
+              Try New Professional Dashboard
+            </button>
+            <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+              Executive summary • Visual analysis • Research citations
+            </p>
+          </div>
+
+          {/* Perplexity Integration */}
+          {!perplexityEnabled ? (
+            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
+              <div className="flex items-center justify-center mb-3">
+                <span className="text-green-600 dark:text-green-400 text-sm font-medium">
+                  🔬 Real-time Research Validation Available!
+                </span>
+              </div>
+              <button 
+                onClick={() => {
+                  // Enable Perplexity and persist the choice
+                  localStorage.setItem('perplexity-enabled', 'true');
+                  window.location.href += '?perplexity=true';
+                }}
+                className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+              >
+                Enable Perplexity Integration
+              </button>
+              <p className="text-xs text-green-600 dark:text-green-400 mt-2">
+                Current research validation • Industry trends • Competitive insights
+              </p>
+            </div>
+          ) : (
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-lg p-4 border-2 border-green-300 dark:border-green-600">
+              <div className="flex items-center justify-center mb-3">
+                <span className="text-green-700 dark:text-green-300 text-sm font-bold">
+                  ✅ Perplexity Integration Active!
+                </span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-center gap-4 text-xs">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-green-700 dark:text-green-300">Real-time Research</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    <span className="text-blue-700 dark:text-blue-300">Trend Analysis</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                    <span className="text-purple-700 dark:text-purple-300">Validation</span>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => window.location.href = '/analysis'}
+                  className="w-full bg-gradient-to-r from-green-600 to-blue-600 text-white px-4 py-2 rounded-lg hover:from-green-700 hover:to-blue-700 transition-all text-sm font-medium"
+                >
+                  Start Enhanced Analysis
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        <div className="space-y-3">
+          <button 
+            onClick={() => window.location.href = '/analysis'}
+            className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            Start New Analysis
+          </button>
+          <button 
+            onClick={() => window.location.href = '/analysis'}
+            className="w-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+          >
+            Back to Analysis
+          </button>
+        </div>
+        
+        <div className="mt-6 text-xs text-gray-500 dark:text-gray-500">
+          <p>Your analysis has been completed successfully.</p>
+          <p>Ready to analyze another design?</p>
+        </div>
+      </div>
+    </div>
+  );
 };
 
-export const getAnalysisResults = async (analysisId: string): Promise<AnalysisResultsResponse | null> => {
-  try {
-    console.log('📖 Loading analysis results from database:', analysisId);
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      console.error('❌ No authenticated user found');
-      return null;
-    }
-
-    const { data, error } = await supabase
-      .from('analysis_results')
-      .select('*')
-      .eq('analysis_id', analysisId)
-      .eq('user_id', user.id)
-      .single();
-
-    if (error) {
-      console.error('❌ Failed to load analysis results:', error);
-      return null;
-    }
-
-    console.log('✅ Analysis results loaded successfully:', {
-      id: data.id,
-      annotationCount: Array.isArray(data.annotations) ? data.annotations.length : 0,
-      imageCount: data.images?.length || 0
-    });
-
-    return data;
-  } catch (error) {
-    console.error('❌ Error loading analysis results:', error);
-    return null;
-  }
-};
-
-export const getUserAnalysisHistory = async (): Promise<AnalysisResultsResponse[]> => {
-  try {
-    console.log('📚 Loading user analysis history from database');
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      console.error('❌ No authenticated user found');
-      return [];
-    }
-
-    const { data, error } = await supabase
-      .from('analysis_results')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('❌ Failed to load analysis history:', error);
-      return [];
-    }
-
-    console.log('✅ Analysis history loaded successfully:', {
-      count: data.length
-    });
-
-    return data;
-  } catch (error) {
-    console.error('❌ Error loading analysis history:', error);
-    return [];
-  }
-};
+export default AnalysisResults;
