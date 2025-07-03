@@ -1,6 +1,7 @@
 // Enhanced Claude UX Strategist Engine with Multi-Model Orchestration
 import { ClaudeStrategistInput, EnhancedStrategistOutput, EnhancedRecommendation, VisionSummary, RAGMatch } from '@/types/strategistInput';
 import { multiModelOrchestrator, SynthesisResult } from './multiModelOrchestrator';
+import { AdvancedPromptEngineering, BusinessImpactCalculator, UX_HEURISTICS, ANTI_PATTERNS } from './advancedPromptEngineering';
 
 // Legacy interface for backward compatibility
 interface StrategistInput {
@@ -176,104 +177,16 @@ IMPORTANT: Respond with ONLY the JSON object, no additional text or explanation.
   }
 
   private buildEnhancedPrompt(input: ClaudeStrategistInput): string {
-    return `
-You are a 20-year Principal UX Designer with deep experience in SaaS, mobile-first, and enterprise systems.
-Your role is to provide strategic UX analysis with quantified business impact and research-backed recommendations.
+    // Use advanced prompt engineering with UX heuristics and anti-pattern detection
+    return AdvancedPromptEngineering.buildEnhancedStrategistPrompt(
+      input.problemStatement,
+      input.visionSummary,
+      input.ragMatches,
+      input.industryContext,
+      input.userPersona,
+      input.businessGoals
+    );
 
-ENHANCED CONTEXT:
-- Problem Statement: "${input.problemStatement}"
-- User Persona: "${input.userPersona}"
-- Business Goals: ${JSON.stringify(input.businessGoals)}
-- Industry Context: "${input.industryContext}"
-- Business Context: ${JSON.stringify(input.businessContext)}
-
-VISION ANALYSIS:
-- Layout Density: ${input.visionSummary.layoutDensity}
-- Navigation Patterns: ${JSON.stringify(input.visionSummary.navigationPatterns)}
-- CTA Positioning: ${JSON.stringify(input.visionSummary.ctaPositioning)}
-- Color Contrast Score: ${input.visionSummary.colorContrast.score}
-- Mobile Optimization: ${JSON.stringify(input.visionSummary.mobileOptimization)}
-
-RAG KNOWLEDGE MATCHES (${input.ragMatches.length} relevant sources):
-${input.ragMatches.slice(0, 5).map(match => 
-  `- ${match.title} (${match.similarity.toFixed(2)} similarity): ${match.content.substring(0, 200)}...`
-).join('\n')}
-
-DESIGN PATTERN ANALYSIS:
-- Primary Pattern: ${input.designPatternType.primaryPattern}
-- Anti-Patterns Detected: ${JSON.stringify(input.designPatternType.antiPatterns)}
-- Complexity Level: ${input.designPatternType.complexity}
-
-KNOWN ISSUES:
-- Critical: ${input.knownIssues.critical.length} issues
-- Important: ${input.knownIssues.important.length} issues
-- Enhancements: ${input.knownIssues.enhancements.length} opportunities
-
-RESEARCH CITATIONS: ${input.researchCitations.slice(0, 3).join(', ')}
-
-YOUR STRATEGIC ANALYSIS FRAMEWORK:
-1. Root Cause Diagnosis: Identify systematic issues vs. surface symptoms
-2. UX Principle Application: Apply Fitts' Law, Progressive Disclosure, Cognitive Load Theory
-3. Business Impact Quantification: Provide specific ROI projections and timelines
-4. Research Validation: Back recommendations with cited research and industry data
-5. Implementation Roadmap: Balance quick wins with strategic initiatives
-
-ANTI-PATTERN DETECTION RULES:
-- Layout density "high" + Mobile optimization <60% → Touch interface violations
-- CTA below fold + Business model "B2C" → Conversion funnel breaks
-- Form fields >8 + No progressive disclosure → Cognitive overload
-- Color contrast <4.5 + Accessibility flags → WCAG violations
-
-OUTPUT ENHANCED JSON STRUCTURE:
-{
-  "diagnosis": "Comprehensive root cause analysis...",
-  "strategicRationale": "Strategic approach with business alignment...",
-  "expertRecommendations": [/* Enhanced recommendations with business value, research backing, implementation details */],
-  "businessImpactAssessment": {
-    "roiProjection": {
-      "timeframe": "6-12 months",
-      "estimatedValue": "$50,000-150,000 annual impact",
-      "confidence": 0.82
-    },
-    "implementationRoadmap": {
-      "quickWins": ["1-week fixes"],
-      "weekOneActions": ["immediate improvements"],
-      "strategicInitiatives": ["2-4 week projects"]
-    },
-    "competitiveAdvantage": "Market positioning benefit"
-  },
-  "abTestFramework": {
-    "primaryHypothesis": "Testable hypothesis",
-    "testVariants": ["variant descriptions"],
-    "successCriteria": ["measurable outcomes"],
-    "estimatedTestDuration": "2-4 weeks",
-    "expectedOutcome": "predicted results"
-  },
-  "successMetrics": ["specific KPIs"],
-  "validationFramework": {
-    "quantitativeMetrics": ["measurable data"],
-    "qualitativeIndicators": ["user feedback signals"],
-    "leadingIndicators": ["early success signals"],
-    "laggingIndicators": ["long-term impact measures"]
-  },
-  "confidenceAssessment": {
-    "overallConfidence": 0.85,
-    "dataQualityScore": 0.8,
-    "researchBacking": 0.9,
-    "implementationFeasibility": 0.7,
-    "businessAlignmentScore": 0.8,
-    "reasoning": "Detailed confidence breakdown"
-  },
-  "researchSources": {
-    "academicSources": ["research papers"],
-    "industrySources": ["industry reports"],
-    "competitorAnalysis": ["competitive insights"],
-    "uxPrinciples": ["applied principles"]
-  }
-}
-
-CRITICAL: Respond with ONLY the JSON object, no additional text.
-`;
   }
 
   private async callEnhancedClaudeAPI(input: ClaudeStrategistInput, prompt: string): Promise<EnhancedStrategistOutput | null> {
