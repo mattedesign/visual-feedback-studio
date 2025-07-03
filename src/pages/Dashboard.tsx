@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getUserAnalysisHistory, AnalysisResultsResponse } from '@/services/analysisResultsService';
 import { toast } from 'sonner';
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
+import { FigmaDashboardLayout } from '@/components/dashboard/FigmaDashboardLayout';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -109,6 +111,27 @@ const Dashboard = () => {
   const handleViewAnalysis = (analysisId: string) => {
     navigate(`/analysis/${analysisId}?beta=true`);
   };
+
+  // Check for Figma UI feature flag
+  const figmaUIEnabled = useFeatureFlag('figma-inspired-ui');
+  const urlParams = new URLSearchParams(window.location.search);
+  const figmaMode = urlParams.get('figma') === 'true';
+
+  // Use Figma layout when feature flag is enabled
+  if (figmaUIEnabled || figmaMode) {
+    return (
+      <FigmaDashboardLayout
+        analyses={analyses}
+        isLoading={isLoading}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        filterStatus={filterStatus}
+        setFilterStatus={setFilterStatus}
+        onNewAnalysis={handleNewAnalysis}
+        onViewAnalysis={handleViewAnalysis}
+      />
+    );
+  }
 
   // Future: Use role information for personalized content
   // const { profile } = useAuth(); // This will include role information

@@ -4,6 +4,7 @@ import { LeftPanelNavigation } from './LeftPanelNavigation';
 import { CenterCanvasArea } from './CenterCanvasArea';
 import { RightPropertiesPanel } from './RightPropertiesPanel';
 import { BottomStatusBar } from './BottomStatusBar';
+import { EnhancedFigmaAnalysisLayout } from './EnhancedFigmaAnalysisLayout';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 
@@ -18,7 +19,27 @@ export const FigmaInspiredAnalysisLayout: React.FC<FigmaInspiredAnalysisLayoutPr
   strategistAnalysis,
   userChallenge
 }) => {
-  // Feature flags
+  console.log('🎨 FigmaInspiredAnalysisLayout render:', {
+    annotationCount: analysisData?.annotations?.length || 0,
+    hasStrategistAnalysis: !!strategistAnalysis,
+    userChallenge
+  });
+
+  // Check if we have substantial analysis data - use enhanced layout
+  const enhancedLayoutEnabled = useFeatureFlag('enhanced-analysis-layout');
+  
+  if (enhancedLayoutEnabled || (analysisData && analysisData.annotations && analysisData.annotations.length > 0)) {
+    return (
+      <EnhancedFigmaAnalysisLayout
+        analysisData={analysisData || { annotations: [] }}
+        strategistAnalysis={strategistAnalysis}
+        userChallenge={userChallenge}
+        onBack={() => window.history.back()}
+      />
+    );
+  }
+
+  // Feature flags for legacy layout
   const resizablePanelsEnabled = useFeatureFlag('resizable-panels');
   const keyboardShortcutsEnabled = useFeatureFlag('keyboard-shortcuts');
   

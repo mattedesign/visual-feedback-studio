@@ -8,6 +8,7 @@ import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { SidebarUpload } from '../studio/SidebarUpload';
 import { StudioChat } from '../studio/StudioChat';
+import { EnhancedFigmaUploadLayout } from './EnhancedFigmaUploadLayout';
 import { 
   Upload, 
   FileImage, 
@@ -26,6 +27,12 @@ interface FigmaUploadLayoutProps {
 }
 
 export const FigmaUploadLayout: React.FC<FigmaUploadLayoutProps> = ({ workflow }) => {
+  // Use enhanced layout for upload/annotate steps
+  const enhancedUploadEnabled = true; // Always use enhanced layout
+  
+  if (enhancedUploadEnabled) {
+    return <EnhancedFigmaUploadLayout workflow={workflow} />;
+  }
   // Feature flags
   const resizablePanelsEnabled = useFeatureFlag('resizable-panels');
   const keyboardShortcutsEnabled = useFeatureFlag('keyboard-shortcuts');
