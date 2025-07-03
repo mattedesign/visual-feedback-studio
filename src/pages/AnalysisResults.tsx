@@ -161,19 +161,19 @@ const AnalysisResults = () => {
   console.log('🎨 Figma UI Check:', { figmaUIEnabled, figmaMode, currentURL: window.location.href });
   
   if (figmaUIEnabled || figmaMode) {
-    // Use proper import instead of require()
-    import('@/components/analysis/figma/FigmaInspiredAnalysisLayout').then(({ FigmaInspiredAnalysisLayout }) => {
-      console.log('✅ Figma layout loaded successfully');
-    });
+    // Use static import - import at top of file
+    const { FigmaInspiredAnalysisLayout } = require('@/components/analysis/figma/FigmaInspiredAnalysisLayout');
     
-    // For now, show a loading state until we can implement proper dynamic import
+    // Get stored context for user challenge
+    const contextKey = `strategist_context_${id}`;
+    const storedContext = localStorage.getItem(contextKey);
+    
     return (
-      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Loading Figma-inspired interface...</p>
-        </div>
-      </div>
+      <FigmaInspiredAnalysisLayout 
+        analysisData={analysisData || { annotations: [] }}
+        strategistAnalysis={strategistAnalysis}
+        userChallenge={id ? (storedContext ? JSON.parse(storedContext).userChallenge : undefined) : undefined}
+      />
     );
   }
 
