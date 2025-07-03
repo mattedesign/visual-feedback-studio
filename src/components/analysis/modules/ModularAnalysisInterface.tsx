@@ -14,6 +14,8 @@ type ModuleType = 'ux-insights' | 'research-backing' | 'business-case';
 
 export const ModularAnalysisInterface = () => {
   const { id } = useParams<{ id: string }>();
+  console.log('🎯 ModularAnalysisInterface - URL Analysis ID:', id);
+  console.log('🎯 ModularAnalysisInterface - Current URL:', window.location.href);
   const [currentModule, setCurrentModule] = useState<ModuleType>('ux-insights');
   const [analysisData, setAnalysisData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);

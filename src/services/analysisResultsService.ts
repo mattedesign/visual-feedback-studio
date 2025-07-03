@@ -39,16 +39,29 @@ export const saveAnalysisResults = async (analysisData: any): Promise<AnalysisRe
  */
 export const getAnalysisResults = async (analysisId: string): Promise<AnalysisResult | null> => {
   try {
+    console.log('Fetching analysis results for ID:', analysisId);
+    
     const { data, error } = await supabase
       .from('analysis_results')
       .select('*')
       .eq('analysis_id', analysisId)
-      .single();
+      .maybeSingle(); // Use maybeSingle() instead of single() to handle no results gracefully
 
     if (error) {
       console.error('Error fetching analysis results:', error);
       return null;
     }
+
+    if (!data) {
+      console.log('No analysis results found for ID:', analysisId);
+      return null;
+    }
+
+    console.log('Analysis results found:', { 
+      id: data.id, 
+      analysisId: data.analysis_id,
+      annotationCount: Array.isArray(data.annotations) ? data.annotations.length : 0 
+    });
 
     return data;
   } catch (error) {
