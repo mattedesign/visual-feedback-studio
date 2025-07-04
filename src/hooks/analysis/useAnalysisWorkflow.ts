@@ -153,6 +153,43 @@ export const useAnalysisWorkflow = () => {
     enhancedAnalysis.resetState();
   }, [enhancedAnalysis]);
 
+  // ✅ FIX: Shared analysis session ID for all uploads
+  const getOrCreateAnalysisSession = useCallback(async () => {
+    if (currentAnalysis?.id) {
+      return currentAnalysis.id;
+    }
+    
+    console.log('🔥 CREATING SINGLE ANALYSIS SESSION for workflow...');
+    try {
+      const { analysisSessionService } = await import('@/services/analysisSessionService');
+      const analysisId = await analysisSessionService.getOrCreateSession();
+      
+      if (analysisId) {
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        setCurrentAnalysis({
+          id: analysisId,
+          user_id: user?.id
+        });
+        
+        console.log('✅ SINGLE ANALYSIS SESSION CREATED:', {
+          analysisId,
+          userId: user?.id?.substring(0, 8) + '...',
+          timestamp: new Date().toISOString()
+        });
+        
+        return analysisId;
+      } else {
+        console.error('❌ Failed to create analysis session - no ID returned');
+        return null;
+      }
+    } catch (error) {
+      console.error('❌ CRITICAL: Failed to create analysis session:', error);
+      return null;
+    }
+  }, [currentAnalysis]);
+
   const addImage = useCallback(async (imageUrl: string) => {
     console.log('📸 ADD IMAGE CALLED:', {
       imageUrl,
@@ -161,56 +198,28 @@ export const useAnalysisWorkflow = () => {
       timestamp: new Date().toISOString()
     });
     
-    // ✅ FIX 1: Single analysis session creation - only create on first image AND no existing session
-    if (!currentAnalysis?.id) {
-      console.log('🔥 CREATING SINGLE ANALYSIS SESSION for workflow...');
-      try {
-        const { analysisSessionService } = await import('@/services/analysisSessionService');
-        const analysisId = await analysisSessionService.getOrCreateSession();
-        
-        if (analysisId) {
-          const { supabase } = await import('@/integrations/supabase/client');
-          const { data: { user } } = await supabase.auth.getUser();
-          
-          setCurrentAnalysis({
-            id: analysisId,
-            user_id: user?.id
-          });
-          
-          console.log('✅ SINGLE ANALYSIS SESSION CREATED:', {
-            analysisId,
-            userId: user?.id?.substring(0, 8) + '...',
-            timestamp: new Date().toISOString()
-          });
-        } else {
-          console.error('❌ Failed to create analysis session - no ID returned');
-          return;
-        }
-      } catch (error) {
-        console.error('❌ CRITICAL: Failed to create analysis session:', error);
-        return;
-      }
+    // ✅ FIX 1: Use shared analysis session
+    const analysisId = await getOrCreateAnalysisSession();
+    if (!analysisId) {
+      console.error('❌ CRITICAL: No analysis session available for image save');
+      return;
     }
     
-    // ✅ FIX 1: Always use the same session for all images
-    if (currentAnalysis?.id) {
-      console.log('💾 SAVING IMAGE TO EXISTING SESSION:', {
-        analysisId: currentAnalysis.id,
-        imageUrl: imageUrl.substring(0, 50) + '...',
-        timestamp: new Date().toISOString()
-      });
+    // Save image to the analysis session
+    console.log('💾 SAVING IMAGE TO SESSION:', {
+      analysisId,
+      imageUrl: imageUrl.substring(0, 50) + '...',
+      timestamp: new Date().toISOString()
+    });
+    
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data: { user } } = await supabase.auth.getUser();
       
-      try {
-        const { supabase } = await import('@/integrations/supabase/client');
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        await saveImagesToUploadedFiles([imageUrl], currentAnalysis.id, user?.id);
-        console.log('✅ IMAGE SAVED TO SINGLE SESSION');
-      } catch (imageError) {
-        console.warn('⚠️ Failed to save image to session:', imageError);
-      }
-    } else {
-      console.error('❌ CRITICAL: No analysis session available for image save');
+      await saveImagesToUploadedFiles([imageUrl], analysisId, user?.id);
+      console.log('✅ IMAGE SAVED TO SESSION');
+    } catch (imageError) {
+      console.warn('⚠️ Failed to save image to session:', imageError);
     }
     
     setImages(prev => {
@@ -231,7 +240,7 @@ export const useAnalysisWorkflow = () => {
     if (images.length === 0) {
       setActiveImageUrl(imageUrl);
     }
-  }, [images, currentAnalysis]);
+  }, [images, getOrCreateAnalysisSession]);
 
   const selectImages = useCallback((imageUrls: string[]) => {
     console.log('🖼️ SELECT IMAGES:', {
@@ -585,7 +594,7 @@ export const useAnalysisWorkflow = () => {
     currentAnalysis,
     selectedImageUrl: images[0] || null,
 
-    // 🔥 FIXED: Enhanced analysis state integration
+    // Enhanced state integration
     isAnalyzing: isAnalyzing || enhancedAnalysis.isAnalyzing,
     isBuilding: enhancedAnalysis.isBuilding,
     buildingStage: enhancedAnalysis.buildingStage,
@@ -610,6 +619,7 @@ export const useAnalysisWorkflow = () => {
     goToPreviousStep,
     proceedFromReview,
     getTotalAnnotationsCount,
-    setIsAnalyzing
+    setIsAnalyzing,
+    getOrCreateAnalysisSession // ✅ FIX: Expose session creation function
   };
 };

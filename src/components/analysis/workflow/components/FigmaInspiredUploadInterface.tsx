@@ -19,11 +19,28 @@ export const FigmaInspiredUploadInterface: React.FC<FigmaInspiredUploadInterface
 
   // Enhanced file upload handler
   const handleUploadComplete = (imageUrl: string) => {
-    console.log('🔥 UPLOAD COMPLETE - FIGMA INTERFACE:', imageUrl);
+    console.log('🔥 CENTERED INTERFACE - UPLOAD COMPLETE:', imageUrl);
     workflow.addUploadedFile(imageUrl);
   };
 
-  const { isProcessing, handleFileUpload } = useUploadLogic(handleUploadComplete);
+  // ✅ FIX: Use shared analysis session for all uploads
+  const handleFileUploadWithSession = async (file: File) => {
+    // Ensure analysis session exists before uploading
+    const analysisId = await workflow.getOrCreateAnalysisSession();
+    if (!analysisId) {
+      console.error('❌ Failed to create analysis session for upload');
+      return;
+    }
+    
+    console.log('📁 Using shared analysis session for upload:', analysisId);
+    return handleFileUpload(file);
+  };
+
+  // ✅ FIX: Get analysis session ID for upload logic
+  const { isProcessing, handleFileUpload } = useUploadLogic(
+    handleUploadComplete, 
+    workflow.currentAnalysis?.id
+  );
 
   // File validation
   const isValidImageFile = (file: File): boolean => {
@@ -67,9 +84,9 @@ export const FigmaInspiredUploadInterface: React.FC<FigmaInspiredUploadInterface
     if (files && files.length > 0) {
       Array.from(files).forEach((file, index) => {
         if (isValidImageFile(file)) {
-          // Use the proper file upload hook instead of object URLs
+          // Use the session-aware file upload
           setTimeout(() => {
-            handleFileUpload(file);
+            handleFileUploadWithSession(file);
           }, index * 100);
         }
       });
@@ -81,9 +98,9 @@ export const FigmaInspiredUploadInterface: React.FC<FigmaInspiredUploadInterface
     if (files) {
       Array.from(files).forEach((file, index) => {
         if (isValidImageFile(file)) {
-          // Use the proper file upload hook instead of object URLs
+          // Use the session-aware file upload
           setTimeout(() => {
-            handleFileUpload(file);
+            handleFileUploadWithSession(file);
           }, index * 100);
         }
       });

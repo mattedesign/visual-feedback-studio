@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { uploadFileToStorage } from '@/services/fileUploadService';
 import { analysisSessionService } from '@/services/analysisSessionService';
 
-export const useFileUpload = (onImageUpload: (imageUrl: string) => void) => {
+// ✅ FIX: Accept optional analysisId to use shared session
+export const useFileUpload = (onImageUpload: (imageUrl: string) => void, analysisId?: string) => {
   // Remove processing state for individual uploads to prevent UI transitions
   // Only show processing when truly needed (like initial setup)
   const [isProcessing, setIsProcessing] = useState(false);
@@ -15,6 +16,7 @@ export const useFileUpload = (onImageUpload: (imageUrl: string) => void) => {
         fileName: file.name,
         fileSize: file.size,
         fileType: file.type,
+        providedAnalysisId: analysisId || 'none - will create new',
         timestamp: new Date().toISOString()
       });
       
@@ -53,17 +55,21 @@ export const useFileUpload = (onImageUpload: (imageUrl: string) => void) => {
         return;
       }
       
-      // ✅ FIXED: Get or create analysis session with proper UUID
-      const analysisId = await analysisSessionService.getOrCreateSession();
-      if (!analysisId) {
-        console.error('❌ Failed to get or create analysis session');
-        return;
+      // ✅ FIX: Use provided analysisId or create new session if none provided
+      let sessionId = analysisId;
+      if (!sessionId) {
+        console.log('🔄 No analysisId provided, creating new session...');
+        sessionId = await analysisSessionService.getOrCreateSession();
+        if (!sessionId) {
+          console.error('❌ Failed to get or create analysis session');
+          return;
+        }
       }
 
-      console.log('📁 Using analysis session ID:', analysisId);
+      console.log('📁 Using analysis session ID:', sessionId);
 
       // Upload file to storage
-      const publicUrl = await uploadFileToStorage(file, analysisId);
+      const publicUrl = await uploadFileToStorage(file, sessionId);
       if (!publicUrl) {
         console.error('❌ File upload failed - no public URL returned');
         return;
