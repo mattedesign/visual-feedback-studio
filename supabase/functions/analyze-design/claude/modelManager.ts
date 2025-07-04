@@ -3,24 +3,24 @@ import { callClaudeApi } from './claudeApiClient.ts';
 import { parseClaudeResponse } from './responseParser.ts';
 import { AnnotationData } from '../types.ts';
 
-// ✅ ENHANCED: Prioritize proven stable models to avoid 401 errors
+// ✅ UPDATED: Prioritize Claude 4 models (latest and most capable)
 const CLAUDE_MODELS = [
-  'claude-3-5-haiku-20241022',    // 🚀 PRIMARY: Most stable, fastest, best auth success
-  'claude-3-5-sonnet-20241022',   // 🚀 SECONDARY: Proven reliability and auth
-  'claude-3-opus-20240229',       // 🚀 TERTIARY: Established model with stable auth
-  'claude-3-haiku-20240307',      // 🚀 FALLBACK: Older but very stable
-  'claude-sonnet-4-20250514',     // ⚠️ EXPERIMENTAL: Newer model (auth may fail)
-  'claude-opus-4-20250514'        // ⚠️ EXPERIMENTAL: Newest model (auth may fail)
+  'claude-sonnet-4-20250514',     // 🚀 PRIMARY: Latest Claude 4 Sonnet (high performance + efficiency)
+  'claude-opus-4-20250514',       // 🚀 SECONDARY: Latest Claude 4 Opus (most capable)
+  'claude-3-5-sonnet-20241022',   // 🚀 FALLBACK: Proven Claude 3.5 Sonnet
+  'claude-3-5-haiku-20241022',    // 🚀 BACKUP: Fast Claude 3.5 Haiku
+  'claude-3-opus-20240229',       // 🚀 LEGACY: Claude 3 Opus fallback
+  'claude-3-haiku-20240307'       // 🚀 FINAL: Claude 3 Haiku final fallback
 ];
 
-// ✅ ENHANCED: Auth-tested model priority (start with most reliable)
+// ✅ UPDATED: Claude 4 first fallback order
 const FALLBACK_ORDER = [
-  'claude-3-5-haiku-20241022',    // 🚀 PREFERRED: Fastest + most auth-reliable
-  'claude-3-5-sonnet-20241022',   // 🚀 SECONDARY: Proven auth reliability
-  'claude-3-opus-20240229',       // 🚀 TERTIARY: Established auth stability
-  'claude-3-haiku-20240307',      // 🚀 BACKUP: Very stable legacy model
-  'claude-sonnet-4-20250514',     // ⚠️ EXPERIMENTAL: Test newer models last
-  'claude-opus-4-20250514'        // ⚠️ EXPERIMENTAL: Most likely to have auth issues
+  'claude-sonnet-4-20250514',     // 🚀 PRIMARY: Latest Claude 4 Sonnet 
+  'claude-opus-4-20250514',       // 🚀 SECONDARY: Latest Claude 4 Opus
+  'claude-3-5-sonnet-20241022',   // 🚀 FALLBACK: Proven Claude 3.5 Sonnet
+  'claude-3-5-haiku-20241022',    // 🚀 BACKUP: Fast Claude 3.5 Haiku  
+  'claude-3-opus-20240229',       // 🚀 LEGACY: Claude 3 Opus
+  'claude-3-haiku-20240307'       // 🚀 FINAL: Claude 3 Haiku
 ];
 
 export async function analyzeWithClaudeModels(
