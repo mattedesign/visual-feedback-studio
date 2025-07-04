@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Annotation } from '@/types/analysis';
 import { subscriptionService } from './subscriptionService';
+import { convertBlobToBase64 } from '@/utils/imageUtils';
 
 interface AnalyzeDesignRequest {
   imageUrls: string[];
@@ -67,9 +68,16 @@ export const createAnalysis = async () => {
 
 const analyzeDesign = async (request: AnalyzeDesignRequest): Promise<AnalyzeDesignResponse> => {
   try {
+    console.log('📡 Main Analysis: Converting blob URLs to base64 before analysis...');
+    
+    // Convert blob URLs to base64 data
+    const base64ImageUrls = await Promise.all(
+      request.imageUrls.map(url => convertBlobToBase64(url))
+    );
+
     console.log('📡 Main Analysis: Calling analyze-design function with RAG enabled:', {
       analysisId: request.analysisId,
-      imageCount: request.imageUrls.length,
+      imageCount: base64ImageUrls.length,
       isComparative: request.isComparative,
       ragEnabled: true // Force enable RAG for main analysis
     });
@@ -77,8 +85,8 @@ const analyzeDesign = async (request: AnalyzeDesignRequest): Promise<AnalyzeDesi
     // Use the same edge function call as the test - this is the working RAG implementation
     const { data, error } = await supabase.functions.invoke('analyze-design', {
       body: {
-        imageUrls: request.imageUrls,
-        imageUrl: request.imageUrls[0], // Include both for compatibility
+        imageUrls: base64ImageUrls, // Now sending base64 data
+        imageUrl: base64ImageUrls[0], // Include both for compatibility
         analysisId: request.analysisId,
         analysisPrompt: request.analysisPrompt,
         designType: request.designType,
