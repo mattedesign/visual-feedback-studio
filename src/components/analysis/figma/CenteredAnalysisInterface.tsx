@@ -178,6 +178,13 @@ export const CenteredAnalysisInterface: React.FC<CenteredAnalysisInterfaceProps>
     setIsAnnotationMode(false);
     setSelectedAnnotation(null);
     setPendingPosition(null);
+    
+    // Reset workflow if user manually goes back
+    if (workflow.isAnalyzing) {
+      console.log('🔄 User manually resetting from analyzing state');
+      workflow.setIsAnalyzing(false);
+      workflow.goToStep('upload');
+    }
   };
 
   return (

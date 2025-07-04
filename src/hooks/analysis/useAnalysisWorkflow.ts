@@ -477,36 +477,10 @@ export const useAnalysisWorkflow = () => {
           setVisionElementsDetected(result.enhancedContext.visionAnalysis.uiElements.length);
         }
         
-        // 🔥 ANALYSIS RESULTS ALREADY SAVED: The edge function handles database storage
-        console.log('✅ Analysis results already saved by edge function');
+        // ✅ ANALYSIS COMPLETE: Edge function handles database storage
+        console.log('✅ Analysis results saved successfully');
         
-        // 🤖 GENERATE AI-ENHANCED SOLUTIONS: Integrate the new solution engine
-        console.log('🤖 Generating AI-enhanced solutions...');
-        try {
-          const consultation = await aiEnhancedSolutionEngine.provideConsultation({
-            analysisResults: result.annotations,
-            userProblemStatement: undefined, // Can be added later via user input
-            analysisContext: analysisContext,
-            analysisId: analysisId,
-            userId: user?.id
-          });
-          
-          console.log('✅ AI-enhanced consultation completed:', {
-            approach: consultation.approach,
-            confidence: consultation.confidence,
-            solutionCount: consultation.solutions.length
-          });
-          
-          setConsultationResults(consultation);
-          
-          // Store consultation in session for results page
-          sessionStorage.setItem('consultationResults', JSON.stringify(consultation));
-          
-        } catch (consultationError) {
-          console.error('⚠️ AI consultation failed, continuing without:', consultationError);
-        }
-        
-        toast.success('Analysis complete and saved! Redirecting to results...');
+        toast.success('Analysis complete! Redirecting to results...');
         
         // 🔥 ROUTE TO SAVED ANALYSIS: Use the permanent analysis ID
         setTimeout(() => {
@@ -515,13 +489,15 @@ export const useAnalysisWorkflow = () => {
         
       } else {
         console.error('❌ Enhanced analysis failed:', result);
-        toast.error('Enhanced analysis failed. Please try again.');
-        setCurrentStep('annotate');
+        toast.error('Analysis failed. Please try again.');
+        setCurrentStep('upload'); // Reset to upload step instead of annotate
+        setIsAnalyzing(false);
       }
     } catch (error) {
       console.error('❌ Enhanced analysis failed:', error);
-      toast.error('Enhanced analysis failed. Please try again.');
-      setCurrentStep('annotate');
+      toast.error('Analysis failed. Please try again.');
+      setCurrentStep('upload'); // Reset to upload step instead of annotate
+      setIsAnalyzing(false);
     } finally {
       setIsAnalyzing(false);
     }

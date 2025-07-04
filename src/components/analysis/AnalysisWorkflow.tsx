@@ -113,7 +113,7 @@ export const AnalysisWorkflow = () => {
           return (
             <TabBasedResultsLayout
               analysisData={workflow.analysisResults}
-              strategistAnalysis={workflow.consultationResults}
+              strategistAnalysis={null}
               userChallenge={workflow.analysisContext}
             />
           );

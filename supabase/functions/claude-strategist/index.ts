@@ -32,7 +32,7 @@ interface ExpertRecommendation {
 console.log('🎭 Claude UX Strategist Function - Starting up');
 
 serve(async (req) => {
-  console.log('📨 Strategist request received:', {
+  console.log('📨 Strategist request received - DISABLED:', {
     method: req.method,
     url: req.url,
     timestamp: new Date().toISOString()
@@ -43,122 +43,15 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
-  }
-
-  try {
-    // 🔧 ENHANCED ERROR DEBUGGING
-    console.log('🔍 Claude Strategist Debug Info:');
-    console.log('Request method:', req.method);
-    console.log('Request headers:', JSON.stringify(Object.fromEntries(req.headers.entries())));
-    
-    const requestBody = await req.json();
-    const { userChallenge, traditionalAnnotations, analysisId, model = 'claude-3-5-haiku-20241022' } = requestBody;
-
-    console.log('📝 Request parameters:');
-    console.log(`   userChallenge: ${userChallenge ? 'EXISTS' : 'MISSING'}`);
-    console.log(`   traditionalAnnotations: ${traditionalAnnotations ? `${traditionalAnnotations.length} items` : 'MISSING'}`);
-    console.log(`   analysisId: ${analysisId ? 'EXISTS' : 'MISSING'}`);
-    console.log(`   model: ${model}`);
-
-    // Validate required parameters
-    if (!userChallenge || !traditionalAnnotations || !analysisId) {
-      console.error('❌ Missing required parameters');
-      return new Response(
-        JSON.stringify({ 
-          error: 'Missing required parameters',
-          received: { 
-            userChallenge: !!userChallenge, 
-            traditionalAnnotations: !!traditionalAnnotations, 
-            analysisId: !!analysisId 
-          }
-        }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
-    // Build strategist-specific prompt
-    const strategistPrompt = buildStrategistPrompt(userChallenge, traditionalAnnotations || []);
-
-    console.log('🤖 Starting Claude strategist analysis:', {
-      model,
-      userChallenge: userChallenge.substring(0, 100) + '...',
-      annotationsCount: traditionalAnnotations?.length || 0
-    });
-
-    // Get Claude API key from environment with enhanced debugging
-    const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
-    console.log('🔍 CLAUDE API KEY DEBUG:');
-    console.log('========================');
-    console.log('API key exists:', !!anthropicApiKey);
-    console.log('API key length:', anthropicApiKey?.length || 0);
-    console.log('API key starts with:', anthropicApiKey?.substring(0, 10));
-    
-    if (!anthropicApiKey) {
-      console.error('❌ ANTHROPIC_API_KEY not found in environment');
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'Anthropic API key not configured - check Supabase secrets'
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    // Call Claude API with enhanced error logging
-    console.log('🔧 About to call Claude API with:', {
-      model,
-      promptLength: strategistPrompt.length,
-      apiKeyLength: anthropicApiKey.length,
-      apiKeyPreview: anthropicApiKey.substring(0, 15) + '...'
-    });
-    
-    const claudeResponse = await callClaudeAPI(strategistPrompt, model, anthropicApiKey);
-
-    if (!claudeResponse.success) {
-      console.error('❌ Claude API failed with details:', {
-        error: claudeResponse.error,
-        model: model,
-        requestId: req.headers.get('x-request-id'),
-        timestamp: new Date().toISOString()
-      });
-      return new Response(JSON.stringify({
-        success: false,
-        error: `Claude API Error: ${claudeResponse.error}`
-      }), {
-        status: 422,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    console.log('✅ Claude strategist analysis completed successfully');
-
-    return new Response(JSON.stringify({
-      success: true,
-      result: claudeResponse.result,
-      model: model
-    }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
-
-  } catch (error) {
-    console.error('💥 Strategist function error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: error.message || 'Unknown error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
-  }
+  // Return disabled message for all requests
+  return new Response(JSON.stringify({
+    success: false,
+    error: 'Claude Strategist functionality has been disabled',
+    message: 'This endpoint is no longer active. Analysis will complete without strategist consultation.'
+  }), {
+    status: 200, // Use 200 to avoid breaking existing flows
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
 });
 
 function buildStrategistPrompt(userChallenge: string, traditionalAnnotations: any[]): string {
