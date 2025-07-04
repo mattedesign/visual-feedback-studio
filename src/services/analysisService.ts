@@ -1,9 +1,9 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Annotation } from '@/types/analysis';
 import { subscriptionService } from './subscriptionService';
-import { convertBlobToBase64 } from '@/utils/imageUtils';
+// ✅ REMOVED: No longer need convertBlobToBase64 import
+// import { convertBlobToBase64 } from '@/utils/imageUtils';
 
 interface AnalyzeDesignRequest {
   imageUrls: string[];
@@ -68,25 +68,42 @@ export const createAnalysis = async () => {
 
 const analyzeDesign = async (request: AnalyzeDesignRequest): Promise<AnalyzeDesignResponse> => {
   try {
-    console.log('📡 Main Analysis: Converting blob URLs to base64 before analysis...');
+    // ✅ FIXED: Use storage URLs directly instead of base64 conversion
+    console.log('📡 Main Analysis: Using storage URLs directly (no base64 conversion)');
     
-    // Convert blob URLs to base64 data
-    const base64ImageUrls = await Promise.all(
-      request.imageUrls.map(url => convertBlobToBase64(url))
-    );
-
-    console.log('📡 Main Analysis: Calling analyze-design function with RAG enabled:', {
-      analysisId: request.analysisId,
-      imageCount: base64ImageUrls.length,
-      isComparative: request.isComparative,
-      ragEnabled: true // Force enable RAG for main analysis
+    // ✅ FIXED: No more base64 conversion - use storage URLs directly
+    const imageUrls = request.imageUrls; // These should be storage URLs now
+    
+    // ✅ FIXED: Validate that we have storage URLs
+    console.log('📡 Main Analysis: Validating storage URLs:', {
+      imageCount: imageUrls.length,
+      urlTypes: imageUrls.map(url => ({
+        isStorage: url.includes('supabase.co') || url.includes('analysis-images'),
+        isBlob: url.startsWith('blob:'),
+        isBase64: url.startsWith('data:'),
+        preview: url.substring(0, 80) + '...'
+      }))
     });
 
-    // Use the same edge function call as the test - this is the working RAG implementation
+    // ✅ FIXED: Warning if still receiving blob URLs
+    const hasBlobs = imageUrls.some(url => url.startsWith('blob:'));
+    if (hasBlobs) {
+      console.warn('⚠️ Warning: Still receiving blob URLs - storage upload may not be working correctly');
+    }
+
+    console.log('📡 Main Analysis: Calling analyze-design function with storage URLs:', {
+      analysisId: request.analysisId,
+      imageCount: imageUrls.length,
+      isComparative: request.isComparative,
+      ragEnabled: true,
+      payloadSize: JSON.stringify({ imageUrls }).length + ' bytes (should be small!)'
+    });
+
+    // ✅ FIXED: Send storage URLs directly to Edge Function
     const { data, error } = await supabase.functions.invoke('analyze-design', {
       body: {
-        imageUrls: base64ImageUrls, // Now sending base64 data
-        imageUrl: base64ImageUrls[0], // Include both for compatibility
+        imageUrls: imageUrls, // ✅ Send storage URLs directly (no base64)
+        imageUrl: imageUrls[0], // Include both for compatibility
         analysisId: request.analysisId,
         analysisPrompt: request.analysisPrompt,
         designType: request.designType,
