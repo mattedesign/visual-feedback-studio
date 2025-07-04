@@ -40,188 +40,79 @@ class AIAnalysisManager {
   ): Promise<AnalysisResult> {
     const startTime = Date.now();
     
-    console.log('🤖 AIAnalysisManager.analyzeImages - Starting comprehensive analysis:', {
+    console.log('🎯 AIAnalysisManager.analyzeImages - Starting Claude-Oriented UX AI Analysis Pipeline:', {
       imageCount: processedImages.length,
       promptLength: analysisPrompt.length,
       isComparative,
       ragEnabled,
       circuitBreakerCount: this.circuitBreakerCount,
-      targetInsights: '16-19',
-      primaryModel: 'Claude Sonnet 4',
-      imageDetails: processedImages.map((img, index) => ({
-        index,
-        hasBase64Data: !!img.base64Data,
-        base64Length: img.base64Data?.length || 0,
-        mimeType: img.mimeType,
-        width: img.width,
-        height: img.height
-      }))
+      primaryModel: 'Claude Sonnet 4.0 (70% weight)',
+      fallbackModel: 'OpenAI GPT-4.1 (20% weight)',
+      researchLayer: 'Perplexity (10% weight)',
+      targetInsights: '16-19 professional standard'
     });
 
     // Validate images have base64 data
     const validImages = processedImages.filter(img => img.base64Data && img.base64Data.length > 0);
     if (validImages.length === 0) {
-      console.error('❌ No valid image data found:', processedImages.map(img => ({
-        hasBase64Data: !!img.base64Data,
-        base64Length: img.base64Data?.length || 0,
-        mimeType: img.mimeType
-      })));
+      console.error('❌ No valid image data found');
       return {
         success: false,
         error: 'No valid image data provided for analysis'
       };
     }
 
-    if (validImages.length !== processedImages.length) {
-      console.warn('⚠️ Some images have invalid data, proceeding with valid ones:', {
-        total: processedImages.length,
-        valid: validImages.length,
-        invalid: processedImages.length - validImages.length
-      });
-    }
-
     try {
-      let enhancedPrompt = analysisPrompt;
-      let ragContext: string | undefined;
-
-      // Build RAG context if enabled
-      if (ragEnabled) {
-        console.log('📚 Building comprehensive RAG context...');
-        
-        try {
-          const ragResult = await this.buildRagContext(analysisPrompt);
-          if (ragResult && ragResult.ragStatus === 'ENABLED') {
-            ragContext = this.formatRagContext(ragResult);
-            console.log('✅ RAG context built successfully:', {
-              ragContextLength: ragContext.length,
-              knowledgeEntries: ragResult.retrievedKnowledge.relevantPatterns.length,
-              competitiveInsights: ragResult.retrievedKnowledge.competitorInsights.length
-            });
-          }
-        } catch (ragError) {
-          console.warn('⚠️ RAG context building failed:', ragError);
-        }
-      }
-
-      // Build comprehensive analysis prompt with strengthened requirements
-      console.log('✨ Building comprehensive analysis prompt with mandatory 16-19 insights requirement');
-      enhancedPrompt = buildAnalysisPrompt(
+      // ✅ FIXED: Use Multi-Model Orchestrator with Claude-First Architecture
+      console.log('🚀 Initializing Multi-Model Orchestrator with Claude-first weighting...');
+      
+      const { multiModelOrchestrator } = await import('./multiModelOrchestrator.ts');
+      
+      const orchestrationResult = await multiModelOrchestrator.orchestrateAnalysis(
+        validImages,
         analysisPrompt,
-        ragContext,
-        isComparative,
-        validImages.length
+        {
+          ragEnabled,
+          perplexityEnabled: true, // Enable Perplexity for research validation
+          forceClaudeOnly: false   // Allow fallbacks if needed
+        }
       );
-
-      console.log('✅ Comprehensive prompt built successfully:', {
-        enhancedPromptLength: enhancedPrompt.length,
-        ragEnhanced: !!ragContext,
-        targetInsights: '16-19',
-        comprehensiveScope: true,
-        mandatoryRequirements: enhancedPrompt.includes('MANDATORY OUTPUT REQUIREMENT')
-      });
-
-      // 🚀 TRY CLAUDE FIRST (Primary Model - Now uses model manager)
-      console.log('🎯 Attempting Claude 4 analysis (Primary)...');
-      try {
-        const claudeResult = await this.callClaudeWithModelManager(validImages, enhancedPrompt);
-        console.log('✅ Claude analysis successful:', {
-          annotationCount: claudeResult.annotations.length,
-          modelUsed: claudeResult.modelUsed || 'Claude 4',
-          targetAchieved: claudeResult.annotations.length >= 16
-        });
-        
-        const processingTime = Date.now() - startTime;
-        return {
-          success: true,
-          annotations: claudeResult.annotations,
-          modelUsed: claudeResult.modelUsed || 'Claude 4',
-          processingTime,
-          ragEnhanced: !!ragContext
-        };
-      } catch (claudeError) {
-        console.warn('⚠️ Claude analysis failed, falling back to OpenAI:', claudeError);
-      }
-
-      // 🔄 FALLBACK TO OPENAI
-      console.log('🔄 Claude failed, attempting OpenAI fallback...');
-      const openaiResult = await this.callOpenAI(validImages, enhancedPrompt);
-
-      if (!openaiResult.ok) {
-        const errorText = await openaiResult.text();
-        console.error('❌ OpenAI API Error Details:', {
-          status: openaiResult.status,
-          statusText: openaiResult.statusText,
-          errorText: errorText.substring(0, 500)
-        });
-        throw new Error(`Both Claude and OpenAI failed. OpenAI error: ${openaiResult.status} ${openaiResult.statusText} - ${errorText}`);
-      }
-
-      const data = await openaiResult.json();
-      
-      console.log('📊 OpenAI fallback analysis response received:', {
-        choices: data.choices?.length || 0,
-        usage: data.usage,
-        responseLength: data.choices?.[0]?.message?.content?.length || 0
-      });
-
-      if (!data.choices || data.choices.length === 0) {
-        throw new Error('No response choices received from OpenAI fallback');
-      }
-
-      const rawContent = data.choices[0].message.content;
-      console.log('📝 Raw AI response length:', rawContent.length);
-      
-      // Parse comprehensive annotations with validation
-      const annotations = this.parseAnnotations(rawContent);
-      
-      console.log('✅ Comprehensive annotations parsed successfully (OpenAI fallback):', {
-        annotationCount: annotations.length,
-        targetCount: '16-19',
-        meetsTarget: annotations.length >= 16,
-        exceedsMinimum: annotations.length >= 12
-      });
-
-      // Enhanced validation for comprehensive analysis
-      if (annotations.length < 12) {
-        console.warn('⚠️ INSUFFICIENT ANNOTATION COUNT - Below professional UX audit standards:', {
-          received: annotations.length,
-          expected: '16-19',
-          minimum: 12,
-          rawResponsePreview: rawContent.substring(0, 500)
-        });
-        
-        // Log the categories to understand what's missing
-        const categories = annotations.map(a => a.category);
-        const severities = annotations.map(a => a.severity);
-        console.warn('📊 Analysis distribution check:', {
-          categories: [...new Set(categories)],
-          severities: [...new Set(severities)],
-          totalAnnotations: annotations.length
-        });
-      }
 
       const processingTime = Date.now() - startTime;
 
-      console.log('✅ AI comprehensive analysis completed successfully (OpenAI fallback):', {
-        annotationsCount: annotations.length,
+      console.log('✅ Claude-Oriented UX AI Analysis Pipeline completed:', {
+        finalAnnotationsCount: orchestrationResult.finalAnnotations.length,
+        primaryModel: orchestrationResult.synthesisMetadata.primaryModel,
+        claudeWeight: orchestrationResult.synthesisMetadata.weights.claude,
+        totalModelsUsed: orchestrationResult.synthesisMetadata.totalModelsUsed,
+        confidenceScore: orchestrationResult.synthesisMetadata.confidenceScore,
+        qualityScore: orchestrationResult.synthesisMetadata.qualityScore,
+        fallbacksTriggered: orchestrationResult.synthesisMetadata.fallbacksTriggered,
         processingTimeMs: processingTime,
-        ragEnhanced: !!ragContext,
-        comprehensiveAnalysis: true,
-        professionalStandard: annotations.length >= 16,
-        targetsAchieved: annotations.length >= 16,
-        modelUsed: 'OpenAI GPT-4o-mini (fallback after Claude 4.0)'
+        professionalStandard: orchestrationResult.finalAnnotations.length >= 16
       });
+
+      // Validate we meet professional UX audit standards
+      if (orchestrationResult.finalAnnotations.length < 12) {
+        console.warn('⚠️ INSUFFICIENT ANNOTATION COUNT - Below professional standards:', {
+          received: orchestrationResult.finalAnnotations.length,
+          minimum: 12,
+          target: '16-19',
+          qualityScore: orchestrationResult.synthesisMetadata.qualityScore
+        });
+      }
 
       return {
         success: true,
-        annotations,
-        modelUsed: 'OpenAI GPT-4o-mini (fallback after Claude 4.0)',
+        annotations: orchestrationResult.finalAnnotations,
+        modelUsed: orchestrationResult.synthesisMetadata.primaryModel,
         processingTime,
-        ragEnhanced: !!ragContext
+        ragEnhanced: ragEnabled,
+        multiModelMetadata: orchestrationResult.synthesisMetadata
       };
 
     } catch (error) {
-      console.error('❌ AI comprehensive analysis failed (both Claude and OpenAI):', error);
+      console.error('❌ Claude-Oriented UX AI Analysis Pipeline failed:', error);
       
       this.circuitBreakerCount++;
       
@@ -233,10 +124,27 @@ class AIAnalysisManager {
         };
       }
 
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown analysis error'
-      };
+      // ✅ EMERGENCY FALLBACK: Try single Claude analysis
+      console.log('🔄 Attempting emergency fallback to single Claude analysis...');
+      try {
+        const claudeResult = await this.callClaudeWithModelManager(validImages, analysisPrompt);
+        const processingTime = Date.now() - startTime;
+        
+        return {
+          success: true,
+          annotations: claudeResult.annotations,
+          modelUsed: claudeResult.modelUsed + ' (emergency fallback)',
+          processingTime,
+          ragEnhanced: false
+        };
+      } catch (fallbackError) {
+        console.error('❌ Emergency fallback also failed:', fallbackError);
+        
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Multi-model analysis pipeline failed'
+        };
+      }
     }
   }
 

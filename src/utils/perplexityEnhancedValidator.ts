@@ -17,12 +17,20 @@ export interface PerplexityValidationMetrics extends ValidationMetrics {
 }
 
 /**
+ * ✅ ENHANCED: Claude-Oriented UX AI Analysis Pipeline Integration
  * Enhanced validator that prioritizes Perplexity research-backed annotations
  * and applies dynamic confidence thresholds based on research quality
+ * 
+ * INTEGRATED WITH CLAUDE-FIRST WEIGHTING:
+ * - Preserves Claude 4.0 high-quality annotations (70% weight priority)
+ * - Validates OpenAI fallback content (20% weight)
+ * - Enhances with Perplexity research validation (10% weight)
  */
 export class PerplexityEnhancedValidator {
+  // ✅ UPDATED: Optimized for Claude-first pipeline
+  private static readonly CLAUDE_CONFIDENCE_THRESHOLD = 0.85; // High threshold for Claude content
   private static readonly DEFAULT_CONFIDENCE_THRESHOLD = 0.7;
-  private static readonly RESEARCH_CONFIDENCE_THRESHOLD = 0.45; // Much lower threshold for research content
+  private static readonly RESEARCH_CONFIDENCE_THRESHOLD = 0.45; // Lower threshold for research content
   private static readonly RESEARCH_CONFIDENCE_BOOST = 0.3; // Significant boost for research content
   private static readonly MIN_RESEARCH_QUALITY_THRESHOLD = 0.6;
 
