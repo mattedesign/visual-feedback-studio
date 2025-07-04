@@ -55,19 +55,41 @@ class DatabaseManager {
         };
       }
 
+      // ✅ ENHANCED: Get images from uploaded_files table for proper database storage
+      let imageUrls: string[] = [];
+      try {
+        const { data: uploadedFiles, error: filesError } = await supabase
+          .from('uploaded_files')
+          .select('public_url')
+          .eq('analysis_id', analysisId)
+          .eq('user_id', analysisRecord.user_id);
+
+        if (!filesError && uploadedFiles?.length > 0) {
+          imageUrls = uploadedFiles
+            .map(file => file.public_url)
+            .filter(Boolean);
+          console.log(`📁 Found ${imageUrls.length} images for analysis ${analysisId}`);
+        } else {
+          console.warn(`⚠️ No uploaded files found for analysis ${analysisId}:`, filesError);
+        }
+      } catch (error) {
+        console.error(`❌ Error fetching uploaded files for analysis ${analysisId}:`, error);
+      }
+
       // Prepare the analysis results data
       const analysisResultsData = {
         analysis_id: analysisId,
         user_id: analysisRecord.user_id,
         annotations: analysisData.annotations,
-        images: [], // Will be populated if needed
+        images: imageUrls, // ✅ Use actual image URLs from uploaded_files
         ai_model_used: 'claude-opus-4-20250514',
         processing_time_ms: Date.now(),
         knowledge_sources_used: analysisData.researchSourceCount || 0,
         total_annotations: analysisData.annotations.length,
         enhanced_context: analysisData.ragEnhanced ? {
           ragEnhanced: true,
-          knowledgeSourcesUsed: analysisData.researchSourceCount || 0
+          knowledgeSourcesUsed: analysisData.researchSourceCount || 0,
+          imageUrls: imageUrls // ✅ Include image URLs in enhanced context
         } : null,
         well_done_data: analysisData.wellDone || null,
         validation_status: 'completed'

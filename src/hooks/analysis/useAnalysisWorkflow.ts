@@ -23,36 +23,61 @@ interface ImageAnnotations {
   annotations: UserAnnotation[];
 }
 
-// Helper function to save image URLs to uploaded_files table
+// ✅ ENHANCED: Helper function to save image URLs to uploaded_files table with better error handling
 const saveImagesToUploadedFiles = async (imageUrls: string[], analysisId: string, userId?: string) => {
-  if (!userId) return;
+  if (!userId) {
+    console.warn('⚠️ No userId provided for saveImagesToUploadedFiles');
+    return;
+  }
   
   const { supabase } = await import('@/integrations/supabase/client');
   
   try {
-    const uploadRecords = imageUrls.map((url, index) => ({
-      analysis_id: analysisId,
-      user_id: userId,
-      file_name: `analysis-image-${index + 1}.jpg`,
-      file_type: 'image/jpeg',
-      file_size: 0, // Unknown for external URLs
-      storage_path: url,
-      upload_type: 'url',
-      public_url: url,
-      original_url: url
-    }));
+    console.log('💾 Saving images to uploaded_files table:', {
+      imageCount: imageUrls.length,
+      analysisId,
+      userId: userId.substring(0, 8) + '...'
+    });
 
-    const { error } = await supabase
+    // Determine file type from URL or default to jpeg
+    const uploadRecords = imageUrls.map((url, index) => {
+      const isStorageUrl = url.includes('supabase.co') || url.includes('analysis-images');
+      let fileType = 'image/jpeg';
+      
+      // Try to determine file type from URL
+      if (url.includes('.png')) fileType = 'image/png';
+      else if (url.includes('.webp')) fileType = 'image/webp';
+      else if (url.includes('.gif')) fileType = 'image/gif';
+
+      return {
+        analysis_id: analysisId,
+        user_id: userId,
+        file_name: `analysis-image-${index + 1}.${fileType.split('/')[1]}`,
+        file_type: fileType,
+        file_size: 0, // Unknown for external URLs
+        storage_path: isStorageUrl ? url : `external/${Date.now()}-${index}`,
+        upload_type: isStorageUrl ? 'file' : 'url',
+        public_url: url,
+        original_url: url
+      };
+    });
+
+    const { data, error } = await supabase
       .from('uploaded_files')
-      .insert(uploadRecords);
+      .insert(uploadRecords)
+      .select('id, public_url');
 
     if (error) {
-      console.error('Error saving images to uploaded_files:', error);
+      console.error('❌ Error saving images to uploaded_files:', error);
+      throw error;
     } else {
-      console.log(`✅ Saved ${imageUrls.length} images to uploaded_files table`);
+      console.log(`✅ Successfully saved ${imageUrls.length} images to uploaded_files table:`, 
+        data?.map(d => d.id));
+      return data;
     }
   } catch (error) {
-    console.error('Error in saveImagesToUploadedFiles:', error);
+    console.error('❌ Critical error in saveImagesToUploadedFiles:', error);
+    throw error; // Re-throw to handle upstream
   }
 };
 
@@ -150,9 +175,28 @@ export const useAnalysisWorkflow = () => {
           });
           
           console.log('✅ Analysis session created:', analysisId);
+          
+          // ✅ IMMEDIATE: Save this first image to uploaded_files
+          try {
+            await saveImagesToUploadedFiles([imageUrl], analysisId, user?.id);
+            console.log('✅ First image immediately saved to uploaded_files');
+          } catch (imageError) {
+            console.warn('⚠️ Failed to immediately save first image:', imageError);
+          }
         }
       } catch (error) {
         console.error('❌ Failed to create analysis session:', error);
+      }
+    } else if (currentAnalysis?.id) {
+      // ✅ IMMEDIATE: Save additional images to uploaded_files as they're added
+      try {
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        await saveImagesToUploadedFiles([imageUrl], currentAnalysis.id, user?.id);
+        console.log('✅ Additional image immediately saved to uploaded_files');
+      } catch (imageError) {
+        console.warn('⚠️ Failed to immediately save additional image:', imageError);
       }
     }
     
@@ -336,9 +380,14 @@ export const useAnalysisWorkflow = () => {
         hasValidIds: !!(analysisId && user?.id)
       });
 
-      // ✅ NEW: Save image URLs to uploaded_files table for proper dashboard display
-      await saveImagesToUploadedFiles(images, analysisId, user?.id);
-      console.log('📁 Images saved to uploaded_files table for dashboard display');
+      // ✅ CRITICAL: Save image URLs to uploaded_files table for proper dashboard display and Claude access
+      try {
+        const savedFiles = await saveImagesToUploadedFiles(images, analysisId, user?.id);
+        console.log('✅ Images saved to uploaded_files table for dashboard display:', savedFiles?.length);
+      } catch (imageSaveError) {
+        console.error('❌ Failed to save images to uploaded_files - analysis will continue but dashboard may not show images correctly:', imageSaveError);
+        // Continue with analysis even if image save fails
+      }
 
       const userAnnotationsArray = imageAnnotations.flatMap(imageAnnotation => 
         imageAnnotation.annotations.map(annotation => ({

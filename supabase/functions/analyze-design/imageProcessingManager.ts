@@ -13,25 +13,40 @@ interface ImageProcessingResult {
 }
 
 class ImageProcessingManager {
+  // ✅ ENHANCED: Better URL conversion with Supabase Storage support
   private convertToFullUrl(imageUrl: string): string {
+    console.log('🔗 Converting URL:', { original: imageUrl.substring(0, 80) + '...' });
+    
     // If it's already a full URL, return as is
     if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      console.log('✅ Already full URL');
       return imageUrl;
     }
     
     // If it's a relative URL starting with /lovable-uploads/, convert to full URL
     if (imageUrl.startsWith('/lovable-uploads/')) {
-      return `https://preview--figmant-ai.lovable.app${imageUrl}`;
+      const fullUrl = `https://preview--figmant-ai.lovable.app${imageUrl}`;
+      console.log('✅ Converted lovable-uploads URL:', fullUrl);
+      return fullUrl;
+    }
+    
+    // If it's a Supabase storage URL pattern
+    if (imageUrl.includes('supabase.co') || imageUrl.includes('analysis-images')) {
+      console.log('✅ Supabase storage URL detected');
+      return imageUrl;
     }
     
     // If it's a relative URL that might be a Supabase storage path
     if (imageUrl.startsWith('/')) {
       const supabaseUrl = Deno.env.get('SUPABASE_URL');
       if (supabaseUrl) {
-        return `${supabaseUrl}${imageUrl}`;
+        const fullUrl = `${supabaseUrl}/storage/v1/object/public/analysis-images${imageUrl}`;
+        console.log('✅ Converted Supabase storage path:', fullUrl);
+        return fullUrl;
       }
     }
     
+    console.log('⚠️ URL conversion fallback - returning as-is:', imageUrl);
     return imageUrl;
   }
 

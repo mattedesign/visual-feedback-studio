@@ -59,11 +59,23 @@ const Dashboard = () => {
     return context.length > 50 ? context.substring(0, 50) + '...' : context;
   };
 
-  // Helper function to determine analysis status
+  // ✅ FIXED: Better logic to determine analysis status - don't require images for completion
   const getAnalysisStatus = (analysis: AnalysisResultsResponse) => {
-    if (analysis.total_annotations > 0 && analysis.images?.length > 0) {
+    // Analysis is completed if it has annotations, regardless of image count
+    if (analysis.total_annotations > 0) {
       return 'completed';
     }
+    
+    // If no annotations but analysis was recently created (within last hour), it might be processing
+    const createdAt = new Date(analysis.created_at);
+    const now = new Date();
+    const hoursSinceCreation = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+    
+    if (hoursSinceCreation <= 1) {
+      return 'processing';
+    }
+    
+    // Otherwise, likely failed or incomplete
     return 'processing';
   };
 

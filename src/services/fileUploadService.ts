@@ -63,8 +63,8 @@ export const uploadFileToStorage = async (file: File, analysisId: string): Promi
       return null;
     }
 
-    // Save metadata to uploaded_files table
-    if (!analysisId.startsWith('temp-')) {
+    // ✅ ENHANCED: Always save metadata to uploaded_files table for proper tracking
+    try {
       const { data: fileRecord, error: dbError } = await supabase
         .from('uploaded_files')
         .insert({
@@ -82,11 +82,16 @@ export const uploadFileToStorage = async (file: File, analysisId: string): Promi
 
       if (dbError) {
         console.error('❌ Database save error:', dbError);
-        toast.error('Failed to save file information');
-        return null;
+        
+        // Don't fail upload if DB save fails, but log it
+        console.warn('⚠️ File uploaded successfully but metadata save failed - file still accessible');
+        console.log('📁 File URL still valid:', urlData.publicUrl);
+      } else {
+        console.log('✅ File metadata saved to database:', fileRecord.id);
       }
-
-      console.log('✅ File metadata saved to database:', fileRecord.id);
+    } catch (dbSaveError) {
+      console.error('❌ Database save exception:', dbSaveError);
+      console.log('📁 File upload successful despite DB save issue:', urlData.publicUrl);
     }
 
     toast.success('Image uploaded successfully!');

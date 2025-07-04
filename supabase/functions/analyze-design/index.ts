@@ -112,6 +112,48 @@ serve(async (req) => {
       targetInsights: '16-19'
     });
 
+    // ✅ ENHANCED: If no image URLs provided, try to fetch from uploaded_files table
+    let finalImageUrls = requestData.imageUrls || [];
+    
+    if ((!finalImageUrls || finalImageUrls.length === 0) && requestData.analysisId) {
+      console.log('🔍 No image URLs in request, fetching from uploaded_files table...');
+      try {
+        const supabaseUrl = Deno.env.get('SUPABASE_URL');
+        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+        
+        if (supabaseUrl && supabaseServiceKey) {
+          const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.50.0');
+          const supabase = createClient(supabaseUrl, supabaseServiceKey);
+          
+          const { data: uploadedFiles, error } = await supabase
+            .from('uploaded_files')
+            .select('public_url')
+            .eq('analysis_id', requestData.analysisId);
+
+          if (!error && uploadedFiles?.length > 0) {
+            finalImageUrls = uploadedFiles
+              .map(file => file.public_url)
+              .filter(Boolean);
+            
+            console.log(`✅ Retrieved ${finalImageUrls.length} image URLs from uploaded_files table`);
+          } else {
+            console.warn('⚠️ No uploaded files found for analysis:', requestData.analysisId);
+          }
+        }
+      } catch (dbError) {
+        console.error('❌ Error fetching images from database:', dbError);
+      }
+    }
+    
+    // Update the imageUrls in requestData for downstream processing
+    requestData.imageUrls = finalImageUrls;
+    
+    console.log('📊 Final image processing plan:', {
+      originalImageCount: (requestData.imageUrls?.length || 0),
+      finalImageCount: finalImageUrls.length,
+      imageSourcesUsed: finalImageUrls.length > 0 ? 'request_or_database' : 'none'
+    });
+
     // Validate request with enhanced validation
     const validationResult = requestValidator.validate(requestData);
     if (!validationResult.isValid) {
@@ -127,9 +169,8 @@ serve(async (req) => {
       );
     }
 
-    // Extract validated data
+    // Extract validated data - use finalImageUrls
     const {
-      imageUrls,
       analysisId,
       analysisPrompt,
       designType = 'web',
@@ -137,6 +178,8 @@ serve(async (req) => {
       ragEnabled = false,
       ragEnhanced = false
     } = requestData;
+    
+    const imageUrls = finalImageUrls; // Use the URLs we determined above
 
     console.log('✅ Request validation passed for comprehensive analysis');
     
