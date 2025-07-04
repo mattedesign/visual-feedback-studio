@@ -19,33 +19,23 @@ import { Button } from '@/components/ui/button';
 import { analysisSessionService } from '@/services/analysisSessionService';
 
 export const AnalysisWorkflow = () => {
-  // 🔄 LOOP DETECTION: Track component renders
-  console.log('🔄 COMPONENT RENDER:', new Date().toISOString(), {
-    componentName: 'AnalysisWorkflow',
-    renderCount: ++((window as any).analysisWorkflowRenderCount) || ((window as any).analysisWorkflowRenderCount = 1)
-  });
-
-  // ✅ FIXED: Move ALL hooks to the top before any conditional returns
+  // ✅ STREAMLINED: All hooks moved to top
   const { user } = useAuth();
   const workflow = useAnalysisWorkflow();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
   
-  // Check for Figma UI feature flag
-  const figmaUIEnabled = useFeatureFlag('figma-inspired-ui');
+  // ✅ STREAMLINED: Always use enhanced Figma UI - no feature flag checks needed
   const urlParams = new URLSearchParams(window.location.search);
-  const figmaMode = urlParams.get('figma') === 'true';
-  
-  // ✅ FIXED: Diagnostic debug mode - always initialize properly
   const debugMode = urlParams.get('debug') === 'true';
   const [showDiagnostics, setShowDiagnostics] = useState(debugMode);
   
-  // ✅ FIXED: Check if we're on the main analysis page vs results page
+  // ✅ STREAMLINED: Route detection for proper state management
   const isOnMainAnalysisPage = window.location.pathname === '/analysis';
   const isOnResultsPage = window.location.pathname.includes('/analysis/') && 
                           window.location.pathname !== '/analysis';
 
-  // ✅ FIXED: Reset workflow and analysis session if we're on main analysis page but have cached results
+  // ✅ STREAMLINED: Reset workflow and session if on main analysis page with cached results
   useEffect(() => {
     if (isOnMainAnalysisPage && workflow.analysisResults) {
       console.log('🔄 On main analysis page with cached results - clearing state and session');
@@ -54,48 +44,25 @@ export const AnalysisWorkflow = () => {
     }
   }, [isOnMainAnalysisPage, workflow.analysisResults]);
   
-  // ✅ FIXED: Debug panel state management
-  console.log('🔍 DEBUG PANEL STATE:', {
-    debugMode,
-    showDiagnostics,
-    urlDebug: urlParams.get('debug'),
-    shouldShowPanel: debugMode || showDiagnostics
-  });
-  
-  console.log('🎨 AnalysisWorkflow Figma Check:', { 
-    figmaUIEnabled, 
-    figmaMode, 
+  console.log('🎨 AnalysisWorkflow - Always Enhanced Mode:', { 
     currentStep: workflow.currentStep,
     currentURL: window.location.href 
   });
 
-  // ✅ FIXED: Now safe to return early after all hooks are called
+  // ✅ STREAMLINED: Early return if no user
   if (!user) {
     return null;
   }
 
-  // Use centered interface for upload step when feature flag is enabled
-  if ((figmaUIEnabled || figmaMode) && workflow.currentStep === 'upload') {
+  // ✅ STREAMLINED: Always use Figma-inspired interface for upload step
+  if (workflow.currentStep === 'upload') {
     return <CenteredAnalysisInterface workflow={workflow} />;
   }
 
-  // Use Figma-inspired annotation layout when feature flag is enabled
-  if ((figmaUIEnabled || figmaMode) && workflow.currentStep === 'annotate') {
+  // ✅ STREAMLINED: Always use Figma-inspired annotation layout
+  if (workflow.currentStep === 'annotate') {
     console.log('✅ Using Figma-inspired annotation layout for step:', workflow.currentStep);
     return <FigmaAnnotateLayout workflow={workflow} />;
-  }
-
-  // For upload and annotate steps, use the studio layout (only when Figma is NOT enabled)
-  if ((workflow.currentStep === 'upload' || workflow.currentStep === 'annotate') && !(figmaUIEnabled || figmaMode)) {
-    return (
-      <AnalysisStudioLayout 
-        workflow={workflow}
-        sidebarCollapsed={sidebarCollapsed}
-        setSidebarCollapsed={setSidebarCollapsed}
-        rightPanelCollapsed={rightPanelCollapsed}
-        setRightPanelCollapsed={setRightPanelCollapsed}
-      />
-    );
   }
 
   const renderCurrentStep = () => {
@@ -105,12 +72,12 @@ export const AnalysisWorkflow = () => {
       case 'analyzing':
         return <AnalyzingStep workflow={workflow} />;
       case 'results':
-        // ✅ FIXED: Only show results when we're on a results route with an ID
+        // ✅ STREAMLINED: Always use enhanced results layout when on results route
         const isOnResultsRoute = window.location.pathname.includes('/analysis/') && 
                                  window.location.pathname !== '/analysis';
         
-        // Use tab-based layout for results when feature flag is enabled AND we're on a results route
-        if ((figmaUIEnabled || figmaMode) && workflow.analysisResults && isOnResultsRoute) {
+        // ✅ STREAMLINED: Always use tab-based layout for results when on results route
+        if (workflow.analysisResults && isOnResultsRoute) {
           return (
             <TabBasedResultsLayout
               analysisData={workflow.analysisResults}
@@ -120,7 +87,7 @@ export const AnalysisWorkflow = () => {
           );
         }
         
-        // ✅ FIXED: If we're on the main analysis page but have results, reset to upload
+        // ✅ STREAMLINED: Reset to upload if on main page with cached results
         if (!isOnResultsRoute && workflow.analysisResults) {
           console.log('🔄 On main analysis page with cached results - resetting to upload');
           workflow.resetWorkflow();
@@ -129,6 +96,7 @@ export const AnalysisWorkflow = () => {
         
         return <ResultsStep workflow={workflow} />;
       default:
+        // ✅ STREAMLINED: Fallback to studio layout for any unhandled cases
         return (
           <AnalysisStudioLayout 
             workflow={workflow}

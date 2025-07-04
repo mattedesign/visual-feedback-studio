@@ -1,29 +1,29 @@
 
 export const useFeatureFlag = (flagName: string): boolean => {
-  // Phase 1: Feature Flag Infrastructure Enhancement
+  // STREAMLINED: All enhanced features are now enabled by default
   const flags = {
-    'modular-analysis': false, // SET TO FALSE BY DEFAULT
-    'business-dashboard': false,
-    'separated-annotation-fields': true, // Enable separated title/description fields
-    'perplexity-integration': true, // Enable Perplexity.ai integration
-    'multi-stage-pipeline': true, // Enable multi-stage analysis pipeline by default
-    'consolidated-analysis-pipeline': true, // Enable consolidated analysis system
+    'modular-analysis': true, // ENABLED: Advanced modular interface
+    'business-dashboard': true, // ENABLED: Business impact dashboard
+    'separated-annotation-fields': true, // ENABLED: Separated title/description fields
+    'perplexity-integration': true, // ENABLED: Perplexity.ai integration
+    'multi-stage-pipeline': true, // ENABLED: Multi-stage analysis pipeline
+    'consolidated-analysis-pipeline': true, // ENABLED: Consolidated analysis system
     
-    // Phase 2: New Figma-Inspired UI Architecture
+    // Figma-Inspired UI Architecture - Always Enabled
     'figma-inspired-ui': true, // ENABLED: Figma-style panels and layout
-    'advanced-strategist': false, // NEW: Enhanced Claude integration
-    'multi-model-orchestration': false, // NEW: Parallel AI processing
+    'advanced-strategist': true, // ENABLED: Enhanced Claude integration
+    'multi-model-orchestration': true, // ENABLED: Parallel AI processing
     
-    // Phase 3: Enhanced Features
+    // Enhanced Features - Always Enabled
     'interactive-annotations': true, // ENABLED: Figma-style annotation overlay
     'resizable-panels': true, // ENABLED: Resizable panel system
     'keyboard-shortcuts': true, // ENABLED: Figma-style shortcuts
-    'export-options': false, // NEW: PDF, image, and data export
+    'export-options': true, // ENABLED: PDF, image, and data export
     
-    // Phase 6: Advanced Features & Optimization
+    // Advanced Features & Optimization - Always Enabled
     'advanced-analytics-dashboard': true, // ENABLED: Pipeline health monitoring
-    'collaborative-features': false, // NEW: Multi-user analysis review
-    'version-history': false, // NEW: Track analysis iterations
+    'collaborative-features': true, // ENABLED: Multi-user analysis review
+    'version-history': true, // ENABLED: Track analysis iterations
     'enhanced-analysis-layout': true, // ENABLED: Enhanced Figma layout
   };
   
