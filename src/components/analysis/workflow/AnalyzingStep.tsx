@@ -1,10 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { useConsolidatedAnalysis } from '@/hooks/analysis/useConsolidatedAnalysis';
 import { SimpleProgressTracker } from '@/components/analysis/SimpleProgressTracker';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { analysisErrorHandler } from '@/utils/analysisErrorHandler';
 import { toast } from 'sonner';
+import { EnhancedErrorHandler } from './components/EnhancedErrorHandler';
 
 interface AnalyzingStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -13,6 +14,7 @@ interface AnalyzingStepProps {
 export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
   const consolidatedAnalysis = useConsolidatedAnalysis();
   const analysisStartedRef = useRef(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
   
   // Feature flags
   const useConsolidatedPipeline = useFeatureFlag('consolidated-analysis-pipeline');
@@ -75,13 +77,14 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       console.error('❌ Consolidated analysis failed:', error);
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      toast.error(`Analysis failed: ${errorMessage}. Please try again.`, {
+      setAnalysisError(errorMessage);
+      
+      toast.error(`Analysis failed: ${errorMessage}`, {
         duration: 8000
       });
       
-      // Reset to allow retry
+      // Don't auto-navigate on error - let user choose what to do
       workflow.setIsAnalyzing(false);
-      workflow.goToStep('annotate');
     } finally {
       analysisStartedRef.current = false;
     }
@@ -105,6 +108,35 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       console.log('✅ Analysis marked as complete by consolidated system');
     }
   }, [consolidatedAnalysis.progress.phase]);
+
+  // ✅ FIXED: Show error handler if analysis failed
+  if (analysisError) {
+    return (
+      <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center p-4">
+        <EnhancedErrorHandler
+          error={analysisError}
+          onRetry={() => {
+            setAnalysisError(null);
+            analysisStartedRef.current = false;
+            performAnalysis();
+          }}
+          onReset={() => {
+            setAnalysisError(null);
+            workflow.resetWorkflow();
+          }}
+          onDebug={() => {
+            // Show debug info - could open diagnostics panel
+            console.log('🔍 Debug info requested for error:', analysisError);
+          }}
+          context={{
+            step: 'analyzing',
+            imageCount: workflow.selectedImages.length,
+            promptLength: workflow.analysisContext.length
+          }}
+        />
+      </div>
+    );
+  }
 
   // Choose progress tracker based on feature flag
   if (useConsolidatedPipeline) {

@@ -4,8 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
-import { X, MessageSquare } from 'lucide-react';
+import { X, MessageSquare, Lightbulb, AlertCircle } from 'lucide-react';
 import { MultiImageAnnotateStep } from './MultiImageAnnotateStep';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AnalysisValidator } from './components/AnalysisValidator';
 
 interface AnnotateStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -74,12 +76,73 @@ export const AnnotateStep = ({ workflow }: AnnotateStepProps) => {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      {/* ✅ FIXED: Analysis Context Input */}
       <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
         <CardHeader>
-          <CardTitle className="text-2xl text-center text-gray-900 dark:text-white">Add Specific Comments</CardTitle>
+          <CardTitle className="text-xl text-gray-900 dark:text-white flex items-center gap-2">
+            <Lightbulb className="w-5 h-5 text-blue-500" />
+            Analysis Context
+          </CardTitle>
+          <p className="text-gray-600 dark:text-gray-400">
+            Describe what you want analyzed about this design (required for AI analysis)
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Textarea
+            value={workflow.analysisContext}
+            onChange={(e) => workflow.setAnalysisContext(e.target.value)}
+            placeholder="Example: Analyze the user onboarding flow for conversion optimization. Focus on clarity of navigation, form completion barriers, and mobile usability issues."
+            className="min-h-24 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600"
+            maxLength={2000}
+          />
+          
+          <div className="flex justify-between items-center text-sm">
+            <span className={`${workflow.analysisContext.length < 10 ? 'text-red-500' : 'text-gray-500'}`}>
+              {workflow.analysisContext.length}/2000 characters 
+              {workflow.analysisContext.length < 10 && ' (minimum 10)'}
+            </span>
+            
+            {workflow.analysisContext.length >= 10 && (
+              <span className="text-green-600 flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" />
+                Ready for analysis
+              </span>
+            )}
+          </div>
+          
+          {workflow.analysisContext.length < 10 && (
+            <Alert className="border-yellow-200 bg-yellow-50">
+              <AlertCircle className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-yellow-700">
+                Please provide more detailed context (at least 10 characters) to ensure high-quality analysis results.
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {/* ✅ FIXED: Real-time validation feedback */}
+          <AnalysisValidator
+            images={workflow.selectedImages}
+            analysisContext={workflow.analysisContext}
+            analysisId={workflow.currentAnalysis?.id}
+          />
+          
+          <div className="flex justify-center">
+            <Button
+              onClick={workflow.goToNextStep}
+              disabled={workflow.analysisContext.length < 10 || workflow.selectedImages.length === 0 || !workflow.currentAnalysis?.id}
+              className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            >
+              Start Analysis ({workflow.selectedImages.length} image{workflow.selectedImages.length !== 1 ? 's' : ''})
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
+        <CardHeader>
+          <CardTitle className="text-2xl text-center text-gray-900 dark:text-white">Add Specific Comments (Optional)</CardTitle>
           <p className="text-gray-600 dark:text-gray-400 text-center">
             Click anywhere on the image to add specific comments about areas you'd like analyzed.
-            Use the analysis setup below to provide overall context.
           </p>
         </CardHeader>
         <CardContent className="space-y-6">

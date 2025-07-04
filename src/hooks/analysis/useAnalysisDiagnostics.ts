@@ -148,8 +148,12 @@ export const useAnalysisDiagnostics = () => {
       checks.push({
         name: 'Analysis Prompt',
         status: 'FAIL',
-        message: `Analysis prompt too short: ${analysisPrompt.length} characters (minimum: 10)`,
-        details: { length: analysisPrompt.length, minimum: 10 }
+        message: `Analysis prompt too short: ${analysisPrompt.trim().length} characters (minimum: 10)`,
+        details: { 
+          length: analysisPrompt.trim().length, 
+          minimum: 10,
+          suggestion: 'Provide more detailed context about what you want analyzed'
+        }
       });
       criticalIssues++;
     } else if (analysisPrompt.length > 2000) {
@@ -165,7 +169,10 @@ export const useAnalysisDiagnostics = () => {
         name: 'Analysis Prompt',
         status: 'PASS',
         message: `Valid analysis prompt: ${analysisPrompt.length} characters`,
-        details: { length: analysisPrompt.length }
+        details: { 
+          length: analysisPrompt.length,
+          wordCount: analysisPrompt.split(/\s+/).length
+        }
       });
     }
 

@@ -92,13 +92,25 @@ export const useConsolidatedAnalysis = () => {
       return { success: false, error: 'Analysis already in progress' };
     }
 
-    // Validation
+    // ✅ FIXED: Enhanced validation with proper error messages
     if (input.imageUrls.length === 0) {
+      toast.error('Please select at least one image to analyze');
       throw new Error('Please select at least one image to analyze');
     }
 
     if (!input.analysisContext.trim()) {
+      toast.error('Please provide analysis context');
       throw new Error('Please provide analysis context');
+    }
+    
+    if (input.analysisContext.trim().length < 10) {
+      toast.error('Analysis context must be at least 10 characters long for meaningful results');
+      throw new Error('Analysis context must be at least 10 characters long');
+    }
+    
+    if (input.analysisContext.length > 2000) {
+      toast.error('Analysis context must be less than 2000 characters');
+      throw new Error('Analysis context must be less than 2000 characters');
     }
 
     console.log('🚀 Starting consolidated analysis:', {

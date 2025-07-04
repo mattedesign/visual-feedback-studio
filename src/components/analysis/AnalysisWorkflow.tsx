@@ -33,9 +33,17 @@ export const AnalysisWorkflow = () => {
   const urlParams = new URLSearchParams(window.location.search);
   const figmaMode = urlParams.get('figma') === 'true';
   
-  // ✅ NEW: Diagnostic debug mode
-  const debugMode = urlParams.get('debug') === 'true';
-  const [showDiagnostics, setShowDiagnostics] = useState(debugMode);
+    // ✅ FIXED: Diagnostic debug mode - always initialize properly
+    const debugMode = urlParams.get('debug') === 'true';
+    const [showDiagnostics, setShowDiagnostics] = useState(debugMode);
+    
+    // ✅ FIXED: Debug panel state management
+    console.log('🔍 DEBUG PANEL STATE:', {
+      debugMode,
+      showDiagnostics,
+      urlDebug: urlParams.get('debug'),
+      shouldShowPanel: debugMode || showDiagnostics
+    });
   
   console.log('🎨 AnalysisWorkflow Figma Check:', { 
     figmaUIEnabled, 
@@ -105,28 +113,29 @@ export const AnalysisWorkflow = () => {
 
   return (
     <div className="h-full">
-      {/* ✅ NEW: Diagnostic Debug Mode */}
+      {/* ✅ FIXED: Always show debug panel when enabled */}
       {(debugMode || showDiagnostics) && (
-        <div className="fixed top-4 right-4 z-50 w-96 max-h-96 overflow-auto">
+        <div className="fixed top-4 right-4 z-50 w-96 max-h-96 overflow-auto bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border">
           <DiagnosticDebugMode
             images={workflow.selectedImages}
             analysisPrompt={workflow.analysisContext}
             analysisId={workflow.currentAnalysis?.id}
+            onDiagnosticsComplete={(canProceed) => {
+              console.log('🔍 Diagnostics completed, can proceed:', canProceed);
+            }}
           />
         </div>
       )}
       
-      {/* Debug Toggle Button */}
-      {!debugMode && (
-        <Button
-          onClick={() => setShowDiagnostics(!showDiagnostics)}
-          variant="ghost"
-          size="sm"
-          className="fixed bottom-4 left-4 z-50 opacity-50 hover:opacity-100"
-        >
-          🔍 Debug
-        </Button>
-      )}
+      {/* ✅ FIXED: Always show debug toggle button */}
+      <Button
+        onClick={() => setShowDiagnostics(!showDiagnostics)}
+        variant="ghost"
+        size="sm"
+        className="fixed bottom-4 left-4 z-50 opacity-60 hover:opacity-100 bg-white/80 backdrop-blur-sm border shadow-sm"
+      >
+        {showDiagnostics ? '🔍 Hide Debug' : '🔍 Debug'}
+      </Button>
       
       {renderCurrentStep()}
     </div>

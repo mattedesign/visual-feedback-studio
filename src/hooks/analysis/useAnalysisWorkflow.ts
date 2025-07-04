@@ -128,12 +128,33 @@ export const useAnalysisWorkflow = () => {
     enhancedAnalysis.resetState();
   }, [enhancedAnalysis]);
 
-  const addImage = useCallback((imageUrl: string) => {
+  const addImage = useCallback(async (imageUrl: string) => {
     console.log('📸 ADD IMAGE CALLED:', {
       imageUrl,
       currentImages: images,
       alreadyExists: images.includes(imageUrl)
     });
+    
+    // ✅ FIXED: Create analysis session on first image upload
+    if (images.length === 0 && !currentAnalysis) {
+      console.log('🔥 Creating analysis session for first image...');
+      try {
+        const analysisId = await analysisService.createAnalysis();
+        if (analysisId) {
+          const { supabase } = await import('@/integrations/supabase/client');
+          const { data: { user } } = await supabase.auth.getUser();
+          
+          setCurrentAnalysis({
+            id: analysisId,
+            user_id: user?.id
+          });
+          
+          console.log('✅ Analysis session created:', analysisId);
+        }
+      } catch (error) {
+        console.error('❌ Failed to create analysis session:', error);
+      }
+    }
     
     setImages(prev => {
       if (prev.includes(imageUrl)) {
@@ -153,7 +174,7 @@ export const useAnalysisWorkflow = () => {
     if (images.length === 0) {
       setActiveImageUrl(imageUrl);
     }
-  }, [images]);
+  }, [images, currentAnalysis]);
 
   const selectImages = useCallback((imageUrls: string[]) => {
     console.log('🖼️ SELECT IMAGES:', {
@@ -434,7 +455,8 @@ export const useAnalysisWorkflow = () => {
         }
         break;
       case 'annotate':
-        setCurrentStep('review');
+        // ✅ FIXED: Skip review step and go directly to analyzing with consolidated pipeline
+        setCurrentStep('analyzing');
         break;
       case 'review':
         startAnalysis();
@@ -498,20 +520,20 @@ export const useAnalysisWorkflow = () => {
     resetWorkflow,
     selectImages,
     selectImage,
+    setAnalysisContext, // ✅ FIXED: Expose analysis context setter
+    setAiAnnotations, // ✅ FIXED: Expose AI annotations setter
     addUploadedFile: addImage,
     setActiveImageUrl,
     setActiveImage,
     addUserAnnotation,
     removeUserAnnotation,
     updateUserAnnotation,
-    setAnalysisContext,
     startAnalysis,
     goToStep,
     goToNextStep,
     goToPreviousStep,
     proceedFromReview,
     getTotalAnnotationsCount,
-    setAiAnnotations: setAiAnnotations,
     setIsAnalyzing
   };
 };
