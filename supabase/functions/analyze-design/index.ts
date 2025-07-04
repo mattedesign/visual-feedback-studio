@@ -415,7 +415,17 @@ serve(async (req) => {
           continue;
         }
         
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(imageData)));
+        // Convert to base64 safely to avoid stack overflow
+        const uint8Array = new Uint8Array(imageData);
+        let binaryString = '';
+        const chunkSize = 1024;
+        for (let i = 0; i < uint8Array.length; i += chunkSize) {
+          const chunk = uint8Array.slice(i, i + chunkSize);
+          for (let j = 0; j < chunk.length; j++) {
+            binaryString += String.fromCharCode(chunk[j]);
+          }
+        }
+        const base64 = btoa(binaryString);
         console.log('✅ Image converted to base64, length:', base64.length);
         
         imageContent.push({
