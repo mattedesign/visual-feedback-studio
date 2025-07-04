@@ -52,8 +52,8 @@ export async function validateAndTestApiKey(apiKey: string): Promise<string> {
     throw new Error(`Anthropic API key too long: ${cleanApiKey.length} chars (expected <200)`);
   }
 
-  // Test API key with a minimal request to verify authentication
-  console.log('🧪 TESTING API KEY AUTHENTICATION...');
+  // Test API key with most reliable model to verify authentication
+  console.log('🧪 TESTING API KEY WITH MOST STABLE MODEL...');
   try {
     const testResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -63,9 +63,9 @@ export async function validateAndTestApiKey(apiKey: string): Promise<string> {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
+        model: 'claude-3-5-haiku-20241022', // Most stable model for auth testing
         max_tokens: 10,
-        messages: [{ role: 'user', content: 'Test' }]
+        messages: [{ role: 'user', content: 'Test auth' }]
       })
     });
 

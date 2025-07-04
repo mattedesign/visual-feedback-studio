@@ -47,3 +47,6 @@ verify_jwt = true
 
 [functions.problem-semantic-matcher]
 verify_jwt = true
+
+[functions.test-claude-auth]
+verify_jwt = true

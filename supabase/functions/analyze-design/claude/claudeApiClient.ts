@@ -178,13 +178,15 @@ Your response must be valid JSON only with this exact structure:
       console.error(`   Model attempted: ${model}`);
       console.error(`   Error response: ${JSON.stringify(errorDetails, null, 2)}`);
       console.error('='.repeat(60));
-      console.error('💡 RECOVERY SUGGESTIONS:');
-      console.error('   1. Verify ANTHROPIC_API_KEY in Supabase secrets');
-      console.error('   2. Regenerate API key in Anthropic Console');
-      console.error('   3. Check for whitespace/formatting issues');
-      console.error('   4. Ensure API key has proper permissions');
+      console.error('💡 ENHANCED RECOVERY SUGGESTIONS:');
+      console.error('   1. Verify ANTHROPIC_API_KEY in Supabase secrets is correctly set');
+      console.error('   2. Regenerate API key in Anthropic Console (old key may be expired)');
+      console.error('   3. Check for whitespace/formatting issues in the API key');
+      console.error('   4. Ensure API key has proper permissions for the requested model');
+      console.error('   5. Try with Claude 3.5 Haiku model first (most stable for auth)');
+      console.error('   6. Check if your Anthropic account has access to the requested model');
       console.error('='.repeat(60));
-      throw new Error(`Claude API authentication failed (401): Invalid or expired API key. Please verify ANTHROPIC_API_KEY in Supabase secrets.`);
+      throw new Error(`Claude API authentication failed (401): Invalid or expired API key. Model: ${model}. Please verify and regenerate ANTHROPIC_API_KEY in Supabase secrets.`);
     }
     
     if (response.status === 400) {

@@ -51,7 +51,7 @@ serve(async (req) => {
   }
 
   try {
-    const { userChallenge, traditionalAnnotations, model = 'claude-opus-4-20250514' } = await req.json();
+    const { userChallenge, traditionalAnnotations, model = 'claude-3-5-haiku-20241022' } = await req.json();
 
     if (!userChallenge) {
       return new Response(JSON.stringify({

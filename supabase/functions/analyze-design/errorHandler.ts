@@ -27,7 +27,7 @@ export function handleError(error: Error): Response {
     errorCategory = 'auth_error';
     errorSeverity = 'critical';
     httpStatus = 401;
-    userFriendlyMessage = 'Claude API authentication failed. Please verify your ANTHROPIC_API_KEY in Supabase secrets.';
+    userFriendlyMessage = 'Claude API authentication failed. Please verify and regenerate your ANTHROPIC_API_KEY in Supabase secrets. The key may be invalid, expired, or have insufficient permissions.';
   } else if (error.message.includes('Input validation failed') || error.message.includes('Validation failed')) {
     errorCategory = 'validation_error';
     errorSeverity = 'medium';

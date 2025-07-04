@@ -3,22 +3,24 @@ import { callClaudeApi } from './claudeApiClient.ts';
 import { parseClaudeResponse } from './responseParser.ts';
 import { AnnotationData } from '../types.ts';
 
-// ✅ ENHANCED: Robust model selection with 401 error resilience
+// ✅ ENHANCED: Prioritize proven stable models to avoid 401 errors
 const CLAUDE_MODELS = [
-  'claude-3-5-haiku-20241022',    // 🚀 PRIMARY: Most stable and fastest
-  'claude-3-5-sonnet-20241022',   // 🚀 SECONDARY: Proven reliability
-  'claude-3-opus-20240229',       // 🚀 TERTIARY: Established model
-  'claude-sonnet-4-20250514',     // ⚠️ FALLBACK: Newer model (may have auth issues)
-  'claude-opus-4-20250514'        // ⚠️ FALLBACK: Newest model (may have auth issues)
+  'claude-3-5-haiku-20241022',    // 🚀 PRIMARY: Most stable, fastest, best auth success
+  'claude-3-5-sonnet-20241022',   // 🚀 SECONDARY: Proven reliability and auth
+  'claude-3-opus-20240229',       // 🚀 TERTIARY: Established model with stable auth
+  'claude-3-haiku-20240307',      // 🚀 FALLBACK: Older but very stable
+  'claude-sonnet-4-20250514',     // ⚠️ EXPERIMENTAL: Newer model (auth may fail)
+  'claude-opus-4-20250514'        // ⚠️ EXPERIMENTAL: Newest model (auth may fail)
 ];
 
-// ✅ ENHANCED: Prioritize stable models for auth reliability
+// ✅ ENHANCED: Auth-tested model priority (start with most reliable)
 const FALLBACK_ORDER = [
-  'claude-3-5-haiku-20241022',    // 🚀 PREFERRED: Most stable for auth
+  'claude-3-5-haiku-20241022',    // 🚀 PREFERRED: Fastest + most auth-reliable
   'claude-3-5-sonnet-20241022',   // 🚀 SECONDARY: Proven auth reliability
-  'claude-3-opus-20240229',       // 🚀 TERTIARY: Established auth
-  'claude-sonnet-4-20250514',     // ⚠️ NEWER: May have auth issues
-  'claude-opus-4-20250514'        // ⚠️ NEWEST: May have auth issues
+  'claude-3-opus-20240229',       // 🚀 TERTIARY: Established auth stability
+  'claude-3-haiku-20240307',      // 🚀 BACKUP: Very stable legacy model
+  'claude-sonnet-4-20250514',     // ⚠️ EXPERIMENTAL: Test newer models last
+  'claude-opus-4-20250514'        // ⚠️ EXPERIMENTAL: Most likely to have auth issues
 ];
 
 export async function analyzeWithClaudeModels(
