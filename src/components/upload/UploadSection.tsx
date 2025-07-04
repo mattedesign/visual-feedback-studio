@@ -5,7 +5,7 @@ import { FileUploadTab } from './FileUploadTab';
 import { WebsiteUploadTab } from './WebsiteUploadTab';
 import { SvgConverterTab } from './SvgConverterTab';
 import { Upload, Globe, Code } from 'lucide-react';
-import { useUploadLogic } from '@/hooks/useUploadLogic';
+import { useFileUpload } from '@/hooks/useFileUpload';
 
 interface UploadSectionProps {
   onImageUpload: (imageUrl: string) => void;
@@ -15,7 +15,9 @@ export const UploadSection = ({ onImageUpload }: UploadSectionProps) => {
   const [activeTab, setActiveTab] = useState('files');
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   
-  const { isProcessing, handleFileUpload, handleUrlSubmit, handleDemoUpload } = useUploadLogic(onImageUpload);
+  const { isProcessing, handleFileUpload } = useFileUpload(onImageUpload);
+  const handleUrlSubmit = async () => {}; // Placeholder for URL upload
+  const handleDemoUpload = () => {}; // Placeholder for demo upload
 
   const handleImageUploadInternal = (imageUrl: string) => {
     setUploadedImages(prev => [...prev, imageUrl]);

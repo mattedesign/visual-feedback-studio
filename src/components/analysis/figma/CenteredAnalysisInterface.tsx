@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
-import { useUploadLogic } from '@/hooks/useUploadLogic';
+import { useFileUpload } from '@/hooks/useFileUpload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -63,10 +63,10 @@ export const CenteredAnalysisInterface: React.FC<CenteredAnalysisInterfaceProps>
   const [selectedAnnotation, setSelectedAnnotation] = useState<Annotation | null>(null);
   const [pendingPosition, setPendingPosition] = useState<{ x: number; y: number } | null>(null);
 
-  const { handleFileUpload } = useUploadLogic((imageUrl: string) => {
+  const { handleFileUpload } = useFileUpload((imageUrl: string) => {
     console.log('🔥 CENTERED INTERFACE - UPLOAD COMPLETE:', imageUrl);
     workflow.addUploadedFile(imageUrl);
-  });
+  }, workflow.currentAnalysis?.id);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();

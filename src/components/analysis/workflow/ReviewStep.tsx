@@ -4,8 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
-import { useAIProviderConfig } from '@/hooks/analysis/useAIProviderConfig';
-import { EnhancedModelSelector } from './components/EnhancedModelSelector';
 import { Check, Plus, Settings } from 'lucide-react';
 
 interface ReviewStepProps {
@@ -16,14 +14,8 @@ export const ReviewStep = ({ workflow }: ReviewStepProps) => {
   const [tempSelectedImages, setTempSelectedImages] = useState<string[]>(
     workflow.selectedImages.length > 0 ? workflow.selectedImages : []
   );
-  const [showModelSelector, setShowModelSelector] = useState(false);
-  
-  const { 
-    selectedConfig, 
-    setSelectedConfig, 
-    availableProviders, 
-    getDisplayName 
-  } = useAIProviderConfig();
+  const [selectedConfig] = useState({ provider: 'auto', model: null, testMode: false });
+  const getDisplayName = () => 'Auto Selection (Smart)';
 
   const handleImageToggle = (url: string) => {
     setTempSelectedImages(prev => 
@@ -61,58 +53,23 @@ export const ReviewStep = ({ workflow }: ReviewStepProps) => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      {/* AI Model Selection Section */}
+      {/* Analysis Configuration Info */}
       <Card className="bg-slate-800/50 border-slate-700">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-xl">AI Analysis Configuration</CardTitle>
-              <p className="text-slate-400 text-sm mt-1">
-                Choose your preferred AI model for analysis
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowModelSelector(!showModelSelector)}
-              className="flex items-center gap-2 border-slate-600 hover:bg-slate-700"
-            >
-              <Settings className="w-4 h-4" />
-              {showModelSelector ? 'Hide Options' : 'Configure'}
-            </Button>
-          </div>
+          <CardTitle className="text-xl">AI Analysis Configuration</CardTitle>
+          <p className="text-slate-400 text-sm mt-1">
+            Using intelligent auto-selection for optimal analysis results
+          </p>
         </CardHeader>
         <CardContent>
-          {!showModelSelector ? (
-            <div className="bg-slate-700/50 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-slate-200">Selected Configuration:</p>
-                  <p className="text-slate-300 text-sm">{getDisplayName()}</p>
-                  {selectedConfig.testMode && (
-                    <Badge variant="outline" className="mt-2 bg-blue-900/20 text-blue-300 border-blue-500/30">
-                      Test Mode Enabled
-                    </Badge>
-                  )}
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowModelSelector(true)}
-                  className="text-blue-400 hover:text-blue-300"
-                >
-                  Change
-                </Button>
+          <div className="bg-slate-700/50 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-slate-200">Selected Configuration:</p>
+                <p className="text-slate-300 text-sm">{getDisplayName()}</p>
               </div>
             </div>
-          ) : (
-            <EnhancedModelSelector
-              selectedConfig={selectedConfig}
-              onConfigChange={setSelectedConfig}
-              availableProviders={availableProviders}
-              showTestMode={true}
-            />
-          )}
+          </div>
         </CardContent>
       </Card>
 

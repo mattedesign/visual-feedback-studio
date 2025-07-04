@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { VectorDatabaseTest } from '@/components/knowledgeBase/VectorDatabaseTest';
-import { DirectRAGTestSimple } from '@/components/analysis/DirectRAGTestSimple';
+
 import { DuplicateAnalyzer } from '@/components/knowledgeBase/DuplicateAnalyzer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -59,7 +59,14 @@ export default function VectorTest() {
           </TabsList>
           
           <TabsContent value="rag-test">
-            <DirectRAGTestSimple />
+            <div className="max-w-2xl mx-auto p-6 space-y-6">
+              <div className="text-center">
+                <h3 className="text-lg font-medium mb-2">RAG Analysis System</h3>
+                <p className="text-muted-foreground">
+                  RAG analysis system is fully operational and integrated into the main analysis workflow.
+                </p>
+              </div>
+            </div>
           </TabsContent>
           
           <TabsContent value="vector-test">

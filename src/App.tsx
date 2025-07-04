@@ -9,9 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Analysis from "./pages/Analysis";
 import AnalysisResults from "./pages/AnalysisResults";
 import Auth from "./pages/Auth";
-import DALLEDemo from "./pages/DalleDemo";
 import UpgradeSuccess from "./pages/UpgradeSuccess";
-import MigrationPage from "./pages/MigrationPage";
 import VectorTest from "./pages/VectorTest";
 import HybridEngineTest from "./pages/HybridEngineTest";
 import History from "./pages/History";
@@ -25,8 +23,6 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 import { AppSidebar } from "@/components/layout/AppSidebar";
 
 
-// Lazy load the knowledge base population page to prevent initialization on app load
-const KnowledgeBasePopulation = lazy(() => import("./pages/KnowledgeBasePopulation"));
 
 const queryClient = new QueryClient();
 
@@ -70,17 +66,10 @@ const App = () => {
                             <Route path="/history" element={<History />} />
                             <Route path="/settings" element={<Settings />} />
                             <Route path="/help" element={<Help />} />
-                            <Route path="/dalle-demo" element={<DALLEDemo />} />
                             <Route path="/upgrade-success" element={<UpgradeSuccess />} />
-                            <Route path="/migration-page" element={<MigrationPage />} />
                             <Route path="/vector-test" element={<VectorTest />} />
                             <Route path="/hybrid-engine-test" element={<HybridEngineTest />} />
                             <Route path="/database-seeder" element={<DatabaseSeeder />} />
-                            <Route path="/knowledge-population" element={
-                              <Suspense fallback={<LoadingSpinner />}>
-                                <KnowledgeBasePopulation />
-                              </Suspense>
-                            } />
                             <Route path="*" element={<Navigate to="/" replace />} />
                           </Routes>
                         </div>

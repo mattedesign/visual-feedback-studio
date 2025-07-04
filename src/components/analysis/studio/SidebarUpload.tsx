@@ -2,7 +2,7 @@
 import { useState, useRef } from 'react';
 import { Upload, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useUploadLogic } from '@/hooks/useUploadLogic';
+import { useFileUpload } from '@/hooks/useFileUpload';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 
 interface SidebarUploadProps {
@@ -34,7 +34,7 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
     console.log('🔥 IMAGE ADDED - STAYING ON UPLOAD FOR CONTEXT');
   };
 
-  const { isProcessing, handleFileUpload } = useUploadLogic(handleUploadComplete);
+  const { isProcessing, handleFileUpload } = useFileUpload(handleUploadComplete, workflow.currentAnalysis?.id);
 
   // Enhanced file validation function
   const isValidImageFile = (file: File): boolean => {

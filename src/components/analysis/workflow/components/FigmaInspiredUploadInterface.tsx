@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Upload, X, Image as ImageIcon, Plus, Send, Sparkles, Zap, Brain } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
-import { useUploadLogic } from '@/hooks/useUploadLogic';
+import { useFileUpload } from '@/hooks/useFileUpload';
 
 interface FigmaInspiredUploadInterfaceProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -37,7 +37,7 @@ export const FigmaInspiredUploadInterface: React.FC<FigmaInspiredUploadInterface
   };
 
   // ✅ FIX: Get analysis session ID for upload logic
-  const { isProcessing, handleFileUpload } = useUploadLogic(
+  const { isProcessing, handleFileUpload } = useFileUpload(
     handleUploadComplete, 
     workflow.currentAnalysis?.id
   );

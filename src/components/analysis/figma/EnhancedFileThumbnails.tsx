@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { useUploadLogic } from '@/hooks/useUploadLogic';
+import { useFileUpload } from '@/hooks/useFileUpload';
 import { 
   Upload, 
   X, 
@@ -44,7 +44,7 @@ export const EnhancedFileThumbnails: React.FC<EnhancedFileThumbnailsProps> = ({
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { handleFileUpload } = useUploadLogic((imageUrl: string) => {
+  const { handleFileUpload } = useFileUpload((imageUrl: string) => {
     console.log('🔥 ENHANCED THUMBNAILS - UPLOAD COMPLETE:', imageUrl);
     onFilesAdd([imageUrl]);
   });

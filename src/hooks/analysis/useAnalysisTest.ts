@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { TestResult } from '@/types/testAnalysis.types';
-import { useTestErrorHandler } from './useTestErrorHandler';
+
 
 export const useAnalysisTest = () => {
   const [isTesting, setIsTesting] = useState(false);
@@ -13,7 +13,29 @@ export const useAnalysisTest = () => {
     debugInfo: ''
   });
 
-  const { categorizeError, getErrorGuidance } = useTestErrorHandler();
+  const categorizeError = (errorMessage: string): string => {
+    if (errorMessage.includes('Incorrect API key') || errorMessage.includes('authentication')) {
+      return 'auth_error';
+    }
+    if (errorMessage.includes('Rate limit')) {
+      return 'rate_limit';
+    }
+    return 'unknown_error';
+  };
+
+  const getErrorGuidance = (error: any, selectedConfig: any): string => {
+    if (error.message.includes('Incorrect API key') || 
+        error.message.includes('authentication_error') ||
+        error.message.includes('Authentication failed')) {
+      return `❌ API Key Authentication Failed\n\nThe API key appears to be invalid or expired.\n\n✅ Quick Fix: Re-enter your API key.`;
+    } else if (error.message.includes('API key not configured')) {
+      return `❌ API Key Missing\n\nNo API key found.\n\n✅ Quick Fix: Add your API key.`;
+    } else if (error.message.includes('Rate limit exceeded')) {
+      return '⏳ Rate Limit Exceeded\n\nYou\'ve made too many requests. Please wait a moment before trying again.';
+    } else {
+      return `❌ Analysis Failed\n\n${error.message}\n\n🔍 Check the debug info below for more details.`;
+    }
+  };
 
   const executeTest = async (selectedConfig: any, getRequestConfig: () => any, getDisplayName: () => string) => {
     setIsTesting(true);
