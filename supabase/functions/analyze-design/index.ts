@@ -248,8 +248,10 @@ serve(async (req) => {
       hasImageUrls: !!requestData.imageUrls,
       imageCount: requestData.imageUrls?.length || 0,
       hasAnalysisPrompt: !!requestData.analysisPrompt,
-      analysisId: requestData.analysisId
+      analysisId: requestData.analysisId,
+      enableGoogleVision: requestData.enableGoogleVision
     });
+    
     // Basic validation
     if (!requestData.imageUrls || requestData.imageUrls.length === 0) {
       // Try to fetch from database if analysisId is provided
@@ -290,6 +292,40 @@ serve(async (req) => {
     if (!requestData.analysisPrompt || requestData.analysisPrompt.trim() === '') {
       console.log('⚠️ No analysis prompt provided, using fallback');
       requestData.analysisPrompt = `Comprehensive UX analysis of ${requestData.imageUrls?.length || 1} design image(s). Provide detailed feedback on usability, visual hierarchy, accessibility, and user experience improvements.`;
+    }
+
+    // If this is a Google Vision-only request, skip Claude analysis
+    if (requestData.enableGoogleVision && requestData.skipClaudeAnalysis) {
+      console.log('👁️ Google Vision only analysis requested...');
+      
+      let googleVisionData = null;
+      try {
+        const visionStartTime = Date.now();
+        googleVisionData = await analyzeWithGoogleVision(requestData.imageUrls[0]);
+        const visionTime = Date.now() - visionStartTime;
+        console.log(`✅ Google Vision analysis completed in ${visionTime}ms`);
+        
+        return new Response(JSON.stringify({
+          success: true,
+          googleVisionData,
+          imageCount: requestData.imageUrls.length,
+          analysisId: requestData.analysisId,
+          processingTime: visionTime
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+        
+      } catch (visionError) {
+        console.error('❌ Google Vision analysis failed:', visionError.message);
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Google Vision analysis failed',
+          details: visionError.message
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
     }
 
     // Call Claude Sonnet 4 for analysis

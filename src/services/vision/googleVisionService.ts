@@ -74,20 +74,18 @@ class GoogleVisionService {
       
       console.log(`✅ [${analysisId}] Image conversion completed in ${conversionTime}ms, size: ${base64Data.length} bytes`);
       
-      // Step 2: Call Google Vision with enhanced error handling
-      console.log(`🚀 [${analysisId}] Calling analyze-vision edge function...`);
+      // Step 2: Call Google Vision via analyze-design function (which has built-in Google Vision)
+      console.log(`🚀 [${analysisId}] Calling analyze-design function with Google Vision integration...`);
       const visionStartTime = Date.now();
       
-      const { data, error } = await supabase.functions.invoke('analyze-vision', {
+      // Use the analyze-design function which has Google Vision built-in
+      const { data, error } = await supabase.functions.invoke('analyze-design', {
         body: {
-          image: base64Data,
-          features: [
-            'TEXT_DETECTION',
-            'OBJECT_LOCALIZATION', 
-            'IMAGE_PROPERTIES',
-            'LABEL_DETECTION'
-          ],
-          provider: 'google'
+          imageUrls: [imageUrl],
+          analysisPrompt: 'Google Vision analysis for UI elements, text detection, and image properties',
+          analysisId: analysisId,
+          enableGoogleVision: true,
+          skipClaudeAnalysis: true
         }
       });
 
@@ -226,10 +224,34 @@ class GoogleVisionService {
     return 'unknown_error';
   }
 
-  private processGoogleVisionResponse(visionData: any, processingTime: number, analysisId: string): VisionAnalysisResult {
-    console.log(`🔄 [${analysisId}] Processing Google Vision response...`);
+  private processGoogleVisionResponse(analysisData: any, processingTime: number, analysisId: string): VisionAnalysisResult {
+    console.log(`🔄 [${analysisId}] Processing analyze-design response with Google Vision data...`);
     
-    // Process Google Vision API response into our standardized format
+    // Extract Google Vision data from the analyze-design response
+    const visionData = analysisData?.googleVisionData || analysisData;
+    
+    if (!visionData) {
+      console.warn(`⚠️ [${analysisId}] No Google Vision data found in response, using fallback`);
+      return this.createFallbackResult(processingTime, 'no_vision_data');
+    }
+    
+    console.log(`🔍 [${analysisId}] Processing Google Vision data:`, {
+      hasUiElements: !!visionData.uiElements,
+      hasTextContent: !!visionData.textContent,
+      hasColors: !!visionData.colors,
+      overallConfidence: visionData.overallConfidence
+    });
+    
+    // If the response already has the processed format, return it directly
+    if (visionData.uiElements && visionData.textContent && visionData.colors) {
+      console.log(`✅ [${analysisId}] Using pre-processed Google Vision data`);
+      return {
+        ...visionData,
+        processingTime: processingTime
+      };
+    }
+    
+    // Otherwise, process the raw Google Vision API response
     const uiElements = [];
     const textContent = [];
     
