@@ -19,6 +19,12 @@ export const useFeatureFlag = (flagName: string): boolean => {
     'resizable-panels': true, // ENABLED: Resizable panel system
     'keyboard-shortcuts': true, // ENABLED: Figma-style shortcuts
     'export-options': false, // NEW: PDF, image, and data export
+    
+    // Phase 6: Advanced Features & Optimization
+    'advanced-analytics-dashboard': true, // ENABLED: Pipeline health monitoring
+    'collaborative-features': false, // NEW: Multi-user analysis review
+    'version-history': false, // NEW: Track analysis iterations
+    'enhanced-analysis-layout': true, // ENABLED: Enhanced Figma layout
   };
   
   // Check for specific flag activation via URL parameters

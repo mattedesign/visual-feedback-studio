@@ -12,6 +12,7 @@ import { SimplifiedContextInput } from './workflow/components/SimplifiedContextI
 import { TabBasedResultsLayout } from './workflow/components/TabBasedResultsLayout';
 import { FigmaInspiredUploadInterface } from './workflow/components/FigmaInspiredUploadInterface';
 import { CenteredAnalysisInterface } from './figma/CenteredAnalysisInterface';
+import { FigmaAnnotateLayout } from './workflow/FigmaAnnotateLayout';
 import { DiagnosticDebugMode } from './DiagnosticDebugMode';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -78,10 +79,10 @@ export const AnalysisWorkflow = () => {
     return <CenteredAnalysisInterface workflow={workflow} />;
   }
 
-  // Use Figma layout for annotate step when feature flag is enabled
+  // Use Figma-inspired annotation layout when feature flag is enabled
   if ((figmaUIEnabled || figmaMode) && workflow.currentStep === 'annotate') {
-    console.log('✅ Using Figma Upload Layout for step:', workflow.currentStep);
-    return <FigmaUploadLayout workflow={workflow} />;
+    console.log('✅ Using Figma-inspired annotation layout for step:', workflow.currentStep);
+    return <FigmaAnnotateLayout workflow={workflow} />;
   }
 
   // For upload and annotate steps, use the studio layout (only when Figma is NOT enabled)
