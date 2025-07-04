@@ -270,14 +270,13 @@ Provide specific, actionable recommendations even with limited automated data.`;
     // ✅ STEP 6: Build Safe Payload
     const payload = {
       imageUrls: imageUrls,
-      imageUrl: imageUrls[0], // Include both for compatibility
       analysisId: request.analysisId,
       analysisPrompt: enhancedContext, // Use enhanced context instead of raw prompt
       designType: request.designType,
       isComparative: request.isComparative,
       ragEnabled: ragReady, // Only enable RAG if context is sufficient
-      visionOutput: visionOutput, // Include vision data for downstream processing
-      context: enhancedContext,
+      // ✅ FIX: Don't send the full visionOutput object to avoid payload size issues
+      hasVisionData: !!visionOutput,
       enhancedAnalysis: true
     };
 

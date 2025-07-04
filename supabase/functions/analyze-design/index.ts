@@ -251,6 +251,11 @@ serve(async (req) => {
     try {
       const rawBody = await req.text();
       console.log(`📝 [${requestId}] Raw request body length: ${rawBody.length}`);
+      
+      if (rawBody.length > 1024 * 1024) { // 1MB limit
+        throw new Error('Request payload too large (max 1MB)');
+      }
+      
       requestData = JSON.parse(rawBody);
     } catch (parseError) {
       console.error(`❌ [${requestId}] Failed to parse request body:`, parseError);
