@@ -101,7 +101,7 @@ class EnhancedAnalysisIntegrator {
       y: annotation.y || 30,
       category: annotation.category || 'ux',
       severity: annotation.severity || 'suggested',
-      feedback: annotation.feedback || 'Design improvement opportunity identified',
+      feedback: annotation.feedback, // ✅ FIXED: Don't override Claude's feedback with generic text
       implementationEffort: annotation.implementationEffort || 'medium',
       businessImpact: annotation.businessImpact || 'medium',
       imageIndex: annotation.imageIndex || 0,
