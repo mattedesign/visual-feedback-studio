@@ -142,22 +142,90 @@ const analyzeDesign = async (request: AnalyzeDesignRequest): Promise<AnalyzeDesi
     // Ensure we have substantial context
     const fullContext = contextComponents.join('\n\n');
     
-    // Add fallback comprehensive context if still too short
+    // ✅ STEP 2.5: Build UX Context Fallback for insufficient vision data
+    function buildUXContextFallback({
+      visionData,
+      annotations,
+      userContext,
+    }: {
+      visionData: any;
+      annotations: any[];
+      userContext: string;
+    }) {
+      const hasMinimalText = visionData?.textContent?.length > 50;
+      const hasColorInfo = visionData?.colors?.dominantColors?.length > 1;
+      const isLikelyMockup = hasMinimalText && hasColorInfo;
+      const uiElementsFound = visionData?.uiElements?.length || 0;
+
+      const fallbackTags = [];
+
+      if (!uiElementsFound || uiElementsFound < 3) {
+        fallbackTags.push("layout sparse");
+        fallbackTags.push("UI structure unclear");
+      }
+
+      if (!hasMinimalText) {
+        fallbackTags.push("low text density");
+      }
+
+      if (hasColorInfo) {
+        fallbackTags.push(`dominant colors: ${visionData.colors.dominantColors.join(", ")}`);
+      }
+
+      if (isLikelyMockup) {
+        fallbackTags.push("mockup or wireframe detected");
+      }
+
+      // Build Claude prompt content despite weak vision data
+      const fallbackContext = `
+Design evaluation with limited vision data:
+- Google Vision extracted ${uiElementsFound} UI elements (below optimal threshold).
+- System analysis suggests this may be a ${isLikelyMockup ? 'design mockup or wireframe' : 'minimalist layout'}.
+- Available metadata:
+  • Text Content: ${visionData?.textContent?.slice(0, 5).map(t => t.text).join(', ') || "None detected"}
+  • Color Palette: ${visionData?.colors?.dominantColors?.join(", ") || "None detected"}
+  • Layout Type: ${visionData?.layout?.type || "Unknown"}
+  • Device Context: ${visionData?.deviceType?.type || "Unknown"}
+- User Annotations: ${annotations?.length || 0} provided
+- User Context: ${userContext || "None provided"}
+
+Analysis Tags: ${fallbackTags.join(", ")}
+
+Despite limited automated detection, please provide comprehensive UX analysis focusing on:
+1. Visual hierarchy and layout effectiveness
+2. Content organization and readability
+3. User interface patterns and consistency
+4. Accessibility considerations
+5. Mobile responsiveness indicators
+6. Call-to-action placement and prominence
+7. Color usage and contrast assessment
+8. Navigation clarity and user flow optimization
+
+Provide specific, actionable recommendations even with limited automated data.`;
+
+      return fallbackContext;
+    }
+
+    // Apply fallback logic if context is insufficient
     let enhancedContext = fullContext;
-    if (fullContext.length < 300) {
-      enhancedContext = `${fullContext}
-
-Analysis Focus: Provide comprehensive UX analysis focusing on:
-1. Visual hierarchy and information architecture
-2. User interface patterns and consistency
-3. Accessibility and usability improvements
-4. Content organization and readability
-5. Call-to-action placement and effectiveness
-6. Mobile responsiveness and device optimization
-7. Color contrast and visual accessibility
-8. Navigation clarity and user flow
-
-Please analyze the design(s) with attention to modern UX principles and best practices.`;
+    const hasInsufficientVisionData = !visionOutput?.uiElements?.length || visionOutput.uiElements.length < 3;
+    
+    if (fullContext.length < 300 || hasInsufficientVisionData) {
+      console.log('🔄 Applying UX context fallback due to insufficient vision data');
+      const fallbackContext = buildUXContextFallback({
+        visionData: visionOutput,
+        annotations: annotations,
+        userContext: userContext
+      });
+      
+      enhancedContext = fullContext.length > fallbackContext.length ? fullContext : fallbackContext;
+      
+      console.log('✅ Fallback context applied:', {
+        originalLength: fullContext.length,
+        fallbackLength: fallbackContext.length,
+        finalLength: enhancedContext.length,
+        uiElementsDetected: visionOutput?.uiElements?.length || 0
+      });
     }
     
     // ✅ STEP 3: Context Validation
