@@ -43,6 +43,21 @@ serve(async (req) => {
     
     // Parse and validate request
     const requestData = await req.json();
+    
+    // ✅ ENHANCED DEBUG LOGGING
+    console.log('🔍 ANALYZE-DESIGN REQUEST RECEIVED');
+    console.log('📊 Request validation check:', {
+      hasImageUrls: !!requestData.imageUrls,
+      imageUrlsCount: requestData.imageUrls?.length || 0,
+      hasAnalysisPrompt: !!requestData.analysisPrompt,
+      analysisPromptLength: requestData.analysisPrompt?.length || 0,
+      imageUrlSamples: requestData.imageUrls?.slice(0, 2)?.map(url => ({
+        type: url.startsWith('data:') ? 'base64' : 'url',
+        length: url.length,
+        preview: url.substring(0, 50) + '...'
+      })) || []
+    });
+    
     console.log('📋 Comprehensive analysis request data received:', {
       hasImageUrls: !!requestData.imageUrls,
       imageCount: requestData.imageUrls?.length || 0,

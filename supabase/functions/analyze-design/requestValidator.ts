@@ -223,8 +223,16 @@ class RequestValidator {
   // Legacy method for backward compatibility
   private isValidUrl(url: string): boolean {
     try {
-      new URL(url);
-      return true;
+      // Handle base64 data URLs
+      if (url.startsWith('data:image/')) {
+        // Validate base64 data URL format
+        const dataUrlRegex = /^data:image\/(png|jpg|jpeg|gif|webp|svg\+xml);base64,/;
+        return dataUrlRegex.test(url) && url.length > 50; // Ensure there's actual data
+      }
+      
+      // Handle regular URLs
+      const urlObj = new URL(url);
+      return urlObj.protocol === 'http:' || urlObj.protocol === 'https:' || urlObj.protocol === 'data:';
     } catch {
       return false;
     }
