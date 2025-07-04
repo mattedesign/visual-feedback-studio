@@ -13,6 +13,12 @@ interface AnalyzeDesignRequest {
   isComparative: boolean;
   ragEnhanced?: boolean;
   researchSourceCount?: number;
+  userComments?: Array<{
+    imageUrl: string;
+    x: number;
+    y: number;
+    comment: string;
+  }>;
 }
 
 interface AnalyzeDesignResponse {
@@ -99,6 +105,14 @@ const analyzeDesign = async (request: AnalyzeDesignRequest): Promise<AnalyzeDesi
     // Add user context
     if (userContext && userContext.trim()) {
       contextComponents.push(`User Challenge: ${userContext.trim()}`);
+    }
+    
+    // Add user comments context if provided
+    if (request.userComments && request.userComments.length > 0) {
+      const commentsDesc = request.userComments
+        .map((comment, index) => `Comment ${index + 1}: "${comment.comment}" (at ${comment.x.toFixed(1)}%, ${comment.y.toFixed(1)}%)`)
+        .join('; ');
+      contextComponents.push(`User Feedback Points: ${commentsDesc}`);
     }
     
     // Add vision insights with more detail
@@ -277,7 +291,9 @@ Provide specific, actionable recommendations even with limited automated data.`;
       ragEnabled: ragReady, // Only enable RAG if context is sufficient
       // ✅ FIX: Don't send the full visionOutput object to avoid payload size issues
       hasVisionData: !!visionOutput,
-      enhancedAnalysis: true
+      enhancedAnalysis: true,
+      // ✅ NEW: Include user comments in a compact format
+      userComments: request.userComments || []
     };
 
     console.log('📡 Step 6: Calling analyze-design with enhanced payload:', {

@@ -277,6 +277,7 @@ serve(async (req) => {
       enableGoogleVision: requestData.enableGoogleVision,
       skipClaudeAnalysis: requestData.skipClaudeAnalysis,
       ragEnabled: requestData.ragEnabled,
+      userCommentsCount: requestData.userComments?.length || 0,
       keys: Object.keys(requestData)
     });
     
@@ -459,6 +460,15 @@ serve(async (req) => {
             {
               type: "text",
               text: `As a UX expert, analyze these ${imageContent.length} design images and provide detailed feedback. Context: ${requestData.analysisPrompt}
+
+${requestData.userComments && requestData.userComments.length > 0 ? 
+`User Feedback Points:
+${requestData.userComments.map((comment, index) => 
+  `• Comment ${index + 1}: "${comment.comment}" (at position ${comment.x.toFixed(1)}%, ${comment.y.toFixed(1)}%)`
+).join('\n')}
+
+Please consider these user feedback points in your analysis and provide recommendations that address their specific concerns.
+` : ''}
 
 Please provide 12-15 specific, actionable insights in this exact JSON format:
 {
