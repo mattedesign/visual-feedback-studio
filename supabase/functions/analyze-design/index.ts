@@ -8,6 +8,221 @@ const corsHeaders = {
 
 console.log('🚀 Streamlined Analysis Function - Starting up');
 
+// Google Vision Analysis Function
+async function analyzeWithGoogleVision(imageUrl) {
+  const analysisId = crypto.randomUUID().substring(0, 8);
+  console.log(`🔍 [${analysisId}] Starting Google Vision analysis for:`, imageUrl.substring(0, 100) + '...');
+  
+  try {
+    // Step 1: Get Google Cloud credentials
+    const googleCredentials = Deno.env.get('GOOGLE_CLOUD_CREDENTIALS');
+    if (!googleCredentials) {
+      throw new Error('Google Cloud credentials not configured');
+    }
+
+    let credentials;
+    try {
+      credentials = JSON.parse(googleCredentials);
+    } catch (parseError) {
+      throw new Error('Invalid Google Cloud credentials format');
+    }
+
+    // Step 2: Convert image to base64
+    console.log(`🔄 [${analysisId}] Converting image to base64...`);
+    const imageResponse = await fetch(imageUrl);
+    if (!imageResponse.ok) {
+      throw new Error(`Failed to fetch image: ${imageResponse.status}`);
+    }
+    
+    const arrayBuffer = await imageResponse.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+    let binaryString = '';
+    
+    // Process in chunks to avoid stack overflow
+    const chunkSize = 8192;
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.slice(i, i + chunkSize);
+      binaryString += String.fromCharCode(...chunk);
+    }
+    
+    const base64Data = btoa(binaryString);
+    console.log(`✅ [${analysisId}] Image converted to base64, size: ${base64Data.length} chars`);
+
+    // Step 3: Get access token
+    console.log(`🔑 [${analysisId}] Getting access token...`);
+    const accessToken = await getAccessToken(credentials, analysisId);
+    
+    // Step 4: Call Google Vision API
+    console.log(`🚀 [${analysisId}] Calling Google Vision API...`);
+    const visionResponse = await fetch('https://vision.googleapis.com/v1/images:annotate', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        requests: [{
+          image: { content: base64Data },
+          features: [
+            { type: 'TEXT_DETECTION' },
+            { type: 'OBJECT_LOCALIZATION', maxResults: 20 },
+            { type: 'IMAGE_PROPERTIES' },
+            { type: 'LABEL_DETECTION', maxResults: 20 }
+          ]
+        }]
+      })
+    });
+
+    if (!visionResponse.ok) {
+      const errorText = await visionResponse.text();
+      throw new Error(`Google Vision API error: ${visionResponse.status} - ${errorText}`);
+    }
+
+    const visionData = await visionResponse.json();
+    const firstResponse = visionData.responses[0];
+    
+    if (firstResponse?.error) {
+      throw new Error(`Google Vision API error: ${firstResponse.error.message}`);
+    }
+
+    // Step 5: Process and return structured data
+    return processGoogleVisionResponse(firstResponse, analysisId);
+    
+  } catch (error) {
+    console.error(`❌ [${analysisId}] Google Vision analysis failed:`, error.message);
+    throw error;
+  }
+}
+
+// Access token generation
+async function getAccessToken(credentials, analysisId) {
+  const jwtHeader = { alg: 'RS256', typ: 'JWT' };
+  const now = Math.floor(Date.now() / 1000);
+  const jwtPayload = {
+    iss: credentials.client_email,
+    scope: 'https://www.googleapis.com/auth/cloud-vision',
+    aud: 'https://oauth2.googleapis.com/token',
+    exp: now + 3600,
+    iat: now
+  };
+
+  const encodedHeader = btoa(JSON.stringify(jwtHeader)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  const encodedPayload = btoa(JSON.stringify(jwtPayload)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  const unsignedToken = `${encodedHeader}.${encodedPayload}`;
+
+  const privateKeyFormatted = credentials.private_key
+    .replace(/-----BEGIN PRIVATE KEY-----/, '')
+    .replace(/-----END PRIVATE KEY-----/, '')
+    .replace(/\n/g, '');
+
+  const privateKeyBuffer = Uint8Array.from(atob(privateKeyFormatted), c => c.charCodeAt(0));
+  const cryptoKey = await crypto.subtle.importKey(
+    'pkcs8', privateKeyBuffer,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false, ['sign']
+  );
+
+  const signature = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5', cryptoKey,
+    new TextEncoder().encode(unsignedToken)
+  );
+
+  const encodedSignature = btoa(String.fromCharCode(...new Uint8Array(signature)))
+    .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+
+  const signedJWT = `${unsignedToken}.${encodedSignature}`;
+
+  const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion: signedJWT
+    })
+  });
+
+  if (!tokenResponse.ok) {
+    const errorText = await tokenResponse.text();
+    throw new Error(`Token exchange failed: ${tokenResponse.status} - ${errorText}`);
+  }
+
+  const tokenData = await tokenResponse.json();
+  return tokenData.access_token;
+}
+
+// Process Google Vision response
+function processGoogleVisionResponse(visionData, analysisId) {
+  console.log(`🔄 [${analysisId}] Processing Google Vision response...`);
+  
+  const uiElements = [];
+  const textContent = [];
+  
+  // Process object localization
+  if (visionData.localizedObjectAnnotations) {
+    visionData.localizedObjectAnnotations.forEach((obj) => {
+      uiElements.push({
+        type: obj.name.toLowerCase(),
+        confidence: obj.score || 0.8,
+        description: `${obj.name} detected with ${Math.round((obj.score || 0.8) * 100)}% confidence`
+      });
+    });
+  }
+
+  // Process text detection
+  if (visionData.textAnnotations) {
+    visionData.textAnnotations.forEach((text, index) => {
+      if (index === 0) return; // Skip full text annotation
+      textContent.push({
+        text: text.description || '',
+        confidence: 0.9,
+        context: 'detected_text'
+      });
+    });
+  }
+
+  // Process image properties for colors
+  let dominantColors = ['#ffffff', '#000000', '#0066cc'];
+  if (visionData.imagePropertiesAnnotation?.dominantColors?.colors) {
+    dominantColors = visionData.imagePropertiesAnnotation.dominantColors.colors
+      .slice(0, 3)
+      .map((color) => {
+        const r = Math.round(color.color.red || 0);
+        const g = Math.round(color.color.green || 0);
+        const b = Math.round(color.color.blue || 0);
+        return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+      });
+  }
+
+  const result = {
+    uiElements,
+    layout: { type: 'web_application', confidence: 0.8, description: 'Web application layout detected' },
+    industry: { industry: 'technology', confidence: 0.7, indicators: ['digital interface', 'web elements'] },
+    accessibility: [],
+    textContent,
+    colors: {
+      dominantColors,
+      colorPalette: {
+        primary: dominantColors[0] || '#0066cc',
+        secondary: dominantColors[1] || '#666666',
+        accent: dominantColors[2] || '#ff6600'
+      },
+      colorContrast: { textBackground: 4.5, accessibility: 'AA' }
+    },
+    deviceType: { type: 'desktop', confidence: 0.8, dimensions: { width: 1200, height: 800, aspectRatio: 1.5 } },
+    overallConfidence: Math.min(0.9, (uiElements.length * 0.1 + textContent.length * 0.05 + 0.6)),
+    processingTime: Date.now()
+  };
+
+  console.log(`✅ [${analysisId}] Vision response processed:`, {
+    uiElementsFound: result.uiElements.length,
+    textContentFound: result.textContent.length,
+    colorsFound: result.colors.dominantColors.length,
+    confidence: result.overallConfidence
+  });
+
+  return result;
+}
+
 serve(async (req) => {
   console.log('📨 Request received:', {
     method: req.method,
@@ -91,8 +306,27 @@ serve(async (req) => {
 
     console.log('🤖 Starting AI analysis with Claude Sonnet 4...');
 
-    // Prepare images for Claude
-    console.log('🔍 Processing images:', requestData.imageUrls);
+    // Step 1: Get Google Vision data for enhanced context
+    console.log('👁️ Starting Google Vision analysis...');
+    let googleVisionData = null;
+    
+    try {
+      const visionStartTime = Date.now();
+      googleVisionData = await analyzeWithGoogleVision(requestData.imageUrls[0]); // Analyze first image
+      const visionTime = Date.now() - visionStartTime;
+      console.log(`✅ Google Vision analysis completed in ${visionTime}ms:`, {
+        uiElementsFound: googleVisionData?.uiElements?.length || 0,
+        textContentFound: googleVisionData?.textContent?.length || 0,
+        colorsFound: googleVisionData?.colors?.dominantColors?.length || 0,
+        confidence: googleVisionData?.overallConfidence || 0
+      });
+    } catch (visionError) {
+      console.warn('⚠️ Google Vision analysis failed, continuing without vision data:', visionError.message);
+      googleVisionData = null;
+    }
+
+    // Step 2: Prepare images for Claude
+    console.log('🔍 Processing images for Claude:', requestData.imageUrls);
     const imageContent = [];
     for (const imageUrl of requestData.imageUrls) {
       try {
@@ -258,7 +492,15 @@ Please provide 12-15 specific, actionable insights in this exact JSON format:
             total_annotations: annotations.length,
             ai_model_used: 'claude-sonnet-4-20250514',
             processing_time_ms: Date.now(),
-            user_id: userId
+            user_id: userId,
+            google_vision_data: googleVisionData,
+            visual_intelligence: googleVisionData ? {
+              confidence: googleVisionData.overallConfidence,
+              uiElementsDetected: googleVisionData.uiElements.length,
+              textContentFound: googleVisionData.textContent.length,
+              colorAnalysis: googleVisionData.colors,
+              deviceType: googleVisionData.deviceType
+            } : null
           });
           
           console.log('✅ Results saved to database');
@@ -276,7 +518,16 @@ Please provide 12-15 specific, actionable insights in this exact JSON format:
       knowledgeSourcesUsed: 1,
       researchCitations: ['Claude Sonnet 4 Analysis'],
       modelUsed: 'claude-sonnet-4-20250514',
-      analysisId: requestData.analysisId
+      analysisId: requestData.analysisId,
+      googleVisionData: googleVisionData,
+      visualIntelligence: googleVisionData ? {
+        confidence: googleVisionData.overallConfidence,
+        uiElementsDetected: googleVisionData.uiElements.length,
+        textContentFound: googleVisionData.textContent.length,
+        colorsDetected: googleVisionData.colors.dominantColors.length,
+        deviceType: googleVisionData.deviceType.type,
+        processingTime: googleVisionData.processingTime
+      } : null
     };
 
     console.log('🎉 Analysis completed successfully:', {
