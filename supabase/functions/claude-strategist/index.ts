@@ -51,16 +51,37 @@ serve(async (req) => {
   }
 
   try {
-    const { userChallenge, traditionalAnnotations, model = 'claude-3-5-haiku-20241022' } = await req.json();
+    // 🔧 ENHANCED ERROR DEBUGGING
+    console.log('🔍 Claude Strategist Debug Info:');
+    console.log('Request method:', req.method);
+    console.log('Request headers:', JSON.stringify(Object.fromEntries(req.headers.entries())));
+    
+    const requestBody = await req.json();
+    const { userChallenge, traditionalAnnotations, analysisId, model = 'claude-3-5-haiku-20241022' } = requestBody;
 
-    if (!userChallenge) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'Missing userChallenge parameter'
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+    console.log('📝 Request parameters:');
+    console.log(`   userChallenge: ${userChallenge ? 'EXISTS' : 'MISSING'}`);
+    console.log(`   traditionalAnnotations: ${traditionalAnnotations ? `${traditionalAnnotations.length} items` : 'MISSING'}`);
+    console.log(`   analysisId: ${analysisId ? 'EXISTS' : 'MISSING'}`);
+    console.log(`   model: ${model}`);
+
+    // Validate required parameters
+    if (!userChallenge || !traditionalAnnotations || !analysisId) {
+      console.error('❌ Missing required parameters');
+      return new Response(
+        JSON.stringify({ 
+          error: 'Missing required parameters',
+          received: { 
+            userChallenge: !!userChallenge, 
+            traditionalAnnotations: !!traditionalAnnotations, 
+            analysisId: !!analysisId 
+          }
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
     // Build strategist-specific prompt

@@ -44,68 +44,49 @@ export async function callClaudeApi(
   console.log(`   Authorization header: "Bearer ${preview}..."`);
   console.log(`   Auth header length: ${authHeader.length}`);
 
-  // 🎯 ENHANCED SYSTEM PROMPT WITH ANNOTATION CORRELATION
-  const enhancedSystemPrompt = `You are a UX/UI design expert. Analyze the provided design and return 12-16 specific, actionable insights in JSON format. Each insight must be a precise annotation with screen coordinates that EXACTLY correspond to the visual element being analyzed.
+  // 🧪 SIMPLIFIED SYSTEM PROMPT - Testing for actual image analysis
+  const simplifiedSystemPrompt = `Look at this design image and analyze what you see.
 
-🚨 CRITICAL CORRELATION REQUIREMENTS 🚨
-- Each annotation's x,y coordinates MUST point to the exact visual element being analyzed
-- The feedback MUST describe what is specifically located at those coordinates  
-- Never place generic feedback at random coordinates
-- Ensure spatial accuracy between annotation position and described element
+Identify 12-16 specific visual elements and provide actionable UX insights for each.
 
-🎯 COORDINATE ACCURACY RULES 🎯
-- Header elements: y: 5-15
-- Navigation: y: 15-25  
-- Main content: y: 25-75
-- Footer: y: 75-95
-- Left sidebar: x: 5-25
-- Center content: x: 25-75
-- Right sidebar: x: 75-95
+Describe exactly what you see at each location:
+- Headers, navigation, buttons, forms
+- Text content, images, layouts
+- Colors, typography, spacing issues
+- Usability problems or improvements
 
-🎨 SPATIAL DISTRIBUTION REQUIREMENTS 🎨
-- Spread annotations across the entire design
-- Don't cluster all annotations in one area
-- Ensure each annotation points to a distinct visual element
-- Balance feedback across different regions of the interface
-
-${systemPrompt}
-
-🔄 MANDATORY JSON RESPONSE FORMAT 🔄
-Your response must be valid JSON only with this exact structure:
+Return only JSON with this structure:
 {
   "annotations": [
     {
-      "x": <precise number 0-100 pointing to the exact element>,
-      "y": <precise number 0-100 pointing to the exact element>, 
-      "feedback": "<specific feedback about the element at these exact coordinates>",
-      "category": "<one of: ux, visual, accessibility, conversion, content>",
-      "severity": "<one of: critical, suggested, enhancement>",
-      "business_impact": "<specific business impact>",
-      "implementation_effort": "<one of: low, medium, high>",
+      "x": 50,
+      "y": 20,
+      "feedback": "I can see a [specific element] at this location. [Specific improvement recommendation]",
+      "category": "ux",
+      "severity": "suggested",
+      "business_impact": "medium",
+      "implementation_effort": "medium",
       "imageIndex": 0
     }
   ]
 }
 
-⚠️ COORDINATE VALIDATION REQUIREMENTS ⚠️
-- Verify each x,y coordinate points to an actual visual element
-- Include element description in feedback (e.g., "The navigation menu at...")
-- Ensure coordinates make logical sense for the described element
-- No generic feedback at arbitrary coordinates`;
+Be specific about what you actually see in the image and provide unique feedback for each annotation.
+
+ANALYSIS CONTEXT: ${systemPrompt}`;
   
-  // Simplified request payload with enhanced prompt
+  // 🔧 ENHANCED REQUEST PAYLOAD WITH IMAGE VALIDATION
   const requestPayload = {
     model: model,
-    max_tokens: 4000, // Increased for more detailed responses
-    temperature: 0.1, // Lower temperature for more consistent positioning
-    system: "You are a UX/UI design analysis expert. Always respond with valid JSON containing precise annotations with accurate coordinate-to-element correlation.",
+    max_tokens: 3000,
+    temperature: 0.3, // Slightly higher for more creative analysis
     messages: [
       {
         role: 'user',
         content: [
           {
             type: 'text',
-            text: enhancedSystemPrompt
+            text: simplifiedSystemPrompt
           },
           {
             type: 'image',
@@ -120,6 +101,13 @@ Your response must be valid JSON only with this exact structure:
     ]
   };
 
+  // Add validation before sending
+  console.log('🔍 Pre-flight validation:');
+  console.log(`   Image data length: ${base64Image.length}`);
+  console.log(`   MIME type: ${mimeType}`);
+  console.log(`   Model: ${model}`);
+  console.log(`   Expected response: JSON with 12-16 annotations`);
+
   console.log('🚀 Making Claude API request with enhanced annotation correlation...');
   console.log(`   Endpoint: https://api.anthropic.com/v1/messages`);
   console.log(`   Method: POST`);
@@ -128,7 +116,7 @@ Your response must be valid JSON only with this exact structure:
   console.log(`   Anthropic-Version: 2023-06-01`);
   console.log(`   Model: ${model}`);
   console.log(`   Image size: ${base64Image.length} characters`);
-  console.log(`   Enhanced prompt length: ${enhancedSystemPrompt.length} characters`);
+  console.log(`   Simplified prompt length: ${simplifiedSystemPrompt.length} characters`);
   console.log(`   Temperature: 0.1 (for consistent positioning)`);
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -231,52 +219,48 @@ Your response must be valid JSON only with this exact structure:
     throw new Error('Invalid response structure: missing text content');
   }
 
-  // 🎯 ENHANCED ANNOTATION VALIDATION AND CORRELATION
-  console.log('🔍 Processing Claude response for annotation correlation...');
-  
+  // 🎯 SIMPLIFIED RESPONSE PROCESSING
   try {
     const responseContent = aiResponse.content[0].text;
-    console.log('Raw Claude response content:', responseContent.substring(0, 200) + '...');
+    console.log('📝 Raw Claude response:', responseContent.substring(0, 500) + '...');
     
-    // Parse the JSON response from Claude
-    const parsed = JSON.parse(responseContent);
+    // Try to parse as JSON
+    let parsed;
+    try {
+      parsed = JSON.parse(responseContent);
+    } catch (parseError) {
+      // If response isn't JSON, try to extract JSON from text
+      const jsonMatch = responseContent.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        parsed = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error('No valid JSON found in Claude response');
+      }
+    }
+    
     const annotations = parsed.annotations || [];
     
-    console.log(`📊 Processing ${annotations.length} annotations for coordinate validation...`);
+    if (annotations.length === 0) {
+      throw new Error('Claude returned no annotations');
+    }
     
-    // Validate and enhance each annotation for proper correlation
+    // Validate each annotation has required fields
     const validatedAnnotations = annotations.map((annotation: any, index: number) => {
-      // Ensure coordinates are numbers and within bounds
-      const x = Math.max(2, Math.min(98, Number(annotation.x) || 50));
-      const y = Math.max(2, Math.min(98, Number(annotation.y) || 50));
+      if (!annotation.feedback || annotation.feedback.length < 10) {
+        throw new Error(`Annotation ${index + 1} has insufficient feedback`);
+      }
       
-      // Enhance feedback with coordinate reference for correlation verification
-      const enhancedFeedback = annotation.feedback + 
-        ` (Located at ${x.toFixed(1)}%, ${y.toFixed(1)}% in the design)`;
-      
-      const validatedAnnotation = {
+      return {
         ...annotation,
-        x,
-        y,
+        x: Math.max(2, Math.min(98, Number(annotation.x) || 50)),
+        y: Math.max(2, Math.min(98, Number(annotation.y) || 50)),
         id: `ai-${index + 1}`,
-        imageIndex: annotation.imageIndex || 0,
-        feedback: enhancedFeedback
+        imageIndex: annotation.imageIndex || 0
       };
-      
-      console.log(`✅ Validated annotation ${index + 1}:`, {
-        id: validatedAnnotation.id,
-        coordinates: { x, y },
-        category: annotation.category,
-        severity: annotation.severity,
-        feedbackLength: enhancedFeedback.length
-      });
-      
-      return validatedAnnotation;
     });
-
-    console.log(`🎯 Successfully processed ${validatedAnnotations.length} annotations with coordinate validation`);
     
-    // Return enhanced response with validated annotations
+    console.log(`✅ Successfully processed ${validatedAnnotations.length} annotations`);
+    
     return {
       ...aiResponse,
       content: [{
@@ -285,12 +269,8 @@ Your response must be valid JSON only with this exact structure:
       }]
     };
     
-  } catch (annotationError) {
-    console.error('❌ Error processing annotations for correlation:', annotationError);
-    console.error('❌ Raw response content:', aiResponse.content[0].text.substring(0, 500));
-    
-    // Return original response if annotation processing fails
-    console.log('⚠️ Falling back to original response due to processing error');
-    return aiResponse;
+  } catch (processingError) {
+    console.error('❌ Response processing failed:', processingError);
+    throw new Error(`Failed to process Claude response: ${processingError.message}`);
   }
 }
