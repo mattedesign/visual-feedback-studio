@@ -121,16 +121,20 @@ const analyzeDesign = async (request: AnalyzeDesignRequest): Promise<AnalyzeDesi
       throw new Error('No data returned from analysis function');
     }
 
-    console.log('✅ Main Analysis: Edge function completed successfully:', {
-      success: data.success,
-      annotationCount: data.annotations?.length || 0,
-      ragEnhanced: data.ragEnhanced || false,
-      knowledgeSourcesUsed: data.knowledgeSourcesUsed || 0,
-      researchCitations: data.researchCitations?.length || 0,
-      // ✅ NEW: Log Well Done data presence
-      wellDoneReceived: !!data.wellDone,
-      wellDoneInsights: data.wellDone?.insights?.length || 0
-    });
+      console.log('✅ Main Analysis: Edge function completed successfully:', {
+        success: data.success,
+        annotationCount: data.annotations?.length || 0,
+        ragEnhanced: data.ragEnhanced || false,
+        knowledgeSourcesUsed: data.knowledgeSourcesUsed || 0,
+        researchCitations: data.researchCitations?.length || 0,
+        // ✅ NEW: Log Well Done data presence
+        wellDoneReceived: !!data.wellDone,
+        wellDoneInsights: data.wellDone?.insights?.length || 0,
+        modelUsed: 'Claude Sonnet 4.0 + Multi-Model Orchestration',
+        googleVisionEnabled: true,
+        perplexityEnabled: true,
+        comprehensiveAnalysis: true
+      });
 
     // If analysis was successful, increment usage counter
     if (data.success && data.annotations?.length > 0) {

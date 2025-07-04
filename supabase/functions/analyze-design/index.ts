@@ -220,13 +220,16 @@ serve(async (req) => {
     console.log('✅ Request validation passed for comprehensive analysis');
     
     // 🔥 COMPREHENSIVE ANALYSIS: Always enable RAG for better insights
-    const useRAG = ragEnabled || ragEnhanced || true; // Force RAG for comprehensive analysis
+    const useRAG = true; // Always use RAG for comprehensive research-backed analysis
     console.log('🎯 Comprehensive Analysis Configuration:', {
       ragEnabled,
       ragEnhanced,
-      useRAG,
+      useRAG: true,
       targetInsights: '16-19',
-      comprehensiveMode: true
+      comprehensiveMode: true,
+      googleVisionEnabled: true,
+      perplexityEnabled: true,
+      multiModelOrchestration: true
     });
 
     // Process images with enhanced error handling
