@@ -256,11 +256,20 @@ ANALYSIS CONTEXT: ${prompt}`;
       );
 
       // ✅ ENHANCED: Validate Claude response quality
+      console.log('🔍 CLAUDE RESPONSE DEBUG:', {
+        responseType: typeof annotations,
+        isArray: Array.isArray(annotations),
+        length: Array.isArray(annotations) ? annotations.length : 'N/A',
+        rawResponse: typeof annotations === 'string' ? annotations.substring(0, 200) + '...' : annotations
+      });
+
       if (!Array.isArray(annotations)) {
-        throw new Error('Claude returned non-array response');
+        console.error('❌ Claude returned non-array response:', annotations);
+        throw new Error(`Claude returned non-array response: ${typeof annotations}`);
       }
       
       if (annotations.length === 0) {
+        console.error('❌ Claude returned empty annotations array');
         throw new Error('Claude returned empty annotations array');
       }
 
@@ -272,7 +281,15 @@ ANALYSIS CONTEXT: ${prompt}`;
         confidence,
         processingTimeMs: processingTime,
         meetsQualityStandard: annotations.length >= 16,
-        qualityGrade: annotations.length >= 18 ? 'Excellent' : annotations.length >= 16 ? 'Good' : annotations.length >= 12 ? 'Acceptable' : 'Below Standard'
+        qualityGrade: annotations.length >= 18 ? 'Excellent' : annotations.length >= 16 ? 'Good' : annotations.length >= 12 ? 'Acceptable' : 'Below Standard',
+        // ✅ DEBUG: Log first few annotations to check structure
+        sampleAnnotations: annotations.slice(0, 2).map(a => ({
+          id: a.id,
+          x: a.x,
+          y: a.y,
+          category: a.category,
+          feedbackPreview: typeof a.feedback === 'string' ? a.feedback.substring(0, 50) + '...' : 'No feedback'
+        }))
       });
 
       return {
