@@ -7,6 +7,7 @@ import { getAnnotationsForAnalysis } from '@/services/annotationsService';
 import { supabase } from '@/integrations/supabase/client';
 import { Annotation } from '@/types/analysis';
 import { AIProvider } from '@/types/aiProvider';
+import { useAnalysisDiagnostics } from './useAnalysisDiagnostics';
 
 interface UseAnalysisExecutionProps {
   currentAnalysis: AnalysisWithFiles | null;
@@ -26,6 +27,9 @@ export const useAnalysisExecution = ({
     currentAnalysisId: currentAnalysis?.id
   });
   
+  // ✅ NEW: Initialize diagnostics
+  const { runClientDiagnostics } = useAnalysisDiagnostics();
+  
   const executeAnalysis = useCallback(async (
     imagesToAnalyze: string[],
     userAnalysisPrompt: string,
@@ -43,6 +47,27 @@ export const useAnalysisExecution = ({
       aiProvider,
       currentAnalysisId: currentAnalysis?.id
     });
+
+    // ✅ NEW: Run pre-analysis diagnostics
+    console.log('🔍 RUNNING PRE-ANALYSIS DIAGNOSTICS...');
+    try {
+      const diagnostics = await runClientDiagnostics(
+        imagesToAnalyze, 
+        userAnalysisPrompt, 
+        currentAnalysis?.id
+      );
+      
+      if (!diagnostics.canProceed) {
+        const criticalIssues = diagnostics.checks.filter(c => c.status === 'FAIL');
+        console.error('❌ PRE-ANALYSIS DIAGNOSTICS FAILED:', criticalIssues);
+        throw new Error(`Analysis blocked by ${criticalIssues.length} critical issue(s). Please fix and try again.`);
+      }
+      
+      console.log('✅ PRE-ANALYSIS DIAGNOSTICS PASSED');
+    } catch (diagnosticError) {
+      console.error('❌ Diagnostic check failed:', diagnosticError);
+      throw diagnosticError;
+    }
 
     console.log('=== Analysis Started (RAG DISABLED) ===');
     console.log('Analysis configuration:', { 

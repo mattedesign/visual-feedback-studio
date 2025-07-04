@@ -9,6 +9,8 @@ import { databaseManager } from './databaseManager.ts';
 import { enhancedAnalysisIntegrator } from './enhancedAnalysisIntegrator.ts';
 // ✅ NEW: Import Well Done Service (safe addition)
 import { WellDoneService } from './services/wellDoneService.ts';
+// ✅ NEW: Import Comprehensive Diagnostics
+import { ComprehensiveDiagnostics } from './diagnostics/comprehensiveDiagnostics.ts';
 
 console.log('🚀 Enhanced Comprehensive Analysis Function - Starting up');
 
@@ -58,26 +60,40 @@ serve(async (req) => {
       })) || []
     });
     
-    // ✅ NEW: Test API key before proceeding
-    console.log('🔑 TESTING CLAUDE API KEY BEFORE ANALYSIS...');
-    const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
-    if (!anthropicApiKey) {
-      console.error('❌ ANTHROPIC_API_KEY not found in environment');
+    // ✅ NEW: COMPREHENSIVE DIAGNOSTICS - Run full system check before proceeding
+    console.log('🔍 RUNNING COMPREHENSIVE ANALYSIS DIAGNOSTICS...');
+    const diagnosticReport = await ComprehensiveDiagnostics.runFullDiagnostics(requestData);
+    
+    console.log('📊 DIAGNOSTIC RESULTS:', {
+      overallStatus: diagnosticReport.overallStatus,
+      totalChecks: diagnosticReport.diagnostics.length,
+      passed: diagnosticReport.diagnostics.filter(d => d.status === 'PASS').length,
+      warnings: diagnosticReport.diagnostics.filter(d => d.status === 'WARNING').length,
+      failures: diagnosticReport.diagnostics.filter(d => d.status === 'FAIL').length,
+      canProceed: !ComprehensiveDiagnostics.shouldBlockAnalysis(diagnosticReport)
+    });
+
+    // If critical failures detected, return diagnostic report
+    if (ComprehensiveDiagnostics.shouldBlockAnalysis(diagnosticReport)) {
+      console.error('❌ CRITICAL DIAGNOSTIC FAILURES - BLOCKING ANALYSIS');
+      console.error('📋 Failed diagnostics:', diagnosticReport.diagnostics.filter(d => d.status === 'FAIL'));
+      
+      const diagnosticResponse = ComprehensiveDiagnostics.formatDiagnosticResponse(diagnosticReport);
       return corsHandler.addCorsHeaders(
-        new Response(JSON.stringify({
-          success: false,
-          error: 'Claude API key not configured',
-          recommendation: 'Please add ANTHROPIC_API_KEY to Supabase secrets',
-          debugInfo: { keyConfigured: false, timestamp: new Date().toISOString() }
-        }), {
-          status: 500,
+        new Response(JSON.stringify(diagnosticResponse), {
+          status: 422,
           headers: { 'Content-Type': 'application/json' }
         })
       );
     }
+
+    console.log('✅ COMPREHENSIVE DIAGNOSTICS PASSED - Analysis can proceed');
     
-    console.log('✅ API key found, length:', anthropicApiKey.length);
-    console.log('✅ API key preview:', anthropicApiKey.substring(0, 10) + '***');
+    // Log any warnings for monitoring
+    const warnings = diagnosticReport.diagnostics.filter(d => d.status === 'WARNING');
+    if (warnings.length > 0) {
+      console.warn('⚠️ DIAGNOSTIC WARNINGS (non-blocking):', warnings.map(w => w.details));
+    }
     
     console.log('📋 Comprehensive analysis request data received:', {
       hasImageUrls: !!requestData.imageUrls,

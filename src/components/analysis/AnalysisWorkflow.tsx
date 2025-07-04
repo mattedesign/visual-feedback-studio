@@ -12,7 +12,9 @@ import { SimplifiedContextInput } from './workflow/components/SimplifiedContextI
 import { TabBasedResultsLayout } from './workflow/components/TabBasedResultsLayout';
 import { FigmaInspiredUploadInterface } from './workflow/components/FigmaInspiredUploadInterface';
 import { CenteredAnalysisInterface } from './figma/CenteredAnalysisInterface';
+import { DiagnosticDebugMode } from './DiagnosticDebugMode';
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 
 export const AnalysisWorkflow = () => {
   // 🔄 LOOP DETECTION: Track component renders
@@ -30,6 +32,10 @@ export const AnalysisWorkflow = () => {
   const figmaUIEnabled = useFeatureFlag('figma-inspired-ui');
   const urlParams = new URLSearchParams(window.location.search);
   const figmaMode = urlParams.get('figma') === 'true';
+  
+  // ✅ NEW: Diagnostic debug mode
+  const debugMode = urlParams.get('debug') === 'true';
+  const [showDiagnostics, setShowDiagnostics] = useState(debugMode);
   
   console.log('🎨 AnalysisWorkflow Figma Check:', { 
     figmaUIEnabled, 
@@ -99,6 +105,29 @@ export const AnalysisWorkflow = () => {
 
   return (
     <div className="h-full">
+      {/* ✅ NEW: Diagnostic Debug Mode */}
+      {(debugMode || showDiagnostics) && (
+        <div className="fixed top-4 right-4 z-50 w-96 max-h-96 overflow-auto">
+          <DiagnosticDebugMode
+            images={workflow.selectedImages}
+            analysisPrompt={workflow.analysisContext}
+            analysisId={workflow.currentAnalysis?.id}
+          />
+        </div>
+      )}
+      
+      {/* Debug Toggle Button */}
+      {!debugMode && (
+        <Button
+          onClick={() => setShowDiagnostics(!showDiagnostics)}
+          variant="ghost"
+          size="sm"
+          className="fixed bottom-4 left-4 z-50 opacity-50 hover:opacity-100"
+        >
+          🔍 Debug
+        </Button>
+      )}
+      
       {renderCurrentStep()}
     </div>
   );
