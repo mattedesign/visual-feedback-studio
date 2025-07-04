@@ -52,30 +52,53 @@ class AIAnalysisManager {
       targetInsights: '16-19 professional standard'
     });
 
-    // Validate images have base64 data
-    const validImages = processedImages.filter(img => img.base64Data && img.base64Data.length > 0);
-    if (validImages.length === 0) {
-      console.error('❌ No valid image data found');
+    // ✅ ENHANCED: Emergency validation with detailed error reporting
+    try {
+      const validationResult = this.validateAnalysisInputs(processedImages, analysisPrompt);
+      if (!validationResult.isValid) {
+        console.error('❌ Analysis input validation failed:', validationResult.errors);
+        return {
+          success: false,
+          error: `Input validation failed: ${validationResult.errors.join(', ')}`,
+          validationErrors: validationResult.errors
+        };
+      }
+    } catch (validationError) {
+      console.error('❌ Critical validation error:', validationError);
       return {
         success: false,
-        error: 'No valid image data provided for analysis'
+        error: 'Critical validation failure - unable to process request'
       };
     }
 
+    // Get validated images from validation
+    const validImages = this.getValidatedImages(processedImages);
+
     try {
-      // ✅ FIXED: Use Multi-Model Orchestrator with Claude-First Architecture
-      console.log('🚀 Initializing Multi-Model Orchestrator with Claude-first weighting...');
+      // ✅ ENHANCED: Robust orchestrator initialization with error handling
+      console.log('🚀 Initializing Enhanced Multi-Model Orchestrator with Claude-first weighting...');
       
       const { multiModelOrchestrator } = await import('./multiModelOrchestrator.ts');
       
-      const orchestrationResult = await multiModelOrchestrator.orchestrateAnalysis(
-        validImages,
-        analysisPrompt,
-        {
-          ragEnabled,
-          perplexityEnabled: true, // Enable Perplexity for research validation
-          forceClaudeOnly: false   // Allow fallbacks if needed
-        }
+      // ✅ ENHANCED: Circuit breaker check before orchestration
+      if (this.circuitBreakerCount >= this.maxCircuitBreakerAttempts) {
+        console.warn('🚨 Circuit breaker open - using emergency single model fallback');
+        const emergencyResult = await this.executeEmergencyFallback(validImages, analysisPrompt);
+        return emergencyResult;
+      }
+      
+      const orchestrationResult = await this.withTimeout(
+        multiModelOrchestrator.orchestrateAnalysis(
+          validImages,
+          analysisPrompt,
+          {
+            ragEnabled,
+            perplexityEnabled: true, // Enable Perplexity for research validation
+            forceClaudeOnly: false   // Allow fallbacks if needed
+          }
+        ),
+        45000, // 45 second timeout for full orchestration
+        'multi-model-orchestration'
       );
 
       const processingTime = Date.now() - startTime;
@@ -120,32 +143,207 @@ class AIAnalysisManager {
         console.error('🚨 Circuit breaker activated - too many failures');
         return {
           success: false,
-          error: 'Analysis service temporarily unavailable after multiple failures'
+          error: 'Analysis service temporarily unavailable after multiple failures',
+          circuitBreakerActive: true
         };
       }
 
-      // ✅ EMERGENCY FALLBACK: Try single Claude analysis
-      console.log('🔄 Attempting emergency fallback to single Claude analysis...');
-      try {
-        const claudeResult = await this.callClaudeWithModelManager(validImages, analysisPrompt);
-        const processingTime = Date.now() - startTime;
-        
-        return {
-          success: true,
-          annotations: claudeResult.annotations,
-          modelUsed: claudeResult.modelUsed + ' (emergency fallback)',
-          processingTime,
-          ragEnhanced: false
-        };
-      } catch (fallbackError) {
-        console.error('❌ Emergency fallback also failed:', fallbackError);
-        
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : 'Multi-model analysis pipeline failed'
-        };
-      }
+      // ✅ ENHANCED: Multi-tier emergency fallback system
+      return await this.executeComprehensiveErrorRecovery(error, validImages, analysisPrompt, startTime);
     }
+  }
+
+  /**
+   * ✅ NEW: Enhanced validation for analysis inputs
+   */
+  private validateAnalysisInputs(
+    processedImages: ProcessedImage[],
+    analysisPrompt: string
+  ): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    // Validate processed images
+    if (!processedImages || !Array.isArray(processedImages)) {
+      errors.push('Processed images must be an array');
+    } else if (processedImages.length === 0) {
+      errors.push('At least one processed image is required');
+    } else {
+      processedImages.forEach((img, index) => {
+        if (!img.base64Data || typeof img.base64Data !== 'string') {
+          errors.push(`Image ${index + 1} missing valid base64 data`);
+        }
+        if (!img.mimeType || typeof img.mimeType !== 'string') {
+          errors.push(`Image ${index + 1} missing valid mime type`);
+        }
+        if (img.base64Data && img.base64Data.length < 100) {
+          errors.push(`Image ${index + 1} base64 data too short (corrupted?)`);
+        }
+      });
+    }
+
+    // Validate analysis prompt
+    if (!analysisPrompt || typeof analysisPrompt !== 'string') {
+      errors.push('Analysis prompt must be a non-empty string');
+    } else if (analysisPrompt.trim().length < 10) {
+      errors.push('Analysis prompt too short (minimum 10 characters)');
+    } else if (analysisPrompt.length > 3000) {
+      errors.push('Analysis prompt too long (maximum 3000 characters)');
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  }
+
+  /**
+   * ✅ NEW: Get validated images with robust filtering
+   */
+  private getValidatedImages(processedImages: ProcessedImage[]): ProcessedImage[] {
+    return processedImages.filter(img => {
+      // Check for valid base64 data
+      if (!img.base64Data || typeof img.base64Data !== 'string' || img.base64Data.length < 100) {
+        console.warn('⚠️ Filtering out image with invalid base64 data');
+        return false;
+      }
+      
+      // Check for valid mime type
+      if (!img.mimeType || !img.mimeType.startsWith('image/')) {
+        console.warn('⚠️ Filtering out image with invalid mime type:', img.mimeType);
+        return false;
+      }
+      
+      return true;
+    });
+  }
+
+  /**
+   * ✅ NEW: Timeout wrapper for async operations
+   */
+  private withTimeout<T>(
+    promise: Promise<T>,
+    timeoutMs: number,
+    operationName: string
+  ): Promise<T> {
+    return new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject(new Error(`${operationName} timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
+
+      promise
+        .then(resolve)
+        .catch(reject)
+        .finally(() => clearTimeout(timeoutId));
+    });
+  }
+
+  /**
+   * ✅ NEW: Emergency fallback for when circuit breaker is open
+   */
+  private async executeEmergencyFallback(
+    validImages: ProcessedImage[],
+    analysisPrompt: string
+  ): Promise<AnalysisResult> {
+    const startTime = Date.now();
+    
+    try {
+      console.log('🚨 Executing emergency fallback - direct Claude analysis');
+      
+      const claudeResult = await this.withTimeout(
+        this.callClaudeWithModelManager(validImages, analysisPrompt),
+        30000,
+        'emergency-claude-fallback'
+      );
+      
+      const processingTime = Date.now() - startTime;
+      
+      return {
+        success: true,
+        annotations: claudeResult.annotations,
+        modelUsed: claudeResult.modelUsed + ' (emergency fallback)',
+        processingTime,
+        ragEnhanced: false,
+        emergencyMode: true
+      };
+    } catch (emergencyError) {
+      console.error('❌ Emergency fallback failed:', emergencyError);
+      
+      // Final fallback - return minimal mock analysis
+      return this.createMinimalFallbackAnalysis(emergencyError, startTime);
+    }
+  }
+
+  /**
+   * ✅ NEW: Comprehensive error recovery system
+   */
+  private async executeComprehensiveErrorRecovery(
+    error: unknown,
+    validImages: ProcessedImage[],
+    analysisPrompt: string,
+    startTime: number
+  ): Promise<AnalysisResult> {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    console.log('🔄 Executing comprehensive error recovery...');
+    
+    // Try emergency fallback first
+    try {
+      const emergencyResult = await this.executeEmergencyFallback(validImages, analysisPrompt);
+      if (emergencyResult.success) {
+        return emergencyResult;
+      }
+    } catch (emergencyError) {
+      console.warn('⚠️ Emergency fallback also failed:', emergencyError);
+    }
+
+    // Final safety net - return minimal analysis
+    return this.createMinimalFallbackAnalysis(error, startTime);
+  }
+
+  /**
+   * ✅ NEW: Create minimal fallback analysis when all else fails
+   */
+  private createMinimalFallbackAnalysis(
+    error: unknown,
+    startTime: number
+  ): AnalysisResult {
+    const errorMessage = error instanceof Error ? error.message : 'Analysis pipeline failure';
+    
+    console.log('🔧 Creating minimal fallback analysis due to system failure');
+    
+    // Create minimal annotations based on common UX principles
+    const minimalAnnotations = [
+      {
+        id: 'fallback-1',
+        x: 50,
+        y: 30,
+        severity: 'suggested',
+        category: 'ux',
+        feedback: 'Unable to complete full analysis. Please verify your images are valid and try again.',
+        imageIndex: 0,
+        fallbackGenerated: true
+      },
+      {
+        id: 'fallback-2',
+        x: 30,
+        y: 60,
+        severity: 'informational',
+        category: 'technical',
+        feedback: 'System temporarily experiencing processing difficulties. Our team has been notified.',
+        imageIndex: 0,
+        fallbackGenerated: true
+      }
+    ];
+
+    return {
+      success: false,
+      annotations: minimalAnnotations,
+      modelUsed: 'Fallback System',
+      processingTime: Date.now() - startTime,
+      ragEnhanced: false,
+      error: `Analysis failed: ${errorMessage}`,
+      fallbackMode: true
+    };
   }
 
   // 🎯 ENHANCED: Claude Model Manager Integration with comprehensive error handling

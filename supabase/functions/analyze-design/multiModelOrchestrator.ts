@@ -168,7 +168,7 @@ export class MultiModelOrchestrator {
   }
 
   /**
-   * 🤖 Claude Sonnet 4.0 Analysis (Primary Model)
+   * 🤖 Claude Sonnet 4.0 Analysis (Primary Model) - Enhanced with robust error handling
    */
   private async runClaudeAnalysis(
     images: any[],
@@ -178,20 +178,37 @@ export class MultiModelOrchestrator {
     const startTime = Date.now();
     
     try {
-      console.log('🤖 Executing Claude Sonnet 4.0 analysis...');
+      console.log('🤖 Executing Enhanced Claude Sonnet 4.0 analysis...');
+      
+      // ✅ ENHANCED: Validate inputs before processing
+      if (!images || !Array.isArray(images) || images.length === 0) {
+        throw new Error('No images provided for Claude analysis');
+      }
       
       // Import and use the existing Claude model manager
       const { analyzeWithClaudeModels } = await import('./claude/modelManager.ts');
       
       const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
       if (!anthropicApiKey) {
-        throw new Error('ANTHROPIC_API_KEY not configured');
+        throw new Error('ANTHROPIC_API_KEY not configured in Supabase secrets');
       }
 
-      // Use the first image for analysis
+      // ✅ ENHANCED: Validate image data more thoroughly
       const primaryImage = images[0];
-      if (!primaryImage?.base64Data) {
-        throw new Error('No valid image data for Claude analysis');
+      if (!primaryImage) {
+        throw new Error('Primary image is null or undefined');
+      }
+      
+      if (!primaryImage.base64Data || typeof primaryImage.base64Data !== 'string') {
+        throw new Error('Primary image missing valid base64Data');
+      }
+      
+      if (primaryImage.base64Data.length < 100) {
+        throw new Error('Primary image base64Data appears corrupted (too short)');
+      }
+      
+      if (!primaryImage.mimeType || !primaryImage.mimeType.startsWith('image/')) {
+        throw new Error(`Invalid image mime type: ${primaryImage.mimeType}`);
       }
 
       const systemPrompt = `You are a professional UX analysis expert conducting comprehensive audits. You MUST generate exactly 16-19 detailed, research-backed insights covering all aspects of design quality, usability, and business impact.
@@ -220,22 +237,42 @@ Ensure exactly 16-19 insights for comprehensive professional analysis.
 
 ANALYSIS CONTEXT: ${prompt}`;
 
-      const annotations = await analyzeWithClaudeModels(
-        primaryImage.base64Data,
-        primaryImage.mimeType,
-        systemPrompt,
-        anthropicApiKey,
-        'claude-sonnet-4-20250514' // Prioritize Sonnet 4.0
+      // ✅ ENHANCED: Add timeout and retry logic for Claude API calls
+      console.log('🚀 Calling Claude with enhanced error handling...', {
+        imageBase64Length: primaryImage.base64Data.length,
+        imageType: primaryImage.mimeType,
+        promptLength: systemPrompt.length
+      });
+      
+      const annotations = await this.withClaudeTimeout(
+        analyzeWithClaudeModels(
+          primaryImage.base64Data,
+          primaryImage.mimeType,
+          systemPrompt,
+          anthropicApiKey,
+          'claude-sonnet-4-20250514' // Prioritize Sonnet 4.0
+        ),
+        35000 // 35 second timeout for Claude
       );
+
+      // ✅ ENHANCED: Validate Claude response quality
+      if (!Array.isArray(annotations)) {
+        throw new Error('Claude returned non-array response');
+      }
+      
+      if (annotations.length === 0) {
+        throw new Error('Claude returned empty annotations array');
+      }
 
       const processingTime = Date.now() - startTime;
       const confidence = this.calculateClaudeConfidence(annotations);
 
-      console.log('✅ Claude analysis completed', {
+      console.log('✅ Enhanced Claude analysis completed', {
         annotationCount: annotations.length,
         confidence,
         processingTimeMs: processingTime,
-        meetsQualityStandard: annotations.length >= 16
+        meetsQualityStandard: annotations.length >= 16,
+        qualityGrade: annotations.length >= 18 ? 'Excellent' : annotations.length >= 16 ? 'Good' : annotations.length >= 12 ? 'Acceptable' : 'Below Standard'
       });
 
       return {
@@ -252,16 +289,75 @@ ANALYSIS CONTEXT: ${prompt}`;
       };
 
     } catch (error) {
-      console.error('❌ Claude analysis failed', error);
+      const processingTime = Date.now() - startTime;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown Claude error';
+      
+      console.error('❌ Enhanced Claude analysis failed', {
+        error: errorMessage,
+        processingTimeMs: processingTime,
+        imageValidation: {
+          hasImages: images.length > 0,
+          firstImageValid: images[0]?.base64Data?.length > 0,
+          imageCount: images.length
+        }
+      });
+      
+      // ✅ ENHANCED: Categorize Claude errors for better debugging
+      let enhancedError = errorMessage;
+      if (errorMessage.includes('API key')) {
+        enhancedError = 'Claude API authentication failed - check ANTHROPIC_API_KEY in Supabase secrets';
+      } else if (errorMessage.includes('timeout')) {
+        enhancedError = 'Claude API request timed out - image may be too large or service overloaded';
+      } else if (errorMessage.includes('rate limit')) {
+        enhancedError = 'Claude API rate limit exceeded - please wait and try again';
+      } else if (errorMessage.includes('base64')) {
+        enhancedError = 'Image processing error - invalid or corrupted image data';
+      }
       
       return {
         modelName: 'Claude Sonnet 4.0',
         annotations: [],
         confidence: 0,
-        processingTime: Date.now() - startTime,
+        processingTime,
         success: false,
-        error: error.message
+        error: enhancedError,
+        errorCategory: this.categorizeError(errorMessage)
       };
+    }
+  }
+
+  /**
+   * ✅ NEW: Timeout wrapper specifically for Claude API calls
+   */
+  private withClaudeTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+    return new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject(new Error(`Claude API call timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
+
+      promise
+        .then(resolve)
+        .catch(reject)
+        .finally(() => clearTimeout(timeoutId));
+    });
+  }
+
+  /**
+   * ✅ NEW: Error categorization for better debugging
+   */
+  private categorizeError(errorMessage: string): string {
+    if (errorMessage.includes('API key') || errorMessage.includes('authentication')) {
+      return 'authentication';
+    } else if (errorMessage.includes('timeout') || errorMessage.includes('timed out')) {
+      return 'timeout';
+    } else if (errorMessage.includes('rate limit')) {
+      return 'rate_limit';
+    } else if (errorMessage.includes('base64') || errorMessage.includes('image')) {
+      return 'image_processing';
+    } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+      return 'network';
+    } else {
+      return 'unknown';
     }
   }
 
@@ -668,19 +764,44 @@ ANALYSIS CONTEXT: ${prompt}`;
   }
 
   private createSingleModelResult(modelResult: ModelResult, reason: string): OrchestratedResult {
-    return {
-      finalAnnotations: modelResult.annotations,
-      modelResults: [modelResult],
-      synthesisMetadata: {
-        primaryModel: modelResult.modelName,
-        weights: reason === 'claude' ? this.CLAUDE_FIRST_WEIGHTS : { claude: 1, openai: 0, perplexity: 0 },
-        confidenceScore: modelResult.confidence,
-        totalModelsUsed: 1,
-        fallbacksTriggered: [reason],
-        qualityScore: modelResult.confidence
-      }
-    };
-  }
-}
+      return {
+        finalAnnotations: modelResult.annotations,
+        modelResults: [modelResult],
+        synthesisMetadata: {
+          primaryModel: modelResult.modelName,
+          weights: reason === 'claude' ? this.CLAUDE_FIRST_WEIGHTS : { claude: 1, openai: 0, perplexity: 0 },
+          confidenceScore: modelResult.confidence,
+          totalModelsUsed: 1,
+          fallbacksTriggered: [reason],
+          qualityScore: modelResult.confidence
+        }
+      };
+    }
 
-export const multiModelOrchestrator = new MultiModelOrchestrator();
+    /**
+     * ✅ NEW: Calculate annotation quality score
+     */
+    private calculateAnnotationQuality(annotations: any[]): number {
+      if (!annotations || annotations.length === 0) return 0;
+      
+      let qualityScore = 0;
+      
+      // Base score from count
+      const countScore = Math.min(annotations.length / 18, 1); // Max at 18 annotations
+      qualityScore += countScore * 0.4;
+      
+      // Diversity score (different categories)
+      const categories = new Set(annotations.map(a => a.category).filter(Boolean));
+      const diversityScore = Math.min(categories.size / 5, 1); // Max at 5 categories
+      qualityScore += diversityScore * 0.3;
+      
+      // Content quality score (feedback length and detail)
+      const avgFeedbackLength = annotations.reduce((sum, a) => sum + (a.feedback?.length || 0), 0) / annotations.length;
+      const contentScore = Math.min(avgFeedbackLength / 100, 1); // Max at 100 chars average
+      qualityScore += contentScore * 0.3;
+      
+      return qualityScore;
+    }
+  }
+
+  export const multiModelOrchestrator = new MultiModelOrchestrator();
