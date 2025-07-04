@@ -442,35 +442,50 @@ export const useAnalysisWorkflow = () => {
         hasValidIds: !!(analysisId && user?.id)
       });
 
-      // ✅ CRITICAL: Save image URLs to uploaded_files table for proper dashboard display and Claude access
-      try {
-        const savedFiles = await saveImagesToUploadedFiles(images, analysisId, user?.id);
-        console.log('✅ Images saved to uploaded_files table for dashboard display:', savedFiles?.length);
-      } catch (imageSaveError) {
-        console.error('❌ Failed to save images to uploaded_files - analysis will continue but dashboard may not show images correctly:', imageSaveError);
-        // Continue with analysis even if image save fails
-      }
+    // ✅ CRITICAL: Save image URLs to uploaded_files table for proper dashboard display and Claude access
+    try {
+      const savedFiles = await saveImagesToUploadedFiles(images, analysisId, user?.id);
+      console.log('✅ Images saved to uploaded_files table for dashboard display:', savedFiles?.length);
+    } catch (imageSaveError) {
+      console.error('❌ Failed to save images to uploaded_files - analysis will continue but dashboard may not show images correctly:', imageSaveError);
+      // Continue with analysis even if image save fails
+    }
 
-      // ✅ IMPROVED: Use user comments for analysis context
-      const userCommentsArray = userComments.flatMap(imageComment => 
-        imageComment.comments.map(comment => ({
-          imageUrl: imageComment.imageUrl,
-          x: comment.x,
-          y: comment.y,
-          comment: comment.comment
-        }))
-      );
+    // ✅ IMPROVED: Use user comments for analysis context (reduced payload)
+    const userCommentsArray = userComments.flatMap(imageComment => 
+      imageComment.comments.map(comment => ({
+        imageUrl: comment.imageUrl || imageComment.imageUrl,
+        x: Math.round(comment.x * 10) / 10, // Round to 1 decimal place
+        y: Math.round(comment.y * 10) / 10, // Round to 1 decimal place
+        comment: comment.comment.substring(0, 500) // Limit comment length
+      }))
+    );
 
-      // Run the analysis with user comments
-      const result = await analysisService.analyzeDesign({
-        imageUrls: images,
-        analysisId,
-        analysisPrompt: analysisContext,
-        designType: 'website',
-        isComparative: images.length > 1,
-        ragEnhanced: true,
-        userComments: userCommentsArray
-      });
+    // ✅ OPTIMIZED: Further reduce payload size for edge function
+    const optimizedPayload = {
+      imageUrls: images.slice(0, 5), // Limit to max 5 images to avoid timeout
+      analysisId,
+      analysisPrompt: analysisContext.substring(0, 800), // Further reduced context length
+      designType: 'website',
+      isComparative: images.length > 1,
+      ragEnhanced: true,
+      // Only include essential user comment data
+      userComments: userCommentsArray.slice(0, 8).map(comment => ({
+        imageUrl: comment.imageUrl,
+        x: Math.round(comment.x),
+        y: Math.round(comment.y), 
+        comment: comment.comment.substring(0, 200) // Limit comment length
+      }))
+    };
+
+    console.log('🚀 Starting optimized analysis with reduced payload:', {
+      imageCount: optimizedPayload.imageUrls.length,
+      commentCount: optimizedPayload.userComments.length,
+      contextLength: optimizedPayload.analysisPrompt.length
+    });
+
+    // Run the analysis with optimized payload
+    const result = await analysisService.analyzeDesign(optimizedPayload);
 
       if (result.success) {
         console.log('✅ Analysis completed successfully - saving to database:', {

@@ -21,9 +21,10 @@ export const MultiImageAnnotateStep = ({ workflow }: MultiImageAnnotateStepProps
   const [showFloatingHint, setShowFloatingHint] = useState(true);
   const [isComparative, setIsComparative] = useState(false);
 
-  const currentImageAnnotations = workflow.imageAnnotations.find(
-    ia => ia.imageUrl === activeImageUrl
-  )?.annotations || [];
+  // ✅ FIXED: Get user comments for the current active image
+  const currentImageComments = workflow.userComments.find(
+    ic => ic.imageUrl === activeImageUrl
+  )?.comments || [];
 
   const currentImageIndex = workflow.selectedImages.indexOf(activeImageUrl);
   const canGoNext = currentImageIndex < workflow.selectedImages.length - 1;
@@ -61,10 +62,10 @@ export const MultiImageAnnotateStep = ({ workflow }: MultiImageAnnotateStepProps
   };
 
   const handleEditAnnotation = (id: string) => {
-    const annotation = currentImageAnnotations.find(ann => ann.id === id);
-    if (annotation) {
-      setCurrentPosition({ x: annotation.x, y: annotation.y });
-      setCommentText(annotation.comment);
+    const comment = currentImageComments.find(c => c.id === id);
+    if (comment) {
+      setCurrentPosition({ x: comment.x, y: comment.y });
+      setCommentText(comment.comment);
       setEditingId(id);
       setShowCommentDialog(true);
     }
@@ -87,7 +88,7 @@ export const MultiImageAnnotateStep = ({ workflow }: MultiImageAnnotateStepProps
   };
 
   const handleSubmitForAnalysis = () => {
-    workflow.goToStep('analyzing');
+    workflow.startAnalysis();
   };
 
   const handleBack = () => {
@@ -152,7 +153,7 @@ export const MultiImageAnnotateStep = ({ workflow }: MultiImageAnnotateStepProps
               
               <ImageViewer
                 imageUrl={activeImageUrl}
-                annotations={currentImageAnnotations}
+                annotations={currentImageComments}
                 showFloatingHint={showFloatingHint}
                 onImageClick={handleImageClick}
                 onEditAnnotation={handleEditAnnotation}
@@ -177,7 +178,7 @@ export const MultiImageAnnotateStep = ({ workflow }: MultiImageAnnotateStepProps
                   </div>
                   <div className="bg-slate-700 p-3 rounded">
                     <div className="text-sm font-medium text-slate-300">Current Image</div>
-                    <div className="text-lg font-bold text-purple-400">{currentImageAnnotations.length} comments</div>
+                    <div className="text-lg font-bold text-purple-400">{currentImageComments.length} comments</div>
                   </div>
                 </div>
               </div>
