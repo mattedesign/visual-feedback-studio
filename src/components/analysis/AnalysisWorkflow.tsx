@@ -23,6 +23,7 @@ export const AnalysisWorkflow = () => {
     renderCount: ++((window as any).analysisWorkflowRenderCount) || ((window as any).analysisWorkflowRenderCount = 1)
   });
 
+  // ✅ FIXED: Move ALL hooks to the top before any conditional returns
   const { user } = useAuth();
   const workflow = useAnalysisWorkflow();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -33,29 +34,10 @@ export const AnalysisWorkflow = () => {
   const urlParams = new URLSearchParams(window.location.search);
   const figmaMode = urlParams.get('figma') === 'true';
   
-    // ✅ FIXED: Diagnostic debug mode - always initialize properly
-    const debugMode = urlParams.get('debug') === 'true';
-    const [showDiagnostics, setShowDiagnostics] = useState(debugMode);
-    
-    // ✅ FIXED: Debug panel state management
-    console.log('🔍 DEBUG PANEL STATE:', {
-      debugMode,
-      showDiagnostics,
-      urlDebug: urlParams.get('debug'),
-      shouldShowPanel: debugMode || showDiagnostics
-    });
+  // ✅ FIXED: Diagnostic debug mode - always initialize properly
+  const debugMode = urlParams.get('debug') === 'true';
+  const [showDiagnostics, setShowDiagnostics] = useState(debugMode);
   
-  console.log('🎨 AnalysisWorkflow Figma Check:', { 
-    figmaUIEnabled, 
-    figmaMode, 
-    currentStep: workflow.currentStep,
-    currentURL: window.location.href 
-  });
-
-  if (!user) {
-    return null;
-  }
-
   // ✅ FIXED: Check if we're on the main analysis page vs results page
   const isOnMainAnalysisPage = window.location.pathname === '/analysis';
   const isOnResultsPage = window.location.pathname.includes('/analysis/') && 
@@ -68,6 +50,26 @@ export const AnalysisWorkflow = () => {
       workflow.resetWorkflow();
     }
   }, [isOnMainAnalysisPage, workflow.analysisResults]);
+  
+  // ✅ FIXED: Debug panel state management
+  console.log('🔍 DEBUG PANEL STATE:', {
+    debugMode,
+    showDiagnostics,
+    urlDebug: urlParams.get('debug'),
+    shouldShowPanel: debugMode || showDiagnostics
+  });
+  
+  console.log('🎨 AnalysisWorkflow Figma Check:', { 
+    figmaUIEnabled, 
+    figmaMode, 
+    currentStep: workflow.currentStep,
+    currentURL: window.location.href 
+  });
+
+  // ✅ FIXED: Now safe to return early after all hooks are called
+  if (!user) {
+    return null;
+  }
 
   // Use centered interface for upload step when feature flag is enabled
   if ((figmaUIEnabled || figmaMode) && workflow.currentStep === 'upload') {
