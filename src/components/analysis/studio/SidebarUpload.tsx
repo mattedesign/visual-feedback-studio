@@ -23,9 +23,9 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
     return null;
   }
 
-  // Enhanced file upload handler with proper validation
+  // Enhanced file upload handler with Supabase Storage
   const handleUploadComplete = (imageUrl: string) => {
-    console.log('🔥 UPLOAD COMPLETE - SINGLE HANDLER:', imageUrl);
+    console.log('🔥 UPLOAD COMPLETE - STORAGE URL:', imageUrl);
     
     // Add to workflow using the simplified interface
     workflow.addUploadedFile(imageUrl);
@@ -64,12 +64,12 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
   const handleMultipleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
-      // Process multiple files with validation
+      // Process multiple files with validation using Supabase Storage
       Array.from(files).forEach((file, index) => {
         if (isValidImageFile(file)) {
-          const objectUrl = URL.createObjectURL(file);
+          // Use the proper file upload hook instead of object URLs
           setTimeout(() => {
-            handleUploadComplete(objectUrl);
+            handleFileUpload(file);
           }, index * 100);
         } else {
           console.warn('Invalid file type:', file.name, file.type);
@@ -83,11 +83,12 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
   const handleDragAreaFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
+      // Process multiple files with validation using Supabase Storage
       Array.from(files).forEach((file, index) => {
         if (isValidImageFile(file)) {
-          const objectUrl = URL.createObjectURL(file);
+          // Use the proper file upload hook instead of object URLs
           setTimeout(() => {
-            handleUploadComplete(objectUrl);
+            handleFileUpload(file);
           }, index * 100);
         } else {
           console.warn('Invalid file type:', file.name, file.type);
@@ -129,11 +130,12 @@ export const SidebarUpload = ({ workflow, collapsed }: SidebarUploadProps) => {
     
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
+      // Process dropped files with validation using Supabase Storage
       Array.from(files).forEach((file, index) => {
         if (isValidImageFile(file)) {
-          const objectUrl = URL.createObjectURL(file);
+          // Use the proper file upload hook instead of object URLs
           setTimeout(() => {
-            handleUploadComplete(objectUrl);
+            handleFileUpload(file);
           }, index * 100);
         } else {
           console.warn('Invalid file type:', file.name, file.type);

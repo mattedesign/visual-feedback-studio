@@ -67,9 +67,9 @@ export const FigmaInspiredUploadInterface: React.FC<FigmaInspiredUploadInterface
     if (files && files.length > 0) {
       Array.from(files).forEach((file, index) => {
         if (isValidImageFile(file)) {
-          const objectUrl = URL.createObjectURL(file);
+          // Use the proper file upload hook instead of object URLs
           setTimeout(() => {
-            handleUploadComplete(objectUrl);
+            handleFileUpload(file);
           }, index * 100);
         }
       });
@@ -81,9 +81,9 @@ export const FigmaInspiredUploadInterface: React.FC<FigmaInspiredUploadInterface
     if (files) {
       Array.from(files).forEach((file, index) => {
         if (isValidImageFile(file)) {
-          const objectUrl = URL.createObjectURL(file);
+          // Use the proper file upload hook instead of object URLs
           setTimeout(() => {
-            handleUploadComplete(objectUrl);
+            handleFileUpload(file);
           }, index * 100);
         }
       });
