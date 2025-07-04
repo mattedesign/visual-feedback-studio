@@ -13,7 +13,7 @@ import { TabBasedResultsLayout } from './workflow/components/TabBasedResultsLayo
 import { FigmaInspiredUploadInterface } from './workflow/components/FigmaInspiredUploadInterface';
 import { CenteredAnalysisInterface } from './figma/CenteredAnalysisInterface';
 import { DiagnosticDebugMode } from './DiagnosticDebugMode';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 
 export const AnalysisWorkflow = () => {
@@ -56,6 +56,19 @@ export const AnalysisWorkflow = () => {
     return null;
   }
 
+  // ✅ FIXED: Check if we're on the main analysis page vs results page
+  const isOnMainAnalysisPage = window.location.pathname === '/analysis';
+  const isOnResultsPage = window.location.pathname.includes('/analysis/') && 
+                          window.location.pathname !== '/analysis';
+
+  // ✅ FIXED: Reset workflow if we're on main analysis page but have cached results
+  useEffect(() => {
+    if (isOnMainAnalysisPage && workflow.analysisResults) {
+      console.log('🔄 On main analysis page with cached results - clearing state');
+      workflow.resetWorkflow();
+    }
+  }, [isOnMainAnalysisPage, workflow.analysisResults]);
+
   // Use centered interface for upload step when feature flag is enabled
   if ((figmaUIEnabled || figmaMode) && workflow.currentStep === 'upload') {
     return <CenteredAnalysisInterface workflow={workflow} />;
@@ -87,8 +100,12 @@ export const AnalysisWorkflow = () => {
       case 'analyzing':
         return <AnalyzingStep workflow={workflow} />;
       case 'results':
-        // Use tab-based layout for results when feature flag is enabled  
-        if ((figmaUIEnabled || figmaMode) && workflow.analysisResults) {
+        // ✅ FIXED: Only show results when we're on a results route with an ID
+        const isOnResultsRoute = window.location.pathname.includes('/analysis/') && 
+                                 window.location.pathname !== '/analysis';
+        
+        // Use tab-based layout for results when feature flag is enabled AND we're on a results route
+        if ((figmaUIEnabled || figmaMode) && workflow.analysisResults && isOnResultsRoute) {
           return (
             <TabBasedResultsLayout
               analysisData={workflow.analysisResults}
@@ -97,6 +114,14 @@ export const AnalysisWorkflow = () => {
             />
           );
         }
+        
+        // ✅ FIXED: If we're on the main analysis page but have results, reset to upload
+        if (!isOnResultsRoute && workflow.analysisResults) {
+          console.log('🔄 On main analysis page with cached results - resetting to upload');
+          workflow.resetWorkflow();
+          return null; // Let it re-render with clean state
+        }
+        
         return <ResultsStep workflow={workflow} />;
       default:
         return (
