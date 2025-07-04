@@ -91,18 +91,33 @@ export const CenteredAnalysisInterface: React.FC<CenteredAnalysisInterfaceProps>
     }
   };
 
-  const handleStartAnalysis = () => {
-    if (!analysisMessage.trim()) {
-      toast.error('Please describe what you want me to analyze');
-      return;
-    }
-    
+  const handleNextStep = () => {
     if (workflow.selectedImages.length === 0) {
       toast.error('Please upload at least one image to analyze');
       return;
     }
     
-    console.log('🚀 Starting analysis with context:', {
+    console.log('🚀 Moving to annotation step:', {
+      contextLength: analysisMessage.length,
+      imageCount: workflow.selectedImages.length
+    });
+    
+    // Set context if provided
+    if (analysisMessage.trim()) {
+      workflow.setAnalysisContext(analysisMessage);
+    }
+    
+    // Go to annotation step to use FigmaAnnotateLayout
+    workflow.goToStep('annotate');
+  };
+
+  const handleSkipAnnotations = () => {
+    if (!analysisMessage.trim()) {
+      toast.error('Please describe what you want me to analyze');
+      return;
+    }
+    
+    console.log('🚀 Skipping annotations, going directly to analysis:', {
       contextLength: analysisMessage.length,
       imageCount: workflow.selectedImages.length
     });
@@ -114,7 +129,7 @@ export const CenteredAnalysisInterface: React.FC<CenteredAnalysisInterfaceProps>
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleStartAnalysis();
+      handleNextStep();
     }
   };
 
@@ -481,13 +496,23 @@ export const CenteredAnalysisInterface: React.FC<CenteredAnalysisInterfaceProps>
                   <span>{workflow.selectedImages.length} image{workflow.selectedImages.length !== 1 ? 's' : ''}</span>
                   {analysisMessage.trim() && <span>• Context provided</span>}
                 </div>
-                <Button 
-                  onClick={handleStartAnalysis}
-                  disabled={!canAnalyze || workflow.isAnalyzing}
-                  className="px-8 min-w-[100px]"
-                >
-                  {workflow.isAnalyzing ? 'Analyzing...' : 'Start Analysis'}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    onClick={handleNextStep}
+                    disabled={workflow.selectedImages.length === 0 || workflow.isAnalyzing}
+                    className="px-6"
+                  >
+                    {workflow.isAnalyzing ? 'Processing...' : 'Next: Add Annotations'}
+                  </Button>
+                  <Button 
+                    onClick={handleSkipAnnotations}
+                    disabled={!canAnalyze || workflow.isAnalyzing}
+                    variant="outline"
+                    className="px-6"
+                  >
+                    Skip & Analyze
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
