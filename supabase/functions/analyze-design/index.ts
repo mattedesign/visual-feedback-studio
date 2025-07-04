@@ -58,6 +58,27 @@ serve(async (req) => {
       })) || []
     });
     
+    // ✅ NEW: Test API key before proceeding
+    console.log('🔑 TESTING CLAUDE API KEY BEFORE ANALYSIS...');
+    const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
+    if (!anthropicApiKey) {
+      console.error('❌ ANTHROPIC_API_KEY not found in environment');
+      return corsHandler.addCorsHeaders(
+        new Response(JSON.stringify({
+          success: false,
+          error: 'Claude API key not configured',
+          recommendation: 'Please add ANTHROPIC_API_KEY to Supabase secrets',
+          debugInfo: { keyConfigured: false, timestamp: new Date().toISOString() }
+        }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      );
+    }
+    
+    console.log('✅ API key found, length:', anthropicApiKey.length);
+    console.log('✅ API key preview:', anthropicApiKey.substring(0, 10) + '***');
+    
     console.log('📋 Comprehensive analysis request data received:', {
       hasImageUrls: !!requestData.imageUrls,
       imageCount: requestData.imageUrls?.length || 0,
