@@ -164,16 +164,27 @@ Your response must be valid JSON only with this exact structure:
       errorDetails = { message: responseText };
     }
     
-    // Enhanced error categorization with debugging
+    // ✅ ENHANCED: 401 Authentication failure analysis with recovery suggestions
     if (response.status === 401) {
-      console.error('🔑 AUTHENTICATION FAILURE ANALYSIS:');
+      console.error('🔑 COMPREHENSIVE 401 AUTHENTICATION FAILURE ANALYSIS:');
+      console.error('='.repeat(60));
       console.error(`   API key exists: ${!!cleanApiKey}`);
       console.error(`   API key length: ${cleanApiKey.length}`);
-      console.error(`   API key format: ${startsCorrectly ? 'VALID' : 'INVALID'}`);
-      console.error(`   API key preview: ${preview}...`);
-      console.error(`   Header format: Bearer ${preview}...`);
-      console.error(`   Error details: ${JSON.stringify(errorDetails)}`);
-      throw new Error(`Authentication failed: Invalid API key. Check your Claude API key configuration.`);
+      console.error(`   API key format valid: ${startsCorrectly ? '✅ VALID' : '❌ INVALID'}`);
+      console.error(`   API key preview: "${preview}..."`);
+      console.error(`   Authorization header: "Bearer ${preview}..."`);
+      console.error(`   Has whitespace issues: ${hasWhitespace ? '⚠️  YES' : '✅ NO'}`);
+      console.error(`   Has special chars: ${hasSpecialChars ? '⚠️  YES' : '✅ NO'}`);
+      console.error(`   Model attempted: ${model}`);
+      console.error(`   Error response: ${JSON.stringify(errorDetails, null, 2)}`);
+      console.error('='.repeat(60));
+      console.error('💡 RECOVERY SUGGESTIONS:');
+      console.error('   1. Verify ANTHROPIC_API_KEY in Supabase secrets');
+      console.error('   2. Regenerate API key in Anthropic Console');
+      console.error('   3. Check for whitespace/formatting issues');
+      console.error('   4. Ensure API key has proper permissions');
+      console.error('='.repeat(60));
+      throw new Error(`Claude API authentication failed (401): Invalid or expired API key. Please verify ANTHROPIC_API_KEY in Supabase secrets.`);
     }
     
     if (response.status === 400) {

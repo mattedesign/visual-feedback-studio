@@ -15,12 +15,19 @@ export function handleError(error: Error): Response {
   let userFriendlyMessage = error.message;
   let httpStatus = 500;
   
-  // ✅ ENHANCED: Comprehensive 422-focused error categorization
-  if (error.message.includes('Incorrect API key') || error.message.includes('authentication') || error.message.includes('ANTHROPIC_API_KEY')) {
+  // ✅ ENHANCED: Comprehensive error categorization with 401 authentication focus
+  if (error.message.includes('Incorrect API key') || 
+      error.message.includes('authentication') || 
+      error.message.includes('ANTHROPIC_API_KEY') ||
+      error.message.includes('Invalid bearer token') ||
+      error.message.includes('API key authentication failed') ||
+      error.message.includes('Invalid or expired key') ||
+      error.message.includes('401') ||
+      error.message.includes('Unauthorized')) {
     errorCategory = 'auth_error';
-    errorSeverity = 'high';
+    errorSeverity = 'critical';
     httpStatus = 401;
-    userFriendlyMessage = 'Authentication failed. API key may be missing or invalid.';
+    userFriendlyMessage = 'Claude API authentication failed. Please verify your ANTHROPIC_API_KEY in Supabase secrets.';
   } else if (error.message.includes('Input validation failed') || error.message.includes('Validation failed')) {
     errorCategory = 'validation_error';
     errorSeverity = 'medium';

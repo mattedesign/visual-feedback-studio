@@ -429,12 +429,13 @@ ANALYSIS CONTEXT: ${prompt}`;
         targetInsights: '16-19'
       });
       
-      // ✅ FIX: Enhanced model manager call with comprehensive error handling
+      // ✅ ENHANCED: Model manager call with 401 error resilience
       const annotations = await analyzeWithClaudeModels(
         primaryImage.base64Data,
         primaryImage.mimeType,
         systemPrompt,
-        anthropicApiKey
+        anthropicApiKey,
+        'claude-3-5-haiku-20241022' // Force stable model first
       );
       
       console.log('📊 Claude Model Manager response received:', {

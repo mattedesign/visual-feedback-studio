@@ -3,22 +3,22 @@ import { callClaudeApi } from './claudeApiClient.ts';
 import { parseClaudeResponse } from './responseParser.ts';
 import { AnnotationData } from '../types.ts';
 
-// ✅ UPDATED: Claude 4 Models First (Latest API)
+// ✅ ENHANCED: Robust model selection with 401 error resilience
 const CLAUDE_MODELS = [
-  'claude-sonnet-4-20250514',     // ⭐ PRIMARY: Latest Sonnet 4.0 (recommended for UX analysis)
-  'claude-opus-4-20250514',       // ⭐ SECONDARY: Latest Opus 4.0 (most capable but slower)
-  'claude-3-5-haiku-20241022',    // 🔄 Fast fallback
-  'claude-3-5-sonnet-20241022',   // 🔄 Reliable fallback
-  'claude-3-opus-20240229'        // 🔄 Last resort
+  'claude-3-5-haiku-20241022',    // 🚀 PRIMARY: Most stable and fastest
+  'claude-3-5-sonnet-20241022',   // 🚀 SECONDARY: Proven reliability
+  'claude-3-opus-20240229',       // 🚀 TERTIARY: Established model
+  'claude-sonnet-4-20250514',     // ⚠️ FALLBACK: Newer model (may have auth issues)
+  'claude-opus-4-20250514'        // ⚠️ FALLBACK: Newest model (may have auth issues)
 ];
 
-// ✅ PRIORITIZE CLAUDE 4 MODELS: Sonnet 4.0 first for optimal UX analysis
+// ✅ ENHANCED: Prioritize stable models for auth reliability
 const FALLBACK_ORDER = [
-  'claude-sonnet-4-20250514',     // ⭐ PREFERRED: Best balance for UX analysis
-  'claude-opus-4-20250514',       // ⭐ PREMIUM: Most capable for complex analysis
-  'claude-3-5-haiku-20241022',    // 🔄 Fast and reliable
-  'claude-3-5-sonnet-20241022',   // 🔄 Good balance
-  'claude-3-opus-20240229'        // 🔄 Last resort
+  'claude-3-5-haiku-20241022',    // 🚀 PREFERRED: Most stable for auth
+  'claude-3-5-sonnet-20241022',   // 🚀 SECONDARY: Proven auth reliability
+  'claude-3-opus-20240229',       // 🚀 TERTIARY: Established auth
+  'claude-sonnet-4-20250514',     // ⚠️ NEWER: May have auth issues
+  'claude-opus-4-20250514'        // ⚠️ NEWEST: May have auth issues
 ];
 
 export async function analyzeWithClaudeModels(
