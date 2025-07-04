@@ -123,11 +123,27 @@ serve(async (req) => {
       targetInsights: '16-19'
     });
 
-    // ✅ ENHANCED: If no image URLs provided, try to fetch from uploaded_files table
+    // ✅ ENHANCED: If no image URLs provided, try to fetch from uploaded_files table with UUID validation
     let finalImageUrls = requestData.imageUrls || [];
     
     if ((!finalImageUrls || finalImageUrls.length === 0) && requestData.analysisId) {
       console.log('🔍 No image URLs in request, fetching from uploaded_files table...');
+      
+      // Validate UUID format before database query
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(requestData.analysisId)) {
+        console.error('❌ Invalid analysis ID format:', requestData.analysisId);
+        return corsHandler.addCorsHeaders(
+          new Response(JSON.stringify({
+            success: false,
+            error: `Invalid analysis ID format: ${requestData.analysisId}. Expected valid UUID.`
+          }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+          })
+        );
+      }
+      
       try {
         const supabaseUrl = Deno.env.get('SUPABASE_URL');
         const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -136,23 +152,32 @@ serve(async (req) => {
           const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.50.0');
           const supabase = createClient(supabaseUrl, supabaseServiceKey);
           
+          // Enhanced query with better error handling and validation
           const { data: uploadedFiles, error } = await supabase
             .from('uploaded_files')
-            .select('public_url')
-            .eq('analysis_id', requestData.analysisId);
+            .select('public_url, file_name, file_type, created_at')
+            .eq('analysis_id', requestData.analysisId)
+            .order('created_at', { ascending: true });
 
-          if (!error && uploadedFiles?.length > 0) {
+          if (error) {
+            console.error('❌ Database query error:', error);
+            console.warn('⚠️ Continuing with provided image URLs despite DB error');
+          } else if (uploadedFiles?.length > 0) {
             finalImageUrls = uploadedFiles
               .map(file => file.public_url)
               .filter(Boolean);
             
             console.log(`✅ Retrieved ${finalImageUrls.length} image URLs from uploaded_files table`);
+            console.log('📁 Files found:', uploadedFiles.map(f => ({ name: f.file_name, type: f.file_type })));
           } else {
             console.warn('⚠️ No uploaded files found for analysis:', requestData.analysisId);
           }
+        } else {
+          console.error('❌ Missing Supabase environment variables');
         }
       } catch (dbError) {
         console.error('❌ Error fetching images from database:', dbError);
+        console.warn('⚠️ Continuing with provided image URLs despite DB error');
       }
     }
     

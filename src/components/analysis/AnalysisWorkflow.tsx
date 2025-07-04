@@ -15,6 +15,7 @@ import { CenteredAnalysisInterface } from './figma/CenteredAnalysisInterface';
 import { DiagnosticDebugMode } from './DiagnosticDebugMode';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { analysisSessionService } from '@/services/analysisSessionService';
 
 export const AnalysisWorkflow = () => {
   // 🔄 LOOP DETECTION: Track component renders
@@ -43,11 +44,12 @@ export const AnalysisWorkflow = () => {
   const isOnResultsPage = window.location.pathname.includes('/analysis/') && 
                           window.location.pathname !== '/analysis';
 
-  // ✅ FIXED: Reset workflow if we're on main analysis page but have cached results
+  // ✅ FIXED: Reset workflow and analysis session if we're on main analysis page but have cached results
   useEffect(() => {
     if (isOnMainAnalysisPage && workflow.analysisResults) {
-      console.log('🔄 On main analysis page with cached results - clearing state');
+      console.log('🔄 On main analysis page with cached results - clearing state and session');
       workflow.resetWorkflow();
+      analysisSessionService.resetSession();
     }
   }, [isOnMainAnalysisPage, workflow.analysisResults]);
   

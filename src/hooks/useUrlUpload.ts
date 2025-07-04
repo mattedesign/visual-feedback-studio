@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { saveUrlUpload } from '@/services/urlUploadService';
 import { captureWebsiteScreenshot, validateUrl } from '@/services/screenshotService';
 import { supabase } from '@/integrations/supabase/client';
+import { analysisSessionService } from '@/services/analysisSessionService';
 
 export const useUrlUpload = (onImageUpload: (imageUrl: string) => void) => {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -46,13 +47,19 @@ export const useUrlUpload = (onImageUpload: (imageUrl: string) => void) => {
       }
       console.log('✓ URL validation passed');
       
-      // Step 3: Generate temporary analysis ID for URL storage
-      const tempAnalysisId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      console.log('✓ Using temporary analysis ID:', tempAnalysisId);
+      // Step 3: Get or create analysis session with proper UUID
+      const analysisId = await analysisSessionService.getOrCreateSession();
+      if (!analysisId) {
+        console.error('Failed to get or create analysis session');
+        toast.error('Failed to initialize analysis session');
+        setIsProcessing(false);
+        return;
+      }
+      console.log('✓ Using analysis session ID:', analysisId);
 
       // Step 4: Save URL upload record (will be associated with real analysis later)
       console.log('Step 4: Saving URL upload record...');
-      const savedUrl = await saveUrlUpload(url, 'website', tempAnalysisId);
+      const savedUrl = await saveUrlUpload(url, 'website', analysisId);
       if (!savedUrl) {
         console.error('Failed to save URL upload record');
         toast.error('Failed to save URL information');

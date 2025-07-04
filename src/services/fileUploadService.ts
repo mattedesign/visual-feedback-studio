@@ -63,35 +63,98 @@ export const uploadFileToStorage = async (file: File, analysisId: string): Promi
       return null;
     }
 
-    // ✅ ENHANCED: Always save metadata to uploaded_files table for proper tracking
+    // ✅ ENHANCED: Always save metadata to uploaded_files table with UUID validation and retry logic
     try {
-      const { data: fileRecord, error: dbError } = await supabase
-        .from('uploaded_files')
-        .insert({
-          analysis_id: analysisId,
-          user_id: user.id,
-          file_name: file.name,
-          file_type: file.type,
-          file_size: file.size,
-          storage_path: fileName,
-          upload_type: 'file',
-          public_url: urlData.publicUrl
-        })
-        .select()
+      // Validate UUID format before database save
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(analysisId)) {
+        console.error('❌ Invalid UUID format:', analysisId);
+        toast.error('Invalid analysis ID format. Please try uploading again.');
+        return null;
+      }
+
+      console.log('✅ UUID validation passed, saving to database...');
+
+      // First, try to create analysis record if it doesn't exist
+      const { data: existingAnalysis } = await supabase
+        .from('analyses')
+        .select('id')
+        .eq('id', analysisId)
+        .eq('user_id', user.id)
         .single();
 
-      if (dbError) {
-        console.error('❌ Database save error:', dbError);
-        
-        // Don't fail upload if DB save fails, but log it
-        console.warn('⚠️ File uploaded successfully but metadata save failed - file still accessible');
-        console.log('📁 File URL still valid:', urlData.publicUrl);
-      } else {
-        console.log('✅ File metadata saved to database:', fileRecord.id);
+      if (!existingAnalysis) {
+        console.log('📝 Creating new analysis record...');
+        const { error: analysisError } = await supabase
+          .from('analyses')
+          .insert({
+            id: analysisId,
+            user_id: user.id,
+            title: `Analysis for ${file.name}`,
+            status: 'pending',
+            design_type: 'web'
+          });
+
+        if (analysisError) {
+          console.error('❌ Failed to create analysis record:', analysisError);
+          // Continue with file record creation even if analysis creation fails
+        } else {
+          console.log('✅ Analysis record created successfully');
+        }
       }
+
+      // Save file metadata with retry logic
+      let retryCount = 0;
+      const maxRetries = 3;
+      let fileRecord = null;
+
+      while (retryCount < maxRetries) {
+        try {
+          const { data, error: dbError } = await supabase
+            .from('uploaded_files')
+            .insert({
+              analysis_id: analysisId,
+              user_id: user.id,
+              file_name: file.name,
+              file_type: file.type,
+              file_size: file.size,
+              storage_path: fileName,
+              upload_type: 'file',
+              public_url: urlData.publicUrl
+            })
+            .select()
+            .single();
+
+          if (dbError) {
+            throw dbError;
+          }
+
+          fileRecord = data;
+          console.log('✅ File metadata saved to database:', fileRecord.id);
+          break;
+
+        } catch (dbError: any) {
+          retryCount++;
+          console.error(`❌ Database save attempt ${retryCount} failed:`, dbError);
+
+          if (retryCount >= maxRetries) {
+            console.warn('⚠️ Max retries reached - file uploaded successfully but metadata save failed');
+            console.log('📁 File URL still valid:', urlData.publicUrl);
+            
+            // Don't fail the upload - file is still accessible
+            break;
+          }
+
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+        }
+      }
+
     } catch (dbSaveError) {
       console.error('❌ Database save exception:', dbSaveError);
       console.log('📁 File upload successful despite DB save issue:', urlData.publicUrl);
+      
+      // Don't fail the upload - file is still accessible
     }
 
     toast.success('Image uploaded successfully!');

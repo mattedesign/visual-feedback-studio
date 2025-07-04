@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { uploadFileToStorage } from '@/services/fileUploadService';
+import { analysisSessionService } from '@/services/analysisSessionService';
 
 export const useFileUpload = (onImageUpload: (imageUrl: string) => void) => {
   // Remove processing state for individual uploads to prevent UI transitions
@@ -52,13 +53,17 @@ export const useFileUpload = (onImageUpload: (imageUrl: string) => void) => {
         return;
       }
       
-      // Generate a temporary analysis ID for file storage
-      const tempAnalysisId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      // ✅ FIXED: Get or create analysis session with proper UUID
+      const analysisId = await analysisSessionService.getOrCreateSession();
+      if (!analysisId) {
+        console.error('❌ Failed to get or create analysis session');
+        return;
+      }
 
-      console.log('📁 Using temporary analysis ID for file storage:', tempAnalysisId);
+      console.log('📁 Using analysis session ID:', analysisId);
 
       // Upload file to storage
-      const publicUrl = await uploadFileToStorage(file, tempAnalysisId);
+      const publicUrl = await uploadFileToStorage(file, analysisId);
       if (!publicUrl) {
         console.error('❌ File upload failed - no public URL returned');
         return;

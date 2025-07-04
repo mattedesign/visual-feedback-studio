@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
-import { createAnalysis } from '@/services/analysisService';
 import { uploadFileToStorage } from '@/services/fileUploadService';
+import { analysisSessionService } from '@/services/analysisSessionService';
 
 export const useSimpleFileUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
@@ -23,14 +23,14 @@ export const useSimpleFileUpload = () => {
         return null;
       }
       
-      // Create analysis first
-      const analysisId = await createAnalysis();
+      // Get or create analysis session with proper UUID
+      const analysisId = await analysisSessionService.getOrCreateSession();
       if (!analysisId) {
-        console.error('Failed to create analysis record');
+        console.error('Failed to get or create analysis session');
         return null;
       }
 
-      console.log('Created analysis with ID:', analysisId);
+      console.log('Using analysis session ID:', analysisId);
 
       // Upload file to storage
       const publicUrl = await uploadFileToStorage(file, analysisId);
