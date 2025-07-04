@@ -36,7 +36,7 @@ class AnalysisSessionService {
           user_id: user.id,
           title: 'New Analysis Session',
           status: 'pending',
-          design_type: 'web',
+          design_type: 'other',
           created_at: new Date().toISOString()
         })
         .select()
