@@ -27,7 +27,7 @@ export function handleError(error: Error): Response {
     errorCategory = 'auth_error';
     errorSeverity = 'critical';
     httpStatus = 401;
-    userFriendlyMessage = 'Claude API authentication failed. Please verify and regenerate your ANTHROPIC_API_KEY in Supabase secrets. The key may be invalid, expired, or have insufficient permissions.';
+    userFriendlyMessage = 'Claude API authentication failed. Your API key is invalid, expired, or revoked. Please regenerate a new API key from the Anthropic Console and update it in Supabase secrets.';
   } else if (error.message.includes('Input validation failed') || error.message.includes('Validation failed')) {
     errorCategory = 'validation_error';
     errorSeverity = 'medium';
@@ -136,7 +136,7 @@ export function handleError(error: Error): Response {
 function getRecommendedAction(category: string): string {
   switch (category) {
     case 'auth_error':
-      return 'Check your API key configuration in Supabase secrets';
+      return 'Regenerate your Claude API key at console.anthropic.com and update it in Supabase secrets';
     case 'validation_error':
     case 'image_validation_error':
       return 'Verify your request format and try again';
