@@ -21,11 +21,18 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
 
   const performAnalysis = async () => {
     if (analysisStartedRef.current || consolidatedAnalysis.isAnalyzing) {
-      console.log('⚠️ Analysis already in progress, skipping duplicate call');
+      console.log('⚠️ FIX 5: Analysis already in progress, skipping duplicate call');
       return;
     }
 
-    console.log('🚀 Starting consolidated analysis with error handling');
+    console.log('🚀 FIX 5: Starting consolidated analysis with enhanced debugging');
+    console.log('📊 FIX 5: Analysis start details:', {
+      imageCount: workflow.selectedImages.length,
+      contextLength: workflow.analysisContext.length,
+      hasContext: !!workflow.analysisContext.trim(),
+      timestamp: new Date().toISOString(),
+      images: workflow.selectedImages.map(url => url.substring(0, 50) + '...')
+    });
     analysisStartedRef.current = true;
 
     try {
@@ -52,29 +59,53 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       });
 
       if (result.success && result.analysisId) {
-        console.log('✅ Consolidated analysis completed successfully:', {
+        console.log('✅ FIX 5: Consolidated analysis completed successfully:', {
           analysisId: result.analysisId,
           annotationCount: result.annotations?.length || 0,
-          hasWellDone: !!result.wellDone
+          hasWellDone: !!result.wellDone,
+          timestamp: new Date().toISOString(),
+          totalTime: Date.now() - (performance.now() || 0)
         });
 
-        // Update workflow state with results
+        // ✅ FIX 5: Enhanced debugging for workflow state update
         if (result.annotations) {
+          console.log('✅ FIX 5: Setting AI annotations:', {
+            count: result.annotations.length,
+            firstAnnotation: result.annotations[0] ? {
+              id: result.annotations[0].id,
+              title: result.annotations[0].title,
+              hasCoordinates: !!(result.annotations[0].x && result.annotations[0].y)
+            } : null
+          });
           workflow.setAiAnnotations(result.annotations);
         }
 
         toast.success('Analysis complete! Redirecting to results...');
+        
+        console.log('🔀 FIX 5: Navigating to results page:', `/analysis/${result.analysisId}?beta=true`);
         
         // Navigate to results with a brief delay
         setTimeout(() => {
           window.location.href = `/analysis/${result.analysisId}?beta=true`;
         }, 1000);
       } else {
+        console.error('❌ FIX 5: Analysis failed with detailed error:', {
+          success: result.success,
+          error: result.error,
+          analysisId: result.analysisId,
+          timestamp: new Date().toISOString()
+        });
         throw new Error(result.error || 'Analysis failed');
       }
 
     } catch (error) {
-      console.error('❌ Consolidated analysis failed:', error);
+      console.error('❌ FIX 5: Consolidated analysis failed with detailed error:', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+        timestamp: new Date().toISOString(),
+        imageCount: workflow.selectedImages.length,
+        contextLength: workflow.analysisContext.length
+      });
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       setAnalysisError(errorMessage);
@@ -83,9 +114,11 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
         duration: 8000
       });
       
-      // Don't auto-navigate on error - let user choose what to do
+      // ✅ FIX 5: Enhanced error recovery logging
+      console.log('🔄 FIX 5: Stopping analysis and resetting workflow state');
       workflow.setIsAnalyzing(false);
     } finally {
+      console.log('🏁 FIX 5: Analysis process completed (success or failure)');
       analysisStartedRef.current = false;
     }
   };

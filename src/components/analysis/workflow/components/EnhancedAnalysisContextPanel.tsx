@@ -208,13 +208,16 @@ export const EnhancedAnalysisContextPanel = ({
             </div>
           )}
 
-          {/* Context Intelligence Preview */}
-          {analysisContext && !isEditing && (
-            <ContextIntelligencePreview
-              analysisContext={analysisContext}
-              imageCount={uploadedImageCount}
-            />
-          )}
+        {/* ✅ FIX 4: Context Intelligence Preview removed during analysis phase */}
+        {/* Context Intelligence Preview disabled to prevent popup during analysis */}
+        {/* 
+        {analysisContext && !isEditing && (
+          <ContextIntelligencePreview
+            analysisContext={analysisContext}
+            imageCount={uploadedImageCount}
+          />
+        )} 
+        */}
         </div>
       )}
     </div>

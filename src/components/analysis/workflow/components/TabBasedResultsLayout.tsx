@@ -132,25 +132,16 @@ export const TabBasedResultsLayout: React.FC<TabBasedResultsLayoutProps> = ({
                   alt={`Analysis image ${currentImageIndex + 1}`}
                   className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
                   onError={(e) => {
-                    console.log('🔍 Image failed to load:', images[currentImageIndex]);
+                    console.log('🔍 FIX 3: Image failed to load:', images[currentImageIndex]);
+                    console.log('🔍 Full image URL:', images[currentImageIndex]);
                     e.currentTarget.style.display = 'none';
+                  }}
+                  onLoad={() => {
+                    console.log('✅ FIX 3: Image loaded successfully:', images[currentImageIndex].substring(0, 50) + '...');
                   }}
                 />
                 
-                {/* Annotation Overlay */}
-                <div className="absolute inset-0">
-                  {insights.map((insight: any, index: number) => (
-                    <div
-                      key={index}
-                      className="absolute w-4 h-4 bg-primary rounded-full border-2 border-white shadow-lg cursor-pointer transform -translate-x-2 -translate-y-2 hover:scale-125 transition-transform"
-                      style={{
-                        left: `${insight.x || Math.random() * 80 + 10}%`,
-                        top: `${insight.y || Math.random() * 80 + 10}%`,
-                      }}
-                      title={insight.title || 'UX Insight'}
-                    />
-                  ))}
-                </div>
+                {/* ✅ FIX 2: Annotations panel removed as requested */}
               </div>
             ) : (
               <div className="text-center text-muted-foreground">

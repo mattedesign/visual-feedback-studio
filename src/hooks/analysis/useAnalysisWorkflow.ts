@@ -157,14 +157,17 @@ export const useAnalysisWorkflow = () => {
     console.log('📸 ADD IMAGE CALLED:', {
       imageUrl,
       currentImages: images,
-      alreadyExists: images.includes(imageUrl)
+      alreadyExists: images.includes(imageUrl),
+      timestamp: new Date().toISOString()
     });
     
-    // ✅ FIXED: Create analysis session on first image upload
-    if (images.length === 0 && !currentAnalysis) {
-      console.log('🔥 Creating analysis session for first image...');
+    // ✅ FIX 1: Single analysis session creation - only create on first image AND no existing session
+    if (!currentAnalysis?.id) {
+      console.log('🔥 CREATING SINGLE ANALYSIS SESSION for workflow...');
       try {
-        const analysisId = await analysisService.createAnalysis();
+        const { analysisSessionService } = await import('@/services/analysisSessionService');
+        const analysisId = await analysisSessionService.getOrCreateSession();
+        
         if (analysisId) {
           const { supabase } = await import('@/integrations/supabase/client');
           const { data: { user } } = await supabase.auth.getUser();
@@ -174,30 +177,40 @@ export const useAnalysisWorkflow = () => {
             user_id: user?.id
           });
           
-          console.log('✅ Analysis session created:', analysisId);
-          
-          // ✅ IMMEDIATE: Save this first image to uploaded_files
-          try {
-            await saveImagesToUploadedFiles([imageUrl], analysisId, user?.id);
-            console.log('✅ First image immediately saved to uploaded_files');
-          } catch (imageError) {
-            console.warn('⚠️ Failed to immediately save first image:', imageError);
-          }
+          console.log('✅ SINGLE ANALYSIS SESSION CREATED:', {
+            analysisId,
+            userId: user?.id?.substring(0, 8) + '...',
+            timestamp: new Date().toISOString()
+          });
+        } else {
+          console.error('❌ Failed to create analysis session - no ID returned');
+          return;
         }
       } catch (error) {
-        console.error('❌ Failed to create analysis session:', error);
+        console.error('❌ CRITICAL: Failed to create analysis session:', error);
+        return;
       }
-    } else if (currentAnalysis?.id) {
-      // ✅ IMMEDIATE: Save additional images to uploaded_files as they're added
+    }
+    
+    // ✅ FIX 1: Always use the same session for all images
+    if (currentAnalysis?.id) {
+      console.log('💾 SAVING IMAGE TO EXISTING SESSION:', {
+        analysisId: currentAnalysis.id,
+        imageUrl: imageUrl.substring(0, 50) + '...',
+        timestamp: new Date().toISOString()
+      });
+      
       try {
         const { supabase } = await import('@/integrations/supabase/client');
         const { data: { user } } = await supabase.auth.getUser();
         
         await saveImagesToUploadedFiles([imageUrl], currentAnalysis.id, user?.id);
-        console.log('✅ Additional image immediately saved to uploaded_files');
+        console.log('✅ IMAGE SAVED TO SINGLE SESSION');
       } catch (imageError) {
-        console.warn('⚠️ Failed to immediately save additional image:', imageError);
+        console.warn('⚠️ Failed to save image to session:', imageError);
       }
+    } else {
+      console.error('❌ CRITICAL: No analysis session available for image save');
     }
     
     setImages(prev => {
@@ -357,21 +370,35 @@ export const useAnalysisWorkflow = () => {
     setCurrentStep('analyzing');
 
     try {
-      // First, create a permanent analysis record
-      const analysisId = await analysisService.createAnalysis();
+      // ✅ FIX 1: Use existing analysis session or create if needed
+      let analysisId = currentAnalysis?.id;
+      
       if (!analysisId) {
-        throw new Error('Failed to create analysis record');
+        console.log('🔧 No existing analysis session, creating one for analysis...');
+        const { analysisSessionService } = await import('@/services/analysisSessionService');
+        analysisId = await analysisSessionService.getOrCreateSession();
+        
+        if (!analysisId) {
+          throw new Error('Failed to create analysis session');
+        }
+        
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        setCurrentAnalysis({
+          id: analysisId,
+          user_id: user?.id
+        });
       }
 
-      console.log('✅ Analysis record created with ID:', analysisId);
-      
-      // ✅ FIX: Store the analysis ID and user info for pipeline use
+      // ✅ FIX 5: Get user for subsequent operations  
       const { supabase } = await import('@/integrations/supabase/client');
       const { data: { user } } = await supabase.auth.getUser();
-      
-      setCurrentAnalysis({
-        id: analysisId,
-        user_id: user?.id
+
+      console.log('✅ USING ANALYSIS SESSION:', {
+        analysisId,
+        wasExisting: !!currentAnalysis?.id,
+        timestamp: new Date().toISOString()
       });
       
       console.log('💾 Current analysis context set:', { 
