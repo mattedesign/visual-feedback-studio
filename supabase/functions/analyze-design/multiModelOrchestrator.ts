@@ -211,14 +211,22 @@ export class MultiModelOrchestrator {
         throw new Error(`Invalid image mime type: ${primaryImage.mimeType}`);
       }
 
-      const systemPrompt = `You are a professional UX analysis expert conducting comprehensive audits. You MUST generate exactly 16-19 detailed, research-backed insights covering all aspects of design quality, usability, and business impact.
+      const systemPrompt = `You are a professional UX analysis expert conducting comprehensive audits. You MUST analyze the specific design image provided and generate exactly 16-19 detailed, research-backed insights covering all aspects of design quality, usability, and business impact.
 
 CRITICAL REQUIREMENTS:
-- Generate EXACTLY 16-19 insights (professional consulting standard)
+- ANALYZE THE ACTUAL IMAGE PROVIDED - Look at specific visual elements, layout, colors, typography, components
+- Generate EXACTLY 16-19 insights based on what you see in the image (professional consulting standard)
 - Include a mix of: critical issues, improvements, positive validations, and business opportunities
 - Cover: UX patterns, accessibility, visual design, conversion optimization, mobile experience
 - Use research-backed recommendations when possible
+- Place coordinates (x, y as percentages) on specific elements you're analyzing in the image
 - Format as valid JSON array with proper structure
+
+VISUAL ANALYSIS INSTRUCTIONS:
+- Examine the layout, navigation, buttons, forms, content hierarchy
+- Look at color usage, typography, spacing, and visual hierarchy
+- Identify usability issues, accessibility concerns, and conversion opportunities
+- Provide specific coordinates for each insight pointing to relevant UI elements
 
 RESPONSE FORMAT - Return ONLY a JSON array like this:
 [
@@ -228,12 +236,12 @@ RESPONSE FORMAT - Return ONLY a JSON array like this:
     "y": 30,
     "severity": "critical",
     "category": "ux",
-    "feedback": "Detailed insight with specific recommendations...",
+    "feedback": "Detailed insight about specific visual element seen in the image...",
     "imageIndex": 0
   }
 ]
 
-Ensure exactly 16-19 insights for comprehensive professional analysis.
+Ensure exactly 16-19 insights for comprehensive professional analysis of the actual image provided.
 
 ANALYSIS CONTEXT: ${prompt}`;
 
