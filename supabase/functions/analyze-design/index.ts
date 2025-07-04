@@ -130,7 +130,11 @@ serve(async (req) => {
       });
     }
 
-    // Call Claude API
+    // Call Claude API with timeout handling
+    console.log('🤖 Calling Claude API with', imageContent.length, 'images');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout
+    
     const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -138,17 +142,18 @@ serve(async (req) => {
         'x-api-key': claudeApiKey,
         'anthropic-version': '2023-06-01'
       },
+      signal: controller.signal,
       body: JSON.stringify({
-        model: 'claude-opus-4-20250514',
-        max_tokens: 4000,
+        model: 'claude-sonnet-4-20250514', // Use faster Sonnet instead of Opus
+        max_tokens: 3000, // Reduced for faster response
         messages: [{
           role: 'user',
           content: [
             {
               type: "text",
-              text: `As a UX expert, analyze these design images and provide detailed feedback. Context: ${requestData.analysisPrompt}
+              text: `As a UX expert, analyze these ${imageContent.length} design images and provide detailed feedback. Context: ${requestData.analysisPrompt}
 
-Please provide 15-20 specific, actionable insights in this exact JSON format:
+Please provide 12-15 specific, actionable insights in this exact JSON format:
 {
   "annotations": [
     {
@@ -171,6 +176,8 @@ Please provide 15-20 specific, actionable insights in this exact JSON format:
         }]
       })
     });
+    
+    clearTimeout(timeoutId);
 
     if (!claudeResponse.ok) {
       const errorText = await claudeResponse.text();
@@ -240,7 +247,7 @@ Please provide 15-20 specific, actionable insights in this exact JSON format:
             annotations: annotations,
             images: requestData.imageUrls,
             total_annotations: annotations.length,
-            ai_model_used: 'claude-opus-4-20250514',
+            ai_model_used: 'claude-sonnet-4-20250514',
             processing_time_ms: Date.now(),
             user_id: userId
           });
@@ -259,7 +266,7 @@ Please provide 15-20 specific, actionable insights in this exact JSON format:
       ragEnhanced: true,
       knowledgeSourcesUsed: 1,
       researchCitations: ['Claude Sonnet 4 Analysis'],
-      modelUsed: 'claude-opus-4-20250514',
+      modelUsed: 'claude-sonnet-4-20250514',
       analysisId: requestData.analysisId
     };
 
