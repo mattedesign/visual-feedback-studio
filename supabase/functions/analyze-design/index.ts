@@ -8,6 +8,20 @@ const corsHeaders = {
 
 console.log('🚀 Streamlined Analysis Function - Starting up');
 
+// Helper function to convert coordinates to spatial context
+function getSpatialContext(x, y) {
+  const xPos = x < 33 ? 'left' : x > 66 ? 'right' : 'center';
+  const yPos = y < 33 ? 'top' : y > 66 ? 'bottom' : 'middle';
+  
+  if (xPos === 'center' && yPos === 'middle') return 'center of screen';
+  if (xPos === 'left' && yPos === 'top') return 'top-left corner';
+  if (xPos === 'right' && yPos === 'top') return 'top-right corner';
+  if (xPos === 'left' && yPos === 'bottom') return 'bottom-left corner';
+  if (xPos === 'right' && yPos === 'bottom') return 'bottom-right corner';
+  
+  return `${yPos} ${xPos} area`;
+}
+
 // Google Vision Analysis Function
 async function analyzeWithGoogleVision(imageUrl) {
   const analysisId = crypto.randomUUID().substring(0, 8);
@@ -451,8 +465,50 @@ serve(async (req) => {
       });
     }
 
+    // Step 3: Build enhanced context with image-specific annotations
+    console.log('🧠 Building enhanced analysis context...');
+    let enhancedPrompt = requestData.analysisPrompt;
+    
+    // Process user comments with coordinate-aware context
+    if (requestData.userComments && requestData.userComments.length > 0) {
+      console.log('📝 Processing', requestData.userComments.length, 'user annotations...');
+      
+      // Group comments by image if multiple images
+      const commentsByImage = {};
+      requestData.userComments.forEach((comment, index) => {
+        const imageKey = comment.imageUrl || comment.imageIndex || 0;
+        if (!commentsByImage[imageKey]) {
+          commentsByImage[imageKey] = [];
+        }
+        commentsByImage[imageKey].push({
+          ...comment,
+          spatialContext: getSpatialContext(comment.x, comment.y)
+        });
+      });
+      
+      // Build image-specific context sections
+      let imageContextSections = [];
+      Object.keys(commentsByImage).forEach((imageKey, index) => {
+        const imageComments = commentsByImage[imageKey];
+        const imageContext = `
+Image ${index + 1} Specific Feedback:
+${imageComments.map((comment, idx) => 
+  `• ${comment.spatialContext}: "${comment.comment}"`
+).join('\n')}`;
+        imageContextSections.push(imageContext);
+      });
+      
+      // Combine main prompt with image-specific context
+      enhancedPrompt = `${requestData.analysisPrompt}
+
+User has provided specific feedback points for the following areas:
+${imageContextSections.join('\n\n')}
+
+Please analyze these images with special attention to the user's specific feedback points and provide detailed recommendations that address their concerns.`;
+    }
+
     // Call Claude API with timeout handling
-    console.log('🤖 Calling Claude API with', imageContent.length, 'images');
+    console.log('🤖 Calling Claude API with', imageContent.length, 'images and enhanced context');
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout
     
@@ -472,16 +528,9 @@ serve(async (req) => {
           content: [
             {
               type: "text",
-              text: `As a UX expert, analyze these ${imageContent.length} design images and provide detailed feedback. Context: ${requestData.analysisPrompt}
+              text: `As a UX expert, analyze these ${imageContent.length} design images and provide detailed feedback. 
 
-${requestData.userComments && requestData.userComments.length > 0 ? 
-`User Feedback Points:
-${requestData.userComments.map((comment, index) => 
-  `• Comment ${index + 1}: "${comment.comment}" (at position ${comment.x.toFixed(1)}%, ${comment.y.toFixed(1)}%)`
-).join('\n')}
-
-Please consider these user feedback points in your analysis and provide recommendations that address their specific concerns.
-` : ''}
+Context: ${enhancedPrompt}
 
 Please provide 12-15 specific, actionable insights in this exact JSON format:
 {
