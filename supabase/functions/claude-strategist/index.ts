@@ -32,9 +32,9 @@ interface ExpertRecommendation {
 console.log('🎭 Claude UX Strategist Function - Starting up');
 
 serve(async (req) => {
-  console.log('📨 Strategist request received - DISABLED:', {
+  const requestId = crypto.randomUUID().substring(0, 8);
+  console.log(`📨 [${requestId}] Claude Strategist request received:`, {
     method: req.method,
-    url: req.url,
     timestamp: new Date().toISOString()
   });
 
@@ -43,16 +43,176 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Return disabled message for all requests
-  return new Response(JSON.stringify({
-    success: false,
-    error: 'Claude Strategist functionality has been disabled',
-    message: 'This endpoint is no longer active. Analysis will complete without strategist consultation.'
-  }), {
-    status: 200, // Use 200 to avoid breaking existing flows
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-  });
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
+  try {
+    const requestData = await req.json();
+    console.log(`📊 [${requestId}] Processing strategist input:`, {
+      hasVisionSummary: !!requestData.visionSummary,
+      ragMatches: requestData.ragMatches?.length || 0,
+      enhancedMode: requestData.enhancedMode,
+      orchestrationMode: requestData.orchestrationMode
+    });
+
+    // Get Claude API key
+    const claudeApiKey = Deno.env.get('ANTHROPIC_API_KEY');
+    if (!claudeApiKey) {
+      throw new Error('Claude API key not configured');
+    }
+
+    // Build enhanced strategist prompt
+    const strategistPrompt = buildEnhancedStrategistPrompt(requestData);
+    
+    // Call Claude API
+    const claudeResult = await callClaudeAPI(
+      strategistPrompt,
+      requestData.model || 'claude-opus-4-20250514',
+      claudeApiKey
+    );
+
+    if (!claudeResult.success) {
+      throw new Error(claudeResult.error || 'Claude API call failed');
+    }
+
+    console.log(`✅ [${requestId}] Strategist analysis completed:`, {
+      recommendationsCount: claudeResult.result?.expertRecommendations?.length || 0,
+      confidence: claudeResult.result?.confidenceAssessment?.overallConfidence || 0
+    });
+
+    return new Response(JSON.stringify({
+      success: true,
+      result: claudeResult.result,
+      processingTime: Date.now(),
+      modelUsed: requestData.model || 'claude-opus-4-20250514'
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+
+  } catch (error) {
+    console.error(`❌ [${requestId}] Strategist error:`, error);
+    return new Response(JSON.stringify({
+      success: false,
+      error: error instanceof Error ? error.message : 'Strategist analysis failed'
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
 });
+
+function buildEnhancedStrategistPrompt(requestData: any): string {
+  const visionContext = requestData.visionSummary ? `
+VISION ANALYSIS CONTEXT:
+- UI Elements Detected: ${requestData.visionSummary.structuralAnalysis?.totalElements || 0}
+- Layout Density: ${requestData.visionSummary.structuralAnalysis?.layoutDensity || 'unknown'}
+- Accessibility Score: ${requestData.visionSummary.accessibilityDetection?.overall || 'unknown'}
+- Mobile Optimization: ${requestData.visionSummary.mobileOptimization?.responsiveScore || 'unknown'}%
+- Visual Hierarchy Assessment: ${requestData.visionSummary.designSystemAssessment?.consistency || 'unknown'}
+` : '';
+
+  const ragContext = requestData.ragMatches?.length > 0 ? `
+RAG KNOWLEDGE CONTEXT:
+${requestData.ragMatches.slice(0, 5).map((match: any, index: number) => `
+${index + 1}. ${match.title || 'Knowledge Entry'}
+   Category: ${match.category || 'general'}
+   Content: ${(match.content || '').substring(0, 200)}...
+   Relevance: ${Math.round((match.similarity || 0) * 100)}%
+`).join('')}
+` : '';
+
+  const competitorContext = requestData.competitorPatterns?.length > 0 ? `
+COMPETITIVE PATTERNS:
+${requestData.competitorPatterns.slice(0, 3).map((pattern: any, index: number) => `
+${index + 1}. ${pattern.pattern_name || 'Pattern'}
+   Industry: ${pattern.industry || 'general'}
+   Effectiveness: ${pattern.effectiveness_score || 'unknown'}
+   Description: ${(pattern.description || '').substring(0, 150)}...
+`).join('')}
+` : '';
+
+  return `
+You are a 20-year Principal UX Designer with deep expertise in SaaS, mobile-first, and enterprise systems.
+You diagnose UX problems with surgical precision and recommend evidence-backed solutions with quantifiable business impact.
+
+ANALYSIS INPUT:
+- Problem Statement: "${requestData.problemStatement || 'General UX Analysis'}"
+- User Persona: ${requestData.userPersona || 'Not specified'}
+- Business Goals: ${JSON.stringify(requestData.businessGoals || [])}
+- Industry Context: ${requestData.industryContext || 'technology'}
+- Design Pattern Type: ${requestData.designPatternType || 'general interface'}
+
+${visionContext}
+${ragContext}
+${competitorContext}
+
+BUSINESS CONTEXT:
+- Business Model: ${requestData.businessContext?.businessModel || 'B2C'}
+- Target Audience: ${requestData.businessContext?.targetAudience || 'general users'}
+- Known Issues: ${JSON.stringify(requestData.knownIssues || {})}
+
+STRATEGIC APPROACH:
+1. DIAGNOSTIC THINKING: Identify root causes, not just symptoms
+2. PATTERN RECOGNITION: Reference established UX principles (Fitts' Law, Miller's Rule, etc.)
+3. BUSINESS IMPACT: Quantify improvements with specific metrics ("25-40% conversion increase")
+4. IMPLEMENTATION REALITY: Consider technical constraints and team capabilities
+5. VALIDATION FRAMEWORK: Provide testable hypotheses and success metrics
+
+EXPERT RECOMMENDATIONS SHOULD:
+- Address specific pain points identified in the vision analysis
+- Leverage knowledge from RAG context for evidence-based solutions  
+- Consider competitive patterns and industry best practices
+- Balance quick wins (1-2 weeks) with strategic improvements (2-3 months)
+- Include implementation guidance and expected business outcomes
+
+OUTPUT FORMAT - Return ONLY valid JSON:
+{
+  "diagnosis": "Root cause analysis with specific vision and context insights...",
+  "strategicRationale": "Strategic approach based on analysis context...", 
+  "expertRecommendations": [
+    {
+      "title": "Specific, actionable recommendation title",
+      "recommendation": "Detailed implementation guidance with context awareness",
+      "confidence": 0.85,
+      "expectedImpact": "Quantified business metrics and user experience improvements",
+      "implementationEffort": "Low|Medium|High",
+      "timeline": "Realistic time estimate",
+      "reasoning": "UX principle and evidence-based justification",
+      "source": "Research backing or best practice reference",
+      "priority": 1,
+      "category": "accessibility|navigation|conversion|mobile|visual-hierarchy",
+      "businessValue": {
+        "quantifiedImpact": "Specific metric improvement",
+        "roiProjection": "Expected return on investment"
+      },
+      "skillsRequired": ["frontend", "design", "ux-research"],
+      "uxPrinciplesApplied": ["principle1", "principle2"],
+      "citations": ["source1", "source2"]
+    }
+  ],
+  "abTestHypothesis": "Testable hypothesis for validation based on analysis",
+  "successMetrics": ["specific metric 1", "specific metric 2", "specific metric 3"],
+  "confidenceAssessment": {
+    "overallConfidence": 0.85,
+    "reasoning": "Evidence quality and context completeness assessment"
+  },
+  "businessImpactAssessment": {
+    "roiProjection": "Expected ROI based on improvements",
+    "implementationRoadmap": {
+      "quickWins": ["immediate action 1", "immediate action 2"],
+      "weekOneActions": ["first week priority 1", "first week priority 2"], 
+      "strategicInitiatives": ["long-term improvement 1", "long-term improvement 2"]
+    }
+  }
+}
+
+CRITICAL: Respond with ONLY the JSON object, no additional text or markdown formatting.
+`;
+}
 
 function buildStrategistPrompt(userChallenge: string, traditionalAnnotations: any[]): string {
   return `

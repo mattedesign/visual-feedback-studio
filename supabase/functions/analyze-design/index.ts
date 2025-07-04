@@ -476,9 +476,11 @@ async function executeMultiModelOrchestration(
       // Perplexity for current trend research
       supabase.functions.invoke('perplexity-research', {
         body: {
+          type: 'competitive',
           query: `UX trends ${enhancedInput.industryContext} ${enhancedInput.problemStatement}`,
-          industryContext: enhancedInput.industryContext,
-          enhancedMode: true
+          industry: enhancedInput.industryContext,
+          recencyFilter: 'month',
+          maxSources: 5
         }
       })
     ]);
