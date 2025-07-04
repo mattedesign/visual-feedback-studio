@@ -35,20 +35,32 @@ class RequestValidator {
       errors.push('Maximum 10 images allowed');
     }
 
-    // ✅ ENHANCED: Validate image data (URLs or base64)
-    if (requestData.imageUrls && Array.isArray(requestData.imageUrls)) {
-      requestData.imageUrls.forEach((imageData, index) => {
-        if (typeof imageData !== 'string' || imageData.trim().length === 0) {
-          errors.push(`Image data at index ${index} is invalid - must be a non-empty string`);
-          return;
-        }
+  // ✅ ENHANCED: Validate image data (URLs or base64)
+  if (requestData.imageUrls && Array.isArray(requestData.imageUrls)) {
+    console.log('🔍 REQUEST VALIDATOR: Processing image URLs:', {
+      totalImages: requestData.imageUrls.length,
+      imageTypes: requestData.imageUrls.map((url, i) => ({
+        index: i,
+        isStorageUrl: url.includes('supabase.co') || url.includes('analysis-images'),
+        isBlobUrl: url.startsWith('blob:'),
+        isBase64: url.startsWith('data:'),
+        isHttpUrl: url.startsWith('http'),
+        preview: url.substring(0, 100)
+      }))
+    });
 
-        const validationResult = this.validateImageData(imageData, index);
-        if (!validationResult.isValid) {
-          errors.push(validationResult.error || `Image data at index ${index} is invalid`);
-        }
-      });
-    }
+    requestData.imageUrls.forEach((imageData, index) => {
+      if (typeof imageData !== 'string' || imageData.trim().length === 0) {
+        errors.push(`Image data at index ${index} is invalid - must be a non-empty string`);
+        return;
+      }
+
+      const validationResult = this.validateImageData(imageData, index);
+      if (!validationResult.isValid) {
+        errors.push(validationResult.error || `Image data at index ${index} is invalid`);
+      }
+    });
+  }
 
     // Validate analysis ID
     if (!requestData.analysisId || typeof requestData.analysisId !== 'string') {
@@ -101,10 +113,14 @@ class RequestValidator {
       return this.validateBase64DataUrl(imageData, index);
     }
     
-    // Check if it's a regular HTTP URL
-    if (imageData.startsWith('http://') || imageData.startsWith('https://')) {
-      return this.validateHttpUrl(imageData, index);
+  // Check if it's a regular HTTP URL (including Supabase storage URLs)
+  if (imageData.startsWith('http://') || imageData.startsWith('https://')) {
+    const result = this.validateHttpUrl(imageData, index);
+    if (result.isValid) {
+      console.log(`✅ VALIDATOR: Valid storage/HTTP URL at index ${index}`);
     }
+    return result;
+  }
 
     // Check if it's raw base64 (without data: prefix)
     if (this.isLikelyBase64(imageData)) {

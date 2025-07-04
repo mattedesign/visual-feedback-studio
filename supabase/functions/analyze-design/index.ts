@@ -63,6 +63,13 @@ serve(async (req) => {
       imageCount: requestData.imageUrls?.length || 0,
       hasAnalysisId: !!requestData.analysisId,
       hasPrompt: !!requestData.analysisPrompt,
+      imageTypes: requestData.imageUrls?.map((url: string, i: number) => ({
+        index: i,
+        isStorageUrl: url.includes('supabase.co') || url.includes('analysis-images'),
+        isBlobUrl: url.startsWith('blob:'),
+        isBase64: url.startsWith('data:'),
+        preview: url.substring(0, 80) + '...'
+      })),
       ragEnabled: requestData.ragEnabled,
       ragEnhanced: requestData.ragEnhanced,
       targetInsights: '16-19'

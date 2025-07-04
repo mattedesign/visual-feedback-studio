@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
+import { useUploadLogic } from '@/hooks/useUploadLogic';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -62,15 +63,10 @@ export const CenteredAnalysisInterface: React.FC<CenteredAnalysisInterfaceProps>
   const [selectedAnnotation, setSelectedAnnotation] = useState<Annotation | null>(null);
   const [pendingPosition, setPendingPosition] = useState<{ x: number; y: number } | null>(null);
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (files && files.length > 0) {
-      Array.from(files).forEach((file) => {
-        const objectUrl = URL.createObjectURL(file);
-        workflow.addUploadedFile(objectUrl);
-      });
-    }
-  };
+  const { handleFileUpload } = useUploadLogic((imageUrl: string) => {
+    console.log('🔥 CENTERED INTERFACE - UPLOAD COMPLETE:', imageUrl);
+    workflow.addUploadedFile(imageUrl);
+  });
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -89,8 +85,7 @@ export const CenteredAnalysisInterface: React.FC<CenteredAnalysisInterfaceProps>
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
       Array.from(files).forEach((file) => {
-        const objectUrl = URL.createObjectURL(file);
-        workflow.addUploadedFile(objectUrl);
+        handleFileUpload(file);
       });
     }
   };
@@ -244,7 +239,12 @@ export const CenteredAnalysisInterface: React.FC<CenteredAnalysisInterfaceProps>
                   type="file"
                   accept="image/*"
                   multiple
-                  onChange={handleFileUpload}
+        onChange={(e) => {
+          const files = e.target.files;
+          if (files) {
+            Array.from(files).forEach(file => handleFileUpload(file));
+          }
+        }}
                   className="hidden"
                 />
                 
@@ -320,7 +320,12 @@ export const CenteredAnalysisInterface: React.FC<CenteredAnalysisInterfaceProps>
                       type="file"
                       accept="image/*"
                       multiple
-                      onChange={handleFileUpload}
+                      onChange={(e) => {
+                        const files = e.target.files;
+                        if (files) {
+                          Array.from(files).forEach(file => handleFileUpload(file));
+                        }
+                      }}
                       className="hidden"
                     />
                     <div className="text-center">

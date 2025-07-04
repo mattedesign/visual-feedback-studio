@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { useUploadLogic } from '@/hooks/useUploadLogic';
 import { 
   Upload, 
   X, 
@@ -42,6 +43,11 @@ export const EnhancedFileThumbnails: React.FC<EnhancedFileThumbnailsProps> = ({
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { handleFileUpload } = useUploadLogic((imageUrl: string) => {
+    console.log('🔥 ENHANCED THUMBNAILS - UPLOAD COMPLETE:', imageUrl);
+    onFilesAdd([imageUrl]);
+  });
 
   const canUploadMore = files.length < maxFiles;
 
@@ -89,36 +95,24 @@ export const EnhancedFileThumbnails: React.FC<EnhancedFileThumbnailsProps> = ({
 
     const droppedFiles = e.dataTransfer.files;
     if (droppedFiles && droppedFiles.length > 0) {
-      const validFiles: string[] = [];
-      
       Array.from(droppedFiles).forEach((file) => {
-        if (isValidImageFile(file) && validFiles.length < (maxFiles - files.length)) {
-          const objectUrl = URL.createObjectURL(file);
-          validFiles.push(objectUrl);
+        if (isValidImageFile(file) && files.length < maxFiles) {
+          // Use proper file upload instead of creating blob URLs
+          handleFileUpload(file);
         }
       });
-      
-      if (validFiles.length > 0) {
-        onFilesAdd(validFiles);
-      }
     }
   };
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files;
     if (selectedFiles && canUploadMore && !isUploading) {
-      const validFiles: string[] = [];
-      
       Array.from(selectedFiles).forEach((file) => {
-        if (isValidImageFile(file) && validFiles.length < (maxFiles - files.length)) {
-          const objectUrl = URL.createObjectURL(file);
-          validFiles.push(objectUrl);
+        if (isValidImageFile(file) && files.length < maxFiles) {
+          // Use proper file upload instead of creating blob URLs
+          handleFileUpload(file);
         }
       });
-      
-      if (validFiles.length > 0) {
-        onFilesAdd(validFiles);
-      }
     }
     e.target.value = '';
   };
