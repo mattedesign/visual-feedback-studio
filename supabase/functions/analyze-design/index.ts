@@ -38,11 +38,14 @@ async function analyzeWithGoogleVision(imageUrl) {
     const uint8Array = new Uint8Array(arrayBuffer);
     let binaryString = '';
     
-    // Process in chunks to avoid stack overflow
-    const chunkSize = 8192;
+    // Process in small chunks to avoid stack overflow
+    const chunkSize = 1024; // Reduced chunk size
     for (let i = 0; i < uint8Array.length; i += chunkSize) {
       const chunk = uint8Array.slice(i, i + chunkSize);
-      binaryString += String.fromCharCode(...chunk);
+      // Use loop instead of spread operator to avoid stack overflow
+      for (let j = 0; j < chunk.length; j++) {
+        binaryString += String.fromCharCode(chunk[j]);
+      }
     }
     
     const base64Data = btoa(binaryString);

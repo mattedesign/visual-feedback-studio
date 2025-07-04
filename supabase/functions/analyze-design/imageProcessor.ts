@@ -26,11 +26,14 @@ export async function fetchImageAsBase64(imageUrl: string): Promise<{ base64Imag
     const uint8Array = new Uint8Array(imageBuffer);
     let binaryString = '';
     
-    // Process in chunks to avoid stack overflow
-    const chunkSize = 8192;
+    // Process in small chunks to avoid stack overflow
+    const chunkSize = 1024; // Reduced chunk size
     for (let i = 0; i < uint8Array.length; i += chunkSize) {
       const chunk = uint8Array.slice(i, i + chunkSize);
-      binaryString += String.fromCharCode.apply(null, Array.from(chunk));
+      // Use loop instead of apply to avoid stack overflow
+      for (let j = 0; j < chunk.length; j++) {
+        binaryString += String.fromCharCode(chunk[j]);
+      }
     }
     
     const base64Image = btoa(binaryString);
