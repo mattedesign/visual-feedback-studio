@@ -68,48 +68,127 @@ export const createAnalysis = async () => {
 
 const analyzeDesign = async (request: AnalyzeDesignRequest): Promise<AnalyzeDesignResponse> => {
   try {
-    // ✅ FIXED: Use storage URLs directly instead of base64 conversion
-    console.log('📡 Main Analysis: Using storage URLs directly (no base64 conversion)');
+    console.log('📡 Main Analysis: Starting orchestrated analysis pipeline');
     
-    // ✅ FIXED: No more base64 conversion - use storage URLs directly
-    const imageUrls = request.imageUrls; // These should be storage URLs now
+    const imageUrls = request.imageUrls;
+    const userContext = request.analysisPrompt;
     
-    // ✅ FIXED: Validate that we have storage URLs
-    console.log('📡 Main Analysis: Validating storage URLs:', {
-      imageCount: imageUrls.length,
-      urlTypes: imageUrls.map(url => ({
-        isStorage: url.includes('supabase.co') || url.includes('analysis-images'),
-        isBlob: url.startsWith('blob:'),
-        isBase64: url.startsWith('data:'),
-        preview: url.substring(0, 80) + '...'
-      }))
-    });
-
-    // ✅ FIXED: Warning if still receiving blob URLs
-    const hasBlobs = imageUrls.some(url => url.startsWith('blob:'));
-    if (hasBlobs) {
-      console.warn('⚠️ Warning: Still receiving blob URLs - storage upload may not be working correctly');
+    // ✅ STEP 1: Await Google Vision + Context Assembly
+    console.log('👁️ Step 1: Executing Google Vision analysis...');
+    let visionOutput = null;
+    let annotations = [];
+    
+    try {
+      // Import and use Google Vision service
+      const { googleVisionService } = await import('../services/vision/googleVisionService');
+      visionOutput = await googleVisionService.analyzeImage(imageUrls[0]);
+      console.log('✅ Google Vision completed:', {
+        uiElements: visionOutput.uiElements?.length || 0,
+        textContent: visionOutput.textContent?.length || 0,
+        colors: visionOutput.colors?.dominantColors?.length || 0,
+        confidence: visionOutput.overallConfidence
+      });
+    } catch (visionError) {
+      console.warn('⚠️ Google Vision failed, continuing without vision data:', visionError.message);
     }
 
-    console.log('📡 Main Analysis: Calling analyze-design function with storage URLs:', {
-      analysisId: request.analysisId,
-      imageCount: imageUrls.length,
-      isComparative: request.isComparative,
-      ragEnabled: true,
-      payloadSize: JSON.stringify({ imageUrls }).length + ' bytes (should be small!)'
+    // ✅ STEP 2: Build Full Context
+    console.log('🔧 Step 2: Building comprehensive analysis context...');
+    const contextComponents = [];
+    
+    // Add user context
+    if (userContext && userContext.trim()) {
+      contextComponents.push(`User Challenge: ${userContext.trim()}`);
+    }
+    
+    // Add vision insights
+    if (visionOutput?.uiElements?.length > 0) {
+      const elementsDesc = visionOutput.uiElements
+        .slice(0, 5)
+        .map(el => `${el.type} (${Math.round(el.confidence * 100)}% confidence)`)
+        .join(', ');
+      contextComponents.push(`Visual Elements Detected: ${elementsDesc}`);
+    }
+    
+    if (visionOutput?.textContent?.length > 0) {
+      const textDesc = visionOutput.textContent
+        .slice(0, 3)
+        .map(text => text.text.substring(0, 30))
+        .join(', ');
+      contextComponents.push(`Text Content: ${textDesc}`);
+    }
+    
+    if (visionOutput?.colors?.dominantColors?.length > 0) {
+      contextComponents.push(`Color Palette: ${visionOutput.colors.dominantColors.slice(0, 3).join(', ')}`);
+    }
+    
+    const fullContext = contextComponents.join('\n');
+    
+    // ✅ STEP 3: Context Validation
+    if (!fullContext || fullContext.length < 100) {
+      throw new Error("⚠️ Full context is missing — RAG would fail.");
+    }
+    
+    console.log('✅ Full context assembled:', {
+      totalLength: fullContext.length,
+      components: contextComponents.length,
+      hasVisionData: !!visionOutput,
+      preview: fullContext.substring(0, 150) + '...'
     });
 
-    // ✅ FIXED: Send storage URLs directly to Edge Function
+    // ✅ STEP 4: Payload Validation (before calling analyze-design)
+    console.log('🔍 Step 4: Validating payload completeness...');
+    
+    if (!userContext || userContext.trim().length < 10) {
+      console.warn("🚫 Insufficient user context — skipping or delaying analyze-design call.");
+      throw new Error("User context is required and must be at least 10 characters");
+    }
+    
+    if (!visionOutput || !visionOutput.uiElements || visionOutput.uiElements.length === 0) {
+      console.warn("🚫 Insufficient vision data — proceeding with limited context.");
+    }
+    
+    if (annotations.length === 0) {
+      console.log("ℹ️ No user annotations provided — using AI-generated annotations only.");
+    }
+
+    // ✅ STEP 5: RAG Readiness Check
+    console.log('🛡️ Step 5: Checking RAG readiness...');
+    const ragReady = fullContext && fullContext.length > 300;
+    
+    console.log('📊 RAG readiness assessment:', {
+      contextLength: fullContext.length,
+      ragReady,
+      hasVisionData: !!visionOutput,
+      hasUserContext: !!userContext?.trim()
+    });
+
+    // ✅ STEP 6: Build Safe Payload
+    const payload = {
+      imageUrls: imageUrls,
+      imageUrl: imageUrls[0], // Include both for compatibility
+      analysisId: request.analysisId,
+      analysisPrompt: fullContext, // Use enhanced context instead of raw prompt
+      designType: request.designType,
+      isComparative: request.isComparative,
+      ragEnabled: ragReady, // Only enable RAG if context is sufficient
+      visionOutput: visionOutput, // Include vision data for downstream processing
+      context: fullContext,
+      enhancedAnalysis: true
+    };
+
+    console.log('📡 Step 6: Calling analyze-design with enhanced payload:', {
+      analysisId: request.analysisId,
+      imageCount: imageUrls.length,
+      contextLength: fullContext.length,
+      ragEnabled: ragReady,
+      hasVisionOutput: !!visionOutput,
+      payloadKeys: Object.keys(payload)
+    });
+
+    // ✅ STEP 7: Execute Analysis with Enhanced Context
     const { data, error } = await supabase.functions.invoke('analyze-design', {
-      body: {
-        imageUrls: imageUrls, // ✅ Send storage URLs directly (no base64)
-        imageUrl: imageUrls[0], // Include both for compatibility
-        analysisId: request.analysisId,
-        analysisPrompt: request.analysisPrompt,
-        designType: request.designType,
-        isComparative: request.isComparative,
-        ragEnabled: true // This is the key - always enable RAG
-      }
+      body: payload
     });
 
     if (error) {
