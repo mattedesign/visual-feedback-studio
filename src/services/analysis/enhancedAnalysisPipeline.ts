@@ -160,11 +160,13 @@ export class EnhancedAnalysisPipeline {
     console.log('💼 Executing business intelligence analysis...');
     
     // ROI projections based on identified issues
-    const roiProjections = BusinessImpactCalculator.calculateProjectedROI(
-      visionAnalysis,
-      ragEnhancement,
-      userContext
-    );
+    const businessCalculator = new BusinessImpactCalculator();
+    const businessMetrics = businessCalculator.calculateBusinessMetrics([]);
+    const roiProjections = {
+      estimatedValue: `$${businessMetrics.revenueEstimate.annual}`,
+      confidence: businessMetrics.revenueEstimate.confidence / 100,
+      timeframe: `${businessMetrics.implementationTimeline.total} weeks`
+    };
     
     // Implementation roadmap with priorities
     const implementationRoadmap = this.generateImplementationRoadmap(
