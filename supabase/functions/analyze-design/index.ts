@@ -92,16 +92,29 @@ serve(async (req) => {
     console.log('🤖 Starting AI analysis with Claude Sonnet 4...');
 
     // Prepare images for Claude
+    console.log('🔍 Processing images:', requestData.imageUrls);
     const imageContent = [];
     for (const imageUrl of requestData.imageUrls) {
       try {
+        console.log('📥 Fetching image:', imageUrl);
         const response = await fetch(imageUrl);
+        console.log('📡 Image fetch response:', response.status, response.statusText);
+        
         if (!response.ok) {
-          console.error('Failed to fetch image:', imageUrl);
+          console.error('❌ Failed to fetch image:', imageUrl, 'Status:', response.status, response.statusText);
           continue;
         }
+        
         const imageData = await response.arrayBuffer();
+        console.log('📊 Image data size:', imageData.byteLength, 'bytes');
+        
+        if (imageData.byteLength === 0) {
+          console.error('❌ Image data is empty for:', imageUrl);
+          continue;
+        }
+        
         const base64 = btoa(String.fromCharCode(...new Uint8Array(imageData)));
+        console.log('✅ Image converted to base64, length:', base64.length);
         
         imageContent.push({
           type: "image",
@@ -112,7 +125,7 @@ serve(async (req) => {
           }
         });
       } catch (error) {
-        console.error('Error processing image:', imageUrl, error);
+        console.error('❌ Error processing image:', imageUrl, error.message);
       }
     }
 
