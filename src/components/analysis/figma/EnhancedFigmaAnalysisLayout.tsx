@@ -191,8 +191,8 @@ export const EnhancedFigmaAnalysisLayout: React.FC<EnhancedFigmaAnalysisLayoutPr
 
         <ResizableHandle />
 
-        {/* Center Panel - Main Analysis View */}
-        <ResizablePanel defaultSize={50} minSize={40}>
+        {/* Center Panel - Main Analysis View - Full Width */}
+        <ResizablePanel defaultSize={75} minSize={60}>
           <div className="h-full flex flex-col">
             {/* Header */}
             <div className="border-b border-border p-4">
@@ -235,7 +235,7 @@ export const EnhancedFigmaAnalysisLayout: React.FC<EnhancedFigmaAnalysisLayoutPr
               )}
             </div>
 
-            {/* Content Area */}
+            {/* Content Area - Top Aligned */}
             <div className="flex-1 overflow-auto p-4">
               {viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -307,103 +307,6 @@ export const EnhancedFigmaAnalysisLayout: React.FC<EnhancedFigmaAnalysisLayoutPr
                 </div>
               )}
             </div>
-          </div>
-        </ResizablePanel>
-
-        <ResizableHandle />
-
-        {/* Right Panel - Details & Strategist Analysis */}
-        <ResizablePanel defaultSize={25} minSize={20} maxSize={35}>
-          <div className="h-full border-l border-border">
-            {selectedAnnotation ? (
-              <div className="p-4 h-full overflow-auto">
-                {(() => {
-                  const annotation = analysisData.annotations.find(a => a.id === selectedAnnotation);
-                  if (!annotation) return null;
-
-                  return (
-                    <div className="space-y-6">
-                      <div>
-                        <div className="flex items-start justify-between mb-3">
-                          <h3 className="font-semibold">{annotation.title}</h3>
-                          <Badge
-                            variant="outline"
-                            className={`text-xs ${getSeverityColor(annotation.severity)}`}
-                          >
-                            {annotation.severity}
-                          </Badge>
-                        </div>
-                        
-                        <div className="space-y-3">
-                          <div>
-                            <h4 className="font-medium text-sm mb-2">Description</h4>
-                            <p className="text-sm text-muted-foreground">{annotation.feedback}</p>
-                          </div>
-                          
-                          <div>
-                            <h4 className="font-medium text-sm mb-2">Category</h4>
-                            <Badge variant="secondary">{annotation.category}</Badge>
-                          </div>
-                        </div>
-                      </div>
-
-                      {strategistAnalysis && (
-                        <div className="border-t border-border pt-4">
-                          <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
-                            <Target className="w-4 h-4 text-primary" />
-                            Strategic Insights
-                          </h4>
-                          
-                          <Tabs defaultValue="impact" className="w-full">
-                            <TabsList className="grid w-full grid-cols-3 text-xs">
-                              <TabsTrigger value="impact">Impact</TabsTrigger>
-                              <TabsTrigger value="solution">Solution</TabsTrigger>
-                              <TabsTrigger value="metrics">Metrics</TabsTrigger>
-                            </TabsList>
-                            
-                            <TabsContent value="impact" className="space-y-3 mt-3">
-                              <div className="text-sm">
-                                <p className="text-muted-foreground">
-                                  Business impact analysis and priority recommendations from the UX strategist.
-                                </p>
-                              </div>
-                            </TabsContent>
-                            
-                            <TabsContent value="solution" className="space-y-3 mt-3">
-                              <div className="text-sm">
-                                <p className="text-muted-foreground">
-                                  Specific implementation guidance and design recommendations.
-                                </p>
-                              </div>
-                            </TabsContent>
-                            
-                            <TabsContent value="metrics" className="space-y-3 mt-3">
-                              <div className="text-sm">
-                                <p className="text-muted-foreground">
-                                  Success metrics and measurement frameworks for tracking improvements.
-                                </p>
-                              </div>
-                            </TabsContent>
-                          </Tabs>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-              </div>
-            ) : (
-              <div className="p-4 h-full flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-muted rounded-lg mx-auto mb-4 flex items-center justify-center">
-                    <Eye className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                  <h3 className="font-medium mb-2">Select an Insight</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Choose an insight from the analysis to view detailed information
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
