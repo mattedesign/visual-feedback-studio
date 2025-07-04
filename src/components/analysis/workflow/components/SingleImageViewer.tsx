@@ -32,7 +32,8 @@ export const SingleImageViewer = ({
   activeAnnotation,
   getCategoryIcon
 }: SingleImageViewerProps) => {
-  // 🔧 CRITICAL FIX: For single image, filter annotations for image index 0
+  // ✅ FIXED: For single image, only show annotations for the current image (imageIndex 0)
+  // This component is for single image viewing only, so we only show imageIndex 0
   const filteredAiAnnotations = aiAnnotations.filter(annotation => {
     const annotationImageIndex = annotation.imageIndex ?? 0;
     return annotationImageIndex === 0;

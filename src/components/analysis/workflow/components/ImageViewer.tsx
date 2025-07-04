@@ -1,5 +1,5 @@
 
-import { MessageSquare, Plus } from 'lucide-react';
+import { MessageSquare, Plus, Edit2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface Annotation {
@@ -61,26 +61,36 @@ export const ImageViewer = ({
             <MessageSquare className="w-4 h-4" />
           </div>
           
-          <div className="absolute top-10 left-1/2 transform -translate-x-1/2 w-64 bg-slate-800 border border-slate-600 rounded-lg p-3 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity z-10">
-            <p className="text-sm text-slate-300 mb-2">{annotation.comment}</p>
+          <div className="absolute top-10 left-1/2 transform -translate-x-1/2 w-72 bg-white border-2 border-gray-200 rounded-lg p-4 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity z-20">
+            <p className="text-sm text-gray-800 mb-3 leading-relaxed">{annotation.comment}</p>
             <div className="flex gap-2">
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => onEditAnnotation(annotation.id)}
-                className="text-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEditAnnotation(annotation.id);
+                }}
+                className="text-xs hover:bg-blue-50"
               >
+                <Edit2 className="w-3 h-3 mr-1" />
                 Edit
               </Button>
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => onDeleteAnnotation(annotation.id)}
-                className="text-xs text-red-400 hover:text-red-300"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteAnnotation(annotation.id);
+                }}
+                className="text-xs text-red-600 hover:bg-red-50"
               >
+                <Trash2 className="w-3 h-3 mr-1" />
                 Delete
               </Button>
             </div>
+            {/* Arrow pointing to annotation */}
+            <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white border-l-2 border-t-2 border-gray-200 rotate-45"></div>
           </div>
         </div>
       ))}

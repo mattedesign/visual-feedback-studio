@@ -46,6 +46,17 @@ serve(async (req) => {
     // Parse and validate request
     const requestData = await req.json();
     
+    // ✅ ENHANCED: Log analysis request structure for debugging
+    console.log('📋 Analysis request structure:', {
+      hasImageUrls: !!requestData.imageUrls,
+      imageCount: requestData.imageUrls?.length || 0,
+      hasUserAnnotations: !!requestData.userAnnotations,
+      userAnnotationCount: requestData.userAnnotations?.length || 0,
+      hasAnalysisPrompt: !!requestData.analysisPrompt,
+      analysisType: requestData.imageUrls?.length > 1 ? 'multi-image' : 'single-image',
+      isComparative: requestData.isComparative
+    });
+    
     // ✅ ENHANCED DEBUG LOGGING
     console.log('🔍 ANALYZE-DESIGN REQUEST RECEIVED');
     console.log('📊 Request validation check:', {

@@ -6,7 +6,6 @@ import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { Images, Sparkles } from 'lucide-react';
 import { ImageNavigationBar } from './components/ImageNavigationBar';
 import { ImageViewer } from './components/ImageViewer';
-import { AnalysisSidebar } from './components/AnalysisSidebar';
 import { CommentDialog } from './components/CommentDialog';
 
 interface MultiImageAnnotateStepProps {
@@ -161,17 +160,49 @@ export const MultiImageAnnotateStep = ({ workflow }: MultiImageAnnotateStepProps
               />
             </div>
 
-            {/* Enhanced sidebar */}
-            <AnalysisSidebar
-              selectedImagesCount={workflow.selectedImages.length}
-              totalAnnotations={totalAnnotations}
-              currentImageAnnotations={currentImageAnnotations}
-              currentImageIndex={currentImageIndex}
-              analysisContext={workflow.analysisContext}
-              isComparative={isComparative}
-              onAnalysisContextChange={workflow.setAnalysisContext}
-              onDeleteAnnotation={handleDeleteAnnotation}
-            />
+            {/* Simplified sidebar - no complex annotation panel */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-medium mb-3 text-slate-200">
+                  Analysis Summary
+                </h3>
+                <div className="space-y-2">
+                  <div className="bg-slate-700 p-3 rounded">
+                    <div className="text-sm font-medium text-slate-300">Selected Images</div>
+                    <div className="text-2xl font-bold text-blue-400">{workflow.selectedImages.length}</div>
+                  </div>
+                  <div className="bg-slate-700 p-3 rounded">
+                    <div className="text-sm font-medium text-slate-300">Total Comments</div>
+                    <div className="text-2xl font-bold text-green-400">{totalAnnotations}</div>
+                  </div>
+                  <div className="bg-slate-700 p-3 rounded">
+                    <div className="text-sm font-medium text-slate-300">Current Image</div>
+                    <div className="text-lg font-bold text-purple-400">{currentImageAnnotations.length} comments</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Analysis context input */}
+              <div>
+                <label className="block text-sm font-medium mb-2 text-slate-200">
+                  {isComparative ? 'Comparative Analysis Context' : 'Analysis Context'}
+                </label>
+                <textarea
+                  value={workflow.analysisContext}
+                  onChange={(e) => workflow.setAnalysisContext(e.target.value)}
+                  placeholder={
+                    isComparative 
+                      ? "Describe what you want to compare across these images..."
+                      : "Add context to guide the AI analysis..."
+                  }
+                  className="w-full bg-slate-700 border-slate-600 text-slate-200 placeholder:text-slate-400 rounded-md p-3 text-sm"
+                  rows={4}
+                />
+                <div className="text-xs text-slate-400 mt-1">
+                  This context will guide the AI analysis for better insights.
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="flex justify-between">
