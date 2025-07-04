@@ -71,14 +71,10 @@ serve(async (req) => {
       }
     }
 
-    if (!requestData.analysisPrompt) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'No analysis prompt provided'
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+    // Defensive measure: Provide fallback prompt if missing
+    if (!requestData.analysisPrompt || requestData.analysisPrompt.trim() === '') {
+      console.log('⚠️ No analysis prompt provided, using fallback');
+      requestData.analysisPrompt = `Comprehensive UX analysis of ${requestData.imageUrls?.length || 1} design image(s). Provide detailed feedback on usability, visual hierarchy, accessibility, and user experience improvements.`;
     }
 
     // Call Claude Sonnet 4 for analysis

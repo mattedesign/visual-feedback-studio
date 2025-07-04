@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { EnhancedCanvasViewer } from './EnhancedCanvasViewer';
 import { AnnotationSystem } from './AnnotationSystem';
 import { EnhancedFileThumbnails } from './EnhancedFileThumbnails';
+import { toast } from 'sonner';
 import { 
   Upload, 
   Filter, 
@@ -91,7 +92,20 @@ export const CenteredAnalysisInterface: React.FC<CenteredAnalysisInterfaceProps>
   };
 
   const handleStartAnalysis = () => {
-    if (!analysisMessage.trim() || workflow.selectedImages.length === 0) return;
+    if (!analysisMessage.trim()) {
+      toast.error('Please describe what you want me to analyze');
+      return;
+    }
+    
+    if (workflow.selectedImages.length === 0) {
+      toast.error('Please upload at least one image to analyze');
+      return;
+    }
+    
+    console.log('🚀 Starting analysis with context:', {
+      contextLength: analysisMessage.length,
+      imageCount: workflow.selectedImages.length
+    });
     
     workflow.setAnalysisContext(analysisMessage);
     workflow.goToStep('analyzing');
@@ -383,25 +397,57 @@ export const CenteredAnalysisInterface: React.FC<CenteredAnalysisInterfaceProps>
           </div>
         )}
 
-        {/* Bottom Chat Area */}
-        <div className="border-t border-border bg-background p-4">
+        {/* Bottom Analysis Context Area - More Prominent */}
+        <div className="border-t border-border bg-background p-6">
           <div className="max-w-4xl mx-auto">
-            <div className="flex items-center gap-3 mb-4">
-              <Input
-                value={analysisMessage}
-                onChange={(e) => setAnalysisMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="How can I help..."
-                className="flex-1 bg-muted/50 border-0 h-12 text-base"
-                disabled={workflow.isAnalyzing}
-              />
-              <Button size="icon" variant="ghost" className="h-12 w-12">
-                <Mic className="w-5 h-5" />
-              </Button>
-              <Button size="icon" variant="ghost" className="h-12 w-12">
-                <MessageSquare className="w-5 h-5" />
-              </Button>
+            {/* Required Analysis Context */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium mb-2">
+                What would you like me to analyze? <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <Input
+                  value={analysisMessage}
+                  onChange={(e) => setAnalysisMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Describe what you want me to analyze (e.g., 'Visual hierarchy and user flow', 'Mobile responsiveness', 'Overall UX improvements')"
+                  className="flex-1 h-12 text-base pr-12"
+                  disabled={workflow.isAnalyzing}
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <Sparkles className="w-5 h-5 text-muted-foreground" />
+                </div>
+              </div>
+              {!analysisMessage.trim() && workflow.selectedImages.length > 0 && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Please describe what you'd like me to analyze about your design
+                </p>
+              )}
             </div>
+            
+            {/* Quick Suggestions */}
+            {workflow.selectedImages.length > 0 && !analysisMessage.trim() && (
+              <div className="mb-4">
+                <p className="text-sm font-medium mb-2">Quick suggestions:</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    'Visual hierarchy and layout',
+                    'User experience improvements', 
+                    'Mobile responsiveness',
+                    'Accessibility review',
+                    'Conversion optimization'
+                  ].map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      onClick={() => setAnalysisMessage(suggestion)}
+                      className="px-3 py-1 text-sm bg-muted hover:bg-muted/80 rounded-full transition-colors"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             
             {/* Bottom Toolbar */}
             <div className="flex items-center justify-between">
@@ -424,13 +470,16 @@ export const CenteredAnalysisInterface: React.FC<CenteredAnalysisInterfaceProps>
               </div>
               
               <div className="flex items-center gap-3">
-                <span className="text-sm font-medium">100%</span>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>{workflow.selectedImages.length} image{workflow.selectedImages.length !== 1 ? 's' : ''}</span>
+                  {analysisMessage.trim() && <span>• Context provided</span>}
+                </div>
                 <Button 
                   onClick={handleStartAnalysis}
                   disabled={!canAnalyze || workflow.isAnalyzing}
-                  className="px-8"
+                  className="px-8 min-w-[100px]"
                 >
-                  Analyze
+                  {workflow.isAnalyzing ? 'Analyzing...' : 'Start Analysis'}
                 </Button>
               </div>
             </div>

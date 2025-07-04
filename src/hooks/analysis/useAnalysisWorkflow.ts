@@ -346,7 +346,7 @@ export const useAnalysisWorkflow = () => {
     }
 
     if (!analysisContext.trim()) {
-      toast.error('Please provide analysis context');
+      toast.error('Please provide analysis context - describe what you want me to analyze');
       return;
     }
 
