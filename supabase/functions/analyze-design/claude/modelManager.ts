@@ -3,24 +3,24 @@ import { callClaudeApi } from './claudeApiClient.ts';
 import { parseClaudeResponse } from './responseParser.ts';
 import { AnnotationData } from '../types.ts';
 
-// ✅ UPDATED: Prioritize Claude 4 models (latest and most capable)
+// ✅ FIXED: Prioritize proven stable models (Claude 4 experimental)
 const CLAUDE_MODELS = [
-  'claude-sonnet-4-20250514',     // 🚀 PRIMARY: Latest Claude 4 Sonnet (high performance + efficiency)
-  'claude-opus-4-20250514',       // 🚀 SECONDARY: Latest Claude 4 Opus (most capable)
-  'claude-3-5-sonnet-20241022',   // 🚀 FALLBACK: Proven Claude 3.5 Sonnet
-  'claude-3-5-haiku-20241022',    // 🚀 BACKUP: Fast Claude 3.5 Haiku
-  'claude-3-opus-20240229',       // 🚀 LEGACY: Claude 3 Opus fallback
-  'claude-3-haiku-20240307'       // 🚀 FINAL: Claude 3 Haiku final fallback
+  'claude-3-5-sonnet-20241022',   // 🚀 PRIMARY: Most reliable and capable
+  'claude-3-5-haiku-20241022',    // 🚀 SECONDARY: Fast and stable
+  'claude-3-opus-20240229',       // 🚀 TERTIARY: Proven legacy model
+  'claude-3-haiku-20240307',      // 🚀 FALLBACK: Very stable backup
+  'claude-sonnet-4-20250514',     // ⚠️ EXPERIMENTAL: Test newer model
+  'claude-opus-4-20250514'        // ⚠️ EXPERIMENTAL: Latest but unstable
 ];
 
-// ✅ UPDATED: Claude 4 first fallback order
+// ✅ FIXED: Stable-first fallback order (proven models first)
 const FALLBACK_ORDER = [
-  'claude-sonnet-4-20250514',     // 🚀 PRIMARY: Latest Claude 4 Sonnet 
-  'claude-opus-4-20250514',       // 🚀 SECONDARY: Latest Claude 4 Opus
-  'claude-3-5-sonnet-20241022',   // 🚀 FALLBACK: Proven Claude 3.5 Sonnet
-  'claude-3-5-haiku-20241022',    // 🚀 BACKUP: Fast Claude 3.5 Haiku  
-  'claude-3-opus-20240229',       // 🚀 LEGACY: Claude 3 Opus
-  'claude-3-haiku-20240307'       // 🚀 FINAL: Claude 3 Haiku
+  'claude-3-5-sonnet-20241022',   // 🚀 PRIMARY: Most reliable 
+  'claude-3-5-haiku-20241022',    // 🚀 SECONDARY: Fast and stable
+  'claude-3-opus-20240229',       // 🚀 TERTIARY: Proven legacy
+  'claude-3-haiku-20240307',      // 🚀 FALLBACK: Very stable
+  'claude-sonnet-4-20250514',     // ⚠️ EXPERIMENTAL: Test if others fail
+  'claude-opus-4-20250514'        // ⚠️ EXPERIMENTAL: Last resort
 ];
 
 export async function analyzeWithClaudeModels(
