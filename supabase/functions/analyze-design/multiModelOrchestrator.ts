@@ -78,7 +78,7 @@ export class MultiModelOrchestrator {
     console.log('🎯 MultiModelOrchestrator - Starting Claude-first analysis pipeline', {
       imageCount: processedImages.length,
       promptLength: analysisPrompt.length,
-      claudeWeight: this.CLAUDE_FIRST_WEIGHTS.claude,
+      claudeWeight: MultiModelOrchestrator.CLAUDE_FIRST_WEIGHTS.claude,
       ragEnabled: options.ragEnabled,
       perplexityEnabled: options.perplexityEnabled,
       forceClaudeOnly: options.forceClaudeOnly
@@ -126,7 +126,7 @@ export class MultiModelOrchestrator {
       console.log('🧠 Phase 4: Claude-First Weighted Synthesis');
       const synthesizedResult = await this.synthesizeResults(
         modelResults,
-        this.CLAUDE_FIRST_WEIGHTS,
+        MultiModelOrchestrator.CLAUDE_FIRST_WEIGHTS,
         fallbacksTriggered
       );
 
@@ -136,7 +136,7 @@ export class MultiModelOrchestrator {
         modelsUsed: modelResults.length,
         finalAnnotationCount: synthesizedResult.annotations.length,
         primaryModel: 'Claude Sonnet 4.0',
-        claudeWeight: this.CLAUDE_FIRST_WEIGHTS.claude,
+        claudeWeight: MultiModelOrchestrator.CLAUDE_FIRST_WEIGHTS.claude,
         processingTimeMs: totalProcessingTime,
         fallbacksTriggered: fallbacksTriggered.length
       });
@@ -146,7 +146,7 @@ export class MultiModelOrchestrator {
         modelResults,
         synthesisMetadata: {
           primaryModel: 'Claude Sonnet 4.0',
-          weights: this.CLAUDE_FIRST_WEIGHTS,
+          weights: MultiModelOrchestrator.CLAUDE_FIRST_WEIGHTS,
           confidenceScore: synthesizedResult.confidence,
           totalModelsUsed: modelResults.length,
           fallbacksTriggered,
@@ -590,7 +590,7 @@ ANALYSIS CONTEXT: ${prompt}`;
   private isClaudeResultAcceptable(result: ModelResult): boolean {
     if (!result.success) return false;
     
-    const thresholds = this.QUALITY_THRESHOLDS.claude;
+    const thresholds = MultiModelOrchestrator.QUALITY_THRESHOLDS.claude;
     const annotationCount = result.annotations.length;
     
     return (
@@ -601,8 +601,8 @@ ANALYSIS CONTEXT: ${prompt}`;
   }
 
   private calculateClaudeConfidence(annotations: any[]): number {
-    const targetMin = this.QUALITY_THRESHOLDS.claude.targetRange[0];
-    const targetMax = this.QUALITY_THRESHOLDS.claude.targetRange[1];
+    const targetMin = MultiModelOrchestrator.QUALITY_THRESHOLDS.claude.targetRange[0];
+    const targetMax = MultiModelOrchestrator.QUALITY_THRESHOLDS.claude.targetRange[1];
     const count = annotations.length;
     
     if (count >= targetMin && count <= targetMax) {
@@ -769,7 +769,7 @@ ANALYSIS CONTEXT: ${prompt}`;
         modelResults: [modelResult],
         synthesisMetadata: {
           primaryModel: modelResult.modelName,
-          weights: reason === 'claude' ? this.CLAUDE_FIRST_WEIGHTS : { claude: 1, openai: 0, perplexity: 0 },
+          weights: reason === 'claude' ? MultiModelOrchestrator.CLAUDE_FIRST_WEIGHTS : { claude: 1, openai: 0, perplexity: 0 },
           confidenceScore: modelResult.confidence,
           totalModelsUsed: 1,
           fallbacksTriggered: [reason],
