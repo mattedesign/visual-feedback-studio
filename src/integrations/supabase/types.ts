@@ -16,17 +16,22 @@ export type Database = {
           analysis_prompt: string | null
           business_goals: string[] | null
           business_impact_score: number | null
+          cancelled_at: string | null
           competitive_position_score: number | null
           created_at: string
           description: string | null
           design_type: string | null
+          failure_reason: string | null
           id: string
           implementation_timeline_weeks: number | null
           knowledge_sources_used: number | null
+          last_retry_at: string | null
+          retry_count: number | null
           revenue_confidence_level: number | null
           revenue_potential_annual: number | null
           status: string
           target_audience: string | null
+          timeout_at: string | null
           title: string
           updated_at: string
           user_id: string
@@ -37,17 +42,22 @@ export type Database = {
           analysis_prompt?: string | null
           business_goals?: string[] | null
           business_impact_score?: number | null
+          cancelled_at?: string | null
           competitive_position_score?: number | null
           created_at?: string
           description?: string | null
           design_type?: string | null
+          failure_reason?: string | null
           id?: string
           implementation_timeline_weeks?: number | null
           knowledge_sources_used?: number | null
+          last_retry_at?: string | null
+          retry_count?: number | null
           revenue_confidence_level?: number | null
           revenue_potential_annual?: number | null
           status?: string
           target_audience?: string | null
+          timeout_at?: string | null
           title?: string
           updated_at?: string
           user_id: string
@@ -58,17 +68,22 @@ export type Database = {
           analysis_prompt?: string | null
           business_goals?: string[] | null
           business_impact_score?: number | null
+          cancelled_at?: string | null
           competitive_position_score?: number | null
           created_at?: string
           description?: string | null
           design_type?: string | null
+          failure_reason?: string | null
           id?: string
           implementation_timeline_weeks?: number | null
           knowledge_sources_used?: number | null
+          last_retry_at?: string | null
+          retry_count?: number | null
           revenue_confidence_level?: number | null
           revenue_potential_annual?: number | null
           status?: string
           target_audience?: string | null
+          timeout_at?: string | null
           title?: string
           updated_at?: string
           user_id?: string
@@ -81,10 +96,12 @@ export type Database = {
           analysis_context: string | null
           analysis_id: string
           annotations: Json
+          cancelled_by_user: boolean | null
           confidence_weights: Json | null
           created_at: string
           enhanced_context: Json | null
           enhanced_prompt_data: Json | null
+          error_details: Json | null
           google_vision_data: Json | null
           id: string
           images: string[]
@@ -100,6 +117,7 @@ export type Database = {
           research_citations: string[] | null
           stage_timing: Json | null
           synthesis_metadata: Json | null
+          timeout_occurred: boolean | null
           total_annotations: number | null
           updated_at: string
           user_id: string
@@ -112,10 +130,12 @@ export type Database = {
           analysis_context?: string | null
           analysis_id: string
           annotations?: Json
+          cancelled_by_user?: boolean | null
           confidence_weights?: Json | null
           created_at?: string
           enhanced_context?: Json | null
           enhanced_prompt_data?: Json | null
+          error_details?: Json | null
           google_vision_data?: Json | null
           id?: string
           images?: string[]
@@ -131,6 +151,7 @@ export type Database = {
           research_citations?: string[] | null
           stage_timing?: Json | null
           synthesis_metadata?: Json | null
+          timeout_occurred?: boolean | null
           total_annotations?: number | null
           updated_at?: string
           user_id: string
@@ -143,10 +164,12 @@ export type Database = {
           analysis_context?: string | null
           analysis_id?: string
           annotations?: Json
+          cancelled_by_user?: boolean | null
           confidence_weights?: Json | null
           created_at?: string
           enhanced_context?: Json | null
           enhanced_prompt_data?: Json | null
+          error_details?: Json | null
           google_vision_data?: Json | null
           id?: string
           images?: string[]
@@ -162,6 +185,7 @@ export type Database = {
           research_citations?: string[] | null
           stage_timing?: Json | null
           synthesis_metadata?: Json | null
+          timeout_occurred?: boolean | null
           total_annotations?: number | null
           updated_at?: string
           user_id?: string
@@ -674,12 +698,25 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      analysis_health: {
+        Row: {
+          avg_duration_seconds: number | null
+          count: number | null
+          last_hour_count: number | null
+          latest_created: string | null
+          status: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       binary_quantize: {
         Args: { "": string } | { "": unknown }
         Returns: unknown
+      }
+      cancel_analysis: {
+        Args: { analysis_id: string; user_id: string }
+        Returns: boolean
       }
       check_analysis_limit: {
         Args: { p_user_id: string }
@@ -782,6 +819,10 @@ export type Database = {
           effectiveness_score: number
           similarity: number
         }[]
+      }
+      reset_stuck_analyses: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       sparsevec_out: {
         Args: { "": unknown }

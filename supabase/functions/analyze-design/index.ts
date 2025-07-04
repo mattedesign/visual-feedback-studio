@@ -9,6 +9,10 @@ const corsHeaders = {
 
 console.log('🚀 Enhanced Claude-Oriented UX Analysis Pipeline - Starting up');
 
+// Analysis timeout configuration
+const ANALYSIS_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+const STAGE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes per stage
+
 // Claude-Oriented Pipeline Core Types
 interface EnhancedAnalysisInput {
   problemStatement: string;
@@ -554,6 +558,86 @@ function synthesizeMultiModelResults(strategistData: any, parallelResults: any[]
   };
 }
 
+// Timeout and cancellation utilities
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      reject(new Error(`${operation} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+    
+    promise
+      .then(result => {
+        clearTimeout(timeoutId);
+        resolve(result);
+      })
+      .catch(error => {
+        clearTimeout(timeoutId);
+        reject(error);
+      });
+  });
+}
+
+async function checkCancellation(supabase: any, analysisId?: string): Promise<boolean> {
+  if (!analysisId) return false;
+  
+  try {
+    const { data, error } = await supabase
+      .from('analyses')
+      .select('status, cancelled_at')
+      .eq('id', analysisId)
+      .single();
+    
+    if (error) {
+      console.warn('Failed to check cancellation status:', error);
+      return false;
+    }
+    
+    return data?.status === 'cancelled' || data?.cancelled_at !== null;
+  } catch (error) {
+    console.warn('Error checking cancellation:', error);
+    return false;
+  }
+}
+
+async function updateAnalysisStatus(
+  supabase: any, 
+  analysisId: string | undefined, 
+  status: string, 
+  failureReason?: string,
+  errorDetails?: any
+): Promise<void> {
+  if (!analysisId) return;
+  
+  try {
+    const updateData: any = {
+      status,
+      updated_at: new Date().toISOString()
+    };
+    
+    if (failureReason) {
+      updateData.failure_reason = failureReason;
+    }
+    
+    if (status === 'analyzing') {
+      updateData.timeout_at = new Date(Date.now() + ANALYSIS_TIMEOUT_MS).toISOString();
+    }
+    
+    await supabase.from('analyses').update(updateData).eq('id', analysisId);
+    
+    // Also update analysis results if there are error details
+    if (errorDetails && status === 'failed') {
+      await supabase.from('analysis_results').upsert({
+        analysis_id: analysisId,
+        error_details: errorDetails,
+        timeout_occurred: failureReason?.includes('timeout') || false,
+        cancelled_by_user: status === 'cancelled'
+      });
+    }
+  } catch (error) {
+    console.error('Failed to update analysis status:', error);
+  }
+}
+
 // Main analysis pipeline
 serve(async (req) => {
   const requestId = crypto.randomUUID().substring(0, 8);
@@ -627,20 +711,59 @@ serve(async (req) => {
 
     const pipelineStart = Date.now();
     
-    // Phase 1: Enhanced Vision Analysis
+    // Set analysis status to analyzing with timeout
+    await updateAnalysisStatus(supabase, requestData.analysisId, 'analyzing');
+    
+    // Phase 1: Enhanced Vision Analysis (with timeout and cancellation check)
     console.log('👁️ Phase 1: Enhanced Vision Analysis');
     const visionStartTime = Date.now();
-    const visionAnalysis = await executeEnhancedVisionAnalysis(requestData.imageUrls);
+    
+    // Check cancellation before vision analysis
+    if (await checkCancellation(supabase, requestData.analysisId)) {
+      await updateAnalysisStatus(supabase, requestData.analysisId, 'cancelled', 'Analysis cancelled by user');
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Analysis was cancelled',
+        cancelled: true
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    const visionAnalysis = await withTimeout(
+      executeEnhancedVisionAnalysis(requestData.imageUrls),
+      STAGE_TIMEOUT_MS,
+      'Vision Analysis'
+    );
     const visionTime = Date.now() - visionStartTime;
     
-    // Phase 2: Enhanced RAG Knowledge Retrieval  
+    // Phase 2: Enhanced RAG Knowledge Retrieval (with timeout and cancellation check)
     console.log('🔍 Phase 2: Enhanced RAG Knowledge Retrieval');
     const ragStartTime = Date.now();
-    const ragResults = await executeEnhancedRAG(
-      requestData.problemStatement,
-      visionAnalysis,
-      requestData.industryContext || 'technology',
-      supabase
+    
+    // Check cancellation before RAG
+    if (await checkCancellation(supabase, requestData.analysisId)) {
+      await updateAnalysisStatus(supabase, requestData.analysisId, 'cancelled', 'Analysis cancelled by user');
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Analysis was cancelled',
+        cancelled: true
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    const ragResults = await withTimeout(
+      executeEnhancedRAG(
+        requestData.problemStatement,
+        visionAnalysis,
+        requestData.industryContext || 'technology',
+        supabase
+      ),
+      STAGE_TIMEOUT_MS,
+      'RAG Knowledge Retrieval'
     );
     const ragTime = Date.now() - ragStartTime;
     
@@ -652,9 +775,22 @@ serve(async (req) => {
       ragResults
     );
     
-    // Phase 4: Multi-Model Orchestrated Analysis
+    // Phase 4: Multi-Model Orchestrated Analysis (with timeout and cancellation check)
     console.log('🎭 Phase 4: Multi-Model Orchestrated Analysis');
     const strategistStartTime = Date.now();
+    
+    // Check cancellation before strategist analysis
+    if (await checkCancellation(supabase, requestData.analysisId)) {
+      await updateAnalysisStatus(supabase, requestData.analysisId, 'cancelled', 'Analysis cancelled by user');
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Analysis was cancelled',
+        cancelled: true
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
     
     const enhancedInput = {
       problemStatement: requestData.problemStatement,
@@ -674,7 +810,11 @@ serve(async (req) => {
       competitorPatterns: ragResults.competitiveIntelligence
     };
     
-    const strategistResults = await executeMultiModelOrchestration(enhancedInput, supabase);
+    const strategistResults = await withTimeout(
+      executeMultiModelOrchestration(enhancedInput, supabase),
+      STAGE_TIMEOUT_MS,
+      'Multi-Model Orchestration'
+    );
     const strategistTime = Date.now() - strategistStartTime;
     
     // Phase 5: Final Synthesis and Business Impact
@@ -763,10 +903,52 @@ serve(async (req) => {
 
   } catch (error) {
     console.error(`💥 [${requestId}] Enhanced pipeline error:`, error);
+    
+    // Update analysis status with error details
+    const errorDetails = {
+      error: error instanceof Error ? error.message : 'Enhanced analysis pipeline failed',
+      stage: 'pipeline_execution',
+      timestamp: new Date().toISOString(),
+      requestId,
+      timeout: error.message?.includes('timed out'),
+      stack: error instanceof Error ? error.stack : undefined
+    };
+    
+    // Extract analysis ID from request data if available
+    let analysisId;
+    try {
+      const rawBody = await req.text();
+      const requestData = JSON.parse(rawBody);
+      analysisId = requestData.analysisId;
+    } catch (parseError) {
+      console.warn('Could not extract analysis ID for error reporting');
+    }
+    
+    // Initialize supabase for error reporting
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL');
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      
+      if (supabaseUrl && supabaseServiceKey) {
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+        await updateAnalysisStatus(
+          supabase, 
+          analysisId, 
+          'failed', 
+          error instanceof Error ? error.message : 'Pipeline execution failed',
+          errorDetails
+        );
+      }
+    } catch (statusUpdateError) {
+      console.error('Failed to update analysis status after error:', statusUpdateError);
+    }
+    
     return new Response(JSON.stringify({
       success: false,
       error: error instanceof Error ? error.message : 'Enhanced analysis pipeline failed',
-      fallbackMode: true
+      errorDetails,
+      fallbackMode: true,
+      requestId
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

@@ -6,6 +6,9 @@ import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { analysisErrorHandler } from '@/utils/analysisErrorHandler';
 import { toast } from 'sonner';
 import { EnhancedErrorHandler } from './components/EnhancedErrorHandler';
+import { useAnalysisCancellation } from '@/hooks/analysis/useAnalysisCancellation';
+import { Button } from '@/components/ui/button';
+import { XCircle } from 'lucide-react';
 
 interface AnalyzingStepProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -15,6 +18,8 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
   const consolidatedAnalysis = useConsolidatedAnalysis();
   const analysisStartedRef = useRef(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [currentAnalysisId, setCurrentAnalysisId] = useState<string | null>(null);
+  const { cancelAnalysis, cancelling } = useAnalysisCancellation();
   
   // Feature flags
   const useConsolidatedPipeline = useFeatureFlag('consolidated-analysis-pipeline');
@@ -66,6 +71,9 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
           timestamp: new Date().toISOString(),
           totalTime: Date.now() - (performance.now() || 0)
         });
+
+        // Store analysis ID for potential cancellation
+        setCurrentAnalysisId(result.analysisId);
 
         // ✅ FIX 5: Enhanced debugging for workflow state update
         if (result.annotations) {
@@ -205,16 +213,37 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
           
           {/* Cancel button for user control */}
           {consolidatedAnalysis.isAnalyzing && (
-            <div className="text-center">
-              <button
-                onClick={() => {
-                  consolidatedAnalysis.cancelAnalysis();
-                  workflow.goToStep('annotate');
+            <div className="text-center space-y-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    // Cancel both locally and in database
+                    consolidatedAnalysis.cancelAnalysis();
+                    
+                    if (currentAnalysisId) {
+                      const cancelled = await cancelAnalysis(currentAnalysisId);
+                      if (cancelled) {
+                        toast.success('Analysis cancelled successfully');
+                        workflow.goToStep('annotate');
+                      }
+                    } else {
+                      // If no analysis ID, just cancel locally
+                      workflow.goToStep('annotate');
+                    }
+                  } catch (error) {
+                    console.error('Failed to cancel analysis:', error);
+                    // Still go back even if cancellation failed
+                    workflow.goToStep('annotate');
+                  }
                 }}
-                className="text-gray-400 hover:text-white text-sm underline"
+                disabled={cancelling}
+                className="flex items-center gap-2 text-red-400 hover:text-red-300 border-red-400/20 hover:border-red-300/20"
               >
-                Cancel Analysis
-              </button>
+                <XCircle className="h-4 w-4" />
+                {cancelling ? 'Cancelling...' : 'Cancel Analysis'}
+              </Button>
             </div>
           )}
 
