@@ -224,7 +224,8 @@ function processGoogleVisionResponse(visionData, analysisId) {
 }
 
 serve(async (req) => {
-  console.log('📨 Request received:', {
+  const requestId = crypto.randomUUID().substring(0, 8);
+  console.log(`📨 [${requestId}] Request received:`, {
     method: req.method,
     url: req.url,
     timestamp: new Date().toISOString()
@@ -233,23 +234,45 @@ serve(async (req) => {
   try {
     // Handle CORS
     if (req.method === 'OPTIONS') {
+      console.log(`🔍 [${requestId}] CORS preflight request`);
       return new Response(null, { headers: corsHeaders });
     }
 
     if (req.method !== 'POST') {
+      console.log(`❌ [${requestId}] Invalid method: ${req.method}`);
       return new Response(JSON.stringify({ error: 'Method not allowed' }), {
         status: 405,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    const requestData = await req.json();
-    console.log('📊 Request data:', {
+    // Parse request body with error handling
+    let requestData;
+    try {
+      const rawBody = await req.text();
+      console.log(`📝 [${requestId}] Raw request body length: ${rawBody.length}`);
+      requestData = JSON.parse(rawBody);
+    } catch (parseError) {
+      console.error(`❌ [${requestId}] Failed to parse request body:`, parseError);
+      return new Response(JSON.stringify({ 
+        error: 'Invalid JSON in request body',
+        details: parseError.message 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    console.log(`📊 [${requestId}] Request data parsed:`, {
       hasImageUrls: !!requestData.imageUrls,
       imageCount: requestData.imageUrls?.length || 0,
       hasAnalysisPrompt: !!requestData.analysisPrompt,
+      promptLength: requestData.analysisPrompt?.length || 0,
       analysisId: requestData.analysisId,
-      enableGoogleVision: requestData.enableGoogleVision
+      enableGoogleVision: requestData.enableGoogleVision,
+      skipClaudeAnalysis: requestData.skipClaudeAnalysis,
+      ragEnabled: requestData.ragEnabled,
+      keys: Object.keys(requestData)
     });
     
     // Basic validation

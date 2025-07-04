@@ -101,39 +101,75 @@ const analyzeDesign = async (request: AnalyzeDesignRequest): Promise<AnalyzeDesi
       contextComponents.push(`User Challenge: ${userContext.trim()}`);
     }
     
-    // Add vision insights
+    // Add vision insights with more detail
     if (visionOutput?.uiElements?.length > 0) {
       const elementsDesc = visionOutput.uiElements
-        .slice(0, 5)
-        .map(el => `${el.type} (${Math.round(el.confidence * 100)}% confidence)`)
-        .join(', ');
+        .slice(0, 10) // Increased from 5 to 10
+        .map(el => `${el.type} (${Math.round(el.confidence * 100)}% confidence): ${el.description}`)
+        .join('; ');
       contextComponents.push(`Visual Elements Detected: ${elementsDesc}`);
     }
     
+    // Add more comprehensive text content
     if (visionOutput?.textContent?.length > 0) {
       const textDesc = visionOutput.textContent
-        .slice(0, 3)
-        .map(text => text.text.substring(0, 30))
+        .slice(0, 20) // Increased from 3 to 20
+        .map(text => text.text.substring(0, 50)) // Increased from 30 to 50
         .join(', ');
-      contextComponents.push(`Text Content: ${textDesc}`);
+      contextComponents.push(`Text Content Found: ${textDesc}`);
     }
     
+    // Add layout and industry context
+    if (visionOutput?.layout) {
+      contextComponents.push(`Layout Type: ${visionOutput.layout.type} (${Math.round(visionOutput.layout.confidence * 100)}% confidence) - ${visionOutput.layout.description}`);
+    }
+    
+    if (visionOutput?.industry) {
+      contextComponents.push(`Industry Context: ${visionOutput.industry.industry} (${Math.round(visionOutput.industry.confidence * 100)}% confidence), Indicators: ${visionOutput.industry.indicators.join(', ')}`);
+    }
+    
+    // Add color palette with more detail
     if (visionOutput?.colors?.dominantColors?.length > 0) {
-      contextComponents.push(`Color Palette: ${visionOutput.colors.dominantColors.slice(0, 3).join(', ')}`);
+      const colorInfo = `Primary: ${visionOutput.colors.colorPalette.primary}, Secondary: ${visionOutput.colors.colorPalette.secondary}, Accent: ${visionOutput.colors.colorPalette.accent}`;
+      contextComponents.push(`Color Analysis: ${colorInfo}, Accessibility: ${visionOutput.colors.colorContrast.accessibility} compliant`);
     }
     
-    const fullContext = contextComponents.join('\n');
+    // Add device type context
+    if (visionOutput?.deviceType) {
+      contextComponents.push(`Device Type: ${visionOutput.deviceType.type} (${visionOutput.deviceType.dimensions.width}x${visionOutput.deviceType.dimensions.height})`);
+    }
+    
+    // Ensure we have substantial context
+    const fullContext = contextComponents.join('\n\n');
+    
+    // Add fallback comprehensive context if still too short
+    let enhancedContext = fullContext;
+    if (fullContext.length < 300) {
+      enhancedContext = `${fullContext}
+
+Analysis Focus: Provide comprehensive UX analysis focusing on:
+1. Visual hierarchy and information architecture
+2. User interface patterns and consistency
+3. Accessibility and usability improvements
+4. Content organization and readability
+5. Call-to-action placement and effectiveness
+6. Mobile responsiveness and device optimization
+7. Color contrast and visual accessibility
+8. Navigation clarity and user flow
+
+Please analyze the design(s) with attention to modern UX principles and best practices.`;
+    }
     
     // ✅ STEP 3: Context Validation
-    if (!fullContext || fullContext.length < 100) {
-      throw new Error("⚠️ Full context is missing — RAG would fail.");
+    if (!enhancedContext || enhancedContext.length < 100) {
+      throw new Error("⚠️ Enhanced context is missing — RAG would fail.");
     }
     
-    console.log('✅ Full context assembled:', {
-      totalLength: fullContext.length,
+    console.log('✅ Enhanced context assembled:', {
+      totalLength: enhancedContext.length,
       components: contextComponents.length,
       hasVisionData: !!visionOutput,
-      preview: fullContext.substring(0, 150) + '...'
+      preview: enhancedContext.substring(0, 150) + '...'
     });
 
     // ✅ STEP 4: Payload Validation (before calling analyze-design)
@@ -154,10 +190,10 @@ const analyzeDesign = async (request: AnalyzeDesignRequest): Promise<AnalyzeDesi
 
     // ✅ STEP 5: RAG Readiness Check
     console.log('🛡️ Step 5: Checking RAG readiness...');
-    const ragReady = fullContext && fullContext.length > 300;
+    const ragReady = enhancedContext && enhancedContext.length > 300;
     
     console.log('📊 RAG readiness assessment:', {
-      contextLength: fullContext.length,
+      contextLength: enhancedContext.length,
       ragReady,
       hasVisionData: !!visionOutput,
       hasUserContext: !!userContext?.trim()
@@ -168,19 +204,19 @@ const analyzeDesign = async (request: AnalyzeDesignRequest): Promise<AnalyzeDesi
       imageUrls: imageUrls,
       imageUrl: imageUrls[0], // Include both for compatibility
       analysisId: request.analysisId,
-      analysisPrompt: fullContext, // Use enhanced context instead of raw prompt
+      analysisPrompt: enhancedContext, // Use enhanced context instead of raw prompt
       designType: request.designType,
       isComparative: request.isComparative,
       ragEnabled: ragReady, // Only enable RAG if context is sufficient
       visionOutput: visionOutput, // Include vision data for downstream processing
-      context: fullContext,
+      context: enhancedContext,
       enhancedAnalysis: true
     };
 
     console.log('📡 Step 6: Calling analyze-design with enhanced payload:', {
       analysisId: request.analysisId,
       imageCount: imageUrls.length,
-      contextLength: fullContext.length,
+      contextLength: enhancedContext.length,
       ragEnabled: ragReady,
       hasVisionOutput: !!visionOutput,
       payloadKeys: Object.keys(payload)
