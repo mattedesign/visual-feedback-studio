@@ -97,18 +97,19 @@ export const CenteredAnalysisInterface: React.FC<CenteredAnalysisInterfaceProps>
       return;
     }
     
-    console.log('🚀 Moving to annotation step:', {
+    if (!analysisMessage.trim()) {
+      toast.error('Please describe what you want me to analyze');
+      return;
+    }
+    
+    console.log('🚀 Going directly to analysis (simplified flow):', {
       contextLength: analysisMessage.length,
       imageCount: workflow.selectedImages.length
     });
     
-    // Set context if provided
-    if (analysisMessage.trim()) {
-      workflow.setAnalysisContext(analysisMessage);
-    }
-    
-    // Go to annotation step to use FigmaAnnotateLayout
-    workflow.goToStep('annotate');
+    // Set context and go directly to analyzing
+    workflow.setAnalysisContext(analysisMessage);
+    workflow.goToStep('analyzing');
   };
 
   const handleSkipAnnotations = () => {
@@ -377,7 +378,7 @@ export const CenteredAnalysisInterface: React.FC<CenteredAnalysisInterfaceProps>
                     {workflow.selectedImages.length} design{workflow.selectedImages.length !== 1 ? 's' : ''} ready for analysis
                   </h3>
                   <p className="text-muted-foreground">
-                    Click on any image to add annotations, or start your analysis below
+                    Describe what you'd like me to analyze below, then click "Start Analysis"
                   </p>
                 </div>
               </div>
@@ -499,18 +500,10 @@ export const CenteredAnalysisInterface: React.FC<CenteredAnalysisInterfaceProps>
                 <div className="flex items-center gap-2">
                   <Button 
                     onClick={handleNextStep}
-                    disabled={workflow.selectedImages.length === 0 || workflow.isAnalyzing}
-                    className="px-6"
-                  >
-                    {workflow.isAnalyzing ? 'Processing...' : 'Next: Add Annotations'}
-                  </Button>
-                  <Button 
-                    onClick={handleSkipAnnotations}
                     disabled={!canAnalyze || workflow.isAnalyzing}
-                    variant="outline"
-                    className="px-6"
+                    className="px-8"
                   >
-                    Skip & Analyze
+                    {workflow.isAnalyzing ? 'Analyzing...' : 'Start Analysis'}
                   </Button>
                 </div>
               </div>

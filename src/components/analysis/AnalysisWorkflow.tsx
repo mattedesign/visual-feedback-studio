@@ -59,10 +59,14 @@ export const AnalysisWorkflow = () => {
     return <CenteredAnalysisInterface workflow={workflow} />;
   }
 
-  // ✅ STREAMLINED: Use simple annotation step
+  // ✅ SIMPLIFIED: Skip annotation step - go directly to analyzing
   if (workflow.currentStep === 'annotate') {
-    console.log('✅ Using simple annotation step for:', workflow.currentStep);
-    return <AnnotateStep workflow={workflow} />;
+    console.log('✅ Skipping annotation step, going directly to analysis');
+    // Automatically proceed to analyzing if we have images and context
+    if (workflow.selectedImages.length > 0 && workflow.analysisContext.trim()) {
+      workflow.goToStep('analyzing');
+    }
+    return <CenteredAnalysisInterface workflow={workflow} />;
   }
 
   const renderCurrentStep = () => {
