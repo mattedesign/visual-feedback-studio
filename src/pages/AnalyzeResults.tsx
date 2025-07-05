@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Loader2, CheckCircle, XCircle, AlertCircle, ArrowLeft } from 'lucide-react'
+import { EnhancedAnalysisDisplay } from '@/components/analyze/patterns/EnhancedAnalysisDisplay'
 
 export default function AnalyzeResults() {
   const params = useParams()
@@ -144,6 +145,56 @@ export default function AnalyzeResults() {
     hasZoneFeedback: !!results?.imageAnalysis?.[selectedImage]?.zoneFeedback
   })
 
+  // Transform results to match EnhancedAnalysisDisplay interface
+  const transformResultsForDisplay = (rawResults: any) => {
+    // Handle multi-model results
+    if (isMultiModel && rawResults) {
+      return {
+        summary: rawResults.summary?.overallAssessment || 'Analysis completed',
+        insights: rawResults.insights || [],
+        recommendations: [
+          ...(rawResults.summary?.keyStrengths || []).map((s: string) => `Strength: ${s}`),
+          ...(rawResults.summary?.quickWins || []).map((w: string) => `Quick Win: ${w}`),
+          ...(rawResults.summary?.criticalIssues || []).map((i: string) => `Issue: ${i}`)
+        ],
+        confidence_score: rawResults.metadata?.confidence || 0.8,
+        pattern_validation_rate: rawResults.metadata?.patternValidationRate || 0.75
+      }
+    }
+    
+    // Handle single model (Claude) results
+    return {
+      summary: rawResults?.summary?.overallAssessment || 'Analysis completed',
+      insights: [
+        ...(rawResults?.summary?.keyStrengths || []).map((s: string, idx: number) => ({
+          type: 'strength',
+          severity: 'low',
+          description: s,
+          pattern: 'UX Best Practice'
+        })),
+        ...(rawResults?.summary?.criticalIssues || []).map((i: string, idx: number) => ({
+          type: 'issue',
+          severity: 'high',
+          description: i,
+          pattern: 'Anti-pattern'
+        })),
+        ...(rawResults?.summary?.quickWins || []).map((w: string, idx: number) => ({
+          type: 'opportunity',
+          severity: 'medium',
+          description: w,
+          pattern: 'Quick Win'
+        }))
+      ],
+      recommendations: [
+        ...(rawResults?.recommendations?.immediate || []),
+        ...(rawResults?.recommendations?.shortTerm || []),
+        ...(rawResults?.recommendations?.longTerm || [])
+      ],
+      confidence_score: 0.85,
+      pattern_validation_rate: 0.7
+    }
+  }
+
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       {/* Header */}
@@ -179,208 +230,15 @@ export default function AnalyzeResults() {
           <TabsTrigger value="annotations">Image Feedback</TabsTrigger>
         </TabsList>
 
-        {/* Summary Tab */}
+        {/* Summary Tab - Now using EnhancedAnalysisDisplay */}
         <TabsContent value="summary" className="space-y-6">
-          {isMultiModel && results ? (
-            <div className="space-y-4">
-              {/* Confidence Badge */}
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-semibold">Multi-Model Analysis</h2>
-                {results.metadata?.confidence && (
-                  <Badge variant="outline" className="text-green-600">
-                    {Math.round(results.metadata.confidence * 100)}% Confidence
-                  </Badge>
-                )}
-              </div>
-              
-              {/* Models Used */}
-              {results.metadata?.modelsUsed && (
-                <div className="text-sm text-gray-600">
-                  Analysis by: {results.metadata.modelsUsed.join(', ')}
-                </div>
-              )}
-              
-              {/* Summary Card */}
-              <Card className="p-6">
-                <h3 className="font-semibold mb-3">Analysis Summary</h3>
-                <p className="text-muted-foreground whitespace-pre-wrap">
-                  {results.summary?.overallAssessment || 'Analysis completed'}
-                </p>
-              </Card>
-              
-              {/* Key Findings Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Strengths */}
-                <Card className="p-6 border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
-                  <h3 className="font-semibold text-green-800 dark:text-green-200 mb-3 flex items-center">
-                    <CheckCircle className="h-5 w-5 mr-2" />
-                    Key Strengths
-                  </h3>
-                  <ul className="space-y-2">
-                    {results.summary?.keyStrengths?.map((strength: string, idx: number) => (
-                      <li key={idx} className="text-green-700 dark:text-green-300 text-sm">
-                        • {strength}
-                      </li>
-                    ))}
-                  </ul>
-                </Card>
-
-                {/* Critical Issues */}
-                <Card className="p-6 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
-                  <h3 className="font-semibold text-red-800 dark:text-red-200 mb-3 flex items-center">
-                    <XCircle className="h-5 w-5 mr-2" />
-                    Critical Issues
-                  </h3>
-                  <ul className="space-y-2">
-                    {results.summary?.criticalIssues?.map((issue: string, idx: number) => (
-                      <li key={idx} className="text-red-700 dark:text-red-300 text-sm">
-                        • {issue}
-                      </li>
-                    ))}
-                  </ul>
-                </Card>
-
-                {/* Quick Wins */}
-                <Card className="p-6 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
-                  <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-3 flex items-center">
-                    <AlertCircle className="h-5 w-5 mr-2" />
-                    Quick Wins
-                  </h3>
-                  <ul className="space-y-2">
-                    {results.summary?.quickWins?.map((win: string, idx: number) => (
-                      <li key={idx} className="text-blue-700 dark:text-blue-300 text-sm">
-                        • {win}
-                      </li>
-                    ))}
-                  </ul>
-                </Card>
-              </div>
-
-              {/* Compound Insights (if available) */}
-              {results.insights && results.insights.length > 0 && (
-                <Card className="p-6">
-                  <h3 className="font-semibold mb-3">Detailed Insights</h3>
-                  {results.insights.slice(0, 5).map((insight: any, idx: number) => (
-                    <div key={idx} className="mb-4 p-4 bg-gray-50 rounded-lg last:mb-0">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">{insight.description}</p>
-                          {insight.evidence && (
-                            <div className="mt-2 text-xs text-gray-600">
-                              {insight.evidence.agreement_score && (
-                                <span>Agreement: {Math.round(insight.evidence.agreement_score * 100)}% • </span>
-                              )}
-                              {insight.evidence.perspectives && (
-                                <span>Sources: {insight.evidence.perspectives.length} models</span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        <Badge className={
-                          insight.severity === 'high' ? 'bg-red-100 text-red-800' :
-                          insight.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-blue-100 text-blue-800'
-                        }>
-                          {insight.severity}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </Card>
-              )}
-            </div>
-          ) : (
-            <>
-              {/* Single Model Results (Claude) */}
-              {/* Overall Assessment */}
-              <Card className="p-6">
-                <h2 className="text-2xl font-semibold mb-4">Overall Assessment</h2>
-                <p className="text-muted-foreground whitespace-pre-wrap">{results?.summary?.overallAssessment}</p>
-              </Card>
-
-              {/* Key Findings Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Strengths */}
-                <Card className="p-6 border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
-                  <h3 className="font-semibold text-green-800 dark:text-green-200 mb-3 flex items-center">
-                    <CheckCircle className="h-5 w-5 mr-2" />
-                    Key Strengths
-                  </h3>
-                  <ul className="space-y-2">
-                    {results?.summary?.keyStrengths?.map((strength: string, idx: number) => (
-                      <li key={idx} className="text-green-700 dark:text-green-300 text-sm">
-                        • {strength}
-                      </li>
-                    ))}
-                  </ul>
-                </Card>
-
-                {/* Critical Issues */}
-                <Card className="p-6 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
-                  <h3 className="font-semibold text-red-800 dark:text-red-200 mb-3 flex items-center">
-                    <XCircle className="h-5 w-5 mr-2" />
-                    Critical Issues
-                  </h3>
-                  <ul className="space-y-2">
-                    {results?.summary?.criticalIssues?.map((issue: string, idx: number) => (
-                      <li key={idx} className="text-red-700 dark:text-red-300 text-sm">
-                        • {issue}
-                      </li>
-                    ))}
-                  </ul>
-                </Card>
-
-                {/* Quick Wins */}
-                <Card className="p-6 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
-                  <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-3 flex items-center">
-                    <AlertCircle className="h-5 w-5 mr-2" />
-                    Quick Wins
-                  </h3>
-                  <ul className="space-y-2">
-                    {results?.summary?.quickWins?.map((win: string, idx: number) => (
-                      <li key={idx} className="text-blue-700 dark:text-blue-300 text-sm">
-                        • {win}
-                      </li>
-                    ))}
-                  </ul>
-                </Card>
-              </div>
-
-              {/* Recommendations */}
-              <Card className="p-6">
-                <h2 className="text-2xl font-semibold mb-4">Recommendations</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div>
-                    <h4 className="font-medium text-foreground mb-2">Immediate Actions</h4>
-                    <ul className="space-y-1">
-                      {results?.recommendations?.immediate?.map((rec: string, idx: number) => (
-                        <li key={idx} className="text-sm text-muted-foreground">• {rec}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-foreground mb-2">Short Term (1-2 weeks)</h4>
-                    <ul className="space-y-1">
-                      {results?.recommendations?.shortTerm?.map((rec: string, idx: number) => (
-                        <li key={idx} className="text-sm text-muted-foreground">• {rec}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-foreground mb-2">Long Term (1-3 months)</h4>
-                    <ul className="space-y-1">
-                      {results?.recommendations?.longTerm?.map((rec: string, idx: number) => (
-                        <li key={idx} className="text-sm text-muted-foreground">• {rec}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </Card>
-            </>
-          )}
+          <EnhancedAnalysisDisplay 
+            results={transformResultsForDisplay(results)}
+            isMultiModel={isMultiModel}
+          />
         </TabsContent>
 
-        {/* Annotations Tab - UPDATED FOR ZONE FEEDBACK */}
+        {/* Annotations Tab - UNCHANGED */}
         <TabsContent value="annotations">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Image Display */}
