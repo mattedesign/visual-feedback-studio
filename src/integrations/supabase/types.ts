@@ -722,6 +722,10 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: boolean
       }
+      emergency_cleanup_stuck_analyses: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       halfvec_avg: {
         Args: { "": number[] }
         Returns: unknown
