@@ -159,103 +159,66 @@ export const useConsolidatedAnalysis = () => {
   }, [isAnalyzing, simulatePhaseProgress, updateProgress]);
 
   const executeAnalysisSteps = async (input: AnalysisInput): Promise<AnalysisResult> => {
-    // 🔥 STREAMLINED: Reduced to 3 phases, 30 seconds total max
+    console.log('🚀 Starting simplified analysis flow');
     
-    // Phase 1: Quick prep (5 seconds)
+    // Phase 1: Quick prep and create analysis record
     updateProgress({ phase: 'uploading', progress: 0, message: 'Preparing analysis...' });
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    updateProgress({ progress: 15 });
     
-    // Phase 2: Create analysis record immediately
-    updateProgress({ phase: 'processing', progress: 20, message: 'Creating analysis record...' });
-    
-    const analysisId = await analysisErrorHandler.withRetry(
-      () => analysisService.createAnalysis(),
-      { maxRetries: 1, baseDelay: 1000, maxDelay: 2000, exponentialBackoff: false },
-      {
-        component: 'ConsolidatedAnalysis',
-        operation: 'createAnalysis'
-      }
-    );
-
+    const analysisId = await analysisService.createAnalysis();
     if (!analysisId) {
       throw new Error('Failed to create analysis record');
     }
 
     console.log('✅ Analysis record created:', analysisId);
-    updateProgress({ progress: 35 });
+    updateProgress({ progress: 20, message: 'Analysis record created' });
     
-    // Get user for database operations
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
-
-    // Phase 3: Execute streamlined AI analysis (20 seconds max)
+    // Phase 2: Execute simple Claude analysis
     updateProgress({ 
       phase: 'analysis', 
       progress: 40, 
-      message: 'Running streamlined AI analysis...',
-      researchSourcesFound: 5 // Simulate research
+      message: 'Running Claude analysis...'
     });
     
-    const analysisResult = await analysisErrorHandler.withTimeout(
-      analysisService.analyzeDesign({
-        imageUrls: input.imageUrls,
-        analysisId,
-        analysisPrompt: input.analysisContext,
-        designType: 'web',
-        isComparative: input.imageUrls.length > 1,
-        ragEnhanced: true,
-        researchSourceCount: 5 // Reduced from 12
-      }),
-      25000, // 25 second timeout (reduced from 120s)
-      'ai-analysis'
-    ) as any; // Type assertion for now
+    const analysisResult = await analysisService.analyzeDesign({
+      imageUrls: input.imageUrls,
+      analysisId,
+      analysisPrompt: input.analysisContext,
+      designType: 'web',
+      isComparative: input.imageUrls.length > 1
+    });
 
     if (!analysisResult.success) {
-      throw new Error(analysisResult.error || 'AI analysis failed');
+      throw new Error(analysisResult.error || 'Analysis failed');
     }
 
-    console.log('✅ Streamlined AI analysis completed:', {
+    console.log('✅ Simple analysis completed:', {
       annotationCount: analysisResult.annotations?.length || 0,
-      researchEnhanced: analysisResult.researchEnhanced,
-      wellDoneReceived: !!analysisResult.wellDone,
-      processingTime: Date.now() - (analysisStartTime?.getTime() || Date.now())
+      modelUsed: 'claude-3-5-sonnet-20241022'
     });
 
-    // Phase 4: Finalize (5 seconds)
+    // Phase 3: Complete
     updateProgress({ 
-      phase: 'recommendations', 
-      progress: 85, 
-      message: 'Finalizing results...',
-      researchSourcesFound: analysisResult.knowledgeSourcesUsed || 5
+      phase: 'complete', 
+      progress: 100, 
+      message: 'Analysis complete!'
     });
-    
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Complete
-    updateProgress({ phase: 'complete', progress: 100, message: 'Analysis complete!' });
     
     const result = {
       success: true,
       annotations: analysisResult.annotations,
-      enhancedContext: analysisResult.researchEnhanced ? {
-        knowledgeSourcesUsed: analysisResult.knowledgeSourcesUsed || 0,
-        citations: analysisResult.researchCitations || []
-      } : undefined,
-      wellDone: analysisResult.wellDone,
-      consultationResults: null, // Skip consultation for speed
+      enhancedContext: undefined,
+      wellDone: null,
+      consultationResults: null,
       analysisId
     };
 
-    // 🔥 STREAMLINED: Direct navigation without strategist prompt
+    // Navigate to results
     if (result.success && result.analysisId) {
       console.log('✅ Analysis complete, redirecting to results');
       
       setTimeout(() => {
         window.location.href = `/analysis/${result.analysisId}?beta=true`;
-      }, 1500); // Quick redirect
+      }, 1000);
     }
     
     return result;

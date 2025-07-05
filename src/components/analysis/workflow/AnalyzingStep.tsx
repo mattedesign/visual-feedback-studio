@@ -26,17 +26,16 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
 
   const performAnalysis = async () => {
     if (analysisStartedRef.current || consolidatedAnalysis.isAnalyzing) {
-      console.log('⚠️ FIX 5: Analysis already in progress, skipping duplicate call');
+      console.log('⚠️ Analysis already in progress, skipping duplicate call');
       return;
     }
 
-    console.log('🚀 FIX 5: Starting consolidated analysis with enhanced debugging');
-    console.log('📊 FIX 5: Analysis start details:', {
+    console.log('🚀 Starting simplified analysis');
+    console.log('📊 Analysis details:', {
       imageCount: workflow.selectedImages.length,
       contextLength: workflow.analysisContext.length,
       hasContext: !!workflow.analysisContext.trim(),
-      timestamp: new Date().toISOString(),
-      images: workflow.selectedImages.map(url => url.substring(0, 50) + '...')
+      timestamp: new Date().toISOString()
     });
     analysisStartedRef.current = true;
 
@@ -50,13 +49,9 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
         throw new Error('No analysis context provided');
       }
 
-      console.log('📊 Analysis Configuration:', {
-        imageCount: workflow.selectedImages.length,
-        contextLength: workflow.analysisContext.length,
-        useConsolidatedPipeline
-      });
+      console.log('📊 Starting simplified analysis with consolidated pipeline');
 
-      // Execute analysis with new consolidated system
+      // Execute simplified analysis
       const result = await consolidatedAnalysis.executeAnalysis({
         imageUrls: workflow.selectedImages,
         analysisContext: workflow.analysisContext,
@@ -64,40 +59,32 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       });
 
       if (result.success && result.analysisId) {
-        console.log('✅ FIX 5: Consolidated analysis completed successfully:', {
+        console.log('✅ Simplified analysis completed:', {
           analysisId: result.analysisId,
           annotationCount: result.annotations?.length || 0,
-          hasWellDone: !!result.wellDone,
-          timestamp: new Date().toISOString(),
-          totalTime: Date.now() - (performance.now() || 0)
+          timestamp: new Date().toISOString()
         });
 
         // Store analysis ID for potential cancellation
         setCurrentAnalysisId(result.analysisId);
 
-        // ✅ FIX 5: Enhanced debugging for workflow state update
         if (result.annotations) {
-          console.log('✅ FIX 5: Setting AI annotations:', {
-            count: result.annotations.length,
-            firstAnnotation: result.annotations[0] ? {
-              id: result.annotations[0].id,
-              title: result.annotations[0].title,
-              hasCoordinates: !!(result.annotations[0].x && result.annotations[0].y)
-            } : null
+          console.log('✅ Setting AI annotations:', {
+            count: result.annotations.length
           });
           workflow.setAiAnnotations(result.annotations);
         }
 
         toast.success('Analysis complete! Redirecting to results...');
         
-        console.log('🔀 FIX 5: Navigating to results page:', `/analysis/${result.analysisId}?beta=true`);
+        console.log('🔀 Navigating to results page:', `/analysis/${result.analysisId}?beta=true`);
         
-        // Navigate to results with a brief delay
+        // Navigate to results
         setTimeout(() => {
           window.location.href = `/analysis/${result.analysisId}?beta=true`;
         }, 1000);
       } else {
-        console.error('❌ FIX 5: Analysis failed with detailed error:', {
+        console.error('❌ Analysis failed:', {
           success: result.success,
           error: result.error,
           analysisId: result.analysisId,
@@ -107,9 +94,8 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
       }
 
     } catch (error) {
-      console.error('❌ FIX 5: Consolidated analysis failed with detailed error:', {
+      console.error('❌ Simplified analysis failed:', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : 'No stack trace',
         timestamp: new Date().toISOString(),
         imageCount: workflow.selectedImages.length,
         contextLength: workflow.analysisContext.length
@@ -122,11 +108,10 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
         duration: 8000
       });
       
-      // ✅ FIX 5: Enhanced error recovery logging
-      console.log('🔄 FIX 5: Stopping analysis and resetting workflow state');
+      console.log('🔄 Stopping analysis and resetting workflow state');
       workflow.setIsAnalyzing(false);
     } finally {
-      console.log('🏁 FIX 5: Analysis process completed (success or failure)');
+      console.log('🏁 Analysis process completed');
       analysisStartedRef.current = false;
     }
   };
