@@ -152,10 +152,9 @@ Focus on actionable, specific recommendations that directly address the user's c
   }
 }
 
-// Save results to database
-async function saveResults(supabase: any, analysisId: string, claudeResult: any, request: SimpleRequest): Promise<void> {
-  // Get current user
-  const authHeader = Deno.env.get('AUTHORIZATION');
+// Save results to database  
+async function saveResults(supabase: any, analysisId: string, claudeResult: any, request: SimpleRequest, authHeader?: string): Promise<void> {
+  // Get current user from request header
   let userId = null;
   
   if (authHeader) {
@@ -208,7 +207,7 @@ async function saveResults(supabase: any, analysisId: string, claudeResult: any,
 }
 
 // Main analysis function
-async function executeSimpleAnalysis(request: SimpleRequest): Promise<any> {
+async function executeSimpleAnalysis(request: SimpleRequest, authHeader?: string): Promise<any> {
   console.log(`🚀 Starting simple analysis for ${request.analysisId}`);
 
   // Initialize Supabase
@@ -233,7 +232,7 @@ async function executeSimpleAnalysis(request: SimpleRequest): Promise<any> {
 
     // Save results
     console.log(`💾 Saving results...`);
-    await saveResults(supabase, request.analysisId, claudeResult, request);
+    await saveResults(supabase, request.analysisId, claudeResult, request, authHeader);
 
     console.log(`✅ Analysis completed successfully`);
 
@@ -286,13 +285,17 @@ serve(async (req) => {
     const body = await req.json();
     const validatedRequest = validateRequest(body);
     
+    // Get auth header from request
+    const authHeader = req.headers.get('authorization') || req.headers.get('Authorization');
+    
     console.log(`📝 Processing request:`, {
       analysisId: validatedRequest.analysisId.substring(0, 8),
       imageCount: validatedRequest.imageUrls.length,
-      promptLength: validatedRequest.analysisPrompt.length
+      promptLength: validatedRequest.analysisPrompt.length,
+      hasAuth: !!authHeader
     });
 
-    const result = await executeSimpleAnalysis(validatedRequest);
+    const result = await executeSimpleAnalysis(validatedRequest, authHeader);
 
     return new Response(
       JSON.stringify(result),
