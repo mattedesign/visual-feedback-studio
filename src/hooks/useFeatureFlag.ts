@@ -1,18 +1,18 @@
 
 export const useFeatureFlag = (flagName: string): boolean => {
-  // STREAMLINED: All enhanced features are now enabled by default
+  // SIMPLIFIED: Only essential features enabled for streamlined flow
   const flags = {
     'modular-analysis': true, // ENABLED: Advanced modular interface
-    'business-dashboard': true, // ENABLED: Business impact dashboard
+    'business-dashboard': false, // DISABLED: Simplified flow
     'separated-annotation-fields': true, // ENABLED: Separated title/description fields
-    'perplexity-integration': true, // ENABLED: Perplexity.ai integration
-    'multi-stage-pipeline': true, // ENABLED: Multi-stage analysis pipeline
+    'perplexity-integration': false, // DISABLED: Simplified flow without Perplexity
+    'multi-stage-pipeline': false, // DISABLED: Simplified flow
     'consolidated-analysis-pipeline': true, // ENABLED: Consolidated analysis system
     
     // Figma-Inspired UI Architecture - Always Enabled
     'figma-inspired-ui': true, // ENABLED: Figma-style panels and layout
-    'advanced-strategist': true, // ENABLED: Enhanced Claude integration
-    'multi-model-orchestration': true, // ENABLED: Parallel AI processing
+    'advanced-strategist': false, // DISABLED: Simplified flow with basic Claude
+    'multi-model-orchestration': false, // DISABLED: Single model approach
     
     // Enhanced Features - Always Enabled
     'interactive-annotations': true, // ENABLED: Figma-style annotation overlay

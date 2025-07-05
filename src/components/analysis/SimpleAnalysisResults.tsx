@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, Download, Share2 } from 'lucide-react';
-import { useFeatureFlag } from '@/hooks/useFeatureFlag';
+// Removed useFeatureFlag - simplified flow doesn't use feature flags
 import { PerplexityIndicator } from './workflow/components/PerplexityIndicator';
 
 interface SimpleAnalysisResultsProps {
@@ -15,7 +15,8 @@ export default function SimpleAnalysisResults({
   annotations = [], 
   onBack 
 }: SimpleAnalysisResultsProps) {
-  const isPerplexityEnabled = useFeatureFlag('perplexity-integration');
+  // SIMPLIFIED: Perplexity disabled for streamlined flow
+  const isPerplexityEnabled = false;
   
   return (
     <div className="min-h-screen bg-slate-900 p-6">

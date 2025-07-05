@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { useConsolidatedAnalysis } from '@/hooks/analysis/useConsolidatedAnalysis';
 import { SimpleProgressTracker } from '@/components/analysis/SimpleProgressTracker';
-import { useFeatureFlag } from '@/hooks/useFeatureFlag';
+// Removed useFeatureFlag - always use simplified consolidated pipeline
 import { analysisErrorHandler } from '@/utils/analysisErrorHandler';
 import { toast } from 'sonner';
 import { EnhancedErrorHandler } from './components/EnhancedErrorHandler';
@@ -21,8 +21,7 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
   const [currentAnalysisId, setCurrentAnalysisId] = useState<string | null>(null);
   const { cancelAnalysis, cancelling } = useAnalysisCancellation();
   
-  // Feature flags
-  const useConsolidatedPipeline = useFeatureFlag('consolidated-analysis-pipeline');
+  // Always use consolidated pipeline - simplified flow only
 
   const performAnalysis = async () => {
     if (analysisStartedRef.current || consolidatedAnalysis.isAnalyzing) {
@@ -164,97 +163,72 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
     );
   }
 
-  // Choose progress tracker based on feature flag
-  if (useConsolidatedPipeline) {
-    return (
-      <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center p-4">
-        <div className="w-full max-w-md space-y-6">
-          <SimpleProgressTracker
-            currentPhase={
-              consolidatedAnalysis.progress.phase === 'idle' ? 'uploading' :
-              consolidatedAnalysis.progress.phase === 'complete' ? 'complete' :
-              consolidatedAnalysis.progress.phase === 'research' ? 'processing' :
-              consolidatedAnalysis.progress.phase === 'analysis' ? 'processing' :
-              consolidatedAnalysis.progress.phase === 'validation' ? 'processing' :
-              consolidatedAnalysis.progress.phase === 'recommendations' ? 'processing' :
-              'processing'
-            }
-            progressPercentage={consolidatedAnalysis.progress.progress}
-            startTime={consolidatedAnalysis.analysisStartTime || new Date()}
-            statusMessage={consolidatedAnalysis.progress.message}
-            onComplete={() => {
-              console.log('🎉 Analysis completed - ready for results');
-            }}
-          />
-          
-          {/* Cancel button for user control */}
-          {consolidatedAnalysis.isAnalyzing && (
-            <div className="text-center space-y-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={async () => {
-                  try {
-                    // Cancel both locally and in database
-                    consolidatedAnalysis.cancelAnalysis();
-                    
-                    if (currentAnalysisId) {
-                      const cancelled = await cancelAnalysis(currentAnalysisId);
-                      if (cancelled) {
-                        toast.success('Analysis cancelled successfully');
-                        workflow.goToStep('upload');
-                      }
-                    } else {
-                      // If no analysis ID, just cancel locally
-                      workflow.goToStep('upload');
-                    }
-                  } catch (error) {
-                    console.error('Failed to cancel analysis:', error);
-                    // Still go back even if cancellation failed
-                    workflow.goToStep('upload');
-                  }
-                }}
-                disabled={cancelling}
-                className="flex items-center gap-2 text-red-400 hover:text-red-300 border-red-400/20 hover:border-red-300/20"
-              >
-                <XCircle className="h-4 w-4" />
-                {cancelling ? 'Cancelling...' : 'Cancel Analysis'}
-              </Button>
-            </div>
-          )}
-
-          {/* Enhanced Error Display */}
-          {workflow.buildingStage && (
-            <div className="text-center">
-              <p className="text-blue-400 text-sm animate-pulse">
-                {workflow.buildingStage}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // Fallback: Use existing progress display if consolidated pipeline is not enabled
+  // Always use consolidated pipeline - simplified flow only
   return (
     <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
         <SimpleProgressTracker
-          currentPhase="analyzing"
-          progressPercentage={75}
-          startTime={new Date()}
-          statusMessage="Running analysis with fallback system..."
+          currentPhase={
+            consolidatedAnalysis.progress.phase === 'idle' ? 'uploading' :
+            consolidatedAnalysis.progress.phase === 'complete' ? 'complete' :
+            consolidatedAnalysis.progress.phase === 'research' ? 'processing' :
+            consolidatedAnalysis.progress.phase === 'analysis' ? 'processing' :
+            consolidatedAnalysis.progress.phase === 'validation' ? 'processing' :
+            consolidatedAnalysis.progress.phase === 'recommendations' ? 'processing' :
+            'processing'
+          }
+          progressPercentage={consolidatedAnalysis.progress.progress}
+          startTime={consolidatedAnalysis.analysisStartTime || new Date()}
+          statusMessage={consolidatedAnalysis.progress.message}
           onComplete={() => {
-            console.log('🎉 Fallback analysis completed');
+            console.log('🎉 Analysis completed - ready for results');
           }}
         />
         
-        <div className="text-center">
-          <p className="text-yellow-400 text-sm">
-            Using legacy analysis system
-          </p>
-        </div>
+        {/* Cancel button for user control */}
+        {consolidatedAnalysis.isAnalyzing && (
+          <div className="text-center space-y-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                try {
+                  // Cancel both locally and in database
+                  consolidatedAnalysis.cancelAnalysis();
+                  
+                  if (currentAnalysisId) {
+                    const cancelled = await cancelAnalysis(currentAnalysisId);
+                    if (cancelled) {
+                      toast.success('Analysis cancelled successfully');
+                      workflow.goToStep('upload');
+                    }
+                  } else {
+                    // If no analysis ID, just cancel locally
+                    workflow.goToStep('upload');
+                  }
+                } catch (error) {
+                  console.error('Failed to cancel analysis:', error);
+                  // Still go back even if cancellation failed
+                  workflow.goToStep('upload');
+                }
+              }}
+              disabled={cancelling}
+              className="flex items-center gap-2 text-red-400 hover:text-red-300 border-red-400/20 hover:border-red-300/20"
+            >
+              <XCircle className="h-4 w-4" />
+              {cancelling ? 'Cancelling...' : 'Cancel Analysis'}
+            </Button>
+          </div>
+        )}
+
+        {/* Enhanced Error Display */}
+        {workflow.buildingStage && (
+          <div className="text-center">
+            <p className="text-blue-400 text-sm animate-pulse">
+              {workflow.buildingStage}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

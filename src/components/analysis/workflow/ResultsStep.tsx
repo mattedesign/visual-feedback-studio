@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
-import { useFeatureFlag } from '@/hooks/useFeatureFlag';
+// Removed useFeatureFlag - simplified flow doesn't use feature flags
 import { BusinessImpactDashboard } from '../modules/BusinessImpactDashboard';
 import { ComparativeAnalysisSummary } from '../ComparativeAnalysisSummary';
 import { EnhancedImageTabsViewer } from './components/EnhancedImageTabsViewer';
@@ -49,7 +49,8 @@ const parseContextForDisplay = (context: string): string[] => {
 };
 
 export const ResultsStep = ({ workflow }: ResultsStepProps) => {
-  const useModularInterface = useFeatureFlag('modular-analysis');
+  // SIMPLIFIED: Business dashboard disabled for streamlined flow
+  const useModularInterface = false;
   
   // Get URL parameter for testing override and module selection
   const urlParams = new URLSearchParams(window.location.search);

@@ -4,7 +4,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Eye, X, Sparkles } from 'lucide-react';
 import { ContextIntelligenceDisplay } from './ContextIntelligenceDisplay';
 import { PerplexityPanel } from './PerplexityPanel';
-import { useFeatureFlag } from '@/hooks/useFeatureFlag';
+// Removed useFeatureFlag - simplified flow doesn't use feature flags
 
 interface Annotation {
   id: string;
@@ -50,7 +50,8 @@ export const AnalysisSidebar = ({
   onAnalysisContextChange,
   onDeleteAnnotation,
 }: AnalysisSidebarProps) => {
-  const isPerplexityEnabled = useFeatureFlag('perplexity-integration');
+  // SIMPLIFIED: Perplexity disabled for streamlined flow
+  const isPerplexityEnabled = false;
   
   // Ensure we're working with clean user input
   const userContext = typeof analysisContext === 'string' ? analysisContext : '';
