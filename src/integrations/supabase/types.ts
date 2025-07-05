@@ -346,6 +346,30 @@ export type Database = {
         }
         Relationships: []
       }
+      emergency_metrics: {
+        Row: {
+          created_at: string
+          id: string
+          metadata: Json | null
+          metric_name: string
+          metric_value: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          metric_name: string
+          metric_value: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          metric_name?: string
+          metric_value?: number
+        }
+        Relationships: []
+      }
       knowledge_entries: {
         Row: {
           application_context: Json | null
