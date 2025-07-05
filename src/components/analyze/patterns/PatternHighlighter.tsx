@@ -50,6 +50,18 @@ const patternUrls: Record<string, string> = {
   'Slack': 'https://slack.design/',
   'GitHub': 'https://primer.style/',
   'Medium': 'https://medium.design/',
+  'Dropbox': 'https://dropbox.design/',
+  'Pinterest': 'https://pinterest.design/',
+  'Instagram': 'https://about.instagram.com/brand',
+  'Netflix': 'https://jobs.netflix.com/culture',
+  'Uber': 'https://brand.uber.com/',
+  'Shopify': 'https://polaris.shopify.com/',
+  'Facebook': 'https://design.facebook.com/',
+  'Amazon': 'https://developer.amazon.com/alexa/branding/alexa-guidelines',
+  'single-column form': 'https://baymard.com/blog/avoid-multi-column-forms',
+  'F-pattern': 'https://www.nngroup.com/articles/f-shaped-pattern-reading-web-content/',
+  'Z-pattern': 'https://uxplanet.org/z-shaped-pattern-for-reading-web-content-ce1135f92f1c',
+  'skeleton screen': 'https://uxdesign.cc/what-you-should-know-about-skeleton-screens-a820c45a571a',
   // Add more URLs as needed
 };
 
@@ -68,11 +80,21 @@ export const PatternHighlighter: React.FC<PatternHighlighterProps> = ({ text, cl
       {parts.map((part, index) => {
         // Check if this part matches any pattern (case-insensitive)
         const isPattern = HIGHLIGHT_PATTERNS.some(
-          p => p.toLowerCase() === part.toLowerCase()
+          p => {
+            const lowerPart = part.toLowerCase();
+            const lowerPattern = p.toLowerCase();
+            return lowerPart === lowerPattern || 
+                   lowerPart === lowerPattern + "'s" || // Handle possessives
+                   lowerPart === lowerPattern + "'" // Handle possessives without s
+          }
         );
         
         if (isPattern) {
-          const hasUrl = patternUrls[part] !== undefined;
+          // Find if there's a URL for this pattern (case-insensitive)
+          const matchedKey = Object.keys(patternUrls).find(
+            key => key.toLowerCase() === part.toLowerCase()
+          );
+          const hasUrl = matchedKey !== undefined;
           
           return (
             <span
@@ -116,13 +138,19 @@ export const PatternHighlighter: React.FC<PatternHighlighterProps> = ({ text, cl
   );
 };
 
-// Handle pattern clicks
+// Handle pattern clicks with case-insensitive URL matching
 function handlePatternClick(pattern: string) {
   console.log('Pattern clicked:', pattern);
   
-  const url = patternUrls[pattern];
-  if (url) {
+  // Find the URL with case-insensitive matching
+  const matchedKey = Object.keys(patternUrls).find(
+    key => key.toLowerCase() === pattern.toLowerCase()
+  );
+  
+  if (matchedKey) {
+    const url = patternUrls[matchedKey];
     window.open(url, '_blank', 'noopener,noreferrer');
+    console.log(`Opening URL for ${pattern}: ${url}`);
   } else {
     // For patterns without URLs, you could show a tooltip or modal
     console.log(`No URL defined for pattern: ${pattern}`);
