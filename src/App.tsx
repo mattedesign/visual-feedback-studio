@@ -8,6 +8,8 @@ import { Suspense, lazy } from "react";
 import Dashboard from "./pages/Dashboard";
 import Analysis from "./pages/Analysis";
 import AnalysisResults from "./pages/AnalysisResults";
+import Analyze from "./pages/Analyze";
+import AnalyzeResults from "./pages/AnalyzeResults";
 import Auth from "./pages/Auth";
 import UpgradeSuccess from "./pages/UpgradeSuccess";
 import VectorTest from "./pages/VectorTest";
@@ -63,6 +65,8 @@ const App = () => {
                             <Route path="/analysis/:id" element={<AnalysisResults />} />
                             <Route path="/analysis-results" element={<AnalysisResults />} />
                             <Route path="/analysis-results/:id" element={<AnalysisResults />} />
+                            <Route path="/analyze" element={<Analyze />} />
+                            <Route path="/analyze-results/:id" element={<AnalyzeResults />} />
                             <Route path="/history" element={<History />} />
                             <Route path="/settings" element={<Settings />} />
                             <Route path="/help" element={<Help />} />

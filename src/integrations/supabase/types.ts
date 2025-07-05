@@ -203,6 +203,77 @@ export type Database = {
           },
         ]
       }
+      analysis_session_images: {
+        Row: {
+          created_at: string | null
+          filename: string | null
+          id: string
+          position: number | null
+          session_id: string | null
+          storage_url: string
+        }
+        Insert: {
+          created_at?: string | null
+          filename?: string | null
+          id?: string
+          position?: number | null
+          session_id?: string | null
+          storage_url: string
+        }
+        Update: {
+          created_at?: string | null
+          filename?: string | null
+          id?: string
+          position?: number | null
+          session_id?: string | null
+          storage_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_session_images_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      analysis_sessions: {
+        Row: {
+          claude_results: Json | null
+          created_at: string | null
+          id: string
+          images: Json | null
+          status: string | null
+          updated_at: string | null
+          user_context: string | null
+          user_id: string | null
+          vision_results: Json | null
+        }
+        Insert: {
+          claude_results?: Json | null
+          created_at?: string | null
+          id?: string
+          images?: Json | null
+          status?: string | null
+          updated_at?: string | null
+          user_context?: string | null
+          user_id?: string | null
+          vision_results?: Json | null
+        }
+        Update: {
+          claude_results?: Json | null
+          created_at?: string | null
+          id?: string
+          images?: Json | null
+          status?: string | null
+          updated_at?: string | null
+          user_context?: string | null
+          user_id?: string | null
+          vision_results?: Json | null
+        }
+        Relationships: []
+      }
       analysis_stage_logs: {
         Row: {
           analysis_result_id: string

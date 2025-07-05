@@ -7,7 +7,8 @@ import {
   Settings, 
   HelpCircle,
   Brain,
-  History
+  History,
+  Image
 } from 'lucide-react';
 import {
   Sidebar,
@@ -35,6 +36,12 @@ const mainNavItems = [
     url: "/analysis",
     icon: Zap,
     badge: "AI"
+  },
+  {
+    title: "Analyze Designs",
+    url: "/analyze",
+    icon: Image,
+    badge: "New"
   },
   {
     title: "History",
