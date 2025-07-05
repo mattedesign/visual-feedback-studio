@@ -42,6 +42,14 @@ const patternUrls: Record<string, string> = {
   'Figma': 'https://www.figma.com/best-practices/',
   'Adobe': 'https://www.adobe.com/design/guide.html',
   'LinkedIn': 'https://brand.linkedin.com/',
+  'Google': 'https://design.google/',
+  'Apple': 'https://developer.apple.com/design/',
+  'Microsoft': 'https://www.microsoft.com/design/fluent/',
+  'Airbnb': 'https://airbnb.design/',
+  'Spotify': 'https://spotify.design/',
+  'Slack': 'https://slack.design/',
+  'GitHub': 'https://primer.style/',
+  'Medium': 'https://medium.design/',
   // Add more URLs as needed
 };
 
@@ -78,12 +86,25 @@ export const PatternHighlighter: React.FC<PatternHighlighterProps> = ({ text, cl
                 border border-blue-200 dark:border-blue-800
                 ${hasUrl ? 'hover:shadow-sm' : ''}
               `}
+              style={{ cursor: 'pointer', userSelect: 'none' }}
               title={hasUrl ? `Learn more about ${part}` : `${part} pattern`}
-              onClick={() => handlePatternClick(part)}
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                handlePatternClick(part);
+              }}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handlePatternClick(part);
+                }
+              }}
             >
               {part}
               {hasUrl && (
-                <ExternalLink className="w-3 h-3 opacity-50" />
+                <ExternalLink className="w-3 h-3 opacity-50 pointer-events-none" />
               )}
             </span>
           );
@@ -102,5 +123,8 @@ function handlePatternClick(pattern: string) {
   const url = patternUrls[pattern];
   if (url) {
     window.open(url, '_blank', 'noopener,noreferrer');
+  } else {
+    // For patterns without URLs, you could show a tooltip or modal
+    console.log(`No URL defined for pattern: ${pattern}`);
   }
 }
