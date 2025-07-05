@@ -12,7 +12,7 @@ import { SimplifiedContextInput } from './workflow/components/SimplifiedContextI
 import { TabBasedResultsLayout } from './workflow/components/TabBasedResultsLayout';
 import { FigmaInspiredUploadInterface } from './workflow/components/FigmaInspiredUploadInterface';
 import { CenteredAnalysisInterface } from './figma/CenteredAnalysisInterface';
-import { FigmaAnnotateLayout } from './workflow/FigmaAnnotateLayout';
+
 import { DiagnosticDebugMode } from './DiagnosticDebugMode';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -59,10 +59,10 @@ export const AnalysisWorkflow = () => {
     return <CenteredAnalysisInterface workflow={workflow} />;
   }
 
-  // ✅ STREAMLINED: Always use Figma-inspired annotation layout
+  // ✅ STREAMLINED: Use simple annotation step
   if (workflow.currentStep === 'annotate') {
-    console.log('✅ Using Figma-inspired annotation layout for step:', workflow.currentStep);
-    return <FigmaAnnotateLayout workflow={workflow} />;
+    console.log('✅ Using simple annotation step for:', workflow.currentStep);
+    return <AnnotateStep workflow={workflow} />;
   }
 
   const renderCurrentStep = () => {
