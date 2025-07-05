@@ -4,6 +4,10 @@ import { supabase } from '@/integrations/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
+import { Switch } from '@/components/ui/switch'
+import { Checkbox } from '@/components/ui/checkbox'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Label } from '@/components/ui/label'
 import { Loader2, Upload, Image as ImageIcon } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -16,6 +20,9 @@ export default function Analyze() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [uploadedImages, setUploadedImages] = useState<string[]>([])
   const [isUploading, setIsUploading] = useState(false)
+  const [useMultiModel, setUseMultiModel] = useState(true)
+  const [selectedModels, setSelectedModels] = useState(['claude', 'gpt4', 'perplexity'])
+  const [analysisType, setAnalysisType] = useState('strategic')
 
   // Initialize session on mount
   useEffect(() => {
@@ -159,7 +166,12 @@ export default function Analyze() {
       console.log('Starting analysis for session:', session.id)
       
       const { data, error } = await supabase.functions.invoke('analysis-orchestrator', {
-        body: { sessionId: session.id }
+        body: { 
+          sessionId: session.id,
+          useMultiModel,
+          models: selectedModels,
+          analysisType
+        }
       })
 
       if (error) {
@@ -265,6 +277,87 @@ export default function Analyze() {
             <div className="text-sm text-muted-foreground">
               <p>Pro tip: Be specific about what aspects you want analyzed for better results.</p>
             </div>
+
+            <Card className="p-4 mb-4">
+              <h3 className="font-semibold mb-3">Analysis Options</h3>
+              
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    checked={useMultiModel}
+                    onCheckedChange={setUseMultiModel}
+                  />
+                  <Label>Use Multi-Model Analysis (Recommended)</Label>
+                </div>
+                
+                {useMultiModel && (
+                  <>
+                    <div className="pl-6 space-y-2">
+                      <Label className="text-sm text-gray-600">AI Models:</Label>
+                      <div className="space-y-1">
+                        <label className="flex items-center space-x-2">
+                          <Checkbox 
+                            checked={selectedModels.includes('claude')}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedModels([...selectedModels, 'claude'])
+                              } else {
+                                setSelectedModels(selectedModels.filter(m => m !== 'claude'))
+                              }
+                            }}
+                          />
+                          <span className="text-sm">Claude (Strategic Analysis)</span>
+                        </label>
+                        <label className="flex items-center space-x-2">
+                          <Checkbox 
+                            checked={selectedModels.includes('gpt4')}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedModels([...selectedModels, 'gpt4'])
+                              } else {
+                                setSelectedModels(selectedModels.filter(m => m !== 'gpt4'))
+                              }
+                            }}
+                          />
+                          <span className="text-sm">GPT-4 (Microcopy & UI)</span>
+                        </label>
+                        <label className="flex items-center space-x-2">
+                          <Checkbox 
+                            checked={selectedModels.includes('perplexity')}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedModels([...selectedModels, 'perplexity'])
+                              } else {
+                                setSelectedModels(selectedModels.filter(m => m !== 'perplexity'))
+                              }
+                            }}
+                          />
+                          <span className="text-sm">Perplexity (Competitive Research)</span>
+                        </label>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label className="text-sm">Analysis Focus:</Label>
+                      <RadioGroup value={analysisType} onValueChange={setAnalysisType}>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="strategic" id="strategic" />
+                          <Label htmlFor="strategic" className="text-sm">Strategic (Business-focused)</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="detailed" id="detailed" />
+                          <Label htmlFor="detailed" className="text-sm">Detailed (UI/UX-focused)</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="competitive" id="competitive" />
+                          <Label htmlFor="competitive" className="text-sm">Competitive (Market-focused)</Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                  </>
+                )}
+              </div>
+            </Card>
 
             <Button
               onClick={startAnalysis}

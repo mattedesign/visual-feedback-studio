@@ -244,6 +244,8 @@ export type Database = {
           created_at: string | null
           id: string
           images: Json | null
+          model_config: Json | null
+          multimodel_results: Json | null
           status: string | null
           updated_at: string | null
           user_context: string | null
@@ -255,6 +257,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           images?: Json | null
+          model_config?: Json | null
+          multimodel_results?: Json | null
           status?: string | null
           updated_at?: string | null
           user_context?: string | null
@@ -266,6 +270,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           images?: Json | null
+          model_config?: Json | null
+          multimodel_results?: Json | null
           status?: string | null
           updated_at?: string | null
           user_context?: string | null

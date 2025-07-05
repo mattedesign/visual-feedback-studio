@@ -111,7 +111,7 @@ export default function AnalyzeResults() {
     )
   }
 
-  const results = session.claude_results
+  const results = session.multimodel_results?.merged_analysis || session.claude_results
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
@@ -143,90 +143,153 @@ export default function AnalyzeResults() {
 
         {/* Summary Tab */}
         <TabsContent value="summary" className="space-y-6">
-          {/* Overall Assessment */}
-          <Card className="p-6">
-            <h2 className="text-2xl font-semibold mb-4">Overall Assessment</h2>
-            <p className="text-muted-foreground whitespace-pre-wrap">{results.summary?.overallAssessment}</p>
-          </Card>
-
-          {/* Key Findings Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Strengths */}
-            <Card className="p-6 border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
-              <h3 className="font-semibold text-green-800 dark:text-green-200 mb-3 flex items-center">
-                <CheckCircle className="h-5 w-5 mr-2" />
-                Key Strengths
-              </h3>
-              <ul className="space-y-2">
-                {results.summary?.keyStrengths?.map((strength: string, idx: number) => (
-                  <li key={idx} className="text-green-700 dark:text-green-300 text-sm">
-                    • {strength}
-                  </li>
-                ))}
-              </ul>
-            </Card>
-
-            {/* Critical Issues */}
-            <Card className="p-6 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
-              <h3 className="font-semibold text-red-800 dark:text-red-200 mb-3 flex items-center">
-                <XCircle className="h-5 w-5 mr-2" />
-                Critical Issues
-              </h3>
-              <ul className="space-y-2">
-                {results.summary?.criticalIssues?.map((issue: string, idx: number) => (
-                  <li key={idx} className="text-red-700 dark:text-red-300 text-sm">
-                    • {issue}
-                  </li>
-                ))}
-              </ul>
-            </Card>
-
-            {/* Quick Wins */}
-            <Card className="p-6 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
-              <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-3 flex items-center">
-                <AlertCircle className="h-5 w-5 mr-2" />
-                Quick Wins
-              </h3>
-              <ul className="space-y-2">
-                {results.summary?.quickWins?.map((win: string, idx: number) => (
-                  <li key={idx} className="text-blue-700 dark:text-blue-300 text-sm">
-                    • {win}
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          </div>
-
-          {/* Recommendations */}
-          <Card className="p-6">
-            <h2 className="text-2xl font-semibold mb-4">Recommendations</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <h4 className="font-medium text-foreground mb-2">Immediate Actions</h4>
-                <ul className="space-y-1">
-                  {results.recommendations?.immediate?.map((rec: string, idx: number) => (
-                    <li key={idx} className="text-sm text-muted-foreground">• {rec}</li>
-                  ))}
-                </ul>
+          {session.multimodel_results ? (
+            <div className="space-y-4">
+              {/* Confidence Badge */}
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-semibold">Multi-Model Analysis</h2>
+                <Badge variant="outline" className="text-green-600">
+                  {Math.round(results.confidence_score * 100)}% Confidence
+                </Badge>
               </div>
-              <div>
-                <h4 className="font-medium text-foreground mb-2">Short Term (1-2 weeks)</h4>
-                <ul className="space-y-1">
-                  {results.recommendations?.shortTerm?.map((rec: string, idx: number) => (
-                    <li key={idx} className="text-sm text-muted-foreground">• {rec}</li>
-                  ))}
-                </ul>
+              
+              {/* Models Used */}
+              <div className="text-sm text-gray-600">
+                Analysis by: {session.multimodel_results.individual_models
+                  ?.filter((m: any) => m.success)
+                  .map((m: any) => m.provider)
+                  .join(', ')}
               </div>
-              <div>
-                <h4 className="font-medium text-foreground mb-2">Long Term (1-3 months)</h4>
-                <ul className="space-y-1">
-                  {results.recommendations?.longTerm?.map((rec: string, idx: number) => (
-                    <li key={idx} className="text-sm text-muted-foreground">• {rec}</li>
+              
+              {/* Unified Summary */}
+              <Card className="p-6">
+                <h3 className="font-semibold mb-3">Analysis Summary</h3>
+                <div className="prose max-w-none">
+                  {results.summary?.split('\n').map((paragraph: string, idx: number) => (
+                    <p key={idx} className="mb-2">{paragraph}</p>
                   ))}
-                </ul>
-              </div>
+                </div>
+              </Card>
+              
+              {/* Compound Insights */}
+              <Card className="p-6">
+                <h3 className="font-semibold mb-3">Key Findings</h3>
+                {results.insights?.map((insight: any, idx: number) => (
+                  <div key={idx} className="mb-4 p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{insight.description}</p>
+                        {insight.evidence && (
+                          <div className="mt-2 text-xs text-gray-600">
+                            {insight.evidence.agreement_score && (
+                              <span>Agreement: {Math.round(insight.evidence.agreement_score * 100)}% • </span>
+                            )}
+                            {insight.evidence.perspectives && (
+                              <span>Sources: {insight.evidence.perspectives.length} models</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <Badge className={
+                        insight.severity === 'high' ? 'bg-red-100 text-red-800' :
+                        insight.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-blue-100 text-blue-800'
+                      }>
+                        {insight.severity}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </Card>
             </div>
-          </Card>
+          ) : (
+            <>
+              {/* Overall Assessment */}
+              <Card className="p-6">
+                <h2 className="text-2xl font-semibold mb-4">Overall Assessment</h2>
+                <p className="text-muted-foreground whitespace-pre-wrap">{results.summary?.overallAssessment}</p>
+              </Card>
+
+              {/* Key Findings Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Strengths */}
+                <Card className="p-6 border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
+                  <h3 className="font-semibold text-green-800 dark:text-green-200 mb-3 flex items-center">
+                    <CheckCircle className="h-5 w-5 mr-2" />
+                    Key Strengths
+                  </h3>
+                  <ul className="space-y-2">
+                    {results.summary?.keyStrengths?.map((strength: string, idx: number) => (
+                      <li key={idx} className="text-green-700 dark:text-green-300 text-sm">
+                        • {strength}
+                      </li>
+                    ))}
+                  </ul>
+                </Card>
+
+                {/* Critical Issues */}
+                <Card className="p-6 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
+                  <h3 className="font-semibold text-red-800 dark:text-red-200 mb-3 flex items-center">
+                    <XCircle className="h-5 w-5 mr-2" />
+                    Critical Issues
+                  </h3>
+                  <ul className="space-y-2">
+                    {results.summary?.criticalIssues?.map((issue: string, idx: number) => (
+                      <li key={idx} className="text-red-700 dark:text-red-300 text-sm">
+                        • {issue}
+                      </li>
+                    ))}
+                  </ul>
+                </Card>
+
+                {/* Quick Wins */}
+                <Card className="p-6 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
+                  <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-3 flex items-center">
+                    <AlertCircle className="h-5 w-5 mr-2" />
+                    Quick Wins
+                  </h3>
+                  <ul className="space-y-2">
+                    {results.summary?.quickWins?.map((win: string, idx: number) => (
+                      <li key={idx} className="text-blue-700 dark:text-blue-300 text-sm">
+                        • {win}
+                      </li>
+                    ))}
+                  </ul>
+                </Card>
+              </div>
+
+              {/* Recommendations */}
+              <Card className="p-6">
+                <h2 className="text-2xl font-semibold mb-4">Recommendations</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <h4 className="font-medium text-foreground mb-2">Immediate Actions</h4>
+                    <ul className="space-y-1">
+                      {results.recommendations?.immediate?.map((rec: string, idx: number) => (
+                        <li key={idx} className="text-sm text-muted-foreground">• {rec}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-foreground mb-2">Short Term (1-2 weeks)</h4>
+                    <ul className="space-y-1">
+                      {results.recommendations?.shortTerm?.map((rec: string, idx: number) => (
+                        <li key={idx} className="text-sm text-muted-foreground">• {rec}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-foreground mb-2">Long Term (1-3 months)</h4>
+                    <ul className="space-y-1">
+                      {results.recommendations?.longTerm?.map((rec: string, idx: number) => (
+                        <li key={idx} className="text-sm text-muted-foreground">• {rec}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </Card>
+            </>
+          )}
         </TabsContent>
 
         {/* Annotations Tab */}
