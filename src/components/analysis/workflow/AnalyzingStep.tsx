@@ -187,15 +187,6 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
             }}
           />
           
-          {/* Research sources indicator */}
-          {consolidatedAnalysis.progress.researchSourcesFound > 0 && (
-            <div className="text-center">
-              <p className="text-emerald-400 text-sm">
-                📚 {consolidatedAnalysis.progress.researchSourcesFound} research insights found
-              </p>
-            </div>
-          )}
-          
           {/* Cancel button for user control */}
           {consolidatedAnalysis.isAnalyzing && (
             <div className="text-center space-y-2">
@@ -211,16 +202,16 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
                       const cancelled = await cancelAnalysis(currentAnalysisId);
                       if (cancelled) {
                         toast.success('Analysis cancelled successfully');
-                        workflow.goToStep('annotate');
+                        workflow.goToStep('upload');
                       }
                     } else {
                       // If no analysis ID, just cancel locally
-                      workflow.goToStep('annotate');
+                      workflow.goToStep('upload');
                     }
                   } catch (error) {
                     console.error('Failed to cancel analysis:', error);
                     // Still go back even if cancellation failed
-                    workflow.goToStep('annotate');
+                    workflow.goToStep('upload');
                   }
                 }}
                 disabled={cancelling}

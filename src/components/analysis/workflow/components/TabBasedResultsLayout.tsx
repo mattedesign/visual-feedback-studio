@@ -80,18 +80,14 @@ export const TabBasedResultsLayout: React.FC<TabBasedResultsLayoutProps> = ({
         <div className="w-80 border-r border-border flex flex-col">
           <div className="p-4">
             <Tabs value={activeTab} onValueChange={setActiveTab} orientation="vertical" className="h-full">
-              <TabsList className="grid w-full grid-rows-3 h-auto">
+              <TabsList className="grid w-full grid-rows-2 h-auto">
                 <TabsTrigger value="summary" className="flex items-center gap-2 w-full justify-start">
                   <Eye className="w-4 h-4" />
                   Summary
                 </TabsTrigger>
                 <TabsTrigger value="analysis" className="flex items-center gap-2 w-full justify-start">
                   <Target className="w-4 h-4" />
-                  UI Analysis
-                </TabsTrigger>
-                <TabsTrigger value="more" className="flex items-center gap-2 w-full justify-start">
-                  <Brain className="w-4 h-4" />
-                  More
+                  UX Insights
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -170,29 +166,14 @@ export const TabBasedResultsLayout: React.FC<TabBasedResultsLayoutProps> = ({
                           <span className="text-sm text-muted-foreground">Images Analyzed</span>
                           <span className="font-semibold">{images.length}</span>
                         </div>
-                        {strategistAnalysis && (
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Strategic Analysis</span>
-                            <Badge variant="secondary">Available</Badge>
-                          </div>
-                        )}
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Categories</span>
+                          <span className="font-semibold">{Object.keys(insightsByCategory).length}</span>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
                 </div>
-
-                {strategistAnalysis && (
-                  <div>
-                    <h3 className="font-semibold mb-3">Executive Summary</h3>
-                    <Card>
-                      <CardContent className="p-4">
-                        <p className="text-sm text-muted-foreground">
-                          {strategistAnalysis.summary}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </div>
-                )}
               </div>
             )}
 
@@ -227,49 +208,6 @@ export const TabBasedResultsLayout: React.FC<TabBasedResultsLayoutProps> = ({
                     </CardContent>
                   </Card>
                 ))}
-              </div>
-            )}
-
-            {activeTab === 'more' && (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="font-semibold mb-3">Business Impact</h3>
-                  <Card>
-                    <CardContent className="p-4">
-                      {strategistAnalysis ? (
-                        <div className="space-y-3">
-                          {strategistAnalysis.recommendations && (
-                            <div>
-                              <h4 className="font-medium text-sm mb-2">Key Recommendations</h4>
-                              <div className="space-y-2">
-                                {strategistAnalysis.recommendations.slice(0, 3).map((rec: any, index: number) => (
-                                  <div key={index} className="p-2 bg-muted/30 rounded text-xs">
-                                    {typeof rec === 'string' ? rec : rec.description}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">
-                          Business impact analysis will be displayed here
-                        </p>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold mb-3">Research Sources</h3>
-                  <Card>
-                    <CardContent className="p-4">
-                      <p className="text-sm text-muted-foreground">
-                        Research citations and sources will be displayed here
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
               </div>
             )}
           </div>
