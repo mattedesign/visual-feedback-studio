@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Settings as SettingsIcon, User, Bell, Shield, Activity } from 'lucide-react';
 import { AnalysisHealthDashboard } from '@/components/analysis/AnalysisHealthDashboard';
+import { SystemHealthMonitor } from '@/components/monitoring/SystemHealthMonitor';
+import { SecurityDashboard } from '@/components/security/SecurityDashboard';
 
 const Settings = () => {
   return (
@@ -15,12 +17,14 @@ const Settings = () => {
         </p>
       </div>
 
-      <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="monitor" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="privacy">Privacy</TabsTrigger>
-          <TabsTrigger value="health">System Health</TabsTrigger>
+          <TabsTrigger value="health">Analysis Health</TabsTrigger>
+          <TabsTrigger value="monitor">System Monitor</TabsTrigger>
+          <TabsTrigger value="security">Security</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
@@ -76,6 +80,14 @@ const Settings = () => {
 
         <TabsContent value="health">
           <AnalysisHealthDashboard />
+        </TabsContent>
+
+        <TabsContent value="monitor">
+          <SystemHealthMonitor />
+        </TabsContent>
+
+        <TabsContent value="security">
+          <SecurityDashboard />
         </TabsContent>
       </Tabs>
     </div>

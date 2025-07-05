@@ -159,21 +159,19 @@ export const useConsolidatedAnalysis = () => {
   }, [isAnalyzing, simulatePhaseProgress, updateProgress]);
 
   const executeAnalysisSteps = async (input: AnalysisInput): Promise<AnalysisResult> => {
-    // Phase 1: Upload simulation
-    await simulatePhaseProgress('uploading', 4000, 0, 10);
+    // 🔥 STREAMLINED: Reduced to 3 phases, 30 seconds total max
     
-    // Phase 2: Processing simulation  
-    await simulatePhaseProgress('processing', 6000, 10, 25);
+    // Phase 1: Quick prep (5 seconds)
+    updateProgress({ phase: 'uploading', progress: 0, message: 'Preparing analysis...' });
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    updateProgress({ progress: 15 });
     
-    // Phase 3: Research simulation
-    await simulatePhaseProgress('research', 12000, 25, 45);
-    
-    // Phase 4: Create analysis record
-    updateProgress({ phase: 'analysis', message: 'Creating analysis record...' });
+    // Phase 2: Create analysis record immediately
+    updateProgress({ phase: 'processing', progress: 20, message: 'Creating analysis record...' });
     
     const analysisId = await analysisErrorHandler.withRetry(
       () => analysisService.createAnalysis(),
-      { maxRetries: 2, baseDelay: 1000, maxDelay: 3000, exponentialBackoff: true },
+      { maxRetries: 1, baseDelay: 1000, maxDelay: 2000, exponentialBackoff: false },
       {
         component: 'ConsolidatedAnalysis',
         operation: 'createAnalysis'
@@ -185,6 +183,7 @@ export const useConsolidatedAnalysis = () => {
     }
 
     console.log('✅ Analysis record created:', analysisId);
+    updateProgress({ progress: 35 });
     
     // Get user for database operations
     const { data: { user } } = await supabase.auth.getUser();
@@ -192,78 +191,49 @@ export const useConsolidatedAnalysis = () => {
       throw new Error('User not authenticated');
     }
 
-    // Phase 5: Execute AI analysis
-    updateProgress({ message: 'Running AI analysis...' });
+    // Phase 3: Execute streamlined AI analysis (20 seconds max)
+    updateProgress({ 
+      phase: 'analysis', 
+      progress: 40, 
+      message: 'Running streamlined AI analysis...',
+      researchSourcesFound: 5 // Simulate research
+    });
     
-    const analysisResult = await analysisErrorHandler.withRetry(
-      () => analysisService.analyzeDesign({
+    const analysisResult = await analysisErrorHandler.withTimeout(
+      analysisService.analyzeDesign({
         imageUrls: input.imageUrls,
         analysisId,
         analysisPrompt: input.analysisContext,
         designType: 'web',
         isComparative: input.imageUrls.length > 1,
         ragEnhanced: true,
-        researchSourceCount: 12
+        researchSourceCount: 5 // Reduced from 12
       }),
-      { maxRetries: 1, baseDelay: 2000, maxDelay: 5000, exponentialBackoff: true },
-      {
-        component: 'ConsolidatedAnalysis',
-        operation: 'analyzeDesign',
-        analysisId
-      }
-    );
+      25000, // 25 second timeout (reduced from 120s)
+      'ai-analysis'
+    ) as any; // Type assertion for now
 
     if (!analysisResult.success) {
       throw new Error(analysisResult.error || 'AI analysis failed');
     }
 
-    console.log('✅ AI analysis completed:', {
+    console.log('✅ Streamlined AI analysis completed:', {
       annotationCount: analysisResult.annotations?.length || 0,
       researchEnhanced: analysisResult.researchEnhanced,
-      wellDoneReceived: !!analysisResult.wellDone
+      wellDoneReceived: !!analysisResult.wellDone,
+      processingTime: Date.now() - (analysisStartTime?.getTime() || Date.now())
     });
 
-    // Phase 6: Progress to recommendations
-    await simulatePhaseProgress('recommendations', 6000, 75, 90);
+    // Phase 4: Finalize (5 seconds)
+    updateProgress({ 
+      phase: 'recommendations', 
+      progress: 85, 
+      message: 'Finalizing results...',
+      researchSourcesFound: analysisResult.knowledgeSourcesUsed || 5
+    });
     
-    // Phase 7: Analysis results already saved by edge function
-    updateProgress({ message: 'Finalizing analysis...' });
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Edge function already saved the results, just simulate completion
-    const savedResultId = analysisId; // Use analysisId as confirmation
-
-    if (!savedResultId) {
-      console.warn('⚠️ Failed to save to database, but analysis completed');
-    }
-
-    // Phase 8: Generate AI consultation (optional)
-    let consultationResults = null;
-    try {
-      updateProgress({ message: 'Generating insights...' });
-      
-      consultationResults = await analysisErrorHandler.withTimeout(
-        aiEnhancedSolutionEngine.provideConsultation({
-          analysisResults: analysisResult.annotations || [],
-          analysisContext: input.analysisContext,
-          analysisId,
-          userId: user.id
-        }),
-        30000, // 30 second timeout for consultation
-        'consultation'
-      );
-      
-      console.log('✅ AI consultation completed:', {
-        approach: consultationResults.approach,
-        confidence: consultationResults.confidence,
-        solutionCount: consultationResults.solutions.length
-      });
-      
-      // Store consultation in session
-      sessionStorage.setItem('consultationResults', JSON.stringify(consultationResults));
-    } catch (consultationError) {
-      console.warn('⚠️ AI consultation failed, continuing without:', consultationError);
-    }
-
     // Complete
     updateProgress({ phase: 'complete', progress: 100, message: 'Analysis complete!' });
     
@@ -275,62 +245,17 @@ export const useConsolidatedAnalysis = () => {
         citations: analysisResult.researchCitations || []
       } : undefined,
       wellDone: analysisResult.wellDone,
-      consultationResults,
+      consultationResults: null, // Skip consultation for speed
       analysisId
     };
 
-    // 🎯 STRATEGIST CONTEXT INTEGRATION (IMMEDIATE FIX)
-    // Replace existing problem statement logic with strategist enhancement
+    // 🔥 STREAMLINED: Direct navigation without strategist prompt
     if (result.success && result.analysisId) {
-      console.log('🎯 Starting UX Strategist enhancement...');
-      
-      const analysisId = result.analysisId;
-      
-      // IMMEDIATE context collection (no setTimeout)
-      try {
-        const strategistContext = prompt(`🧠 UX STRATEGIST CONSULTATION
-
-I'm your 20-year Principal UX strategist. For expert-level recommendations, I need business context:
-
-What specific design challenge are you facing?
-
-Examples:
-• "Users abandon checkout at payment step - 60% drop-off rate"
-• "Mobile users can't find our main CTA - conversion down 40%" 
-• "Dashboard overwhelming new users - activation down to 25%"
-• "Form completion dropped from 80% to 30% after redesign"
-
-Be specific about metrics, user behavior, and business impact.`);
-
-        if (strategistContext?.trim()) {
-          // Store for enhanced analysis
-          localStorage.setItem(`strategist_context_${analysisId}`, JSON.stringify({
-            userChallenge: strategistContext.trim(),
-            timestamp: Date.now(),
-            analysisType: 'strategist_enhanced',
-            expectationLevel: 'principal_designer'
-          }));
-          
-          console.log('✅ Strategist context captured:', strategistContext.trim());
-          toast.success('🎭 UX Strategist analysis starting...');
-        } else {
-          console.log('ℹ️ No strategist context provided, using traditional analysis');
-          toast.success('Analysis complete! Redirecting to results...');
-        }
-      } catch (error) {
-        console.error('❌ Strategist context collection error:', error);
-        toast.success('Analysis complete! Redirecting to results...');
-      }
-      
-      // Navigate with strategist flag if context was provided
-      const hasStrategistContext = localStorage.getItem(`strategist_context_${analysisId}`);
-      const redirectUrl = hasStrategistContext 
-        ? `/analysis/${analysisId}?strategist=true&beta=true`
-        : `/analysis/${analysisId}?beta=true`;
+      console.log('✅ Analysis complete, redirecting to results');
       
       setTimeout(() => {
-        window.location.href = redirectUrl;
-      }, 2000); // Slightly longer delay for better UX
+        window.location.href = `/analysis/${result.analysisId}?beta=true`;
+      }, 1500); // Quick redirect
     }
     
     return result;

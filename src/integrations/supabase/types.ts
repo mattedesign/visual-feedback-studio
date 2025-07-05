@@ -565,6 +565,33 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          created_at: string
+          endpoint: string
+          id: string
+          requests_count: number
+          user_id: string | null
+          window_start: string
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          id?: string
+          requests_count?: number
+          user_id?: string | null
+          window_start?: string
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          id?: string
+          requests_count?: number
+          user_id?: string | null
+          window_start?: string
+        }
+        Relationships: []
+      }
       uploaded_files: {
         Row: {
           analysis_id: string
@@ -744,6 +771,14 @@ export type Database = {
       }
       check_analysis_limit: {
         Args: { p_user_id: string }
+        Returns: boolean
+      }
+      check_rate_limit: {
+        Args: {
+          p_user_id: string
+          p_endpoint: string
+          p_limit_per_minute?: number
+        }
         Returns: boolean
       }
       emergency_cleanup_stuck_analyses: {
