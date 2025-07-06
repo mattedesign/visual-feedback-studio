@@ -1,4 +1,4 @@
-// ✅ Final GoblinStudio.tsx with full component and Supabase integration
+// ✅ Final GoblinStudio.tsx with working file upload and image validation before analysis
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,7 +24,7 @@ import {
   startGoblinAnalysis
 } from '@/services/goblin/index';
 import { supabase } from '@/integrations/supabase/client';
-import { GoblinPersonaSelector } from '@/components/goblin/personas/PersonaSelector';
+import GoblinPersonaSelector from '@/components/goblin/personas/PersonaSelector';
 
 export type GoblinPersonaType = 'strategic' | 'mirror' | 'mad' | 'exec' | 'clarity';
 
@@ -44,12 +44,11 @@ const GoblinStudio: React.FC = () => {
   const [goal, setGoal] = useState('');
   const [persona, setPersona] = useState<GoblinPersonaType>('strategic');
   const [images, setImages] = useState<File[]>([]);
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [fetchedImages, setFetchedImages] = useState<any[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [analysisStage, setAnalysisStage] = useState('');
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [fetchedImages, setFetchedImages] = useState<any[]>([]);
 
   useEffect(() => {
     if (sessionId) {
@@ -76,6 +75,7 @@ const GoblinStudio: React.FC = () => {
       toast.error('Please fill in all fields and upload at least one image.');
       return;
     }
+
     setIsAnalyzing(true);
     setAnalysisProgress(10);
     setAnalysisStage('Creating analysis session...');
@@ -83,10 +83,8 @@ const GoblinStudio: React.FC = () => {
     try {
       const session = await createGoblinSession({
         title,
-        goal_description: goal,
-        persona_type: persona,
-        analysis_mode: 'single',
-        confidence_level: 1
+        goal,
+        personaType: persona,
       });
 
       setSessionId(session.id);
@@ -95,6 +93,18 @@ const GoblinStudio: React.FC = () => {
 
       for (let i = 0; i < images.length; i++) {
         await uploadGoblinImage(session.id, images[i], i);
+      }
+
+      await new Promise((res) => setTimeout(res, 800));
+
+      const { data: imageCheck, error: imageCheckError } = await supabase
+        .from('goblin_analysis_images')
+        .select('*')
+        .eq('session_id', session.id);
+
+      if (imageCheckError || !imageCheck || imageCheck.length === 0) {
+        toast.error('Images failed to upload. Goblin needs screenshots to analyze.');
+        return;
       }
 
       setAnalysisProgress(60);
@@ -125,27 +135,13 @@ const GoblinStudio: React.FC = () => {
         </h1>
 
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label>Title</Label>
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Onboarding Redesign for Checkout Flow"
-              />
-            </div>
-            <div>
-              <Label>Upload Screenshots</Label>
-              <Input
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={(e) => {
-                  const files = Array.from(e.target.files || []);
-                  setImages(files);
-                }}
-              />
-            </div>
+          <div>
+            <Label>Title</Label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. Onboarding Redesign for Checkout Flow"
+            />
           </div>
 
           <div>
@@ -158,10 +154,23 @@ const GoblinStudio: React.FC = () => {
           </div>
 
           <GoblinPersonaSelector
-            selectedPersona={persona}
-            onPersonaChange={(val) => setPersona(val)}
+            persona={persona}
+            onSelect={(val) => setPersona(val as GoblinPersonaType)}
+            options={GOBLIN_PERSONAS}
           />
 
+          <div>
+            <Label>Upload Screenshots</Label>
+            <Input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={(e) => {
+                const files = Array.from(e.target.files || []);
+                setImages(files);
+              }}
+            />
+          </div>
 
           <Button
             className="w-full mt-4"
