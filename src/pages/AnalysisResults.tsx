@@ -25,7 +25,7 @@ const navigateToNewAnalysis = () => {
   });
   
   // Navigate to clean analysis page
-  window.location.href = '/analysis';
+  window.location.href = '/analyze';
 };
 
 const AnalysisResults = () => {

@@ -106,7 +106,7 @@ const UpgradeSuccess: React.FC = () => {
             </p>
             <div className="space-y-2">
               <Button 
-                onClick={() => navigate('/analysis')} 
+                onClick={() => navigate('/analyze')} 
                 variant="outline"
                 className="w-full"
               >
@@ -154,13 +154,13 @@ const UpgradeSuccess: React.FC = () => {
             
             <div className="space-y-3">
               <Button 
-                onClick={() => navigate('/analysis')} 
+                onClick={() => navigate('/analyze')} 
                 className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
               >
                 View Your New Visuals
               </Button>
               <Button 
-                onClick={() => navigate('/analysis')} 
+                onClick={() => navigate('/analyze')} 
                 variant="outline"
                 className="w-full"
               >

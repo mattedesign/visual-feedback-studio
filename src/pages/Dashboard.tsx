@@ -117,7 +117,7 @@ const Dashboard = () => {
       }
     });
     console.log('🔄 NEW ANALYSIS: Cleared persistent state, navigating to clean upload interface');
-    navigate('/analysis');
+    navigate('/analyze');
   };
 
   const handleViewAnalysis = (analysisId: string) => {

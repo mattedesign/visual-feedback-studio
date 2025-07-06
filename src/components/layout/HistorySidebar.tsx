@@ -126,7 +126,7 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = ({ isOpen, onClose 
                       }
                     });
                     console.log('🔄 NEW ANALYSIS: Cleared state from history sidebar');
-                    navigate('/analysis');
+                    navigate('/analyze');
                     onClose();
                   }}
                   size="sm"

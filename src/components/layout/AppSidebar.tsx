@@ -32,10 +32,10 @@ const mainNavItems = [
     badge: null
   },
   {
-    title: "New Analysis",
+    title: "Analysis History",
     url: "/analysis",
-    icon: Zap,
-    badge: "AI"
+    icon: BarChart3,
+    badge: null
   },
   {
     title: "Analyze Designs",
