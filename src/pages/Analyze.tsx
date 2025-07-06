@@ -165,9 +165,11 @@ export default function Analyze() {
       // Trigger analysis
       console.log('Starting analysis for session:', session.id)
       
-      const { data, error } = await supabase.functions.invoke('analysis-orchestrator', {
+      const { data, error } = await supabase.functions.invoke('analyze-design', {
         body: { 
           sessionId: session.id,
+          imageUrls: uploadedImages,
+          analysisPrompt: userContext,
           useMultiModel,
           models: selectedModels,
           analysisType

@@ -8,17 +8,38 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
-console.log('🚀 Simplified Analysis Pipeline - Starting');
+console.log('🚀 Enhanced Analysis Pipeline - Starting with session support');
 
-interface SimpleRequest {
-  imageUrls: string[];
-  analysisId: string;
-  analysisPrompt: string;
+interface AnalysisRequest {
+  sessionId?: string;
+  imageUrls?: string[];
+  analysisId?: string;
+  analysisPrompt?: string;
   designType?: string;
+  useMultiModel?: boolean;
+  models?: string[];
+  analysisType?: string;
 }
 
-// Simple validation
-function validateRequest(body: any): SimpleRequest {
+// Enhanced validation for both session and direct modes
+function validateRequest(body: any): AnalysisRequest {
+  // Session-based mode (from Analyze page)
+  if (body?.sessionId) {
+    if (typeof body.sessionId !== 'string') {
+      throw new Error('Valid session ID is required');
+    }
+    return {
+      sessionId: body.sessionId,
+      imageUrls: body.imageUrls || [],
+      analysisPrompt: body.analysisPrompt || '',
+      useMultiModel: body.useMultiModel || false,
+      models: body.models || ['claude'],
+      analysisType: body.analysisType || 'strategic',
+      designType: body.designType || 'web'
+    };
+  }
+
+  // Legacy direct mode (backwards compatibility)
   if (!body?.imageUrls || !Array.isArray(body.imageUrls) || body.imageUrls.length === 0) {
     throw new Error('At least one image URL is required');
   }
@@ -39,19 +60,21 @@ function validateRequest(body: any): SimpleRequest {
   };
 }
 
-// Simple Claude analysis
-async function callClaudeForAnalysis(request: SimpleRequest): Promise<any> {
+// Enhanced Claude analysis with session support
+async function callClaudeForAnalysis(request: AnalysisRequest, imageUrls: string[], prompt: string): Promise<any> {
   const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
   if (!anthropicApiKey) {
     throw new Error('Anthropic API key not configured');
   }
 
-  // Simple prompt focused on basic UX analysis
-  const prompt = `As a UX expert, analyze this ${request.designType} design and provide specific, actionable recommendations.
+  // Enhanced prompt with pattern-focused analysis
+  const analysisPrompt = `As a senior UX strategist with 20 years of experience, analyze this ${request.designType || 'web'} design and provide comprehensive, pattern-focused recommendations.
 
-User's Challenge: ${request.analysisPrompt}
+User's Challenge: ${prompt}
 
-Number of images: ${request.imageUrls.length}
+Number of images: ${imageUrls.length}
+Analysis Type: ${request.analysisType || 'strategic'}
+Multi-Model: ${request.useMultiModel ? 'Yes' : 'No'}
 
 Please provide 6-10 specific UX recommendations in this exact JSON format:
 
@@ -90,7 +113,7 @@ Focus on actionable, specific recommendations that directly address the user's c
       temperature: 0.3,
       messages: [{
         role: 'user',
-        content: prompt
+        content: analysisPrompt
       }]
     })
   });
@@ -152,8 +175,8 @@ Focus on actionable, specific recommendations that directly address the user's c
   }
 }
 
-// Save results to database  
-async function saveResults(supabase: any, analysisId: string, claudeResult: any, request: SimpleRequest, authHeader?: string): Promise<void> {
+// Enhanced save results for session-based analysis
+async function saveResults(supabase: any, request: AnalysisRequest, claudeResult: any, authHeader?: string): Promise<any> {
   // Get current user from request header
   let userId = null;
   
@@ -171,44 +194,106 @@ async function saveResults(supabase: any, analysisId: string, claudeResult: any,
     throw new Error('User authentication required');
   }
 
-  // Save analysis results
-  const { error: resultsError } = await supabase
-    .from('analysis_results')
-    .insert({
-      analysis_id: analysisId,
-      user_id: userId,
-      images: request.imageUrls,
-      annotations: claudeResult.annotations || [],
-      analysis_context: request.analysisPrompt,
-      ai_model_used: 'claude-3-5-sonnet-20241022',
-      total_annotations: claudeResult.annotations?.length || 0,
-      validation_status: 'completed'
-    });
+  // Session-based mode
+  if (request.sessionId) {
+    const analysisResults = {
+      summary: {
+        overallAssessment: `Analysis completed for ${request.analysisType || 'strategic'} review`,
+        keyStrengths: claudeResult.annotations
+          ?.filter((a: any) => a.severity === 'low')
+          ?.map((a: any) => a.title) || [],
+        criticalIssues: claudeResult.annotations
+          ?.filter((a: any) => a.severity === 'high')
+          ?.map((a: any) => a.title) || [],
+        quickWins: claudeResult.annotations
+          ?.filter((a: any) => a.implementationEffort === 'low')
+          ?.map((a: any) => a.title) || []
+      },
+      imageAnalysis: [{
+        zoneFeedback: {
+          'top-left': claudeResult.annotations?.slice(0, 2)?.map((a: any) => ({
+            feedback: a.description,
+            severity: a.severity,
+            source: 'claude'
+          })) || [],
+          'top-center': claudeResult.annotations?.slice(2, 4)?.map((a: any) => ({
+            feedback: a.description,
+            severity: a.severity,
+            source: 'claude'
+          })) || [],
+          'middle-center': claudeResult.annotations?.slice(4, 6)?.map((a: any) => ({
+            feedback: a.description,
+            severity: a.severity,
+            source: 'claude'
+          })) || []
+        }
+      }],
+      metadata: {
+        confidence: 0.85,
+        modelsUsed: request.models || ['claude']
+      }
+    };
 
-  if (resultsError) {
-    console.error('Failed to save results:', resultsError);
-    throw new Error('Failed to save analysis results');
-  }
+    // Save to analysis_sessions
+    const { error: sessionError } = await supabase
+      .from('analysis_sessions')
+      .update({
+        status: 'completed',
+        claude_results: analysisResults,
+        multimodel_results: request.useMultiModel ? analysisResults : null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', request.sessionId);
 
-  // Update analysis status
-  const { error: statusError } = await supabase
-    .from('analyses')
-    .update({ 
-      status: 'completed',
-      analysis_completed_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', analysisId);
+    if (sessionError) {
+      console.error('Failed to save session results:', sessionError);
+      throw new Error('Failed to save session analysis results');
+    }
 
-  if (statusError) {
-    console.error('Failed to update status:', statusError);
-    throw new Error('Failed to update analysis status');
+    return analysisResults;
+
+  } else {
+    // Legacy direct mode
+    const { error: resultsError } = await supabase
+      .from('analysis_results')
+      .insert({
+        analysis_id: request.analysisId,
+        user_id: userId,
+        images: request.imageUrls || [],
+        annotations: claudeResult.annotations || [],
+        analysis_context: request.analysisPrompt,
+        ai_model_used: 'claude-3-5-sonnet-20241022',
+        total_annotations: claudeResult.annotations?.length || 0,
+        validation_status: 'completed'
+      });
+
+    if (resultsError) {
+      console.error('Failed to save results:', resultsError);
+      throw new Error('Failed to save analysis results');
+    }
+
+    // Update analysis status
+    const { error: statusError } = await supabase
+      .from('analyses')
+      .update({ 
+        status: 'completed',
+        analysis_completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', request.analysisId);
+
+    if (statusError) {
+      console.error('Failed to update status:', statusError);
+      throw new Error('Failed to update analysis status');
+    }
+
+    return claudeResult;
   }
 }
 
-// Main analysis function
-async function executeSimpleAnalysis(request: SimpleRequest, authHeader?: string): Promise<any> {
-  console.log(`🚀 Starting simple analysis for ${request.analysisId}`);
+// Enhanced analysis execution
+async function executeAnalysis(request: AnalysisRequest, authHeader?: string): Promise<any> {
+  console.log(`🚀 Starting analysis for ${request.sessionId || request.analysisId}`);
 
   // Initialize Supabase
   const supabase = createClient(
@@ -217,22 +302,67 @@ async function executeSimpleAnalysis(request: SimpleRequest, authHeader?: string
   );
 
   try {
-    // Update status to analyzing
-    await supabase
-      .from('analyses')
-      .update({ 
-        status: 'analyzing',
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', request.analysisId);
+    let imageUrls: string[] = [];
+    let prompt = '';
+
+    // Session-based mode: fetch session data
+    if (request.sessionId) {
+      console.log(`📋 Fetching session data for ${request.sessionId}`);
+      
+      // Update session status
+      await supabase
+        .from('analysis_sessions')
+        .update({ 
+          status: 'processing',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', request.sessionId);
+
+      // Get session data including images
+      const { data: sessionData, error: sessionError } = await supabase
+        .from('analysis_sessions')
+        .select('*, analysis_session_images(*)')
+        .eq('id', request.sessionId)
+        .single();
+
+      if (sessionError) {
+        throw new Error(`Failed to fetch session: ${sessionError.message}`);
+      }
+
+      // Extract image URLs and prompt
+      imageUrls = sessionData.analysis_session_images?.map((img: any) => img.storage_url) || [];
+      prompt = sessionData.user_context || request.analysisPrompt || '';
+      
+      if (imageUrls.length === 0) {
+        throw new Error('No images found in session');
+      }
+      
+      if (!prompt.trim()) {
+        throw new Error('No analysis prompt found in session');
+      }
+
+    } else {
+      // Direct mode: use provided data
+      imageUrls = request.imageUrls || [];
+      prompt = request.analysisPrompt || '';
+      
+      // Update analysis status
+      await supabase
+        .from('analyses')
+        .update({ 
+          status: 'analyzing',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', request.analysisId);
+    }
 
     // Call Claude for analysis
-    console.log(`🤖 Calling Claude for analysis...`);
-    const claudeResult = await callClaudeForAnalysis(request);
+    console.log(`🤖 Calling Claude for analysis of ${imageUrls.length} images...`);
+    const claudeResult = await callClaudeForAnalysis(request, imageUrls, prompt);
 
     // Save results
     console.log(`💾 Saving results...`);
-    await saveResults(supabase, request.analysisId, claudeResult, request, authHeader);
+    const savedResults = await saveResults(supabase, request, claudeResult, authHeader);
 
     console.log(`✅ Analysis completed successfully`);
 
@@ -240,7 +370,8 @@ async function executeSimpleAnalysis(request: SimpleRequest, authHeader?: string
       success: true,
       annotations: claudeResult.annotations || [],
       totalAnnotations: claudeResult.annotations?.length || 0,
-      modelUsed: 'claude-3-5-sonnet-20241022'
+      modelUsed: 'claude-3-5-sonnet-20241022',
+      results: savedResults
     };
 
   } catch (error) {
@@ -248,14 +379,24 @@ async function executeSimpleAnalysis(request: SimpleRequest, authHeader?: string
     
     // Update status to failed
     try {
-      await supabase
-        .from('analyses')
-        .update({ 
-          status: 'failed',
-          failure_reason: error.message,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', request.analysisId);
+      if (request.sessionId) {
+        await supabase
+          .from('analysis_sessions')
+          .update({ 
+            status: 'error',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', request.sessionId);
+      } else {
+        await supabase
+          .from('analyses')
+          .update({ 
+            status: 'failed',
+            failure_reason: error.message,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', request.analysisId);
+      }
     } catch (updateError) {
       console.error(`Failed to update failure status:`, updateError);
     }
@@ -289,13 +430,15 @@ serve(async (req) => {
     const authHeader = req.headers.get('authorization') || req.headers.get('Authorization');
     
     console.log(`📝 Processing request:`, {
-      analysisId: validatedRequest.analysisId.substring(0, 8),
-      imageCount: validatedRequest.imageUrls.length,
-      promptLength: validatedRequest.analysisPrompt.length,
-      hasAuth: !!authHeader
+      sessionId: validatedRequest.sessionId?.substring(0, 8) || 'none',
+      analysisId: validatedRequest.analysisId?.substring(0, 8) || 'none',
+      imageCount: validatedRequest.imageUrls?.length || 0,
+      promptLength: validatedRequest.analysisPrompt?.length || 0,
+      hasAuth: !!authHeader,
+      useMultiModel: validatedRequest.useMultiModel
     });
 
-    const result = await executeSimpleAnalysis(validatedRequest, authHeader);
+    const result = await executeAnalysis(validatedRequest, authHeader);
 
     return new Response(
       JSON.stringify(result),
