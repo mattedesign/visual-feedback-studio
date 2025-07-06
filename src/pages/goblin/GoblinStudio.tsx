@@ -83,8 +83,10 @@ const GoblinStudio: React.FC = () => {
     try {
       const session = await createGoblinSession({
         title,
-        goal,
-        personaType: persona,
+        persona_type: persona,
+        analysis_mode: 'single',
+        goal_description: goal,
+        confidence_level: 2,
       });
 
       setSessionId(session.id);
@@ -154,9 +156,8 @@ const GoblinStudio: React.FC = () => {
           </div>
 
           <GoblinPersonaSelector
-            persona={persona}
-            onSelect={(val) => setPersona(val as GoblinPersonaType)}
-            options={GOBLIN_PERSONAS}
+            selectedPersona={persona}
+            onPersonaChange={(val) => setPersona(val as GoblinPersonaType)}
           />
 
           <div>
