@@ -18,6 +18,7 @@ import History from "./pages/History";
 import Settings from "./pages/Settings";
 import Help from "./pages/Help";
 import GoblinStudio from "./pages/goblin/GoblinStudio";
+import GoblinResults from "./pages/goblin/GoblinResults";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { DatabaseSeeder } from "@/components/admin/DatabaseSeeder";
 import { useAuth } from "@/hooks/useAuth";
@@ -69,6 +70,7 @@ const App = () => {
                             <Route path="analyze" element={<Analyze />} />
                             <Route path="analyze-results/:id" element={<AnalyzeResults />} />
                             <Route path="goblin" element={<GoblinStudio />} />
+                            <Route path="goblin/results/:sessionId" element={<GoblinResults />} />
                             <Route path="history" element={<History />} />
                             <Route path="settings" element={<Settings />} />
                             <Route path="help" element={<Help />} />
