@@ -44,6 +44,12 @@ const mainNavItems = [
     badge: "New"
   },
   {
+    title: "Goblin Studio",
+    url: "/goblin",
+    icon: Brain,
+    badge: "👾"
+  },
+  {
     title: "History",
     url: "/history",
     icon: History,
