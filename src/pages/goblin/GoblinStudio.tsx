@@ -22,7 +22,7 @@ import { toast } from 'sonner';
 import { GoblinPersonaSelector, GoblinPersonaType } from '@/components/goblin/personas/PersonaSelector';
 
 const GoblinStudio: React.FC = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
 
   // Form state
@@ -39,14 +39,25 @@ const GoblinStudio: React.FC = () => {
   const [sessionId, setSessionId] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log('🎯 GoblinStudio: useEffect triggered', { user: !!user, location: window.location.pathname });
+    console.log('🎯 GoblinStudio: useEffect triggered', { 
+      user: !!user, 
+      loading, 
+      location: window.location.pathname 
+    });
+    
+    // Don't redirect while auth is still loading
+    if (loading) {
+      console.log('⏳ GoblinStudio: Auth still loading, waiting...');
+      return;
+    }
+    
     if (!user) {
-      console.log('🚨 GoblinStudio: No user, redirecting to auth');
+      console.log('🚨 GoblinStudio: No user after loading complete, redirecting to auth');
       navigate('/auth');
     } else {
       console.log('✅ GoblinStudio: User authenticated, staying on goblin page');
     }
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -170,12 +181,12 @@ const GoblinStudio: React.FC = () => {
     }
   };
 
-  if (!user) {
+  if (loading || !user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p>Loading...</p>
+          <p>{loading ? 'Loading...' : 'Redirecting...'}</p>
         </div>
       </div>
     );
