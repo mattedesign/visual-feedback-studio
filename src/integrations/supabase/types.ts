@@ -447,6 +447,136 @@ export type Database = {
         }
         Relationships: []
       }
+      goblin_analysis_images: {
+        Row: {
+          created_at: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          screen_type: string | null
+          session_id: string | null
+          upload_order: number | null
+          vision_metadata: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          screen_type?: string | null
+          session_id?: string | null
+          upload_order?: number | null
+          vision_metadata?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          screen_type?: string | null
+          session_id?: string | null
+          upload_order?: number | null
+          vision_metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goblin_analysis_images_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "goblin_analysis_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      goblin_analysis_results: {
+        Row: {
+          annotations: Json | null
+          created_at: string | null
+          goblin_gripe_level: string | null
+          id: string
+          model_metadata: Json | null
+          persona_feedback: Json
+          priority_matrix: Json | null
+          processing_time_ms: number | null
+          session_id: string | null
+          synthesis_summary: string | null
+        }
+        Insert: {
+          annotations?: Json | null
+          created_at?: string | null
+          goblin_gripe_level?: string | null
+          id?: string
+          model_metadata?: Json | null
+          persona_feedback: Json
+          priority_matrix?: Json | null
+          processing_time_ms?: number | null
+          session_id?: string | null
+          synthesis_summary?: string | null
+        }
+        Update: {
+          annotations?: Json | null
+          created_at?: string | null
+          goblin_gripe_level?: string | null
+          id?: string
+          model_metadata?: Json | null
+          persona_feedback?: Json
+          priority_matrix?: Json | null
+          processing_time_ms?: number | null
+          session_id?: string | null
+          synthesis_summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goblin_analysis_results_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "goblin_analysis_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      goblin_analysis_sessions: {
+        Row: {
+          analysis_mode: string
+          confidence_level: number | null
+          created_at: string | null
+          goal_description: string | null
+          id: string
+          persona_type: string
+          status: string | null
+          title: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          analysis_mode?: string
+          confidence_level?: number | null
+          created_at?: string | null
+          goal_description?: string | null
+          id?: string
+          persona_type?: string
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          analysis_mode?: string
+          confidence_level?: number | null
+          created_at?: string | null
+          goal_description?: string | null
+          id?: string
+          persona_type?: string
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       knowledge_entries: {
         Row: {
           application_context: Json | null
