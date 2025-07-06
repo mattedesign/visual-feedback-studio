@@ -89,7 +89,7 @@ serve(async (req) => {
     if (request.imageUrls && request.imageUrls.length > 0) {
       console.log('👁️ Step 1: Starting Google Vision analysis...');
       try {
-        const visionResponse = await supabase.functions.invoke('analysis-vision-processor', {
+        const visionResponse = await supabase.functions.invoke('google-vision-analysis', {
           body: {
             sessionId: request.sessionId,
             imageUrls: request.imageUrls
@@ -109,7 +109,7 @@ serve(async (req) => {
 
     // Step 2: Core Claude Analysis
     console.log('🤖 Step 2: Starting Claude analysis...');
-    const claudeResponse = await supabase.functions.invoke('analysis-claude-processor', {
+    const claudeResponse = await supabase.functions.invoke('analyze-design', {
       body: {
         sessionId: request.sessionId,
         analysisPrompt: request.analysisPrompt,
@@ -129,7 +129,7 @@ serve(async (req) => {
     if (request.useMultiModel && request.models && request.models.length > 1) {
       console.log('🔄 Step 3: Starting multi-model coordination...');
       try {
-        const multiModelResponse = await supabase.functions.invoke('analysis-multimodel-orchestrator', {
+        const multiModelResponse = await supabase.functions.invoke('multi-model-analysis', {
           body: {
             sessionId: request.sessionId,
             baseAnalysis: claudeResponse.data,
