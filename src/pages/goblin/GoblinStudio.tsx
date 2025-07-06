@@ -1,333 +1,439 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { 
+  Sparkles, 
+  Play, 
+  Timer, 
+  Upload,
+  CheckCircle,
+  AlertCircle 
+} from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
+import { 
+  createGoblinSession, 
+  uploadGoblinImage, 
+  startGoblinAnalysis 
+} from '@/services/goblin/index';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+// Define the persona type here if PersonaSelector doesn't exist
+export type GoblinPersonaType = 'strategic' | 'mirror' | 'mad' | 'exec' | 'clarity';
+
+interface GoblinPersonaConfig {
+  id: GoblinPersonaType;
+  name: string;
+  emoji: string;
+  description: string;
+  speciality: string;
+  tone: string;
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+const GOBLIN_PERSONAS: GoblinPersonaConfig[] = [
+  {
+    id: 'strategic',
+    name: 'Strategic Peer',
+    emoji: '🎯',
+    description: 'Senior UX strategist providing peer-level critique',
+    speciality: 'Business impact & conversion optimization',
+    tone: 'Professional, research-backed'
+  },
+  {
+    id: 'clarity',
+    name: 'Clarity (The UX Goblin)',
+    emoji: '👾',
+    description: 'Brutally honest feedback with no sugarcoating',
+    speciality: 'Truth-telling & practical fixes',
+    tone: 'Sassy, direct, helpful'
+  },
+  {
+    id: 'mirror',
+    name: 'Mirror of Intent',
+    emoji: '🪞',
+    description: 'Reflective coach for self-awareness',
+    speciality: 'Intent vs perception analysis',
+    tone: 'Curious, non-judgmental'
+  },
+  {
+    id: 'mad',
+    name: 'Mad UX Scientist',
+    emoji: '🧪',
+    description: 'Wild experiments and unconventional approaches',
+    speciality: 'Pattern-breaking ideas & A/B tests',
+    tone: 'Creative, experimental'
+  },
+  {
+    id: 'exec',
+    name: 'C-Suite Whisperer',
+    emoji: '💼',
+    description: 'Business impact-focused summaries',
+    speciality: 'Executive communication & ROI',
+    tone: 'Executive, metrics-driven'
   }
+];
 
-  try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+// Inline PersonaSelector component
+const GoblinPersonaSelector: React.FC<{
+  selectedPersona: GoblinPersonaType;
+  onPersonaChange: (persona: GoblinPersonaType) => void;
+}> = ({ selectedPersona, onPersonaChange }) => {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {GOBLIN_PERSONAS.map((persona) => (
+        <Card
+          key={persona.id}
+          className={`cursor-pointer transition-all hover:shadow-lg ${
+            selectedPersona === persona.id
+              ? persona.id === 'clarity'
+                ? 'ring-2 ring-green-500 bg-green-50'
+                : 'ring-2 ring-purple-500 bg-purple-50'
+              : 'hover:ring-1 hover:ring-gray-300'
+          }`}
+          onClick={() => onPersonaChange(persona.id)}
+        >
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">{persona.emoji}</span>
+              <div className="flex-1">
+                <h3 className="font-semibold text-sm">{persona.name}</h3>
+                <p className="text-xs text-gray-600 mt-1">{persona.description}</p>
+                <div className="mt-2 space-y-1">
+                  <Badge variant="outline" className="text-xs">
+                    {persona.speciality}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+};
 
-    const { sessionId } = await req.json()
-    console.log('🎯 Goblin Orchestrator starting for session:', sessionId)
+const GoblinStudio: React.FC = () => {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
 
-    // Update session status
-    const { error: updateError } = await supabaseClient
-      .from('goblin_analysis_sessions')
-      .update({ status: 'processing', updated_at: new Date().toISOString() })
-      .eq('id', sessionId)
+  // Form state
+  const [title, setTitle] = useState('');
+  const [goal, setGoal] = useState('');
+  const [persona, setPersona] = useState<GoblinPersonaType>('strategic');
+  const [images, setImages] = useState<File[]>([]);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
 
-    if (updateError) throw updateError
+  // Analysis state
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [analysisStage, setAnalysisStage] = useState('');
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
-    // Get session details
-    const { data: session, error: sessionError } = await supabaseClient
-      .from('goblin_analysis_sessions')
-      .select('*')
-      .eq('id', sessionId)
-      .single()
-
-    if (sessionError) throw sessionError
-    console.log('📋 Session details:', { 
-      persona: session.persona_type, 
-      mode: session.analysis_mode,
-      goal: session.goal_description 
-    })
-
-    // Get images for this session
-    const { data: images, error: imagesError } = await supabaseClient
-      .from('goblin_analysis_images')
-      .select('*')
-      .eq('session_id', sessionId)
-      .order('upload_order')
-
-    if (imagesError) throw imagesError
-
-    console.log(`📸 Found ${images.length} images to analyze`)
-
-    // STEP 1: Vision Detection for each image
-    const screenDetections = []
-    for (const image of images) {
-      try {
-        console.log(`🔍 Calling goblin-vision-screen-detector for image ${image.upload_order}`)
-        
-        const visionResponse = await fetch(
-          `${Deno.env.get('SUPABASE_URL')}/functions/v1/goblin-vision-screen-detector`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              imageUrl: image.file_path,
-              order: image.upload_order
-            })
-          }
-        )
-
-        if (!visionResponse.ok) {
-          console.error(`❌ Vision detector HTTP error for image ${image.upload_order}: ${visionResponse.status}`)
-          throw new Error(`Vision detector returned ${visionResponse.status}`)
-        }
-
-        const visionData = await visionResponse.json()
-        console.log(`📥 Vision response for image ${image.upload_order}:`, JSON.stringify(visionData))
-        
-        if (visionData.success) {
-          console.log(`✅ Vision detection successful for image ${image.upload_order}: ${visionData.screenType} (${visionData.confidence})`)
-          screenDetections.push({
-            ...visionData,
-            imageId: image.id
-          })
-        } else {
-          console.error(`⚠️ Vision detection failed for image ${image.upload_order}:`, visionData.error)
-          // Use fallback but continue processing
-          screenDetections.push({
-            order: image.upload_order,
-            screenType: visionData.fallback?.screenType || 'interface',
-            confidence: 0,
-            error: visionData.error,
-            metadata: visionData.fallback?.metadata || { labels: [], topScores: [] },
-            imageId: image.id
-          })
-        }
-
-        // Update image with vision metadata (even if failed)
-        await supabaseClient
-          .from('goblin_analysis_images')
-          .update({ 
-            screen_type: visionData.screenType || visionData.fallback?.screenType || 'interface',
-            vision_metadata: visionData
-          })
-          .eq('id', image.id)
-
-      } catch (visionError) {
-        console.error(`❌ Vision detection error for image ${image.id}:`, visionError.message)
-        
-        // Add fallback detection
-        screenDetections.push({
-          order: image.upload_order,
-          screenType: 'interface',
-          confidence: 0,
-          error: visionError.message,
-          metadata: { labels: [], topScores: [] },
-          imageId: image.id
-        })
-        
-        // Still update the image record
-        await supabaseClient
-          .from('goblin_analysis_images')
-          .update({ 
-            screen_type: 'interface',
-            vision_metadata: { error: visionError.message }
-          })
-          .eq('id', image.id)
-      }
-    }
-
-    console.log(`✅ Vision detection phase complete. Processed ${screenDetections.length} images`)
-    console.log('📊 Detection summary:', screenDetections.map(d => ({
-      order: d.order,
-      type: d.screenType,
-      confidence: d.confidence,
-      hasError: !!d.error
-    })))
-
-    // STEP 2: Build prompts with persona
-    console.log('📝 Building goblin prompts...')
-    const promptResponse = await fetch(
-      `${Deno.env.get('SUPABASE_URL')}/functions/v1/goblin-persona-prompt-builder`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          persona: session.persona_type,
-          mode: session.analysis_mode,
-          goal: session.goal_description,
-          confidence: session.confidence_level,
-          screenTypes: screenDetections
-        })
-      }
-    )
-
-    if (!promptResponse.ok) {
-      const errorText = await promptResponse.text()
-      console.error('❌ Prompt building failed:', errorText)
-      throw new Error('Prompt building failed')
-    }
-
-    const promptData = await promptResponse.json()
-    console.log('✅ Prompts built successfully:', promptData)
-
-    // STEP 3: Claude Analysis
-    console.log('🤖 Starting Claude analysis...')
-    const claudeResponse = await fetch(
-      `${Deno.env.get('SUPABASE_URL')}/functions/v1/goblin-model-claude-analyzer`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: promptData.prompt,
-          systemMessage: promptData.systemMessage,
-          imageUrls: images.map(img => img.file_path),
-          persona: session.persona_type,
-          metadata: {
-            screenTypes: screenDetections,
-            sessionId: sessionId
-          }
-        })
-      }
-    )
-
-    if (!claudeResponse.ok) {
-      const errorText = await claudeResponse.text()
-      console.error('❌ Claude analysis failed:', errorText)
-      throw new Error('Claude analysis failed')
-    }
-
-    const claudeData = await claudeResponse.json()
-    console.log('✅ Claude analysis complete:', JSON.stringify(claudeData).substring(0, 500))
-
-    // STEP 4: Synthesis (if multiple images or always for consistency)
-    let finalResults = claudeData
+  useEffect(() => {
+    console.log('🎯 GoblinStudio: useEffect triggered', { 
+      user: !!user, 
+      loading, 
+      location: window.location.pathname 
+    });
     
-    console.log('🔄 Synthesizing results...')
-    const synthesisResponse = await fetch(
-      `${Deno.env.get('SUPABASE_URL')}/functions/v1/goblin-model-synthesis`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          claudeResults: claudeData,
-          screenDetections,
-          persona: session.persona_type
-        })
-      }
-    )
-
-    if (synthesisResponse.ok) {
-      finalResults = await synthesisResponse.json()
-      console.log('✅ Synthesis complete:', JSON.stringify(finalResults).substring(0, 500))
+    if (loading) {
+      console.log('⏳ GoblinStudio: Auth still loading, waiting...');
+      return;
+    }
+    
+    if (!user) {
+      console.log('🚨 GoblinStudio: No user after loading complete, redirecting to auth');
+      navigate('/auth');
     } else {
-      console.error('⚠️ Synthesis failed, using Claude results directly')
+      console.log('✅ GoblinStudio: User authenticated, staying on goblin page');
+    }
+  }, [user, loading, navigate]);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const fileArray = Array.from(e.target.files);
+      setImages(fileArray);
+      
+      // Create preview URLs
+      const urls = fileArray.map(file => URL.createObjectURL(file));
+      setImageUrls(urls);
+    }
+  };
+
+  const canStartAnalysis = () => {
+    return images.length > 0 && goal.trim().length > 0 && title.trim().length > 0;
+  };
+
+  const startGoblinAnalysisFlow = async () => {
+    if (!canStartAnalysis()) {
+      toast.error('Please complete all required fields and upload images');
+      return;
     }
 
-    // Prepare the results data with better structure
-    const resultsData = {
-      session_id: sessionId,
-      persona_feedback: finalResults.feedback || {
-        [session.persona_type]: {
-          content: finalResults.result?.content || finalResults.analysis || 'Analysis completed',
-          timestamp: new Date().toISOString()
-        }
-      },
-      synthesis_summary: finalResults.summary || `${session.persona_type} analysis for ${session.goal_description}`,
-      priority_matrix: finalResults.priorities || {
-        whatWorks: [],
-        whatHurts: [],
-        whatNext: []
-      },
-      annotations: finalResults.annotations || [],
-      model_metadata: {
-        model: 'claude-3-sonnet',
-        persona: session.persona_type,
-        screenDetections,
-        processingSteps: {
-          visionDetection: screenDetections.length > 0,
-          promptBuilding: !!promptData,
-          claudeAnalysis: !!claudeData,
-          synthesis: !!finalResults
-        },
-        ...finalResults.metadata
-      },
-      processing_time_ms: Date.now() - new Date(session.created_at).getTime(),
-      goblin_gripe_level: session.persona_type === 'clarity' ? 
-        (finalResults.gripeLevel || 'medium') : null
-    }
+    setIsAnalyzing(true);
+    setAnalysisProgress(10);
+    setAnalysisStage('Preparing goblin workspace...');
 
-    console.log('💾 Saving results:', JSON.stringify(resultsData).substring(0, 500))
-
-    // Save results
-    const { error: resultsError } = await supabaseClient
-      .from('goblin_analysis_results')
-      .insert(resultsData)
-
-    if (resultsError) {
-      console.error('❌ Failed to save results:', resultsError)
-      throw resultsError
-    }
-
-    // Update session to completed
-    await supabaseClient
-      .from('goblin_analysis_sessions')
-      .update({ 
-        status: 'completed',
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', sessionId)
-
-    console.log('🎉 Goblin analysis complete!')
-
-    return new Response(JSON.stringify({
-      success: true,
-      sessionId,
-      message: '🎉 Goblin analysis complete!'
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    })
-
-  } catch (error) {
-    console.error('❌ Goblin orchestrator error:', error)
-    console.error('Stack trace:', error.stack)
-    
-    // Update session to failed
     try {
-      const supabaseClient = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-      )
+      // Step 1: Create session using service layer
+      setAnalysisStage('Creating analysis session...');
+      const session = await createGoblinSession({
+        title: title.trim(),
+        persona_type: persona,
+        analysis_mode: images.length > 1 ? 'journey' : 'single',
+        goal_description: goal.trim(),
+        confidence_level: 2
+      });
       
-      const body = await req.json().catch(() => ({ sessionId: null }))
-      
-      if (body.sessionId) {
-        await supabaseClient
-          .from('goblin_analysis_sessions')
-          .update({ 
-            status: 'failed',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', body.sessionId)
-      }
-    } catch (e) {
-      console.error('Failed to update session status:', e)
-    }
+      setSessionId(session.id);
+      setAnalysisProgress(30);
+      console.log('✅ Session created:', session.id);
 
-    return new Response(JSON.stringify({ 
-      error: error.message,
-      stage: 'goblin-orchestration',
-      details: error.stack
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    })
+      // Step 2: Upload images using service layer
+      setAnalysisStage('Uploading images to goblin lair...');
+      for (let i = 0; i < images.length; i++) {
+        const progress = 30 + (20 * (i + 1) / images.length);
+        setAnalysisProgress(progress);
+        
+        const imageRecord = await uploadGoblinImage(session.id, images[i], i + 1);
+        console.log(`✅ Image ${i + 1} uploaded:`, imageRecord);
+      }
+      setAnalysisProgress(50);
+
+      // Step 3: Start analysis using service layer (only pass sessionId!)
+      setAnalysisStage(persona === 'clarity' ? 'Waking up Clarity the goblin...' : 'Starting analysis...');
+      const analysisResult = await startGoblinAnalysis(session.id);
+      
+      console.log('✅ Analysis started:', analysisResult);
+      setAnalysisProgress(90);
+      setAnalysisStage('Finalizing goblin feedback...');
+      
+      // Brief pause for UX
+      setTimeout(() => {
+        setAnalysisProgress(100);
+        setAnalysisStage(persona === 'clarity' ? 'Goblin analysis complete! 👾' : 'Analysis complete!');
+        
+        toast.success('Goblin analysis completed successfully!');
+        
+        // Navigate to results
+        setTimeout(() => {
+          navigate(`/goblin/results/${session.id}`);
+        }, 1000);
+      }, 1000);
+
+    } catch (error) {
+      console.error('❌ Goblin analysis failed:', error);
+      toast.error(error instanceof Error ? error.message : 'Goblin analysis failed');
+      setIsAnalyzing(false);
+      setAnalysisProgress(0);
+      setAnalysisStage('');
+    }
+  };
+
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p>{loading ? 'Loading...' : 'Redirecting...'}</p>
+        </div>
+      </div>
+    );
   }
-})
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-4 space-y-8">
+        {/* Header */}
+        <div className="text-center space-y-3">
+          <div className="flex items-center justify-center gap-2 text-purple-600 mb-2">
+            <Sparkles className="w-8 h-8" />
+            <span className="text-3xl font-bold">Figmant Goblin Studio</span>
+          </div>
+          <p className="text-lg text-gray-600">
+            Multi-persona UX analysis with brutally honest goblin feedback
+          </p>
+          <div className="flex items-center justify-center gap-2">
+            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+              v128.1 • Goblin Edition
+            </Badge>
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              👾 Clarity Available
+            </Badge>
+          </div>
+        </div>
+
+        {!isAnalyzing ? (
+          <div className="space-y-8">
+            {/* Analysis Setup */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Upload className="w-5 h-5" />
+                  Analysis Setup
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="title">Analysis Title</Label>
+                    <Input
+                      id="title"
+                      placeholder="e.g., Dashboard Goblin Review"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="images">Upload Design Images</Label>
+                    <Input
+                      id="images"
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageUpload}
+                      className="cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="goal">What are you trying to achieve?</Label>
+                  <Textarea
+                    id="goal"
+                    placeholder="e.g., Help users find and use the main dashboard features without getting lost or confused"
+                    value={goal}
+                    onChange={(e) => setGoal(e.target.value)}
+                    rows={3}
+                    className="resize-none"
+                  />
+                </div>
+
+                {/* Image Preview */}
+                {images.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Uploaded Images ({images.length})</Label>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {imageUrls.map((url, index) => (
+                        <div key={index} className="relative">
+                          <img
+                            src={url}
+                            alt={`Upload ${index + 1}`}
+                            className="w-full h-24 object-cover rounded-md border border-gray-200"
+                          />
+                          <Badge 
+                            variant="secondary" 
+                            className="absolute top-1 left-1 text-xs"
+                          >
+                            {index + 1}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Persona Selection */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Choose Your Analysis Persona</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <GoblinPersonaSelector
+                  selectedPersona={persona}
+                  onPersonaChange={setPersona}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Start Analysis Button */}
+            <div className="flex justify-center">
+              <Button
+                onClick={startGoblinAnalysisFlow}
+                disabled={!canStartAnalysis()}
+                size="lg"
+                className={`px-8 py-4 text-lg font-semibold ${
+                  persona === 'clarity' 
+                    ? 'bg-green-600 hover:bg-green-700' 
+                    : 'bg-purple-600 hover:bg-purple-700'
+                } text-white`}
+              >
+                <Play className="w-5 h-5 mr-2" />
+                {persona === 'clarity' ? 'Wake Up the Goblin 👾' : 'Start Analysis'}
+              </Button>
+            </div>
+
+            {/* Requirements Check */}
+            <Card className="bg-gray-50">
+              <CardContent className="pt-6">
+                <h4 className="font-semibold mb-3 text-gray-900">Ready to Analyze?</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    {title.trim() ? <CheckCircle className="w-4 h-4 text-green-500" /> : <AlertCircle className="w-4 h-4 text-gray-400" />}
+                    <span className={title.trim() ? 'text-green-700' : 'text-gray-500'}>Analysis title</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {goal.trim() ? <CheckCircle className="w-4 h-4 text-green-500" /> : <AlertCircle className="w-4 h-4 text-gray-400" />}
+                    <span className={goal.trim() ? 'text-green-700' : 'text-gray-500'}>Goal description</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {images.length > 0 ? <CheckCircle className="w-4 h-4 text-green-500" /> : <AlertCircle className="w-4 h-4 text-gray-400" />}
+                    <span className={images.length > 0 ? 'text-green-700' : 'text-gray-500'}>Images uploaded</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          /* Analysis Progress */
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Timer className="w-5 h-5" />
+                {persona === 'clarity' ? 'Goblin Analysis in Progress' : 'Analysis in Progress'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="text-center">
+                <div className="text-6xl mb-4">
+                  {persona === 'clarity' ? '👾' : '🎯'}
+                </div>
+                <h3 className="text-xl font-semibold mb-2">
+                  {persona === 'clarity' ? 'Clarity is examining your design...' : 'Analyzing your design...'}
+                </h3>
+              </div>
+              
+              <div className="space-y-3">
+                <Progress value={analysisProgress} className="w-full h-3" />
+                <p className="text-center text-gray-600 font-medium">{analysisStage}</p>
+                <div className="text-center">
+                  <Badge variant="secondary" className="text-lg px-4 py-1">
+                    {analysisProgress}% Complete
+                  </Badge>
+                </div>
+              </div>
+
+              {persona === 'clarity' && analysisProgress > 40 && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                  <p className="text-green-700 text-sm italic">
+                    *Goblin muttering: "Hmm, interesting choices, human..."*
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default GoblinStudio;
