@@ -39,8 +39,12 @@ const GoblinStudio: React.FC = () => {
   const [sessionId, setSessionId] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('🎯 GoblinStudio: useEffect triggered', { user: !!user, location: window.location.pathname });
     if (!user) {
+      console.log('🚨 GoblinStudio: No user, redirecting to auth');
       navigate('/auth');
+    } else {
+      console.log('✅ GoblinStudio: User authenticated, staying on goblin page');
     }
   }, [user, navigate]);
 
