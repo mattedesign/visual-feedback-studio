@@ -16,8 +16,14 @@ import {
   AlertCircle 
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+// Import the service functions!
+import { 
+  createGoblinSession, 
+  uploadGoblinImage, 
+  startGoblinAnalysis 
+} from '@/services/goblin';
 
 import { GoblinPersonaSelector, GoblinPersonaType } from '@/components/goblin/personas/PersonaSelector';
 
@@ -45,7 +51,6 @@ const GoblinStudio: React.FC = () => {
       location: window.location.pathname 
     });
     
-    // Don't redirect while auth is still loading
     if (loading) {
       console.log('⏳ GoblinStudio: Auth still loading, waiting...');
       return;
@@ -74,48 +79,8 @@ const GoblinStudio: React.FC = () => {
     return images.length > 0 && goal.trim().length > 0 && title.trim().length > 0;
   };
 
-  const uploadImagesToSupabase = async (): Promise<string[]> => {
-    const uploadPromises = images.map(async (image, index) => {
-      const fileName = `goblin-${Date.now()}-${index}-${image.name}`;
-      
-      const { data, error } = await supabase.storage
-        .from('analysis-images')
-        .upload(fileName, image);
-
-      if (error) throw error;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('analysis-images')
-        .getPublicUrl(fileName);
-
-      return publicUrl;
-    });
-
-    return Promise.all(uploadPromises);
-  };
-
-  const createGoblinSession = async () => {
-    if (!user) throw new Error('User not authenticated');
-
-    const { data, error } = await supabase
-      .from('goblin_analysis_sessions')
-      .insert({
-        user_id: user.id,
-        title: title.trim(),
-        persona_type: persona,
-        analysis_mode: images.length > 1 ? 'journey' : 'single',
-        goal_description: goal.trim(),
-        confidence_level: 2,
-        status: 'pending'
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data.id;
-  };
-
-  const startGoblinAnalysis = async () => {
+  // FIXED: Use the service layer properly!
+  const startGoblinAnalysisFlow = async () => {
     if (!canStartAnalysis()) {
       toast.error('Please complete all required fields and upload images');
       return;
@@ -126,40 +91,40 @@ const GoblinStudio: React.FC = () => {
     setAnalysisStage('Preparing goblin workspace...');
 
     try {
-      // Step 1: Upload images
-      setAnalysisStage('Uploading images to goblin lair...');
-      const uploadedImageUrls = await uploadImagesToSupabase();
-      setAnalysisProgress(30);
-
-      // Step 2: Create session
+      // Step 1: Create session using service layer
       setAnalysisStage('Creating analysis session...');
-      const newSessionId = await createGoblinSession();
-      setSessionId(newSessionId);
-      setAnalysisProgress(40);
+      const session = await createGoblinSession({
+        title: title.trim(),
+        persona_type: persona,
+        analysis_mode: images.length > 1 ? 'journey' : 'single',
+        goal_description: goal.trim(),
+        confidence_level: 2
+      });
+      
+      setSessionId(session.id);
+      setAnalysisProgress(30);
+      console.log('✅ Session created:', session.id);
 
-      // Step 3: Start analysis
-      setAnalysisStage(`${persona === 'clarity' ? 'Waking up Clarity the goblin...' : 'Starting analysis...'}`);
+      // Step 2: Upload images using service layer
+      setAnalysisStage('Uploading images to goblin lair...');
+      for (let i = 0; i < images.length; i++) {
+        const progress = 30 + (20 * (i + 1) / images.length);
+        setAnalysisProgress(progress);
+        
+        const imageRecord = await uploadGoblinImage(session.id, images[i], i + 1);
+        console.log(`✅ Image ${i + 1} uploaded:`, imageRecord);
+      }
       setAnalysisProgress(50);
 
-      const { data: result, error: analysisError } = await supabase.functions.invoke('goblin-analysis-orchestrator', {
-        body: {
-          sessionId: newSessionId,
-          imageUrls: uploadedImageUrls,
-          persona,
-          mode: images.length > 1 ? 'journey' : 'single',
-          goal: goal.trim(),
-          confidence: 2
-        }
-      });
-
-      if (analysisError) {
-        throw new Error(`Goblin analysis failed: ${analysisError.message}`);
-      }
+      // Step 3: Start analysis using service layer (only pass sessionId!)
+      setAnalysisStage(persona === 'clarity' ? 'Waking up Clarity the goblin...' : 'Starting analysis...');
+      const analysisResult = await startGoblinAnalysis(session.id);
       
+      console.log('✅ Analysis started:', analysisResult);
       setAnalysisProgress(90);
       setAnalysisStage('Finalizing goblin feedback...');
       
-      // Simulate final processing
+      // Brief pause for UX
       setTimeout(() => {
         setAnalysisProgress(100);
         setAnalysisStage(persona === 'clarity' ? 'Goblin analysis complete! 👾' : 'Analysis complete!');
@@ -168,12 +133,12 @@ const GoblinStudio: React.FC = () => {
         
         // Navigate to results
         setTimeout(() => {
-          navigate(`/goblin/results/${newSessionId}`);
+          navigate(`/goblin/results/${session.id}`);
         }, 1000);
       }, 1000);
 
     } catch (error) {
-      console.error('Goblin analysis failed:', error);
+      console.error('❌ Goblin analysis failed:', error);
       toast.error(error instanceof Error ? error.message : 'Goblin analysis failed');
       setIsAnalyzing(false);
       setAnalysisProgress(0);
@@ -195,7 +160,7 @@ const GoblinStudio: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 space-y-8">
-        {/* Header */}
+        {/* Header - keep as is */}
         <div className="text-center space-y-3">
           <div className="flex items-center justify-center gap-2 text-purple-600 mb-2">
             <Sparkles className="w-8 h-8" />
@@ -214,9 +179,10 @@ const GoblinStudio: React.FC = () => {
           </div>
         </div>
 
+        {/* Rest of the component stays the same, just update the button onClick */}
         {!isAnalyzing ? (
           <div className="space-y-8">
-            {/* Analysis Setup */}
+            {/* Analysis Setup - keep as is */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -225,6 +191,7 @@ const GoblinStudio: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Keep all the form fields as they are */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="title">Analysis Title</Label>
@@ -261,7 +228,7 @@ const GoblinStudio: React.FC = () => {
                   />
                 </div>
 
-                {/* Image Preview */}
+                {/* Image Preview - keep as is */}
                 {images.length > 0 && (
                   <div className="space-y-2">
                     <Label>Uploaded Images ({images.length})</Label>
@@ -287,7 +254,7 @@ const GoblinStudio: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Persona Selection */}
+            {/* Persona Selection - keep as is */}
             <Card>
               <CardHeader>
                 <CardTitle>Choose Your Analysis Persona</CardTitle>
@@ -300,10 +267,10 @@ const GoblinStudio: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Start Analysis Button */}
+            {/* UPDATED: Button now calls the fixed function */}
             <div className="flex justify-center">
               <Button
-                onClick={startGoblinAnalysis}
+                onClick={startGoblinAnalysisFlow} // Changed function name
                 disabled={!canStartAnalysis()}
                 size="lg"
                 className={`px-8 py-4 text-lg font-semibold ${
@@ -317,7 +284,7 @@ const GoblinStudio: React.FC = () => {
               </Button>
             </div>
 
-            {/* Requirements Check */}
+            {/* Requirements Check - keep as is */}
             <Card className="bg-gray-50">
               <CardContent className="pt-6">
                 <h4 className="font-semibold mb-3 text-gray-900">Ready to Analyze?</h4>
@@ -339,7 +306,7 @@ const GoblinStudio: React.FC = () => {
             </Card>
           </div>
         ) : (
-          /* Analysis Progress */
+          /* Analysis Progress - keep as is */
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
