@@ -24,7 +24,7 @@ import {
   startGoblinAnalysis
 } from '@/services/goblin/index';
 import { supabase } from '@/integrations/supabase/client';
-import GoblinPersonaSelector from '@/components/goblin/personas/PersonaSelector';
+import { GoblinPersonaSelector } from '@/components/goblin/personas/PersonaSelector';
 
 export type GoblinPersonaType = 'strategic' | 'mirror' | 'mad' | 'exec' | 'clarity';
 
