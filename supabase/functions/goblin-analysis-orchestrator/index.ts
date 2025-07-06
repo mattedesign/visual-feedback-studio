@@ -14,8 +14,45 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let requestBody;
+  let sessionId;
+
   try {
-    const { sessionId } = await req.json();
+    // Parse request body with error handling
+    try {
+      requestBody = await req.json();
+      console.log('📥 Received request body:', requestBody);
+    } catch (parseError) {
+      console.error('❌ Failed to parse request body:', parseError);
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Invalid request body - must be valid JSON',
+          details: parseError.message
+        }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // Validate sessionId
+    sessionId = requestBody?.sessionId;
+    if (!sessionId) {
+      console.error('❌ Missing sessionId in request');
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'sessionId is required',
+          received: requestBody
+        }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
 
     // Initialize Supabase
     const supabase = createClient(
@@ -205,29 +242,36 @@ serve(async (req) => {
   } catch (error) {
     console.error('❌ Goblin orchestration failed:', error);
 
-    // Try to update session status to error
-    try {
-      const supabase = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-      );
-      
-      const { sessionId } = await req.json();
-      if (sessionId) {
+    // Try to update session status to error if we have a valid sessionId
+    if (sessionId) {
+      try {
+        const supabase = createClient(
+          Deno.env.get('SUPABASE_URL') ?? '',
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+        );
+        
+        console.log(`🔄 Updating session ${sessionId} status to failed`);
         await supabase
           .from('goblin_analysis_sessions')
-          .update({ status: 'failed' })
+          .update({ 
+            status: 'failed',
+            updated_at: new Date().toISOString()
+          })
           .eq('id', sessionId);
+        
+        console.log(`✅ Session ${sessionId} marked as failed`);
+      } catch (updateError) {
+        console.error('Failed to update session status:', updateError);
       }
-    } catch (updateError) {
-      console.error('Failed to update session status:', updateError);
     }
 
     return new Response(
       JSON.stringify({ 
         success: false,
         error: error.message,
-        timestamp: new Date().toISOString()
+        sessionId: sessionId || null,
+        timestamp: new Date().toISOString(),
+        stage: 'orchestration'
       }),
       { 
         status: 500,
