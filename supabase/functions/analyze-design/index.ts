@@ -422,12 +422,16 @@ async function executeAnalysis(request: AnalysisRequest, authHeader?: string): P
 
 // Main request handler
 serve(async (req) => {
+  console.log('🔥 EDGE FUNCTION CALLED - Request received:', req.method);
+  
   // Handle CORS
   if (req.method === 'OPTIONS') {
+    console.log('✅ CORS preflight handled');
     return new Response(null, { headers: corsHeaders });
   }
 
   if (req.method !== 'POST') {
+    console.log('❌ Invalid method:', req.method);
     return new Response(
       JSON.stringify({ error: 'Method not allowed' }),
       { 
@@ -438,8 +442,15 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🔍 Parsing request body...');
     const body = await req.json();
+    console.log('✅ Body parsed, validating request...');
     const validatedRequest = validateRequest(body);
+    console.log('✅ Request validated:', {
+      sessionId: validatedRequest.sessionId?.substring(0, 8) || 'none',
+      hasImages: !!validatedRequest.imageUrls?.length,
+      hasPrompt: !!validatedRequest.analysisPrompt
+    });
     
     // Get auth header from request
     const authHeader = req.headers.get('authorization') || req.headers.get('Authorization');
@@ -453,7 +464,9 @@ serve(async (req) => {
       useMultiModel: validatedRequest.useMultiModel
     });
 
+    console.log('🚀 Starting analysis execution...');
     const result = await executeAnalysis(validatedRequest, authHeader);
+    console.log('✅ Analysis completed successfully');
 
     return new Response(
       JSON.stringify(result),
@@ -466,6 +479,7 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error(`❌ Request failed:`, errorMessage);
+    console.error(`❌ Error stack:`, error instanceof Error ? error.stack : 'No stack trace');
 
     let statusCode = 500;
     if (errorMessage.includes('required') || errorMessage.includes('validation')) statusCode = 400;
@@ -474,7 +488,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false,
-        error: errorMessage
+        error: errorMessage,
+        timestamp: new Date().toISOString()
       }),
       { 
         status: statusCode,
