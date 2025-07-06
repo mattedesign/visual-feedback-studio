@@ -162,17 +162,19 @@ export default function Analyze() {
         })
         .eq('id', session.id)
 
-      // Trigger analysis
-      console.log('Starting analysis for session:', session.id)
+      // Trigger analysis orchestration
+      console.log('Starting analysis orchestration for session:', session.id)
       
-      const { data, error } = await supabase.functions.invoke('analyze-design', {
+      const { data, error } = await supabase.functions.invoke('analysis-orchestrator', {
         body: { 
           sessionId: session.id,
           imageUrls: uploadedImages,
           analysisPrompt: userContext,
           useMultiModel,
           models: selectedModels,
-          analysisType
+          analysisType,
+          enablePerplexityResearch: true,
+          enableMicrocopyEnhancement: true
         }
       })
 
