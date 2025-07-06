@@ -62,20 +62,20 @@ const App = () => {
                         <div className="flex-1 overflow-auto">
                           <Routes>
                             <Route path="/" element={<Dashboard />} />
-                            <Route path="/analysis" element={<Analysis />} />
-                            <Route path="/analysis/:id" element={<AnalysisResults />} />
-                            <Route path="/analysis-results" element={<AnalysisResults />} />
-                            <Route path="/analysis-results/:id" element={<AnalysisResults />} />
-                            <Route path="/analyze" element={<Analyze />} />
-                            <Route path="/analyze-results/:id" element={<AnalyzeResults />} />
-                            <Route path="/goblin" element={<GoblinStudio />} />
-                            <Route path="/history" element={<History />} />
-                            <Route path="/settings" element={<Settings />} />
-                            <Route path="/help" element={<Help />} />
-                            <Route path="/upgrade-success" element={<UpgradeSuccess />} />
-                            <Route path="/vector-test" element={<VectorTest />} />
-                            <Route path="/hybrid-engine-test" element={<HybridEngineTest />} />
-                            <Route path="/database-seeder" element={<DatabaseSeeder />} />
+                            <Route path="analysis" element={<Analysis />} />
+                            <Route path="analysis/:id" element={<AnalysisResults />} />
+                            <Route path="analysis-results" element={<AnalysisResults />} />
+                            <Route path="analysis-results/:id" element={<AnalysisResults />} />
+                            <Route path="analyze" element={<Analyze />} />
+                            <Route path="analyze-results/:id" element={<AnalyzeResults />} />
+                            <Route path="goblin" element={<GoblinStudio />} />
+                            <Route path="history" element={<History />} />
+                            <Route path="settings" element={<Settings />} />
+                            <Route path="help" element={<Help />} />
+                            <Route path="upgrade-success" element={<UpgradeSuccess />} />
+                            <Route path="vector-test" element={<VectorTest />} />
+                            <Route path="hybrid-engine-test" element={<HybridEngineTest />} />
+                            <Route path="database-seeder" element={<DatabaseSeeder />} />
                             <Route path="*" element={<Navigate to="/" replace />} />
                           </Routes>
                         </div>
