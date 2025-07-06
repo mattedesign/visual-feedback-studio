@@ -24,7 +24,7 @@ import {
   startGoblinAnalysis
 } from '@/services/goblin/index';
 import { supabase } from '@/integrations/supabase/client';
-import GoblinPersonaSelector from '@/components/goblin/personas/PersonaSelector';
+import { GoblinPersonaSelector } from '@/components/goblin/personas/PersonaSelector';
 
 export type GoblinPersonaType = 'strategic' | 'mirror' | 'mad' | 'exec' | 'clarity';
 
@@ -83,8 +83,10 @@ const GoblinStudio: React.FC = () => {
     try {
       const session = await createGoblinSession({
         title,
-        goal,
-        personaType: persona,
+        goal_description: goal,
+        persona_type: persona,
+        analysis_mode: 'single',
+        confidence_level: 1
       });
 
       setSessionId(session.id);
@@ -142,9 +144,8 @@ const GoblinStudio: React.FC = () => {
           </div>
 
           <GoblinPersonaSelector
-            persona={persona}
-            onSelect={(val) => setPersona(val as GoblinPersonaType)}
-            options={GOBLIN_PERSONAS}
+            selectedPersona={persona}
+            onPersonaChange={(val) => setPersona(val)}
           />
 
           <div>
