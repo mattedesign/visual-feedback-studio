@@ -23,7 +23,7 @@ import {
   uploadGoblinImage,
   startGoblinAnalysis
 } from '@/services/goblin/index';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 
 
 export type GoblinPersonaType = 'strategic' | 'mirror' | 'mad' | 'exec' | 'clarity';
