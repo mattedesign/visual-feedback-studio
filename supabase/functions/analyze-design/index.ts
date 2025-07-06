@@ -177,10 +177,25 @@ Focus on actionable, specific recommendations that directly address the user's c
 
 // Enhanced save results for session-based analysis
 async function saveResults(supabase: any, request: AnalysisRequest, claudeResult: any, authHeader?: string): Promise<any> {
-  // Get current user from request header
+  // For session-based analysis, get user ID from the session data instead of auth token
   let userId = null;
   
-  if (authHeader) {
+  if (request.sessionId) {
+    // Get user ID from session data
+    const { data: sessionData, error: sessionError } = await supabase
+      .from('analysis_sessions')
+      .select('user_id')
+      .eq('id', request.sessionId)
+      .single();
+    
+    if (sessionError) {
+      console.error('Could not get user from session:', sessionError.message);
+      throw new Error('Session not found');
+    }
+    
+    userId = sessionData.user_id;
+  } else if (authHeader) {
+    // Legacy mode: try to get user from auth header
     try {
       const token = authHeader.replace('Bearer ', '');
       const { data: { user } } = await supabase.auth.getUser(token);
