@@ -125,13 +125,27 @@ const GoblinStudio: React.FC = () => {
         </h1>
 
         <div className="space-y-4">
-          <div>
-            <Label>Title</Label>
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Onboarding Redesign for Checkout Flow"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>Title</Label>
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. Onboarding Redesign for Checkout Flow"
+              />
+            </div>
+            <div>
+              <Label>Upload Screenshots</Label>
+              <Input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  setImages(files);
+                }}
+              />
+            </div>
           </div>
 
           <div>
@@ -148,18 +162,6 @@ const GoblinStudio: React.FC = () => {
             onPersonaChange={(val) => setPersona(val)}
           />
 
-          <div>
-            <Label>Upload Screenshots</Label>
-            <Input
-              type="file"
-              multiple
-              accept="image/*"
-              onChange={(e) => {
-                const files = Array.from(e.target.files || []);
-                setImages(files);
-              }}
-            />
-          </div>
 
           <Button
             className="w-full mt-4"
