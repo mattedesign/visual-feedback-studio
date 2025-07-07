@@ -14,13 +14,14 @@ serve(async (req) => {
   }
 
   try {
-    const { sessionId, imageUrls, prompt, persona, systemPrompt } = await req.json();
+    const { sessionId, imageUrls, prompt, persona, systemPrompt, visionResults } = await req.json();
 
     console.log('🧠 Processing Claude analysis:', {
       sessionId: sessionId?.substring(0, 8),
       persona,
       imageCount: imageUrls?.length,
-      promptLength: prompt?.length
+      promptLength: prompt?.length,
+      hasVisionResults: !!visionResults
     });
 
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
@@ -28,10 +29,58 @@ serve(async (req) => {
       throw new Error('Anthropic API key not configured');
     }
 
-    // Build enhanced prompt based on persona
-    const enhancedPrompt = buildPersonaPrompt(persona, prompt, imageUrls.length);
+    // Fetch and convert images to base64
+    const imageContent = [];
+    if (imageUrls && Array.isArray(imageUrls)) {
+      console.log('🖼️ Processing images for Claude vision...');
+      for (let i = 0; i < imageUrls.length; i++) {
+        const imageUrl = imageUrls[i];
+        try {
+          console.log(`📥 Fetching image ${i + 1}: ${imageUrl}`);
+          const imageResponse = await fetch(imageUrl);
+          if (!imageResponse.ok) {
+            throw new Error(`Failed to fetch image: ${imageResponse.status}`);
+          }
+          
+          const arrayBuffer = await imageResponse.arrayBuffer();
+          const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+          
+          // Determine media type from response or URL
+          const contentType = imageResponse.headers.get('content-type') || 'image/png';
+          
+          imageContent.push({
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: contentType,
+              data: base64
+            }
+          });
+          
+          console.log(`✅ Image ${i + 1} converted to base64 (${Math.round(base64.length / 1024)}KB)`);
+        } catch (error) {
+          console.error(`❌ Failed to process image ${i + 1}:`, error);
+          // Continue with other images
+        }
+      }
+    }
 
-    console.log('🚀 Calling Claude Sonnet 4 for analysis...');
+    // Build enhanced prompt with vision context
+    const enhancedPrompt = buildPersonaPrompt(persona, prompt, imageUrls?.length || 0, visionResults);
+
+    // Build message content array with text and images
+    const messageContent = [
+      {
+        type: 'text',
+        text: enhancedPrompt
+      },
+      ...imageContent
+    ];
+
+    console.log('🚀 Calling Claude Sonnet 4 for multimodal analysis...', {
+      textLength: enhancedPrompt.length,
+      imageCount: imageContent.length
+    });
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -46,7 +95,7 @@ serve(async (req) => {
         temperature: persona === 'clarity' ? 0.7 : 0.3, // Goblin gets more creative
         messages: [{
           role: 'user',
-          content: enhancedPrompt
+          content: messageContent
         }]
       })
     });
@@ -117,11 +166,21 @@ serve(async (req) => {
   }
 });
 
-function buildPersonaPrompt(persona: string, userGoal: string, imageCount: number): string {
+function buildPersonaPrompt(persona: string, userGoal: string, imageCount: number, visionResults?: any[]): string {
   const baseContext = `
 User's Goal: ${userGoal}
 Number of screens analyzed: ${imageCount}
 Analysis Mode: ${imageCount > 1 ? 'User Journey' : 'Single Screen'}
+
+${visionResults && visionResults.length > 0 ? `
+Google Vision Analysis Context:
+${visionResults.map((result, i) => `
+Image ${i + 1}: Detected as "${result.screenType || 'interface'}" with confidence ${result.confidence || 0}
+${result.textDetection ? `Text found: ${result.textDetection.slice(0, 200)}...` : 'No text detected'}
+`).join('')}
+` : ''}
+
+IMPORTANT: You can now SEE the actual screenshots. Analyze what you visually observe in the images provided, not just the text description.
 `;
 
   switch (persona) {
@@ -130,29 +189,35 @@ Analysis Mode: ${imageCount > 1 ? 'User Journey' : 'Single Screen'}
 
 ${baseContext}
 
+Look at the actual screenshots provided and tell me what you REALLY see. Don't sugarcoat it. Point out specific visual elements, layout issues, confusing UI patterns, and usability problems you can directly observe.
+
 Respond in character as Clarity the goblin. Be direct and sassy, but provide genuinely useful feedback. Structure your response as JSON:
 
 {
-  "analysis": "Your brutally honest analysis in goblin voice",
-  "recommendations": ["Specific actionable fixes"],
+  "analysis": "Your brutally honest visual analysis in goblin voice - describe exactly what you see",
+  "recommendations": ["Specific visual fixes you can see are needed"],
   "gripeLevel": "low|medium|rage-cranked",
-  "goblinWisdom": "One piece of hard-earned UX truth"
+  "goblinWisdom": "One piece of hard-earned UX truth based on what you observed",
+  "visualObservations": ["Specific things you can see in the screenshots that need fixing"]
 }
 
-Remember: You're helpful but honest. Users need to hear the truth about their UX, even if it stings.`;
+Remember: You can actually SEE the screens now. Base your feedback on the visual reality, not assumptions.`;
 
     case 'strategic':
       return `You are a senior UX strategist with 20 years of experience. Provide strategic, research-backed analysis focusing on business impact and user outcomes.
 
 ${baseContext}
 
+Examine the screenshots provided and analyze the strategic implications of what you observe. Look at the visual hierarchy, user flow, conversion elements, and overall user experience patterns.
+
 Provide comprehensive strategic analysis in JSON format:
 
 {
-  "analysis": "Strategic assessment with business context",
-  "recommendations": ["Strategic improvements with business rationale"],
-  "priorities": ["High-impact changes to focus on first"],
-  "metrics": ["Key metrics to track improvement"]
+  "analysis": "Strategic assessment based on visual observation of the screens",
+  "recommendations": ["Strategic improvements with business rationale based on what you see"],
+  "priorities": ["High-impact visual changes to focus on first"],
+  "metrics": ["Key metrics to track improvement"],
+  "visualStrategy": ["Strategic observations about the visual design and layout"]
 }`;
 
     case 'mirror':
@@ -160,13 +225,16 @@ Provide comprehensive strategic analysis in JSON format:
 
 ${baseContext}
 
+Look at the screenshots and help the designer reflect on what they've created. Point out visual patterns, design decisions, and their potential impact on users.
+
 Respond as a thoughtful coach in JSON format:
 
 {
-  "analysis": "Reflective questions and observations",
-  "recommendations": ["Self-reflection prompts and gentle guidance"],
-  "insights": ["Key realizations to explore"],
-  "nextSteps": ["Ways to deepen understanding"]
+  "analysis": "Reflective questions and observations based on visual analysis",
+  "recommendations": ["Self-reflection prompts based on what you observe"],
+  "insights": ["Key realizations about the visual design to explore"],
+  "nextSteps": ["Ways to improve based on visual observations"],
+  "reflectiveQuestions": ["Questions about specific visual elements you can see"]
 }`;
 
     case 'mad':
@@ -174,13 +242,16 @@ Respond as a thoughtful coach in JSON format:
 
 ${baseContext}
 
+Examine these screenshots with your mad scientist eyes! What crazy experiments could improve these interfaces? What unconventional approaches do you see potential for?
+
 Respond with experimental enthusiasm in JSON format:
 
 {
-  "analysis": "Experimental analysis with wild ideas",
-  "recommendations": ["Unconventional and creative solutions"],
-  "experiments": ["A/B tests or unusual approaches to try"],
-  "wildCard": "One completely unexpected suggestion"
+  "analysis": "Experimental analysis of what you visually observe",
+  "recommendations": ["Unconventional solutions based on visual analysis"],
+  "experiments": ["Specific A/B tests or wild approaches based on what you see"],
+  "wildCard": "One completely unexpected visual suggestion",
+  "madObservations": ["Crazy insights from looking at the actual screens"]
 }`;
 
     case 'executive':
@@ -189,13 +260,16 @@ Respond with experimental enthusiasm in JSON format:
 
 ${baseContext}
 
+Analyze these screenshots from a business perspective. What visual elements support or hinder business goals? What changes would drive better conversion and user engagement?
+
 Provide business-focused analysis in JSON format:
 
 {
-  "analysis": "Business impact assessment",
-  "recommendations": ["Changes with clear ROI"],
-  "metrics": ["KPIs to measure success"],
-  "timeline": ["Implementation phases with business priorities"]
+  "analysis": "Business impact assessment of visual elements you observe",
+  "recommendations": ["Changes with clear ROI based on visual analysis"],
+  "metrics": ["KPIs to measure success of visual improvements"],
+  "timeline": ["Implementation phases for visual improvements"],
+  "businessVisualImpact": ["How specific visual elements affect business outcomes"]
 }`;
   }
 }
