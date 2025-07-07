@@ -13,15 +13,16 @@ serve(async (req) => {
   }
 
   try {
-    const { sessionId, persona, analysisData, goal } = await req.json();
+    const { sessionId, persona, analysisData, goal, imageCount } = await req.json();
 
     console.log('🧪 Synthesizing results for:', {
       sessionId: sessionId?.substring(0, 8),
       persona,
-      hasAnalysisData: !!analysisData
+      hasAnalysisData: !!analysisData,
+      imageCount: imageCount || 1
     });
 
-    const synthesizedResults = synthesizeResults(persona, analysisData, goal);
+    const synthesizedResults = synthesizeResults(persona, analysisData, goal, imageCount || 1);
 
     return new Response(
       JSON.stringify({
@@ -58,7 +59,7 @@ serve(async (req) => {
   }
 });
 
-function synthesizeResults(persona: string, analysisData: any, goal: string) {
+function synthesizeResults(persona: string, analysisData: any, goal: string, imageCount: number = 1) {
   // Extract core analysis content
   const analysis = analysisData.analysisData?.analysis || analysisData.rawResponse || 'Analysis completed';
   const recommendations = analysisData.analysisData?.recommendations || [];
@@ -78,8 +79,8 @@ function synthesizeResults(persona: string, analysisData: any, goal: string) {
   // Generate summary
   const summary = generateSummary(persona, analysis, recommendations, goal);
 
-  // Create annotations for UI overlay
-  const annotations = generateAnnotations(recommendations, persona);
+  // Create annotations for UI overlay with image associations
+  const annotations = generateAnnotations(recommendations, persona, imageCount);
 
   // Determine gripe level for Clarity goblin
   const gripeLevel = persona === 'clarity' 
@@ -265,17 +266,27 @@ function generateSummary(persona: string, analysis: string, recommendations: str
   return `${personaName} analysis completed for your goal: "${goal}". ${recCount} strategic recommendations have been provided to enhance user experience and achieve your objectives. Focus on implementing high-impact changes that align with your specific goals.`;
 }
 
-function generateAnnotations(recommendations: string[], persona: string): any[] {
-  return recommendations.slice(0, 5).map((rec, index) => ({
-    id: `${persona}-rec-${index + 1}`,
-    title: `${persona.charAt(0).toUpperCase() + persona.slice(1)} Recommendation ${index + 1}`,
-    description: rec,
-    category: persona === 'clarity' ? 'goblin_wisdom' : 'improvement',
-    x: 20 + (index * 15) % 80, // Distribute across screen
-    y: 20 + (index * 20) % 60,
-    persona,
-    priority: index < 2 ? 'high' : 'medium'
-  }));
+function generateAnnotations(recommendations: string[], persona: string, imageCount: number = 1): any[] {
+  return recommendations.slice(0, 5).map((rec, index) => {
+    // Assign each annotation to a specific image (cycling through available images)
+    const imageIndex = index % imageCount;
+    
+    return {
+      id: `${persona}-rec-${index + 1}`,
+      title: `${persona.charAt(0).toUpperCase() + persona.slice(1)} Recommendation ${index + 1}`,
+      description: rec,
+      feedback: rec, // Add feedback field for compatibility
+      category: persona === 'clarity' ? 'goblin_wisdom' : 'improvement',
+      x: 20 + (index * 15) % 80, // Distribute across screen
+      y: 20 + (index * 20) % 60,
+      width: 8, // Add default width
+      height: 4, // Add default height
+      image_index: imageIndex, // ✅ NEW: Associate with specific image
+      imageIndex: imageIndex, // ✅ NEW: Alternative field for compatibility
+      persona,
+      priority: index < 2 ? 'high' : 'medium'
+    };
+  });
 }
 
 function determineGripeLevel(analysis: string): string {

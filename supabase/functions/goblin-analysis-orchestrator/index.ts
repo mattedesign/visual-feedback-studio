@@ -191,7 +191,8 @@ serve(async (req) => {
         sessionId,
         persona,
         analysisData: analysisResult.data,
-        goal
+        goal,
+        imageCount: imageUrls.length // ✅ NEW: Pass image count for annotation distribution
       }
     });
 

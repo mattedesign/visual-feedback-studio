@@ -23,14 +23,29 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
   const currentImage = images[currentImageIndex];
   // Filter annotations by current image
   const allAnnotations = results?.annotations || [];
+  
+  // ✅ PHASE 2: Enhanced annotation filtering with fallback logic
   const annotations = allAnnotations.filter((annotation: any) => {
     // Check if annotation has image_index or image_id that matches current image
     const hasImageIndex = annotation.image_index === currentImageIndex || annotation.imageIndex === currentImageIndex;
     const hasImageId = annotation.image_id === currentImage?.id;
     
-    // Only show annotations that are specifically tagged for this image
-    // If no image specificity exists, don't show any annotations (they may be general feedback)
-    return hasImageIndex || hasImageId;
+    // If annotation is specifically tagged for this image, show it
+    if (hasImageIndex || hasImageId) {
+      return true;
+    }
+    
+    // ✅ FALLBACK: If no annotations have image associations, show all on first image
+    const hasAnyImageAssociations = allAnnotations.some((ann: any) => 
+      ann.image_index !== undefined || ann.imageIndex !== undefined || ann.image_id !== undefined
+    );
+    
+    // If no annotations have image associations, show them all on the first image only
+    if (!hasAnyImageAssociations && currentImageIndex === 0) {
+      return true;
+    }
+    
+    return false;
   });
 
   return (
