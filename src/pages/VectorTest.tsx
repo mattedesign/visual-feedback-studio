@@ -1,12 +1,12 @@
 
 import React from 'react';
 import { VectorDatabaseTest } from '@/components/knowledgeBase/VectorDatabaseTest';
-
+import { KnowledgeExportManager } from '@/components/knowledgeBase/KnowledgeExportManager';
 import { DuplicateAnalyzer } from '@/components/knowledgeBase/DuplicateAnalyzer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Database, TestTube, Search, GitBranch } from 'lucide-react';
+import { Database, TestTube, Search, GitBranch, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function VectorTest() {
@@ -47,14 +47,26 @@ export default function VectorTest() {
                 <GitBranch className="w-4 h-4" />
                 Manage Batches
               </Button>
+              <Button 
+                variant="secondary"
+                onClick={() => {
+                  const tabsTrigger = document.querySelector('[value="export"]') as HTMLElement;
+                  tabsTrigger?.click();
+                }}
+                className="flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Export Knowledge
+              </Button>
             </div>
           </CardContent>
         </Card>
 
         <Tabs defaultValue="rag-test" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="rag-test">RAG Analysis Test</TabsTrigger>
             <TabsTrigger value="vector-test">Vector Database Test</TabsTrigger>
+            <TabsTrigger value="export">Knowledge Export</TabsTrigger>
             <TabsTrigger value="duplicates">Duplicate Analysis</TabsTrigger>
           </TabsList>
           
@@ -71,6 +83,10 @@ export default function VectorTest() {
           
           <TabsContent value="vector-test">
             <VectorDatabaseTest />
+          </TabsContent>
+
+          <TabsContent value="export">
+            <KnowledgeExportManager />
           </TabsContent>
 
           <TabsContent value="duplicates">

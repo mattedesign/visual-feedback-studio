@@ -279,6 +279,59 @@ export const useVectorKnowledge = () => {
     }
   }, []);
 
+  const exportAllKnowledge = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await vectorKnowledgeService.exportAllKnowledge();
+      console.log('Exported all knowledge:', data.length + ' entries');
+      toast.success(`Exported ${data.length} knowledge entries successfully`);
+      return data;
+    } catch (error) {
+      console.error('Error exporting all knowledge:', error);
+      toast.error('Failed to export knowledge base');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const exportFilteredKnowledge = useCallback(async (filters: {
+    primary_category?: string;
+    complexity_level?: string;
+    industry_tags?: string[];
+    source?: string;
+  }) => {
+    setIsLoading(true);
+    try {
+      const data = await vectorKnowledgeService.exportFilteredKnowledge(filters);
+      console.log('Exported filtered knowledge:', data.length + ' entries');
+      toast.success(`Exported ${data.length} filtered knowledge entries successfully`);
+      return data;
+    } catch (error) {
+      console.error('Error exporting filtered knowledge:', error);
+      toast.error('Failed to export filtered knowledge');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const exportKnowledgeStats = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const stats = await vectorKnowledgeService.exportKnowledgeStats();
+      console.log('Exported knowledge stats:', stats);
+      toast.success('Knowledge statistics exported successfully');
+      return stats;
+    } catch (error) {
+      console.error('Error exporting knowledge stats:', error);
+      toast.error('Failed to export knowledge statistics');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   return {
     isLoading,
     searchResults,
@@ -295,6 +348,9 @@ export const useVectorKnowledge = () => {
     getIndustryPatterns,
     searchByComplexity,
     getCategoryBreakdown,
+    exportAllKnowledge,
+    exportFilteredKnowledge,
+    exportKnowledgeStats,
     clearResults: () => {
       setSearchResults([]);
       setPatternResults([]);

@@ -332,6 +332,152 @@ class VectorService {
     }
   }
 
+  // Knowledge Export Methods
+  async exportAllKnowledge(): Promise<KnowledgeEntry[]> {
+    try {
+      console.log('🔍 Vector Export: Exporting all knowledge entries...');
+      
+      const { data, error } = await supabase
+        .from('knowledge_entries')
+        .select(`
+          id,
+          title,
+          content,
+          source,
+          category,
+          primary_category,
+          secondary_category,
+          industry_tags,
+          complexity_level,
+          use_cases,
+          related_patterns,
+          freshness_score,
+          application_context,
+          tags,
+          metadata,
+          created_at,
+          updated_at
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('❌ Vector Export: Failed to export knowledge:', error);
+        throw error;
+      }
+
+      console.log('✅ Vector Export: Successfully exported', data?.length || 0, 'entries');
+      return data || [];
+    } catch (error) {
+      console.error('❌ Vector Export: Export failed:', error);
+      throw error;
+    }
+  }
+
+  async exportFilteredKnowledge(filters: {
+    primary_category?: string;
+    complexity_level?: string;
+    industry_tags?: string[];
+    source?: string;
+  }): Promise<KnowledgeEntry[]> {
+    try {
+      console.log('🔍 Vector Export: Exporting filtered knowledge entries...', filters);
+      
+      let query = supabase
+        .from('knowledge_entries')
+        .select(`
+          id,
+          title,
+          content,
+          source,
+          category,
+          primary_category,
+          secondary_category,
+          industry_tags,
+          complexity_level,
+          use_cases,
+          related_patterns,
+          freshness_score,
+          application_context,
+          tags,
+          metadata,
+          created_at,
+          updated_at
+        `);
+
+      if (filters.primary_category) {
+        query = query.eq('primary_category', filters.primary_category);
+      }
+      
+      if (filters.complexity_level) {
+        query = query.eq('complexity_level', filters.complexity_level);
+      }
+
+      if (filters.source) {
+        query = query.eq('source', filters.source);
+      }
+
+      if (filters.industry_tags && filters.industry_tags.length > 0) {
+        query = query.overlaps('industry_tags', filters.industry_tags);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('❌ Vector Export: Failed to export filtered knowledge:', error);
+        throw error;
+      }
+
+      console.log('✅ Vector Export: Successfully exported', data?.length || 0, 'filtered entries');
+      return data || [];
+    } catch (error) {
+      console.error('❌ Vector Export: Filtered export failed:', error);
+      throw error;
+    }
+  }
+
+  async exportKnowledgeStats(): Promise<{
+    totalEntries: number;
+    categoryBreakdown: Array<{ category: string; count: number }>;
+    complexityBreakdown: Array<{ level: string; count: number }>;
+    sourceBreakdown: Array<{ source: string; count: number }>;
+    exportedAt: string;
+  }> {
+    try {
+      console.log('🔍 Vector Export: Exporting knowledge statistics...');
+      
+      const stats = await this.getKnowledgeStats();
+      
+      // Get source breakdown
+      const { data: sourceData, error: sourceError } = await supabase
+        .from('knowledge_entries')
+        .select('source');
+
+      if (sourceError) {
+        console.warn('⚠️ Could not fetch source breakdown:', sourceError);
+      }
+
+      const sourceBreakdown = sourceData?.reduce((acc: any[], item: any) => {
+        const source = item.source || 'Unknown';
+        const existing = acc.find(s => s.source === source);
+        if (existing) {
+          existing.count++;
+        } else {
+          acc.push({ source, count: 1 });
+        }
+        return acc;
+      }, []) || [];
+
+      return {
+        ...stats,
+        sourceBreakdown,
+        exportedAt: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('❌ Vector Export: Stats export failed:', error);
+      throw error;
+    }
+  }
+
   private async generateEmbedding(text: string): Promise<string> {
     try {
       const { data, error } = await supabase.functions.invoke('generate-embeddings', {
