@@ -1,19 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Sparkles, Download, Share2, ChevronLeft, ChevronRight,
-  ThumbsUp, AlertTriangle, Flame, Copy, Check, Eye, EyeOff
-} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-// ✅ New imports for upcoming tabs
+// ✅ Tab components
 import DetailedModeView from '@/components/goblin/DetailedModeView';
 import ClarityChat from '@/components/goblin/ClarityChat';
+import StrategistResultsDisplay from '@/components/goblin/StrategistResultsDisplay';
 
 const GoblinResults: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -105,16 +99,20 @@ const GoblinResults: React.FC = () => {
   if (!results) return <div className="p-6 text-center">No results found.</div>;
 
   const session = results.goblin_analysis_sessions;
-  const personaData = results.persona_feedback[session.persona_type];
-  const isGoblin = session.persona_type === 'clarity';
+  const personaData = results.persona_feedback?.[session?.persona_type] || {};
 
   return (
     <div className="p-6">
-      <Tabs defaultValue="detailed">
+      <Tabs defaultValue="summary">
         <TabsList>
+          <TabsTrigger value="summary">Summary</TabsTrigger>
           <TabsTrigger value="detailed">Detailed</TabsTrigger>
           <TabsTrigger value="clarity">Clarity</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="summary">
+          <StrategistResultsDisplay results={results} />
+        </TabsContent>
 
         <TabsContent value="detailed">
           <DetailedModeView
