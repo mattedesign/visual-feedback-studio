@@ -125,6 +125,7 @@ const GoblinResults: React.FC = () => {
           <DetailedModeView
             images={images}
             session={session}
+            results={results}
             showAnnotations={showAnnotations}
             currentImageIndex={currentImageIndex}
             setCurrentImageIndex={setCurrentImageIndex}

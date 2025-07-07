@@ -3,6 +3,7 @@ import React from 'react';
 interface DetailedModeViewProps {
   images: any[];
   session: any;
+  results: any;
   showAnnotations: boolean;
   currentImageIndex: number;
   setCurrentImageIndex: React.Dispatch<React.SetStateAction<number>>;
@@ -12,13 +13,15 @@ interface DetailedModeViewProps {
 const DetailedModeView: React.FC<DetailedModeViewProps> = ({
   images,
   session,
+  results,
   showAnnotations,
   currentImageIndex,
   setCurrentImageIndex,
   setShowAnnotations
 }) => {
   const currentImage = images[currentImageIndex];
-  const annotations = currentImage?.annotations || [];
+  // Get annotations from results.annotations array, filter by current image if needed
+  const annotations = results?.annotations || [];
 
   return (
     <div className="space-y-4">

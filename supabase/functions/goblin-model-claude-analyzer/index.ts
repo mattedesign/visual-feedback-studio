@@ -30,11 +30,12 @@ serve(async (req) => {
   }
 
   try {
-    const { sessionId, imageUrls, prompt, persona, systemPrompt, visionResults } = await req.json();
+    const { sessionId, imageUrls, prompt, persona, systemPrompt, visionResults, chatMode, conversationHistory, originalAnalysis } = await req.json();
 
     console.log('🧠 Processing Claude analysis:', {
       sessionId: sessionId?.substring(0, 8),
       persona,
+      chatMode: !!chatMode,
       imageCount: imageUrls?.length,
       promptLength: prompt?.length,
       hasVisionResults: !!visionResults
@@ -45,9 +46,9 @@ serve(async (req) => {
       throw new Error('Anthropic API key not configured');
     }
 
-    // Fetch and convert images to base64 with chunked processing
+    // Skip image processing for chat mode
     const imageContent = [];
-    if (imageUrls && Array.isArray(imageUrls)) {
+    if (!chatMode && imageUrls && Array.isArray(imageUrls)) {
       console.log('🖼️ Processing images for Claude vision...');
       
       for (let i = 0; i < imageUrls.length; i++) {
@@ -107,8 +108,10 @@ serve(async (req) => {
       }
     }
 
-    // Build enhanced prompt with vision context
-    const enhancedPrompt = buildPersonaPrompt(persona, prompt, imageUrls?.length || 0, visionResults);
+    // Build enhanced prompt with vision context or chat context
+    const enhancedPrompt = chatMode 
+      ? buildChatPrompt(persona, prompt, conversationHistory, originalAnalysis)
+      : buildPersonaPrompt(persona, prompt, imageUrls?.length || 0, visionResults);
 
     // Build message content array with text and images
     const messageContent = [
@@ -398,4 +401,43 @@ function extractGoblinAttitude(content: string): string {
   }
   
   return 'sarcastic'; // Default goblin mood
+}
+
+function buildChatPrompt(persona: string, userMessage: string, conversationHistory?: string, originalAnalysis?: any): string {
+  const context = originalAnalysis ? `
+Original Analysis Context:
+- Analysis: ${originalAnalysis.analysis || 'N/A'}
+- Biggest Gripe: ${originalAnalysis.biggestGripe || 'N/A'}
+- Goblin Wisdom: ${originalAnalysis.goblinWisdom || 'N/A'}
+` : '';
+
+  const history = conversationHistory ? `
+Previous Conversation:
+${conversationHistory}
+
+` : '';
+
+  switch (persona) {
+    case 'clarity':
+      return `You are Clarity, a brutally honest UX goblin who's been trapped in design systems for centuries. You're sassy, direct, but ultimately helpful.
+
+${context}
+${history}
+
+The user just asked: "${userMessage}"
+
+Respond in character as Clarity the goblin. Be direct, sassy, but provide genuinely useful feedback. Keep it conversational and reference the original analysis if relevant. Don't repeat yourself - build on the conversation.
+
+Stay in character and be helpful while maintaining your goblin personality.`;
+
+    default:
+      return `You are a ${persona} UX advisor continuing a conversation.
+
+${context}
+${history}
+
+The user just asked: "${userMessage}"
+
+Respond helpfully in character, building on the previous conversation context.`;
+  }
 }
