@@ -67,6 +67,20 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
           </Button>
         </div>
       </div>
+
+      <div className="flex gap-2 overflow-x-auto mb-4">
+        {images.map((img, idx) => (
+          <button
+            key={img.id}
+            onClick={() => setCurrentImageIndex(idx)}
+            className={`w-20 h-20 rounded border-2 overflow-hidden ${
+              idx === currentImageIndex ? 'border-green-500' : 'border-gray-300'
+            }`}
+          >
+            <img src={img.file_path} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+          </button>
+        ))}
+      </div>
       
       <div className="relative w-full aspect-video bg-gray-900 rounded-lg overflow-hidden">
         <img
@@ -114,20 +128,6 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
             </div>
           );
         })}
-      </div>
-
-      <div className="flex gap-2 overflow-x-auto">
-        {images.map((img, idx) => (
-          <button
-            key={img.id}
-            onClick={() => setCurrentImageIndex(idx)}
-            className={`w-20 h-20 rounded border-2 overflow-hidden ${
-              idx === currentImageIndex ? 'border-green-500' : 'border-gray-300'
-            }`}
-          >
-            <img src={img.file_path} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
-          </button>
-        ))}
       </div>
 
       <AnnotationDialog
