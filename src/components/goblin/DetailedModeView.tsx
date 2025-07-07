@@ -50,21 +50,31 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
         {showAnnotations && annotations.length > 0 && annotations.map((annotation: any, idx: number) => {
           // Handle different annotation data structures with fallbacks
           const annotationText = annotation.feedback || annotation.description || annotation.text || `Annotation ${idx + 1}`;
-          const coords = annotation.coordinates || annotation;
-          const x = coords.x || 0;
-          const y = coords.y || 0;
-          const width = coords.width || 0.1;
-          const height = coords.height || 0.05;
+          
+          // Handle coordinates - they might be directly on annotation or nested
+          let x, y, width, height;
+          if (annotation.coordinates) {
+            x = annotation.coordinates.x || 0;
+            y = annotation.coordinates.y || 0;
+            width = annotation.coordinates.width || 8;
+            height = annotation.coordinates.height || 4;
+          } else {
+            // Coordinates directly on annotation object
+            x = annotation.x || 0;
+            y = annotation.y || 0;
+            width = annotation.width || 8;
+            height = annotation.height || 4;
+          }
           
           return (
             <div
               key={idx}
               className="absolute border border-pink-500 bg-pink-500/10 rounded text-xs text-white p-1 cursor-pointer"
               style={{
-                top: `${y * 100}%`,
-                left: `${x * 100}%`,
-                width: `${width * 100}%`,
-                height: `${height * 100}%`
+                top: `${y}%`,
+                left: `${x}%`,
+                width: `${width}%`,
+                height: `${height}%`
               }}
               title={annotationText}
             >
