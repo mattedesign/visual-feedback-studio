@@ -33,34 +33,10 @@ const mainNavItems = [
     badge: null
   },
   {
-    title: "Analysis History",
-    url: "/analysis",
-    icon: BarChart3,
-    badge: null
-  },
-  {
-    title: "Analyze Designs",
-    url: "/analyze",
-    icon: Image,
-    badge: "New"
-  },
-  {
     title: "Goblin Studio",
     url: "/goblin",
     icon: Brain,
     badge: "👾"
-  },
-  {
-    title: "History",
-    url: "/history",
-    icon: History,
-    badge: null
-  },
-  {
-    title: "Knowledge Base",
-    url: "/vector-test",
-    icon: Database,
-    badge: null
   }
 ];
 
