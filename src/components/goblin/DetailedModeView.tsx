@@ -21,8 +21,16 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
   setShowAnnotations
 }) => {
   const currentImage = images[currentImageIndex];
-  // Get annotations from results.annotations array, filter by current image if needed
-  const annotations = results?.annotations || [];
+  // Filter annotations by current image
+  const allAnnotations = results?.annotations || [];
+  const annotations = allAnnotations.filter((annotation: any) => {
+    // Check if annotation has image_index or image_id that matches current image
+    return annotation.image_index === currentImageIndex || 
+           annotation.imageIndex === currentImageIndex ||
+           annotation.image_id === currentImage?.id ||
+           // If no image specificity, show all annotations (fallback for older data)
+           (!annotation.image_index && !annotation.imageIndex && !annotation.image_id);
+  });
 
   return (
     <div className="space-y-4">
@@ -69,7 +77,7 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
           return (
             <div
               key={idx}
-              className="absolute border border-pink-500 bg-pink-500/10 rounded text-xs text-white p-1 cursor-pointer"
+              className="absolute border border-pink-500 bg-pink-500/10 rounded text-xs text-pink-900 font-medium p-1 cursor-pointer"
               style={{
                 top: `${y}%`,
                 left: `${x}%`,
