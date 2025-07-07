@@ -48,36 +48,37 @@ const AnnotationDialog: React.FC<AnnotationDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl bg-white border-none shadow-lg">
+        <DialogHeader className="space-y-0 pb-4">
           <div className="flex items-center justify-between">
-            <DialogTitle className={`flex items-center gap-2 ${colors.primary}`}>
-              👾 {annotation.title || `${persona.charAt(0).toUpperCase() + persona.slice(1)} Feedback`}
+            <DialogTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+              👾 {annotation.title || `${persona.charAt(0).toUpperCase() + persona.slice(1)} Recommendation ${annotation.id?.split('-').pop() || ''}`}
             </DialogTitle>
             <DialogClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
               <X className="h-4 w-4" />
               <span className="sr-only">Close</span>
             </DialogClose>
           </div>
-          <div className="flex items-center gap-2 mt-2">
-            <Badge variant="outline" className={colors.badge}>
+          
+          <div className="flex items-center gap-2 pt-3">
+            <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-0 rounded-full px-3 py-1">
               {persona}
             </Badge>
             {annotation.priority && (
-              <Badge variant="secondary" className={colors.badge}>
+              <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-0 rounded-full px-3 py-1">
                 {annotation.priority} priority
               </Badge>
             )}
             {annotation.category && (
-              <Badge variant="outline" className={colors.badge}>
+              <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-0 rounded-full px-3 py-1">
                 {annotation.category}
               </Badge>
             )}
           </div>
         </DialogHeader>
         
-        <div className={`rounded-lg p-4 ${colors.bg} ${colors.border} border`}>
-          <p className="text-foreground whitespace-pre-wrap leading-relaxed">
+        <div className="bg-purple-50 rounded-lg p-6 border-0">
+          <p className="text-gray-900 whitespace-pre-wrap leading-relaxed text-base">
             {annotationText}
           </p>
         </div>
