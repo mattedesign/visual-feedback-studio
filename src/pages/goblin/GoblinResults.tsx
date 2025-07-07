@@ -50,6 +50,10 @@ const GoblinResults: React.FC = () => {
     loadResults();
   }, [sessionId]);
 
+  // Extract session and persona data early for use in handlers
+  const session = results?.goblin_analysis_sessions;
+  const personaData = results?.persona_feedback?.[session?.persona_type] || {};
+
   const handleExport = () => {
     if (!results || !session || !personaData) return;
     const exportData = {
@@ -97,9 +101,6 @@ const GoblinResults: React.FC = () => {
 
   if (loading) return <div className="p-6 text-center">Loading...</div>;
   if (!results) return <div className="p-6 text-center">No results found.</div>;
-
-  const session = results.goblin_analysis_sessions;
-  const personaData = results.persona_feedback?.[session?.persona_type] || {};
 
   return (
     <div className="p-6">
