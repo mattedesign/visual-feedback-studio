@@ -27,13 +27,13 @@ import { Badge } from '@/components/ui/badge';
 
 const mainNavItems = [
   {
-    title: "Goblin Dashboard",
+    title: "Dashboard",
     url: "/",
-    icon: Brain,
-    badge: "👾"
+    icon: LayoutDashboard,
+    badge: null
   },
   {
-    title: "Goblin Studio", 
+    title: "Analyze", 
     url: "/goblin",
     icon: Zap,
     badge: "New"
