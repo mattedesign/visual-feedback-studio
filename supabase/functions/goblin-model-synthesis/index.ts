@@ -102,21 +102,35 @@ function getPersonaSpecificData(persona: string, analysisData: any) {
       return {
         goblinWisdom: analysisData?.goblinWisdom || "Users don't care about your clever design - they just want to get stuff done!",
         attitude: analysisData?.goblinAttitude || 'grumpy',
-        userRealityCheck: "What users actually experience vs. what you think they experience"
+        userRealityCheck: "What users actually experience vs. what you think they experience",
+        // Map to expected UI properties
+        biggestGripe: analysisData?.biggestGripe || "Your users are confused and you don't even realize it!",
+        whatMakesGoblinHappy: analysisData?.whatMakesGoblinHappy || "Clear, obvious interfaces that don't make users think",
+        goblinPrediction: analysisData?.goblinPrediction || "Fix the confusing parts and watch your conversion rates soar"
       };
       
     case 'strategic':
       return {
         businessImpact: analysisData?.businessImpact || "Strategic improvements needed to align with business objectives",
         implementation: analysisData?.implementation || "Phased approach recommended for maximum impact",
-        metrics: analysisData?.metrics || ["User satisfaction", "Task completion rate", "Business conversion"]
+        metrics: analysisData?.metrics || ["User satisfaction", "Task completion rate", "Business conversion"],
+        // Map to expected UI properties
+        biggestGripe: analysisData?.businessImpact || "Your UX strategy isn't aligned with business goals - you're leaving money on the table",
+        whatMakesGoblinHappy: analysisData?.implementation || "Strategic UX improvements that drive measurable business results",
+        goblinWisdom: "Every design decision should tie back to a business metric",
+        goblinPrediction: "Align UX with business strategy and watch both user satisfaction and revenue grow"
       };
       
     case 'mirror':
       return {
         insights: analysisData?.insights || ["Consider the gap between intention and user perception"],
         reflection: analysisData?.reflection || "What assumptions might you be making about your users?",
-        nextSteps: ["Observe real users interacting with your design", "Question your design assumptions"]
+        nextSteps: ["Observe real users interacting with your design", "Question your design assumptions"],
+        // Map to expected UI properties
+        biggestGripe: analysisData?.reflection || "You're designing for yourself, not your users - step back and see what they actually see",
+        whatMakesGoblinHappy: Array.isArray(analysisData?.insights) ? analysisData.insights.join(", ") : (analysisData?.insights || "Deep user insights that challenge design assumptions"),
+        goblinWisdom: "The most powerful design insights come from honest self-reflection",
+        goblinPrediction: "Question your assumptions and you'll discover breakthrough UX improvements"
       };
       
     case 'mad':
@@ -126,7 +140,7 @@ function getPersonaSpecificData(persona: string, analysisData: any) {
         riskLevel: "experimental",
         // Map to expected UI properties
         biggestGripe: analysisData?.wildCard || "Your interface is playing it way too safe - users can handle some creative chaos!",
-        whatMakesGoblinHappy: analysisData?.experiments?.join(", ") || "Experiments that break conventional UX rules and surprise users in delightful ways",
+        whatMakesGoblinHappy: Array.isArray(analysisData?.experiments) ? analysisData.experiments.join(", ") : (analysisData?.experiments || "Experiments that break conventional UX rules and surprise users in delightful ways"),
         goblinWisdom: "Sometimes the most brilliant UX solutions come from completely ignoring what everyone else is doing",
         goblinPrediction: "If you embrace experimental approaches, you'll discover interaction patterns that set you apart from boring competitors"
       };
@@ -135,7 +149,12 @@ function getPersonaSpecificData(persona: string, analysisData: any) {
       return {
         roi: analysisData?.roi || "UX improvements with measurable business impact",
         timeline: analysisData?.timeline || ["Phase 1: Quick wins", "Phase 2: Strategic improvements"],
-        competitiveAdvantage: "Enhanced user experience drives competitive differentiation"
+        competitiveAdvantage: "Enhanced user experience drives competitive differentiation",
+        // Map to expected UI properties
+        biggestGripe: analysisData?.roi || "Your UX investments aren't generating the ROI they should - time to focus on high-impact changes",
+        whatMakesGoblinHappy: Array.isArray(analysisData?.timeline) ? analysisData.timeline.join(", ") : (analysisData?.timeline || "Strategic UX roadmaps that deliver measurable business results"),
+        goblinWisdom: "The best UX decisions are backed by data and drive clear business outcomes",
+        goblinPrediction: "Focus on high-ROI UX improvements and you'll see both user satisfaction and business metrics improve dramatically"
       };
       
     default:
