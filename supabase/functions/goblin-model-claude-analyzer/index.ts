@@ -8,6 +8,22 @@ const corsHeaders = {
 
 console.log('🤖 Goblin Claude Analyzer - Real Claude API integration');
 
+// Chunked base64 conversion to avoid stack overflow on large images
+async function convertToBase64Chunked(arrayBuffer: ArrayBuffer): Promise<string> {
+  const uint8Array = new Uint8Array(arrayBuffer);
+  const chunkSize = 1024 * 8; // 8KB chunks to avoid stack overflow
+  let binaryString = '';
+  
+  // Convert to binary string in chunks
+  for (let i = 0; i < uint8Array.length; i += chunkSize) {
+    const chunk = uint8Array.slice(i, i + chunkSize);
+    binaryString += String.fromCharCode.apply(null, Array.from(chunk));
+  }
+  
+  // Convert the complete binary string to base64
+  return btoa(binaryString);
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -29,10 +45,11 @@ serve(async (req) => {
       throw new Error('Anthropic API key not configured');
     }
 
-    // Fetch and convert images to base64
+    // Fetch and convert images to base64 with chunked processing
     const imageContent = [];
     if (imageUrls && Array.isArray(imageUrls)) {
       console.log('🖼️ Processing images for Claude vision...');
+      
       for (let i = 0; i < imageUrls.length; i++) {
         const imageUrl = imageUrls[i];
         try {
@@ -42,8 +59,27 @@ serve(async (req) => {
             throw new Error(`Failed to fetch image: ${imageResponse.status}`);
           }
           
+          // Early validation: Check image size
+          const contentLength = imageResponse.headers.get('content-length');
+          if (contentLength) {
+            const sizeInMB = parseInt(contentLength) / (1024 * 1024);
+            if (sizeInMB > 20) {
+              console.warn(`⚠️ Image ${i + 1} is very large (${sizeInMB.toFixed(2)}MB), skipping`);
+              continue;
+            }
+          }
+          
           const arrayBuffer = await imageResponse.arrayBuffer();
-          const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+          
+          // Validate actual size after download
+          const actualSizeInMB = arrayBuffer.byteLength / (1024 * 1024);
+          if (actualSizeInMB > 20) {
+            console.warn(`⚠️ Image ${i + 1} actual size too large (${actualSizeInMB.toFixed(2)}MB), skipping`);
+            continue;
+          }
+          
+          // Chunked base64 conversion to avoid stack overflow
+          const base64 = await convertToBase64Chunked(arrayBuffer);
           
           // Determine media type from response or URL
           const contentType = imageResponse.headers.get('content-type') || 'image/png';
@@ -58,9 +94,15 @@ serve(async (req) => {
           });
           
           console.log(`✅ Image ${i + 1} converted to base64 (${Math.round(base64.length / 1024)}KB)`);
+          
+          // Clear memory after each image
+          if (typeof globalThis.gc === 'function') {
+            globalThis.gc();
+          }
+          
         } catch (error) {
           console.error(`❌ Failed to process image ${i + 1}:`, error);
-          // Continue with other images
+          // Continue with other images - don't let one bad image kill the whole analysis
         }
       }
     }
@@ -82,23 +124,58 @@ serve(async (req) => {
       imageCount: imageContent.length
     });
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': anthropicApiKey,
-        'Content-Type': 'application/json',
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
-        temperature: persona === 'clarity' ? 0.3 : 0.7, // Clarity needs focus, others get creativity
-        messages: [{
-          role: 'user',
-          content: messageContent
-        }]
-      })
-    });
+    let response;
+    let fallbackUsed = false;
+
+    try {
+      // First attempt: Full multimodal analysis
+      response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': anthropicApiKey,
+          'Content-Type': 'application/json',
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 4000,
+          temperature: persona === 'clarity' ? 0.3 : 0.7,
+          messages: [{
+            role: 'user',
+            content: messageContent
+          }]
+        })
+      });
+    } catch (error) {
+      console.warn('⚠️ Multimodal Claude call failed, trying text-only fallback:', error);
+      
+      // Fallback: Text-only analysis with vision summary
+      const fallbackPrompt = `${enhancedPrompt}\n\nNote: Visual analysis was attempted but failed. Please provide text-based UX analysis based on the goal and context provided.`;
+      
+      try {
+        response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'x-api-key': anthropicApiKey,
+            'Content-Type': 'application/json',
+            'anthropic-version': '2023-06-01'
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 4000,
+            temperature: persona === 'clarity' ? 0.3 : 0.7,
+            messages: [{
+              role: 'user',
+              content: fallbackPrompt
+            }]
+          })
+        });
+        fallbackUsed = true;
+        console.log('✅ Text-only fallback succeeded');
+      } catch (fallbackError) {
+        throw new Error(`Both multimodal and text-only Claude calls failed: ${fallbackError.message}`);
+      }
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -142,6 +219,7 @@ serve(async (req) => {
         sessionId,
         persona,
         modelUsed: 'claude-sonnet-4-20250514',
+        fallbackUsed,
         analysisData,
         rawResponse: content,
         timestamp: new Date().toISOString()
