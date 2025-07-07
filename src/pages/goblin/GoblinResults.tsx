@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 // ✅ Tab components
 import DetailedModeView from '@/components/goblin/DetailedModeView';
 import ClarityChat from '@/components/goblin/ClarityChat';
-import StrategistResultsDisplay from '@/components/goblin/StrategistResultsDisplay';
+import SummaryView from '@/components/goblin/SummaryView';
 
 const GoblinResults: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -111,7 +111,14 @@ const GoblinResults: React.FC = () => {
         </TabsList>
 
         <TabsContent value="summary">
-          <StrategistResultsDisplay results={results} />
+          <SummaryView
+            results={results}
+            session={session}
+            personaData={personaData}
+            onExport={handleExport}
+            onCopyLink={handleCopyLink}
+            copied={copied}
+          />
         </TabsContent>
 
         <TabsContent value="detailed">
