@@ -1,16 +1,16 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import Dashboard from './Dashboard';
+import Archive from './Archive';
 
 const History = () => {
-  // For now, just redirect to the main dashboard which already shows history
+  // Redirect to archive which shows the traditional analysis history
   const navigate = useNavigate();
   
   React.useEffect(() => {
-    navigate('/', { replace: true });
+    navigate('/archive', { replace: true });
   }, [navigate]);
 
-  return <Dashboard />;
+  return <Archive />;
 };
 
 export default History;

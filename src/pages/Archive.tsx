@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { FigmaDashboardLayout } from '@/components/dashboard/FigmaDashboardLayout';
 
-const Dashboard = () => {
+const Archive = () => {
   const navigate = useNavigate();
   const [analyses, setAnalyses] = useState<AnalysisResultsResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -150,19 +150,19 @@ const Dashboard = () => {
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Analysis Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Traditional Analysis Archive</h1>
           <p className="text-muted-foreground mt-2">
-            Manage and review your UX analysis history
+            Legacy UX analysis history (archived data)
           </p>
         </div>
         
         <div className="flex gap-3">
           <Button
-            onClick={() => navigate('/hybrid-engine-test')}
+            onClick={() => navigate('/')}
             variant="outline"
             size="lg"
           >
-            🧪 Test Hybrid Engine
+            🧠 New Goblin Dashboard
           </Button>
           
           <Button
@@ -344,4 +344,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default Archive;

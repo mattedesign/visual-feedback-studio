@@ -5,7 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Suspense, lazy } from "react";
-import Dashboard from "./pages/Dashboard";
+import GoblinDashboard from "./pages/GoblinDashboard";
+import Archive from "./pages/Archive";
 import Analysis from "./pages/Analysis";
 import AnalysisResults from "./pages/AnalysisResults";
 import Analyze from "./pages/Analyze";
@@ -62,7 +63,8 @@ const App = () => {
                         {/* Main content area */}
                         <div className="flex-1 overflow-auto">
                           <Routes>
-                            <Route path="/" element={<Dashboard />} />
+                            <Route path="/" element={<GoblinDashboard />} />
+                            <Route path="archive" element={<Archive />} />
                             <Route path="analysis" element={<Analysis />} />
                             <Route path="analysis/:id" element={<AnalysisResults />} />
                             <Route path="analysis-results" element={<AnalysisResults />} />
