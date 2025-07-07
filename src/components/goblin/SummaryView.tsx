@@ -61,7 +61,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
         color: 'text-green-600',
         bgColor: 'bg-green-50',
         borderColor: 'border-green-200',
-        items: matrix.working || matrix.whats_working || []
+        items: matrix.whatWorks || []
       },
       {
         title: "What Needs Attention",
@@ -69,7 +69,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
         color: 'text-orange-600',
         bgColor: 'bg-orange-50',
         borderColor: 'border-orange-200',
-        items: matrix.attention || matrix.needs_attention || matrix.issues || []
+        items: matrix.whatHurts || []
       },
       {
         title: "Next Steps",
@@ -77,7 +77,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
         color: 'text-blue-600',
         bgColor: 'bg-blue-50',
         borderColor: 'border-blue-200',
-        items: matrix.next_steps || matrix.recommendations || []
+        items: matrix.whatNext || []
       }
     ];
 
