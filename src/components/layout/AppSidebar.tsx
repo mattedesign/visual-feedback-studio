@@ -30,6 +30,8 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 const mainNavItems = [
   {
@@ -67,6 +69,17 @@ export function AppSidebar() {
   const currentPath = location.pathname;
   const collapsed = state === 'collapsed';
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate('/auth');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
 
   const isActive = (path: string) => {
     if (path === '/') {
@@ -175,7 +188,7 @@ export function AppSidebar() {
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton asChild>
-                        <button className="w-full">
+                        <button className="w-full" onClick={handleLogout}>
                           <LogOut className="h-4 w-4" />
                           <span>Logout</span>
                         </button>
