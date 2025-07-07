@@ -267,9 +267,34 @@ function generateSummary(persona: string, analysis: string, recommendations: str
 }
 
 function generateAnnotations(recommendations: string[], persona: string, imageCount: number = 1): any[] {
-  return recommendations.slice(0, 5).map((rec, index) => {
-    // Assign each annotation to a specific image (cycling through available images)
+  // Ensure we have enough annotations for all images - minimum 2 per image, max 8 total
+  const minAnnotationsPerImage = 2;
+  const maxTotalAnnotations = 8;
+  const targetAnnotationCount = Math.min(imageCount * minAnnotationsPerImage, maxTotalAnnotations);
+  
+  // Take recommendations and repeat if needed to reach target count
+  const availableRecs = recommendations.length > 0 ? recommendations : [`Improve user experience for ${persona} persona`];
+  const annotationsToGenerate = [];
+  
+  for (let i = 0; i < targetAnnotationCount; i++) {
+    const recIndex = i % availableRecs.length;
+    annotationsToGenerate.push(availableRecs[recIndex]);
+  }
+  
+  return annotationsToGenerate.map((rec, index) => {
+    // Distribute annotations evenly across images first, then add extras
     const imageIndex = index % imageCount;
+    
+    // Create more varied positioning within each image
+    const annotationsPerImage = Math.ceil(annotationsToGenerate.length / imageCount);
+    const positionInImage = Math.floor(index / imageCount);
+    
+    // Generate diverse positions across the image
+    const positions = [
+      { x: 15, y: 15 }, { x: 85, y: 15 }, { x: 15, y: 85 }, { x: 85, y: 85 },
+      { x: 50, y: 25 }, { x: 25, y: 50 }, { x: 75, y: 50 }, { x: 50, y: 75 }
+    ];
+    const position = positions[positionInImage % positions.length];
     
     return {
       id: `${persona}-rec-${index + 1}`,
@@ -277,8 +302,8 @@ function generateAnnotations(recommendations: string[], persona: string, imageCo
       description: rec,
       feedback: rec, // Add feedback field for compatibility
       category: persona === 'clarity' ? 'goblin_wisdom' : 'improvement',
-      x: 20 + (index * 15) % 80, // Distribute across screen
-      y: 20 + (index * 20) % 60,
+      x: position.x,
+      y: position.y,
       width: 8, // Add default width
       height: 4, // Add default height
       image_index: imageIndex, // ✅ NEW: Associate with specific image

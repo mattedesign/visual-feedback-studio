@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import AnnotationDialog from './AnnotationDialog';
 
 interface DetailedModeViewProps {
   images: any[];
@@ -20,6 +21,9 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
   setCurrentImageIndex,
   setShowAnnotations
 }) => {
+  const [selectedAnnotation, setSelectedAnnotation] = useState<any>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  
   const currentImage = images[currentImageIndex];
   // Filter annotations by current image
   const allAnnotations = results?.annotations || [];
@@ -72,9 +76,6 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
         />
 
         {showAnnotations && annotations.length > 0 && annotations.map((annotation: any, idx: number) => {
-          // Handle different annotation data structures with fallbacks
-          const annotationText = annotation.feedback || annotation.description || annotation.text || `Annotation ${idx + 1}`;
-          
           // Handle coordinates - they might be directly on annotation or nested
           let x, y, width, height;
           if (annotation.coordinates) {
@@ -89,22 +90,27 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
             width = annotation.width || 8;
             height = annotation.height || 4;
           }
+
+          const handleAnnotationClick = () => {
+            setSelectedAnnotation(annotation);
+            setDialogOpen(true);
+          };
           
           return (
             <div
               key={idx}
-              className="absolute border border-pink-500 bg-pink-500/10 rounded text-xs text-pink-900 font-medium p-1 cursor-pointer"
+              className="absolute border-2 border-pink-500 bg-pink-500/20 rounded-full w-8 h-8 flex items-center justify-center cursor-pointer hover:bg-pink-500/30 transition-colors shadow-lg"
               style={{
                 top: `${y}%`,
                 left: `${x}%`,
-                width: `${width}%`,
-                height: `${height}%`
+                transform: 'translate(-50%, -50%)'
               }}
-              title={annotationText}
+              onClick={handleAnnotationClick}
+              title="Click to view full annotation"
             >
-              {annotationText.length > 20
-                ? annotationText.slice(0, 20) + '...'
-                : annotationText}
+              <span className="text-pink-900 font-bold text-sm">
+                {idx + 1}
+              </span>
             </div>
           );
         })}
@@ -123,6 +129,13 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
           </button>
         ))}
       </div>
+
+      <AnnotationDialog
+        annotation={selectedAnnotation}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        persona={session?.persona_type || 'clarity'}
+      />
     </div>
   );
 };
