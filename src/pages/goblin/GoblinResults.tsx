@@ -129,8 +129,7 @@ const GoblinResults: React.FC = () => {
 
         <TabsContent value="clarity">
           <ClarityChat
-            sessionId={sessionId!}
-            personaType={session.persona_type}
+            session={session}
             personaData={personaData}
           />
         </TabsContent>
