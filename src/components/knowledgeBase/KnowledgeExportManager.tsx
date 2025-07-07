@@ -68,9 +68,17 @@ export const KnowledgeExportManager = () => {
     const progressInterval = simulateProgress(2000);
     
     try {
+      console.log('🔄 Starting knowledge export...');
       const data = await exportAllKnowledge();
       clearInterval(progressInterval);
       setExportProgress(100);
+      
+      console.log('✅ Export successful, data:', data);
+      
+      if (!data || data.length === 0) {
+        toast.error('No knowledge entries found to export');
+        return;
+      }
       
       const timestamp = new Date().toISOString().split('T')[0];
       downloadJSON(data, `knowledge-base-full-${timestamp}.json`);
@@ -83,7 +91,8 @@ export const KnowledgeExportManager = () => {
       toast.success(`Successfully exported ${data.length} knowledge entries`);
     } catch (error) {
       clearInterval(progressInterval);
-      console.error('Export failed:', error);
+      console.error('❌ Export failed:', error);
+      toast.error(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsExporting(false);
       setTimeout(() => setExportProgress(0), 2000);
@@ -132,9 +141,12 @@ export const KnowledgeExportManager = () => {
     const progressInterval = simulateProgress(1000);
     
     try {
+      console.log('🔄 Starting stats export...');
       const stats = await exportKnowledgeStats();
       clearInterval(progressInterval);
       setExportProgress(100);
+      
+      console.log('✅ Stats export successful:', stats);
       
       const timestamp = new Date().toISOString().split('T')[0];
       downloadJSON(stats, `knowledge-base-stats-${timestamp}.json`);
@@ -142,7 +154,8 @@ export const KnowledgeExportManager = () => {
       toast.success('Successfully exported knowledge base statistics');
     } catch (error) {
       clearInterval(progressInterval);
-      console.error('Stats export failed:', error);
+      console.error('❌ Stats export failed:', error);
+      toast.error(`Stats export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsExporting(false);
       setTimeout(() => setExportProgress(0), 2000);

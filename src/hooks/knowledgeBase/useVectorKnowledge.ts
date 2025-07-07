@@ -282,12 +282,12 @@ export const useVectorKnowledge = () => {
   const exportAllKnowledge = useCallback(async () => {
     setIsLoading(true);
     try {
+      console.log('🔄 Hook: Starting export all knowledge...');
       const data = await vectorKnowledgeService.exportAllKnowledge();
-      console.log('Exported all knowledge:', data.length + ' entries');
-      toast.success(`Exported ${data.length} knowledge entries successfully`);
+      console.log('✅ Hook: Exported all knowledge:', data.length + ' entries');
       return data;
     } catch (error) {
-      console.error('Error exporting all knowledge:', error);
+      console.error('❌ Hook: Error exporting all knowledge:', error);
       toast.error('Failed to export knowledge base');
       throw error;
     } finally {
