@@ -25,11 +25,12 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
   const allAnnotations = results?.annotations || [];
   const annotations = allAnnotations.filter((annotation: any) => {
     // Check if annotation has image_index or image_id that matches current image
-    return annotation.image_index === currentImageIndex || 
-           annotation.imageIndex === currentImageIndex ||
-           annotation.image_id === currentImage?.id ||
-           // If no image specificity, show all annotations (fallback for older data)
-           (!annotation.image_index && !annotation.imageIndex && !annotation.image_id);
+    const hasImageIndex = annotation.image_index === currentImageIndex || annotation.imageIndex === currentImageIndex;
+    const hasImageId = annotation.image_id === currentImage?.id;
+    
+    // Only show annotations that are specifically tagged for this image
+    // If no image specificity exists, don't show any annotations (they may be general feedback)
+    return hasImageIndex || hasImageId;
   });
 
   return (
