@@ -2,12 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 // ✅ Tab components
 import DetailedModeView from '@/components/goblin/DetailedModeView';
 import ClarityChat from '@/components/goblin/ClarityChat';
 import SummaryView from '@/components/goblin/SummaryView';
-import { GoblinNavigation } from '@/components/goblin/GoblinNavigation';
 
 const GoblinResults: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -108,41 +108,43 @@ const GoblinResults: React.FC = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <GoblinNavigation 
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        annotationCount={annotationCount}
-      />
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'summary' | 'detailed' | 'clarity')}>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="summary">Summary</TabsTrigger>
+          <TabsTrigger value="detailed">Detailed ({annotationCount})</TabsTrigger>
+          <TabsTrigger value="clarity">Clarity Chat</TabsTrigger>
+        </TabsList>
 
-      {activeTab === 'summary' && (
-        <SummaryView
-          results={results}
-          session={session}
-          personaData={personaData}
-          onExport={handleExport}
-          onCopyLink={handleCopyLink}
-          copied={copied}
-        />
-      )}
+        <TabsContent value="summary">
+          <SummaryView
+            results={results}
+            session={session}
+            personaData={personaData}
+            onExport={handleExport}
+            onCopyLink={handleCopyLink}
+            copied={copied}
+          />
+        </TabsContent>
 
-      {activeTab === 'detailed' && (
-        <DetailedModeView
-          images={images}
-          session={session}
-          results={results}
-          showAnnotations={showAnnotations}
-          currentImageIndex={currentImageIndex}
-          setCurrentImageIndex={setCurrentImageIndex}
-          setShowAnnotations={setShowAnnotations}
-        />
-      )}
+        <TabsContent value="detailed">
+          <DetailedModeView
+            images={images}
+            session={session}
+            results={results}
+            showAnnotations={showAnnotations}
+            currentImageIndex={currentImageIndex}
+            setCurrentImageIndex={setCurrentImageIndex}
+            setShowAnnotations={setShowAnnotations}
+          />
+        </TabsContent>
 
-      {activeTab === 'clarity' && (
-        <ClarityChat
-          session={session}
-          personaData={personaData}
-        />
-      )}
+        <TabsContent value="clarity">
+          <ClarityChat
+            session={session}
+            personaData={personaData}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
