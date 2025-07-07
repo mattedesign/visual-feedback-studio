@@ -130,24 +130,14 @@ const GoblinDashboard = () => {
           </p>
         </div>
         
-        <div className="flex gap-3">
-          <Button
-            onClick={() => navigate('/archive')}
-            variant="outline"
-            size="lg"
-          >
-            📁 Traditional Analysis Archive
-          </Button>
-          
-          <Button
-            onClick={handleNewAnalysis}
-            size="lg"
-            className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            New Goblin Analysis
-          </Button>
-        </div>
+        <Button
+          onClick={handleNewAnalysis}
+          size="lg"
+          className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+        >
+          <Plus className="w-5 h-5 mr-2" />
+          New Goblin Analysis
+        </Button>
       </div>
 
       {/* Quick Stats */}
