@@ -160,17 +160,21 @@ const SummaryView: React.FC<SummaryViewProps> = ({
               <p className="whitespace-pre-wrap">{personaData.analysis}</p>
             </div>
             
-            {personaData.biggestGripe && (
+            {(personaData.biggestGripe || personaData.wildCard) && (
               <div>
                 <h4 className="font-semibold mb-2 text-red-600">🤬 Biggest Gripe:</h4>
-                <p className="whitespace-pre-wrap">{personaData.biggestGripe}</p>
+                <p className="whitespace-pre-wrap">{personaData.biggestGripe || personaData.wildCard || 'No specific gripes identified'}</p>
               </div>
             )}
             
-            {personaData.whatMakesGoblinHappy && (
+            {(personaData.whatMakesGoblinHappy || personaData.experiments) && (
               <div>
                 <h4 className={`font-semibold mb-2 ${colors.primary}`}>😈 What Actually Works:</h4>
-                <p className="whitespace-pre-wrap">{personaData.whatMakesGoblinHappy}</p>
+                <p className="whitespace-pre-wrap">
+                  {personaData.whatMakesGoblinHappy || 
+                   (Array.isArray(personaData.experiments) ? personaData.experiments.join(", ") : personaData.experiments) || 
+                   'Effective approaches identified'}
+                </p>
               </div>
             )}
             

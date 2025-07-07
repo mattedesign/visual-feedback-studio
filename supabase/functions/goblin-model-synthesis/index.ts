@@ -123,7 +123,12 @@ function getPersonaSpecificData(persona: string, analysisData: any) {
       return {
         experiments: analysisData?.experiments || ["A/B test unconventional approaches"],
         wildCard: analysisData?.wildCard || "What if we completely flipped the expected interaction pattern?",
-        riskLevel: "experimental"
+        riskLevel: "experimental",
+        // Map to expected UI properties
+        biggestGripe: analysisData?.wildCard || "Your interface is playing it way too safe - users can handle some creative chaos!",
+        whatMakesGoblinHappy: analysisData?.experiments?.join(", ") || "Experiments that break conventional UX rules and surprise users in delightful ways",
+        goblinWisdom: "Sometimes the most brilliant UX solutions come from completely ignoring what everyone else is doing",
+        goblinPrediction: "If you embrace experimental approaches, you'll discover interaction patterns that set you apart from boring competitors"
       };
       
     case 'executive':
