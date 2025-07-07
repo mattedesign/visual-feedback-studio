@@ -92,7 +92,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
-        temperature: persona === 'clarity' ? 0.7 : 0.3, // Goblin gets more creative
+        temperature: persona === 'clarity' ? 0.3 : 0.7, // Clarity needs focus, others get creativity
         messages: [{
           role: 'user',
           content: messageContent
