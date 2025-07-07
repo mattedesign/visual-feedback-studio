@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -9,7 +9,10 @@ import {
   Brain,
   History,
   Image,
-  Database
+  Database,
+  User,
+  ChevronDown,
+  LogOut
 } from 'lucide-react';
 import {
   Sidebar,
@@ -20,6 +23,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
@@ -60,6 +66,7 @@ export function AppSidebar() {
   const location = useLocation();
   const currentPath = location.pathname;
   const collapsed = state === 'collapsed';
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const isActive = (path: string) => {
     if (path === '/') {
@@ -127,7 +134,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {bottomNavItems.map((item) => (
+               {bottomNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink 
@@ -140,6 +147,43 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              
+              {/* Profile Menu */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => setIsProfileOpen(!isProfileOpen)}
+                  className="hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                >
+                  <User className="h-4 w-4 flex-shrink-0" />
+                  {!collapsed && (
+                    <>
+                      <span className="flex-1">Profile</span>
+                      <ChevronDown className={`h-4 w-4 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
+                    </>
+                  )}
+                </SidebarMenuButton>
+                
+                {!collapsed && isProfileOpen && (
+                  <SidebarMenuSub>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild>
+                        <button className="w-full">
+                          <User className="h-4 w-4" />
+                          <span>View Profile</span>
+                        </button>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild>
+                        <button className="w-full">
+                          <LogOut className="h-4 w-4" />
+                          <span>Logout</span>
+                        </button>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  </SidebarMenuSub>
+                )}
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
