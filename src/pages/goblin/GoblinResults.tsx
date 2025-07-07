@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -8,6 +7,7 @@ import { toast } from 'sonner';
 import DetailedModeView from '@/components/goblin/DetailedModeView';
 import ClarityChat from '@/components/goblin/ClarityChat';
 import SummaryView from '@/components/goblin/SummaryView';
+import { GoblinNavigation } from '@/components/goblin/GoblinNavigation';
 
 const GoblinResults: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -17,6 +17,7 @@ const GoblinResults: React.FC = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [copied, setCopied] = useState(false);
   const [showAnnotations, setShowAnnotations] = useState(true);
+  const [activeTab, setActiveTab] = useState<'summary' | 'detailed' | 'clarity'>('summary');
 
   useEffect(() => {
     const loadResults = async () => {
@@ -102,45 +103,46 @@ const GoblinResults: React.FC = () => {
   if (loading) return <div className="p-6 text-center">Loading...</div>;
   if (!results) return <div className="p-6 text-center">No results found.</div>;
 
+  // Get annotation count for badge
+  const annotationCount = results?.annotations?.length || 0;
+
   return (
-    <div className="p-6">
-      <Tabs defaultValue="summary">
-        <TabsList>
-          <TabsTrigger value="summary">Summary</TabsTrigger>
-          <TabsTrigger value="detailed">Detailed</TabsTrigger>
-          <TabsTrigger value="clarity">Clarity</TabsTrigger>
-        </TabsList>
+    <div className="p-6 max-w-7xl mx-auto">
+      <GoblinNavigation 
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        annotationCount={annotationCount}
+      />
 
-        <TabsContent value="summary">
-          <SummaryView
-            results={results}
-            session={session}
-            personaData={personaData}
-            onExport={handleExport}
-            onCopyLink={handleCopyLink}
-            copied={copied}
-          />
-        </TabsContent>
+      {activeTab === 'summary' && (
+        <SummaryView
+          results={results}
+          session={session}
+          personaData={personaData}
+          onExport={handleExport}
+          onCopyLink={handleCopyLink}
+          copied={copied}
+        />
+      )}
 
-        <TabsContent value="detailed">
-          <DetailedModeView
-            images={images}
-            session={session}
-            results={results}
-            showAnnotations={showAnnotations}
-            currentImageIndex={currentImageIndex}
-            setCurrentImageIndex={setCurrentImageIndex}
-            setShowAnnotations={setShowAnnotations}
-          />
-        </TabsContent>
+      {activeTab === 'detailed' && (
+        <DetailedModeView
+          images={images}
+          session={session}
+          results={results}
+          showAnnotations={showAnnotations}
+          currentImageIndex={currentImageIndex}
+          setCurrentImageIndex={setCurrentImageIndex}
+          setShowAnnotations={setShowAnnotations}
+        />
+      )}
 
-        <TabsContent value="clarity">
-          <ClarityChat
-            session={session}
-            personaData={personaData}
-          />
-        </TabsContent>
-      </Tabs>
+      {activeTab === 'clarity' && (
+        <ClarityChat
+          session={session}
+          personaData={personaData}
+        />
+      )}
     </div>
   );
 };
