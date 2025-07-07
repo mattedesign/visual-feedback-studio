@@ -1,4 +1,5 @@
 import React from 'react';
+import { Button } from '@/components/ui/button';
 
 interface DetailedModeViewProps {
   images: any[];
@@ -25,6 +26,20 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
 
   return (
     <div className="space-y-4">
+      {/* Controls */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">Image Analysis ({currentImageIndex + 1} of {images.length})</h3>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => setShowAnnotations(!showAnnotations)}
+            variant={showAnnotations ? "default" : "outline"}
+            size="sm"
+          >
+            {showAnnotations ? '👁️ Hide' : '👁️ Show'} Annotations ({annotations.length})
+          </Button>
+        </div>
+      </div>
+      
       <div className="relative w-full aspect-video bg-gray-900 rounded-lg overflow-hidden">
         <img
           src={currentImage?.file_path}
@@ -32,23 +47,33 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
           className="w-full h-full object-contain"
         />
 
-        {showAnnotations && annotations.length > 0 && annotations.map((annotation: any, idx: number) => (
-          <div
-            key={idx}
-            className="absolute border border-pink-500 bg-pink-500/10 rounded text-xs text-white p-1 cursor-pointer"
-            style={{
-              top: `${annotation.y * 100}%`,
-              left: `${annotation.x * 100}%`,
-              width: `${annotation.width * 100}%`,
-              height: `${annotation.height * 100}%`
-            }}
-            title={annotation.text}
-          >
-            {annotation.text.length > 20
-              ? annotation.text.slice(0, 20) + '...'
-              : annotation.text}
-          </div>
-        ))}
+        {showAnnotations && annotations.length > 0 && annotations.map((annotation: any, idx: number) => {
+          // Handle different annotation data structures with fallbacks
+          const annotationText = annotation.feedback || annotation.description || annotation.text || `Annotation ${idx + 1}`;
+          const coords = annotation.coordinates || annotation;
+          const x = coords.x || 0;
+          const y = coords.y || 0;
+          const width = coords.width || 0.1;
+          const height = coords.height || 0.05;
+          
+          return (
+            <div
+              key={idx}
+              className="absolute border border-pink-500 bg-pink-500/10 rounded text-xs text-white p-1 cursor-pointer"
+              style={{
+                top: `${y * 100}%`,
+                left: `${x * 100}%`,
+                width: `${width * 100}%`,
+                height: `${height * 100}%`
+              }}
+              title={annotationText}
+            >
+              {annotationText.length > 20
+                ? annotationText.slice(0, 20) + '...'
+                : annotationText}
+            </div>
+          );
+        })}
       </div>
 
       <div className="flex gap-2 overflow-x-auto">
