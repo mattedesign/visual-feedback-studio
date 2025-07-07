@@ -252,14 +252,14 @@ export const KnowledgeExportManager = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Select 
-              value={exportFilters.primary_category || ''} 
-              onValueChange={(value: string) => setExportFilters({ ...exportFilters, primary_category: value || undefined })}
+              value={exportFilters.primary_category || 'all'} 
+              onValueChange={(value: string) => setExportFilters({ ...exportFilters, primary_category: value === 'all' ? undefined : value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Filter by Primary Category" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value="all">All Categories</SelectItem>
                 <SelectItem value="patterns">Patterns</SelectItem>
                 <SelectItem value="compliance">Compliance</SelectItem>
                 <SelectItem value="research">Research</SelectItem>
@@ -269,14 +269,14 @@ export const KnowledgeExportManager = () => {
             </Select>
 
             <Select 
-              value={exportFilters.complexity_level || ''} 
-              onValueChange={(value: string) => setExportFilters({ ...exportFilters, complexity_level: value || undefined })}
+              value={exportFilters.complexity_level || 'all'} 
+              onValueChange={(value: string) => setExportFilters({ ...exportFilters, complexity_level: value === 'all' ? undefined : value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Filter by Complexity" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Levels</SelectItem>
+                <SelectItem value="all">All Levels</SelectItem>
                 <SelectItem value="basic">Basic</SelectItem>
                 <SelectItem value="intermediate">Intermediate</SelectItem>
                 <SelectItem value="advanced">Advanced</SelectItem>
