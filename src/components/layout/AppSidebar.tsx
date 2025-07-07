@@ -8,7 +8,8 @@ import {
   HelpCircle,
   Brain,
   History,
-  Image
+  Image,
+  Database
 } from 'lucide-react';
 import {
   Sidebar,
@@ -53,6 +54,12 @@ const mainNavItems = [
     title: "History",
     url: "/history",
     icon: History,
+    badge: null
+  },
+  {
+    title: "Knowledge Base",
+    url: "/vector-test",
+    icon: Database,
     badge: null
   }
 ];
