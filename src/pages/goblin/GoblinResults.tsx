@@ -4,20 +4,25 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Sparkles, Download, Share2, ChevronLeft, ChevronRight, 
+import {
+  Sparkles, Download, Share2, ChevronLeft, ChevronRight,
   ThumbsUp, AlertTriangle, Flame, Copy, Check, Eye, EyeOff
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import DetailedView from './DetailedView';
-import ClarityChat from './ClarityChat';
+
+// ✅ New imports for upcoming tabs
+import DetailedModeView from '@/components/goblin/DetailedModeView';
+import ClarityChat from '@/components/goblin/ClarityChat';
 
 const GoblinResults: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const [results, setResults] = useState<any>(null);
   const [images, setImages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [copied, setCopied] = useState(false);
+  const [showAnnotations, setShowAnnotations] = useState(true);
 
   useEffect(() => {
     const loadResults = async () => {
@@ -41,7 +46,6 @@ const GoblinResults: React.FC = () => {
 
         if (imageError) throw imageError;
         setImages(imageData);
-
       } catch (error) {
         console.error('Failed to load results:', error);
       } finally {
@@ -52,41 +56,85 @@ const GoblinResults: React.FC = () => {
     loadResults();
   }, [sessionId]);
 
-  if (loading) return <div>Loading...</div>;
-  if (!results) return <div>Results not found.</div>;
+  const handleExport = () => {
+    if (!results || !session || !personaData) return;
+    const exportData = {
+      session: session.title,
+      date: new Date().toISOString(),
+      persona: session.persona_type,
+      analysis: personaData.analysis,
+      recommendations: personaData.recommendations,
+      gripeLevel: results.goblin_gripe_level,
+      biggestGripe: personaData.biggestGripe,
+      whatMakesGoblinHappy: personaData.whatMakesGoblinHappy,
+      goblinWisdom: personaData.goblinWisdom,
+      goblinPrediction: personaData.goblinPrediction,
+      priorityMatrix: results.priority_matrix,
+      synthesissSummary: results.synthesis_summary
+    };
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(dataBlob);
+    link.download = `goblin-analysis-${session.id}-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    toast.success('Analysis exported! 📥');
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      toast.success('Link copied! Share your goblin wisdom! 📋');
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      toast.error('Failed to copy link');
+    }
+  };
+
+  const getGripeEmoji = (level: string) => {
+    switch(level) {
+      case 'low': return '😤';
+      case 'medium': return '🤬';
+      case 'rage-cranked': return '🌋';
+      default: return '👾';
+    }
+  };
+
+  if (loading) return <div className="p-6 text-center">Loading...</div>;
+  if (!results) return <div className="p-6 text-center">No results found.</div>;
 
   const session = results.goblin_analysis_sessions;
-  const personaData = results.persona_feedback?.[session.persona_type];
+  const personaData = results.persona_feedback[session.persona_type];
+  const isGoblin = session.persona_type === 'clarity';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
-      <div className="max-w-6xl mx-auto px-4 space-y-6">
-        <h1 className="text-3xl font-bold">Goblin Analysis Results</h1>
+    <div className="p-6">
+      <Tabs defaultValue="detailed">
+        <TabsList>
+          <TabsTrigger value="detailed">Detailed</TabsTrigger>
+          <TabsTrigger value="clarity">Clarity</TabsTrigger>
+        </TabsList>
 
-        <Tabs defaultValue="detailed" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="detailed">Detailed</TabsTrigger>
-            <TabsTrigger value="clarity">Clarity</TabsTrigger>
-          </TabsList>
+        <TabsContent value="detailed">
+          <DetailedModeView
+            images={images}
+            session={session}
+            showAnnotations={showAnnotations}
+            currentImageIndex={currentImageIndex}
+            setCurrentImageIndex={setCurrentImageIndex}
+            setShowAnnotations={setShowAnnotations}
+          />
+        </TabsContent>
 
-          <TabsContent value="detailed" className="mt-6">
-            <DetailedView
-              session={session}
-              images={images}
-              annotations={personaData?.annotations || []}
-            />
-          </TabsContent>
-
-          <TabsContent value="clarity" className="mt-6">
-            <ClarityChat
-              session={session}
-              personaType={session.persona_type}
-              analysis={personaData?.analysis || ''}
-              recommendations={personaData?.recommendations || []}
-            />
-          </TabsContent>
-        </Tabs>
-      </div>
+        <TabsContent value="clarity">
+          <ClarityChat
+            sessionId={sessionId!}
+            personaType={session.persona_type}
+            personaData={personaData}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
