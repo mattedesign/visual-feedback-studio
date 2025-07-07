@@ -27,10 +27,26 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData }) => {
   // Initialize with persona data from analysis
   useEffect(() => {
     if (personaData && messages.length === 0) {
+      console.log('🔧 ClarityChat: Initializing with persona data:', {
+        hasPersonaData: !!personaData,
+        availableFields: Object.keys(personaData),
+        hasBiggestGripe: !!personaData.biggestGripe,
+        hasWhatMakesGoblinHappy: !!personaData.whatMakesGoblinHappy,
+        hasGoblinPrediction: !!personaData.goblinPrediction,
+        hasGoblinWisdom: !!personaData.goblinWisdom
+      });
+
+      // Build initial message with fallbacks for missing fields
+      const analysis = personaData.analysis || "Analysis completed";
+      const biggestGripe = personaData.biggestGripe || "Your interface needs attention!";
+      const whatMakesGoblinHappy = personaData.whatMakesGoblinHappy || "User-centered design that works";
+      const goblinPrediction = personaData.goblinPrediction || "Improve the UX and users will thank you";
+      const goblinWisdom = personaData.goblinWisdom || "Good UX speaks for itself";
+
       const initialMessage: ChatMessage = {
         id: 'initial',
         role: 'clarity',
-        content: `${personaData.analysis}\n\n🤬 **My biggest gripe:** ${personaData.biggestGripe}\n\n😈 **What I actually like:** ${personaData.whatMakesGoblinHappy}\n\n🔮 **My prediction:** ${personaData.goblinPrediction}\n\n💎 **Goblin wisdom:** ${personaData.goblinWisdom}`,
+        content: `${analysis}\n\n🤬 **My biggest gripe:** ${biggestGripe}\n\n😈 **What I actually like:** ${whatMakesGoblinHappy}\n\n🔮 **My prediction:** ${goblinPrediction}\n\n💎 **Goblin wisdom:** ${goblinWisdom}`,
         timestamp: new Date()
       };
       setMessages([initialMessage]);

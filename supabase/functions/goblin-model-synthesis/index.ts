@@ -64,14 +64,24 @@ function synthesizeResults(persona: string, analysisData: any, goal: string, ima
   const analysis = analysisData.analysisData?.analysis || analysisData.rawResponse || 'Analysis completed';
   const recommendations = analysisData.analysisData?.recommendations || [];
   
-  // Build persona-specific feedback structure
+  // Get mapped persona data with required UI fields
+  const mappedPersonaData = getPersonaSpecificData(persona, analysisData.analysisData);
+  
+  // Build persona-specific feedback structure with mapped fields at top level
   const personaFeedback = {
     [persona]: {
       analysis,
       recommendations,
-      persona_specific: getPersonaSpecificData(persona, analysisData.analysisData)
+      // Include all mapped fields directly for UI access
+      ...mappedPersonaData,
+      persona_specific: mappedPersonaData
     }
   };
+  
+  console.log(`✅ Built persona feedback for ${persona}:`, {
+    hasRequiredFields: !!(mappedPersonaData.biggestGripe && mappedPersonaData.whatMakesGoblinHappy && mappedPersonaData.goblinWisdom && mappedPersonaData.goblinPrediction),
+    personaDataKeys: Object.keys(mappedPersonaData)
+  });
 
   // Create priority matrix
   const priorityMatrix = createPriorityMatrix(recommendations, persona, analysis);
@@ -97,68 +107,93 @@ function synthesizeResults(persona: string, analysisData: any, goal: string, ima
 }
 
 function getPersonaSpecificData(persona: string, analysisData: any) {
+  console.log(`🎭 Mapping persona data for: ${persona}`, { 
+    hasAnalysisData: !!analysisData,
+    availableKeys: analysisData ? Object.keys(analysisData) : []
+  });
+
+  // Extract base analysis content for fallbacks
+  const baseAnalysis = analysisData?.analysis || analysisData?.rawResponse || "Analysis completed";
+  const baseRecommendations = analysisData?.recommendations || [];
+
   switch (persona) {
     case 'clarity':
-      return {
+      const clarityData = {
         goblinWisdom: analysisData?.goblinWisdom || "Users don't care about your clever design - they just want to get stuff done!",
         attitude: analysisData?.goblinAttitude || 'grumpy',
         userRealityCheck: "What users actually experience vs. what you think they experience",
-        // Map to expected UI properties
+        // REQUIRED UI properties for Clarity chat
         biggestGripe: analysisData?.biggestGripe || "Your users are confused and you don't even realize it!",
         whatMakesGoblinHappy: analysisData?.whatMakesGoblinHappy || "Clear, obvious interfaces that don't make users think",
         goblinPrediction: analysisData?.goblinPrediction || "Fix the confusing parts and watch your conversion rates soar"
       };
+      console.log('✅ Clarity persona data mapped:', clarityData);
+      return clarityData;
       
     case 'strategic':
-      return {
+      const strategicData = {
         businessImpact: analysisData?.businessImpact || "Strategic improvements needed to align with business objectives",
         implementation: analysisData?.implementation || "Phased approach recommended for maximum impact",
         metrics: analysisData?.metrics || ["User satisfaction", "Task completion rate", "Business conversion"],
-        // Map to expected UI properties
-        biggestGripe: analysisData?.businessImpact || "Your UX strategy isn't aligned with business goals - you're leaving money on the table",
-        whatMakesGoblinHappy: analysisData?.implementation || "Strategic UX improvements that drive measurable business results",
-        goblinWisdom: "Every design decision should tie back to a business metric",
-        goblinPrediction: "Align UX with business strategy and watch both user satisfaction and revenue grow"
+        // REQUIRED UI properties for Clarity chat
+        biggestGripe: analysisData?.businessImpact || analysisData?.biggestGripe || "Your UX strategy isn't aligned with business goals - you're leaving money on the table",
+        whatMakesGoblinHappy: analysisData?.implementation || analysisData?.whatMakesGoblinHappy || "Strategic UX improvements that drive measurable business results",
+        goblinWisdom: analysisData?.goblinWisdom || "Every design decision should tie back to a business metric",
+        goblinPrediction: analysisData?.goblinPrediction || "Align UX with business strategy and watch both user satisfaction and revenue grow"
       };
+      console.log('✅ Strategic persona data mapped:', strategicData);
+      return strategicData;
       
     case 'mirror':
-      return {
+      const mirrorData = {
         insights: analysisData?.insights || ["Consider the gap between intention and user perception"],
         reflection: analysisData?.reflection || "What assumptions might you be making about your users?",
         nextSteps: ["Observe real users interacting with your design", "Question your design assumptions"],
-        // Map to expected UI properties
-        biggestGripe: analysisData?.reflection || "You're designing for yourself, not your users - step back and see what they actually see",
-        whatMakesGoblinHappy: Array.isArray(analysisData?.insights) ? analysisData.insights.join(", ") : (analysisData?.insights || "Deep user insights that challenge design assumptions"),
-        goblinWisdom: "The most powerful design insights come from honest self-reflection",
-        goblinPrediction: "Question your assumptions and you'll discover breakthrough UX improvements"
+        // REQUIRED UI properties for Clarity chat
+        biggestGripe: analysisData?.reflection || analysisData?.biggestGripe || "You're designing for yourself, not your users - step back and see what they actually see",
+        whatMakesGoblinHappy: Array.isArray(analysisData?.insights) ? analysisData.insights.join(", ") : (analysisData?.insights || analysisData?.whatMakesGoblinHappy || "Deep user insights that challenge design assumptions"),
+        goblinWisdom: analysisData?.goblinWisdom || "The most powerful design insights come from honest self-reflection",
+        goblinPrediction: analysisData?.goblinPrediction || "Question your assumptions and you'll discover breakthrough UX improvements"
       };
+      console.log('✅ Mirror persona data mapped:', mirrorData);
+      return mirrorData;
       
     case 'mad':
-      return {
+      const madData = {
         experiments: analysisData?.experiments || ["A/B test unconventional approaches"],
         wildCard: analysisData?.wildCard || "What if we completely flipped the expected interaction pattern?",
         riskLevel: "experimental",
-        // Map to expected UI properties
-        biggestGripe: analysisData?.wildCard || "Your interface is playing it way too safe - users can handle some creative chaos!",
-        whatMakesGoblinHappy: Array.isArray(analysisData?.experiments) ? analysisData.experiments.join(", ") : (analysisData?.experiments || "Experiments that break conventional UX rules and surprise users in delightful ways"),
-        goblinWisdom: "Sometimes the most brilliant UX solutions come from completely ignoring what everyone else is doing",
-        goblinPrediction: "If you embrace experimental approaches, you'll discover interaction patterns that set you apart from boring competitors"
+        // REQUIRED UI properties for Clarity chat - map from mad scientist specific fields
+        biggestGripe: analysisData?.wildCard || analysisData?.biggestGripe || "Your interface is playing it way too safe - users can handle some creative chaos!",
+        whatMakesGoblinHappy: Array.isArray(analysisData?.experiments) ? analysisData.experiments.join(", ") : (analysisData?.experiments || analysisData?.whatMakesGoblinHappy || "Experiments that break conventional UX rules and surprise users in delightful ways"),
+        goblinWisdom: analysisData?.goblinWisdom || "Sometimes the most brilliant UX solutions come from completely ignoring what everyone else is doing",
+        goblinPrediction: analysisData?.goblinPrediction || "If you embrace experimental approaches, you'll discover interaction patterns that set you apart from boring competitors"
       };
+      console.log('✅ Mad scientist persona data mapped:', madData);
+      return madData;
       
     case 'executive':
-      return {
+      const executiveData = {
         roi: analysisData?.roi || "UX improvements with measurable business impact",
         timeline: analysisData?.timeline || ["Phase 1: Quick wins", "Phase 2: Strategic improvements"],
         competitiveAdvantage: "Enhanced user experience drives competitive differentiation",
-        // Map to expected UI properties
-        biggestGripe: analysisData?.roi || "Your UX investments aren't generating the ROI they should - time to focus on high-impact changes",
-        whatMakesGoblinHappy: Array.isArray(analysisData?.timeline) ? analysisData.timeline.join(", ") : (analysisData?.timeline || "Strategic UX roadmaps that deliver measurable business results"),
-        goblinWisdom: "The best UX decisions are backed by data and drive clear business outcomes",
-        goblinPrediction: "Focus on high-ROI UX improvements and you'll see both user satisfaction and business metrics improve dramatically"
+        // REQUIRED UI properties for Clarity chat
+        biggestGripe: analysisData?.roi || analysisData?.biggestGripe || "Your UX investments aren't generating the ROI they should - time to focus on high-impact changes",
+        whatMakesGoblinHappy: Array.isArray(analysisData?.timeline) ? analysisData.timeline.join(", ") : (analysisData?.timeline || analysisData?.whatMakesGoblinHappy || "Strategic UX roadmaps that deliver measurable business results"),
+        goblinWisdom: analysisData?.goblinWisdom || "The best UX decisions are backed by data and drive clear business outcomes",
+        goblinPrediction: analysisData?.goblinPrediction || "Focus on high-ROI UX improvements and you'll see both user satisfaction and business metrics improve dramatically"
       };
+      console.log('✅ Executive persona data mapped:', executiveData);
+      return executiveData;
       
     default:
-      return {};
+      console.log('⚠️ Unknown persona, using fallback data');
+      return {
+        biggestGripe: "Your interface needs some goblin attention!",
+        whatMakesGoblinHappy: "User-centered design that actually works",
+        goblinWisdom: "Good UX speaks for itself",
+        goblinPrediction: "Fix the user experience and everything else follows"
+      };
   }
 }
 
