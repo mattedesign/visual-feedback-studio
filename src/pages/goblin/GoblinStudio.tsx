@@ -130,10 +130,10 @@ const GoblinStudio: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-background py-8">
       <div className="max-w-4xl mx-auto px-4 space-y-8">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Sparkles className="text-purple-600 w-5 h-5" /> Goblin UX Analysis
+        <h1 className="text-2xl font-bold flex items-center gap-2 text-foreground">
+          <Sparkles className="text-primary w-5 h-5" /> 👾 Goblin UX Analysis Studio
         </h1>
 
         <div className="space-y-4">
