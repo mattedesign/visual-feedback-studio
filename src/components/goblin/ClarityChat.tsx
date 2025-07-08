@@ -62,7 +62,7 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
     return qualityTags;
   };
 
-  // Load persistent conversation history - fixed timing and dependency issues
+  // Load persistent conversation history - enhanced with better error handling
   useEffect(() => {
     const loadConversationHistory = async () => {
       if (!session?.id) {
@@ -73,7 +73,7 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
       try {
         console.log('📚 Loading persistent conversation history for session:', session.id);
         
-        // Fetch conversation history from the database
+        // Fetch conversation history from the database with user context
         const { data: historyData, error } = await supabase
           .from('goblin_refinement_history')
           .select('*')
@@ -99,7 +99,8 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
             refinement_score: record.refinement_score,
             conversation_stage: record.conversation_stage,
             parsed_problems: record.parsed_problems,
-            suggested_fixes: record.suggested_fixes
+            suggested_fixes: record.suggested_fixes,
+            quality_tags: [] // Will be populated below
           }));
 
           console.log('✅ Setting loaded messages from database:', loadedMessages.length);
@@ -110,7 +111,7 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
           }));
           setMessages(messagesWithQuality);
         } else {
-          // No history found in database, check if we have persona data to create initial message
+          // No history found in database, create initial message from persona data
           console.log('📝 No conversation history found, creating initial message from persona data');
           loadInitialMessage();
         }
@@ -143,28 +144,44 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
         role: 'clarity',
         content: initialMessageContent,
         timestamp: new Date(),
-        conversation_stage: 'initial'
+        conversation_stage: 'initial',
+        quality_tags: []
       };
       
       console.log('✅ Setting initial message from persona data');
       setMessages([initialMessage]);
 
-      // Save the initial message to the database to ensure persistence
+      // Save the initial message to the database to ensure persistence - only if not already saved
       try {
-        console.log('💾 Saving initial message to database for persistence');
-        await supabase.functions.invoke('goblin-model-claude-analyzer', {
-          body: {
-            sessionId: session.id,
-            chatMode: false, // This is the initial analysis call
-            prompt: 'Initial analysis', 
-            persona: session?.persona_type || 'clarity',
-            conversationHistory: '',
-            originalAnalysis: personaData,
-            saveInitialOnly: true, // Custom flag to just save initial message
-            initialContent: initialMessageContent
-          }
-        });
-        console.log('✅ Initial message saved to database');
+        console.log('💾 Checking if initial message needs to be saved to database');
+        
+        // Check if initial message is already in database
+        const { data: existingInitial } = await supabase
+          .from('goblin_refinement_history')
+          .select('id')
+          .eq('session_id', session.id)
+          .eq('role', 'clarity')
+          .eq('conversation_stage', 'initial')
+          .limit(1);
+
+        if (!existingInitial || existingInitial.length === 0) {
+          console.log('💾 Saving initial message to database for persistence');
+          await supabase.functions.invoke('goblin-model-claude-analyzer', {
+            body: {
+              sessionId: session.id,
+              chatMode: false,
+              prompt: 'Initial analysis', 
+              persona: session?.persona_type || 'clarity',
+              conversationHistory: '',
+              originalAnalysis: personaData,
+              saveInitialOnly: true,
+              initialContent: initialMessageContent
+            }
+          });
+          console.log('✅ Initial message saved to database');
+        } else {
+          console.log('⚠️ Initial message already exists in database, skipping save');
+        }
       } catch (error) {
         console.warn('⚠️ Failed to save initial message to database:', error);
         // Continue anyway - the message is still shown in UI
@@ -174,11 +191,11 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
     // Reset messages and load conversation whenever session or persona data changes
     setMessages([]); // Clear existing messages first
     
-    if (session?.id) {
+    if (session?.id && personaData) {
       console.log('🚀 Triggering conversation history load for session:', session.id);
       loadConversationHistory();
     } else {
-      console.log('⏸️ Not loading conversation - missing session ID');
+      console.log('⏸️ Not loading conversation - missing session ID or persona data');
     }
   }, [session?.id, personaData]);
 
@@ -241,14 +258,21 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
               refinement_score: record.refinement_score,
               conversation_stage: record.conversation_stage,
               parsed_problems: record.parsed_problems,
-              suggested_fixes: record.suggested_fixes
+              suggested_fixes: record.suggested_fixes,
+              quality_tags: [] // Will be populated below
+            }));
+
+            // Add quality tags to reloaded messages
+            const messagesWithQuality = reloadedMessages.map(msg => ({
+              ...msg,
+              quality_tags: analyzeMessageQuality(msg)
             }));
 
             // Only update if we have more messages than before (to avoid losing state)
             setMessages(prevMessages => {
-              if (reloadedMessages.length >= prevMessages.length) {
+              if (messagesWithQuality.length >= prevMessages.length) {
                 console.log('✅ Updating messages with enhanced data from database');
-                return reloadedMessages;
+                return messagesWithQuality;
               } else {
                 console.log('⚠️ Database has fewer messages than current state, keeping current');
                 return prevMessages;
@@ -261,7 +285,8 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
               id: Date.now().toString() + '_clarity',
               role: 'clarity',
               content: data.analysisData?.analysis || data.rawResponse || 'Hmm, seems I lost my voice for a moment there...',
-              timestamp: new Date()
+              timestamp: new Date(),
+              quality_tags: []
             };
             setMessages(prev => [...prev, clarityResponse]);
           }
@@ -272,11 +297,12 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
             id: Date.now().toString() + '_clarity',
             role: 'clarity',
             content: data.analysisData?.analysis || data.rawResponse || 'Hmm, seems I lost my voice for a moment there...',
-            timestamp: new Date()
+            timestamp: new Date(),
+            quality_tags: []
           };
           setMessages(prev => [...prev, clarityResponse]);
         }
-      }, 1500); // Reduced wait time for better UX
+      }, 1000); // Reduced wait time for better UX
     } catch (error) {
       console.error('Chat error:', error);
       toast.error('Failed to send message to Clarity');
