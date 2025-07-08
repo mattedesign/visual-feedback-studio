@@ -34,8 +34,12 @@ const Auth = () => {
     if (!authLoading && user && session) {
       console.log('✅ User already authenticated, redirecting to dashboard...');
       
-      // Use replace to avoid adding to browser history (prevents back button loops)
-      navigate('/', { replace: true });
+      // Small delay to prevent redirect loops during auth state changes
+      const redirectTimer = setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 100);
+      
+      return () => clearTimeout(redirectTimer);
     }
   }, [user, session, authLoading, navigate]);
 

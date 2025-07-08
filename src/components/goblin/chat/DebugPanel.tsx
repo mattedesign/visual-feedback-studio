@@ -44,18 +44,22 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({ sessionId, persona }) =>
     console.log(`🐛 [${type.toUpperCase()}] ${message}`, data);
   };
 
-  // Monitor authentication status
+  // Monitor authentication status - FIXED: Prevent continuous loops
   useEffect(() => {
-    addEvent('auth', 'Checking authentication status');
+    // Only log auth changes, don't create excessive events
+    const newAuthStatus = user ? 'authenticated' : 'unauthenticated';
     
-    if (user) {
-      setAuthStatus('authenticated');
-      addEvent('auth', `User authenticated: ${user.id.substring(0, 8)}...`, { userId: user.id }, 'success');
-    } else {
-      setAuthStatus('unauthenticated');
-      addEvent('auth', 'User not authenticated', {}, 'error');
+    // Only update and log if status actually changed
+    if (newAuthStatus !== authStatus) {
+      setAuthStatus(newAuthStatus);
+      
+      if (user) {
+        addEvent('auth', `User authenticated: ${user.id.substring(0, 8)}...`, { userId: user.id }, 'success');
+      } else {
+        addEvent('auth', 'User not authenticated', {}, 'warn');
+      }
     }
-  }, [user]);
+  }, [user, authStatus]); // Added authStatus to deps to prevent loops
 
   // Test database connectivity
   const testDatabaseConnection = async () => {

@@ -24,80 +24,119 @@ export const useAuth = () => {
 
   useEffect(() => {
     let mounted = true;
+    let profileFetchAbortController: AbortController | null = null;
 
-    // Set up auth state listener
+    // Helper function to safely update auth state
+    const updateAuthState = (updates: Partial<AuthState>) => {
+      if (mounted) {
+        setAuthState(prev => ({ ...prev, ...updates }));
+      }
+    };
+
+    // Helper function to fetch profile with abort signal
+    const fetchProfile = async (userId: string): Promise<UserProfile | null> => {
+      if (profileFetchAbortController) {
+        profileFetchAbortController.abort();
+      }
+      
+      profileFetchAbortController = new AbortController();
+      
+      try {
+        const profile = await ProfileService.getProfile(userId);
+        return profileFetchAbortController.signal.aborted ? null : profile;
+      } catch (error) {
+        if (profileFetchAbortController.signal.aborted) {
+          return null;
+        }
+        console.warn('Profile fetch failed:', error);
+        return null;
+      }
+    };
+
+    // Set up auth state listener - FIXED: No async callback
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         if (!mounted) return;
         
+        console.log('🔐 Auth state change:', { event, hasSession: !!session, hasUser: !!session?.user });
+        
         if (session?.user) {
-          // Fetch profile information after successful auth
+          // Update auth state immediately (synchronously)
+          updateAuthState({
+            session,
+            user: session.user,
+            loading: false,
+            error: null
+          });
+          
+          // Fetch profile asynchronously without blocking
           setTimeout(async () => {
-            const profile = await ProfileService.getProfile(session.user.id);
-            if (mounted) {
-              setAuthState(prev => ({
-                ...prev,
-                session,
-                user: session.user,
-                profile,
-                loading: false,
-                error: null
-              }));
+            const profile = await fetchProfile(session.user.id);
+            if (mounted && profile) {
+              updateAuthState({ profile });
             }
           }, 0);
         } else {
-          setAuthState(prev => ({
-            ...prev,
+          // Clear auth state immediately
+          updateAuthState({
             session: null,
             user: null,
             profile: null,
             loading: false,
             error: null
-          }));
+          });
         }
       }
     );
 
-    // Initialize session check
+    // Initialize session check - FIXED: Prevent duplicate profile fetches
     const initialize = async () => {
+      if (!mounted) return;
+      
       try {
+        console.log('🚀 Initializing auth state...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
-        if (mounted) {
-          if (error) {
-            setAuthState(prev => ({
-              ...prev,
-              error: error.message,
-              loading: false
-            }));
-          } else if (session?.user) {
-            const profile = await ProfileService.getProfile(session.user.id);
-            setAuthState(prev => ({
-              ...prev,
-              session,
-              user: session.user,
-              profile,
-              loading: false,
-              error: null
-            }));
-          } else {
-            setAuthState(prev => ({
-              ...prev,
-              session: null,
-              user: null,
-              profile: null,
-              loading: false,
-              error: null
-            }));
+        if (!mounted) return;
+        
+        if (error) {
+          console.error('❌ Session check error:', error);
+          updateAuthState({
+            error: error.message,
+            loading: false
+          });
+        } else if (session?.user) {
+          console.log('✅ Found existing session');
+          // Set basic auth state first
+          updateAuthState({
+            session,
+            user: session.user,
+            loading: false,
+            error: null
+          });
+          
+          // Fetch profile separately to avoid blocking
+          const profile = await fetchProfile(session.user.id);
+          if (mounted && profile) {
+            updateAuthState({ profile });
           }
+        } else {
+          console.log('📭 No existing session');
+          updateAuthState({
+            session: null,
+            user: null,
+            profile: null,
+            loading: false,
+            error: null
+          });
         }
       } catch (err) {
+        console.error('❌ Auth initialization error:', err);
         if (mounted) {
-          setAuthState(prev => ({
-            ...prev,
+          updateAuthState({
             error: err instanceof Error ? err.message : 'Session check failed',
             loading: false
-          }));
+          });
         }
       }
     };
@@ -106,6 +145,9 @@ export const useAuth = () => {
 
     return () => {
       mounted = false;
+      if (profileFetchAbortController) {
+        profileFetchAbortController.abort();
+      }
       subscription.unsubscribe();
     };
   }, []);
