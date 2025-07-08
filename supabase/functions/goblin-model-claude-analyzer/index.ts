@@ -112,119 +112,44 @@ serve(async (req) => {
 
     const startTime = Date.now();
 
-    // ✅ CRITICAL FIX: Enhanced image processing with detailed logging
+    // ✅ SIMPLE: Handle imageUrls safely 
     const imageContent = [];
-    
-    console.log(`🔍 IMAGE PROCESSING DEBUG - Chat mode: ${actualChatMode}, Has imageUrls: ${!!imageUrls}, Type: ${typeof imageUrls}`);
-    
     if (!actualChatMode && imageUrls) {
-      // Normalize imageUrls to always be an array
-      let normalizedImageUrls = [];
+      let normalizedImageUrls = Array.isArray(imageUrls) ? imageUrls : [imageUrls];
       
-      if (Array.isArray(imageUrls)) {
-        normalizedImageUrls = imageUrls;
-      } else if (typeof imageUrls === 'object' && imageUrls !== null) {
-        // Single image object
-        normalizedImageUrls = [imageUrls];
-      } else if (typeof imageUrls === 'string') {
-        // Single URL string
-        normalizedImageUrls = [{ url: imageUrls, file_path: imageUrls }];
-      }
-      
-      console.log(`📸 PROCESSING ${normalizedImageUrls.length} images for session ${sessionId?.substring(0, 8)}`);
-      console.log(`🔗 Sample URLs:`, normalizedImageUrls.slice(0, 2).map(img => img?.url || img?.file_path || img));
+      console.log(`📸 Processing ${normalizedImageUrls.length} images for Claude`);
       
       for (let i = 0; i < Math.min(normalizedImageUrls.length, 3); i++) {
         const imageItem = normalizedImageUrls[i];
         const imageUrl = imageItem?.url || imageItem?.file_path || imageItem;
         
-        console.log(`🎯 Processing image ${i + 1}/${normalizedImageUrls.length}: ${imageUrl}`);
-        
-        if (!imageUrl || typeof imageUrl !== 'string') {
-          console.error(`❌ INVALID IMAGE URL at index ${i}:`, imageItem);
-          continue;
-        }
+        if (!imageUrl) continue;
         
         try {
-          console.log(`📥 Fetching image ${i + 1}: ${imageUrl.substring(0, 100)}...`);
-          
-          // ✅ ENHANCED: Add headers for better compatibility
-          const imageResponse = await fetch(imageUrl, {
-            method: 'GET',
-            headers: {
-              'User-Agent': 'Claude-Image-Processor/1.0'
-            }
-          });
-          
-          console.log(`📡 Response status: ${imageResponse.status} ${imageResponse.statusText}`);
-          
-          if (!imageResponse.ok) {
-            console.error(`❌ HTTP Error ${imageResponse.status}: ${imageResponse.statusText} for URL: ${imageUrl}`);
-            continue;
-          }
-          
-          const contentType = imageResponse.headers.get('content-type') || 'image/png';
-          console.log(`📋 Content-Type: ${contentType}`);
-          
-          if (!contentType.startsWith('image/')) {
-            console.error(`❌ Invalid content type: ${contentType}`);
-            continue;
-          }
+          const imageResponse = await fetch(imageUrl);
+          if (!imageResponse.ok) continue;
           
           const imageBlob = await imageResponse.blob();
           const arrayBuffer = await imageBlob.arrayBuffer();
-          const sizeInMB = arrayBuffer.byteLength / (1024 * 1024);
+          const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+          const contentType = imageResponse.headers.get('content-type') || 'image/png';
           
-          console.log(`📊 Image ${i + 1}: ${sizeInMB.toFixed(2)}MB, ${contentType}, ${arrayBuffer.byteLength} bytes`);
-          
-          if (sizeInMB > 20) {
-            console.warn(`⚠️ Image ${i + 1} too large (${sizeInMB.toFixed(2)}MB), skipping`);
-            continue;
-          }
-          
-          if (arrayBuffer.byteLength === 0) {
-            console.error(`❌ Image ${i + 1} is empty (0 bytes)`);
-            continue;
-          }
-          
-          // Convert to base64
-          const uint8Array = new Uint8Array(arrayBuffer);
-          const base64 = btoa(String.fromCharCode.apply(null, Array.from(uint8Array)));
-          
-          console.log(`🔄 Converted to base64: ${base64.length} characters`);
-          
-          const imageContentItem = {
+          imageContent.push({
             type: 'image',
             source: {
               type: 'base64',
               media_type: contentType,
               data: base64
             }
-          };
-          
-          imageContent.push(imageContentItem);
-          
-          console.log(`✅ Image ${i + 1} successfully processed and added to Claude request`);
-          
-        } catch (error) {
-          console.error(`❌ CRITICAL: Failed to process image ${i + 1}:`, error.message);
-          console.error(`🔍 Error details:`, {
-            name: error.name,
-            message: error.message,
-            url: imageUrl.substring(0, 100)
           });
-          continue;
+          
+          console.log(`✅ Image ${i + 1} processed successfully`);
+        } catch (error) {
+          console.error(`❌ Failed to process image ${i + 1}:`, error.message);
         }
       }
       
-      console.log(`🎉 IMAGE PROCESSING COMPLETE - ${imageContent.length}/${normalizedImageUrls.length} images successfully processed for Claude`);
-      
-      if (imageContent.length === 0) {
-        console.error(`🚨 CRITICAL ISSUE: NO IMAGES PROCESSED! This is why Claude can't see images.`);
-        console.error(`🔍 Original imageUrls:`, imageUrls);
-      }
-    } else {
-      console.log(`ℹ️ Skipping image processing - Chat mode: ${actualChatMode}, Has imageUrls: ${!!imageUrls}`);
+      console.log(`🎉 ${imageContent.length} images ready for Claude`);
     }
 
     // Build enhanced prompt
