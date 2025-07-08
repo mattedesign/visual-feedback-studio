@@ -73,57 +73,33 @@ serve(async (req) => {
 
     const { persona_type: persona, analysis_mode: mode, goal_description: goal, confidence_level: confidence } = session;
 
-    // Fetch images from database
-    const { data: images, error: imagesError } = await supabase
-      .from('goblin_analysis_images')
-      .select('*')
-      .eq('session_id', sessionId)
-      .order('upload_order', { ascending: true });
+    // ✅ SIMPLIFIED: Use dedicated get-images-by-session function instead of manual URL construction
+    console.log('📸 Fetching images via get-images-by-session function...');
+    
+    const imagesResponse = await supabase.functions.invoke('get-images-by-session', {
+      body: { sessionId }
+    });
 
-    if (imagesError) {
-      throw new Error(`Failed to fetch images: ${imagesError.message}`);
+    if (imagesResponse.error) {
+      throw new Error(`Failed to fetch images: ${imagesResponse.error.message}`);
     }
 
-    if (!images || images.length === 0) {
+    const imageUrls = imagesResponse.data || [];
+    
+    if (imageUrls.length === 0) {
       throw new Error('No images found for analysis session');
     }
 
-    // ✅ ENHANCED: Convert file paths to proper public URLs for Claude analyzer
-    console.log('🔍 Raw images data from database:', JSON.stringify(images, null, 2));
-    
-    const imageUrls = images.map(img => {
-      // If file_path is already a full URL, use it directly
-      if (img.file_path.startsWith('http')) {
-        console.log(`✅ Using existing full URL: ${img.file_path}`);
-        return img.file_path;
-      }
-      
-      // ✅ FIXED: Properly construct Supabase storage public URL
-      const supabaseUrl = Deno.env.get('SUPABASE_URL');
-      // Remove any leading slashes and ensure clean path
-      let cleanPath = img.file_path.replace(/^\/+/, '');
-      
-      // If the path doesn't start with the expected bucket structure, fix it
-      if (!cleanPath.startsWith('analysis-images/')) {
-        // Handle case where path might be just the filename or partial path
-        if (cleanPath.includes('/')) {
-          // Extract just the filename if it's a complex path
-          const pathParts = cleanPath.split('/');
-          cleanPath = `analysis-images/${pathParts[pathParts.length - 1]}`;
-        } else {
-          // Just a filename, add bucket prefix
-          cleanPath = `analysis-images/${cleanPath}`;
-        }
-      }
-      
-      const fullUrl = `${supabaseUrl}/storage/v1/object/public/${cleanPath}`;
-      
-      console.log(`🔗 Converting file path to URL: ${img.file_path} -> ${fullUrl}`);
-      return fullUrl;
-    });
+    // ✅ SIMPLIFIED: Simple validation and logging
+    const validImageUrls = imageUrls
+      .map(img => img.file_path)
+      .filter(url => url && typeof url === 'string' && url.trim().length > 0);
 
-    console.log('📋 Final imageUrls array being sent to Claude:', JSON.stringify(imageUrls, null, 2));
-    console.log(`📊 Image count: ${imageUrls.length} images ready for analysis`);
+    if (validImageUrls.length === 0) {
+      throw new Error(`No valid image URLs found. Please check image storage and accessibility.`);
+    }
+
+    console.log(`✅ Found ${validImageUrls.length} valid images for analysis`);
 
     console.log('🎯 Orchestrating goblin analysis:', {
       sessionId: sessionId?.substring(0, 8),
@@ -143,22 +119,22 @@ serve(async (req) => {
     console.log('👁️ Processing images with Google Vision...');
     const visionResults = [];
     
-    for (let i = 0; i < images.length; i++) {
-      const image = images[i];
-      console.log(`🔍 Processing image ${i + 1}/${images.length}: ${image.file_name}`);
+    for (let i = 0; i < imageUrls.length; i++) {
+      const imageData = imageUrls[i];
+      console.log(`🔍 Processing image ${i + 1}/${imageUrls.length}: ${imageData.file_name}`);
       
       try {
         const visionResult = await supabase.functions.invoke('goblin-vision-screen-detector', {
           body: { 
-            imageUrl: image.file_path,
-            order: image.upload_order
+            imageUrl: imageData.file_path,
+            order: imageData.upload_order
           }
         });
         
         if (visionResult.error) {
           console.warn(`⚠️ Vision failed for image ${i + 1}:`, visionResult.error);
           visionResults.push({
-            order: image.upload_order,
+            order: imageData.upload_order,
             screenType: 'interface',
             confidence: 0,
             error: visionResult.error.message
@@ -175,12 +151,12 @@ serve(async (req) => {
             screen_type: visionResult.data?.screenType || 'interface',
             vision_metadata: visionResult.data
           })
-          .eq('id', image.id);
+          .eq('id', imageData.id);
           
       } catch (error) {
         console.warn(`⚠️ Vision processing failed for image ${i + 1}:`, error.message);
         visionResults.push({
-          order: image.upload_order,
+          order: imageData.upload_order || i + 1,
           screenType: 'interface',
           confidence: 0,
           error: error.message
@@ -193,7 +169,7 @@ serve(async (req) => {
       body: { 
         persona, 
         goal, 
-        imageCount: imageUrls.length, 
+        imageCount: validImageUrls.length,
         mode, 
         confidence,
         visionResults
@@ -206,29 +182,9 @@ serve(async (req) => {
 
     // Step 3: Analyze with Claude - FIXED: Enhanced validation and error recovery
     console.log('🤖 Calling Claude analyzer with verified parameters...');
-    console.log(`📊 Sending ${imageUrls.length} image URLs to Claude analyzer`);
+    console.log(`📊 Sending ${validImageUrls.length} image URLs to Claude analyzer`);
     
-    // ✅ ENHANCED: Validate imageUrls with detailed logging
-    const validImageUrls = imageUrls.filter((url, index) => {
-      const isValid = url && typeof url === 'string' && url.trim().length > 0;
-      if (!isValid) {
-        console.warn(`⚠️ Filtering out invalid image URL at index ${index}:`, url);
-      } else {
-        console.log(`✅ Valid image URL ${index + 1}: ${url}`);
-      }
-      return isValid;
-    });
-
-    if (validImageUrls.length === 0) {
-      console.error('❌ No valid image URLs found!', {
-        originalImageCount: images.length,
-        originalImageUrls: imageUrls,
-        allImagePaths: images.map(img => img.file_path)
-      });
-      throw new Error(`No valid image URLs found. Original count: ${imageUrls.length}, Valid count: ${validImageUrls.length}. Check image storage and URL construction.`);
-    }
-
-    console.log(`✅ Validated ${validImageUrls.length} image URLs for Claude analysis`);
+    // ✅ SIMPLIFIED: URLs are already validated above, pass them through directly
     
     // ✅ ENHANCED: Claude analysis with detailed parameter logging
     const claudeRequestBody = {
@@ -263,7 +219,7 @@ serve(async (req) => {
         persona,
         analysisData: analysisResult.data,
         goal,
-        imageCount: imageUrls.length // ✅ NEW: Pass image count for annotation distribution
+        imageCount: validImageUrls.length
       }
     });
 

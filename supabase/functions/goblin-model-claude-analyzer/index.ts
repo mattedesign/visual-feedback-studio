@@ -130,10 +130,10 @@ serve(async (req) => {
 
     const startTime = Date.now();
 
-    // Process images only for non-chat mode - FIXED: Use Supabase client for authenticated access
+    // ✅ SIMPLIFIED: Process images with simple fetch for non-chat mode
     const imageContent = [];
     if (!actualChatMode && imageUrls && Array.isArray(imageUrls)) {
-      logDebug('IMAGE_PROCESSING', 'Starting image processing for Claude vision', {
+      logDebug('IMAGE_PROCESSING', 'Starting simplified image processing', {
         imageCount: imageUrls.length,
         actualChatMode,
         sessionId: sessionId?.substring(0, 8)
@@ -144,48 +144,14 @@ serve(async (req) => {
         try {
           console.log(`📥 Fetching image ${i + 1}: ${imageUrl}`);
           
-          // FIXED: Use Supabase client for authenticated image access
-          let imageBlob: Blob;
-          let contentType = 'image/png';
-          
-          if (imageUrl.includes('supabase.co') || imageUrl.includes('/storage/v1/object/')) {
-            // Extract bucket and path from Supabase storage URL
-            const urlParts = imageUrl.split('/storage/v1/object/');
-            if (urlParts.length === 2) {
-              const [bucket, ...pathParts] = urlParts[1].split('/');
-              const filePath = pathParts.join('/');
-              
-              logDebug('IMAGE_FETCH', 'Fetching from Supabase storage', { bucket, filePath });
-              
-              const { data: fileData, error: downloadError } = await supabase.storage
-                .from(bucket)
-                .download(filePath);
-              
-              if (downloadError) {
-                throw new Error(`Supabase storage download failed: ${downloadError.message}`);
-              }
-              
-              if (!fileData) {
-                throw new Error('No file data returned from Supabase storage');
-              }
-              
-              imageBlob = fileData;
-              contentType = fileData.type || 'image/png';
-              
-              console.log(`✅ Successfully downloaded from Supabase storage: ${fileData.size} bytes`);
-            } else {
-              throw new Error('Invalid Supabase storage URL format');
-            }
-          } else {
-            // Fallback to raw fetch for external URLs
-            logDebug('IMAGE_FETCH', 'Using raw fetch for external URL', { imageUrl });
-            const imageResponse = await fetch(imageUrl);
-            if (!imageResponse.ok) {
-              throw new Error(`Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`);
-            }
-            imageBlob = await imageResponse.blob();
-            contentType = imageResponse.headers.get('content-type') || 'image/png';
+          // ✅ SIMPLIFIED: Use simple fetch - URLs are already properly constructed
+          const imageResponse = await fetch(imageUrl);
+          if (!imageResponse.ok) {
+            throw new Error(`Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`);
           }
+          
+          const imageBlob = await imageResponse.blob();
+          const contentType = imageResponse.headers.get('content-type') || 'image/png';
           
           // Convert blob to array buffer
           const arrayBuffer = await imageBlob.arrayBuffer();
@@ -199,7 +165,6 @@ serve(async (req) => {
           
           if (sizeInMB > 20) {
             console.warn(`⚠️ Image ${i + 1} too large (${sizeInMB.toFixed(2)}MB), skipping`);
-            logDebug('IMAGE_PROCESSING', 'Image skipped due to size', { imageIndex: i + 1, sizeInMB });
             continue;
           }
           
@@ -216,22 +181,9 @@ serve(async (req) => {
           });
           
           console.log(`✅ Image ${i + 1} processed successfully (${sizeInMB.toFixed(2)}MB, ${contentType})`);
-          logDebug('IMAGE_PROCESSING', 'Image processed successfully', { 
-            imageIndex: i + 1, 
-            sizeInMB: sizeInMB.toFixed(2),
-            contentType,
-            base64Length: base64.length
-          });
           
         } catch (error) {
           console.error(`❌ Failed to process image ${i + 1}:`, error);
-          logDebug('IMAGE_PROCESSING', 'Image processing failed', { 
-            imageIndex: i + 1, 
-            imageUrl: imageUrl.substring(0, 100) + '...', 
-            error: (error as Error).message 
-          });
-          
-          // Continue processing other images even if one fails
           continue;
         }
       }
