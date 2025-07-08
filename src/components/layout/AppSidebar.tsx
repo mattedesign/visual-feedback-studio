@@ -93,8 +93,8 @@ export function AppSidebar() {
 
   const getNavClassName = (active: boolean) =>
     active 
-      ? "bg-primary text-primary-foreground font-medium" 
-      : "hover:bg-muted/50 text-muted-foreground hover:text-foreground";
+      ? "flex py-2 px-3 items-center gap-2 self-stretch rounded-xl bg-[#584774] text-white font-medium" 
+      : "flex py-2 px-3 items-center gap-2 self-stretch rounded-xl text-muted-foreground hover:bg-[#584774] hover:text-white focus:bg-[#584774] focus:text-white transition-colors";
 
   return (
     <Sidebar variant="sidebar" collapsible="icon">
@@ -180,7 +180,7 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                  className="flex py-2 px-3 items-center gap-2 self-stretch rounded-xl text-muted-foreground hover:bg-[#584774] hover:text-white focus:bg-[#584774] focus:text-white transition-colors"
                 >
                   <User className="h-4 w-4 flex-shrink-0" />
                   {!collapsed && (
