@@ -12,7 +12,7 @@
     --card-foreground: 25 15% 15%;
     --popover: 35 30% 98%;
     --popover-foreground: 25 15% 15%;
-    --primary: 25 45% 25%;
+    --primary: 266 24% 37%;
     --primary-foreground: 35 25% 96%;
     --secondary: 35 20% 92%;
     --secondary-foreground: 25 15% 15%;
@@ -24,13 +24,13 @@
     --destructive-foreground: 35 25% 96%;
     --border: 35 12% 85%;
     --input: 35 12% 85%;
-    --ring: 25 45% 25%;
+    --ring: 266 24% 37%;
     
     /* V128 Brand Colors */
     --warm-cream: 35 25% 96%;
     --warm-beige: 35 20% 92%;
     --warm-tan: 35 15% 88%;
-    --professional-brown: 25 45% 25%;
+    --professional-brown: 266 24% 37%;
     --soft-gray: 25 8% 45%;
     --accent-warm: 35 35% 85%;
     
