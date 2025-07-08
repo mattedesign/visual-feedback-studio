@@ -27,12 +27,12 @@
     --ring: 266 24% 37%;
     
     /* V128 Brand Colors */
-    --warm-cream: 35 25% 96%;
-    --warm-beige: 35 20% 92%;
-    --warm-tan: 35 15% 88%;
+    --warm-cream: 266 24% 95%;
+    --warm-beige: 266 24% 90%;
+    --warm-tan: 266 24% 85%;
     --professional-brown: 266 24% 37%;
     --soft-gray: 25 8% 45%;
-    --accent-warm: 35 35% 85%;
+    --accent-warm: 266 24% 80%;
     
     /* Typography Enhancement */
     --heading-weight: 600;
