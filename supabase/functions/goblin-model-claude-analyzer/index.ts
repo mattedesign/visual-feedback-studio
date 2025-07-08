@@ -179,6 +179,12 @@ serve(async (req) => {
     // Build enhanced prompt
     const enhancedPrompt = buildPrompt(persona, prompt, actualChatMode, conversationHistory, originalAnalysis);
     
+    // Build message content
+    const messageContent = [
+      { type: 'text', text: enhancedPrompt },
+      ...imageContent
+    ];
+
     // Log what we're sending to Claude
     logDebug('CLAUDE_API', 'Preparing Claude request', {
       sessionId: sessionId?.substring(0, 8),
@@ -188,12 +194,6 @@ serve(async (req) => {
       messageContentLength: messageContent.length,
       promptLength: enhancedPrompt.length
     });
-
-    // Build message content
-    const messageContent = [
-      { type: 'text', text: enhancedPrompt },
-      ...imageContent
-    ];
 
     console.log('🚀 Calling Claude API...');
 
