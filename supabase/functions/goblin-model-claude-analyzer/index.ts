@@ -398,7 +398,11 @@ function buildPrompt(persona: string, userPrompt: string, chatMode: boolean, con
     basePrompt += `\n\nConversation history:\n${conversationHistory}\n\nUser's new question: ${userPrompt}`;
     
     if (originalAnalysis) {
-      basePrompt += `\n\nOriginal analysis context: ${JSON.stringify(originalAnalysis).substring(0, 500)}...`;
+      try {
+        basePrompt += `\n\nOriginal analysis context: ${JSON.stringify(originalAnalysis).substring(0, 500)}...`;
+      } catch (err) {
+        basePrompt += `\n\nOriginal analysis context: [Complex analysis object - ${typeof originalAnalysis}]`;
+      }
     }
   } else {
     basePrompt += `\n\nUser's request: ${userPrompt}`;
