@@ -13,6 +13,8 @@ import ChatMessageComponent from './chat/components/ChatMessage';
 import ChatInput from './chat/components/ChatInput';
 import LoadingIndicator from './chat/components/LoadingIndicator';
 import { ChatPersistenceTest } from './chat/ChatPersistenceTest';
+import { DebugPanel } from './chat/DebugPanel';
+import { useDebugMonitor } from './chat/hooks/useDebugMonitor';
 
 const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedbackUpdate }) => {
   const [inputValue, setInputValue] = useState('');
@@ -23,6 +25,9 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
 
   const { messages, setMessages, analyzeMessageQuality, reloadMessages } = useChatHistory({ session, personaData });
   const { validateMessagePersistence } = useMessagePersistence(session?.id);
+  
+  // Initialize debug monitoring
+  const debugMonitor = useDebugMonitor(session?.id || '');
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -50,6 +55,14 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
       console.log('🎭 Sending chat message for session:', session?.id);
       console.log('📝 Message:', currentMessageInput);
       
+      // Track message sending
+      debugMonitor.trackMessageSent(currentMessageInput, 'user');
+      debugMonitor.trackEdgeFunctionCall('goblin-model-claude-analyzer', {
+        sessionId: session.id,
+        chatMode: true,
+        prompt: currentMessageInput
+      });
+      
       const { data, error } = await supabase.functions.invoke('goblin-model-claude-analyzer', {
         body: {
           sessionId: session.id,
@@ -63,19 +76,28 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
 
       if (error) {
         console.error('Edge function error:', error);
+        debugMonitor.trackEdgeFunctionError('goblin-model-claude-analyzer', error);
         throw error;
       }
 
       console.log('📡 Chat response received:', data);
+      
+      // Track successful message reception
+      debugMonitor.trackMessageReceived(data.rawResponse || '', 'edge-function');
 
       // Wait a moment for persistence to complete
       await new Promise(resolve => setTimeout(resolve, 1000));
 
+      // Track persistence attempt
+      debugMonitor.trackPersistenceAttempt('load-history');
+      
       // Reload messages from database to get the complete conversation
       const reloadSuccess = await reloadMessages();
       
       if (!reloadSuccess) {
         console.warn('❌ Failed to reload from database, adding message directly');
+        debugMonitor.trackPersistenceFailure('load-history', new Error('Failed to reload messages from database'));
+        
         // Fallback: add the AI response directly to the UI
         const clarityResponse: ChatMessage = {
           id: Date.now().toString() + '_clarity',
@@ -88,6 +110,7 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
         toast.warning('Message sent but may not be saved - please refresh to see full history');
       } else {
         console.log('✅ Messages reloaded successfully from database');
+        debugMonitor.logDebugEvent('PERSISTENCE', 'LOAD_SUCCESS', { messageCount: messages.length });
       }
 
     } catch (error) {
@@ -285,6 +308,9 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
         isLoading={isLoading}
         session={session}
       />
+      
+      {/* Debug Panel */}
+      <DebugPanel sessionId={session?.id || ''} persona={session?.persona_type || 'clarity'} />
     </div>
   );
 };

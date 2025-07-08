@@ -92,6 +92,7 @@ export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) =>
 
     try {
       console.log('📚 Loading conversation history for session:', session.id);
+      console.time('loadConversationHistory');
       
       // Fetch conversation history from database
       const { data: historyData, error } = await supabase
@@ -112,6 +113,7 @@ export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) =>
       }
 
       console.log(`🔍 Found ${historyData?.length || 0} messages in database`);
+      console.timeEnd('loadConversationHistory');
 
       if (historyData && historyData.length > 0) {
         // Convert database records to ChatMessage format
@@ -149,6 +151,17 @@ export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) =>
       }
     } catch (error) {
       console.error('❌ Error loading conversation history:', error);
+      console.timeEnd('loadConversationHistory');
+      
+      // Log detailed error information
+      if (error instanceof Error) {
+        console.error('Error details:', {
+          message: error.message,
+          stack: error.stack,
+          sessionId: session?.id
+        });
+      }
+      
       // Fall back to initial message
       const initialMessage = createInitialMessageFromPersonaData();
       if (initialMessage) {

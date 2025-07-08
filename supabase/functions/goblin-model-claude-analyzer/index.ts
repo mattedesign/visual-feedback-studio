@@ -7,7 +7,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-console.log('🤖 Goblin Claude Analyzer - Simplified Chat Persistence v2');
+console.log('🤖 Goblin Claude Analyzer - Enhanced Debug v3');
+
+// Enhanced logging function
+function logDebug(category: string, message: string, data?: any) {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] 🐛 [${category}] ${message}`, data ? JSON.stringify(data, null, 2) : '');
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -17,13 +23,15 @@ serve(async (req) => {
   try {
     const { sessionId, imageUrls, prompt, persona, chatMode, conversationHistory, originalAnalysis, saveInitialOnly, initialContent } = await req.json();
 
-    console.log('🧠 Processing Claude analysis:', {
+    logDebug('INIT', 'Processing Claude analysis request', {
       sessionId: sessionId?.substring(0, 8),
       persona,
       chatMode: !!chatMode,
       saveInitialOnly: !!saveInitialOnly,
       promptLength: prompt?.length,
-      hasInitialContent: !!initialContent
+      hasInitialContent: !!initialContent,
+      hasImageUrls: !!imageUrls,
+      hasConversationHistory: !!conversationHistory
     });
 
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
@@ -46,16 +54,18 @@ serve(async (req) => {
         const { data: { user }, error: userError } = await supabase.auth.getUser(token);
         if (user && !userError) {
           userId = user.id;
-          console.log('🔒 User authenticated:', userId.substring(0, 8));
+          logDebug('AUTH', 'User authenticated successfully', { userId: userId.substring(0, 8) });
+        } else {
+          logDebug('AUTH', 'Authentication failed', { error: userError?.message });
         }
       } catch (authError) {
-        console.warn('⚠️ Auth failed:', authError);
+        logDebug('AUTH', 'Authentication error', { error: (authError as Error).message });
       }
     }
 
     // Special handling for saveInitialOnly mode
     if (saveInitialOnly && initialContent && sessionId && userId) {
-      console.log('📝 Saving initial message only');
+      logDebug('PERSISTENCE', 'Saving initial message only', { sessionId: sessionId.substring(0, 8), contentLength: initialContent.length });
       
       try {
         // Check if initial message already exists
@@ -91,9 +101,9 @@ serve(async (req) => {
             throw insertError;
           }
 
-          console.log('✅ Initial message saved successfully:', insertResult);
+          logDebug('PERSISTENCE', 'Initial message saved successfully', { insertResult });
         } else {
-          console.log('⚠️ Initial message already exists, skipping');
+          logDebug('PERSISTENCE', 'Initial message already exists, skipping');
         }
 
         return new Response(
@@ -107,7 +117,7 @@ serve(async (req) => {
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       } catch (error) {
-        console.error('❌ Save initial failed:', error);
+        logDebug('PERSISTENCE', 'Save initial failed', { error: (error as Error).message });
         throw error;
       }
     }
@@ -200,7 +210,7 @@ serve(async (req) => {
     // Handle conversation persistence SIMPLIFIED
     if (sessionId && userId && chatMode) {
       try {
-        console.log('💾 Saving chat messages to database');
+        logDebug('PERSISTENCE', 'Starting chat message persistence', { sessionId: sessionId.substring(0, 8), userId: userId.substring(0, 8) });
         
         // Get the current max message order for this session
         const { data: lastMessage } = await supabase
@@ -228,9 +238,9 @@ serve(async (req) => {
           });
 
         if (userError) {
-          console.error('❌ Failed to save user message:', userError);
+          logDebug('PERSISTENCE', 'Failed to save user message', { error: userError.message, code: userError.code });
         } else {
-          console.log('✅ User message saved');
+          logDebug('PERSISTENCE', 'User message saved successfully', { messageOrder: nextOrder });
         }
 
         // Insert AI response
@@ -252,13 +262,13 @@ serve(async (req) => {
           });
 
         if (aiError) {
-          console.error('❌ Failed to save AI message:', aiError);
+          logDebug('PERSISTENCE', 'Failed to save AI message', { error: aiError.message, code: aiError.code });
         } else {
-          console.log('✅ AI message saved');
+          logDebug('PERSISTENCE', 'AI message saved successfully', { messageOrder: nextOrder + 1, processingTime });
         }
 
       } catch (persistError) {
-        console.error('⚠️ Failed to persist conversation:', persistError);
+        logDebug('PERSISTENCE', 'Failed to persist conversation', { error: (persistError as Error).message });
       }
     }
 
