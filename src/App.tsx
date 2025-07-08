@@ -48,13 +48,15 @@ const App = () => {
                       <AppSidebar />
                       <SidebarInset className="ml-[16px] mr-0">
                         {/* Main content area */}
-                        <div className="flex flex-col items-start flex-1 self-stretch rounded-[20px] border border-border overflow-auto m-4 bg-background" style={{
+                        <div className="flex flex-col items-start flex-1 self-stretch rounded-[20px] border-8 overflow-auto m-4 bg-white" style={{
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'flex-start',
                       flex: '1 0 0',
                       alignSelf: 'stretch',
-                      borderRadius: '20px'
+                      borderRadius: '20px',
+                      borderColor: '#5C3C90',
+                      background: '#FFF'
                     }}>
                           <Routes>
                             <Route path="/" element={<GoblinDashboard />} />
