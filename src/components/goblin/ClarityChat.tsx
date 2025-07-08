@@ -83,7 +83,7 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
         if (error) {
           console.warn('⚠️ Failed to load conversation history:', error);
           // Fall back to initial message from persona data
-          loadInitialMessage();
+          await loadInitialMessage();
           return;
         }
 
@@ -113,12 +113,12 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
         } else {
           // No history found in database, create initial message from persona data
           console.log('📝 No conversation history found, creating initial message from persona data');
-          loadInitialMessage();
+          await loadInitialMessage();
         }
       } catch (error) {
         console.error('❌ Error loading conversation history:', error);
         // Always fall back to initial message on error
-        loadInitialMessage();
+        await loadInitialMessage();
       }
     };
 
@@ -206,6 +206,30 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
     }
   }, [messages]);
 
+  const validateMessagePersistence = async (expectedMessageCount: number, maxRetries: number = 3): Promise<boolean> => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      console.log(`🔍 Validation attempt ${attempt}/${maxRetries} - expecting ${expectedMessageCount} messages`);
+      
+      const { data: historyData, error } = await supabase
+        .from('goblin_refinement_history')
+        .select('id')
+        .eq('session_id', session.id);
+
+      if (!error && historyData && historyData.length >= expectedMessageCount) {
+        console.log(`✅ Persistence validated: ${historyData.length} messages found`);
+        return true;
+      }
+
+      if (attempt < maxRetries) {
+        console.log(`⏳ Waiting before retry... (${historyData?.length || 0}/${expectedMessageCount})`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      }
+    }
+
+    console.warn(`❌ Persistence validation failed after ${maxRetries} attempts`);
+    return false;
+  };
+
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
 
@@ -216,6 +240,7 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
       timestamp: new Date()
     };
 
+    const currentMessageInput = inputValue;
     setMessages(prev => [...prev, userMessage]);
     setInputValue('');
     setIsLoading(true);
@@ -224,75 +249,71 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
       // Call the goblin-model-claude-analyzer with chatMode
       const actualPersona = session?.persona_type || 'clarity';
       console.log('🎭 Using persona:', actualPersona, 'for session:', session?.id);
+      console.log('📝 Sending message:', currentMessageInput);
       
       const { data, error } = await supabase.functions.invoke('goblin-model-claude-analyzer', {
         body: {
           sessionId: session.id,
           chatMode: true,
-          prompt: inputValue,
+          prompt: currentMessageInput,
           persona: actualPersona,
           conversationHistory: messages.map(m => `${m.role}: ${m.content}`).join('\n\n'),
           originalAnalysis: personaData
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
 
-      // Reload messages from database to get updated intelligence data while preserving state
-      setTimeout(async () => {
-        try {
-          console.log('🔄 Reloading conversation history after new message');
-          
-          const { data: historyData, error: reloadError } = await supabase
-            .from('goblin_refinement_history')
-            .select('*')
-            .eq('session_id', session.id)
-            .order('message_order', { ascending: true });
+      console.log('📡 Edge function response received:', data);
 
-          if (!reloadError && historyData && historyData.length > 0) {
-            const reloadedMessages = historyData.map(record => ({
-              id: record.id,
-              role: record.role as 'user' | 'clarity',
-              content: record.content,
-              timestamp: new Date(record.created_at),
-              refinement_score: record.refinement_score,
-              conversation_stage: record.conversation_stage,
-              parsed_problems: record.parsed_problems,
-              suggested_fixes: record.suggested_fixes,
-              quality_tags: [] // Will be populated below
-            }));
+      // Validate that messages were persisted before proceeding
+      const expectedMessageCount = messages.length + 2; // +1 for user message, +1 for AI response
+      console.log('🔍 Validating message persistence...');
+      
+      const persistenceValidated = await validateMessagePersistence(expectedMessageCount);
+      
+      if (!persistenceValidated) {
+        console.warn('⚠️ Message persistence validation failed, using fallback approach');
+        toast.error('Message may not be saved properly. Please refresh if chat history is lost.');
+      }
 
-            // Add quality tags to reloaded messages
-            const messagesWithQuality = reloadedMessages.map(msg => ({
-              ...msg,
-              quality_tags: analyzeMessageQuality(msg)
-            }));
+      // Reload messages from database to get updated intelligence data
+      try {
+        console.log('🔄 Reloading conversation history after new message');
+        
+        const { data: historyData, error: reloadError } = await supabase
+          .from('goblin_refinement_history')
+          .select('*')
+          .eq('session_id', session.id)
+          .order('message_order', { ascending: true });
 
-            // Only update if we have more messages than before (to avoid losing state)
-            setMessages(prevMessages => {
-              if (messagesWithQuality.length >= prevMessages.length) {
-                console.log('✅ Updating messages with enhanced data from database');
-                return messagesWithQuality;
-              } else {
-                console.log('⚠️ Database has fewer messages than current state, keeping current');
-                return prevMessages;
-              }
-            });
-          } else {
-            console.warn('❌ Failed to reload from database, adding fallback response');
-            // Fallback to basic response if reload fails
-            const clarityResponse: ChatMessage = {
-              id: Date.now().toString() + '_clarity',
-              role: 'clarity',
-              content: data.analysisData?.analysis || data.rawResponse || 'Hmm, seems I lost my voice for a moment there...',
-              timestamp: new Date(),
-              quality_tags: []
-            };
-            setMessages(prev => [...prev, clarityResponse]);
-          }
-        } catch (reloadError) {
-          console.error('❌ Failed to reload messages:', reloadError);
-          // Fallback to basic response
+        if (!reloadError && historyData && historyData.length > 0) {
+          const reloadedMessages = historyData.map(record => ({
+            id: record.id,
+            role: record.role as 'user' | 'clarity',
+            content: record.content,
+            timestamp: new Date(record.created_at),
+            refinement_score: record.refinement_score,
+            conversation_stage: record.conversation_stage,
+            parsed_problems: record.parsed_problems,
+            suggested_fixes: record.suggested_fixes,
+            quality_tags: [] // Will be populated below
+          }));
+
+          // Add quality tags to reloaded messages
+          const messagesWithQuality = reloadedMessages.map(msg => ({
+            ...msg,
+            quality_tags: analyzeMessageQuality(msg)
+          }));
+
+          console.log(`✅ Loaded ${messagesWithQuality.length} messages from database`);
+          setMessages(messagesWithQuality);
+        } else {
+          console.warn('❌ Failed to reload from database, using fallback response');
+          // Fallback to basic response if reload fails
           const clarityResponse: ChatMessage = {
             id: Date.now().toString() + '_clarity',
             role: 'clarity',
@@ -301,8 +322,21 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
             quality_tags: []
           };
           setMessages(prev => [...prev, clarityResponse]);
+          toast.warning('Using offline response - message history may not persist');
         }
-      }, 1000); // Reduced wait time for better UX
+      } catch (reloadError) {
+        console.error('❌ Failed to reload messages:', reloadError);
+        // Fallback to basic response
+        const clarityResponse: ChatMessage = {
+          id: Date.now().toString() + '_clarity',
+          role: 'clarity',
+          content: data.analysisData?.analysis || data.rawResponse || 'Hmm, seems I lost my voice for a moment there...',
+          timestamp: new Date(),
+          quality_tags: []
+        };
+        setMessages(prev => [...prev, clarityResponse]);
+        toast.warning('Using offline response - please refresh to see full chat history');
+      }
     } catch (error) {
       console.error('Chat error:', error);
       toast.error('Failed to send message to Clarity');
