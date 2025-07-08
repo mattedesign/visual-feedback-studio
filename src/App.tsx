@@ -48,11 +48,7 @@ const App = () => {
                       <AppSidebar />
                       <SidebarInset className="ml-[16px] mr-0">
                         {/* Main content area */}
-                        <div className={`flex flex-col items-start flex-1 self-stretch rounded-[20px] border border-border overflow-auto m-4 ${
-                          window.location.pathname.startsWith('/goblin') 
-                            ? 'bg-gradient-to-br from-[#FFFAF8] via-[#FFFBF9] via-[#F5D1BF] to-[#DD93CE]' 
-                            : 'bg-background'
-                        }`} style={{
+                        <div className="flex flex-col items-start flex-1 self-stretch rounded-[20px] border border-border overflow-auto m-4 bg-[#FFF1E9]" style={{
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'flex-start',
