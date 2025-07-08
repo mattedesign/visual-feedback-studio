@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -26,16 +25,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
-
-
-
 const queryClient = new QueryClient();
-
 const App = () => {
-  const { user, signOut } = useAuth();
-
-  return (
-    <QueryClientProvider client={queryClient}>
+  const {
+    user,
+    signOut
+  } = useAuth();
+  return <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -47,21 +43,19 @@ const App = () => {
                 <Route path="/auth" element={<Auth />} />
                 
                 {/* Protected routes with sidebar layout */}
-                <Route path="/*" element={
-                  <AuthGuard>
+                <Route path="/*" element={<AuthGuard>
                     <>
                       <AppSidebar />
-                      <SidebarInset>
+                      <SidebarInset className="mx-[16px]">
                         {/* Main content area */}
-                        <div className="flex flex-col items-start flex-1 self-stretch rounded-[20px] border border-border bg-background overflow-auto m-4"
-                             style={{
-                               display: 'flex',
-                               flexDirection: 'column',
-                               alignItems: 'flex-start',
-                               flex: '1 0 0',
-                               alignSelf: 'stretch',
-                               borderRadius: '20px'
-                             }}>
+                        <div className="flex flex-col items-start flex-1 self-stretch rounded-[20px] border border-border bg-background overflow-auto m-4" style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      flex: '1 0 0',
+                      alignSelf: 'stretch',
+                      borderRadius: '20px'
+                    }}>
                           <Routes>
                             <Route path="/" element={<GoblinDashboard />} />
                             <Route path="archive" element={<Archive />} />
@@ -86,15 +80,12 @@ const App = () => {
                       </SidebarInset>
                       
                     </>
-                  </AuthGuard>
-                } />
+                  </AuthGuard>} />
               </Routes>
             </div>
           </SidebarProvider>
         </BrowserRouter>
       </TooltipProvider>
-    </QueryClientProvider>
-  );
+    </QueryClientProvider>;
 };
-
 export default App;
