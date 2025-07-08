@@ -61,7 +61,14 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				// V128 Theme Colors
+				'warm-cream': 'hsl(var(--warm-cream))',
+				'warm-beige': 'hsl(var(--warm-beige))',
+				'warm-tan': 'hsl(var(--warm-tan))',
+				'professional-brown': 'hsl(var(--professional-brown))',
+				'soft-gray': 'hsl(var(--soft-gray))',
+				'accent-warm': 'hsl(var(--accent-warm))'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

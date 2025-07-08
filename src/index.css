@@ -5,25 +5,40 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
+    /* V128 Theme - Warm Professional Palette */
+    --background: 35 25% 96%;
+    --foreground: 25 15% 15%;
+    --card: 35 30% 98%;
+    --card-foreground: 25 15% 15%;
+    --popover: 35 30% 98%;
+    --popover-foreground: 25 15% 15%;
+    --primary: 25 45% 25%;
+    --primary-foreground: 35 25% 96%;
+    --secondary: 35 20% 92%;
+    --secondary-foreground: 25 15% 15%;
+    --muted: 35 15% 90%;
+    --muted-foreground: 25 8% 45%;
+    --accent: 35 20% 88%;
+    --accent-foreground: 25 15% 15%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --destructive-foreground: 35 25% 96%;
+    --border: 35 12% 85%;
+    --input: 35 12% 85%;
+    --ring: 25 45% 25%;
+    
+    /* V128 Brand Colors */
+    --warm-cream: 35 25% 96%;
+    --warm-beige: 35 20% 92%;
+    --warm-tan: 35 15% 88%;
+    --professional-brown: 25 45% 25%;
+    --soft-gray: 25 8% 45%;
+    --accent-warm: 35 35% 85%;
+    
+    /* Typography Enhancement */
+    --heading-weight: 600;
+    --body-weight: 400;
+    --label-weight: 500;
+    
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;

@@ -117,161 +117,164 @@ const GoblinDashboard = () => {
   }
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-            <Brain className="w-8 h-8 text-primary" />
-            Goblin UX Studio
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Multi-persona UX analysis with brutally honest feedback
-          </p>
-        </div>
-        
-        <Button
-          onClick={handleNewAnalysis}
-          size="lg"
-          className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          New Goblin Analysis
-        </Button>
-      </div>
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Brain className="w-5 h-5 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Sessions</p>
-                <p className="text-2xl font-bold">{sessions.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <BarChart3 className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Completed</p>
-                <p className="text-2xl font-bold">{sessions.filter(s => s.status === 'completed').length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Timer className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Processing</p>
-                <p className="text-2xl font-bold">{sessions.filter(s => s.status === 'processing').length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <Sparkles className="w-5 h-5 text-yellow-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Clarity Goblins</p>
-                <p className="text-2xl font-bold">{sessions.filter(s => s.persona_type === 'clarity').length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Sessions Grid */}
-      {sessions.length === 0 ? (
-        <div className="text-center py-12">
-          <Brain className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            No goblin sessions yet
-          </h3>
-          <p className="text-gray-600 mb-6">
-            Start your first multi-persona UX analysis to see results here
-          </p>
+    <div className="min-h-screen bg-background">
+      <div className="max-w-7xl mx-auto p-8">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-12">
+          <div className="space-y-2">
+            <h1 className="text-4xl font-semibold tracking-tight text-foreground flex items-center gap-3">
+              <Brain className="w-9 h-9 text-professional-brown" />
+              Goblin UX Studio
+            </h1>
+            <p className="text-lg text-muted-foreground font-medium">
+              Multi-persona UX analysis with brutally honest feedback
+            </p>
+          </div>
+          
           <Button
             onClick={handleNewAnalysis}
-            className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+            size="lg"
+            className="bg-professional-brown hover:bg-professional-brown/90 text-primary-foreground px-8 py-3 text-base font-medium shadow-sm"
           >
-            <Plus className="w-4 h-4 mr-2" />
-            Create First Goblin Analysis
+            <Plus className="w-5 h-5 mr-2" />
+            New Goblin Analysis
           </Button>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sessions.map((session) => (
-            <Card
-              key={session.id}
-              className="hover:shadow-lg transition-shadow cursor-pointer border border-gray-200"
-              onClick={() => handleViewSession(session.id)}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg font-semibold text-gray-900 mb-2">
-                      {session.title}
-                    </CardTitle>
-                    <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                      <Calendar className="w-4 h-4" />
-                      <span>{formatDate(session.created_at)}</span>
-                    </div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-lg">{getPersonaIcon(session.persona_type)}</span>
-                      <span className="text-sm font-medium">{getPersonaLabel(session.persona_type)}</span>
-                    </div>
-                  </div>
-                  <Badge
-                    className={getStatusColor(session.status)}
-                  >
-                    {session.status}
-                  </Badge>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+          <Card className="border-0 shadow-sm bg-card">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-accent-warm rounded-xl">
+                  <Brain className="w-6 h-6 text-professional-brown" />
                 </div>
-              </CardHeader>
-              
-              <CardContent>
-                {session.goal_description && (
-                  <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                    {session.goal_description}
-                  </p>
-                )}
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleViewSession(session.id);
-                  }}
-                >
-                  <Eye className="w-4 h-4 mr-2" />
-                  View Analysis
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total Sessions</p>
+                  <p className="text-3xl font-semibold text-foreground">{sessions.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-0 shadow-sm bg-card">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-accent-warm rounded-xl">
+                  <BarChart3 className="w-6 h-6 text-professional-brown" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Completed</p>
+                  <p className="text-3xl font-semibold text-foreground">{sessions.filter(s => s.status === 'completed').length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-0 shadow-sm bg-card">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-accent-warm rounded-xl">
+                  <Timer className="w-6 h-6 text-professional-brown" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Processing</p>
+                  <p className="text-3xl font-semibold text-foreground">{sessions.filter(s => s.status === 'processing').length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-0 shadow-sm bg-card">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-accent-warm rounded-xl">
+                  <Sparkles className="w-6 h-6 text-professional-brown" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Clarity Goblins</p>
+                  <p className="text-3xl font-semibold text-foreground">{sessions.filter(s => s.persona_type === 'clarity').length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      )}
+
+        {/* Sessions Grid */}
+        {sessions.length === 0 ? (
+          <div className="text-center py-16 bg-card rounded-2xl border-0 shadow-sm">
+            <Brain className="w-20 h-20 text-soft-gray mx-auto mb-6" />
+            <h3 className="text-2xl font-semibold text-foreground mb-3">
+              No goblin sessions yet
+            </h3>
+            <p className="text-muted-foreground text-lg mb-8 max-w-md mx-auto">
+              Start your first multi-persona UX analysis to see results here
+            </p>
+            <Button
+              onClick={handleNewAnalysis}
+              size="lg"
+              className="bg-professional-brown hover:bg-professional-brown/90 text-primary-foreground px-8 py-3 text-base font-medium"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Create First Goblin Analysis
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {sessions.map((session) => (
+              <Card
+                key={session.id}
+                className="hover:shadow-md transition-all duration-200 cursor-pointer border-0 shadow-sm bg-card hover:scale-[1.02]"
+                onClick={() => handleViewSession(session.id)}
+              >
+                <CardHeader className="pb-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="text-lg font-semibold text-foreground mb-3">
+                        {session.title}
+                      </CardTitle>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                        <Calendar className="w-4 h-4" />
+                        <span>{formatDate(session.created_at)}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xl">{getPersonaIcon(session.persona_type)}</span>
+                        <span className="text-sm font-medium text-foreground">{getPersonaLabel(session.persona_type)}</span>
+                      </div>
+                    </div>
+                    <Badge
+                      className={getStatusColor(session.status)}
+                    >
+                      {session.status}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                
+                <CardContent>
+                  {session.goal_description && (
+                    <p className="text-sm text-muted-foreground mb-6 line-clamp-2">
+                      {session.goal_description}
+                    </p>
+                  )}
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full border-border hover:bg-accent"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleViewSession(session.id);
+                    }}
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    View Analysis
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

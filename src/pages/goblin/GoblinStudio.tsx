@@ -1,4 +1,4 @@
-// ✅ Final GoblinStudio.tsx with working file upload and image validation before analysis
+// ✅ Final GoblinStudio.tsx with V128 Theme
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -130,84 +130,105 @@ const GoblinStudio: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4 space-y-8">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Sparkles className="text-purple-600 w-5 h-5" /> Goblin UX Analysis
-        </h1>
-
-        <div className="space-y-4">
-          <div>
-            <Label>Title</Label>
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Onboarding Redesign for Checkout Flow"
-            />
-          </div>
-
-          <div>
-            <Label>What’s your goal for this analysis?</Label>
-            <Textarea
-              value={goal}
-              onChange={(e) => setGoal(e.target.value)}
-              placeholder="We want to improve conversion and reduce bounce rate on mobile checkout."
-            />
-          </div>
-
-          <GoblinPersonaSelector
-            selectedPersona={persona}
-            onPersonaChange={(val) => setPersona(val as GoblinPersonaType)}
-          />
-
-          <div>
-            <Label>Upload Screenshots</Label>
-            <Input
-              type="file"
-              multiple
-              accept="image/*"
-              onChange={(e) => {
-                const files = Array.from(e.target.files || []);
-                setImages(files);
-              }}
-            />
-          </div>
-
-          <Button
-            className="w-full mt-4"
-            disabled={isAnalyzing}
-            onClick={handleSubmit}
-          >
-            {isAnalyzing ? 'Analyzing...' : 'Run Goblin Analysis'}
-          </Button>
-
-          {isAnalyzing && (
-            <div className="space-y-2">
-              <Label className="text-sm text-muted-foreground">{analysisStage}</Label>
-              <Progress value={analysisProgress} />
-            </div>
-          )}
-
-          {fetchedImages.length > 0 && (
-            <div className="space-y-2">
-              <Label>Fetched Images from Supabase</Label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {fetchedImages.map((img, index) => (
-                  <div key={index} className="relative">
-                    <img
-                      src={img.file_path}
-                      alt={`Uploaded ${index + 1}`}
-                      className="w-full h-24 object-cover rounded-md border border-gray-200"
-                    />
-                    <Badge variant="secondary" className="absolute top-1 left-1 text-xs">
-                      {index + 1}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+    <div className="min-h-screen bg-background">
+      <div className="max-w-5xl mx-auto px-8 py-12">
+        <div className="mb-12">
+          <h1 className="text-4xl font-semibold tracking-tight text-foreground flex items-center gap-3 mb-3">
+            <Sparkles className="text-professional-brown w-9 h-9" /> Goblin UX Analysis
+          </h1>
+          <p className="text-lg text-muted-foreground font-medium">
+            Configure your multi-persona UX analysis session
+          </p>
         </div>
+
+        <Card className="border-0 shadow-sm bg-card">
+          <CardContent className="p-8">
+            <div className="space-y-8">
+              <div>
+                <Label className="text-base font-medium text-foreground mb-2 block">Analysis Title</Label>
+                <Input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g. Onboarding Redesign for Checkout Flow"
+                  className="text-base"
+                />
+              </div>
+
+              <div>
+                <Label className="text-base font-medium text-foreground mb-2 block">What's your goal for this analysis?</Label>
+                <Textarea
+                  value={goal}
+                  onChange={(e) => setGoal(e.target.value)}
+                  placeholder="We want to improve conversion and reduce bounce rate on mobile checkout."
+                  className="min-h-[120px] text-base"
+                />
+              </div>
+
+              <div>
+                <Label className="text-base font-medium text-foreground mb-4 block">Analysis Persona</Label>
+                <GoblinPersonaSelector
+                  selectedPersona={persona}
+                  onPersonaChange={(val) => setPersona(val as GoblinPersonaType)}
+                />
+              </div>
+
+              <div>
+                <Label className="text-base font-medium text-foreground mb-2 block">Upload Screenshots</Label>
+                <Input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    setImages(files);
+                  }}
+                  className="text-base file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-accent-warm file:text-professional-brown hover:file:bg-accent-warm/80"
+                />
+                {images.length > 0 && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {images.length} image{images.length > 1 ? 's' : ''} selected
+                  </p>
+                )}
+              </div>
+
+              <Button
+                className="w-full mt-8 py-4 text-base font-medium bg-professional-brown hover:bg-professional-brown/90"
+                disabled={isAnalyzing}
+                onClick={handleSubmit}
+                size="lg"
+              >
+                {isAnalyzing ? 'Analyzing...' : 'Run Goblin Analysis'}
+              </Button>
+
+              {isAnalyzing && (
+                <div className="space-y-3 mt-6">
+                  <Label className="text-sm font-medium text-muted-foreground">{analysisStage}</Label>
+                  <Progress value={analysisProgress} className="h-2" />
+                </div>
+              )}
+
+              {fetchedImages.length > 0 && (
+                <div className="space-y-4 mt-8">
+                  <Label className="text-base font-medium text-foreground">Uploaded Images</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {fetchedImages.map((img, index) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={img.file_path}
+                          alt={`Uploaded ${index + 1}`}
+                          className="w-full h-28 object-cover rounded-lg border border-border shadow-sm"
+                        />
+                        <Badge variant="secondary" className="absolute top-2 left-2 text-xs bg-card shadow-sm">
+                          {index + 1}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
