@@ -127,12 +127,12 @@ const GoblinStudio: React.FC = () => {
             <div className="space-y-8">
               <div>
                 <Label className="text-base font-medium text-foreground mb-2 block">Analysis Title</Label>
-                <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Onboarding Redesign for Checkout Flow" className="text-base" />
+                <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Onboarding Redesign for Checkout Flow" className="text-base bg-white" />
               </div>
 
               <div>
                 <Label className="text-base font-medium text-foreground mb-2 block">What's your goal for this analysis?</Label>
-                <Textarea value={goal} onChange={e => setGoal(e.target.value)} placeholder="We want to improve conversion and reduce bounce rate on mobile checkout." className="min-h-[120px] text-base" />
+                <Textarea value={goal} onChange={e => setGoal(e.target.value)} placeholder="We want to improve conversion and reduce bounce rate on mobile checkout." className="min-h-[120px] text-base bg-white" />
               </div>
 
               <div>
@@ -145,7 +145,7 @@ const GoblinStudio: React.FC = () => {
                 <Input type="file" multiple accept="image/*" onChange={e => {
                 const files = Array.from(e.target.files || []);
                 setImages(files);
-              }} className="text-base file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-accent-warm file:text-professional-brown hover:file:bg-accent-warm/80" />
+              }} className="text-base file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-accent-warm file:text-professional-brown hover:file:bg-accent-warm/80 bg-white" />
                 {images.length > 0 && <p className="text-sm text-muted-foreground mt-2">
                     {images.length} image{images.length > 1 ? 's' : ''} selected
                   </p>}
