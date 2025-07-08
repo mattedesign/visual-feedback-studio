@@ -61,73 +61,12 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				},
-				// V128 Theme Extensions
-				v128: {
-					slate: {
-						50: 'hsl(var(--v128-slate-50))',
-						100: 'hsl(var(--v128-slate-100))',
-						200: 'hsl(var(--v128-slate-200))',
-						300: 'hsl(var(--v128-slate-300))',
-						500: 'hsl(var(--v128-slate-500))',
-						600: 'hsl(var(--v128-slate-600))',
-						700: 'hsl(var(--v128-slate-700))',
-						800: 'hsl(var(--v128-slate-800))',
-						900: 'hsl(var(--v128-slate-900))'
-					},
-					purple: {
-						500: 'hsl(var(--v128-purple-500))',
-						600: 'hsl(var(--v128-purple-600))',
-						700: 'hsl(var(--v128-purple-700))'
-					},
-					green: {
-						400: 'hsl(var(--v128-green-400))',
-						500: 'hsl(var(--v128-green-500))',
-						600: 'hsl(var(--v128-green-600))'
-					},
-					blue: {
-						500: 'hsl(var(--v128-blue-500))'
-					},
-					amber: {
-						400: 'hsl(var(--v128-amber-400))'
-					},
-					red: {
-						500: 'hsl(var(--v128-red-500))'
-					}
-				},
-				goblin: {
-					primary: 'hsl(var(--goblin-primary))',
-					secondary: 'hsl(var(--goblin-secondary))',
-					accent: 'hsl(var(--goblin-accent))',
-					bg: 'hsl(var(--goblin-bg))',
-					text: 'hsl(var(--goblin-text))'
 				}
-			},
-			fontFamily: {
-				display: 'var(--font-display)',
-				body: 'var(--font-body)',
-				mono: 'var(--font-mono)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'
-			},
-			boxShadow: {
-				'v128-soft': 'var(--shadow-soft)',
-				'v128-medium': 'var(--shadow-medium)',
-				'v128-large': 'var(--shadow-large)',
-				'v128-goblin': 'var(--shadow-goblin)'
-			},
-			backgroundImage: {
-				'gradient-primary': 'var(--gradient-primary)',
-				'gradient-goblin': 'var(--gradient-goblin)',
-				'gradient-subtle': 'var(--gradient-subtle)'
-			},
-			transitionDuration: {
-				'v128-quick': 'var(--transition-quick)',
-				'v128-smooth': 'var(--transition-smooth)',
-				'v128-slow': 'var(--transition-slow)'
 			},
 			keyframes: {
 				'accordion-down': {
