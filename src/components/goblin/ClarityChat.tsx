@@ -29,7 +29,7 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData }) => {
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // Load persistent conversation history with improved state management
+  // Load persistent conversation history - fixed timing and dependency issues
   useEffect(() => {
     const loadConversationHistory = async () => {
       if (!session?.id) {
@@ -110,14 +110,14 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData }) => {
       setMessages([initialMessage]);
     };
 
-    // Only load if we have a session and no messages currently loaded
-    if (session?.id && messages.length === 0) {
+    // Reset messages and load conversation whenever session or persona data changes
+    setMessages([]); // Clear existing messages first
+    
+    if (session?.id) {
       console.log('🚀 Triggering conversation history load for session:', session.id);
       loadConversationHistory();
-    } else if (session?.id && messages.length > 0) {
-      console.log('⏭️ Skipping conversation load - messages already present:', messages.length);
     } else {
-      console.log('⏸️ Not loading conversation - missing session ID or conditions not met');
+      console.log('⏸️ Not loading conversation - missing session ID');
     }
   }, [session?.id, personaData]);
 
