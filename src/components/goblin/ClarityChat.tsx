@@ -126,12 +126,15 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData }) => {
 
     try {
       // Call the goblin-model-claude-analyzer with chatMode
+      const actualPersona = session?.persona_type || 'clarity';
+      console.log('🎭 Using persona:', actualPersona, 'for session:', session?.id);
+      
       const { data, error } = await supabase.functions.invoke('goblin-model-claude-analyzer', {
         body: {
           sessionId: session.id,
           chatMode: true,
           prompt: inputValue,
-          persona: 'clarity',
+          persona: actualPersona,
           conversationHistory: messages.map(m => `${m.role}: ${m.content}`).join('\n\n'),
           originalAnalysis: personaData
         }
@@ -207,9 +210,10 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData }) => {
   };
 
   const exportChat = () => {
+    const actualPersona = session?.persona_type || 'clarity';
     const chatData = {
       session: session.title,
-      persona: 'clarity',
+      persona: actualPersona,
       date: new Date().toISOString(),
       messages: messages.map(m => ({
         role: m.role,
@@ -231,7 +235,14 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData }) => {
     <div className="flex flex-col h-[600px] space-y-4">
       <Card className="flex-1 flex flex-col overflow-hidden">
         <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xl">Chat with Clarity 🧠👾</CardTitle>
+          <CardTitle className="text-xl">
+            Chat with {session?.persona_type === 'clarity' ? 'Clarity 🧠👾' : 
+                       session?.persona_type === 'mirror' ? 'Mirror 🪞✨' :
+                       session?.persona_type === 'strategic' ? 'Strategist 📊🎯' :
+                       session?.persona_type === 'mad' ? 'Mad Scientist 🔬⚡' :
+                       session?.persona_type === 'executive' ? 'Executive 💼📈' :
+                       'AI Assistant 🤖'}
+          </CardTitle>
           <Button onClick={exportChat} variant="outline" size="sm">
             Export Chat
           </Button>
@@ -253,7 +264,14 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData }) => {
                   >
                     {message.role === 'clarity' && (
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <span className="text-sm font-semibold text-green-600">👾 Clarity</span>
+                        <span className="text-sm font-semibold text-green-600">
+                          {session?.persona_type === 'clarity' ? '👾 Clarity' : 
+                           session?.persona_type === 'mirror' ? '🪞 Mirror' :
+                           session?.persona_type === 'strategic' ? '📊 Strategist' :
+                           session?.persona_type === 'mad' ? '🔬 Mad Scientist' :
+                           session?.persona_type === 'executive' ? '💼 Executive' :
+                           '🤖 AI Assistant'}
+                        </span>
                         <span className="text-xs text-muted-foreground">
                           {message.timestamp.toLocaleTimeString()}
                         </span>
@@ -315,7 +333,14 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData }) => {
                 <div className="flex justify-start">
                   <div className="bg-muted border-l-4 border-green-500 rounded-lg px-4 py-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-green-600">👾 Clarity</span>
+                      <span className="text-sm font-semibold text-green-600">
+                        {session?.persona_type === 'clarity' ? '👾 Clarity' : 
+                         session?.persona_type === 'mirror' ? '🪞 Mirror' :
+                         session?.persona_type === 'strategic' ? '📊 Strategist' :
+                         session?.persona_type === 'mad' ? '🔬 Mad Scientist' :
+                         session?.persona_type === 'executive' ? '💼 Executive' :
+                         '🤖 AI Assistant'}
+                      </span>
                       <div className="flex space-x-1">
                         <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
                         <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
@@ -335,7 +360,12 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData }) => {
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyPress={handleKeyPress}
-          placeholder="Ask Clarity about your UX... if you dare 😈"
+          placeholder={`Ask ${session?.persona_type === 'clarity' ? 'Clarity' : 
+                                session?.persona_type === 'mirror' ? 'Mirror' :
+                                session?.persona_type === 'strategic' ? 'the Strategist' :
+                                session?.persona_type === 'mad' ? 'the Mad Scientist' :
+                                session?.persona_type === 'executive' ? 'the Executive' :
+                                'the AI Assistant'} about your UX... ${session?.persona_type === 'clarity' ? 'if you dare 😈' : '💭'}`}
           disabled={isLoading}
           className="flex-1"
         />

@@ -39,7 +39,8 @@ serve(async (req) => {
       chatMode: !!chatMode,
       imageCount: imageUrls?.length,
       promptLength: prompt?.length,
-      hasVisionResults: !!visionResults
+      hasVisionResults: !!visionResults,
+      hasConversationHistory: !!conversationHistory
     });
 
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
@@ -230,7 +231,7 @@ serve(async (req) => {
     // Handle conversation persistence for chat mode
     if (chatMode && sessionId && authHeader) {
       try {
-        console.log('💾 Persisting conversation turn to database...');
+        console.log('💾 Persisting conversation turn to database with persona:', persona);
         
         // Set up Supabase auth for the request
         await supabase.auth.setSession({
@@ -254,7 +255,7 @@ serve(async (req) => {
           const nextOrder = (lastMessage?.message_order || 0) + 1;
 
           // Store user message first
-          await supabase
+          const userInsertResult = await supabase
             .from('goblin_refinement_history')
             .insert({
               session_id: sessionId,
@@ -267,11 +268,17 @@ serve(async (req) => {
               processing_time_ms: 0
             });
 
+          if (userInsertResult.error) {
+            console.error('Failed to insert user message:', userInsertResult.error);
+          } else {
+            console.log('✅ User message stored successfully for persona:', persona);
+          }
+
           // Analyze response for intelligence scoring
           const intelligenceScoring = await analyzeResponseIntelligence(content, prompt, persona, supabase);
 
           // Store AI response with intelligence metadata
-          await supabase
+          const aiInsertResult = await supabase
             .from('goblin_refinement_history')
             .insert({
               session_id: sessionId,
@@ -288,9 +295,16 @@ serve(async (req) => {
               processing_time_ms: processingTime,
               metadata: {
                 original_analysis_data: analysisData,
-                scoring_metadata: intelligenceScoring.metadata
+                scoring_metadata: intelligenceScoring.metadata,
+                used_persona: persona // Track which persona was used
               }
             });
+
+          if (aiInsertResult.error) {
+            console.error('Failed to insert AI message:', aiInsertResult.error);
+          } else {
+            console.log('✅ AI response stored successfully for persona:', persona);
+          }
 
           console.log('✅ Conversation turn persisted successfully');
         }
@@ -513,6 +527,46 @@ The user just asked: "${userMessage}"
 Respond in character as Clarity the goblin. Be direct, sassy, but provide genuinely useful feedback. Keep it conversational and reference the original analysis if relevant. Don't repeat yourself - build on the conversation.
 
 Stay in character and be helpful while maintaining your goblin personality.`;
+
+    case 'mirror':
+      return `You are Mirror, a reflective UX coach helping designers gain self-awareness about their work. You ask probing questions and guide discovery through thoughtful inquiry.
+
+${context}
+${history}
+
+The user just asked: "${userMessage}"
+
+Respond as a thoughtful, reflective coach. Ask insightful questions that help the user discover deeper truths about their design. Reference the original analysis to build on insights. Keep it conversational and supportive while challenging assumptions.`;
+
+    case 'strategic':
+      return `You are a senior UX strategist with 20 years of experience. Provide strategic, research-backed analysis focusing on business impact and user outcomes.
+
+${context}
+${history}
+
+The user just asked: "${userMessage}"
+
+Respond as an experienced strategist. Focus on business impact, ROI, and strategic decision-making. Reference the original analysis to provide deeper strategic insights. Keep it professional yet conversational.`;
+
+    case 'mad':
+      return `You are the Mad UX Scientist - you love wild experiments and unconventional approaches. Think outside the box and suggest creative solutions!
+
+${context}
+${history}
+
+The user just asked: "${userMessage}"
+
+Respond with experimental enthusiasm! Suggest creative, unconventional approaches to UX problems. Reference the original analysis to build on experimental ideas. Keep it energetic and innovative.`;
+
+    case 'executive':
+      return `You are an executive-focused UX advisor. Focus on ROI, business metrics, and bottom-line impact. You speak the language of leadership and strategic decision-making.
+
+${context}
+${history}
+
+The user just asked: "${userMessage}"
+
+Respond as an executive advisor. Focus on business outcomes, KPIs, and strategic value. Reference the original analysis to provide executive-level insights. Keep it strategic and results-oriented.`;
 
     default:
       return `You are a ${persona} UX advisor continuing a conversation.
