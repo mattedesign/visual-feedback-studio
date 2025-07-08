@@ -48,7 +48,7 @@ const App = () => {
                       <AppSidebar />
                       <SidebarInset className="ml-[16px] mr-0">
                         {/* Main content area */}
-                        <div className="flex flex-col items-start flex-1 self-stretch rounded-[20px] border border-border overflow-auto m-4 bg-[#FFF1E9]" style={{
+                        <div className="flex flex-col items-start flex-1 self-stretch rounded-[20px] border border-border overflow-auto m-4 bg-background" style={{
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'flex-start',

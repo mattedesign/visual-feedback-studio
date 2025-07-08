@@ -6,7 +6,7 @@
 @layer base {
   :root {
     /* V128 Theme - Warm Professional Palette */
-    --background: 32 100% 95%;
+    --background: 28 100% 95%;
     --foreground: 25 15% 15%;
     --card: 35 30% 98%;
     --card-foreground: 25 15% 15%;
