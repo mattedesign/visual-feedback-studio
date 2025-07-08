@@ -112,7 +112,7 @@ const GoblinStudio: React.FC = () => {
       setIsAnalyzing(false);
     }
   };
-    return <div className="min-h-screen bg-white">
+    return <div className="min-h-screen">{/* Removed bg-white */}
       <div className="max-w-5xl mx-auto bg-white px-8 py-6 rounded-[20px] border-8 border-[#5C3C90]">
         <div className="mb-12">
           <h1 className="text-4xl font-semibold tracking-tight text-foreground flex items-center gap-3 mb-3">
