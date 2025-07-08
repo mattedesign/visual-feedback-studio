@@ -113,7 +113,7 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
           return (
             <div
               key={idx}
-              className="absolute border-2 border-pink-500 bg-pink-500/20 rounded-full w-8 h-8 flex items-center justify-center cursor-pointer hover:bg-pink-500/30 transition-colors shadow-lg"
+              className="goblin-annotation-marker absolute border-2 border-accent rounded-full w-8 h-8 flex items-center justify-center shadow-lg hover:scale-110"
               style={{
                 top: `${y}%`,
                 left: `${x}%`,
@@ -122,7 +122,7 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
               onClick={handleAnnotationClick}
               title="Click to view full annotation"
             >
-              <span className="text-pink-900 font-bold text-sm">
+              <span className="font-bold text-sm annotation-marker-number">
                 {idx + 1}
               </span>
             </div>

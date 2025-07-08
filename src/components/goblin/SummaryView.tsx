@@ -133,10 +133,10 @@ const SummaryView: React.FC<SummaryViewProps> = ({
         </div>
         <div className="flex gap-2">
           <Button onClick={onCopyLink} variant="outline">
-            {copied ? 'Copied!' : 'Copy Link'}
+            {copied ? '✅ Copied!' : '📋 Share Analysis'}
           </Button>
-          <Button onClick={onExport}>
-            Export Results
+          <Button onClick={onExport} variant="secondary">
+            📥 Export Goblin Wisdom
           </Button>
         </div>
       </div>

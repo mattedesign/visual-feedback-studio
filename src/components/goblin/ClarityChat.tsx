@@ -160,10 +160,10 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData }) => {
                   className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                    className={`${
                       message.role === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-foreground border-l-4 border-green-500'
+                        ? 'goblin-chat-bubble-user'
+                        : 'goblin-chat-bubble-ai border-l-4 border-primary'
                     }`}
                   >
                     {message.role === 'clarity' && (
