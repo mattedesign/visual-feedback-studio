@@ -113,7 +113,7 @@ const GoblinStudio: React.FC = () => {
     }
   };
     return <div className="min-h-screen">{/* Removed bg-white */}
-      <div className="w-full mx-auto px-8 py-6 border-8">
+      <div className="w-full mx-auto px-8 py-6 rounded-[20px]">
         <div className="mb-12">
           <h1 className="text-4xl font-semibold tracking-tight text-foreground flex items-center gap-3 mb-3">
             <Sparkles className="text-professional-brown w-9 h-9" /> Goblin UX Analysis
