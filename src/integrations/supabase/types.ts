@@ -582,6 +582,71 @@ export type Database = {
         }
         Relationships: []
       }
+      goblin_refinement_history: {
+        Row: {
+          content: string
+          conversation_stage: string | null
+          created_at: string | null
+          id: string
+          message_order: number
+          metadata: Json | null
+          model_used: string | null
+          parsed_problems: Json | null
+          processing_time_ms: number | null
+          reasoning: string | null
+          refinement_score: number | null
+          role: string
+          session_id: string
+          suggested_fixes: Json | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          conversation_stage?: string | null
+          created_at?: string | null
+          id?: string
+          message_order: number
+          metadata?: Json | null
+          model_used?: string | null
+          parsed_problems?: Json | null
+          processing_time_ms?: number | null
+          reasoning?: string | null
+          refinement_score?: number | null
+          role: string
+          session_id: string
+          suggested_fixes?: Json | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          conversation_stage?: string | null
+          created_at?: string | null
+          id?: string
+          message_order?: number
+          metadata?: Json | null
+          model_used?: string | null
+          parsed_problems?: Json | null
+          processing_time_ms?: number | null
+          reasoning?: string | null
+          refinement_score?: number | null
+          role?: string
+          session_id?: string
+          suggested_fixes?: Json | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goblin_refinement_history_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "goblin_analysis_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       knowledge_entries: {
         Row: {
           application_context: Json | null

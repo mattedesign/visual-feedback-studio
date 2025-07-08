@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -45,6 +46,15 @@ serve(async (req) => {
     if (!anthropicApiKey) {
       throw new Error('Anthropic API key not configured');
     }
+
+    // Initialize Supabase client for conversation persistence
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+    // Get authorization header to identify user
+    const authHeader = req.headers.get('authorization');
+    const startTime = Date.now();
 
     // Skip image processing for chat mode
     const imageContent = [];
@@ -189,6 +199,7 @@ serve(async (req) => {
     const content = data.content[0]?.text || '';
     
     console.log('✅ Claude analysis completed, processing response...');
+    const processingTime = Date.now() - startTime;
 
     // Parse and structure the response
     let analysisData;
@@ -214,6 +225,79 @@ serve(async (req) => {
         severity: 'medium',
         goblinAttitude: persona === 'clarity' ? 'grumpy' : null
       };
+    }
+
+    // Handle conversation persistence for chat mode
+    if (chatMode && sessionId && authHeader) {
+      try {
+        console.log('💾 Persisting conversation turn to database...');
+        
+        // Set up Supabase auth for the request
+        await supabase.auth.setSession({
+          access_token: authHeader.replace('Bearer ', ''),
+          refresh_token: ''
+        });
+
+        // Get current user to store user_id
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          // Get the next message order number for this session
+          const { data: lastMessage } = await supabase
+            .from('goblin_refinement_history')
+            .select('message_order')
+            .eq('session_id', sessionId)
+            .order('message_order', { ascending: false })
+            .limit(1)
+            .single();
+
+          const nextOrder = (lastMessage?.message_order || 0) + 1;
+
+          // Store user message first
+          await supabase
+            .from('goblin_refinement_history')
+            .insert({
+              session_id: sessionId,
+              user_id: user.id,
+              message_order: nextOrder,
+              role: 'user',
+              content: prompt,
+              conversation_stage: determineConversationStage(nextOrder),
+              model_used: 'claude-sonnet-4-20250514',
+              processing_time_ms: 0
+            });
+
+          // Analyze response for intelligence scoring
+          const intelligenceScoring = await analyzeResponseIntelligence(content, prompt, persona, supabase);
+
+          // Store AI response with intelligence metadata
+          await supabase
+            .from('goblin_refinement_history')
+            .insert({
+              session_id: sessionId,
+              user_id: user.id,
+              message_order: nextOrder + 1,
+              role: 'clarity',
+              content: content,
+              conversation_stage: determineConversationStage(nextOrder + 1),
+              refinement_score: intelligenceScoring.refinement_score,
+              parsed_problems: intelligenceScoring.parsed_problems,
+              suggested_fixes: intelligenceScoring.suggested_fixes,
+              reasoning: intelligenceScoring.reasoning,
+              model_used: 'claude-sonnet-4-20250514',
+              processing_time_ms: processingTime,
+              metadata: {
+                original_analysis_data: analysisData,
+                scoring_metadata: intelligenceScoring.metadata
+              }
+            });
+
+          console.log('✅ Conversation turn persisted successfully');
+        }
+      } catch (persistError) {
+        console.error('⚠️ Failed to persist conversation:', persistError);
+        // Continue without blocking the response
+      }
     }
 
     return new Response(
@@ -440,4 +524,213 @@ The user just asked: "${userMessage}"
 
 Respond helpfully in character, building on the previous conversation context.`;
   }
+}
+
+// Helper function to determine conversation stage based on message order
+function determineConversationStage(messageOrder: number): string {
+  if (messageOrder <= 2) return 'initial';
+  if (messageOrder <= 6) return 'clarification';  
+  if (messageOrder <= 12) return 'refinement';
+  return 'resolution';
+}
+
+// Advanced intelligence scoring function
+async function analyzeResponseIntelligence(content: string, userPrompt: string, persona: string, supabase: any) {
+  const scoringStartTime = Date.now();
+  
+  try {
+    console.log('🧠 Analyzing response intelligence for scoring...');
+    
+    // Parse problems mentioned in the user prompt
+    const parsedProblems = extractProblemsFromPrompt(userPrompt);
+    
+    // Extract suggested fixes from the AI response
+    const suggestedFixes = extractFixesFromResponse(content);
+    
+    // Calculate refinement score based on content analysis
+    const refinementScore = calculateRefinementScore(content, userPrompt, persona);
+    
+    // Generate reasoning for the score
+    const reasoning = generateReasoning(content, userPrompt, refinementScore);
+    
+    const processingTime = Date.now() - scoringStartTime;
+    
+    return {
+      refinement_score: refinementScore,
+      parsed_problems: parsedProblems,
+      suggested_fixes: suggestedFixes,
+      reasoning,
+      metadata: {
+        scoring_method: 'heuristic_analysis',
+        processing_time_ms: processingTime,
+        content_length: content.length,
+        problem_count: parsedProblems.length,
+        fix_count: suggestedFixes.length
+      }
+    };
+  } catch (error) {
+    console.error('⚠️ Intelligence scoring failed:', error);
+    return {
+      refinement_score: 0.5, // Neutral score on error
+      parsed_problems: [],
+      suggested_fixes: [],
+      reasoning: 'Scoring analysis failed, using default values',
+      metadata: { error: error.message }
+    };
+  }
+}
+
+// Extract UX problems from user prompts
+function extractProblemsFromPrompt(prompt: string): any[] {
+  const problems = [];
+  const lowerPrompt = prompt.toLowerCase();
+  
+  // Common UX problem indicators
+  const problemPatterns = [
+    { pattern: /confus(ed|ing)/g, type: 'confusion', severity: 'medium' },
+    { pattern: /frustrat(ed|ing)/g, type: 'frustration', severity: 'high' },
+    { pattern: /difficult|hard to/g, type: 'usability', severity: 'medium' },
+    { pattern: /can't find|cannot find/g, type: 'findability', severity: 'high' },
+    { pattern: /slow|loading/g, type: 'performance', severity: 'medium' },
+    { pattern: /error|broken/g, type: 'functionality', severity: 'high' },
+    { pattern: /unclear|ambiguous/g, type: 'clarity', severity: 'medium' }
+  ];
+  
+  problemPatterns.forEach(({ pattern, type, severity }) => {
+    const matches = prompt.match(pattern);
+    if (matches) {
+      problems.push({
+        type,
+        severity,
+        description: matches[0],
+        context: extractContextAroundMatch(prompt, matches[0])
+      });
+    }
+  });
+  
+  return problems;
+}
+
+// Extract actionable fixes from AI responses
+function extractFixesFromResponse(content: string): any[] {
+  const fixes = [];
+  const lines = content.split('\n');
+  
+  // Look for recommendation patterns
+  const recommendationPatterns = [
+    /^[-•*]\s+(.+)/,  // Bullet points
+    /recommend\w*:\s*(.+)/i,  // "Recommend:" statements
+    /should\s+(.+)/i,  // "Should" statements
+    /consider\s+(.+)/i,  // "Consider" statements
+    /try\s+(.+)/i  // "Try" statements
+  ];
+  
+  lines.forEach((line, index) => {
+    recommendationPatterns.forEach(pattern => {
+      const match = line.match(pattern);
+      if (match && match[1] && match[1].length > 10) {
+        fixes.push({
+          type: 'recommendation',
+          description: match[1].trim(),
+          confidence: calculateFixConfidence(match[1]),
+          line_number: index + 1
+        });
+      }
+    });
+  });
+  
+  return fixes.slice(0, 10); // Limit to top 10 fixes
+}
+
+// Calculate refinement score based on content quality
+function calculateRefinementScore(content: string, userPrompt: string, persona: string): number {
+  let score = 0.5; // Base score
+  
+  // Content length factor (longer, more detailed responses score higher)
+  const lengthFactor = Math.min(content.length / 1000, 1) * 0.2;
+  score += lengthFactor;
+  
+  // Specificity factor (specific terms and examples boost score)
+  const specificityTerms = ['specifically', 'for example', 'such as', 'in particular', 'consider', 'recommend'];
+  const specificityCount = specificityTerms.filter(term => 
+    content.toLowerCase().includes(term)
+  ).length;
+  const specificityFactor = Math.min(specificityCount / 5, 1) * 0.2;
+  score += specificityFactor;
+  
+  // Actionability factor (actionable language boosts score)
+  const actionableTerms = ['should', 'could', 'try', 'implement', 'change', 'improve', 'fix'];
+  const actionableCount = actionableTerms.filter(term =>
+    content.toLowerCase().includes(term)
+  ).length;
+  const actionableFactor = Math.min(actionableCount / 3, 1) * 0.2;
+  score += actionableFactor;
+  
+  // Persona-specific adjustments
+  if (persona === 'clarity') {
+    // Clarity gets bonus for sassiness and directness
+    const clarityTerms = ['honestly', 'truth', 'reality', 'actually', 'really'];
+    const clarityCount = clarityTerms.filter(term =>
+      content.toLowerCase().includes(term)
+    ).length;
+    score += Math.min(clarityCount / 3, 1) * 0.1;
+  }
+  
+  // Cap score between 0 and 1
+  return Math.max(0, Math.min(1, score));
+}
+
+// Generate reasoning for the intelligence score
+function generateReasoning(content: string, userPrompt: string, score: number): string {
+  const factors = [];
+  
+  if (score > 0.8) {
+    factors.push('Response demonstrates high specificity and actionable guidance');
+  } else if (score > 0.6) {
+    factors.push('Response provides solid recommendations with good detail');
+  } else if (score > 0.4) {
+    factors.push('Response addresses the query with moderate depth');
+  } else {
+    factors.push('Response provides basic feedback but could be more detailed');
+  }
+  
+  if (content.length > 800) {
+    factors.push('Comprehensive response length');
+  }
+  
+  const recommendationCount = (content.match(/recommend|should|consider|try/gi) || []).length;
+  if (recommendationCount > 3) {
+    factors.push('Multiple actionable recommendations provided');
+  }
+  
+  return factors.join('; ');
+}
+
+// Helper function to extract context around matched text
+function extractContextAroundMatch(text: string, match: string): string {
+  const matchIndex = text.toLowerCase().indexOf(match.toLowerCase());
+  if (matchIndex === -1) return match;
+  
+  const start = Math.max(0, matchIndex - 30);
+  const end = Math.min(text.length, matchIndex + match.length + 30);
+  
+  return text.substring(start, end).trim();
+}
+
+// Calculate confidence score for extracted fixes
+function calculateFixConfidence(fixText: string): number {
+  let confidence = 0.5;
+  
+  // Specific action words boost confidence
+  const actionWords = ['implement', 'change', 'modify', 'adjust', 'redesign'];
+  if (actionWords.some(word => fixText.toLowerCase().includes(word))) {
+    confidence += 0.3;
+  }
+  
+  // Specific measurements or examples boost confidence
+  if (fixText.match(/\d+/)) {
+    confidence += 0.2;
+  }
+  
+  return Math.min(1, confidence);
 }
