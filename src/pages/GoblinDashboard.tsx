@@ -86,10 +86,10 @@ const GoblinDashboard = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return 'bg-primary/10 text-primary border-primary';
-      case 'processing': return 'bg-secondary/10 text-secondary border-secondary';
-      case 'failed': return 'bg-destructive/10 text-destructive border-destructive';
-      default: return 'bg-muted text-muted-foreground border-border';
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'processing': return 'bg-blue-100 text-blue-800';
+      case 'failed': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -133,67 +133,66 @@ const GoblinDashboard = () => {
         <Button
           onClick={handleNewAnalysis}
           size="lg"
-          variant="default"
-          className="enhanced-button-primary hover:scale-105"
+          className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
         >
           <Plus className="w-5 h-5 mr-2" />
-          ✨ New Goblin Analysis
+          New Goblin Analysis
         </Button>
       </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <Card className="goblin-card">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Brain className="w-5 h-5 text-primary" />
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Brain className="w-5 h-5 text-purple-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Sessions</p>
-                <p className="text-2xl font-bold text-card-foreground">{sessions.length}</p>
+                <p className="text-2xl font-bold">{sessions.length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="goblin-card">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <BarChart3 className="w-5 h-5 text-primary" />
+              <div className="p-2 bg-green-100 rounded-lg">
+                <BarChart3 className="w-5 h-5 text-green-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Completed</p>
-                <p className="text-2xl font-bold text-card-foreground">{sessions.filter(s => s.status === 'completed').length}</p>
+                <p className="text-2xl font-bold">{sessions.filter(s => s.status === 'completed').length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="goblin-card">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-secondary/10 rounded-lg">
-                <Timer className="w-5 h-5 text-secondary" />
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Timer className="w-5 h-5 text-blue-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Processing</p>
-                <p className="text-2xl font-bold text-card-foreground">{sessions.filter(s => s.status === 'processing').length}</p>
+                <p className="text-2xl font-bold">{sessions.filter(s => s.status === 'processing').length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="goblin-card">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-accent/10 rounded-lg">
-                <Sparkles className="w-5 h-5 text-accent" />
+              <div className="p-2 bg-yellow-100 rounded-lg">
+                <Sparkles className="w-5 h-5 text-yellow-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Clarity Goblins</p>
-                <p className="text-2xl font-bold text-card-foreground">{sessions.filter(s => s.persona_type === 'clarity').length}</p>
+                <p className="text-2xl font-bold">{sessions.filter(s => s.persona_type === 'clarity').length}</p>
               </div>
             </div>
           </CardContent>
@@ -203,20 +202,19 @@ const GoblinDashboard = () => {
       {/* Sessions Grid */}
       {sessions.length === 0 ? (
         <div className="text-center py-12">
-          <Brain className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-foreground mb-2">
-            🎯 No goblin sessions yet
+          <Brain className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            No goblin sessions yet
           </h3>
-          <p className="text-muted-foreground mb-6">
+          <p className="text-gray-600 mb-6">
             Start your first multi-persona UX analysis to see results here
           </p>
           <Button
             onClick={handleNewAnalysis}
-            variant="secondary"
-            className="enhanced-button-secondary hover:scale-105"
+            className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
           >
             <Plus className="w-4 h-4 mr-2" />
-            ✨ Create First Goblin Analysis
+            Create First Goblin Analysis
           </Button>
         </div>
       ) : (
@@ -224,26 +222,25 @@ const GoblinDashboard = () => {
           {sessions.map((session) => (
             <Card
               key={session.id}
-              className="goblin-card hover:shadow-goblin cursor-pointer transition-goblin hover:scale-[1.02]"
+              className="hover:shadow-lg transition-shadow cursor-pointer border border-gray-200"
               onClick={() => handleViewSession(session.id)}
             >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <CardTitle className="text-lg font-semibold text-card-foreground mb-2">
+                    <CardTitle className="text-lg font-semibold text-gray-900 mb-2">
                       {session.title}
                     </CardTitle>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                    <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                       <Calendar className="w-4 h-4" />
                       <span>{formatDate(session.created_at)}</span>
                     </div>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-lg">{getPersonaIcon(session.persona_type)}</span>
-                      <span className="text-sm font-medium text-card-foreground">{getPersonaLabel(session.persona_type)}</span>
+                      <span className="text-sm font-medium">{getPersonaLabel(session.persona_type)}</span>
                     </div>
                   </div>
                   <Badge
-                    variant="outline"
                     className={getStatusColor(session.status)}
                   >
                     {session.status}
@@ -253,7 +250,7 @@ const GoblinDashboard = () => {
               
               <CardContent>
                 {session.goal_description && (
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                  <p className="text-sm text-gray-600 mb-4 line-clamp-2">
                     {session.goal_description}
                   </p>
                 )}
@@ -261,14 +258,14 @@ const GoblinDashboard = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full hover:scale-105"
+                  className="w-full"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleViewSession(session.id);
                   }}
                 >
                   <Eye className="w-4 h-4 mr-2" />
-                  👁️ View Analysis
+                  View Analysis
                 </Button>
               </CardContent>
             </Card>
