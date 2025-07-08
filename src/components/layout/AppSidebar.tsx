@@ -94,7 +94,7 @@ export function AppSidebar() {
   const getNavClassName = (active: boolean) => {
     return active 
       ? "flex py-4 px-3 items-center gap-2 self-stretch rounded-xl bg-[#584774] text-white font-medium min-h-[40px]" 
-      : "flex py-4 px-3 items-center gap-2 self-stretch rounded-xl text-muted-foreground hover:bg-white/10 hover:text-foreground focus:bg-white/10 focus:text-foreground transition-colors min-h-[40px]";
+      : "flex py-4 px-3 items-center gap-2 self-stretch rounded-xl text-muted-foreground hover:bg-[#FFFBF7] hover:text-foreground focus:bg-[#FFFBF7] focus:text-foreground transition-colors min-h-[40px]";
   };
 
   return (
