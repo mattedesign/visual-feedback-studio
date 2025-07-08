@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AnnotationDialog from './AnnotationDialog';
 
 interface DetailedModeViewProps {
@@ -10,6 +12,7 @@ interface DetailedModeViewProps {
   currentImageIndex: number;
   setCurrentImageIndex: React.Dispatch<React.SetStateAction<number>>;
   setShowAnnotations: React.Dispatch<React.SetStateAction<boolean>>;
+  chatFeedbackAnchors?: {[messageId: string]: any[]};
 }
 
 const DetailedModeView: React.FC<DetailedModeViewProps> = ({
@@ -19,7 +22,8 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
   showAnnotations,
   currentImageIndex,
   setCurrentImageIndex,
-  setShowAnnotations
+  setShowAnnotations,
+  chatFeedbackAnchors = {}
 }) => {
   const [selectedAnnotation, setSelectedAnnotation] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -51,6 +55,9 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
     
     return false;
   });
+
+  // Get total feedback anchors count
+  const totalFeedbackAnchors = Object.values(chatFeedbackAnchors).flat().length;
 
   return (
     <div className="space-y-4">
@@ -129,6 +136,40 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
           );
         })}
       </div>
+
+      {/* Chat Feedback Integration */}
+      {totalFeedbackAnchors > 0 && (
+        <Card className="border-purple-200 bg-purple-50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-purple-700 flex items-center gap-2">
+              💬 Chat Feedback Anchors ({totalFeedbackAnchors})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-2">
+              {Object.entries(chatFeedbackAnchors).map(([messageId, anchors]) => (
+                <div key={messageId} className="space-y-1">
+                  {anchors.map((anchor, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-xs">
+                      <Badge variant="outline" className="bg-purple-100 text-purple-700">
+                        {anchor.type}
+                      </Badge>
+                      <span className="text-purple-600">
+                        {anchor.timestamp.toLocaleTimeString()}
+                      </span>
+                      {anchor.data && (
+                        <span className="text-purple-800 truncate max-w-xs">
+                          {typeof anchor.data === 'string' ? anchor.data.slice(0, 50) + '...' : 'Feedback data'}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <AnnotationDialog
         annotation={selectedAnnotation}

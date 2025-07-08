@@ -11,6 +11,7 @@ interface SummaryViewProps {
   onExport: () => void;
   onCopyLink: () => void;
   copied: boolean;
+  chatFeedbackAnchors?: {[messageId: string]: any[]};
 }
 
 const SummaryView: React.FC<SummaryViewProps> = ({
@@ -19,7 +20,8 @@ const SummaryView: React.FC<SummaryViewProps> = ({
   personaData,
   onExport,
   onCopyLink,
-  copied
+  copied,
+  chatFeedbackAnchors = {}
 }) => {
   const getGripeEmoji = (level: string) => {
     switch(level) {

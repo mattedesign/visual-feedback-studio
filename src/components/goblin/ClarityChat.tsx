@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 interface ClarityChatProps {
   session: any;
   personaData: any;
+  onFeedbackUpdate?: (messageId: string, feedbackType: string, data: any) => void;
 }
 
 interface ChatMessage {
@@ -21,13 +22,45 @@ interface ChatMessage {
   conversation_stage?: string;
   parsed_problems?: any[];
   suggested_fixes?: any[];
+  feedback_anchors?: string[];
+  quality_tags?: string[];
+  expansion_suggestions?: string[];
 }
 
-const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData }) => {
+const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedbackUpdate }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [feedbackMode, setFeedbackMode] = useState<string | null>(null);
+  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  const analyzeMessageQuality = (message: ChatMessage) => {
+    const content = message.content.toLowerCase();
+    const qualityTags = [];
+    
+    // Scoring based on content analysis
+    if (content.includes('specific') || content.includes('exactly') || content.includes('precisely')) {
+      qualityTags.push('specific');
+    }
+    if (content.includes('should') || content.includes('recommend') || content.includes('action')) {
+      qualityTags.push('actionable');
+    }
+    if (content.includes('because') || content.includes('reason') || content.includes('why')) {
+      qualityTags.push('explanatory');
+    }
+    if (message.refinement_score && message.refinement_score > 0.8) {
+      qualityTags.push('high-quality');
+    }
+    if (message.parsed_problems?.length > 0) {
+      qualityTags.push('problem-focused');
+    }
+    if (message.suggested_fixes?.length > 0) {
+      qualityTags.push('solution-oriented');
+    }
+    
+    return qualityTags;
+  };
 
   // Load persistent conversation history - fixed timing and dependency issues
   useEffect(() => {
@@ -70,7 +103,12 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData }) => {
           }));
 
           console.log('✅ Setting loaded messages from database:', loadedMessages.length);
-          setMessages(loadedMessages);
+          // Add quality tags to loaded messages
+          const messagesWithQuality = loadedMessages.map(msg => ({
+            ...msg,
+            quality_tags: analyzeMessageQuality(msg)
+          }));
+          setMessages(messagesWithQuality);
         } else {
           // No history found in database, check if we have persona data to create initial message
           console.log('📝 No conversation history found, creating initial message from persona data');
@@ -263,6 +301,98 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData }) => {
     }
   };
 
+  const handleRefineFeedback = async (messageId: string, feedbackType: string) => {
+    setSelectedMessageId(messageId);
+    setFeedbackMode(feedbackType);
+    
+    const message = messages.find(m => m.id === messageId);
+    if (!message) return;
+
+    try {
+      // Call edge function to generate refined feedback
+      const { data, error } = await supabase.functions.invoke('goblin-model-claude-analyzer', {
+        body: {
+          sessionId: session.id,
+          chatMode: true,
+          prompt: `Please provide ${feedbackType} feedback for this message: "${message.content}"`,
+          persona: session?.persona_type || 'clarity',
+          conversationHistory: '',
+          originalAnalysis: personaData,
+          feedbackType
+        }
+      });
+
+      if (error) throw error;
+
+      // Update message with feedback anchors
+      const updatedMessages = messages.map(m => {
+        if (m.id === messageId) {
+          const newAnchors = [...(m.feedback_anchors || []), `${feedbackType}: ${data.rawResponse?.slice(0, 100)}...`];
+          return { ...m, feedback_anchors: newAnchors };
+        }
+        return m;
+      });
+      
+      setMessages(updatedMessages);
+      onFeedbackUpdate?.(messageId, feedbackType, data);
+      toast.success(`${feedbackType} feedback added!`);
+    } catch (error) {
+      console.error('Feedback refinement error:', error);
+      toast.error('Failed to generate refined feedback');
+    } finally {
+      setFeedbackMode(null);
+      setSelectedMessageId(null);
+    }
+  };
+
+  const handleAddFeedbackAnchor = (messageId: string, anchor: string) => {
+    const updatedMessages = messages.map(m => {
+      if (m.id === messageId) {
+        const newAnchors = [...(m.feedback_anchors || []), anchor];
+        return { ...m, feedback_anchors: newAnchors };
+      }
+      return m;
+    });
+    setMessages(updatedMessages);
+    onFeedbackUpdate?.(messageId, 'anchor', anchor);
+  };
+
+  const handleExpandPrompt = async () => {
+    if (!inputValue.trim()) return;
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('goblin-model-claude-analyzer', {
+        body: {
+          sessionId: session.id,
+          chatMode: true,
+          prompt: `Please suggest 3 better ways to ask this question for more actionable UX feedback: "${inputValue}"`,
+          persona: session?.persona_type || 'clarity',
+          conversationHistory: '',
+          originalAnalysis: personaData,
+          feedbackType: 'expansion'
+        }
+      });
+
+      if (error) throw error;
+
+      // Show expansion suggestions as a temporary message
+      const expansionMessage: ChatMessage = {
+        id: Date.now().toString() + '_expansion',
+        role: 'clarity',
+        content: `💡 **Here are better ways to ask that question:**\n\n${data.rawResponse}`,
+        timestamp: new Date(),
+        expansion_suggestions: data.rawResponse?.split('\n').filter((line: string) => line.trim())
+      };
+      
+      setMessages(prev => [...prev, expansionMessage]);
+      toast.success('Prompt expansion suggestions added!');
+    } catch (error) {
+      console.error('Prompt expansion error:', error);
+      toast.error('Failed to generate prompt suggestions');
+    }
+  };
+
+
   const exportChat = () => {
     const actualPersona = session?.persona_type || 'clarity';
     const chatData = {
@@ -272,7 +402,10 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData }) => {
       messages: messages.map(m => ({
         role: m.role,
         content: m.content,
-        timestamp: m.timestamp
+        timestamp: m.timestamp,
+        feedback_anchors: m.feedback_anchors,
+        quality_tags: m.quality_tags,
+        refinement_score: m.refinement_score
       }))
     };
 
@@ -374,12 +507,82 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData }) => {
                           </div>
                         )}
                       </div>
-                    )}
-                    {message.role === 'user' && (
-                      <div className="text-xs text-primary-foreground/70 mt-1">
-                        {message.timestamp.toLocaleTimeString()}
-                      </div>
-                    )}
+                     )}
+                     
+                     {/* Feedback Anchors */}
+                     {message.feedback_anchors && message.feedback_anchors.length > 0 && (
+                       <div className="mt-3 text-xs">
+                         <span className="font-medium text-purple-600">Feedback Anchors:</span>
+                         <div className="flex flex-wrap gap-1 mt-1">
+                           {message.feedback_anchors.map((anchor, idx) => (
+                             <Badge key={idx} variant="outline" className="text-xs bg-purple-50 text-purple-700">
+                               {anchor.split(':')[0]}
+                             </Badge>
+                           ))}
+                         </div>
+                       </div>
+                     )}
+
+                     {/* Refine Feedback Buttons */}
+                     {message.role === 'clarity' && (
+                       <div className="mt-3 flex flex-wrap gap-2">
+                         <Button
+                           size="sm"
+                           variant="outline"
+                           className="text-xs h-6 px-2"
+                           onClick={() => handleRefineFeedback(message.id, 'clarity')}
+                           disabled={feedbackMode === 'clarity' && selectedMessageId === message.id}
+                         >
+                           🔍 More Clarity
+                         </Button>
+                         <Button
+                           size="sm"
+                           variant="outline"
+                           className="text-xs h-6 px-2"
+                           onClick={() => handleRefineFeedback(message.id, 'specificity')}
+                           disabled={feedbackMode === 'specificity' && selectedMessageId === message.id}
+                         >
+                           📋 More Specific
+                         </Button>
+                         <Button
+                           size="sm"
+                           variant="outline"
+                           className="text-xs h-6 px-2"
+                           onClick={() => handleRefineFeedback(message.id, 'actionable')}
+                           disabled={feedbackMode === 'actionable' && selectedMessageId === message.id}
+                         >
+                           ⚡ More Actionable
+                         </Button>
+                         <Button
+                           size="sm"
+                           variant="outline"
+                           className="text-xs h-6 px-2"
+                           onClick={() => handleAddFeedbackAnchor(message.id, `Detailed analysis at ${new Date().toLocaleTimeString()}`)}
+                         >
+                           📌 Add to Detailed
+                         </Button>
+                       </div>
+                      )}
+
+                      {/* Quality Tags */}
+                      {message.role === 'clarity' && analyzeMessageQuality(message).length > 0 && (
+                        <div className="mt-3 text-xs">
+                          <span className="font-medium text-indigo-600">Quality Tags:</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {analyzeMessageQuality(message).map((tag, idx) => (
+                              <Badge key={idx} variant="secondary" className="text-xs bg-indigo-50 text-indigo-700">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {message.role === 'user' && (
+                       <div className="text-xs text-primary-foreground/70 mt-1">
+                         {message.timestamp.toLocaleTimeString()}
+                       </div>
+                     )}
                   </div>
                 </div>
               ))}
@@ -423,6 +626,15 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData }) => {
           disabled={isLoading}
           className="flex-1"
         />
+        <Button 
+          onClick={handleExpandPrompt}
+          disabled={!inputValue.trim() || isLoading}
+          variant="outline"
+          size="sm"
+          title="Get better question suggestions"
+        >
+          💡 Expand
+        </Button>
         <Button 
           onClick={handleSendMessage} 
           disabled={!inputValue.trim() || isLoading}

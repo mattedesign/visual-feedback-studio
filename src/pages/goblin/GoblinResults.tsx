@@ -18,6 +18,7 @@ const GoblinResults: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const [showAnnotations, setShowAnnotations] = useState(true);
   const [activeTab, setActiveTab] = useState<'summary' | 'detailed' | 'clarity'>('summary');
+  const [chatFeedbackAnchors, setChatFeedbackAnchors] = useState<{[messageId: string]: any[]}>({});
 
   useEffect(() => {
     const loadResults = async () => {
@@ -91,6 +92,18 @@ const GoblinResults: React.FC = () => {
     }
   };
 
+  const handleChatFeedbackUpdate = (messageId: string, feedbackType: string, data: any) => {
+    setChatFeedbackAnchors(prev => ({
+      ...prev,
+      [messageId]: [...(prev[messageId] || []), { type: feedbackType, data, timestamp: new Date() }]
+    }));
+    
+    // If user clicked "Add to Detailed", switch to detailed tab
+    if (feedbackType === 'anchor') {
+      setActiveTab('detailed');
+    }
+  };
+
   const getGripeEmoji = (level: string) => {
     switch(level) {
       case 'low': return '😤';
@@ -124,6 +137,7 @@ const GoblinResults: React.FC = () => {
               onExport={handleExport}
               onCopyLink={handleCopyLink}
               copied={copied}
+              chatFeedbackAnchors={chatFeedbackAnchors}
             />
           </TabsContent>
 
@@ -136,6 +150,7 @@ const GoblinResults: React.FC = () => {
               currentImageIndex={currentImageIndex}
               setCurrentImageIndex={setCurrentImageIndex}
               setShowAnnotations={setShowAnnotations}
+              chatFeedbackAnchors={chatFeedbackAnchors}
             />
           </TabsContent>
 
@@ -143,6 +158,7 @@ const GoblinResults: React.FC = () => {
             <ClarityChat
               session={session}
               personaData={personaData}
+              onFeedbackUpdate={handleChatFeedbackUpdate}
             />
           </TabsContent>
         </Tabs>
