@@ -12,6 +12,7 @@ import { useMessagePersistence } from './chat/hooks/useMessagePersistence';
 import ChatMessageComponent from './chat/components/ChatMessage';
 import ChatInput from './chat/components/ChatInput';
 import LoadingIndicator from './chat/components/LoadingIndicator';
+import { ChatPersistenceTest } from './chat/ChatPersistenceTest';
 
 const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedbackUpdate }) => {
   const [inputValue, setInputValue] = useState('');
@@ -46,17 +47,15 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
     setIsLoading(true);
 
     try {
-      // Call the goblin-model-claude-analyzer with chatMode
-      const actualPersona = session?.persona_type || 'clarity';
-      console.log('🎭 Using persona:', actualPersona, 'for session:', session?.id);
-      console.log('📝 Sending message:', currentMessageInput);
+      console.log('🎭 Sending chat message for session:', session?.id);
+      console.log('📝 Message:', currentMessageInput);
       
       const { data, error } = await supabase.functions.invoke('goblin-model-claude-analyzer', {
         body: {
           sessionId: session.id,
           chatMode: true,
           prompt: currentMessageInput,
-          persona: actualPersona,
+          persona: session?.persona_type || 'clarity',
           conversationHistory: messages.map(m => `${m.role}: ${m.content}`).join('\n\n'),
           originalAnalysis: personaData
         }
@@ -67,35 +66,30 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
         throw error;
       }
 
-      console.log('📡 Edge function response received:', data);
+      console.log('📡 Chat response received:', data);
 
-      // Validate that messages were persisted before proceeding
-      const expectedMessageCount = messages.length + 2; // +1 for user message, +1 for AI response
-      console.log('🔍 Validating message persistence...');
-      
-      const persistenceValidated = await validateMessagePersistence(expectedMessageCount);
-      
-      if (!persistenceValidated) {
-        console.warn('⚠️ Message persistence validation failed, using fallback approach');
-        toast.error('Message may not be saved properly. Please refresh if chat history is lost.');
-      }
+      // Wait a moment for persistence to complete
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Reload messages from database to get updated intelligence data
+      // Reload messages from database to get the complete conversation
       const reloadSuccess = await reloadMessages();
       
       if (!reloadSuccess) {
-        console.warn('❌ Failed to reload from database, using fallback response');
-        // Fallback to basic response if reload fails
+        console.warn('❌ Failed to reload from database, adding message directly');
+        // Fallback: add the AI response directly to the UI
         const clarityResponse: ChatMessage = {
           id: Date.now().toString() + '_clarity',
           role: 'clarity',
-          content: data.analysisData?.analysis || data.rawResponse || 'Hmm, seems I lost my voice for a moment there...',
+          content: data.rawResponse || 'Response received but failed to persist.',
           timestamp: new Date(),
           quality_tags: []
         };
         setMessages(prev => [...prev, clarityResponse]);
-        toast.warning('Using offline response - message history may not persist');
+        toast.warning('Message sent but may not be saved - please refresh to see full history');
+      } else {
+        console.log('✅ Messages reloaded successfully from database');
       }
+
     } catch (error) {
       console.error('Chat error:', error);
       toast.error('Failed to send message to Clarity');
@@ -249,6 +243,9 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
 
   return (
     <div className="flex flex-col h-[600px] space-y-4">
+      {/* Debug Test Component */}
+      <ChatPersistenceTest sessionId={session?.id} persona={session?.persona_type || 'clarity'} />
+      
       <Card className="flex-1 flex flex-col overflow-hidden">
         <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-xl">
