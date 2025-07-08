@@ -130,17 +130,38 @@ serve(async (req) => {
 
     const startTime = Date.now();
 
-    // ✅ SIMPLIFIED: Process images with simple fetch for non-chat mode
+    // ✅ ROBUST: Handle imageUrls safely - can be null, undefined, single object, or array
     const imageContent = [];
-    if (!actualChatMode && imageUrls && Array.isArray(imageUrls)) {
-      logDebug('IMAGE_PROCESSING', 'Starting simplified image processing', {
-        imageCount: imageUrls.length,
+    if (!actualChatMode && imageUrls) {
+      // Normalize imageUrls to always be an array
+      let normalizedImageUrls = [];
+      
+      if (Array.isArray(imageUrls)) {
+        normalizedImageUrls = imageUrls;
+      } else if (typeof imageUrls === 'object' && imageUrls !== null) {
+        // Single image object
+        normalizedImageUrls = [imageUrls];
+      } else if (typeof imageUrls === 'string') {
+        // Single URL string
+        normalizedImageUrls = [{ url: imageUrls, file_path: imageUrls }];
+      }
+      
+      logDebug('IMAGE_PROCESSING', 'Starting robust image processing', {
+        originalImageUrls: imageUrls,
+        normalizedCount: normalizedImageUrls.length,
         actualChatMode,
         sessionId: sessionId?.substring(0, 8)
       });
       
-      for (let i = 0; i < Math.min(imageUrls.length, 3); i++) {
-        const imageUrl = imageUrls[i];
+      for (let i = 0; i < Math.min(normalizedImageUrls.length, 3); i++) {
+        const imageItem = normalizedImageUrls[i];
+        const imageUrl = imageItem?.url || imageItem?.file_path || imageItem;
+        
+        if (!imageUrl || typeof imageUrl !== 'string') {
+          console.warn(`⚠️ Invalid image URL at index ${i}:`, imageItem);
+          continue;
+        }
+        
         try {
           console.log(`📥 Fetching image ${i + 1}: ${imageUrl}`);
           
@@ -189,9 +210,9 @@ serve(async (req) => {
       }
       
       logDebug('IMAGE_PROCESSING', 'Image processing completed', { 
-        totalImages: imageUrls.length,
+        totalImages: normalizedImageUrls.length,
         processedImages: imageContent.length,
-        skippedImages: imageUrls.length - imageContent.length
+        skippedImages: normalizedImageUrls.length - imageContent.length
       });
     }
 
