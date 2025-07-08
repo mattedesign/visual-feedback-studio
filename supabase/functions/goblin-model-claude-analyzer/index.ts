@@ -155,14 +155,13 @@ serve(async (req) => {
     // Build enhanced prompt
     const enhancedPrompt = buildPrompt(persona, prompt, actualChatMode, conversationHistory, originalAnalysis);
     
-    // Build message content
-    const messageContent = [
-      { type: 'text', text: enhancedPrompt },
-      ...imageContent
-    ];
+    console.log("🧙‍♂️ Sending message to Claude with", imageContent.length, "images");
 
-    // Log what we're sending to Claude
-    console.log(`🎯 Preparing Claude request - ${imageContent.length} images, ${enhancedPrompt.length} chars`);
+    // ✅ FIX: Correct message structure - images and text in same content array
+    const messages = [{
+      role: "user",
+      content: [...imageContent, { type: "text", text: enhancedPrompt }]
+    }];
 
     console.log('🚀 Calling Claude API...');
 
@@ -178,10 +177,7 @@ serve(async (req) => {
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
         temperature: persona === 'clarity' ? 0.3 : 0.7,
-        messages: [{
-          role: 'user',
-          content: messageContent
-        }]
+        messages
       })
     });
 
@@ -190,21 +186,14 @@ serve(async (req) => {
       throw new Error(`Claude API error: ${response.status} - ${errorText}`);
     }
 
-    const data = await response.json();
+    const responseData = await response.json();
     
-    // ✅ CRITICAL DEBUG: Log the actual Claude response
-    console.log('🧠 Claude raw response:', JSON.stringify(data, null, 2));
+    console.log("🧠 Claude raw response:", JSON.stringify(responseData, null, 2));
     
-    const content = data.content?.[0]?.text || '';
+    const summaryText = responseData.content?.map(c => c.text).join('\n') || '⚠️ No summary returned';
     
-    // ✅ CRITICAL DEBUG: Check if we got content
-    console.log('📝 Extracted content length:', content.length);
-    console.log('📄 Content preview:', content.substring(0, 200));
-    
-    if (!content) {
-      console.error('❌ CRITICAL: Claude returned no content!');
-      console.error('🔍 Full response structure:', Object.keys(data));
-      throw new Error('Claude returned no content');
+    if (!summaryText || summaryText === '⚠️ No summary returned') {
+      throw new Error('Claude returned no content.');
     }
     
     const processingTime = Date.now() - startTime;
@@ -255,7 +244,7 @@ serve(async (req) => {
             user_id: userId,
             message_order: nextOrder + 1,
             role: 'clarity',
-            content: content,
+             content: summaryText,
             conversation_stage: 'chat',
             model_used: 'claude-sonnet-4-20250514',
             processing_time_ms: processingTime,
@@ -297,7 +286,7 @@ serve(async (req) => {
               user_id: userId,
               message_order: 1,
               role: 'clarity',
-              content: content,
+              content: summaryText,
               conversation_stage: 'initial',
               model_used: 'claude-sonnet-4-20250514',
               processing_time_ms: processingTime,
@@ -324,8 +313,8 @@ serve(async (req) => {
         sessionId,
         persona,
         modelUsed: 'claude-sonnet-4-20250514',
-        analysisData: { analysis: content },
-        rawResponse: content,
+         analysisData: { analysis: summaryText },
+         rawResponse: summaryText,
         timestamp: new Date().toISOString()
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
