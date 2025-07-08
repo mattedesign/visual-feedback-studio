@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { createGoblinSession, uploadGoblinImage, startGoblinAnalysis } from '@/services/goblin/index';
 import { supabase } from '@/integrations/supabase/client';
 import { GoblinPersonaSelector } from '@/components/goblin/personas/PersonaSelector';
+import PersonaLoadingQuips from '@/components/goblin/PersonaLoadingQuips';
 export type GoblinPersonaType = 'strategic' | 'mirror' | 'mad' | 'exec' | 'clarity';
 const GOBLIN_PERSONAS = [{
   value: 'strategic',
@@ -155,9 +156,12 @@ const GoblinStudio: React.FC = () => {
                 {isAnalyzing ? 'Analyzing...' : 'Run Goblin Analysis'}
               </Button>
 
-              {isAnalyzing && <div className="space-y-3 mt-6">
-                  <Label className="text-sm font-medium text-muted-foreground">{analysisStage}</Label>
-                  <Progress value={analysisProgress} className="h-2" />
+              {isAnalyzing && <div className="space-y-6 mt-8">
+                  <PersonaLoadingQuips persona={persona} />
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium text-muted-foreground">{analysisStage}</Label>
+                    <Progress value={analysisProgress} className="h-2" />
+                  </div>
                 </div>}
 
               {fetchedImages.length > 0 && <div className="space-y-4 mt-8">
