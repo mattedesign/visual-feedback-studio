@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { logImageDebugInfo } from '@/utils/imageDebugUtils';
 
 // ✅ Tab components
 import DetailedModeView from '@/components/goblin/DetailedModeView';
@@ -41,6 +42,13 @@ const GoblinResults: React.FC = () => {
           .order('upload_order');
 
         if (imageError) throw imageError;
+        
+        // ✅ ENHANCED: Debug image URLs and accessibility
+        console.log('🎯 GoblinResults - Loaded images:', imageData?.length);
+        if (imageData && imageData.length > 0) {
+          logImageDebugInfo(imageData, 'GoblinResults - Loaded Images');
+        }
+        
         setImages(imageData);
       } catch (error) {
         console.error('Failed to load results:', error);

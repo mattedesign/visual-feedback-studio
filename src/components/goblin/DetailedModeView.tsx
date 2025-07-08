@@ -32,11 +32,24 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
   // Filter annotations by current image
   const allAnnotations = results?.annotations || [];
   
-  // ✅ PHASE 2: Enhanced annotation filtering with fallback logic
+  // ✅ ENHANCED: Enhanced annotation filtering with comprehensive debug logging
   const annotations = allAnnotations.filter((annotation: any) => {
     // Check if annotation has image_index or image_id that matches current image
     const hasImageIndex = annotation.image_index === currentImageIndex || annotation.imageIndex === currentImageIndex;
     const hasImageId = annotation.image_id === currentImage?.id;
+    
+    // Debug logging for annotation filtering
+    console.log(`🔍 Annotation filtering debug:`, {
+      annotationId: annotation.id?.substring(0, 8) || 'no-id',
+      annotationImageIndex: annotation.image_index,
+      annotationImageIndexAlt: annotation.imageIndex,
+      annotationImageId: annotation.image_id,
+      currentImageIndex,
+      currentImageId: currentImage?.id,
+      hasImageIndex,
+      hasImageId,
+      willInclude: hasImageIndex || hasImageId
+    });
     
     // If annotation is specifically tagged for this image, show it
     if (hasImageIndex || hasImageId) {
@@ -48,12 +61,25 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
       ann.image_index !== undefined || ann.imageIndex !== undefined || ann.image_id !== undefined
     );
     
+    console.log(`📊 Annotation association check:`, {
+      totalAnnotations: allAnnotations.length,
+      hasAnyImageAssociations,
+      currentImageIndex,
+      showingOnFirstImage: !hasAnyImageAssociations && currentImageIndex === 0
+    });
+    
     // If no annotations have image associations, show them all on the first image only
     if (!hasAnyImageAssociations && currentImageIndex === 0) {
       return true;
     }
     
     return false;
+  });
+
+  console.log(`📋 Filtered annotations for image ${currentImageIndex + 1}:`, {
+    totalAvailable: allAnnotations.length,
+    filtered: annotations.length,
+    currentImage: currentImage?.file_name
   });
 
   // Get total feedback anchors count
