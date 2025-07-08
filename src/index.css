@@ -8,10 +8,10 @@
     /* V128 Theme - Goblin UX Brand Colors */
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
     
     /* Primary - Goblin Green */
     --primary: 142 76% 36%;
@@ -25,11 +25,15 @@
     
     /* Accent - Chaos Orange */
     --accent: 20 95% 55%;
-    --accent-foreground: 0 0% 9%;
+    --accent-foreground: 240 10% 3.9%;
     
     /* Muted - Dark Goblin Cave */
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 5% 64.9%;
+    
+    /* Light content areas */
+    --content-light: 0 0% 100%;
+    --content-light-foreground: 240 10% 3.9%;
     
     /* Destructive - Rage Red */
     --destructive: 0 84.2% 60.2%;
