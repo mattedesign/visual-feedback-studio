@@ -88,7 +88,21 @@ serve(async (req) => {
       throw new Error('No images found for analysis session');
     }
 
-    const imageUrls = images.map(img => img.file_path);
+    // Convert file paths to full public URLs for Claude analyzer
+    const imageUrls = images.map(img => {
+      // If file_path is already a full URL, use it directly
+      if (img.file_path.startsWith('http')) {
+        return img.file_path;
+      }
+      
+      // Convert Supabase storage file path to public URL
+      const supabaseUrl = Deno.env.get('SUPABASE_URL');
+      const cleanPath = img.file_path.replace(/^\/+/, ''); // Remove leading slashes
+      const fullUrl = `${supabaseUrl}/storage/v1/object/public/analysis-images/${cleanPath}`;
+      
+      console.log(`🔗 Converting file path to URL: ${img.file_path} -> ${fullUrl}`);
+      return fullUrl;
+    });
 
     console.log('🎯 Orchestrating goblin analysis:', {
       sessionId: sessionId?.substring(0, 8),
