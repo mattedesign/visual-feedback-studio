@@ -46,7 +46,7 @@ const App = () => {
                 <Route path="/*" element={<AuthGuard>
                     <>
                       <AppSidebar />
-                      <SidebarInset className="ml-[16px] mr-[8px]">
+                      <SidebarInset className="ml-[16px] mr-0">
                         {/* Main content area */}
                         <div className="flex flex-col items-start flex-1 self-stretch rounded-[20px] border border-border bg-background overflow-auto m-4" style={{
                       display: 'flex',
