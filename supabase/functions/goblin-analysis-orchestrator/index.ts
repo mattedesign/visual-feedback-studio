@@ -169,15 +169,15 @@ serve(async (req) => {
       throw new Error(`Prompt building failed: ${promptResult.error.message}`);
     }
 
-    // Step 3: Analyze with Claude
+    // Step 3: Analyze with Claude - FIXED: Use correct parameters
     const analysisResult = await supabase.functions.invoke('goblin-model-claude-analyzer', {
       body: {
         sessionId,
         imageUrls,
         prompt: promptResult.data.prompt,
         persona,
-        systemPrompt: promptResult.data.systemPrompt,
-        visionResults
+        chatMode: false  // ✅ CRITICAL: Explicitly set to false for image processing
+        // Note: systemPrompt and visionResults are not used by Claude analyzer
       }
     });
 
