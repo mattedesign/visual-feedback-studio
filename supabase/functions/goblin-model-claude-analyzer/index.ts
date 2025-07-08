@@ -23,15 +23,21 @@ serve(async (req) => {
   try {
     const { sessionId, imageUrls, prompt, persona, chatMode, conversationHistory, originalAnalysis, saveInitialOnly, initialContent } = await req.json();
 
+    // CRITICAL FIX: Ensure chatMode is properly defaulted for image processing
+    const actualChatMode = chatMode === true; // Default to false (non-chat mode) for image processing
+    
     logDebug('INIT', 'Processing Claude analysis request', {
       sessionId: sessionId?.substring(0, 8),
       persona,
-      chatMode: !!chatMode,
+      chatMode: actualChatMode,
+      chatModeRaw: chatMode,
       saveInitialOnly: !!saveInitialOnly,
       promptLength: prompt?.length,
       hasInitialContent: !!initialContent,
       hasImageUrls: !!imageUrls,
-      hasConversationHistory: !!conversationHistory
+      imageUrlsLength: Array.isArray(imageUrls) ? imageUrls.length : 0,
+      hasConversationHistory: !!conversationHistory,
+      imageProcessingCondition: !actualChatMode && imageUrls && Array.isArray(imageUrls)
     });
 
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
@@ -124,10 +130,14 @@ serve(async (req) => {
 
     const startTime = Date.now();
 
-    // Process images only for non-chat mode
+    // Process images only for non-chat mode - FIXED CONDITION
     const imageContent = [];
-    if (!chatMode && imageUrls && Array.isArray(imageUrls)) {
-      console.log('🖼️ Processing images for Claude vision...');
+    if (!actualChatMode && imageUrls && Array.isArray(imageUrls)) {
+      logDebug('IMAGE_PROCESSING', 'Starting image processing for Claude vision', {
+        imageCount: imageUrls.length,
+        actualChatMode,
+        sessionId: sessionId?.substring(0, 8)
+      });
       
       for (let i = 0; i < Math.min(imageUrls.length, 3); i++) {
         const imageUrl = imageUrls[i];
@@ -167,7 +177,17 @@ serve(async (req) => {
     }
 
     // Build enhanced prompt
-    const enhancedPrompt = buildPrompt(persona, prompt, chatMode, conversationHistory, originalAnalysis);
+    const enhancedPrompt = buildPrompt(persona, prompt, actualChatMode, conversationHistory, originalAnalysis);
+    
+    // Log what we're sending to Claude
+    logDebug('CLAUDE_API', 'Preparing Claude request', {
+      sessionId: sessionId?.substring(0, 8),
+      persona,
+      actualChatMode,
+      imageCount: imageContent.length,
+      messageContentLength: messageContent.length,
+      promptLength: enhancedPrompt.length
+    });
 
     // Build message content
     const messageContent = [
@@ -208,7 +228,7 @@ serve(async (req) => {
     console.log('✅ Claude analysis completed');
 
     // Handle conversation persistence SIMPLIFIED
-    if (sessionId && userId && chatMode) {
+    if (sessionId && userId && actualChatMode) {
       try {
         logDebug('PERSISTENCE', 'Starting chat message persistence', { sessionId: sessionId.substring(0, 8), userId: userId.substring(0, 8) });
         
@@ -273,7 +293,7 @@ serve(async (req) => {
     }
 
     // Handle initial analysis persistence (non-chat mode)
-    if (sessionId && userId && !chatMode) {
+    if (sessionId && userId && !actualChatMode) {
       try {
         console.log('💾 Saving initial analysis to database');
         
