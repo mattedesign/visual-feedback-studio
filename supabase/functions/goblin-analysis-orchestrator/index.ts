@@ -88,7 +88,7 @@ serve(async (req) => {
       throw new Error('No images found for analysis session');
     }
 
-    // Convert file paths to full public URLs for Claude analyzer
+    // ✅ ENHANCED: Convert file paths to proper public URLs for Claude analyzer
     console.log('🔍 Raw images data from database:', JSON.stringify(images, null, 2));
     
     const imageUrls = images.map(img => {
@@ -98,10 +98,25 @@ serve(async (req) => {
         return img.file_path;
       }
       
-      // Convert Supabase storage file path to public URL
+      // ✅ FIXED: Properly construct Supabase storage public URL
       const supabaseUrl = Deno.env.get('SUPABASE_URL');
-      const cleanPath = img.file_path.replace(/^\/+/, ''); // Remove leading slashes
-      const fullUrl = `${supabaseUrl}/storage/v1/object/public/analysis-images/${cleanPath}`;
+      // Remove any leading slashes and ensure clean path
+      let cleanPath = img.file_path.replace(/^\/+/, '');
+      
+      // If the path doesn't start with the expected bucket structure, fix it
+      if (!cleanPath.startsWith('analysis-images/')) {
+        // Handle case where path might be just the filename or partial path
+        if (cleanPath.includes('/')) {
+          // Extract just the filename if it's a complex path
+          const pathParts = cleanPath.split('/');
+          cleanPath = `analysis-images/${pathParts[pathParts.length - 1]}`;
+        } else {
+          // Just a filename, add bucket prefix
+          cleanPath = `analysis-images/${cleanPath}`;
+        }
+      }
+      
+      const fullUrl = `${supabaseUrl}/storage/v1/object/public/${cleanPath}`;
       
       console.log(`🔗 Converting file path to URL: ${img.file_path} -> ${fullUrl}`);
       return fullUrl;
@@ -193,29 +208,48 @@ serve(async (req) => {
     console.log('🤖 Calling Claude analyzer with verified parameters...');
     console.log(`📊 Sending ${imageUrls.length} image URLs to Claude analyzer`);
     
-    // Validate imageUrls before sending
-    const validImageUrls = imageUrls.filter(url => {
+    // ✅ ENHANCED: Validate imageUrls with detailed logging
+    const validImageUrls = imageUrls.filter((url, index) => {
       const isValid = url && typeof url === 'string' && url.trim().length > 0;
       if (!isValid) {
-        console.warn('⚠️ Filtering out invalid image URL:', url);
+        console.warn(`⚠️ Filtering out invalid image URL at index ${index}:`, url);
+      } else {
+        console.log(`✅ Valid image URL ${index + 1}: ${url}`);
       }
       return isValid;
     });
 
     if (validImageUrls.length === 0) {
-      throw new Error(`No valid image URLs found. Original count: ${imageUrls.length}, Valid count: ${validImageUrls.length}`);
+      console.error('❌ No valid image URLs found!', {
+        originalImageCount: images.length,
+        originalImageUrls: imageUrls,
+        allImagePaths: images.map(img => img.file_path)
+      });
+      throw new Error(`No valid image URLs found. Original count: ${imageUrls.length}, Valid count: ${validImageUrls.length}. Check image storage and URL construction.`);
     }
 
     console.log(`✅ Validated ${validImageUrls.length} image URLs for Claude analysis`);
     
+    // ✅ ENHANCED: Claude analysis with detailed parameter logging
+    const claudeRequestBody = {
+      sessionId,
+      imageUrls: validImageUrls,  // Use validated URLs
+      prompt: promptResult.data.prompt,
+      persona,
+      chatMode: false  // ✅ CRITICAL: Explicitly set to false for image processing
+    };
+    
+    console.log('🤖 Calling Claude analyzer with request body:', {
+      sessionId: sessionId?.substring(0, 8),
+      imageUrlCount: validImageUrls.length,
+      imageUrlSamples: validImageUrls.slice(0, 2), // Log first 2 URLs for verification
+      promptLength: promptResult.data.prompt?.length,
+      persona,
+      chatMode: false
+    });
+    
     const analysisResult = await supabase.functions.invoke('goblin-model-claude-analyzer', {
-      body: {
-        sessionId,
-        imageUrls: validImageUrls,  // Use validated URLs
-        prompt: promptResult.data.prompt,
-        persona,
-        chatMode: false  // ✅ CRITICAL: Explicitly set to false for image processing
-      }
+      body: claudeRequestBody
     });
 
     if (analysisResult.error) {
