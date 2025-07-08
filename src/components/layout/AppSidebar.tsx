@@ -100,7 +100,7 @@ export function AppSidebar() {
     <Sidebar variant="sidebar" collapsible="icon">
       <SidebarContent className="flex flex-col h-full">
         {/* Logo/Header */}
-        <div className={`p-4 border-b border-sidebar-border ${collapsed ? 'px-2' : ''}`}>
+        <div className={`p-4 ${collapsed ? 'px-2' : ''}`}>
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <div className="text-2xl flex-shrink-0">👾</div>
