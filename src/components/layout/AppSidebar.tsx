@@ -91,10 +91,13 @@ export function AppSidebar() {
     return currentPath.startsWith(path);
   };
 
-  const getNavClassName = (active: boolean) =>
-    active 
-      ? "flex py-4 px-3 items-center gap-2 self-stretch rounded-xl bg-[#584774] text-white font-medium" 
-      : "flex py-4 px-3 items-center gap-2 self-stretch rounded-xl text-muted-foreground hover:bg-[#584774] hover:text-white focus:bg-[#584774] focus:text-white transition-colors";
+  const getNavClassName = (active: boolean) => {
+    const isGoblinRoute = currentPath.startsWith('/goblin');
+    const minHeight = isGoblinRoute ? 'min-h-[40px]' : '';
+    return active 
+      ? `flex py-4 px-3 items-center gap-2 self-stretch rounded-xl bg-[#584774] text-white font-medium ${minHeight}` 
+      : `flex py-4 px-3 items-center gap-2 self-stretch rounded-xl text-muted-foreground hover:bg-[#584774] hover:text-white focus:bg-[#584774] focus:text-white transition-colors ${minHeight}`;
+  };
 
   return (
     <Sidebar variant="sidebar" collapsible="icon">
