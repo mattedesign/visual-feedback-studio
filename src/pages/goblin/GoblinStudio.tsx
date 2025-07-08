@@ -112,7 +112,7 @@ const GoblinStudio: React.FC = () => {
     }
   };
   return <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto px-8 py-12 bg-white">
+      <div className="max-w-5xl mx-auto bg-white px-[32px] py-[24px]">
         <div className="mb-12">
           <h1 className="text-4xl font-semibold tracking-tight text-foreground flex items-center gap-3 mb-3">
             <Sparkles className="text-professional-brown w-9 h-9" /> Goblin UX Analysis
