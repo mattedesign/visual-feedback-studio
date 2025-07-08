@@ -117,8 +117,8 @@ const GoblinDashboard = () => {
         </div>
       </div>;
   }
-   return <div className="min-h-screen">
-      <div className="max-w-7xl mx-auto p-8 bg-white/90 backdrop-blur-sm rounded-xl mx-4 my-4">
+    return <div className="min-h-screen">
+      <div className="max-w-7xl mx-auto p-8 bg-white">
         {/* Header */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-12">
           <div className="space-y-2">
