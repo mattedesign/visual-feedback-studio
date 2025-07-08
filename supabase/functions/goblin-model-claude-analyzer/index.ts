@@ -7,13 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-console.log('🤖 Goblin Claude Analyzer - Enhanced Debug v3');
-
-// Enhanced logging function
-function logDebug(category: string, message: string, data?: any) {
-  const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] 🐛 [${category}] ${message}`, data ? JSON.stringify(data, null, 2) : '');
-}
+console.log('🤖 Goblin Claude Analyzer - Streamlined v4');
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -26,19 +20,7 @@ serve(async (req) => {
     // CRITICAL FIX: Ensure chatMode is properly defaulted for image processing
     const actualChatMode = chatMode === true; // Default to false (non-chat mode) for image processing
     
-    logDebug('INIT', 'Processing Claude analysis request', {
-      sessionId: sessionId?.substring(0, 8),
-      persona,
-      chatMode: actualChatMode,
-      chatModeRaw: chatMode,
-      saveInitialOnly: !!saveInitialOnly,
-      promptLength: prompt?.length,
-      hasInitialContent: !!initialContent,
-      hasImageUrls: !!imageUrls,
-      imageUrlsLength: Array.isArray(imageUrls) ? imageUrls.length : 0,
-      hasConversationHistory: !!conversationHistory,
-      imageProcessingCondition: !actualChatMode && imageUrls && Array.isArray(imageUrls)
-    });
+    console.log(`🎯 Processing request - Session: ${sessionId?.substring(0, 8)}, Persona: ${persona}, Chat: ${actualChatMode}`);
 
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
     if (!anthropicApiKey) {
@@ -60,18 +42,18 @@ serve(async (req) => {
         const { data: { user }, error: userError } = await supabase.auth.getUser(token);
         if (user && !userError) {
           userId = user.id;
-          logDebug('AUTH', 'User authenticated successfully', { userId: userId.substring(0, 8) });
+          console.log(`✅ User authenticated: ${userId.substring(0, 8)}`);
         } else {
-          logDebug('AUTH', 'Authentication failed', { error: userError?.message });
+          console.warn('⚠️ Authentication failed:', userError?.message);
         }
       } catch (authError) {
-        logDebug('AUTH', 'Authentication error', { error: (authError as Error).message });
+        console.error('❌ Authentication error:', authError);
       }
     }
 
     // Special handling for saveInitialOnly mode
     if (saveInitialOnly && initialContent && sessionId && userId) {
-      logDebug('PERSISTENCE', 'Saving initial message only', { sessionId: sessionId.substring(0, 8), contentLength: initialContent.length });
+      console.log(`💾 Saving initial message - Session: ${sessionId.substring(0, 8)}, Length: ${initialContent.length}`);
       
       try {
         // Check if initial message already exists
@@ -107,9 +89,9 @@ serve(async (req) => {
             throw insertError;
           }
 
-          logDebug('PERSISTENCE', 'Initial message saved successfully', { insertResult });
+          console.log('✅ Initial message saved successfully');
         } else {
-          logDebug('PERSISTENCE', 'Initial message already exists, skipping');
+          console.log('ℹ️ Initial message already exists, skipping');
         }
 
         return new Response(
@@ -123,7 +105,7 @@ serve(async (req) => {
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       } catch (error) {
-        logDebug('PERSISTENCE', 'Save initial failed', { error: (error as Error).message });
+        console.error('❌ Save initial failed:', error);
         throw error;
       }
     }
@@ -146,12 +128,7 @@ serve(async (req) => {
         normalizedImageUrls = [{ url: imageUrls, file_path: imageUrls }];
       }
       
-      logDebug('IMAGE_PROCESSING', 'Starting robust image processing', {
-        originalImageUrls: imageUrls,
-        normalizedCount: normalizedImageUrls.length,
-        actualChatMode,
-        sessionId: sessionId?.substring(0, 8)
-      });
+      console.log(`📸 Processing ${normalizedImageUrls.length} images for session ${sessionId?.substring(0, 8)}`);
       
       for (let i = 0; i < Math.min(normalizedImageUrls.length, 3); i++) {
         const imageItem = normalizedImageUrls[i];
@@ -178,11 +155,7 @@ serve(async (req) => {
           const arrayBuffer = await imageBlob.arrayBuffer();
           const sizeInMB = arrayBuffer.byteLength / (1024 * 1024);
           
-          logDebug('IMAGE_PROCESSING', 'Image size check', { 
-            imageIndex: i + 1, 
-            sizeInMB: sizeInMB.toFixed(2),
-            contentType 
-          });
+          console.log(`📊 Image ${i + 1}: ${sizeInMB.toFixed(2)}MB, ${contentType}`);
           
           if (sizeInMB > 20) {
             console.warn(`⚠️ Image ${i + 1} too large (${sizeInMB.toFixed(2)}MB), skipping`);
@@ -209,11 +182,7 @@ serve(async (req) => {
         }
       }
       
-      logDebug('IMAGE_PROCESSING', 'Image processing completed', { 
-        totalImages: normalizedImageUrls.length,
-        processedImages: imageContent.length,
-        skippedImages: normalizedImageUrls.length - imageContent.length
-      });
+      console.log(`✅ Image processing completed - ${imageContent.length}/${normalizedImageUrls.length} images processed`);
     }
 
     // Build enhanced prompt
@@ -226,14 +195,7 @@ serve(async (req) => {
     ];
 
     // Log what we're sending to Claude
-    logDebug('CLAUDE_API', 'Preparing Claude request', {
-      sessionId: sessionId?.substring(0, 8),
-      persona,
-      actualChatMode,
-      imageCount: imageContent.length,
-      messageContentLength: messageContent.length,
-      promptLength: enhancedPrompt.length
-    });
+    console.log(`🎯 Preparing Claude request - ${imageContent.length} images, ${enhancedPrompt.length} chars`);
 
     console.log('🚀 Calling Claude API...');
 
@@ -270,7 +232,7 @@ serve(async (req) => {
     // Handle conversation persistence SIMPLIFIED
     if (sessionId && userId && actualChatMode) {
       try {
-        logDebug('PERSISTENCE', 'Starting chat message persistence', { sessionId: sessionId.substring(0, 8), userId: userId.substring(0, 8) });
+        console.log(`💬 Starting chat persistence - Session: ${sessionId.substring(0, 8)}`);
         
         // Get the current max message order for this session
         const { data: lastMessage } = await supabase
@@ -298,9 +260,9 @@ serve(async (req) => {
           });
 
         if (userError) {
-          logDebug('PERSISTENCE', 'Failed to save user message', { error: userError.message, code: userError.code });
+          console.error('❌ Failed to save user message:', userError);
         } else {
-          logDebug('PERSISTENCE', 'User message saved successfully', { messageOrder: nextOrder });
+          console.log(`✅ User message saved - Order: ${nextOrder}`);
         }
 
         // Insert AI response
@@ -322,13 +284,13 @@ serve(async (req) => {
           });
 
         if (aiError) {
-          logDebug('PERSISTENCE', 'Failed to save AI message', { error: aiError.message, code: aiError.code });
+          console.error('❌ Failed to save AI message:', aiError);
         } else {
-          logDebug('PERSISTENCE', 'AI message saved successfully', { messageOrder: nextOrder + 1, processingTime });
+          console.log(`✅ AI message saved - Order: ${nextOrder + 1}, Time: ${processingTime}ms`);
         }
 
       } catch (persistError) {
-        logDebug('PERSISTENCE', 'Failed to persist conversation', { error: (persistError as Error).message });
+        console.error('❌ Failed to persist conversation:', persistError);
       }
     }
 

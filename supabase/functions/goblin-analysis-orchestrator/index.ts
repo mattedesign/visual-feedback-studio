@@ -84,16 +84,14 @@ serve(async (req) => {
       throw new Error(`Failed to fetch images: ${imagesResponse.error.message}`);
     }
 
-    const imageUrls = imagesResponse.data || [];
+    const imageUrls = imagesResponse.data?.validImages || [];
     
     if (imageUrls.length === 0) {
       throw new Error('No images found for analysis session');
     }
 
-    // ✅ SIMPLIFIED: Simple validation and logging
-    const validImageUrls = imageUrls
-      .map(img => img.file_path)
-      .filter(url => url && typeof url === 'string' && url.trim().length > 0);
+    // ✅ FIXED: Use the hydrated image data structure correctly
+    const validImageUrls = imageUrls.filter(img => img && (img.url || img.file_path));
 
     if (validImageUrls.length === 0) {
       throw new Error(`No valid image URLs found. Please check image storage and accessibility.`);
