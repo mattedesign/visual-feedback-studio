@@ -53,7 +53,7 @@ const App = () => {
                       <AppSidebar />
                       <SidebarInset>
                         {/* Main content area */}
-                        <div className="flex flex-col items-start flex-1 self-stretch rounded-[20px] border border-border bg-background overflow-auto ml-4 my-4"
+                        <div className="flex flex-col items-start flex-1 self-stretch rounded-[20px] border border-border bg-background overflow-auto mx-4 my-4"
                              style={{
                                display: 'flex',
                                flexDirection: 'column',
