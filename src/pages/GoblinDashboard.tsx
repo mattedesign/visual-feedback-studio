@@ -17,6 +17,7 @@ interface GoblinSession {
   status: string;
   created_at: string;
   updated_at: string;
+  first_image_url?: string;
 }
 
 const GoblinDashboard = () => {
@@ -34,18 +35,39 @@ const GoblinDashboard = () => {
     
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
+      
+      // First get all sessions
+      const { data: sessionsData, error: sessionsError } = await supabase
         .from('goblin_analysis_sessions')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Failed to load goblin sessions:', error);
+      if (sessionsError) {
+        console.error('Failed to load goblin sessions:', sessionsError);
         toast.error('Failed to load your goblin sessions');
-      } else {
-        setSessions(data || []);
+        return;
       }
+
+      // Then get the first image for each session
+      const sessionsWithImages = await Promise.all(
+        (sessionsData || []).map(async (session) => {
+          const { data: imageData } = await supabase
+            .from('goblin_analysis_images')
+            .select('file_path')
+            .eq('session_id', session.id)
+            .order('upload_order', { ascending: true })
+            .limit(1)
+            .single();
+
+          return {
+            ...session,
+            first_image_url: imageData?.file_path || null
+          };
+        })
+      );
+
+      setSessions(sessionsWithImages);
     } catch (error) {
       console.error('Error loading goblin sessions:', error);
       toast.error('Error loading goblin sessions');
@@ -225,6 +247,16 @@ const GoblinDashboard = () => {
               className="hover:shadow-lg transition-shadow cursor-pointer border border-gray-200"
               onClick={() => handleViewSession(session.id)}
             >
+              {session.first_image_url && (
+                <div className="aspect-video bg-gray-100 rounded-t-lg overflow-hidden">
+                  <img
+                    src={session.first_image_url}
+                    alt={`Preview for ${session.title}`}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+              
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
