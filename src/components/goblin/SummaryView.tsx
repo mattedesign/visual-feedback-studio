@@ -34,17 +34,17 @@ const SummaryView: React.FC<SummaryViewProps> = ({
     switch(personaType) {
       case 'clarity':
         return {
-          primary: 'text-green-600',
-          bg: 'bg-green-50',
-          border: 'border-green-200',
-          badge: 'bg-green-100 text-green-800'
+          primary: 'text-professional-brown',
+          bg: 'bg-card',
+          border: 'border-border',
+          badge: 'bg-accent-warm text-professional-brown'
         };
       default:
         return {
-          primary: 'text-purple-600',
-          bg: 'bg-purple-50',
-          border: 'border-purple-200',
-          badge: 'bg-purple-100 text-purple-800'
+          primary: 'text-professional-brown',
+          bg: 'bg-card',
+          border: 'border-border',
+          badge: 'bg-accent-warm text-professional-brown'
         };
     }
   };
@@ -58,37 +58,36 @@ const SummaryView: React.FC<SummaryViewProps> = ({
       {
         title: "What's Working",
         icon: CheckCircle,
-        color: 'text-green-600',
-        bgColor: 'bg-green-50',
-        borderColor: 'border-green-200',
+        color: 'text-emerald-600',
+        bgColor: 'bg-emerald-50 border-emerald-200',
+        borderColor: 'border-emerald-200',
         items: matrix.whatWorks || []
       },
       {
         title: "What Needs Attention",
         icon: AlertTriangle,
-        color: 'text-orange-600',
-        bgColor: 'bg-orange-50',
-        borderColor: 'border-orange-200',
+        color: 'text-amber-600',
+        bgColor: 'bg-amber-50 border-amber-200',
+        borderColor: 'border-amber-200',
         items: matrix.whatHurts || []
       },
       {
         title: "Next Steps",
         icon: Rocket,
         color: 'text-blue-600',
-        bgColor: 'bg-blue-50',
+        bgColor: 'bg-blue-50 border-blue-200',
         borderColor: 'border-blue-200',
         items: matrix.whatNext || []
       }
     ];
 
     return (
-      <div className="grid gap-4 md:grid-cols-3">
-        {sections.map((section, idx) => {
+      <div className="grid gap-6 md:grid-cols-3">{sections.map((section, idx) => {
           const Icon = section.icon;
           const items = Array.isArray(section.items) ? section.items : [];
           
           return (
-            <Card key={idx} className={`${section.bgColor} ${section.borderColor}`}>
+            <Card key={idx} className={`${section.bgColor} border-0 shadow-sm`}>
               <CardHeader className="pb-3">
                 <CardTitle className={`text-sm font-medium ${section.color} flex items-center gap-2`}>
                   <Icon className="w-4 h-4" />
@@ -117,12 +116,12 @@ const SummaryView: React.FC<SummaryViewProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header with actions */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
         <div>
-          <h2 className="text-2xl font-bold">{session?.title || 'Goblin Analysis'}</h2>
-          <div className="flex items-center gap-2 mt-2">
+          <h2 className="text-3xl font-semibold tracking-tight text-foreground">{session?.title || 'Goblin Analysis'}</h2>
+          <div className="flex items-center gap-3 mt-3">
             <Badge variant="outline" className={colors.badge}>{session?.persona_type}</Badge>
             {results?.goblin_gripe_level && (
               <Badge variant="secondary" className={colors.badge}>
@@ -131,11 +130,11 @@ const SummaryView: React.FC<SummaryViewProps> = ({
             )}
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={onCopyLink} variant="outline">
+        <div className="flex gap-3">
+          <Button onClick={onCopyLink} variant="outline" className="border-border hover:bg-accent">
             {copied ? 'Copied!' : 'Copy Link'}
           </Button>
-          <Button onClick={onExport}>
+          <Button onClick={onExport} className="bg-professional-brown hover:bg-professional-brown/90">
             Export Results
           </Button>
         </div>
@@ -143,9 +142,9 @@ const SummaryView: React.FC<SummaryViewProps> = ({
 
       {/* Goblin Feedback Section */}
       {personaData?.analysis && (
-        <Card className={colors.bg}>
-          <CardHeader>
-            <CardTitle className={`flex items-center gap-2 ${colors.primary}`}>
+        <Card className="border-0 shadow-sm bg-card">
+          <CardHeader className="pb-4">
+            <CardTitle className={`flex items-center gap-3 text-xl font-semibold ${colors.primary}`}>
               👾 Goblin Feedback
               {results?.goblin_gripe_level && (
                 <Badge variant="outline" className={colors.badge}>
@@ -154,23 +153,23 @@ const SummaryView: React.FC<SummaryViewProps> = ({
               )}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
             <div>
-              <h4 className="font-semibold mb-2">Analysis:</h4>
-              <p className="whitespace-pre-wrap">{personaData.analysis}</p>
+              <h4 className="font-semibold mb-3 text-foreground">Analysis:</h4>
+              <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">{personaData.analysis}</p>
             </div>
             
             {(personaData.biggestGripe || personaData.wildCard) && (
               <div>
-                <h4 className="font-semibold mb-2 text-red-600">🤬 Biggest Gripe:</h4>
-                <p className="whitespace-pre-wrap">{personaData.biggestGripe || personaData.wildCard || 'No specific gripes identified'}</p>
+                <h4 className="font-semibold mb-3 text-red-600">🤬 Biggest Gripe:</h4>
+                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">{personaData.biggestGripe || personaData.wildCard || 'No specific gripes identified'}</p>
               </div>
             )}
             
             {(personaData.whatMakesGoblinHappy || personaData.experiments) && (
               <div>
-                <h4 className={`font-semibold mb-2 ${colors.primary}`}>😈 What Actually Works:</h4>
-                <p className="whitespace-pre-wrap">
+                <h4 className={`font-semibold mb-3 ${colors.primary}`}>😈 What Actually Works:</h4>
+                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
                   {personaData.whatMakesGoblinHappy || 
                    (Array.isArray(personaData.experiments) ? personaData.experiments.join(", ") : personaData.experiments) || 
                    'Effective approaches identified'}
@@ -180,15 +179,15 @@ const SummaryView: React.FC<SummaryViewProps> = ({
             
             {personaData.goblinWisdom && (
               <div>
-                <h4 className={`font-semibold mb-2 ${colors.primary}`}>💎 Goblin Wisdom:</h4>
-                <p className="whitespace-pre-wrap">{personaData.goblinWisdom}</p>
+                <h4 className={`font-semibold mb-3 ${colors.primary}`}>💎 Goblin Wisdom:</h4>
+                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">{personaData.goblinWisdom}</p>
               </div>
             )}
             
             {personaData.goblinPrediction && (
               <div>
-                <h4 className="font-semibold mb-2 text-blue-600">🔮 Goblin Prediction:</h4>
-                <p className="whitespace-pre-wrap">{personaData.goblinPrediction}</p>
+                <h4 className="font-semibold mb-3 text-blue-600">🔮 Goblin Prediction:</h4>
+                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">{personaData.goblinPrediction}</p>
               </div>
             )}
           </CardContent>
@@ -197,24 +196,24 @@ const SummaryView: React.FC<SummaryViewProps> = ({
 
       {/* Recommendations */}
       {(personaData?.recommendations || (Array.isArray(personaData?.recommendations) && personaData.recommendations.length > 0)) && (
-        <Card className={colors.bg}>
-          <CardHeader>
-            <CardTitle className={`flex items-center gap-2 ${colors.primary}`}>
+        <Card className="border-0 shadow-sm bg-card">
+          <CardHeader className="pb-4">
+            <CardTitle className={`flex items-center gap-3 text-xl font-semibold ${colors.primary}`}>
               🚀 Recommendations
             </CardTitle>
           </CardHeader>
           <CardContent>
             {Array.isArray(personaData.recommendations) ? (
-              <ul className="space-y-2">
+              <ul className="space-y-3">
                 {personaData.recommendations.map((rec: string, idx: number) => (
-                  <li key={idx} className="flex items-start gap-2">
-                    <span className={`${colors.primary} mt-1`}>•</span>
-                    <span>{rec}</span>
+                  <li key={idx} className="flex items-start gap-3">
+                    <span className={`${colors.primary} mt-1 text-lg`}>•</span>
+                    <span className="text-muted-foreground leading-relaxed">{rec}</span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="whitespace-pre-wrap">{personaData.recommendations}</p>
+              <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">{personaData.recommendations}</p>
             )}
           </CardContent>
         </Card>
@@ -222,9 +221,9 @@ const SummaryView: React.FC<SummaryViewProps> = ({
 
       {/* Priority Matrix */}
       {results?.priority_matrix && (
-        <Card>
-          <CardHeader>
-            <CardTitle className={colors.primary}>🎯 Priority Matrix</CardTitle>
+        <Card className="border-0 shadow-sm bg-card">
+          <CardHeader className="pb-4">
+            <CardTitle className={`text-xl font-semibold ${colors.primary}`}>🎯 Priority Matrix</CardTitle>
           </CardHeader>
           <CardContent>
             {renderPriorityMatrix(results.priority_matrix)}
@@ -234,12 +233,12 @@ const SummaryView: React.FC<SummaryViewProps> = ({
 
       {/* Synthesis Summary */}
       {results?.synthesis_summary && (
-        <Card className={colors.bg}>
-          <CardHeader>
-            <CardTitle className={colors.primary}>📋 Synthesis Summary</CardTitle>
+        <Card className="border-0 shadow-sm bg-card">
+          <CardHeader className="pb-4">
+            <CardTitle className={`text-xl font-semibold ${colors.primary}`}>📋 Synthesis Summary</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="whitespace-pre-wrap">{results.synthesis_summary}</p>
+            <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">{results.synthesis_summary}</p>
           </CardContent>
         </Card>
       )}

@@ -107,44 +107,46 @@ const GoblinResults: React.FC = () => {
   const annotationCount = results?.annotations?.length || 0;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'summary' | 'detailed' | 'clarity')}>
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="summary">Summary</TabsTrigger>
-          <TabsTrigger value="detailed">Detailed ({annotationCount})</TabsTrigger>
-          <TabsTrigger value="clarity">Clarity Chat</TabsTrigger>
-        </TabsList>
+    <div className="min-h-screen bg-background">
+      <div className="max-w-7xl mx-auto p-8">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'summary' | 'detailed' | 'clarity')}>
+          <TabsList className="grid w-full grid-cols-3 bg-muted border-0 p-1">
+            <TabsTrigger value="summary" className="text-sm font-medium">Summary</TabsTrigger>
+            <TabsTrigger value="detailed" className="text-sm font-medium">Detailed ({annotationCount})</TabsTrigger>
+            <TabsTrigger value="clarity" className="text-sm font-medium">Clarity Chat</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="summary">
-          <SummaryView
-            results={results}
-            session={session}
-            personaData={personaData}
-            onExport={handleExport}
-            onCopyLink={handleCopyLink}
-            copied={copied}
-          />
-        </TabsContent>
+          <TabsContent value="summary" className="mt-8">
+            <SummaryView
+              results={results}
+              session={session}
+              personaData={personaData}
+              onExport={handleExport}
+              onCopyLink={handleCopyLink}
+              copied={copied}
+            />
+          </TabsContent>
 
-        <TabsContent value="detailed">
-          <DetailedModeView
-            images={images}
-            session={session}
-            results={results}
-            showAnnotations={showAnnotations}
-            currentImageIndex={currentImageIndex}
-            setCurrentImageIndex={setCurrentImageIndex}
-            setShowAnnotations={setShowAnnotations}
-          />
-        </TabsContent>
+          <TabsContent value="detailed" className="mt-8">
+            <DetailedModeView
+              images={images}
+              session={session}
+              results={results}
+              showAnnotations={showAnnotations}
+              currentImageIndex={currentImageIndex}
+              setCurrentImageIndex={setCurrentImageIndex}
+              setShowAnnotations={setShowAnnotations}
+            />
+          </TabsContent>
 
-        <TabsContent value="clarity">
-          <ClarityChat
-            session={session}
-            personaData={personaData}
-          />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="clarity" className="mt-8">
+            <ClarityChat
+              session={session}
+              personaData={personaData}
+            />
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 };
