@@ -266,7 +266,22 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const content = data.content[0]?.text || '';
+    
+    // ✅ CRITICAL DEBUG: Log the actual Claude response
+    console.log('🧠 Claude raw response:', JSON.stringify(data, null, 2));
+    
+    const content = data.content?.[0]?.text || '';
+    
+    // ✅ CRITICAL DEBUG: Check if we got content
+    console.log('📝 Extracted content length:', content.length);
+    console.log('📄 Content preview:', content.substring(0, 200));
+    
+    if (!content) {
+      console.error('❌ CRITICAL: Claude returned no content!');
+      console.error('🔍 Full response structure:', Object.keys(data));
+      throw new Error('Claude returned no content');
+    }
+    
     const processingTime = Date.now() - startTime;
     
     console.log('✅ Claude analysis completed');
