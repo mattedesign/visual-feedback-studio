@@ -83,7 +83,7 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData }) => {
       }
     };
 
-    const loadInitialMessage = () => {
+    const loadInitialMessage = async () => {
       if (!personaData) {
         console.warn('❌ No persona data available for creating initial message');
         return;
@@ -98,16 +98,39 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData }) => {
       const goblinPrediction = personaData.goblinPrediction || "Improve the UX and users will thank you";
       const goblinWisdom = personaData.goblinWisdom || "Good UX speaks for itself";
 
+      const initialMessageContent = `${analysis}\n\n🤬 **My biggest gripe:** ${biggestGripe}\n\n😈 **What I actually like:** ${whatMakesGoblinHappy}\n\n🔮 **My prediction:** ${goblinPrediction}\n\n💎 **Goblin wisdom:** ${goblinWisdom}`;
+
       const initialMessage: ChatMessage = {
         id: 'initial-from-persona',
         role: 'clarity',
-        content: `${analysis}\n\n🤬 **My biggest gripe:** ${biggestGripe}\n\n😈 **What I actually like:** ${whatMakesGoblinHappy}\n\n🔮 **My prediction:** ${goblinPrediction}\n\n💎 **Goblin wisdom:** ${goblinWisdom}`,
+        content: initialMessageContent,
         timestamp: new Date(),
         conversation_stage: 'initial'
       };
       
       console.log('✅ Setting initial message from persona data');
       setMessages([initialMessage]);
+
+      // Save the initial message to the database to ensure persistence
+      try {
+        console.log('💾 Saving initial message to database for persistence');
+        await supabase.functions.invoke('goblin-model-claude-analyzer', {
+          body: {
+            sessionId: session.id,
+            chatMode: false, // This is the initial analysis call
+            prompt: 'Initial analysis', 
+            persona: session?.persona_type || 'clarity',
+            conversationHistory: '',
+            originalAnalysis: personaData,
+            saveInitialOnly: true, // Custom flag to just save initial message
+            initialContent: initialMessageContent
+          }
+        });
+        console.log('✅ Initial message saved to database');
+      } catch (error) {
+        console.warn('⚠️ Failed to save initial message to database:', error);
+        // Continue anyway - the message is still shown in UI
+      }
     };
 
     // Reset messages and load conversation whenever session or persona data changes

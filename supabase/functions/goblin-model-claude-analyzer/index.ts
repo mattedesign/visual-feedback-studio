@@ -31,7 +31,7 @@ serve(async (req) => {
   }
 
   try {
-    const { sessionId, imageUrls, prompt, persona, systemPrompt, visionResults, chatMode, conversationHistory, originalAnalysis } = await req.json();
+    const { sessionId, imageUrls, prompt, persona, systemPrompt, visionResults, chatMode, conversationHistory, originalAnalysis, saveInitialOnly, initialContent } = await req.json();
 
     console.log('🧠 Processing Claude analysis:', {
       sessionId: sessionId?.substring(0, 8),
@@ -117,6 +117,78 @@ serve(async (req) => {
           // Continue with other images - don't let one bad image kill the whole analysis
         }
       }
+    }
+
+    // If we're just saving an initial message, skip Claude API call and analysis
+    if (saveInitialOnly && initialContent) {
+      console.log('📝 Saving initial message only, skipping Claude API call');
+      
+      // Handle conversation persistence for initial message
+      if (sessionId && authHeader) {
+        try {
+          console.log('💾 Persisting initial conversation to database');
+          
+          // Set up Supabase auth for the request
+          await supabase.auth.setSession({
+            access_token: authHeader.replace('Bearer ', ''),
+            refresh_token: ''
+          });
+
+          // Get current user to store user_id
+          const { data: { user } } = await supabase.auth.getUser();
+          
+          if (user) {
+            // Check if initial message already exists
+            const { data: existingMessages, error: checkError } = await supabase
+              .from('goblin_refinement_history')
+              .select('id')
+              .eq('session_id', sessionId)
+              .limit(1);
+
+            const isFirstConversation = !existingMessages || existingMessages.length === 0;
+
+            if (isFirstConversation) {
+              console.log('🎯 Storing initial message for persistence');
+              
+              await supabase
+                .from('goblin_refinement_history')
+                .insert({
+                  session_id: sessionId,
+                  user_id: user.id,
+                  message_order: 1,
+                  role: 'clarity',
+                  content: initialContent,
+                  conversation_stage: 'initial',
+                  model_used: 'claude-sonnet-4-20250514',
+                  processing_time_ms: 0,
+                  metadata: {
+                    used_persona: persona,
+                    is_initial_analysis: true,
+                    save_initial_only: true
+                  }
+                });
+              
+              console.log('✅ Initial message stored for persistence');
+            } else {
+              console.log('⚠️ Initial message already exists, skipping save');
+            }
+          }
+        } catch (persistError) {
+          console.error('⚠️ Failed to persist initial message:', persistError);
+        }
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          sessionId,
+          persona,
+          modelUsed: 'initial-save-only',
+          message: 'Initial message saved successfully',
+          timestamp: new Date().toISOString()
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Build enhanced prompt with vision context or chat context
@@ -252,9 +324,11 @@ serve(async (req) => {
 
           const isFirstConversation = !existingMessages || existingMessages.length === 0;
 
-          if (isFirstConversation && !chatMode) {
-            // This is the initial analysis - store it as the first message
+          if ((isFirstConversation && !chatMode) || saveInitialOnly) {
+            // This is the initial analysis OR we're specifically saving an initial message - store it as the first message
             console.log('🎯 Storing initial analysis as first conversation message');
+            
+            const contentToStore = saveInitialOnly ? initialContent : content;
             
             await supabase
               .from('goblin_refinement_history')
@@ -263,14 +337,15 @@ serve(async (req) => {
                 user_id: user.id,
                 message_order: 1,
                 role: 'clarity',
-                content: content,
+                content: contentToStore,
                 conversation_stage: 'initial',
                 model_used: 'claude-sonnet-4-20250514',
                 processing_time_ms: processingTime,
                 metadata: {
                   original_analysis_data: analysisData,
                   used_persona: persona,
-                  is_initial_analysis: true
+                  is_initial_analysis: true,
+                  save_initial_only: saveInitialOnly || false
                 }
               });
             
