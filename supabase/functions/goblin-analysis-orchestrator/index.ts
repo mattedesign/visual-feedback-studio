@@ -89,9 +89,12 @@ serve(async (req) => {
     }
 
     // Convert file paths to full public URLs for Claude analyzer
+    console.log('🔍 Raw images data from database:', JSON.stringify(images, null, 2));
+    
     const imageUrls = images.map(img => {
       // If file_path is already a full URL, use it directly
       if (img.file_path.startsWith('http')) {
+        console.log(`✅ Using existing full URL: ${img.file_path}`);
         return img.file_path;
       }
       
@@ -103,6 +106,9 @@ serve(async (req) => {
       console.log(`🔗 Converting file path to URL: ${img.file_path} -> ${fullUrl}`);
       return fullUrl;
     });
+
+    console.log('📋 Final imageUrls array being sent to Claude:', JSON.stringify(imageUrls, null, 2));
+    console.log(`📊 Image count: ${imageUrls.length} images ready for analysis`);
 
     console.log('🎯 Orchestrating goblin analysis:', {
       sessionId: sessionId?.substring(0, 8),
@@ -183,15 +189,32 @@ serve(async (req) => {
       throw new Error(`Prompt building failed: ${promptResult.error.message}`);
     }
 
-    // Step 3: Analyze with Claude - FIXED: Use correct parameters
+    // Step 3: Analyze with Claude - FIXED: Enhanced validation and error recovery
+    console.log('🤖 Calling Claude analyzer with verified parameters...');
+    console.log(`📊 Sending ${imageUrls.length} image URLs to Claude analyzer`);
+    
+    // Validate imageUrls before sending
+    const validImageUrls = imageUrls.filter(url => {
+      const isValid = url && typeof url === 'string' && url.trim().length > 0;
+      if (!isValid) {
+        console.warn('⚠️ Filtering out invalid image URL:', url);
+      }
+      return isValid;
+    });
+
+    if (validImageUrls.length === 0) {
+      throw new Error(`No valid image URLs found. Original count: ${imageUrls.length}, Valid count: ${validImageUrls.length}`);
+    }
+
+    console.log(`✅ Validated ${validImageUrls.length} image URLs for Claude analysis`);
+    
     const analysisResult = await supabase.functions.invoke('goblin-model-claude-analyzer', {
       body: {
         sessionId,
-        imageUrls,
+        imageUrls: validImageUrls,  // Use validated URLs
         prompt: promptResult.data.prompt,
         persona,
         chatMode: false  // ✅ CRITICAL: Explicitly set to false for image processing
-        // Note: systemPrompt and visionResults are not used by Claude analyzer
       }
     });
 
