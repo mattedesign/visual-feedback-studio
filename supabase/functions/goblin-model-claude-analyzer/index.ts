@@ -228,10 +228,10 @@ serve(async (req) => {
       };
     }
 
-    // Handle conversation persistence for chat mode
-    if (chatMode && sessionId && authHeader) {
+    // Handle conversation persistence for chat mode AND initial message storage
+    if (sessionId && authHeader) {
       try {
-        console.log('💾 Persisting conversation turn to database with persona:', persona);
+        console.log('💾 Persisting conversation to database with persona:', persona);
         
         // Set up Supabase auth for the request
         await supabase.auth.setSession({
@@ -243,70 +243,107 @@ serve(async (req) => {
         const { data: { user } } = await supabase.auth.getUser();
         
         if (user) {
-          // Get the next message order number for this session
-          const { data: lastMessage } = await supabase
+          // Check if this is the first time we're storing conversation history for this session
+          const { data: existingMessages, error: checkError } = await supabase
             .from('goblin_refinement_history')
-            .select('message_order')
+            .select('id')
             .eq('session_id', sessionId)
-            .order('message_order', { ascending: false })
-            .limit(1)
-            .single();
+            .limit(1);
 
-          const nextOrder = (lastMessage?.message_order || 0) + 1;
+          const isFirstConversation = !existingMessages || existingMessages.length === 0;
 
-          // Store user message first
-          const userInsertResult = await supabase
-            .from('goblin_refinement_history')
-            .insert({
-              session_id: sessionId,
-              user_id: user.id,
-              message_order: nextOrder,
-              role: 'user',
-              content: prompt,
-              conversation_stage: determineConversationStage(nextOrder),
-              model_used: 'claude-sonnet-4-20250514',
-              processing_time_ms: 0
-            });
+          if (isFirstConversation && !chatMode) {
+            // This is the initial analysis - store it as the first message
+            console.log('🎯 Storing initial analysis as first conversation message');
+            
+            await supabase
+              .from('goblin_refinement_history')
+              .insert({
+                session_id: sessionId,
+                user_id: user.id,
+                message_order: 1,
+                role: 'clarity',
+                content: content,
+                conversation_stage: 'initial',
+                model_used: 'claude-sonnet-4-20250514',
+                processing_time_ms: processingTime,
+                metadata: {
+                  original_analysis_data: analysisData,
+                  used_persona: persona,
+                  is_initial_analysis: true
+                }
+              });
+            
+            console.log('✅ Initial analysis stored as conversation seed');
+          } else if (chatMode) {
+            // This is a chat interaction - continue conversation
+            console.log('💬 Storing chat interaction');
+            
+            // Get the next message order number for this session
+            const { data: lastMessage } = await supabase
+              .from('goblin_refinement_history')
+              .select('message_order')
+              .eq('session_id', sessionId)
+              .order('message_order', { ascending: false })
+              .limit(1)
+              .single();
 
-          if (userInsertResult.error) {
-            console.error('Failed to insert user message:', userInsertResult.error);
-          } else {
-            console.log('✅ User message stored successfully for persona:', persona);
+            const nextOrder = (lastMessage?.message_order || 0) + 1;
+
+            // Store user message first
+            const userInsertResult = await supabase
+              .from('goblin_refinement_history')
+              .insert({
+                session_id: sessionId,
+                user_id: user.id,
+                message_order: nextOrder,
+                role: 'user',
+                content: prompt,
+                conversation_stage: determineConversationStage(nextOrder),
+                model_used: 'claude-sonnet-4-20250514',
+                processing_time_ms: 0
+              });
+
+            if (userInsertResult.error) {
+              console.error('Failed to insert user message:', userInsertResult.error);
+            } else {
+              console.log('✅ User message stored successfully for persona:', persona);
+            }
+
+            // Analyze response for intelligence scoring
+            const intelligenceScoring = await analyzeResponseIntelligence(content, prompt, persona, supabase);
+
+            // Store AI response with intelligence metadata
+            const aiInsertResult = await supabase
+              .from('goblin_refinement_history')
+              .insert({
+                session_id: sessionId,
+                user_id: user.id,
+                message_order: nextOrder + 1,
+                role: 'clarity',
+                content: content,
+                conversation_stage: determineConversationStage(nextOrder + 1),
+                refinement_score: intelligenceScoring.refinement_score,
+                parsed_problems: intelligenceScoring.parsed_problems,
+                suggested_fixes: intelligenceScoring.suggested_fixes,
+                reasoning: intelligenceScoring.reasoning,
+                model_used: 'claude-sonnet-4-20250514',
+                processing_time_ms: processingTime,
+                metadata: {
+                  original_analysis_data: analysisData,
+                  scoring_metadata: intelligenceScoring.metadata,
+                  used_persona: persona
+                }
+              });
+
+            if (aiInsertResult.error) {
+              console.error('Failed to insert AI message:', aiInsertResult.error);
+            } else {
+              console.log('✅ AI response stored successfully for persona:', persona);
+            }
+
+            console.log('✅ Chat conversation turn persisted successfully');
           }
-
-          // Analyze response for intelligence scoring
-          const intelligenceScoring = await analyzeResponseIntelligence(content, prompt, persona, supabase);
-
-          // Store AI response with intelligence metadata
-          const aiInsertResult = await supabase
-            .from('goblin_refinement_history')
-            .insert({
-              session_id: sessionId,
-              user_id: user.id,
-              message_order: nextOrder + 1,
-              role: 'clarity',
-              content: content,
-              conversation_stage: determineConversationStage(nextOrder + 1),
-              refinement_score: intelligenceScoring.refinement_score,
-              parsed_problems: intelligenceScoring.parsed_problems,
-              suggested_fixes: intelligenceScoring.suggested_fixes,
-              reasoning: intelligenceScoring.reasoning,
-              model_used: 'claude-sonnet-4-20250514',
-              processing_time_ms: processingTime,
-              metadata: {
-                original_analysis_data: analysisData,
-                scoring_metadata: intelligenceScoring.metadata,
-                used_persona: persona // Track which persona was used
-              }
-            });
-
-          if (aiInsertResult.error) {
-            console.error('Failed to insert AI message:', aiInsertResult.error);
-          } else {
-            console.log('✅ AI response stored successfully for persona:', persona);
-          }
-
-          console.log('✅ Conversation turn persisted successfully');
         }
       } catch (persistError) {
         console.error('⚠️ Failed to persist conversation:', persistError);

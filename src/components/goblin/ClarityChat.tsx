@@ -29,13 +29,16 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData }) => {
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // Load persistent conversation history
+  // Load persistent conversation history with improved state management
   useEffect(() => {
     const loadConversationHistory = async () => {
-      if (!session?.id) return;
+      if (!session?.id) {
+        console.warn('❌ No session ID available for loading conversation history');
+        return;
+      }
 
       try {
-        console.log('📚 Loading persistent conversation history...');
+        console.log('📚 Loading persistent conversation history for session:', session.id);
         
         // Fetch conversation history from the database
         const { data: historyData, error } = await supabase
@@ -45,11 +48,13 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData }) => {
           .order('message_order', { ascending: true });
 
         if (error) {
-          console.warn('Failed to load conversation history:', error);
+          console.warn('⚠️ Failed to load conversation history:', error);
           // Fall back to initial message from persona data
           loadInitialMessage();
           return;
         }
+
+        console.log(`🔍 Found ${historyData?.length || 0} messages in database for session ${session.id}`);
 
         if (historyData && historyData.length > 0) {
           // Convert database records to ChatMessage format
@@ -64,22 +69,27 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData }) => {
             suggested_fixes: record.suggested_fixes
           }));
 
+          console.log('✅ Setting loaded messages from database:', loadedMessages.length);
           setMessages(loadedMessages);
-          console.log(`✅ Loaded ${loadedMessages.length} messages from conversation history`);
         } else {
-          // No history found, start with initial message
+          // No history found in database, check if we have persona data to create initial message
+          console.log('📝 No conversation history found, creating initial message from persona data');
           loadInitialMessage();
         }
       } catch (error) {
-        console.error('Error loading conversation history:', error);
+        console.error('❌ Error loading conversation history:', error);
+        // Always fall back to initial message on error
         loadInitialMessage();
       }
     };
 
     const loadInitialMessage = () => {
-      if (!personaData) return;
+      if (!personaData) {
+        console.warn('❌ No persona data available for creating initial message');
+        return;
+      }
 
-      console.log('🔧 Creating initial message from persona data');
+      console.log('🔧 Creating initial message from persona data for persona:', session?.persona_type);
       
       // Build initial message with fallbacks for missing fields
       const analysis = personaData.analysis || "Analysis completed";
@@ -89,17 +99,25 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData }) => {
       const goblinWisdom = personaData.goblinWisdom || "Good UX speaks for itself";
 
       const initialMessage: ChatMessage = {
-        id: 'initial',
+        id: 'initial-from-persona',
         role: 'clarity',
         content: `${analysis}\n\n🤬 **My biggest gripe:** ${biggestGripe}\n\n😈 **What I actually like:** ${whatMakesGoblinHappy}\n\n🔮 **My prediction:** ${goblinPrediction}\n\n💎 **Goblin wisdom:** ${goblinWisdom}`,
         timestamp: new Date(),
         conversation_stage: 'initial'
       };
+      
+      console.log('✅ Setting initial message from persona data');
       setMessages([initialMessage]);
     };
 
+    // Only load if we have a session and no messages currently loaded
     if (session?.id && messages.length === 0) {
+      console.log('🚀 Triggering conversation history load for session:', session.id);
       loadConversationHistory();
+    } else if (session?.id && messages.length > 0) {
+      console.log('⏭️ Skipping conversation load - messages already present:', messages.length);
+    } else {
+      console.log('⏸️ Not loading conversation - missing session ID or conditions not met');
     }
   }, [session?.id, personaData]);
 
@@ -142,16 +160,18 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData }) => {
 
       if (error) throw error;
 
-      // Reload messages from database to get updated intelligence data
+      // Reload messages from database to get updated intelligence data while preserving state
       setTimeout(async () => {
         try {
+          console.log('🔄 Reloading conversation history after new message');
+          
           const { data: historyData, error: reloadError } = await supabase
             .from('goblin_refinement_history')
             .select('*')
             .eq('session_id', session.id)
             .order('message_order', { ascending: true });
 
-          if (!reloadError && historyData) {
+          if (!reloadError && historyData && historyData.length > 0) {
             const reloadedMessages = historyData.map(record => ({
               id: record.id,
               role: record.role as 'user' | 'clarity',
@@ -162,8 +182,19 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData }) => {
               parsed_problems: record.parsed_problems,
               suggested_fixes: record.suggested_fixes
             }));
-            setMessages(reloadedMessages);
+
+            // Only update if we have more messages than before (to avoid losing state)
+            setMessages(prevMessages => {
+              if (reloadedMessages.length >= prevMessages.length) {
+                console.log('✅ Updating messages with enhanced data from database');
+                return reloadedMessages;
+              } else {
+                console.log('⚠️ Database has fewer messages than current state, keeping current');
+                return prevMessages;
+              }
+            });
           } else {
+            console.warn('❌ Failed to reload from database, adding fallback response');
             // Fallback to basic response if reload fails
             const clarityResponse: ChatMessage = {
               id: Date.now().toString() + '_clarity',
@@ -174,7 +205,7 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData }) => {
             setMessages(prev => [...prev, clarityResponse]);
           }
         } catch (reloadError) {
-          console.error('Failed to reload messages:', reloadError);
+          console.error('❌ Failed to reload messages:', reloadError);
           // Fallback to basic response
           const clarityResponse: ChatMessage = {
             id: Date.now().toString() + '_clarity',
@@ -184,7 +215,7 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData }) => {
           };
           setMessages(prev => [...prev, clarityResponse]);
         }
-      }, 2000); // Wait 2 seconds for database persistence to complete
+      }, 1500); // Reduced wait time for better UX
     } catch (error) {
       console.error('Chat error:', error);
       toast.error('Failed to send message to Clarity');
