@@ -25,6 +25,9 @@ export const useAuth = () => {
   useEffect(() => {
     let mounted = true;
     let profileFetchAbortController: AbortController | null = null;
+    let debounceTimer: NodeJS.Timeout | null = null;
+    let lastSessionId: string | null = null;
+    let initializationComplete = false;
 
     // Helper function to safely update auth state
     const updateAuthState = (updates: Partial<AuthState>) => {
@@ -53,9 +56,27 @@ export const useAuth = () => {
       }
     };
 
-    // Set up auth state listener - FIXED: No async callback
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+    // Debounced auth state handler to prevent rapid oscillations
+    const handleAuthStateChange = (event: string, session: any) => {
+      if (!mounted) return;
+      
+      // Check if session actually changed to prevent duplicate updates
+      const newSessionId = session?.user?.id || null;
+      const sessionChanged = newSessionId !== lastSessionId;
+      
+      if (!sessionChanged && initializationComplete) {
+        return; // Skip duplicate session updates
+      }
+      
+      lastSessionId = newSessionId;
+      
+      // Clear previous debounce timer
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+      
+      // Debounce auth state changes to prevent rapid oscillations
+      debounceTimer = setTimeout(() => {
         if (!mounted) return;
         
         console.log('🔐 Auth state change:', { event, hasSession: !!session, hasUser: !!session?.user });
@@ -86,10 +107,10 @@ export const useAuth = () => {
             error: null
           });
         }
-      }
-    );
+      }, 100); // 100ms debounce to prevent rapid state changes
+    };
 
-    // Initialize session check - FIXED: Prevent duplicate profile fetches
+    // Initialize session check FIRST, then set up listener
     const initialize = async () => {
       if (!mounted) return;
       
@@ -107,6 +128,8 @@ export const useAuth = () => {
           });
         } else if (session?.user) {
           console.log('✅ Found existing session');
+          lastSessionId = session.user.id;
+          
           // Set basic auth state first
           updateAuthState({
             session,
@@ -130,6 +153,8 @@ export const useAuth = () => {
             error: null
           });
         }
+        
+        initializationComplete = true;
       } catch (err) {
         console.error('❌ Auth initialization error:', err);
         if (mounted) {
@@ -138,17 +163,35 @@ export const useAuth = () => {
             loading: false
           });
         }
+        initializationComplete = true;
       }
     };
 
-    initialize();
+    // Set up auth state listener AFTER initialization
+    const setupListener = () => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
+      return subscription;
+    };
+
+    // Initialize first, then set up listener
+    let subscription: any;
+    initialize().then(() => {
+      if (mounted) {
+        subscription = setupListener();
+      }
+    });
 
     return () => {
       mounted = false;
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
       if (profileFetchAbortController) {
         profileFetchAbortController.abort();
       }
-      subscription.unsubscribe();
+      if (subscription) {
+        subscription.unsubscribe();
+      }
     };
   }, []);
 

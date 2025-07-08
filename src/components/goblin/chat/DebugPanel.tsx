@@ -44,22 +44,30 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({ sessionId, persona }) =>
     console.log(`🐛 [${type.toUpperCase()}] ${message}`, data);
   };
 
-  // Monitor authentication status - FIXED: Prevent continuous loops
+  // Monitor authentication status - OPTIMIZED: Reduced frequency of auth logging
   useEffect(() => {
-    // Only log auth changes, don't create excessive events
     const newAuthStatus = user ? 'authenticated' : 'unauthenticated';
     
-    // Only update and log if status actually changed
+    // Only update and log if status actually changed, and throttle logging
     if (newAuthStatus !== authStatus) {
       setAuthStatus(newAuthStatus);
       
-      if (user) {
-        addEvent('auth', `User authenticated: ${user.id.substring(0, 8)}...`, { userId: user.id }, 'success');
-      } else {
-        addEvent('auth', 'User not authenticated', {}, 'warn');
+      // Throttle auth status logging to prevent spam
+      const now = Date.now();
+      const lastAuthLog = localStorage.getItem('lastAuthLogTime');
+      const shouldLog = !lastAuthLog || (now - parseInt(lastAuthLog)) > 5000; // 5 second throttle
+      
+      if (shouldLog) {
+        localStorage.setItem('lastAuthLogTime', now.toString());
+        
+        if (user) {
+          addEvent('auth', `User authenticated: ${user.id.substring(0, 8)}...`, { userId: user.id }, 'success');
+        } else {
+          addEvent('auth', 'User not authenticated', {}, 'warn');
+        }
       }
     }
-  }, [user, authStatus]); // Added authStatus to deps to prevent loops
+  }, [user]); // Removed authStatus from deps to prevent infinite loops
 
   // Test database connectivity
   const testDatabaseConnection = async () => {
