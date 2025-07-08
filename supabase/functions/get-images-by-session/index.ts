@@ -28,7 +28,7 @@ serve(async (req) => {
     // Fetch images for the session - simple and clean
     const { data: images, error: imagesError } = await supabase
       .from('goblin_analysis_images')
-      .select('file_path, upload_order, screen_type, vision_metadata, file_size')
+      .select('id, file_path, file_name, upload_order, screen_type, vision_metadata, file_size')
       .eq('session_id', sessionId)
       .order('upload_order', { ascending: true });
 
@@ -36,24 +36,28 @@ serve(async (req) => {
       throw new Error(`Failed to fetch images: ${imagesError.message}`);
     }
 
-    // Simple URL conversion - no over-engineering
-    const processedImages = (images || []).map(img => {
-      let file_path = img.file_path;
+    // Transform images to match expected frontend format
+    const validImages = (images || []).map(img => {
+      let url = img.file_path;
       
       // Convert relative path to full URL if needed
-      if (!file_path.startsWith('http')) {
+      if (!url.startsWith('http')) {
         const supabaseUrl = Deno.env.get('SUPABASE_URL');
-        const cleanPath = file_path.replace(/^\/+/, '');
+        const cleanPath = url.replace(/^\/+/, '');
         
         if (!cleanPath.startsWith('analysis-images/')) {
-          file_path = `${supabaseUrl}/storage/v1/object/public/analysis-images/${cleanPath}`;
+          url = `${supabaseUrl}/storage/v1/object/public/analysis-images/${cleanPath}`;
         } else {
-          file_path = `${supabaseUrl}/storage/v1/object/public/${cleanPath}`;
+          url = `${supabaseUrl}/storage/v1/object/public/${cleanPath}`;
         }
       }
 
       return {
-        file_path,
+        id: img.id || `img-${img.upload_order}`,
+        url, // Transform file_path to url
+        file_path: url, // Keep for backward compatibility
+        fileName: img.file_name || `image-${img.upload_order}`, // Transform to fileName
+        file_name: img.file_name, // Keep for backward compatibility
         upload_order: img.upload_order,
         screen_type: img.screen_type,
         vision_metadata: img.vision_metadata,
@@ -61,10 +65,21 @@ serve(async (req) => {
       };
     });
 
-    console.log(`📸 Returning ${processedImages.length} images for session ${sessionId.substring(0, 8)}`);
+    const response = {
+      validImages,
+      summary: {
+        total: validImages.length,
+        sessionId: sessionId.substring(0, 8),
+        hydrationComplete: true,
+        goblinPrompt: "🧙‍♂️ Images hydrated by goblin magic! Ready for UX scrutiny."
+      }
+    };
+
+    console.log(`📸 Hydrated ${validImages.length} images for session ${sessionId.substring(0, 8)}`);
+    console.log("🧠 Hydration response prepared with goblin magic");
 
     return new Response(
-      JSON.stringify(processedImages),
+      JSON.stringify(response),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

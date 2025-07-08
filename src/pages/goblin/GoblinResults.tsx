@@ -35,21 +35,26 @@ const GoblinResults: React.FC = () => {
         if (error) throw error;
         setResults(data);
 
-        const { data: imageData, error: imageError } = await supabase
-          .from('goblin_analysis_images')
-          .select('*')
-          .eq('session_id', sessionId)
-          .order('upload_order');
+        // ✅ USE HYDRATION: Call edge function instead of direct database query
+        const { data: imageResponse, error: imageError } = await supabase.functions.invoke('get-images-by-session', {
+          body: { sessionId }
+        });
 
         if (imageError) throw imageError;
         
-        // ✅ ENHANCED: Debug image URLs and accessibility
-        console.log('🎯 GoblinResults - Loaded images:', imageData?.length);
-        if (imageData && imageData.length > 0) {
-          logImageDebugInfo(imageData, 'GoblinResults - Loaded Images');
+        const images = imageResponse?.validImages || [];
+        
+        // ✅ HYDRATION DEBUGGING: Add requested console.log
+        console.log("🧠 Hydration response", images);
+        console.log('🎯 GoblinResults - Hydrated images:', images.length);
+        console.log('🧙‍♂️ Goblin magic summary:', imageResponse?.summary);
+        
+        // Enhanced debug logging
+        if (images && images.length > 0) {
+          logImageDebugInfo(images, 'GoblinResults - Hydrated Images');
         }
         
-        setImages(imageData);
+        setImages(images);
       } catch (error) {
         console.error('Failed to load results:', error);
       } finally {

@@ -79,7 +79,7 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
   console.log(`📋 Filtered annotations for image ${currentImageIndex + 1}:`, {
     totalAvailable: allAnnotations.length,
     filtered: annotations.length,
-    currentImage: currentImage?.file_name
+    currentImage: currentImage?.fileName || currentImage?.file_name
   });
 
   // Get total feedback anchors count
@@ -104,20 +104,20 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
       <div className="flex gap-2 overflow-x-auto mb-4">
         {images.map((img, idx) => (
           <button
-            key={img.id}
+            key={img.id || `img-${idx}`}
             onClick={() => setCurrentImageIndex(idx)}
             className={`w-20 h-20 rounded border-2 overflow-hidden ${
               idx === currentImageIndex ? 'border-green-500' : 'border-gray-300'
             }`}
           >
-            <img src={img.file_path} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+            <img src={img.url || img.file_path} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
           </button>
         ))}
       </div>
       
       <div className="relative w-full aspect-video bg-gray-900 rounded-lg overflow-hidden">
         <img
-          src={currentImage?.file_path}
+          src={currentImage?.url || currentImage?.file_path}
           alt={`Screen ${currentImageIndex + 1}`}
           className="w-full h-full object-contain"
         />
