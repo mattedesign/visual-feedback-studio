@@ -177,6 +177,53 @@ const SummaryView: React.FC<SummaryViewProps> = ({
                'The goblin is identifying what makes them happy...'}
             </p>
           </div>
+
+          {/* Strategic persona specific fields */}
+          {personaData?.businessImpact && (
+            <div>
+              <h4 className="font-semibold mb-3 text-emerald-600">💼 Business Impact:</h4>
+              <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+                {personaData.businessImpact}
+              </p>
+            </div>
+          )}
+
+          {personaData?.implementation && (
+            <div>
+              <h4 className="font-semibold mb-3 text-blue-600">⚙️ Implementation Strategy:</h4>
+              <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+                {personaData.implementation}
+              </p>
+            </div>
+          )}
+
+          {personaData?.visualStrategy && Array.isArray(personaData.visualStrategy) && personaData.visualStrategy.length > 0 && (
+            <div>
+              <h4 className="font-semibold mb-3 text-purple-600">🎨 Visual Strategy:</h4>
+              <ul className="space-y-2">
+                {personaData.visualStrategy.map((strategy: string, idx: number) => (
+                  <li key={idx} className="flex items-start gap-2 text-sm">
+                    <span className="text-purple-600 mt-1">•</span>
+                    <span className="text-muted-foreground">{strategy}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {personaData?.competitiveVisualEdge && Array.isArray(personaData.competitiveVisualEdge) && personaData.competitiveVisualEdge.length > 0 && (
+            <div>
+              <h4 className="font-semibold mb-3 text-orange-600">🏆 Competitive Visual Edge:</h4>
+              <ul className="space-y-2">
+                {personaData.competitiveVisualEdge.map((edge: string, idx: number) => (
+                  <li key={idx} className="flex items-start gap-2 text-sm">
+                    <span className="text-orange-600 mt-1">•</span>
+                    <span className="text-muted-foreground">{edge}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           
           <div>
             <h4 className={`font-semibold mb-3 ${colors.primary}`}>💎 Goblin Wisdom:</h4>

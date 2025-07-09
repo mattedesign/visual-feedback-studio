@@ -21,6 +21,12 @@ interface PersonaData {
   goblinPrediction?: string;
   wildCard?: string;
   experiments?: string | string[];
+  // Strategic persona specific fields
+  businessImpact?: string;
+  implementation?: string;
+  visualStrategy?: string[];
+  competitiveVisualEdge?: string[];
+  metrics?: string[];
 }
 
 const GoblinResults: React.FC = () => {
@@ -210,7 +216,12 @@ const GoblinResults: React.FC = () => {
           biggestGripe: parsed.biggestGripe || '',
           whatMakesGoblinHappy: parsed.whatMakesGoblinHappy || '',
           goblinWisdom: parsed.goblinWisdom || '',
-          goblinPrediction: parsed.goblinPrediction || ''
+          goblinPrediction: parsed.goblinPrediction || '',
+          businessImpact: parsed.businessImpact || '',
+          implementation: parsed.implementation || '',
+          visualStrategy: parsed.visualStrategy || [],
+          competitiveVisualEdge: parsed.competitiveVisualEdge || [],
+          metrics: parsed.metrics || []
         };
         console.log('✅ PARSED JSON STRING: Successfully extracted structured data', {
           analysisLength: personaData.analysis?.length,
@@ -243,17 +254,33 @@ const GoblinResults: React.FC = () => {
     // Check if the object has a nested analysis string that might be JSON
     let analysisValue = rawPersonaData.analysis;
     let nestedRecommendations = rawPersonaData.recommendations || [];
+    let nestedBusinessImpact = '';
+    let nestedImplementation = '';
+    let nestedVisualStrategy = [];
+    let nestedCompetitiveVisualEdge = [];
     
     if (typeof analysisValue === 'string' && analysisValue.includes('"analysis":')) {
       console.log('🔍 Found nested JSON in analysis field, trying to parse...');
       try {
         const parsed = JSON.parse(analysisValue);
         analysisValue = parsed.analysis || analysisValue;
-        // Also extract nested recommendations if they exist
+        // Extract all nested fields for strategic persona
         if (parsed.recommendations && Array.isArray(parsed.recommendations)) {
           nestedRecommendations = parsed.recommendations;
         }
-        console.log('✅ Successfully parsed nested JSON, extracted analysis and recommendations');
+        if (parsed.businessImpact) {
+          nestedBusinessImpact = parsed.businessImpact;
+        }
+        if (parsed.implementation) {
+          nestedImplementation = parsed.implementation;
+        }
+        if (parsed.visualStrategy && Array.isArray(parsed.visualStrategy)) {
+          nestedVisualStrategy = parsed.visualStrategy;
+        }
+        if (parsed.competitiveVisualEdge && Array.isArray(parsed.competitiveVisualEdge)) {
+          nestedCompetitiveVisualEdge = parsed.competitiveVisualEdge;
+        }
+        console.log('✅ Successfully parsed nested JSON, extracted analysis and strategic fields');
       } catch (nestedParseError) {
         console.log('⚠️ Failed to parse nested JSON, using as-is:', nestedParseError.message);
       }
@@ -268,13 +295,25 @@ const GoblinResults: React.FC = () => {
     const extractedGoblinWisdom = rawPersonaData.goblinWisdom || '';
     const extractedGoblinPrediction = rawPersonaData.goblinPrediction || '';
     
+    // Extract strategic persona specific fields
+    const extractedBusinessImpact = nestedBusinessImpact || rawPersonaData.businessImpact || '';
+    const extractedImplementation = nestedImplementation || rawPersonaData.implementation || '';
+    const extractedVisualStrategy = nestedVisualStrategy.length > 0 ? nestedVisualStrategy : (rawPersonaData.visualStrategy || []);
+    const extractedCompetitiveVisualEdge = nestedCompetitiveVisualEdge.length > 0 ? nestedCompetitiveVisualEdge : (rawPersonaData.competitiveVisualEdge || []);
+    const extractedMetrics = rawPersonaData.metrics || [];
+    
     personaData = {
       analysis: extractedAnalysis,
       recommendations: extractedRecommendations,
       biggestGripe: extractedBiggestGripe,
       whatMakesGoblinHappy: extractedWhatMakesGoblinHappy,
       goblinWisdom: extractedGoblinWisdom,
-      goblinPrediction: extractedGoblinPrediction
+      goblinPrediction: extractedGoblinPrediction,
+      businessImpact: extractedBusinessImpact,
+      implementation: extractedImplementation,
+      visualStrategy: extractedVisualStrategy,
+      competitiveVisualEdge: extractedCompetitiveVisualEdge,
+      metrics: extractedMetrics
     };
     
     console.log('✅ OBJECT FORMAT: Extracted persona data successfully');
