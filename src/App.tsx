@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useState } from "react";
 import GoblinDashboard from "./pages/GoblinDashboard";
 import Archive from "./pages/Archive";
 import Analysis from "./pages/Analysis";
@@ -25,12 +25,23 @@ import { useAuth } from "@/hooks/useAuth";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
+import { TopNavigation } from "@/components/layout/TopNavigation";
+import { useIsMobile } from "@/hooks/use-mobile";
 const queryClient = new QueryClient();
 const App = () => {
   const {
     user,
     signOut
   } = useAuth();
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  const handleMobileMenuToggle = () => {
+    setIsMobileSidebarOpen(!isMobileSidebarOpen);
+  };
+
+  const handleMobileSidebarClose = () => {
+    setIsMobileSidebarOpen(false);
+  };
   return <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
@@ -45,10 +56,19 @@ const App = () => {
                 {/* Protected routes with sidebar layout */}
                 <Route path="/*" element={<AuthGuard>
                     <>
-                      <AppSidebar />
-                      <SidebarInset className="ml-[16px] mr-0 bg-transparent mx-0">
+                      <AppSidebar 
+                        isMobileOpen={isMobileSidebarOpen}
+                        onMobileClose={handleMobileSidebarClose}
+                      />
+                      <SidebarInset className="ml-0 md:ml-[16px] mr-0 bg-transparent mx-0">
+                        <TopNavigation 
+                          user={user} 
+                          onSignOut={signOut}
+                          onMobileMenuToggle={handleMobileMenuToggle}
+                          isMobileSidebarOpen={isMobileSidebarOpen}
+                        />
                         {/* Main content area */}
-                        <div className="flex flex-col items-start flex-1 self-stretch rounded-[20px] border-8 overflow-auto m-4 bg-white" style={{
+                        <div className="flex flex-col items-start flex-1 self-stretch rounded-[20px] border-8 overflow-auto m-2 md:m-4 bg-white" style={{
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'flex-start',

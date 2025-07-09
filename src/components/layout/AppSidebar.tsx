@@ -12,7 +12,8 @@ import {
   Database,
   User,
   ChevronDown,
-  LogOut
+  LogOut,
+  X
 } from 'lucide-react';
 import {
   Sidebar,
@@ -33,6 +34,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const mainNavItems = [
   {
@@ -66,11 +68,17 @@ const bottomNavItems = [
   }
 ];
 
-export function AppSidebar() {
+interface AppSidebarProps {
+  isMobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
+
+export function AppSidebar({ isMobileOpen, onMobileClose }: AppSidebarProps) {
   const { state } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
   const collapsed = state === 'collapsed';
+  const isMobile = useIsMobile();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { signOut } = useAuth();
   const navigate = useNavigate();
@@ -79,8 +87,19 @@ export function AppSidebar() {
     try {
       await signOut();
       navigate('/auth');
+      // Close mobile sidebar on logout
+      if (isMobile && onMobileClose) {
+        onMobileClose();
+      }
     } catch (error) {
       console.error('Logout failed:', error);
+    }
+  };
+
+  const handleNavClick = () => {
+    // Close mobile sidebar when navigating
+    if (isMobile && onMobileClose) {
+      onMobileClose();
     }
   };
 
@@ -98,23 +117,55 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar variant="sidebar" collapsible="icon">
-      <SidebarContent className="flex flex-col h-full">
-        {/* Logo/Header */}
-        <div className={`p-4 ${collapsed ? 'px-2' : ''}`}>
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <div className="text-2xl flex-shrink-0">👾</div>
-              {!collapsed && (
-                <div className="flex flex-col">
-                  <span className="font-semibold text-sm">Goblin UX</span>
-                  <span className="text-xs text-muted-foreground">Analysis Studio</span>
-                </div>
+    <>
+      {/* Mobile overlay */}
+      {isMobile && isMobileOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={onMobileClose}
+        />
+      )}
+      
+      <Sidebar 
+        variant="sidebar" 
+        collapsible="icon"
+        className={`${
+          isMobile 
+            ? `fixed top-0 left-0 h-full z-50 transform transition-transform duration-300 ease-in-out ${
+                isMobileOpen ? 'translate-x-0' : '-translate-x-full'
+              } md:relative md:translate-x-0 md:z-auto`
+            : ''
+        }`}
+      >
+        <SidebarContent className="flex flex-col h-full">
+          {/* Logo/Header */}
+          <div className={`p-4 ${collapsed ? 'px-2' : ''}`}>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="text-2xl flex-shrink-0">👾</div>
+                {!collapsed && (
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-sm">Goblin UX</span>
+                    <span className="text-xs text-muted-foreground">Analysis Studio</span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Mobile close button */}
+              {isMobile && onMobileClose ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onMobileClose}
+                  className="h-6 w-6 p-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              ) : (
+                <SidebarTrigger className="h-6 w-6" />
               )}
             </div>
-            <SidebarTrigger className="h-6 w-6" />
           </div>
-        </div>
 
         {/* Main Navigation */}
         <SidebarGroup className="flex-1">
@@ -126,11 +177,12 @@ export function AppSidebar() {
               {mainNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink 
-                      to={item.url} 
-                      className={getNavClassName(isActive(item.url))}
-                      end={item.url === '/'}
-                    >
+                     <NavLink 
+                       to={item.url} 
+                       className={getNavClassName(isActive(item.url))}
+                       end={item.url === '/'}
+                       onClick={handleNavClick}
+                     >
                        <div className="flex items-center gap-2">
                          {collapsed ? (
                            <span className="text-lg">{item.emoji}</span>
@@ -166,10 +218,11 @@ export function AppSidebar() {
                {bottomNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink 
-                      to={item.url} 
-                      className={getNavClassName(isActive(item.url))}
-                    >
+                     <NavLink 
+                       to={item.url} 
+                       className={getNavClassName(isActive(item.url))}
+                       onClick={handleNavClick}
+                     >
                       <item.icon className="h-4 w-4 flex-shrink-0" />
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>
@@ -218,5 +271,6 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>
+    </>
   );
 }
