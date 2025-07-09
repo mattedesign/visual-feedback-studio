@@ -50,3 +50,21 @@ verify_jwt = true
 
 [functions.test-claude-auth]
 verify_jwt = true
+
+[functions.goblin-analysis-orchestrator]
+verify_jwt = true
+
+[functions.goblin-model-claude-analyzer]
+verify_jwt = true
+
+[functions.goblin-model-synthesis]
+verify_jwt = true
+
+[functions.goblin-persona-prompt-builder]
+verify_jwt = true
+
+[functions.goblin-vision-screen-detector]
+verify_jwt = true
+
+[functions.get-images-by-session]
+verify_jwt = true
