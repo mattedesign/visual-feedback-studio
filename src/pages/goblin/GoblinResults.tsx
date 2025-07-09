@@ -26,14 +26,23 @@ const GoblinResults: React.FC = () => {
       if (!sessionId) return;
 
       try {
+        // Fix: Handle multiple results by getting the most recent one
         const { data, error } = await supabase
           .from('goblin_analysis_results')
           .select(`*, goblin_analysis_sessions (*)`)
           .eq('session_id', sessionId)
-          .single();
+          .order('created_at', { ascending: false })
+          .limit(1);
 
         if (error) throw error;
-        setResults(data);
+        
+        // Get the first (most recent) result
+        const latestResult = data?.[0] || null;
+        if (!latestResult) {
+          throw new Error('No results found for this session');
+        }
+        
+        setResults(latestResult);
 
         // ✅ USE HYDRATION: Call edge function instead of direct database query
         const { data: imageResponse, error: imageError } = await supabase.functions.invoke('get-images-by-session', {
@@ -57,6 +66,7 @@ const GoblinResults: React.FC = () => {
         setImages(images);
       } catch (error) {
         console.error('Failed to load results:', error);
+        toast.error('Failed to load analysis results');
       } finally {
         setLoading(false);
       }
