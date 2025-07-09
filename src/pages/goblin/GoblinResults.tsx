@@ -111,8 +111,20 @@ const GoblinResults: React.FC = () => {
     hasPersonaFeedback: !!results?.persona_feedback,
     personaFeedbackKeys: results?.persona_feedback ? Object.keys(results.persona_feedback) : [],
     fullPersonaFeedback: results?.persona_feedback,
-    hasSynthesis: !!results?.synthesis_summary
+    hasSynthesis: !!results?.synthesis_summary,
+    sessionId: sessionId
   });
+  
+  // Additional detailed logging for debugging
+  if (results?.persona_feedback) {
+    console.log('📊 DETAILED PERSONA FEEDBACK ANALYSIS:', {
+      personaFeedbackType: typeof results.persona_feedback,
+      personaFeedbackStringified: JSON.stringify(results.persona_feedback, null, 2),
+      personaFeedbackKeys: Object.keys(results.persona_feedback),
+      firstValueType: results.persona_feedback[Object.keys(results.persona_feedback)[0]] ? typeof results.persona_feedback[Object.keys(results.persona_feedback)[0]] : 'none',
+      firstValuePreview: results.persona_feedback[Object.keys(results.persona_feedback)[0]] ? JSON.stringify(results.persona_feedback[Object.keys(results.persona_feedback)[0]]).substring(0, 200) : 'none'
+    });
+  }
   
   // Enhanced persona data extraction with comprehensive debugging
   let rawPersonaData = null;
@@ -179,6 +191,14 @@ const GoblinResults: React.FC = () => {
     goblinPrediction: ''
   };
   
+  console.log('🔍 DEBUGGING RAW PERSONA DATA:', {
+    rawPersonaDataType: typeof rawPersonaData,
+    rawPersonaDataValue: rawPersonaData,
+    isString: typeof rawPersonaData === 'string',
+    stringLength: typeof rawPersonaData === 'string' ? rawPersonaData.length : 'N/A',
+    stringPreview: typeof rawPersonaData === 'string' ? rawPersonaData.substring(0, 100) : 'N/A'
+  });
+
   if (typeof rawPersonaData === 'string') {
     // Try to parse JSON string first
     try {
@@ -192,22 +212,56 @@ const GoblinResults: React.FC = () => {
           goblinWisdom: parsed.goblinWisdom || '',
           goblinPrediction: parsed.goblinPrediction || ''
         };
-        console.log('✅ PARSED JSON STRING: Successfully extracted structured data');
+        console.log('✅ PARSED JSON STRING: Successfully extracted structured data', {
+          analysisLength: personaData.analysis?.length,
+          hasOtherFields: !!(personaData.biggestGripe || personaData.goblinWisdom)
+        });
       } else {
         throw new Error('Not a valid object');
       }
     } catch (parseError) {
-      // If it's just a plain string, use it as the analysis
-      personaData = { 
-        ...personaData,
-        analysis: rawPersonaData || results?.synthesis_summary || 'Analysis completed'
-      };
-      console.log('✅ PLAIN STRING: Using raw string as analysis');
+      console.log('⚠️ JSON PARSE FAILED:', parseError.message, 'Raw data:', rawPersonaData.substring(0, 200));
+      
+      // Check if it contains JSON-like structure and extract the analysis value
+      const jsonMatch = rawPersonaData.match(/"analysis":\s*"([^"]+)"/);
+      if (jsonMatch && jsonMatch[1]) {
+        console.log('✅ EXTRACTED ANALYSIS FROM JSON STRING');
+        personaData = { 
+          ...personaData,
+          analysis: jsonMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"')
+        };
+      } else {
+        // If it's just a plain string, use it as the analysis
+        personaData = { 
+          ...personaData,
+          analysis: rawPersonaData || results?.synthesis_summary || 'Analysis completed'
+        };
+        console.log('✅ PLAIN STRING: Using raw string as analysis');
+      }
     }
   } else if (rawPersonaData && typeof rawPersonaData === 'object') {
+    // Check if the object has a nested analysis string that might be JSON
+    let analysisValue = rawPersonaData.analysis;
+    let nestedRecommendations = rawPersonaData.recommendations || [];
+    
+    if (typeof analysisValue === 'string' && analysisValue.includes('"analysis":')) {
+      console.log('🔍 Found nested JSON in analysis field, trying to parse...');
+      try {
+        const parsed = JSON.parse(analysisValue);
+        analysisValue = parsed.analysis || analysisValue;
+        // Also extract nested recommendations if they exist
+        if (parsed.recommendations && Array.isArray(parsed.recommendations)) {
+          nestedRecommendations = parsed.recommendations;
+        }
+        console.log('✅ Successfully parsed nested JSON, extracted analysis and recommendations');
+      } catch (nestedParseError) {
+        console.log('⚠️ Failed to parse nested JSON, using as-is:', nestedParseError.message);
+      }
+    }
+    
     // Enhanced object property extraction with detailed logging
-    const extractedAnalysis = rawPersonaData.analysis || results?.synthesis_summary || 'Analysis completed';
-    const extractedRecommendations = rawPersonaData.recommendations || '';
+    const extractedAnalysis = analysisValue || results?.synthesis_summary || 'Analysis completed';
+    const extractedRecommendations = nestedRecommendations.length > 0 ? nestedRecommendations : (rawPersonaData.recommendations || []);
     const extractedBiggestGripe = rawPersonaData.biggestGripe || rawPersonaData.wildCard || '';
     const extractedWhatMakesGoblinHappy = rawPersonaData.whatMakesGoblinHappy || 
                                          (Array.isArray(rawPersonaData.experiments) ? rawPersonaData.experiments.join(", ") : rawPersonaData.experiments) || '';
