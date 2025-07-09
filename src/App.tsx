@@ -25,23 +25,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
-import { TopNavigation } from "@/components/layout/TopNavigation";
-import { useIsMobile } from "@/hooks/use-mobile";
 const queryClient = new QueryClient();
 const App = () => {
   const {
     user,
     signOut
   } = useAuth();
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-
-  const handleMobileMenuToggle = () => {
-    setIsMobileSidebarOpen(!isMobileSidebarOpen);
-  };
-
-  const handleMobileSidebarClose = () => {
-    setIsMobileSidebarOpen(false);
-  };
   return <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
@@ -56,17 +45,8 @@ const App = () => {
                 {/* Protected routes with sidebar layout */}
                 <Route path="/*" element={<AuthGuard>
                     <>
-                      <AppSidebar 
-                        isMobileOpen={isMobileSidebarOpen}
-                        onMobileClose={handleMobileSidebarClose}
-                      />
+                      <AppSidebar />
                       <SidebarInset className="ml-0 md:ml-[16px] mr-0 bg-transparent mx-0">
-                        <TopNavigation 
-                          user={user} 
-                          onSignOut={signOut}
-                          onMobileMenuToggle={handleMobileMenuToggle}
-                          isMobileSidebarOpen={isMobileSidebarOpen}
-                        />
                         {/* Main content area */}
                         <div className="flex flex-col items-start flex-1 self-stretch rounded-[20px] border-8 overflow-auto m-2 md:m-4 bg-white" style={{
                       display: 'flex',

@@ -13,7 +13,8 @@ import {
   User,
   ChevronDown,
   LogOut,
-  X
+  X,
+  Menu
 } from 'lucide-react';
 import {
   Sidebar,
@@ -68,13 +69,10 @@ const bottomNavItems = [
   }
 ];
 
-interface AppSidebarProps {
-  isMobileOpen?: boolean;
-  onMobileClose?: () => void;
-}
+interface AppSidebarProps {}
 
-export function AppSidebar({ isMobileOpen, onMobileClose }: AppSidebarProps) {
-  const { state } = useSidebar();
+export function AppSidebar({}: AppSidebarProps) {
+  const { state, setOpen, open } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
   const collapsed = state === 'collapsed';
@@ -87,10 +85,6 @@ export function AppSidebar({ isMobileOpen, onMobileClose }: AppSidebarProps) {
     try {
       await signOut();
       navigate('/auth');
-      // Close mobile sidebar on logout
-      if (isMobile && onMobileClose) {
-        onMobileClose();
-      }
     } catch (error) {
       console.error('Logout failed:', error);
     }
@@ -98,8 +92,8 @@ export function AppSidebar({ isMobileOpen, onMobileClose }: AppSidebarProps) {
 
   const handleNavClick = () => {
     // Close mobile sidebar when navigating
-    if (isMobile && onMobileClose) {
-      onMobileClose();
+    if (isMobile) {
+      setOpen(false);
     }
   };
 
@@ -118,11 +112,23 @@ export function AppSidebar({ isMobileOpen, onMobileClose }: AppSidebarProps) {
 
   return (
     <>
+      {/* Mobile trigger button - always visible on mobile */}
+      {isMobile && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setOpen(true)}
+          className="fixed top-4 left-4 z-50 md:hidden bg-white shadow-md border"
+        >
+          <Menu className="h-4 w-4" />
+        </Button>
+      )}
+
       {/* Mobile overlay */}
-      {isMobile && isMobileOpen && (
+      {isMobile && open && (
         <div 
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
-          onClick={onMobileClose}
+          onClick={() => setOpen(false)}
         />
       )}
       
@@ -132,7 +138,7 @@ export function AppSidebar({ isMobileOpen, onMobileClose }: AppSidebarProps) {
         className={`${
           isMobile 
             ? `fixed top-0 left-0 h-full z-50 transform transition-transform duration-300 ease-in-out ${
-                isMobileOpen ? 'translate-x-0' : '-translate-x-full'
+                open ? 'translate-x-0' : '-translate-x-full'
               } md:relative md:translate-x-0 md:z-auto`
             : ''
         }`}
@@ -152,11 +158,11 @@ export function AppSidebar({ isMobileOpen, onMobileClose }: AppSidebarProps) {
               </div>
               
               {/* Mobile close button */}
-              {isMobile && onMobileClose ? (
+              {isMobile ? (
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={onMobileClose}
+                  onClick={() => setOpen(false)}
                   className="h-6 w-6 p-0"
                 >
                   <X className="h-4 w-4" />
