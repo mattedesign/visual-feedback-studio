@@ -112,64 +112,147 @@ serve(async (req) => {
 
     const startTime = Date.now();
 
-    // ✅ SIMPLE: Handle imageUrls safely 
+    // ✅ ENHANCED: Handle imageUrls with comprehensive debugging and validation
     const imageContent = [];
     
-    console.log('🔍 DEBUGGING IMAGE PROCESSING:', {
+    console.log('🔍 COMPREHENSIVE IMAGE DEBUGGING:', {
       actualChatMode,
       hasImageUrls: !!imageUrls,
       imageUrlsType: typeof imageUrls,
+      imageUrlsIsArray: Array.isArray(imageUrls),
       imageUrlsLength: Array.isArray(imageUrls) ? imageUrls.length : 'not array',
-      imageUrlsValue: imageUrls
+      imageUrlsStringified: JSON.stringify(imageUrls, null, 2),
+      imageUrlsKeys: typeof imageUrls === 'object' && imageUrls ? Object.keys(imageUrls) : 'not object'
     });
     
     if (!actualChatMode && imageUrls) {
-      let normalizedImageUrls = Array.isArray(imageUrls) ? imageUrls : [imageUrls];
+      // ✅ ENHANCED: Better normalization of imageUrls structure
+      let normalizedImageUrls = [];
       
-      console.log(`📸 Processing ${normalizedImageUrls.length} images for Claude`);
-      console.log('📸 Normalized image URLs:', normalizedImageUrls);
+      if (Array.isArray(imageUrls)) {
+        normalizedImageUrls = imageUrls;
+        console.log('📸 imageUrls is already an array');
+      } else if (typeof imageUrls === 'string') {
+        normalizedImageUrls = [imageUrls];
+        console.log('📸 imageUrls is a string, wrapping in array');
+      } else if (typeof imageUrls === 'object' && imageUrls) {
+        // Handle object with potential nested structure
+        if (imageUrls.url || imageUrls.file_path || imageUrls.storage_url) {
+          normalizedImageUrls = [imageUrls];
+          console.log('📸 imageUrls is an object with URL property');
+        } else {
+          // Try to find arrays or URL-like properties in the object
+          const possibleArrays = Object.values(imageUrls).filter(val => Array.isArray(val));
+          if (possibleArrays.length > 0) {
+            normalizedImageUrls = possibleArrays[0];
+            console.log('📸 Found array within imageUrls object');
+          } else {
+            console.warn('❌ Could not normalize imageUrls object structure');
+          }
+        }
+      } else {
+        console.warn('❌ imageUrls has unexpected structure');
+      }
+      
+      console.log('📸 Normalized image URLs:', {
+        count: normalizedImageUrls.length,
+        structure: normalizedImageUrls.map((item, idx) => ({
+          index: idx,
+          type: typeof item,
+          isString: typeof item === 'string',
+          hasUrl: item?.url ? 'yes' : 'no',
+          hasFilePath: item?.file_path ? 'yes' : 'no',
+          hasStorageUrl: item?.storage_url ? 'yes' : 'no',
+          value: typeof item === 'string' ? item : JSON.stringify(item)
+        }))
+      });
       
       for (let i = 0; i < Math.min(normalizedImageUrls.length, 3); i++) {
         const imageItem = normalizedImageUrls[i];
-        // ✅ FIX: Handle both simple URLs and complex objects
-        const imageUrl = typeof imageItem === 'string' ? imageItem : (imageItem?.url || imageItem?.file_path || imageItem);
+        
+        // ✅ ENHANCED: More comprehensive URL extraction
+        let imageUrl = null;
+        
+        if (typeof imageItem === 'string') {
+          imageUrl = imageItem;
+        } else if (typeof imageItem === 'object' && imageItem) {
+          // Try multiple possible URL properties
+          imageUrl = imageItem.url || imageItem.file_path || imageItem.storage_url || imageItem.src || imageItem.href;
+        }
         
         console.log(`📸 Processing image ${i + 1}:`, {
-          imageItemType: typeof imageItem,
-          imageItem: typeof imageItem === 'string' ? imageItem : imageItem,
-          extractedUrl: imageUrl
+          originalItem: typeof imageItem === 'string' ? imageItem : JSON.stringify(imageItem),
+          extractedUrl: imageUrl,
+          urlValid: !!(imageUrl && typeof imageUrl === 'string' && imageUrl.trim().length > 0)
         });
         
-        if (!imageUrl || typeof imageUrl !== 'string') {
-          console.warn(`❌ Invalid image URL at index ${i}:`, imageUrl);
+        if (!imageUrl || typeof imageUrl !== 'string' || imageUrl.trim().length === 0) {
+          console.warn(`❌ Invalid or missing image URL at index ${i}:`, { imageItem, imageUrl });
           continue;
         }
         
         try {
+          console.log(`🔄 Fetching image ${i + 1} from: ${imageUrl.substring(0, 100)}...`);
+          
           const imageResponse = await fetch(imageUrl);
-          if (!imageResponse.ok) continue;
+          
+          console.log(`📡 Image ${i + 1} fetch response:`, {
+            ok: imageResponse.ok,
+            status: imageResponse.status,
+            statusText: imageResponse.statusText,
+            contentType: imageResponse.headers.get('content-type'),
+            contentLength: imageResponse.headers.get('content-length')
+          });
+          
+          if (!imageResponse.ok) {
+            console.warn(`❌ Failed to fetch image ${i + 1}: ${imageResponse.status} ${imageResponse.statusText}`);
+            continue;
+          }
           
           const imageBlob = await imageResponse.blob();
+          console.log(`📦 Image ${i + 1} blob size: ${imageBlob.size} bytes, type: ${imageBlob.type}`);
+          
           const arrayBuffer = await imageBlob.arrayBuffer();
           const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
           const contentType = imageResponse.headers.get('content-type') || 'image/png';
           
-          imageContent.push({
+          const imageContentItem = {
             type: 'image',
             source: {
               type: 'base64',
               media_type: contentType,
               data: base64
             }
+          };
+          
+          imageContent.push(imageContentItem);
+          
+          console.log(`✅ Image ${i + 1} processed successfully:`, {
+            contentType,
+            base64Length: base64.length,
+            mediaType: contentType
           });
           
-          console.log(`✅ Image ${i + 1} processed successfully`);
         } catch (error) {
-          console.error(`❌ Failed to process image ${i + 1}:`, error.message);
+          console.error(`❌ Failed to process image ${i + 1}:`, {
+            error: error.message,
+            stack: error.stack,
+            imageUrl: imageUrl.substring(0, 100)
+          });
         }
       }
       
-      console.log(`🎉 ${imageContent.length} images ready for Claude`);
+      // ✅ ENHANCED: Validation that images were actually processed
+      console.log(`🎉 Image processing complete:`, {
+        totalImagesAttempted: normalizedImageUrls.length,
+        imagesSuccessfullyProcessed: imageContent.length,
+        readyForClaude: imageContent.length > 0
+      });
+      
+      if (normalizedImageUrls.length > 0 && imageContent.length === 0) {
+        console.error('❌ CRITICAL: No images were successfully processed despite having image URLs!');
+        console.error('❌ This means Claude will not receive any images to analyze!');
+      }
     }
 
     // Build enhanced prompt
