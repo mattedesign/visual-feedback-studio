@@ -44,8 +44,24 @@ export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) =>
 
     console.log('🔧 Creating initial message from persona data');
     
-    // Simple initial message for chat interface
-    const initialMessageContent = "What other questions do you have about this design?";
+    // Extract actual analysis content from persona data
+    let initialMessageContent = "What other questions do you have about this design?";
+    
+    try {
+      if (personaData.analysis && personaData.analysis.length > 0) {
+        // Use the actual analysis content
+        initialMessageContent = personaData.analysis;
+        console.log('✅ Using persona analysis content:', initialMessageContent.substring(0, 100) + '...');
+      } else if (personaData.synthesis_summary) {
+        // Fallback to synthesis summary
+        initialMessageContent = personaData.synthesis_summary;
+        console.log('✅ Using synthesis summary as fallback');
+      } else {
+        console.warn('⚠️ No analysis content found, using default message');
+      }
+    } catch (error) {
+      console.error('❌ Error extracting analysis content:', error);
+    }
 
     return {
       id: 'initial-from-persona',

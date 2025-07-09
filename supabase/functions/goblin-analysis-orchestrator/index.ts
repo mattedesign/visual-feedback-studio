@@ -95,18 +95,7 @@ serve(async (req) => {
       .filter(img => img && img.file_path && typeof img.file_path === 'string' && img.file_path.trim().length > 0)
       .map(img => img.file_path); // Extract just the file_path string
 
-    console.log('🔍 URL Extraction Debug:', {
-      totalImages: imageUrls.length,
-      imageStructure: imageUrls.slice(0, 2).map(img => ({
-        hasFilePath: !!img?.file_path,
-        filePathType: typeof img?.file_path,
-        filePathValue: img?.file_path?.substring(0, 50) + '...',
-        hasUrl: !!img?.url,
-        keys: Object.keys(img || {})
-      })),
-      validUrlsCount: validImageUrls.length,
-      validUrlsSample: validImageUrls.slice(0, 2)
-    });
+    console.log('📸 Extracted URLs for Claude:', validImageUrls.slice(0, 2));
 
     if (validImageUrls.length === 0) {
       console.error('❌ No valid image URLs found. Image structure:', imageUrls);
@@ -114,7 +103,6 @@ serve(async (req) => {
     }
 
     console.log(`✅ Found ${validImageUrls.length} valid images for analysis`);
-    console.log('📸 Final URLs being sent to Claude:', validImageUrls.slice(0, 2)); // Log first 2 URLs
 
     console.log('🎯 Orchestrating goblin analysis:', {
       sessionId: sessionId?.substring(0, 8),
@@ -201,24 +189,15 @@ serve(async (req) => {
     
     // ✅ SIMPLIFIED: URLs are already validated above, pass them through directly
     
-    // ✅ ENHANCED: Claude analysis with detailed parameter logging
     const claudeRequestBody = {
       sessionId,
-      imageUrls: validImageUrls,  // Now contains simple URL strings
+      imageUrls: validImageUrls,
       prompt: promptResult.data.prompt,
       persona,
-      chatMode: false  // ✅ CRITICAL: Explicitly set to false for image processing
+      chatMode: false
     };
     
-    console.log('🤖 Calling Claude analyzer with request body:', {
-      sessionId: sessionId?.substring(0, 8),
-      imageUrlCount: validImageUrls.length,
-      imageUrlSamples: validImageUrls.slice(0, 2), // Log first 2 URLs for verification
-      imageUrlsType: typeof validImageUrls[0], // Should be 'string'
-      promptLength: promptResult.data.prompt?.length,
-      persona,
-      chatMode: false
-    });
+    console.log('🤖 Calling Claude analyzer with', validImageUrls.length, 'images');
     
     const analysisResult = await supabase.functions.invoke('goblin-model-claude-analyzer', {
       body: claudeRequestBody
