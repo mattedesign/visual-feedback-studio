@@ -274,20 +274,30 @@ serve(async (req) => {
         if (jsonMatch) {
           parsedData = JSON.parse(jsonMatch[0]);
           console.log('✅ Parsed structured data:', Object.keys(parsedData));
-        } else {
-          // Fallback: create structured data from text
-          parsedData = {
-            analysis: summaryText,
-            biggestGripe: "Your interface needs some clarity improvements!",
-            whatMakesGoblinHappy: "Clear, obvious design that doesn't make users think",
-            goblinWisdom: "The best UX is invisible - users should focus on their goals, not figuring out your interface",
-            goblinPrediction: "Once you fix the confusing parts, users will complete tasks faster and with less frustration"
-          };
-        }
+    } else {
+      // Fallback: create structured data from text
+      parsedData = {
+        analysis: summaryText,
+        recommendations: [
+          "Improve interface clarity and user guidance",
+          "Enhance visual hierarchy for better content scanning",
+          "Optimize user flow and navigation patterns"
+        ],
+        biggestGripe: "Your interface needs some clarity improvements!",
+        whatMakesGoblinHappy: "Clear, obvious design that doesn't make users think",
+        goblinWisdom: "The best UX is invisible - users should focus on their goals, not figuring out your interface",
+        goblinPrediction: "Once you fix the confusing parts, users will complete tasks faster and with less frustration"
+      };
+    }
       } catch (parseError) {
         console.error('❌ Failed to parse structured data:', parseError);
         parsedData = {
           analysis: summaryText,
+          recommendations: [
+            "Improve interface clarity and user guidance",
+            "Enhance visual hierarchy for better content scanning",
+            "Optimize user flow and navigation patterns"
+          ],
           biggestGripe: "Your interface needs some clarity improvements!",
           whatMakesGoblinHappy: "Clear, obvious design that doesn't make users think",
           goblinWisdom: "The best UX is invisible",

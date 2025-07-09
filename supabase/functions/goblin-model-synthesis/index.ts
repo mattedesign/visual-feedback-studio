@@ -201,11 +201,73 @@ function createErrorResponse(error: any): Response {
 }
 
 function extractAnalysisData(analysisData: any) {
-  return {
-    analysis: analysisData.analysisData?.analysis || analysisData.rawResponse || 'Analysis completed',
-    recommendations: analysisData.analysisData?.recommendations || [],
-    rawAnalysisData: analysisData.analysisData || {}
+  console.log('🔍 Extracting analysis data:', {
+    hasAnalysisData: !!analysisData.analysisData,
+    analysisDataKeys: analysisData.analysisData ? Object.keys(analysisData.analysisData) : [],
+    hasRawResponse: !!analysisData.rawResponse
+  });
+
+  let extractedAnalysis = '';
+  let extractedRecommendations = [];
+  let extractedRawData = {};
+
+  // Try to get structured data from analysisData first
+  if (analysisData.analysisData && typeof analysisData.analysisData === 'object') {
+    extractedAnalysis = analysisData.analysisData.analysis || '';
+    extractedRecommendations = analysisData.analysisData.recommendations || [];
+    extractedRawData = analysisData.analysisData;
+    
+    console.log('✅ Extracted from analysisData:', {
+      hasAnalysis: !!extractedAnalysis,
+      recommendationsCount: extractedRecommendations.length,
+      recommendations: extractedRecommendations
+    });
+  }
+  
+  // If no recommendations found, try parsing rawResponse as JSON
+  if (extractedRecommendations.length === 0 && analysisData.rawResponse) {
+    try {
+      const jsonMatch = analysisData.rawResponse.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        if (parsed.recommendations && Array.isArray(parsed.recommendations)) {
+          extractedRecommendations = parsed.recommendations;
+          console.log('✅ Extracted recommendations from rawResponse:', extractedRecommendations);
+        }
+        if (parsed.analysis && !extractedAnalysis) {
+          extractedAnalysis = parsed.analysis;
+        }
+        // Merge parsed data
+        extractedRawData = { ...extractedRawData, ...parsed };
+      }
+    } catch (error) {
+      console.log('⚠️ Failed to parse rawResponse JSON:', error.message);
+    }
+  }
+  
+  // Final fallbacks
+  if (!extractedAnalysis) {
+    extractedAnalysis = analysisData.rawResponse || 'Analysis completed';
+  }
+  
+  if (extractedRecommendations.length === 0) {
+    console.log('⚠️ No recommendations found, using fallback');
+    extractedRecommendations = ['Improve user experience clarity', 'Enhance interface usability'];
+  }
+
+  const result = {
+    analysis: extractedAnalysis,
+    recommendations: extractedRecommendations,
+    rawAnalysisData: extractedRawData
   };
+  
+  console.log('🎯 Final extracted data:', {
+    analysisLength: result.analysis.length,
+    recommendationsCount: result.recommendations.length,
+    recommendations: result.recommendations
+  });
+  
+  return result;
 }
 
 function buildPersonaFeedback(persona: string, extractedData: any, mappedPersonaData: PersonaData) {
