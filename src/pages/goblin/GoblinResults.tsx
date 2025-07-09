@@ -89,7 +89,25 @@ const GoblinResults: React.FC = () => {
 
   // Extract session and persona data early for use in handlers
   const session = results?.goblin_analysis_sessions;
-  const personaData = results?.persona_feedback?.[session?.persona_type] || {};
+  // Fix: Handle both string and object formats for persona feedback
+  const rawPersonaData = results?.persona_feedback?.[session?.persona_type];
+  
+  // Parse the persona feedback correctly
+  let personaData = {};
+  if (typeof rawPersonaData === 'string') {
+    // If it's just a string, use it as the analysis
+    personaData = { 
+      analysis: rawPersonaData || results?.synthesis_summary || 'Analysis completed'
+    };
+  } else if (rawPersonaData) {
+    // If it's an object, use it as-is
+    personaData = rawPersonaData;
+  } else {
+    // Fallback to synthesis summary
+    personaData = {
+      analysis: results?.synthesis_summary || 'Analysis completed'
+    };
+  }
 
   const handleExport = () => {
     if (!results || !session || !personaData) return;
