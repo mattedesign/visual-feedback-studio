@@ -44,14 +44,8 @@ export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) =>
 
     console.log('🔧 Creating initial message from persona data');
     
-    // Build initial message content from persona data
-    const analysis = personaData.analysis || "Analysis completed";
-    const biggestGripe = personaData.biggestGripe || "Your interface needs attention!";
-    const whatMakesGoblinHappy = personaData.whatMakesGoblinHappy || "User-centered design that works";
-    const goblinPrediction = personaData.goblinPrediction || "Improve the UX and users will thank you";
-    const goblinWisdom = personaData.goblinWisdom || "Good UX speaks for itself";
-
-    const initialMessageContent = `${analysis}\n\n🤬 **My biggest gripe:** ${biggestGripe}\n\n😈 **What I actually like:** ${whatMakesGoblinHappy}\n\n🔮 **My prediction:** ${goblinPrediction}\n\n💎 **Goblin wisdom:** ${goblinWisdom}`;
+    // Simple initial message for chat interface
+    const initialMessageContent = "What other questions do you have about this design?";
 
     return {
       id: 'initial-from-persona',
