@@ -18,9 +18,9 @@ serve(async (req) => {
     const { sessionId, imageUrls, prompt, persona, chatMode, conversationHistory, originalAnalysis, saveInitialOnly, initialContent } = await req.json();
 
     // CRITICAL FIX: Ensure chatMode is properly defaulted for image processing
-    const actualChatMode = chatMode === true; // Default to false (non-chat mode) for image processing
+    const actualChatMode = chatMode === true;
     
-    console.log(`🎯 Processing request - Session: ${sessionId?.substring(0, 8)}, Persona: ${persona}, Chat: ${actualChatMode}`);
+    console.log(`🎯 Processing request - Session: ${sessionId?.substring(0, 8)}, Persona: ${persona}, Chat: ${actualChatMode}, HasImages: ${!!imageUrls}`);
 
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
     if (!anthropicApiKey) {
