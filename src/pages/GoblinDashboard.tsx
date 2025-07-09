@@ -138,7 +138,7 @@ const GoblinDashboard = () => {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           <Card className="border-0 shadow-sm bg-card">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
