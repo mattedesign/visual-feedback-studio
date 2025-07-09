@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +10,18 @@ import { logImageDebugInfo } from '@/utils/imageDebugUtils';
 import DetailedModeView from '@/components/goblin/DetailedModeView';
 import ClarityChat from '@/components/goblin/ClarityChat';
 import SummaryView from '@/components/goblin/SummaryView';
+
+// Type definition for persona data
+interface PersonaData {
+  analysis?: string;
+  recommendations?: string | string[];
+  biggestGripe?: string;
+  whatMakesGoblinHappy?: string;
+  goblinWisdom?: string;
+  goblinPrediction?: string;
+  wildCard?: string;
+  experiments?: string | string[];
+}
 
 const GoblinResults: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -92,19 +105,37 @@ const GoblinResults: React.FC = () => {
   // Fix: Handle both string and object formats for persona feedback
   const rawPersonaData = results?.persona_feedback?.[session?.persona_type];
   
-  // Parse the persona feedback correctly
-  let personaData = {};
+  // Parse the persona feedback correctly with proper typing
+  let personaData: PersonaData = {
+    analysis: '',
+    recommendations: '',
+    biggestGripe: '',
+    whatMakesGoblinHappy: '',
+    goblinWisdom: '',
+    goblinPrediction: ''
+  };
+  
   if (typeof rawPersonaData === 'string') {
     // If it's just a string, use it as the analysis
     personaData = { 
+      ...personaData,
       analysis: rawPersonaData || results?.synthesis_summary || 'Analysis completed'
     };
-  } else if (rawPersonaData) {
-    // If it's an object, use it as-is
-    personaData = rawPersonaData;
+  } else if (rawPersonaData && typeof rawPersonaData === 'object') {
+    // If it's an object, merge with defaults
+    personaData = {
+      analysis: rawPersonaData.analysis || results?.synthesis_summary || 'Analysis completed',
+      recommendations: rawPersonaData.recommendations || '',
+      biggestGripe: rawPersonaData.biggestGripe || rawPersonaData.wildCard || '',
+      whatMakesGoblinHappy: rawPersonaData.whatMakesGoblinHappy || 
+                           (Array.isArray(rawPersonaData.experiments) ? rawPersonaData.experiments.join(", ") : rawPersonaData.experiments) || '',
+      goblinWisdom: rawPersonaData.goblinWisdom || '',
+      goblinPrediction: rawPersonaData.goblinPrediction || ''
+    };
   } else {
     // Fallback to synthesis summary
     personaData = {
+      ...personaData,
       analysis: results?.synthesis_summary || 'Analysis completed'
     };
   }
