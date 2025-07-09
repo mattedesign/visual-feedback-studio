@@ -13,7 +13,6 @@ import ChatMessageComponent from './chat/components/ChatMessage';
 import ChatInput from './chat/components/ChatInput';
 import LoadingIndicator from './chat/components/LoadingIndicator';
 import { ChatPersistenceTest } from './chat/ChatPersistenceTest';
-import { DebugPanel } from './chat/DebugPanel';
 import { useDebugMonitor } from './chat/hooks/useDebugMonitor';
 
 const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedbackUpdate }) => {
@@ -358,9 +357,6 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
         isLoading={isLoading}
         session={session}
       />
-      
-      {/* Debug Panel */}
-      <DebugPanel sessionId={session?.id || ''} persona={session?.persona_type || 'clarity'} />
     </div>
   );
 };
