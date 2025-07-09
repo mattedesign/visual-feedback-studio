@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ChatMessage } from '../types';
+import { safeExtractAnalysisContent, validatePersonaData, validateSessionData } from '../../validation/dataValidation';
+import { trackPersonaExtraction, trackChatMessage, dataFlowMonitor } from '../../monitoring/dataFlowMonitor';
 
 interface UseChatHistoryProps {
   session: any;
@@ -38,32 +40,18 @@ export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) =>
 
   const createInitialMessageFromPersonaData = () => {
     if (!personaData) {
-      console.warn('❌ No persona data available for creating initial message');
+      trackPersonaExtraction(false, null);
       return null;
     }
 
-    console.log('🔧 Creating initial message from persona data');
+    // Validate and extract content using the safe function
+    const validation = validatePersonaData(personaData);
+    const initialMessageContent = safeExtractAnalysisContent(personaData);
     
-    // Extract actual analysis content from persona data
-    let initialMessageContent = "What other questions do you have about this design?";
-    
-    try {
-      if (personaData.analysis && personaData.analysis.length > 0) {
-        // Use the actual analysis content
-        initialMessageContent = personaData.analysis;
-        console.log('✅ Using persona analysis content:', initialMessageContent.substring(0, 100) + '...');
-      } else if (personaData.synthesis_summary) {
-        // Fallback to synthesis summary
-        initialMessageContent = personaData.synthesis_summary;
-        console.log('✅ Using synthesis summary as fallback');
-      } else {
-        console.warn('⚠️ No analysis content found, using default message');
-      }
-    } catch (error) {
-      console.error('❌ Error extracting analysis content:', error);
-    }
+    const success = validation.isValid && initialMessageContent.length > 0;
+    trackPersonaExtraction(success, personaData, initialMessageContent);
 
-    return {
+    const message = {
       id: 'initial-from-persona',
       role: 'clarity' as const,
       content: initialMessageContent,
@@ -71,6 +59,9 @@ export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) =>
       conversation_stage: 'initial',
       quality_tags: []
     };
+
+    trackChatMessage(true, message);
+    return message;
   };
 
   const saveInitialMessageToDatabase = async (messageContent: string) => {
