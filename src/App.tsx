@@ -37,7 +37,7 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <SidebarProvider defaultOpen={true}>
-            <div className="min-h-screen flex w-full bg-background">
+            <div className="min-h-screen flex w-full bg-transparent">
               <Routes>
                 {/* Public routes - no sidebar */}
                 <Route path="/auth" element={<Auth />} />
