@@ -401,7 +401,7 @@ const GoblinResults: React.FC = () => {
     <div className="min-h-screen bg-white">
       <div className="flex flex-col items-start flex-1 self-stretch rounded-[20px] max-w-7xl mx-auto px-8 py-6">
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'summary' | 'detailed' | 'clarity')}>
-          <TabsList className="grid w-full grid-cols-3 bg-muted border-0 p-1">
+          <TabsList className="sticky top-0 z-10 grid w-full grid-cols-3 bg-muted border-0 p-1 backdrop-blur-sm">
             <TabsTrigger value="summary" className="text-sm font-medium">Summary</TabsTrigger>
             <TabsTrigger value="detailed" className="text-sm font-medium">Detailed ({annotationCount})</TabsTrigger>
             <TabsTrigger value="clarity" className="text-sm font-medium">Clarity Chat</TabsTrigger>
