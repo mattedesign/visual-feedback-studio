@@ -26,6 +26,8 @@ const GoblinResults: React.FC = () => {
       if (!sessionId) return;
 
       try {
+        console.log('🔍 Loading results for session:', sessionId);
+        
         // Fix: Handle multiple results by getting the most recent one
         const { data, error } = await supabase
           .from('goblin_analysis_results')
@@ -34,10 +36,20 @@ const GoblinResults: React.FC = () => {
           .order('created_at', { ascending: false })
           .limit(1);
 
-        if (error) throw error;
+        console.log('📊 Query response:', { data, error });
+        
+        if (error) {
+          console.error('❌ Database error:', error);
+          throw error;
+        }
         
         // Get the first (most recent) result
         const latestResult = data?.[0] || null;
+        
+        console.log('🎯 Latest result:', latestResult);
+        console.log('🧠 Persona feedback:', latestResult?.persona_feedback);
+        console.log('📝 Synthesis summary:', latestResult?.synthesis_summary);
+        
         if (!latestResult) {
           throw new Error('No results found for this session');
         }
