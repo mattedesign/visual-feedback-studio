@@ -401,6 +401,7 @@ function buildPrompt(persona: string, userPrompt: string, chatMode: boolean, con
     basePrompt += `\n\nAnalyze the uploaded interface images and provide a structured response in JSON format with these exact fields:
 {
   "analysis": "Your detailed UX analysis of the interface",
+  "recommendations": ["Specific actionable recommendation 1", "Specific actionable recommendation 2", "etc"],
   "biggestGripe": "The main UX problem that annoys you most",
   "whatMakesGoblinHappy": "What actually works well in this design",
   "goblinWisdom": "Your key insight or wisdom about the UX",
@@ -409,7 +410,7 @@ function buildPrompt(persona: string, userPrompt: string, chatMode: boolean, con
 
 User's request: ${userPrompt}
 
-Be thorough, specific, and maintain your ${persona} personality throughout the analysis.`;
+Be thorough, specific, and maintain your ${persona} personality throughout the analysis. Provide at least 3-5 actionable recommendations.`;
   }
 
   return basePrompt;
