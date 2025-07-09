@@ -12,8 +12,6 @@ import { useMessagePersistence } from './chat/hooks/useMessagePersistence';
 import ChatMessageComponent from './chat/components/ChatMessage';
 import ChatInput from './chat/components/ChatInput';
 import LoadingIndicator from './chat/components/LoadingIndicator';
-import { ChatPersistenceTest } from './chat/ChatPersistenceTest';
-import { useDebugMonitor } from './chat/hooks/useDebugMonitor';
 
 const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedbackUpdate }) => {
   const [inputValue, setInputValue] = useState('');
@@ -24,9 +22,6 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
 
   const { messages, setMessages, analyzeMessageQuality, reloadMessages } = useChatHistory({ session, personaData });
   const { validateMessagePersistence } = useMessagePersistence(session?.id);
-  
-  // Initialize debug monitoring
-  const debugMonitor = useDebugMonitor(session?.id || '');
 
   // Auto-scroll to bottom when messages load or change
   const scrollToBottom = () => {
@@ -92,16 +87,6 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
 
     try {
       console.log('🎭 Sending chat message for session:', session?.id);
-      console.log('📝 Message:', currentMessageInput);
-      console.log('📊 Current message count before send:', currentMessageCount);
-      
-      // Track message sending
-      debugMonitor.trackMessageSent(currentMessageInput, 'user');
-      debugMonitor.trackEdgeFunctionCall('goblin-model-claude-analyzer', {
-        sessionId: session.id,
-        chatMode: true,
-        prompt: currentMessageInput
-      });
       
       const { data, error } = await supabase.functions.invoke('goblin-model-claude-analyzer', {
         body: {
@@ -116,14 +101,10 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
 
       if (error) {
         console.error('Edge function error:', error);
-        debugMonitor.trackEdgeFunctionError('goblin-model-claude-analyzer', error);
         throw error;
       }
 
       console.log('📡 Chat response received:', data);
-      
-      // Track successful message reception
-      debugMonitor.trackMessageReceived(data.rawResponse || '', 'edge-function');
 
       // Expected message count: current + user message + AI response
       const expectedMessageCount = currentMessageCount + 2;
@@ -140,13 +121,11 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
         
         if (reloadSuccess) {
           console.log('✅ Messages reloaded successfully from database');
-          debugMonitor.logDebugEvent('PERSISTENCE', 'LOAD_SUCCESS', { messageCount: messages.length });
         } else {
           throw new Error('Failed to reload messages after successful persistence');
         }
       } else {
         console.warn('⚠️ Persistence validation failed, using fallback approach');
-        debugMonitor.trackPersistenceFailure('validation', new Error('Message persistence validation failed'));
         
         // Fallback: add the AI response directly to the UI
         const clarityResponse: ChatMessage = {
@@ -315,9 +294,6 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
 
   return (
     <div className="flex flex-col h-[600px] space-y-4">
-      {/* Debug Test Component */}
-      <ChatPersistenceTest sessionId={session?.id} persona={session?.persona_type || 'clarity'} />
-      
       <Card className="flex-1 flex flex-col overflow-hidden">
         <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-xl">
