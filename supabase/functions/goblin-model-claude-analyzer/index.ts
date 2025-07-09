@@ -114,14 +114,29 @@ serve(async (req) => {
 
     // ✅ SIMPLE: Handle imageUrls safely 
     const imageContent = [];
+    
+    console.log('🔍 DEBUGGING IMAGE PROCESSING:', {
+      actualChatMode,
+      hasImageUrls: !!imageUrls,
+      imageUrlsType: typeof imageUrls,
+      imageUrlsLength: Array.isArray(imageUrls) ? imageUrls.length : 'not array',
+      imageUrlsValue: imageUrls
+    });
+    
     if (!actualChatMode && imageUrls) {
       let normalizedImageUrls = Array.isArray(imageUrls) ? imageUrls : [imageUrls];
       
       console.log(`📸 Processing ${normalizedImageUrls.length} images for Claude`);
+      console.log('📸 Normalized image URLs:', normalizedImageUrls);
       
       for (let i = 0; i < Math.min(normalizedImageUrls.length, 3); i++) {
         const imageItem = normalizedImageUrls[i];
         const imageUrl = imageItem?.url || imageItem?.file_path || imageItem;
+        
+        console.log(`📸 Processing image ${i + 1}:`, {
+          imageItem,
+          extractedUrl: imageUrl
+        });
         
         if (!imageUrl) continue;
         
