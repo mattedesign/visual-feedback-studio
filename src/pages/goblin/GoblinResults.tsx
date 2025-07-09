@@ -114,31 +114,60 @@ const GoblinResults: React.FC = () => {
     hasSynthesis: !!results?.synthesis_summary
   });
   
-  // Fix: Improved persona data access with multiple fallback strategies
+  // Enhanced persona data extraction with comprehensive debugging
   let rawPersonaData = null;
+  
+  console.log('🔍 PERSONA DATA EXTRACTION - Starting extraction:', {
+    hasPersonaFeedback: !!results?.persona_feedback,
+    personaType: session?.persona_type,
+    personaFeedbackStructure: results?.persona_feedback ? Object.keys(results.persona_feedback) : [],
+    fullPersonaFeedback: results?.persona_feedback
+  });
   
   // Strategy 1: Try direct persona type access
   if (results?.persona_feedback && session?.persona_type) {
     rawPersonaData = results.persona_feedback[session.persona_type];
-    console.log('🎯 Strategy 1 - Direct access result:', rawPersonaData);
+    console.log('🎯 Strategy 1 - Direct access for persona:', session.persona_type, {
+      found: !!rawPersonaData,
+      dataType: typeof rawPersonaData,
+      dataKeys: rawPersonaData && typeof rawPersonaData === 'object' ? Object.keys(rawPersonaData) : [],
+      rawData: rawPersonaData
+    });
   }
   
   // Strategy 2: If Strategy 1 failed, try first available persona data
   if (!rawPersonaData && results?.persona_feedback) {
     const availablePersonas = Object.keys(results.persona_feedback);
     if (availablePersonas.length > 0) {
-      rawPersonaData = results.persona_feedback[availablePersonas[0]];
-      console.log('🎯 Strategy 2 - First available persona:', availablePersonas[0], rawPersonaData);
+      const firstPersona = availablePersonas[0];
+      rawPersonaData = results.persona_feedback[firstPersona];
+      console.log('🎯 Strategy 2 - Using first available persona:', firstPersona, {
+        found: !!rawPersonaData,
+        dataType: typeof rawPersonaData,
+        dataKeys: rawPersonaData && typeof rawPersonaData === 'object' ? Object.keys(rawPersonaData) : [],
+        rawData: rawPersonaData
+      });
     }
   }
   
   // Strategy 3: Direct analysis property fallback
   if (!rawPersonaData && results?.persona_feedback) {
     rawPersonaData = results.persona_feedback;
-    console.log('🎯 Strategy 3 - Direct persona_feedback:', rawPersonaData);
+    console.log('🎯 Strategy 3 - Using direct persona_feedback:', {
+      found: !!rawPersonaData,
+      dataType: typeof rawPersonaData,
+      dataKeys: rawPersonaData && typeof rawPersonaData === 'object' ? Object.keys(rawPersonaData) : [],
+      rawData: rawPersonaData
+    });
   }
   
-  console.log('🔍 Final rawPersonaData:', rawPersonaData);
+  console.log('🔍 Final rawPersonaData extraction result:', {
+    found: !!rawPersonaData,
+    dataType: typeof rawPersonaData,
+    isObject: rawPersonaData && typeof rawPersonaData === 'object',
+    keys: rawPersonaData && typeof rawPersonaData === 'object' ? Object.keys(rawPersonaData) : [],
+    sample: rawPersonaData
+  });
   
   // Parse the persona feedback correctly with proper typing
   let personaData: PersonaData = {
@@ -156,23 +185,39 @@ const GoblinResults: React.FC = () => {
       ...personaData,
       analysis: rawPersonaData || results?.synthesis_summary || 'Analysis completed'
     };
-    console.log('✅ Using string format:', personaData.analysis.substring(0, 50) + '...');
+    console.log('✅ STRING FORMAT: Using raw string as analysis:', {
+      analysisLength: personaData.analysis.length,
+      analysisPreview: personaData.analysis.substring(0, 100) + '...'
+    });
   } else if (rawPersonaData && typeof rawPersonaData === 'object') {
-    // If it's an object, merge with defaults
+    // Enhanced object property extraction with detailed logging
+    const extractedAnalysis = rawPersonaData.analysis || results?.synthesis_summary || 'Analysis completed';
+    const extractedRecommendations = rawPersonaData.recommendations || '';
+    const extractedBiggestGripe = rawPersonaData.biggestGripe || rawPersonaData.wildCard || '';
+    const extractedWhatMakesGoblinHappy = rawPersonaData.whatMakesGoblinHappy || 
+                                         (Array.isArray(rawPersonaData.experiments) ? rawPersonaData.experiments.join(", ") : rawPersonaData.experiments) || '';
+    const extractedGoblinWisdom = rawPersonaData.goblinWisdom || '';
+    const extractedGoblinPrediction = rawPersonaData.goblinPrediction || '';
+    
     personaData = {
-      analysis: rawPersonaData.analysis || results?.synthesis_summary || 'Analysis completed',
-      recommendations: rawPersonaData.recommendations || '',
-      biggestGripe: rawPersonaData.biggestGripe || rawPersonaData.wildCard || '',
-      whatMakesGoblinHappy: rawPersonaData.whatMakesGoblinHappy || 
-                           (Array.isArray(rawPersonaData.experiments) ? rawPersonaData.experiments.join(", ") : rawPersonaData.experiments) || '',
-      goblinWisdom: rawPersonaData.goblinWisdom || '',
-      goblinPrediction: rawPersonaData.goblinPrediction || ''
+      analysis: extractedAnalysis,
+      recommendations: extractedRecommendations,
+      biggestGripe: extractedBiggestGripe,
+      whatMakesGoblinHappy: extractedWhatMakesGoblinHappy,
+      goblinWisdom: extractedGoblinWisdom,
+      goblinPrediction: extractedGoblinPrediction
     };
-    console.log('✅ Using object format:', {
-      hasAnalysis: !!personaData.analysis,
-      hasBiggestGripe: !!personaData.biggestGripe,
-      hasGoblinWisdom: !!personaData.goblinWisdom,
-      analysisPreview: personaData.analysis.substring(0, 50) + '...'
+    
+    console.log('✅ OBJECT FORMAT: Extracted persona data with content lengths:', {
+      analysisLength: extractedAnalysis.length,
+      recommendationsLength: typeof extractedRecommendations === 'string' ? extractedRecommendations.length : 0,
+      biggestGripeLength: extractedBiggestGripe.length,
+      whatMakesGoblinHappyLength: extractedWhatMakesGoblinHappy.length,
+      goblinWisdomLength: extractedGoblinWisdom.length,
+      goblinPredictionLength: extractedGoblinPrediction.length,
+      analysisPreview: extractedAnalysis.substring(0, 100) + '...',
+      biggestGripePreview: extractedBiggestGripe.substring(0, 50) + '...',
+      goblinWisdomPreview: extractedGoblinWisdom.substring(0, 50) + '...'
     });
   } else {
     // Fallback to synthesis summary
@@ -180,7 +225,10 @@ const GoblinResults: React.FC = () => {
       ...personaData,
       analysis: results?.synthesis_summary || 'Analysis completed'
     };
-    console.log('⚠️ Using fallback to synthesis_summary:', personaData.analysis.substring(0, 50) + '...');
+    console.log('⚠️ FALLBACK: Using synthesis_summary as analysis:', {
+      synthesisLength: (results?.synthesis_summary || '').length,
+      synthesisPreview: (results?.synthesis_summary || 'Analysis completed').substring(0, 100) + '...'
+    });
   }
   
   console.log('🎉 FINAL PERSONA DATA:', {
