@@ -29,12 +29,49 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
   // Initialize debug monitoring
   const debugMonitor = useDebugMonitor(session?.id || '');
 
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
+  // Auto-scroll to bottom when messages load or change
+  const scrollToBottom = () => {
     if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+      const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement;
+      if (scrollElement) {
+        scrollElement.scrollTop = scrollElement.scrollHeight;
+      }
     }
+  };
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    scrollToBottom();
   }, [messages]);
+
+  // Scroll to bottom when component mounts or becomes visible
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      scrollToBottom();
+    }, 100); // Small delay to ensure DOM is ready
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Add intersection observer to detect when chat becomes visible (tab switch)
+  useEffect(() => {
+    const scrollArea = scrollAreaRef.current;
+    if (!scrollArea) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && messages.length > 0) {
+            setTimeout(() => scrollToBottom(), 100);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(scrollArea);
+    return () => observer.disconnect();
+  }, [messages.length]);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
