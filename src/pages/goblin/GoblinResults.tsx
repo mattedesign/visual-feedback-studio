@@ -10,7 +10,7 @@ import { useImageLoader } from '@/hooks/goblin/useImageLoader';
 import DetailedModeView from '@/components/goblin/DetailedModeView';
 import ClarityChat from '@/components/goblin/ClarityChat';
 import SummaryView from '@/components/goblin/SummaryView';
-import { ImageLoadingDebug } from '@/components/goblin/debug/ImageLoadingDebug';
+
 
 // Type definition for persona data
 interface PersonaData {
@@ -404,17 +404,6 @@ const GoblinResults: React.FC = () => {
   return (
     <div className="min-h-screen bg-white">
       <div className="flex flex-col items-start flex-1 self-stretch rounded-[20px] max-w-7xl mx-auto px-8 py-6">
-        {/* Image Loading Debug Component */}
-        <div className="w-full mb-6">
-          <ImageLoadingDebug
-            images={images}
-            loading={imagesLoading}
-            error={imageError}
-            retryCount={accessibilityReport?.total || 0}
-            accessibilityReport={accessibilityReport}
-            onRetry={retryImages}
-          />
-        </div>
         
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'summary' | 'detailed' | 'clarity')}>
           <TabsList className="sticky top-0 z-10 grid w-full grid-cols-3 bg-muted border-0 p-1 backdrop-blur-sm">
