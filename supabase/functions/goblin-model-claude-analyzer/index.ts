@@ -131,14 +131,19 @@ serve(async (req) => {
       
       for (let i = 0; i < Math.min(normalizedImageUrls.length, 3); i++) {
         const imageItem = normalizedImageUrls[i];
-        const imageUrl = imageItem?.url || imageItem?.file_path || imageItem;
+        // ✅ FIX: Handle both simple URLs and complex objects
+        const imageUrl = typeof imageItem === 'string' ? imageItem : (imageItem?.url || imageItem?.file_path || imageItem);
         
         console.log(`📸 Processing image ${i + 1}:`, {
-          imageItem,
+          imageItemType: typeof imageItem,
+          imageItem: typeof imageItem === 'string' ? imageItem : imageItem,
           extractedUrl: imageUrl
         });
         
-        if (!imageUrl) continue;
+        if (!imageUrl || typeof imageUrl !== 'string') {
+          console.warn(`❌ Invalid image URL at index ${i}:`, imageUrl);
+          continue;
+        }
         
         try {
           const imageResponse = await fetch(imageUrl);

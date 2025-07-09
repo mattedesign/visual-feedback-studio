@@ -90,14 +90,17 @@ serve(async (req) => {
       throw new Error('No images found for analysis session');
     }
 
-    // ✅ FIXED: Use the hydrated image data structure correctly
-    const validImageUrls = imageUrls.filter(img => img && (img.url || img.file_path));
+    // ✅ FIXED: Extract simple URL strings for Claude
+    const validImageUrls = imageUrls
+      .filter(img => img && (img.url || img.file_path))
+      .map(img => img.url || img.file_path); // Extract just the URL string
 
     if (validImageUrls.length === 0) {
       throw new Error(`No valid image URLs found. Please check image storage and accessibility.`);
     }
 
     console.log(`✅ Found ${validImageUrls.length} valid images for analysis`);
+    console.log('📸 Extracted URLs for Claude:', validImageUrls.slice(0, 2)); // Log first 2 URLs
 
     console.log('🎯 Orchestrating goblin analysis:', {
       sessionId: sessionId?.substring(0, 8),
@@ -187,7 +190,7 @@ serve(async (req) => {
     // ✅ ENHANCED: Claude analysis with detailed parameter logging
     const claudeRequestBody = {
       sessionId,
-      imageUrls: validImageUrls,  // Use validated URLs
+      imageUrls: validImageUrls,  // Now contains simple URL strings
       prompt: promptResult.data.prompt,
       persona,
       chatMode: false  // ✅ CRITICAL: Explicitly set to false for image processing
@@ -197,6 +200,7 @@ serve(async (req) => {
       sessionId: sessionId?.substring(0, 8),
       imageUrlCount: validImageUrls.length,
       imageUrlSamples: validImageUrls.slice(0, 2), // Log first 2 URLs for verification
+      imageUrlsType: typeof validImageUrls[0], // Should be 'string'
       promptLength: promptResult.data.prompt?.length,
       persona,
       chatMode: false
