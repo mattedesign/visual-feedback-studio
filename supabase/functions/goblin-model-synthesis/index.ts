@@ -507,26 +507,55 @@ class AnnotationGenerator {
     const positionInImage = Math.floor(index / imageCount);
     const position = SYNTHESIS_CONFIG.annotations.positions[positionInImage % SYNTHESIS_CONFIG.annotations.positions.length];
     
-    // Create meaningful UX annotations based on common interface elements
-    const annotationTypes = [
-      { title: 'Navigation Clarity', category: 'navigation', description: 'Main navigation could be more obvious to users' },
-      { title: 'Call-to-Action', category: 'conversion', description: 'Primary buttons need stronger visual hierarchy' },
-      { title: 'Content Hierarchy', category: 'readability', description: 'Information architecture needs clearer structure' },
-      { title: 'User Flow', category: 'usability', description: 'Simplify the path to key user actions' },
-      { title: 'Visual Feedback', category: 'interaction', description: 'Users need clearer feedback for their actions' },
-      { title: 'Mobile Experience', category: 'responsive', description: 'Touch targets and mobile layout need optimization' },
-      { title: 'Loading States', category: 'performance', description: 'Add loading indicators for better perceived performance' },
-      { title: 'Error Prevention', category: 'validation', description: 'Help users avoid common mistakes with better form design' }
+    // Determine category and title from recommendation content or use fallback
+    const categoryMapping = {
+      navigation: ['navigation', 'menu', 'nav', 'header', 'sidebar'],
+      conversion: ['button', 'cta', 'call-to-action', 'convert', 'sign up', 'buy', 'purchase'],
+      readability: ['content', 'text', 'hierarchy', 'typography', 'font', 'read'],
+      usability: ['flow', 'path', 'journey', 'user', 'ease', 'simple'],
+      interaction: ['feedback', 'response', 'click', 'hover', 'interaction'],
+      responsive: ['mobile', 'tablet', 'responsive', 'touch', 'device'],
+      performance: ['loading', 'speed', 'performance', 'wait', 'fast'],
+      validation: ['error', 'validation', 'form', 'mistake', 'prevent']
+    };
+    
+    const fallbackTypes = [
+      { title: 'Navigation Clarity', category: 'navigation' },
+      { title: 'Call-to-Action', category: 'conversion' },
+      { title: 'Content Hierarchy', category: 'readability' },
+      { title: 'User Flow', category: 'usability' },
+      { title: 'Visual Feedback', category: 'interaction' },
+      { title: 'Mobile Experience', category: 'responsive' },
+      { title: 'Loading States', category: 'performance' },
+      { title: 'Error Prevention', category: 'validation' }
     ];
     
-    const annotationType = annotationTypes[index % annotationTypes.length];
+    // Try to determine category from recommendation content
+    let detectedCategory = 'usability'; // default
+    let detectedTitle = 'UX Improvement';
+    
+    const recLower = recommendation.toLowerCase();
+    for (const [category, keywords] of Object.entries(categoryMapping)) {
+      if (keywords.some(keyword => recLower.includes(keyword))) {
+        detectedCategory = category;
+        detectedTitle = fallbackTypes.find(type => type.category === category)?.title || 'UX Improvement';
+        break;
+      }
+    }
+    
+    // If no category detected, use fallback rotation
+    if (detectedCategory === 'usability' && !recLower.includes('user') && !recLower.includes('flow')) {
+      const fallbackType = fallbackTypes[index % fallbackTypes.length];
+      detectedCategory = fallbackType.category;
+      detectedTitle = fallbackType.title;
+    }
     
     return {
       id: `${persona}-annotation-${index + 1}`,
-      title: annotationType.title,
-      description: annotationType.description,
-      feedback: recommendation || annotationType.description,
-      category: annotationType.category,
+      title: detectedTitle,
+      description: recommendation || `Improve user experience for ${persona} persona`,
+      feedback: recommendation || `Improve user experience for ${persona} persona`,
+      category: detectedCategory,
       x: position.x,
       y: position.y,
       width: 8,
