@@ -142,84 +142,82 @@ const SummaryView: React.FC<SummaryViewProps> = ({
         </div>
       </div>
 
-      {/* Goblin Feedback Section */}
-      {personaData?.analysis && (
-        <Card className="border-0 shadow-sm bg-card">
-          <CardHeader className="pb-4">
-            <CardTitle className={`flex items-center gap-3 text-xl font-semibold ${colors.primary}`}>
-              👾 Goblin Feedback
-              {results?.goblin_gripe_level && (
-                <Badge variant="outline" className={colors.badge}>
-                  {getGripeEmoji(results.goblin_gripe_level)} {results.goblin_gripe_level}
-                </Badge>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <h4 className="font-semibold mb-3 text-foreground">Analysis:</h4>
-              <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">{personaData.analysis}</p>
-            </div>
-            
-            {(personaData.biggestGripe || personaData.wildCard) && (
-              <div>
-                <h4 className="font-semibold mb-3 text-red-600">🤬 Biggest Gripe:</h4>
-                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">{personaData.biggestGripe || personaData.wildCard || 'No specific gripes identified'}</p>
-              </div>
+      {/* Goblin Feedback Section - Always show if we have session data */}
+      <Card className="border-0 shadow-sm bg-card">
+        <CardHeader className="pb-4">
+          <CardTitle className={`flex items-center gap-3 text-xl font-semibold ${colors.primary}`}>
+            👾 Goblin Feedback
+            {results?.goblin_gripe_level && (
+              <Badge variant="outline" className={colors.badge}>
+                {getGripeEmoji(results.goblin_gripe_level)} {results.goblin_gripe_level}
+              </Badge>
             )}
-            
-            {(personaData.whatMakesGoblinHappy || personaData.experiments) && (
-              <div>
-                <h4 className={`font-semibold mb-3 ${colors.primary}`}>😈 What Actually Works:</h4>
-                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                  {personaData.whatMakesGoblinHappy || 
-                   (Array.isArray(personaData.experiments) ? personaData.experiments.join(", ") : personaData.experiments) || 
-                   'Effective approaches identified'}
-                </p>
-              </div>
-            )}
-            
-            {personaData.goblinWisdom && (
-              <div>
-                <h4 className={`font-semibold mb-3 ${colors.primary}`}>💎 Goblin Wisdom:</h4>
-                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">{personaData.goblinWisdom}</p>
-              </div>
-            )}
-            
-            {personaData.goblinPrediction && (
-              <div>
-                <h4 className="font-semibold mb-3 text-blue-600">🔮 Goblin Prediction:</h4>
-                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">{personaData.goblinPrediction}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div>
+            <h4 className="font-semibold mb-3 text-foreground">Analysis:</h4>
+            <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+              {personaData?.analysis || results?.synthesis_summary || 'Analysis completed - awaiting detailed feedback from the goblin...'}
+            </p>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold mb-3 text-red-600">🤬 Biggest Gripe:</h4>
+            <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+              {personaData?.biggestGripe || personaData?.wildCard || 'The goblin is still formulating their biggest complaint...'}
+            </p>
+          </div>
+          
+          <div>
+            <h4 className={`font-semibold mb-3 ${colors.primary}`}>😈 What Actually Works:</h4>
+            <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+              {personaData?.whatMakesGoblinHappy || 
+               (Array.isArray(personaData?.experiments) ? personaData.experiments.join(", ") : personaData?.experiments) || 
+               'The goblin is identifying what makes them happy...'}
+            </p>
+          </div>
+          
+          <div>
+            <h4 className={`font-semibold mb-3 ${colors.primary}`}>💎 Goblin Wisdom:</h4>
+            <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+              {personaData?.goblinWisdom || 'Goblin wisdom is being distilled...'}
+            </p>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold mb-3 text-blue-600">🔮 Goblin Prediction:</h4>
+            <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+              {personaData?.goblinPrediction || 'The goblin is peering into the future...'}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Recommendations */}
-      {(personaData?.recommendations || (Array.isArray(personaData?.recommendations) && personaData.recommendations.length > 0)) && (
-        <Card className="border-0 shadow-sm bg-card">
-          <CardHeader className="pb-4">
-            <CardTitle className={`flex items-center gap-3 text-xl font-semibold ${colors.primary}`}>
-              🚀 Recommendations
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {Array.isArray(personaData.recommendations) ? (
-              <ul className="space-y-3">
-                {personaData.recommendations.map((rec: string, idx: number) => (
-                  <li key={idx} className="flex items-start gap-3">
-                    <span className={`${colors.primary} mt-1 text-lg`}>•</span>
-                    <span className="text-muted-foreground leading-relaxed">{rec}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">{personaData.recommendations}</p>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      {/* Recommendations - Always show */}
+      <Card className="border-0 shadow-sm bg-card">
+        <CardHeader className="pb-4">
+          <CardTitle className={`flex items-center gap-3 text-xl font-semibold ${colors.primary}`}>
+            🚀 Recommendations
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {Array.isArray(personaData?.recommendations) && personaData.recommendations.length > 0 ? (
+            <ul className="space-y-3">
+              {personaData.recommendations.map((rec: string, idx: number) => (
+                <li key={idx} className="flex items-start gap-3">
+                  <span className={`${colors.primary} mt-1 text-lg`}>•</span>
+                  <span className="text-muted-foreground leading-relaxed">{rec}</span>
+                </li>
+              ))}
+            </ul>
+          ) : personaData?.recommendations && typeof personaData.recommendations === 'string' ? (
+            <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">{personaData.recommendations}</p>
+          ) : (
+            <p className="text-muted-foreground italic">The goblin is crafting personalized recommendations...</p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Priority Matrix */}
       {results?.priority_matrix && (
