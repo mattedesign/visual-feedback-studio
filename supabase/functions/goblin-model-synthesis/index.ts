@@ -213,8 +213,7 @@ function buildPersonaFeedback(persona: string, extractedData: any, mappedPersona
     [persona]: {
       analysis: extractedData.analysis,
       recommendations: extractedData.recommendations,
-      ...mappedPersonaData,
-      persona_specific: mappedPersonaData
+      ...mappedPersonaData
     }
   };
 }
