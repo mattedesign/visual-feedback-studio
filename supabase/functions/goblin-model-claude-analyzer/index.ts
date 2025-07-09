@@ -265,6 +265,37 @@ serve(async (req) => {
       }
     }
 
+    // Parse structured response for non-chat mode
+    let parsedData: any = {};
+    if (!actualChatMode) {
+      try {
+        // Try to extract JSON from the response
+        const jsonMatch = summaryText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          parsedData = JSON.parse(jsonMatch[0]);
+          console.log('✅ Parsed structured data:', Object.keys(parsedData));
+        } else {
+          // Fallback: create structured data from text
+          parsedData = {
+            analysis: summaryText,
+            biggestGripe: "Your interface needs some clarity improvements!",
+            whatMakesGoblinHappy: "Clear, obvious design that doesn't make users think",
+            goblinWisdom: "The best UX is invisible - users should focus on their goals, not figuring out your interface",
+            goblinPrediction: "Once you fix the confusing parts, users will complete tasks faster and with less frustration"
+          };
+        }
+      } catch (parseError) {
+        console.error('❌ Failed to parse structured data:', parseError);
+        parsedData = {
+          analysis: summaryText,
+          biggestGripe: "Your interface needs some clarity improvements!",
+          whatMakesGoblinHappy: "Clear, obvious design that doesn't make users think",
+          goblinWisdom: "The best UX is invisible",
+          goblinPrediction: "Fix the UX issues and watch user satisfaction improve"
+        };
+      }
+    }
+
     // Handle initial analysis persistence (non-chat mode)
     if (sessionId && userId && !actualChatMode) {
       try {
@@ -292,7 +323,8 @@ serve(async (req) => {
               processing_time_ms: processingTime,
               metadata: {
                 used_persona: persona,
-                is_initial_analysis: true
+                is_initial_analysis: true,
+                parsed_data: parsedData
               }
             });
 
@@ -313,8 +345,8 @@ serve(async (req) => {
         sessionId,
         persona,
         modelUsed: 'claude-sonnet-4-20250514',
-         analysisData: { analysis: summaryText },
-         rawResponse: summaryText,
+        analysisData: actualChatMode ? { analysis: summaryText } : parsedData,
+        rawResponse: summaryText,
         timestamp: new Date().toISOString()
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -348,8 +380,12 @@ function buildPrompt(persona: string, userPrompt: string, chatMode: boolean, con
 
   let basePrompt = personaInstructions[persona as keyof typeof personaInstructions] || personaInstructions.clarity;
   
-  if (chatMode && conversationHistory) {
-    basePrompt += `\n\nConversation history:\n${conversationHistory}\n\nUser's new question: ${userPrompt}`;
+  if (chatMode) {
+    basePrompt += `\n\nYou are in chat mode. Respond conversationally to the user's question while maintaining your ${persona} persona.`;
+    
+    if (conversationHistory) {
+      basePrompt += `\n\nConversation history:\n${conversationHistory}`;
+    }
     
     if (originalAnalysis) {
       try {
@@ -358,8 +394,22 @@ function buildPrompt(persona: string, userPrompt: string, chatMode: boolean, con
         basePrompt += `\n\nOriginal analysis context: [Complex analysis object - ${typeof originalAnalysis}]`;
       }
     }
+    
+    basePrompt += `\n\nUser's new question: ${userPrompt}`;
+    basePrompt += `\n\nRespond in plain text as ${persona} would, maintaining your personality while being helpful and direct.`;
   } else {
-    basePrompt += `\n\nUser's request: ${userPrompt}`;
+    basePrompt += `\n\nAnalyze the uploaded interface images and provide a structured response in JSON format with these exact fields:
+{
+  "analysis": "Your detailed UX analysis of the interface",
+  "biggestGripe": "The main UX problem that annoys you most",
+  "whatMakesGoblinHappy": "What actually works well in this design",
+  "goblinWisdom": "Your key insight or wisdom about the UX",
+  "goblinPrediction": "What will happen if the user follows your advice"
+}
+
+User's request: ${userPrompt}
+
+Be thorough, specific, and maintain your ${persona} personality throughout the analysis.`;
   }
 
   return basePrompt;

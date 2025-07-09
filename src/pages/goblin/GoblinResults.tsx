@@ -180,15 +180,30 @@ const GoblinResults: React.FC = () => {
   };
   
   if (typeof rawPersonaData === 'string') {
-    // If it's just a string, use it as the analysis
-    personaData = { 
-      ...personaData,
-      analysis: rawPersonaData || results?.synthesis_summary || 'Analysis completed'
-    };
-    console.log('✅ STRING FORMAT: Using raw string as analysis:', {
-      analysisLength: personaData.analysis.length,
-      analysisPreview: personaData.analysis.substring(0, 100) + '...'
-    });
+    // Try to parse JSON string first
+    try {
+      const parsed = JSON.parse(rawPersonaData);
+      if (parsed && typeof parsed === 'object') {
+        personaData = {
+          analysis: parsed.analysis || rawPersonaData,
+          recommendations: parsed.recommendations || '',
+          biggestGripe: parsed.biggestGripe || '',
+          whatMakesGoblinHappy: parsed.whatMakesGoblinHappy || '',
+          goblinWisdom: parsed.goblinWisdom || '',
+          goblinPrediction: parsed.goblinPrediction || ''
+        };
+        console.log('✅ PARSED JSON STRING: Successfully extracted structured data');
+      } else {
+        throw new Error('Not a valid object');
+      }
+    } catch (parseError) {
+      // If it's just a plain string, use it as the analysis
+      personaData = { 
+        ...personaData,
+        analysis: rawPersonaData || results?.synthesis_summary || 'Analysis completed'
+      };
+      console.log('✅ PLAIN STRING: Using raw string as analysis');
+    }
   } else if (rawPersonaData && typeof rawPersonaData === 'object') {
     // Enhanced object property extraction with detailed logging
     const extractedAnalysis = rawPersonaData.analysis || results?.synthesis_summary || 'Analysis completed';
@@ -208,27 +223,14 @@ const GoblinResults: React.FC = () => {
       goblinPrediction: extractedGoblinPrediction
     };
     
-    console.log('✅ OBJECT FORMAT: Extracted persona data with content lengths:', {
-      analysisLength: extractedAnalysis.length,
-      recommendationsLength: typeof extractedRecommendations === 'string' ? extractedRecommendations.length : 0,
-      biggestGripeLength: extractedBiggestGripe.length,
-      whatMakesGoblinHappyLength: extractedWhatMakesGoblinHappy.length,
-      goblinWisdomLength: extractedGoblinWisdom.length,
-      goblinPredictionLength: extractedGoblinPrediction.length,
-      analysisPreview: extractedAnalysis.substring(0, 100) + '...',
-      biggestGripePreview: extractedBiggestGripe.substring(0, 50) + '...',
-      goblinWisdomPreview: extractedGoblinWisdom.substring(0, 50) + '...'
-    });
+    console.log('✅ OBJECT FORMAT: Extracted persona data successfully');
   } else {
     // Fallback to synthesis summary
     personaData = {
       ...personaData,
       analysis: results?.synthesis_summary || 'Analysis completed'
     };
-    console.log('⚠️ FALLBACK: Using synthesis_summary as analysis:', {
-      synthesisLength: (results?.synthesis_summary || '').length,
-      synthesisPreview: (results?.synthesis_summary || 'Analysis completed').substring(0, 100) + '...'
-    });
+    console.log('⚠️ FALLBACK: Using synthesis_summary as analysis');
   }
   
   console.log('🎉 FINAL PERSONA DATA:', {

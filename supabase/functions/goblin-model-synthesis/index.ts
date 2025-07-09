@@ -507,12 +507,26 @@ class AnnotationGenerator {
     const positionInImage = Math.floor(index / imageCount);
     const position = SYNTHESIS_CONFIG.annotations.positions[positionInImage % SYNTHESIS_CONFIG.annotations.positions.length];
     
+    // Create meaningful UX annotations based on common interface elements
+    const annotationTypes = [
+      { title: 'Navigation Clarity', category: 'navigation', description: 'Main navigation could be more obvious to users' },
+      { title: 'Call-to-Action', category: 'conversion', description: 'Primary buttons need stronger visual hierarchy' },
+      { title: 'Content Hierarchy', category: 'readability', description: 'Information architecture needs clearer structure' },
+      { title: 'User Flow', category: 'usability', description: 'Simplify the path to key user actions' },
+      { title: 'Visual Feedback', category: 'interaction', description: 'Users need clearer feedback for their actions' },
+      { title: 'Mobile Experience', category: 'responsive', description: 'Touch targets and mobile layout need optimization' },
+      { title: 'Loading States', category: 'performance', description: 'Add loading indicators for better perceived performance' },
+      { title: 'Error Prevention', category: 'validation', description: 'Help users avoid common mistakes with better form design' }
+    ];
+    
+    const annotationType = annotationTypes[index % annotationTypes.length];
+    
     return {
-      id: `${persona}-rec-${index + 1}`,
-      title: `${persona.charAt(0).toUpperCase() + persona.slice(1)} Recommendation ${index + 1}`,
-      description: recommendation,
-      feedback: recommendation,
-      category: persona === 'clarity' ? 'goblin_wisdom' : 'improvement',
+      id: `${persona}-annotation-${index + 1}`,
+      title: annotationType.title,
+      description: annotationType.description,
+      feedback: recommendation || annotationType.description,
+      category: annotationType.category,
       x: position.x,
       y: position.y,
       width: 8,
