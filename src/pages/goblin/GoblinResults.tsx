@@ -102,8 +102,43 @@ const GoblinResults: React.FC = () => {
 
   // Extract session and persona data early for use in handlers
   const session = results?.goblin_analysis_sessions;
-  // Fix: Handle both string and object formats for persona feedback
-  const rawPersonaData = results?.persona_feedback?.[session?.persona_type];
+  
+  // 🔍 DEBUG: Enhanced logging for data extraction debugging
+  console.log('🔍 GOBLIN RESULTS - DATA EXTRACTION DEBUG:', {
+    hasResults: !!results,
+    hasSession: !!session,
+    personaType: session?.persona_type,
+    hasPersonaFeedback: !!results?.persona_feedback,
+    personaFeedbackKeys: results?.persona_feedback ? Object.keys(results.persona_feedback) : [],
+    fullPersonaFeedback: results?.persona_feedback,
+    hasSynthesis: !!results?.synthesis_summary
+  });
+  
+  // Fix: Improved persona data access with multiple fallback strategies
+  let rawPersonaData = null;
+  
+  // Strategy 1: Try direct persona type access
+  if (results?.persona_feedback && session?.persona_type) {
+    rawPersonaData = results.persona_feedback[session.persona_type];
+    console.log('🎯 Strategy 1 - Direct access result:', rawPersonaData);
+  }
+  
+  // Strategy 2: If Strategy 1 failed, try first available persona data
+  if (!rawPersonaData && results?.persona_feedback) {
+    const availablePersonas = Object.keys(results.persona_feedback);
+    if (availablePersonas.length > 0) {
+      rawPersonaData = results.persona_feedback[availablePersonas[0]];
+      console.log('🎯 Strategy 2 - First available persona:', availablePersonas[0], rawPersonaData);
+    }
+  }
+  
+  // Strategy 3: Direct analysis property fallback
+  if (!rawPersonaData && results?.persona_feedback) {
+    rawPersonaData = results.persona_feedback;
+    console.log('🎯 Strategy 3 - Direct persona_feedback:', rawPersonaData);
+  }
+  
+  console.log('🔍 Final rawPersonaData:', rawPersonaData);
   
   // Parse the persona feedback correctly with proper typing
   let personaData: PersonaData = {
@@ -121,6 +156,7 @@ const GoblinResults: React.FC = () => {
       ...personaData,
       analysis: rawPersonaData || results?.synthesis_summary || 'Analysis completed'
     };
+    console.log('✅ Using string format:', personaData.analysis.substring(0, 50) + '...');
   } else if (rawPersonaData && typeof rawPersonaData === 'object') {
     // If it's an object, merge with defaults
     personaData = {
@@ -132,13 +168,28 @@ const GoblinResults: React.FC = () => {
       goblinWisdom: rawPersonaData.goblinWisdom || '',
       goblinPrediction: rawPersonaData.goblinPrediction || ''
     };
+    console.log('✅ Using object format:', {
+      hasAnalysis: !!personaData.analysis,
+      hasBiggestGripe: !!personaData.biggestGripe,
+      hasGoblinWisdom: !!personaData.goblinWisdom,
+      analysisPreview: personaData.analysis.substring(0, 50) + '...'
+    });
   } else {
     // Fallback to synthesis summary
     personaData = {
       ...personaData,
       analysis: results?.synthesis_summary || 'Analysis completed'
     };
+    console.log('⚠️ Using fallback to synthesis_summary:', personaData.analysis.substring(0, 50) + '...');
   }
+  
+  console.log('🎉 FINAL PERSONA DATA:', {
+    hasAnalysis: !!personaData.analysis,
+    analysisLength: personaData.analysis?.length || 0,
+    hasBiggestGripe: !!personaData.biggestGripe,
+    hasGoblinWisdom: !!personaData.goblinWisdom,
+    hasGoblinPrediction: !!personaData.goblinPrediction
+  });
 
   const handleExport = () => {
     if (!results || !session || !personaData) return;
