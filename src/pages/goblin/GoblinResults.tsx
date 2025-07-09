@@ -4,12 +4,13 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { logImageDebugInfo } from '@/utils/imageDebugUtils';
+import { useImageLoader } from '@/hooks/goblin/useImageLoader';
 
 // ✅ Tab components
 import DetailedModeView from '@/components/goblin/DetailedModeView';
 import ClarityChat from '@/components/goblin/ClarityChat';
 import SummaryView from '@/components/goblin/SummaryView';
+import { ImageLoadingDebug } from '@/components/goblin/debug/ImageLoadingDebug';
 
 // Type definition for persona data
 interface PersonaData {
@@ -32,8 +33,17 @@ interface PersonaData {
 const GoblinResults: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const [results, setResults] = useState<any>(null);
-  const [images, setImages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Use the robust image loader hook
+  const { 
+    images, 
+    loading: imagesLoading, 
+    error: imageError, 
+    retry: retryImages,
+    hasAccessibleImages,
+    accessibilityReport
+  } = useImageLoader({ sessionId, autoLoad: true });
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [copied, setCopied] = useState(false);
   const [showAnnotations, setShowAnnotations] = useState(true);
@@ -74,27 +84,8 @@ const GoblinResults: React.FC = () => {
         }
         
         setResults(latestResult);
-
-        // ✅ USE HYDRATION: Call edge function instead of direct database query
-        const { data: imageResponse, error: imageError } = await supabase.functions.invoke('get-images-by-session', {
-          body: { sessionId }
-        });
-
-        if (imageError) throw imageError;
         
-        const images = imageResponse?.validImages || [];
-        
-        // ✅ HYDRATION DEBUGGING: Add requested console.log
-        console.log("🧠 Hydration response", images);
-        console.log('🎯 GoblinResults - Hydrated images:', images.length);
-        console.log('🧙‍♂️ Goblin magic summary:', imageResponse?.summary);
-        
-        // Enhanced debug logging
-        if (images && images.length > 0) {
-          logImageDebugInfo(images, 'GoblinResults - Hydrated Images');
-        }
-        
-        setImages(images);
+        // Images are now handled by useImageLoader hook
       } catch (error) {
         console.error('Failed to load results:', error);
         toast.error('Failed to load analysis results');
@@ -398,8 +389,14 @@ const GoblinResults: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="p-6 text-center">Loading...</div>;
+  if (loading) return <div className="p-6 text-center">Loading analysis results...</div>;
   if (!results) return <div className="p-6 text-center">No results found.</div>;
+  
+  // Show loading state for images
+  const isImagesLoading = imagesLoading && images.length === 0;
+  
+  // Show image error with retry option
+  const showImageError = imageError && !isImagesLoading;
 
   // Get annotation count for badge
   const annotationCount = results?.annotations?.length || 0;
@@ -407,6 +404,18 @@ const GoblinResults: React.FC = () => {
   return (
     <div className="min-h-screen bg-white">
       <div className="flex flex-col items-start flex-1 self-stretch rounded-[20px] max-w-7xl mx-auto px-8 py-6">
+        {/* Image Loading Debug Component */}
+        <div className="w-full mb-6">
+          <ImageLoadingDebug
+            images={images}
+            loading={imagesLoading}
+            error={imageError}
+            retryCount={accessibilityReport?.total || 0}
+            accessibilityReport={accessibilityReport}
+            onRetry={retryImages}
+          />
+        </div>
+        
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'summary' | 'detailed' | 'clarity')}>
           <TabsList className="sticky top-0 z-10 grid w-full grid-cols-3 bg-muted border-0 p-1 backdrop-blur-sm">
             <TabsTrigger value="summary" className="text-sm font-medium">Summary</TabsTrigger>
@@ -427,6 +436,44 @@ const GoblinResults: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="detailed" className="mt-8">
+            {isImagesLoading && (
+              <div className="flex items-center justify-center p-8 text-muted-foreground">
+                <div className="animate-spin mr-3 h-5 w-5 border-2 border-primary border-t-transparent rounded-full"></div>
+                Loading images... ({accessibilityReport.total > 0 ? `${accessibilityReport.total} found` : 'searching'})
+              </div>
+            )}
+            
+            {showImageError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-red-800 font-medium">Failed to load images</p>
+                    <p className="text-red-600 text-sm mt-1">{imageError}</p>
+                    {accessibilityReport.total > 0 && (
+                      <p className="text-red-600 text-xs mt-1">
+                        Found {accessibilityReport.total} images, {accessibilityReport.accessible} accessible
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={retryImages}
+                    className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-800 rounded text-sm"
+                  >
+                    Retry
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {!hasAccessibleImages && images.length > 0 && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                <p className="text-yellow-800 font-medium">Image accessibility issues detected</p>
+                <p className="text-yellow-600 text-sm mt-1">
+                  {accessibilityReport.inaccessible} of {accessibilityReport.total} images cannot be displayed properly.
+                </p>
+              </div>
+            )}
+            
             <DetailedModeView
               images={images}
               session={session}
