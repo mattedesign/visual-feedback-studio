@@ -90,17 +90,31 @@ serve(async (req) => {
       throw new Error('No images found for analysis session');
     }
 
-    // ✅ FIXED: Extract simple URL strings for Claude
+    // ✅ FIXED: Extract simple URL strings for Claude - use only file_path from database
     const validImageUrls = imageUrls
-      .filter(img => img && (img.url || img.file_path))
-      .map(img => img.url || img.file_path); // Extract just the URL string
+      .filter(img => img && img.file_path && typeof img.file_path === 'string' && img.file_path.trim().length > 0)
+      .map(img => img.file_path); // Extract just the file_path string
+
+    console.log('🔍 URL Extraction Debug:', {
+      totalImages: imageUrls.length,
+      imageStructure: imageUrls.slice(0, 2).map(img => ({
+        hasFilePath: !!img?.file_path,
+        filePathType: typeof img?.file_path,
+        filePathValue: img?.file_path?.substring(0, 50) + '...',
+        hasUrl: !!img?.url,
+        keys: Object.keys(img || {})
+      })),
+      validUrlsCount: validImageUrls.length,
+      validUrlsSample: validImageUrls.slice(0, 2)
+    });
 
     if (validImageUrls.length === 0) {
+      console.error('❌ No valid image URLs found. Image structure:', imageUrls);
       throw new Error(`No valid image URLs found. Please check image storage and accessibility.`);
     }
 
     console.log(`✅ Found ${validImageUrls.length} valid images for analysis`);
-    console.log('📸 Extracted URLs for Claude:', validImageUrls.slice(0, 2)); // Log first 2 URLs
+    console.log('📸 Final URLs being sent to Claude:', validImageUrls.slice(0, 2)); // Log first 2 URLs
 
     console.log('🎯 Orchestrating goblin analysis:', {
       sessionId: sessionId?.substring(0, 8),
