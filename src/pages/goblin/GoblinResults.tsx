@@ -261,12 +261,17 @@ const GoblinResults: React.FC = () => {
     
     if (typeof analysisValue === 'string' && analysisValue.includes('"analysis":')) {
       console.log('🔍 Found nested JSON in analysis field, trying to parse...');
+      console.log('🔍 Raw analysis value:', analysisValue.substring(0, 200) + '...');
       try {
         const parsed = JSON.parse(analysisValue);
+        console.log('🔍 Parsed nested JSON:', parsed);
+        console.log('🔍 Parsed recommendations:', parsed.recommendations);
+        
         analysisValue = parsed.analysis || analysisValue;
         // Extract all nested fields for strategic persona
         if (parsed.recommendations && Array.isArray(parsed.recommendations)) {
           nestedRecommendations = parsed.recommendations;
+          console.log('✅ Extracted nested recommendations:', nestedRecommendations);
         }
         if (parsed.businessImpact) {
           nestedBusinessImpact = parsed.businessImpact;
@@ -288,7 +293,7 @@ const GoblinResults: React.FC = () => {
     
     // Enhanced object property extraction with detailed logging
     const extractedAnalysis = analysisValue || results?.synthesis_summary || 'Analysis completed';
-    const extractedRecommendations = nestedRecommendations.length > 0 ? nestedRecommendations : (rawPersonaData.recommendations || []);
+    const extractedRecommendations = nestedRecommendations.length > 0 ? nestedRecommendations : (Array.isArray(rawPersonaData.recommendations) && rawPersonaData.recommendations.length > 0 ? rawPersonaData.recommendations : []);
     const extractedBiggestGripe = rawPersonaData.biggestGripe || rawPersonaData.wildCard || '';
     const extractedWhatMakesGoblinHappy = rawPersonaData.whatMakesGoblinHappy || 
                                          (Array.isArray(rawPersonaData.experiments) ? rawPersonaData.experiments.join(", ") : rawPersonaData.experiments) || '';
@@ -331,7 +336,9 @@ const GoblinResults: React.FC = () => {
     analysisLength: personaData.analysis?.length || 0,
     hasBiggestGripe: !!personaData.biggestGripe,
     hasGoblinWisdom: !!personaData.goblinWisdom,
-    hasGoblinPrediction: !!personaData.goblinPrediction
+    hasGoblinPrediction: !!personaData.goblinPrediction,
+    recommendationsCount: Array.isArray(personaData.recommendations) ? personaData.recommendations.length : 0,
+    recommendations: personaData.recommendations
   });
 
   const handleExport = () => {
