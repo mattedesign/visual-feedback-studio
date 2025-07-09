@@ -47,6 +47,9 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
     };
 
     const currentMessageInput = inputValue;
+    const currentMessageCount = messages.length;
+    
+    // Optimistically add user message to UI
     setMessages(prev => [...prev, userMessage]);
     setInputValue('');
     setIsLoading(true);
@@ -54,6 +57,7 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
     try {
       console.log('🎭 Sending chat message for session:', session?.id);
       console.log('📝 Message:', currentMessageInput);
+      console.log('📊 Current message count before send:', currentMessageCount);
       
       // Track message sending
       debugMonitor.trackMessageSent(currentMessageInput, 'user');
@@ -85,18 +89,28 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
       // Track successful message reception
       debugMonitor.trackMessageReceived(data.rawResponse || '', 'edge-function');
 
-      // Wait a moment for persistence to complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Expected message count: current + user message + AI response
+      const expectedMessageCount = currentMessageCount + 2;
+      console.log('🔍 Validating persistence - expecting', expectedMessageCount, 'messages');
 
-      // Track persistence attempt
-      debugMonitor.trackPersistenceAttempt('load-history');
+      // Validate message persistence with retries
+      const persistenceValidated = await validateMessagePersistence(expectedMessageCount, 3);
       
-      // Reload messages from database to get the complete conversation
-      const reloadSuccess = await reloadMessages();
-      
-      if (!reloadSuccess) {
-        console.warn('❌ Failed to reload from database, adding message directly');
-        debugMonitor.trackPersistenceFailure('load-history', new Error('Failed to reload messages from database'));
+      if (persistenceValidated) {
+        console.log('✅ Messages persisted successfully, reloading from database');
+        
+        // Reload messages from database to get the complete conversation
+        const reloadSuccess = await reloadMessages();
+        
+        if (reloadSuccess) {
+          console.log('✅ Messages reloaded successfully from database');
+          debugMonitor.logDebugEvent('PERSISTENCE', 'LOAD_SUCCESS', { messageCount: messages.length });
+        } else {
+          throw new Error('Failed to reload messages after successful persistence');
+        }
+      } else {
+        console.warn('⚠️ Persistence validation failed, using fallback approach');
+        debugMonitor.trackPersistenceFailure('validation', new Error('Message persistence validation failed'));
         
         // Fallback: add the AI response directly to the UI
         const clarityResponse: ChatMessage = {
@@ -108,16 +122,15 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
         };
         setMessages(prev => [...prev, clarityResponse]);
         toast.warning('Message sent but may not be saved - please refresh to see full history');
-      } else {
-        console.log('✅ Messages reloaded successfully from database');
-        debugMonitor.logDebugEvent('PERSISTENCE', 'LOAD_SUCCESS', { messageCount: messages.length });
       }
 
     } catch (error) {
       console.error('Chat error:', error);
       toast.error('Failed to send message to Clarity');
       
-      // Add error message
+      // Remove the optimistic user message and add error message
+      setMessages(prev => prev.slice(0, -1));
+      
       const errorMessage: ChatMessage = {
         id: Date.now().toString() + '_error',
         role: 'clarity',
