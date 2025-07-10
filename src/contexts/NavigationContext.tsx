@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
 interface NavigationContextType {
   activeTab: 'summary' | 'detailed' | 'clarity';
@@ -16,16 +16,25 @@ interface NavigationProviderProps {
   children: ReactNode;
   onTabChange?: (tab: 'summary' | 'detailed' | 'clarity') => void;
   onImageChange?: (index: number) => void;
+  initialTotalImages?: number;
 }
 
 export function NavigationProvider({ 
   children, 
   onTabChange, 
-  onImageChange 
+  onImageChange,
+  initialTotalImages = 0
 }: NavigationProviderProps) {
   const [activeTab, setActiveTabState] = useState<'summary' | 'detailed' | 'clarity'>('summary');
   const [currentImageIndex, setCurrentImageIndexState] = useState(0);
-  const [totalImages, setTotalImages] = useState(0);
+  const [totalImages, setTotalImages] = useState(initialTotalImages);
+
+  // Update totalImages when initialTotalImages prop changes
+  useEffect(() => {
+    if (initialTotalImages > 0) {
+      setTotalImages(initialTotalImages);
+    }
+  }, [initialTotalImages]);
 
   const setActiveTab = (tab: 'summary' | 'detailed' | 'clarity') => {
     setActiveTabState(tab);

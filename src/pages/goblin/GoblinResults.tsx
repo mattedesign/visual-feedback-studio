@@ -50,6 +50,35 @@ const GoblinResults: React.FC = () => {
   const [showAnnotations, setShowAnnotations] = useState(true);
   const [activeTab, setActiveTab] = useState<'summary' | 'detailed' | 'clarity'>('summary');
   const [chatFeedbackAnchors, setChatFeedbackAnchors] = useState<{[messageId: string]: any[]}>({});
+  const [totalImages, setTotalImages] = useState(0);
+
+  // Function to extract maximum screen number from analysis text
+  const extractMaxScreenNumber = (analysisData: any): number => {
+    if (!analysisData) return 0;
+    
+    let maxScreenNumber = 0;
+    const screenRegex = /\b(?:screen|Screen)\s+(\d+)\b/gi;
+    
+    // Search through all text content in the analysis data
+    const searchInObject = (obj: any) => {
+      if (typeof obj === 'string') {
+        let match;
+        while ((match = screenRegex.exec(obj)) !== null) {
+          const screenNumber = parseInt(match[1], 10);
+          if (screenNumber > maxScreenNumber) {
+            maxScreenNumber = screenNumber;
+          }
+        }
+        // Reset regex lastIndex for next search
+        screenRegex.lastIndex = 0;
+      } else if (obj && typeof obj === 'object') {
+        Object.values(obj).forEach(value => searchInObject(value));
+      }
+    };
+    
+    searchInObject(analysisData);
+    return maxScreenNumber;
+  };
 
   useEffect(() => {
     const loadResults = async () => {
@@ -333,6 +362,20 @@ const GoblinResults: React.FC = () => {
     recommendations: personaData.recommendations
   });
 
+  // Extract total images count from analysis data and update navigation context
+  useEffect(() => {
+    if (results && personaData) {
+      const extractedScreenCount = extractMaxScreenNumber(results);
+      const finalImageCount = Math.max(extractedScreenCount, images.length);
+      console.log('🖼️ Setting total images:', {
+        extractedFromAnalysis: extractedScreenCount,
+        actualImagesLoaded: images.length,
+        finalCount: finalImageCount
+      });
+      setTotalImages(finalImageCount);
+    }
+  }, [results, personaData, images.length]);
+
   const handleExport = () => {
     if (!results || !session || !personaData) return;
     const exportData = {
@@ -406,6 +449,7 @@ const GoblinResults: React.FC = () => {
     <NavigationProvider 
       onTabChange={setActiveTab} 
       onImageChange={setCurrentImageIndex}
+      initialTotalImages={totalImages}
     >
       <div className="min-h-screen bg-white">
         <div className="flex flex-col items-start flex-1 self-stretch rounded-[20px] max-w-7xl mx-auto px-8 py-6">
