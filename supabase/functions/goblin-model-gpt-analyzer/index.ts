@@ -17,9 +17,22 @@ serve(async (req) => {
   try {
     const { sessionId, imageUrls, prompt, persona, chatMode, conversationHistory, originalAnalysis, saveInitialOnly, initialContent } = await req.json();
 
+    // Add persona mapping to fix frontend/backend persona name mismatches
+    const personaMapping: { [key: string]: string } = {
+      'mad': 'mad_scientist',
+      'exec': 'executive',
+      'strategic': 'strategic', 
+      'clarity': 'clarity',
+      'mirror': 'mirror'
+    };
+
+    // Normalize persona name
+    const normalizedPersona = personaMapping[persona] || persona;
+    console.log(`🎭 GPT Persona mapping: ${persona} → ${normalizedPersona}`);
+
     const actualChatMode = chatMode === true;
     
-    console.log(`🎯 GPT Processing request - Session: ${sessionId?.substring(0, 8)}, Persona: ${persona}, Chat: ${actualChatMode}, HasImages: ${!!imageUrls}`);
+    console.log(`🎯 GPT Processing request - Session: ${sessionId?.substring(0, 8)}, Persona: ${normalizedPersona}, Chat: ${actualChatMode}, HasImages: ${!!imageUrls}`);
 
     const openAiApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAiApiKey) {
@@ -76,7 +89,7 @@ serve(async (req) => {
               model_used: 'gpt-4.1-2025-04-14',
               processing_time_ms: 0,
               metadata: {
-                used_persona: persona,
+                used_persona: normalizedPersona,
                 is_initial_analysis: true,
                 save_initial_only: true,
                 fallback_model: true
@@ -172,7 +185,7 @@ serve(async (req) => {
       // Add text prompt
       content.push({
         type: "text",
-        text: buildPrompt(persona, prompt, actualChatMode, conversationHistory, originalAnalysis)
+        text: buildPrompt(normalizedPersona, prompt, actualChatMode, conversationHistory, originalAnalysis)
       });
       
       messages.push({
@@ -184,7 +197,7 @@ serve(async (req) => {
       // Text-only mode for chat
       messages.push({
         role: "user",
-        content: buildPrompt(persona, prompt, actualChatMode, conversationHistory, originalAnalysis)
+        content: buildPrompt(normalizedPersona, prompt, actualChatMode, conversationHistory, originalAnalysis)
       });
     }
 
@@ -201,7 +214,7 @@ serve(async (req) => {
         model: 'gpt-4.1-2025-04-14',
         messages: messages,
         max_tokens: 4000,
-        temperature: persona === 'clarity' ? 0.3 : 0.7,
+        temperature: normalizedPersona === 'clarity' ? 0.3 : 0.7,
       })
     });
 
@@ -272,7 +285,7 @@ serve(async (req) => {
             model_used: 'gpt-4.1-2025-04-14',
             processing_time_ms: processingTime,
             metadata: {
-              used_persona: persona,
+              used_persona: normalizedPersona,
               is_chat_response: true,
               fallback_model: true
             }
@@ -332,16 +345,16 @@ serve(async (req) => {
           console.log('✅ Raw parsed data fields:', Object.keys(rawParsed));
           
           // Validate persona-specific fields and create fallback if needed
-          parsedData = validateAndNormalizePersonaData(rawParsed, persona, summaryText);
-          console.log('✅ Validated structured data for persona:', persona, 'Fields:', Object.keys(parsedData));
+          parsedData = validateAndNormalizePersonaData(rawParsed, normalizedPersona, summaryText);
+          console.log('✅ Validated structured data for persona:', normalizedPersona, 'Fields:', Object.keys(parsedData));
         } else {
           console.warn('❌ No valid JSON found in response, creating fallback data');
-          parsedData = createPersonaFallbackData(persona, summaryText);
+          parsedData = createPersonaFallbackData(normalizedPersona, summaryText);
         }
       } catch (parseError) {
         console.error('❌ Failed to parse structured data:', parseError);
         console.error('❌ Raw response excerpt:', summaryText.substring(0, 500));
-        parsedData = createPersonaFallbackData(persona, summaryText);
+        parsedData = createPersonaFallbackData(normalizedPersona, summaryText);
       }
     }
 
@@ -370,7 +383,7 @@ serve(async (req) => {
               model_used: 'gpt-4.1-2025-04-14',
               processing_time_ms: processingTime,
               metadata: {
-                used_persona: persona,
+                used_persona: normalizedPersona,
                 is_initial_analysis: true,
                 parsed_data: parsedData,
                 fallback_model: true
