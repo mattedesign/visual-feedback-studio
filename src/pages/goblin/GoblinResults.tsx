@@ -248,202 +248,97 @@ const GoblinResults: React.FC = () => {
 
   // Enhanced persona data extraction with better error handling and persona-specific normalization
   const extractPersonaData = (data: any, personaType: string, fallbackSummary: string): PersonaData => {
+    console.log(`🎭 Extracting data for persona: ${personaType}`, data);
+    
     const defaultPersonaData: PersonaData = {
       analysis: fallbackSummary || 'Analysis completed',
       recommendations: [],
       biggestGripe: 'No specific issues identified',
-      whatMakesGoblinHappy: 'Overall design has potential',
-      goblinWisdom: 'Every design has opportunities for improvement',
-      goblinPrediction: 'With improvements, user experience will enhance',
-      businessImpact: '',
-      implementation: '',
-      visualStrategy: [],
-      competitiveVisualEdge: [],
-      metrics: []
+      whatMakesGoblinHappy: 'Design has potential',
+      goblinWisdom: 'Every interface can be improved',
+      goblinPrediction: 'Better UX with fixes'
     };
 
-    // Helper function to normalize persona-specific data to common format
-    const normalizePersonaData = (parsed: any, persona: string): PersonaData => {
-      console.log(`🔄 Normalizing ${persona} persona data:`, Object.keys(parsed || {}));
-      
-      switch (persona) {
-        case 'strategic':
-          return {
-            ...defaultPersonaData,
-            analysis: parsed.analysis || parsed.executiveSummary || parsed.businessImpact || fallbackSummary,
-            recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : 
-                           Array.isArray(parsed.strategicRecommendations) ? parsed.strategicRecommendations :
-                           Array.isArray(parsed.visualStrategy) ? parsed.visualStrategy :
-                           Array.isArray(parsed.competitiveVisualEdge) ? parsed.competitiveVisualEdge :
-                           parsed.recommendations ? [parsed.recommendations] :
-                           defaultPersonaData.recommendations,
-            biggestGripe: parsed.businessImpact || parsed.biggestGripe || parsed.implementation || defaultPersonaData.biggestGripe,
-            whatMakesGoblinHappy: parsed.competitiveAdvantage || parsed.whatMakesGoblinHappy || parsed.visualStrategy?.[0] || defaultPersonaData.whatMakesGoblinHappy,
-            goblinWisdom: parsed.strategicPriority || parsed.goblinWisdom || parsed.businessImpact || defaultPersonaData.goblinWisdom,
-            goblinPrediction: parsed.measurableOutcomes || parsed.goblinPrediction || parsed.implementation || defaultPersonaData.goblinPrediction,
-            businessImpact: parsed.businessImpact || parsed.analysis || '',
-            implementation: parsed.implementation || parsed.strategicPriority || ''
-          };
-          
-        case 'mirror':
-          return {
-            ...defaultPersonaData,
-            analysis: parsed.insights || parsed.reflection || fallbackSummary,
-            recommendations: Array.isArray(parsed.empathyGaps) ? parsed.empathyGaps : 
-                           Array.isArray(parsed.visualReflections) ? parsed.visualReflections :
-                           defaultPersonaData.recommendations,
-            biggestGripe: parsed.emotionalImpact || parsed.empathyGaps?.[0] || defaultPersonaData.biggestGripe,
-            whatMakesGoblinHappy: parsed.userStory || parsed.insights || defaultPersonaData.whatMakesGoblinHappy,
-            goblinWisdom: parsed.reflection || parsed.insights || defaultPersonaData.goblinWisdom,
-            goblinPrediction: parsed.userStory || parsed.emotionalImpact || defaultPersonaData.goblinPrediction
-          };
-          
-        case 'mad_scientist':
-        case 'mad':
-          return {
-            ...defaultPersonaData,
-            analysis: parsed.hypothesis || parsed.madScience || parsed.analysis || fallbackSummary,
-            recommendations: Array.isArray(parsed.experiments) ? parsed.experiments : 
-                           Array.isArray(parsed.crazyIdeas) ? parsed.crazyIdeas :
-                           Array.isArray(parsed.recommendations) ? parsed.recommendations :
-                           defaultPersonaData.recommendations,
-            biggestGripe: parsed.weirdFindings || parsed.biggestGripe || defaultPersonaData.biggestGripe,
-            whatMakesGoblinHappy: parsed.hypothesis || parsed.crazyIdeas?.[0] || parsed.whatMakesGoblinHappy || defaultPersonaData.whatMakesGoblinHappy,
-            goblinWisdom: parsed.labNotes || parsed.goblinWisdom || defaultPersonaData.goblinWisdom,
-            goblinPrediction: parsed.hypothesis || parsed.goblinPrediction || defaultPersonaData.goblinPrediction
-          };
-          
-        case 'exec':
-          return {
-            ...defaultPersonaData,
-            analysis: parsed.executiveSummary || parsed.analysis || fallbackSummary,
-            recommendations: Array.isArray(parsed.strategicRecommendations) ? parsed.strategicRecommendations : 
-                           Array.isArray(parsed.businessRisks) ? parsed.businessRisks :
-                           defaultPersonaData.recommendations,
-            biggestGripe: parsed.roiImpact || parsed.stakeholderConcerns || defaultPersonaData.biggestGripe,
-            whatMakesGoblinHappy: parsed.competitiveImplications || parsed.executiveSummary || defaultPersonaData.whatMakesGoblinHappy,
-            goblinWisdom: parsed.stakeholderConcerns || parsed.roiImpact || defaultPersonaData.goblinWisdom,
-            goblinPrediction: parsed.competitiveImplications || parsed.roiImpact || defaultPersonaData.goblinPrediction,
-            businessImpact: parsed.roiImpact || '',
-            implementation: parsed.strategicRecommendations?.join('; ') || ''
-          };
-          
-        case 'clarity':
-        default:
-          return {
-            ...defaultPersonaData,
-            analysis: parsed.analysis || fallbackSummary,
-            recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : 
-                           parsed.recommendations ? [parsed.recommendations] : 
-                           Array.isArray(parsed.experiments) ? parsed.experiments :
-                           defaultPersonaData.recommendations,
-            biggestGripe: parsed.biggestGripe || parsed.weirdFindings || defaultPersonaData.biggestGripe,
-            whatMakesGoblinHappy: parsed.whatMakesGoblinHappy || parsed.hypothesis || defaultPersonaData.whatMakesGoblinHappy,
-            goblinWisdom: parsed.goblinWisdom || parsed.labNotes || defaultPersonaData.goblinWisdom,
-            goblinPrediction: parsed.goblinPrediction || parsed.madScience || defaultPersonaData.goblinPrediction
-          };
-      }
-    };
-
+    // Handle string responses (remove JSON artifacts)
     if (typeof data === 'string') {
-      // Enhanced JSON parsing with multiple strategies
-      let cleanData = data;
+      console.log('📝 Processing string response');
       
-      console.log('🔍 Processing string data:', { length: data.length, preview: data.substring(0, 100) });
-      
-      // Strategy 1: Remove markdown code blocks first
-      cleanData = cleanData.replace(/```json\s*[\s\S]*?\s*```/g, '');
-      cleanData = cleanData.replace(/```[\s\S]*?```/g, '');
-      
-      // Strategy 2: Find JSON-like content between braces
-      const jsonMatch = cleanData.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        cleanData = jsonMatch[0];
-      }
-      
-      // Strategy 3: Clean up common JSON formatting issues
-      cleanData = cleanData
-        .replace(/\\n/g, '\\n')  // Preserve escaped newlines
-        .replace(/\n/g, ' ')     // Replace actual newlines with spaces
-        .replace(/\s+/g, ' ')    // Normalize whitespace
+      // Remove JSON code blocks and artifacts
+      let cleanText = data
+        .replace(/```json/g, '')
+        .replace(/```/g, '')
+        .replace(/\{[\s\S]*?\}/g, '') // Remove JSON objects
         .trim();
       
-      try {
-        console.log('🔍 Attempting JSON parse on cleaned data:', { cleanedLength: cleanData.length });
-        const parsed = JSON.parse(cleanData);
-        
-        if (parsed && typeof parsed === 'object') {
-          console.log('✅ Successfully parsed JSON, normalizing for persona:', personaType);
-          return normalizePersonaData(parsed, personaType);
-        }
-      } catch (parseError) {
-        console.log('⚠️ Initial JSON parse failed, trying nested object extraction:', parseError.message);
-        
-        // Strategy 4: Try to find and parse nested JSON objects
-        try {
-          // Look for nested objects that might be valid JSON
-          const nestedJsonMatch = data.match(/\{[^}]*"[^"]*":\s*\{[\s\S]*?\}\s*[^{]*\}/);
-          if (nestedJsonMatch) {
-            const nestedParsed = JSON.parse(nestedJsonMatch[0]);
-            console.log('✅ Successfully parsed nested JSON');
-            return normalizePersonaData(nestedParsed, personaType);
-          }
-        } catch (nestedError) {
-          console.log('⚠️ Nested JSON parse also failed, trying field extraction');
-        }
-        
-        // Strategy 5: Extract specific fields using advanced regex patterns
-        const extractedFields: any = {};
-        
-        // Enhanced patterns that handle nested quotes and newlines
-        const fieldPatterns = [
-          { field: 'analysis', pattern: /"analysis"\s*:\s*"([^"\\]*(\\.[^"\\]*)*)"/s },
-          { field: 'executiveSummary', pattern: /"executiveSummary"\s*:\s*"([^"\\]*(\\.[^"\\]*)*)"/s },
-          { field: 'insights', pattern: /"insights"\s*:\s*"([^"\\]*(\\.[^"\\]*)*)"/s },
-          { field: 'hypothesis', pattern: /"hypothesis"\s*:\s*"([^"\\]*(\\.[^"\\]*)*)"/s },
-          { field: 'biggestGripe', pattern: /"biggestGripe"\s*:\s*"([^"\\]*(\\.[^"\\]*)*)"/s },
-          { field: 'goblinWisdom', pattern: /"goblinWisdom"\s*:\s*"([^"\\]*(\\.[^"\\]*)*)"/s },
-          { field: 'recommendations', pattern: /"recommendations"\s*:\s*\[(.*?)\]/s }
-        ];
-        
-        fieldPatterns.forEach(({ field, pattern }) => {
-          const match = data.match(pattern);
-          if (match && match[1]) {
-            if (field === 'recommendations') {
-              try {
-                // Try to parse the array content
-                const arrayContent = `[${match[1]}]`;
-                const parsedArray = JSON.parse(arrayContent);
-                extractedFields[field] = parsedArray;
-              } catch {
-                // Fallback: split by comma and clean up
-                extractedFields[field] = match[1]
-                  .split(',')
-                  .map(item => item.replace(/["\s]/g, ''))
-                  .filter(item => item.length > 0);
-              }
-            } else {
-              extractedFields[field] = match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
-            }
-          }
-        });
-        
-        if (Object.keys(extractedFields).length > 0) {
-          console.log('✅ Extracted fields successfully:', Object.keys(extractedFields));
-          return normalizePersonaData(extractedFields, personaType);
-        }
-        
-        // Final fallback - use the entire string as analysis
-        console.log('⚠️ All parsing strategies failed, using raw text');
-        return normalizePersonaData({ analysis: data }, personaType);
+      if (cleanText.length > 0) {
+        return {
+          ...defaultPersonaData,
+          analysis: cleanText
+        };
       }
-    } else if (data && typeof data === 'object') {
-      console.log('✅ Data is already object, normalizing for persona:', personaType);
-      return normalizePersonaData(data, personaType);
+      
+      // If no clean text, try to extract from JSON
+      try {
+        const jsonMatch = data.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          return extractFromObject(parsed, personaType, defaultPersonaData);
+        }
+      } catch (error) {
+        console.warn('JSON parsing failed, using fallback');
+      }
+      
+      return defaultPersonaData;
     }
     
-    console.log('⚠️ No valid data found, using defaults');
+    // Handle object responses
+    if (data && typeof data === 'object') {
+      console.log('📦 Processing object response');
+      return extractFromObject(data, personaType, defaultPersonaData);
+    }
+    
     return defaultPersonaData;
+  };
+
+  // Helper function to extract from object
+  const extractFromObject = (obj: any, personaType: string, fallback: PersonaData): PersonaData => {
+    // Map persona-specific fields to common format
+    const getAnalysis = () => {
+      return obj.analysis || obj.insights || obj.executiveSummary || obj.hypothesis || fallback.analysis;
+    };
+    
+    const getRecommendations = () => {
+      if (Array.isArray(obj.recommendations)) return obj.recommendations;
+      if (Array.isArray(obj.experiments)) return obj.experiments;
+      if (Array.isArray(obj.strategicRecommendations)) return obj.strategicRecommendations;
+      if (Array.isArray(obj.businessRisks)) return obj.businessRisks;
+      return fallback.recommendations;
+    };
+    
+    const getBiggestGripe = () => {
+      return obj.biggestGripe || obj.roiImpact || obj.weirdFindings || obj.emotionalImpact || fallback.biggestGripe;
+    };
+    
+    const getWhatMakesGoblinHappy = () => {
+      return obj.whatMakesGoblinHappy || obj.competitiveAdvantage || obj.userStory || obj.hypothesis || fallback.whatMakesGoblinHappy;
+    };
+    
+    const getGoblinWisdom = () => {
+      return obj.goblinWisdom || obj.strategicPriority || obj.reflection || obj.labNotes || fallback.goblinWisdom;
+    };
+    
+    const getGoblinPrediction = () => {
+      return obj.goblinPrediction || obj.measurableOutcomes || obj.emotionalImpact || obj.competitiveImplications || fallback.goblinPrediction;
+    };
+    
+    return {
+      analysis: getAnalysis(),
+      recommendations: getRecommendations(),
+      biggestGripe: getBiggestGripe(),
+      whatMakesGoblinHappy: getWhatMakesGoblinHappy(),
+      goblinWisdom: getGoblinWisdom(),
+      goblinPrediction: getGoblinPrediction()
+    };
   };
 
   if (rawPersonaData) {
