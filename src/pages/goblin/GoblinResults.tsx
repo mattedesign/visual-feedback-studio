@@ -270,16 +270,19 @@ const GoblinResults: React.FC = () => {
         case 'strategic':
           return {
             ...defaultPersonaData,
-            analysis: parsed.analysis || parsed.executiveSummary || fallbackSummary,
+            analysis: parsed.analysis || parsed.executiveSummary || parsed.businessImpact || fallbackSummary,
             recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : 
                            Array.isArray(parsed.strategicRecommendations) ? parsed.strategicRecommendations :
+                           Array.isArray(parsed.visualStrategy) ? parsed.visualStrategy :
+                           Array.isArray(parsed.competitiveVisualEdge) ? parsed.competitiveVisualEdge :
+                           parsed.recommendations ? [parsed.recommendations] :
                            defaultPersonaData.recommendations,
-            biggestGripe: parsed.businessImpact || parsed.biggestGripe || defaultPersonaData.biggestGripe,
-            whatMakesGoblinHappy: parsed.competitiveAdvantage || parsed.whatMakesGoblinHappy || defaultPersonaData.whatMakesGoblinHappy,
-            goblinWisdom: parsed.strategicPriority || parsed.goblinWisdom || defaultPersonaData.goblinWisdom,
-            goblinPrediction: parsed.measurableOutcomes || parsed.goblinPrediction || defaultPersonaData.goblinPrediction,
-            businessImpact: parsed.businessImpact || '',
-            implementation: parsed.strategicPriority || ''
+            biggestGripe: parsed.businessImpact || parsed.biggestGripe || parsed.implementation || defaultPersonaData.biggestGripe,
+            whatMakesGoblinHappy: parsed.competitiveAdvantage || parsed.whatMakesGoblinHappy || parsed.visualStrategy?.[0] || defaultPersonaData.whatMakesGoblinHappy,
+            goblinWisdom: parsed.strategicPriority || parsed.goblinWisdom || parsed.businessImpact || defaultPersonaData.goblinWisdom,
+            goblinPrediction: parsed.measurableOutcomes || parsed.goblinPrediction || parsed.implementation || defaultPersonaData.goblinPrediction,
+            businessImpact: parsed.businessImpact || parsed.analysis || '',
+            implementation: parsed.implementation || parsed.strategicPriority || ''
           };
           
         case 'mirror':
