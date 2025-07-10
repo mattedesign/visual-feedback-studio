@@ -433,8 +433,56 @@ const GoblinResults: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="p-6 text-center">Loading analysis results...</div>;
-  if (!results) return <div className="p-6 text-center">No results found.</div>;
+  // Enhanced loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold mb-2">Loading Analysis...</h2>
+          <p className="text-muted-foreground mb-4">The goblin is examining your design with supernatural intensity...</p>
+          
+          <div className="bg-gray-100 rounded-full h-2 mb-2">
+            <div className="bg-primary h-2 rounded-full transition-all duration-1000 animate-pulse"></div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Processing images and running analysis pipeline...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Enhanced no results state
+  if (!results) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center max-w-md mx-auto">
+          <div className="text-6xl mb-4">🧙‍♂️❓</div>
+          <h2 className="text-xl font-semibold mb-2">No Analysis Found</h2>
+          <p className="text-muted-foreground mb-4">
+            The goblin couldn't find any analysis results for this session.
+          </p>
+          
+          <div className="space-y-2">
+            <button 
+              onClick={() => window.location.reload()} 
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 rounded-md"
+            >
+              Refresh Results
+            </button>
+            
+            <button 
+              onClick={() => window.location.href = '/goblin'} 
+              className="w-full border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 rounded-md"
+            >
+              Start New Analysis
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   // Show loading state for images
   const isImagesLoading = imagesLoading && images.length === 0;

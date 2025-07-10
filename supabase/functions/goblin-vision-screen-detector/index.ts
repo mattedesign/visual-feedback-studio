@@ -5,6 +5,21 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Enhanced error handling and circuit breaker
+const RETRY_CONFIG = {
+  maxRetries: 2,
+  retryDelay: 1000,
+  timeoutMs: 15000
+};
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error('Vision API timeout')), timeoutMs);
+  });
+  
+  return Promise.race([promise, timeoutPromise]);
+}
+
 const SCREEN_PATTERNS = {
   dashboard: ['dashboard', 'analytics', 'metrics', 'chart', 'data', 'graph', 'statistics'],
   checkout: ['checkout', 'payment', 'billing', 'cart', 'purchase', 'buy now', 'credit card'],
@@ -18,8 +33,8 @@ const SCREEN_PATTERNS = {
   interface: ['interface', 'screen', 'page', 'view'] // default fallback
 }
 
-async function detectGoblinScreenType(imageUrl: string) {
-  console.log('🔍 detectGoblinScreenType called with:', imageUrl)
+async function detectGoblinScreenType(imageUrl: string, retryCount = 0): Promise<any> {
+  console.log(`🔍 detectGoblinScreenType called (attempt ${retryCount + 1}):`, imageUrl.substring(0, 100))
   
   try {
     // Check if API key exists
@@ -46,11 +61,14 @@ async function detectGoblinScreenType(imageUrl: string) {
     
     console.log('📤 Sending request to Vision API...')
     
-    const visionResponse = await fetch(visionUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody)
-    })
+    const visionResponse = await withTimeout(
+      fetch(visionUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      }),
+      RETRY_CONFIG.timeoutMs
+    );
 
     console.log('📥 Vision API response status:', visionResponse.status)
 
@@ -131,8 +149,16 @@ async function detectGoblinScreenType(imageUrl: string) {
     }
 
   } catch (error) {
-    console.error('❌ Goblin vision detection failed with error:', error.message)
+    console.error(`❌ Goblin vision detection failed (attempt ${retryCount + 1}):`, error.message)
     console.error('Stack trace:', error.stack)
+    
+    // Retry logic for transient errors
+    if (retryCount < RETRY_CONFIG.maxRetries && 
+        (error.message.includes('timeout') || error.message.includes('network') || error.status >= 500)) {
+      console.log(`🔄 Retrying vision detection in ${RETRY_CONFIG.retryDelay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, RETRY_CONFIG.retryDelay));
+      return detectGoblinScreenType(imageUrl, retryCount + 1);
+    }
     
     // Return a fallback result instead of throwing
     return { 
@@ -140,6 +166,8 @@ async function detectGoblinScreenType(imageUrl: string) {
       confidence: 0, 
       detectedText: '',
       error: error.message,
+      fallback: true,
+      retryCount: retryCount + 1,
       metadata: {
         labels: [],
         topScores: []
