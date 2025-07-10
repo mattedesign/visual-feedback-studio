@@ -358,10 +358,11 @@ serve(async (req) => {
       }
     }
 
-    // Handle initial analysis persistence (non-chat mode)
+    // For non-chat mode, only save to refinement history if called directly (not via orchestrator)
+    // The orchestrator will handle saving the final results to goblin_analysis_results
     if (sessionId && userId && !actualChatMode) {
       try {
-        console.log('💾 Saving initial analysis to database');
+        console.log('💾 Saving initial analysis to conversation history only');
         
         const { data: existingMessages } = await supabase
           .from('goblin_refinement_history')
@@ -386,14 +387,15 @@ serve(async (req) => {
                 used_persona: normalizedPersona,
                 is_initial_analysis: true,
                 parsed_data: parsedData,
-                fallback_model: true
+                fallback_model: true,
+                note: 'Individual analyzer output - orchestrator will handle final results'
               }
             });
 
           if (initialError) {
             console.error('❌ Failed to save initial analysis:', initialError);
           } else {
-            console.log('✅ Initial analysis saved (GPT fallback)');
+            console.log('✅ Initial analysis saved to conversation history (GPT fallback)');
           }
         }
       } catch (persistError) {
