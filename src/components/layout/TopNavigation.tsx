@@ -5,22 +5,19 @@ import { User } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { History, ChevronLeft, Menu } from 'lucide-react';
+import { History, ChevronLeft } from 'lucide-react';
 import { HistorySidebar } from './HistorySidebar';
+import { MobileNavigation } from './MobileNavigation';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface TopNavigationProps {
   user?: User;
   onSignOut?: () => void;
-  onMobileMenuToggle?: () => void;
-  isMobileSidebarOpen?: boolean;
 }
 
 export const TopNavigation: React.FC<TopNavigationProps> = ({ 
   user, 
-  onSignOut, 
-  onMobileMenuToggle,
-  isMobileSidebarOpen 
+  onSignOut
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -50,17 +47,13 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
           <div className="flex items-center justify-between">
             {/* Left side - Mobile menu + Logo and Navigation */}
             <div className="flex items-center gap-3 md:gap-6">
-              {/* Mobile menu button */}
-              {isMobile && onMobileMenuToggle && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onMobileMenuToggle}
-                  className="text-gray-600 hover:text-gray-900 p-2"
-                  aria-label="Toggle menu"
-                >
-                  <Menu className="w-5 h-5" />
-                </Button>
+              {/* Mobile menu dropdown */}
+              {isMobile && (
+                <MobileNavigation
+                  user={user}
+                  onSignOut={onSignOut}
+                  onHistoryToggle={() => setIsHistorySidebarOpen(true)}
+                />
               )}
 
               {isAnalysisResultsPage && (

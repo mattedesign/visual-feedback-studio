@@ -72,11 +72,10 @@ const bottomNavItems = [
 interface AppSidebarProps {}
 
 export function AppSidebar({}: AppSidebarProps) {
-  const { state, setOpen, open } = useSidebar();
+  const { state, setOpen, open, isMobile } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
   const collapsed = state === 'collapsed';
-  const isMobile = useIsMobile();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { signOut } = useAuth();
   const navigate = useNavigate();
@@ -110,68 +109,35 @@ export function AppSidebar({}: AppSidebarProps) {
       : "flex py-4 px-3 items-center gap-2 self-stretch rounded-xl text-muted-foreground hover:bg-[#BECDED] hover:text-foreground focus:bg-[#BECDED] focus:text-foreground transition-colors min-h-[40px]";
   };
 
-  return (
-    <>
-      {/* Mobile trigger button - always visible on mobile */}
-      {isMobile && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setOpen(true)}
-          className="fixed top-4 left-4 z-50 md:hidden bg-white shadow-md border"
-        >
-          <Menu className="h-4 w-4" />
-        </Button>
-      )}
+  // Hide sidebar on mobile - mobile nav is handled by dropdown
+  if (isMobile) {
+    return null;
+  }
 
-      {/* Mobile overlay */}
-      {isMobile && open && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
-          onClick={() => setOpen(false)}
-        />
-      )}
-      
-      <Sidebar 
-        variant="sidebar" 
-        collapsible="icon"
-        className={`${
-          isMobile 
-            ? `fixed top-0 left-0 h-full z-50 transform transition-transform duration-300 ease-in-out ${
-                open ? 'translate-x-0' : '-translate-x-full'
-              } md:relative md:translate-x-0 md:z-auto`
-            : ''
-        }`}
-      >
-        <SidebarContent className="flex flex-col h-full">
-          {/* Logo/Header */}
-          <div className={`p-4 ${collapsed ? 'px-2' : ''}`}>
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <div className="text-2xl flex-shrink-0">👾</div>
-                {!collapsed && (
-                  <div className="flex flex-col">
-                    <span className="font-semibold text-sm">Goblin UX</span>
-                    <span className="text-xs text-muted-foreground">Analysis Studio</span>
-                  </div>
-                )}
-              </div>
-              
-              {/* Mobile close button */}
-              {isMobile ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setOpen(false)}
-                  className="h-6 w-6 p-0"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              ) : (
-                <SidebarTrigger className="h-6 w-6" />
+  return (
+    <Sidebar 
+      variant="sidebar" 
+      collapsible="icon"
+      className="border-r"
+    >
+      <SidebarContent className="flex flex-col h-full">
+        {/* Logo/Header */}
+        <div className={`p-4 ${collapsed ? 'px-2' : ''}`}>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="text-2xl flex-shrink-0">👾</div>
+              {!collapsed && (
+                <div className="flex flex-col">
+                  <span className="font-semibold text-sm">Goblin UX</span>
+                  <span className="text-xs text-muted-foreground">Analysis Studio</span>
+                </div>
               )}
             </div>
+            
+            {/* Desktop sidebar trigger */}
+            <SidebarTrigger className="h-6 w-6" />
           </div>
+        </div>
 
         {/* Main Navigation */}
         <SidebarGroup className="flex-1">
@@ -277,6 +243,5 @@ export function AppSidebar({}: AppSidebarProps) {
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>
-    </>
   );
 }

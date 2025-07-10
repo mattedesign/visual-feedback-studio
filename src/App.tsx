@@ -23,7 +23,7 @@ import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { DatabaseSeeder } from "@/components/admin/DatabaseSeeder";
 import { useAuth } from "@/hooks/useAuth";
 import { AuthGuard } from "@/components/auth/AuthGuard";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 const queryClient = new QueryClient();
 const App = () => {
