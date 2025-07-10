@@ -28,7 +28,6 @@ import {
   SidebarMenuSub,
   SidebarMenuSubItem,
   SidebarMenuSubButton,
-  SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
@@ -123,19 +122,14 @@ export function AppSidebar({}: AppSidebarProps) {
       <SidebarContent className="flex flex-col h-full">
         {/* Logo/Header */}
         <div className={`p-4 ${collapsed ? 'px-2' : ''}`}>
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <div className="text-2xl flex-shrink-0">👾</div>
-              {!collapsed && (
-                <div className="flex flex-col">
-                  <span className="font-semibold text-sm">Goblin UX</span>
-                  <span className="text-xs text-muted-foreground">Analysis Studio</span>
-                </div>
-              )}
-            </div>
-            
-            {/* Desktop sidebar trigger */}
-            <SidebarTrigger className="h-6 w-6" />
+          <div className="flex items-center gap-2">
+            <div className="text-2xl flex-shrink-0">👾</div>
+            {!collapsed && (
+              <div className="flex flex-col">
+                <span className="font-semibold text-sm">Goblin UX</span>
+                <span className="text-xs text-muted-foreground">Analysis Studio</span>
+              </div>
+            )}
           </div>
         </div>
 
