@@ -28,6 +28,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubItem,
   SidebarMenuSubButton,
+  SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
@@ -121,16 +122,26 @@ export function AppSidebar({}: AppSidebarProps) {
     >
       <SidebarContent className="flex flex-col h-full">
         {/* Logo/Header */}
-        <div className={`p-4 ${collapsed ? 'px-2' : ''}`}>
-          <div className="flex items-center gap-2">
-            <div className="text-2xl flex-shrink-0">👾</div>
-            {!collapsed && (
-              <div className="flex flex-col">
-                <span className="font-semibold text-sm">Goblin UX</span>
-                <span className="text-xs text-muted-foreground">Analysis Studio</span>
+        <div className="p-4">
+          {collapsed ? (
+            // When collapsed: trigger on top, logo below
+            <div className="flex flex-col items-center gap-2">
+              <SidebarTrigger className="h-6 w-6 self-center" />
+              <div className="text-2xl">👾</div>
+            </div>
+          ) : (
+            // When expanded: logo and trigger side by side
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="text-2xl flex-shrink-0">👾</div>
+                <div className="flex flex-col">
+                  <span className="font-semibold text-sm">Goblin UX</span>
+                  <span className="text-xs text-muted-foreground">Analysis Studio</span>
+                </div>
               </div>
-            )}
-          </div>
+              <SidebarTrigger className="h-6 w-6 flex-shrink-0" />
+            </div>
+          )}
         </div>
 
         {/* Main Navigation */}

@@ -23,7 +23,7 @@ import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { DatabaseSeeder } from "@/components/admin/DatabaseSeeder";
 import { useAuth } from "@/hooks/useAuth";
 import { AuthGuard } from "@/components/auth/AuthGuard";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 const queryClient = new QueryClient();
 const App = () => {
@@ -45,11 +45,6 @@ const App = () => {
                 {/* Protected routes with sidebar layout */}
                 <Route path="/*" element={<AuthGuard>
                     <>
-                      {/* Global sidebar trigger - always visible */}
-                      <header className="fixed top-4 left-4 z-50">
-                        <SidebarTrigger className="bg-white shadow-lg border rounded-md p-2" />
-                      </header>
-                      
                       <AppSidebar />
                       <SidebarInset className="ml-0 md:ml-[16px] mr-0 bg-transparent mx-0">
                         {/* Main content area */}
