@@ -227,6 +227,32 @@ const GoblinResults: React.FC = () => {
     sample: rawPersonaData
   });
 
+  // Helper function to clean JSON markdown blocks from strings
+  const cleanMarkdownJson = (text: string): string => {
+    if (typeof text !== 'string') return text;
+    
+    // Remove JSON markdown code blocks: ```json\n{...}\n```
+    let cleaned = text.replace(/```json\s*\n?({[\s\S]*?})\s*\n?```/g, (match, jsonContent) => {
+      try {
+        const parsed = JSON.parse(jsonContent);
+        // If the JSON contains an "analysis" field, return just that value
+        if (parsed.analysis) {
+          return parsed.analysis;
+        }
+        // Otherwise return the whole JSON content as string
+        return jsonContent;
+      } catch (e) {
+        // If parsing fails, return the content without the markdown wrapper
+        return jsonContent;
+      }
+    });
+    
+    // Also handle plain markdown code blocks: ```\n...\n```
+    cleaned = cleaned.replace(/```\s*\n?([\s\S]*?)\s*\n?```/g, '$1');
+    
+    return cleaned.trim();
+  };
+
   // Simplified approach: extract persona data from results.persona_feedback
   const extractPersonaData = (data: any, personaType: string, fallbackSummary: string): PersonaData => {
     console.log('🔍 Extracting persona data for:', personaType, data);
@@ -239,10 +265,47 @@ const GoblinResults: React.FC = () => {
     // Direct persona type access or use data as-is
     const personaData = data[personaType] || data;
     
-    // If it's a string, treat as analysis
+    // If it's a string, treat as analysis and clean markdown
     if (typeof personaData === 'string') {
-      console.log('✅ Using string data as analysis');
-      return { analysis: personaData };
+      console.log('✅ Using string data as analysis, cleaning markdown');
+      const cleanedAnalysis = cleanMarkdownJson(personaData);
+      return { analysis: cleanedAnalysis };
+    }
+
+    // If it's an object, clean any string fields that might contain markdown
+    if (typeof personaData === 'object' && personaData !== null) {
+      const cleanedData = { ...personaData };
+      
+      // Clean common fields that might contain markdown
+      const fieldsToClean = ['analysis', 'biggestGripe', 'goblinWisdom', 'goblinPrediction', 'whatMakesGoblinHappy'];
+      
+      fieldsToClean.forEach(field => {
+        if (typeof cleanedData[field] === 'string') {
+          cleanedData[field] = cleanMarkdownJson(cleanedData[field]);
+        }
+      });
+      
+      // Clean recommendations array if it exists
+      if (Array.isArray(cleanedData.recommendations)) {
+        cleanedData.recommendations = cleanedData.recommendations.map((rec: any) => {
+          if (typeof rec === 'string') {
+            return cleanMarkdownJson(rec);
+          }
+          if (typeof rec === 'object' && rec !== null) {
+            const cleanedRec = { ...rec };
+            Object.keys(cleanedRec).forEach(key => {
+              if (typeof cleanedRec[key] === 'string') {
+                cleanedRec[key] = cleanMarkdownJson(cleanedRec[key]);
+              }
+            });
+            return cleanedRec;
+          }
+          return rec;
+        });
+      }
+      
+      console.log('✅ Using cleaned object data');
+      return cleanedData;
     }
 
     // Use the data as-is
