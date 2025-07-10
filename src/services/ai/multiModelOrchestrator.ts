@@ -44,80 +44,66 @@ export interface SynthesisResult {
 
 export class MultiModelOrchestrator {
   private weights: ModelWeights = {
-    claude: 0.5,
-    gpt4o: 0.2,
-    perplexity: 0.2,
-    googleVision: 0.1
+    claude: 0.8,    // Primary - more weight
+    gpt4o: 0.2,     // Backup only  
+    perplexity: 0,  // Disabled for now
+    googleVision: 0 // Disabled for now
   };
 
-  private fallbackSequence = ['claude', 'gpt4o', 'perplexity'];
-  private maxConcurrentRequests = 4;
-  private requestTimeout = 30000; // 30 seconds
+  private requestTimeout = 45000; // 45 seconds - more generous
 
   async orchestrateAnalysis(input: ClaudeStrategistInput): Promise<SynthesisResult> {
-    console.log('🎭 Starting multi-model orchestration...');
+    console.log('🎭 Starting simplified orchestration (Claude primary)...');
     const startTime = Date.now();
 
     try {
-      // Execute parallel AI model calls
-      const modelPromises = this.createModelPromises(input);
-      const modelResponses = await this.executeParallelCalls(modelPromises);
+      // Try Claude first
+      const claudeResult = await this.callClaudeModel(input);
+      
+      if (claudeResult.success) {
+        console.log('✅ Claude analysis successful');
+        return {
+          synthesizedOutput: claudeResult.response,
+          modelContributions: { claude: 1, gpt4o: 0, perplexity: 0, googleVision: 0 },
+          overallConfidence: claudeResult.confidence,
+          processingMetrics: {
+            totalTime: Date.now() - startTime,
+            successfulModels: 1,
+            failedModels: [],
+            fallbacksUsed: []
+          }
+        };
+      }
 
-      // Synthesize responses with weighted confidence
-      const synthesisResult = await this.synthesizeResponses(modelResponses, input);
+      // Fallback to GPT-4o if Claude fails
+      console.log('⚠️ Claude failed, trying GPT-4o...');
+      const gptResult = await this.callGPT4oModel(input);
+      
+      if (gptResult.success) {
+        console.log('✅ GPT-4o fallback successful');
+        return {
+          synthesizedOutput: gptResult.response,
+          modelContributions: { claude: 0, gpt4o: 1, perplexity: 0, googleVision: 0 },
+          overallConfidence: gptResult.confidence,
+          processingMetrics: {
+            totalTime: Date.now() - startTime,
+            successfulModels: 1,
+            failedModels: ['claude'],
+            fallbacksUsed: ['gpt-4o']
+          }
+        };
+      }
 
-      // Calculate final metrics
-      const totalTime = Date.now() - startTime;
-      synthesisResult.processingMetrics.totalTime = totalTime;
-
-      console.log('✅ Multi-model orchestration completed:', {
-        totalTime,
-        successfulModels: synthesisResult.processingMetrics.successfulModels,
-        overallConfidence: synthesisResult.overallConfidence
-      });
-
-      return synthesisResult;
+      // Both failed - return simple fallback
+      console.log('❌ Both Claude and GPT-4o failed');
+      return this.generateFallbackSynthesis(input, Date.now() - startTime);
 
     } catch (error) {
-      console.error('❌ Multi-model orchestration failed:', error);
-      
-      // Fallback to enhanced single-model analysis
+      console.error('❌ Orchestration failed:', error);
       return this.generateFallbackSynthesis(input, Date.now() - startTime);
     }
   }
 
-  private createModelPromises(input: ClaudeStrategistInput): Promise<ModelResponse>[] {
-    return [
-      this.callClaudeModel(input),
-      this.callGPT4oModel(input),
-      this.callPerplexityModel(input),
-      this.callGoogleVisionModel(input)
-    ];
-  }
-
-  private async executeParallelCalls(promises: Promise<ModelResponse>[]): Promise<ModelResponse[]> {
-    console.log('🚀 Executing parallel AI model calls...');
-    
-    // Use Promise.allSettled to handle individual failures gracefully
-    const results = await Promise.allSettled(promises);
-    
-    return results.map((result, index) => {
-      if (result.status === 'fulfilled') {
-        return result.value;
-      } else {
-        const modelNames = ['claude', 'gpt-4o', 'perplexity', 'google-vision'];
-        console.warn(`⚠️ ${modelNames[index]} model failed:`, result.reason);
-        
-        return {
-          modelName: modelNames[index] as ModelResponse['modelName'],
-          success: false,
-          error: result.reason?.message || 'Unknown error',
-          processingTime: 0,
-          confidence: 0
-        };
-      }
-    });
-  }
 
   private async callClaudeModel(input: ClaudeStrategistInput): Promise<ModelResponse> {
     const startTime = Date.now();

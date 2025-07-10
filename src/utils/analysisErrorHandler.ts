@@ -22,13 +22,7 @@ interface CircuitBreakerState {
 }
 
 class AnalysisErrorHandler {
-  private circuitBreakers = new Map<string, CircuitBreakerState>();
-  private readonly CIRCUIT_THRESHOLD = 3;
-  private readonly CIRCUIT_TIMEOUT = 30000; // 30 seconds
-  private readonly MAX_CIRCUIT_BREAKERS = 100; // Prevent memory leaks
   private activePromises = new Map<string, AbortController>();
-  private metrics = new Map<string, any>();
-  private cleanupTimer?: number;
 
   /**
    * Wrap promises with timeout and cancellation
@@ -65,88 +59,43 @@ class AnalysisErrorHandler {
   }
 
   /**
-   * Circuit breaker pattern implementation
+   * Simple timeout wrapper without circuit breaking
    */
-  async withCircuitBreaker<T>(
+  async withSimpleTimeout<T>(
     operation: () => Promise<T>,
-    circuitKey: string,
+    timeoutMs: number = 30000,
     context: ErrorContext
   ): Promise<T> {
-    const breaker = this.getCircuitBreaker(circuitKey);
-
-    // Check if circuit is open
-    if (breaker.state === 'open') {
-      const timeSinceLastFailure = Date.now() - breaker.lastFailure;
-      if (timeSinceLastFailure < this.CIRCUIT_TIMEOUT) {
-        throw new Error(`Circuit breaker open for ${circuitKey}. Retry in ${Math.ceil((this.CIRCUIT_TIMEOUT - timeSinceLastFailure) / 1000)}s`);
-      } else {
-        breaker.state = 'half-open';
-      }
-    }
-
-    try {
-      const result = await operation();
-      
-      // Success - reset circuit breaker
-      if (breaker.state === 'half-open') {
-        breaker.state = 'closed';
-        breaker.failures = 0;
-      }
-      
-      return result;
-    } catch (error) {
-      breaker.failures++;
-      breaker.lastFailure = Date.now();
-
-      if (breaker.failures >= this.CIRCUIT_THRESHOLD) {
-        breaker.state = 'open';
-        console.warn(`🔴 Circuit breaker opened for ${circuitKey} after ${breaker.failures} failures`);
-      }
-
-      throw error;
-    }
+    return this.withTimeout(operation(), timeoutMs, `${context.component}.${context.operation}`);
   }
 
   /**
-   * Retry with exponential backoff
+   * Simple retry with linear backoff
    */
-  async withRetry<T>(
+  async withSimpleRetry<T>(
     operation: () => Promise<T>,
-    config: RetryConfig = {
-      maxRetries: 3,
-      baseDelay: 1000,
-      maxDelay: 10000,
-      exponentialBackoff: true
-    },
+    maxRetries: number = 2,
+    delayMs: number = 1000,
     context: ErrorContext
   ): Promise<T> {
     let lastError: Error;
     
-    for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         if (attempt > 0) {
-          const delay = config.exponentialBackoff 
-            ? Math.min(config.baseDelay * Math.pow(2, attempt - 1), config.maxDelay)
-            : config.baseDelay;
-          
-          console.log(`⏳ Retrying ${context.operation} (attempt ${attempt}/${config.maxRetries}) after ${delay}ms`);
-          await this.delay(delay);
+          console.log(`⏳ Retrying ${context.operation} (attempt ${attempt}/${maxRetries}) after ${delayMs}ms`);
+          await this.delay(delayMs);
         }
         
         return await operation();
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
         
-        if (attempt === config.maxRetries) {
+        if (attempt === maxRetries || this.isNonRetryableError(lastError)) {
           break;
         }
         
-        // Don't retry certain errors
-        if (this.isNonRetryableError(lastError)) {
-          break;
-        }
-        
-        console.warn(`⚠️ ${context.operation} failed (attempt ${attempt + 1}/${config.maxRetries + 1}):`, lastError.message);
+        console.warn(`⚠️ ${context.operation} failed (attempt ${attempt + 1}/${maxRetries + 1}):`, lastError.message);
       }
     }
     
@@ -154,7 +103,7 @@ class AnalysisErrorHandler {
   }
 
   /**
-   * Handle and categorize errors
+   * Handle and categorize errors - simplified
    */
   handleError(error: unknown, context: ErrorContext): never {
     const errorObj = error instanceof Error ? error : new Error(String(error));
@@ -166,14 +115,6 @@ class AnalysisErrorHandler {
       severity: categorizedError.severity,
       context
     });
-
-    // Track error for circuit breaker
-    if (context.analysisId) {
-      const circuitKey = `${context.component}-${context.operation}`;
-      const breaker = this.getCircuitBreaker(circuitKey);
-      breaker.failures++;
-      breaker.lastFailure = Date.now();
-    }
 
     // Show user-friendly error message
     const userMessage = this.getUserFriendlyMessage(categorizedError);
@@ -199,83 +140,14 @@ class AnalysisErrorHandler {
   }
 
   /**
-   * Reset circuit breakers
+   * Get simple status
    */
-  resetCircuitBreakers(): void {
-    console.log('🔄 Resetting all circuit breakers');
-    this.circuitBreakers.clear();
-  }
-
-  /**
-   * Start memory management and metrics collection
-   */
-  startCleanupTimer(): void {
-    if (this.cleanupTimer) return;
-    
-    this.cleanupTimer = window.setInterval(() => {
-      this.cleanupCircuitBreakers();
-      this.cleanupMetrics();
-    }, 60000); // Every minute
-  }
-
-  /**
-   * Stop cleanup timer
-   */
-  stopCleanupTimer(): void {
-    if (this.cleanupTimer) {
-      clearInterval(this.cleanupTimer);
-      this.cleanupTimer = undefined;
-    }
-  }
-
-  /**
-   * Collect performance metrics
-   */
-  collectMetric(name: string, value: number, metadata?: Record<string, any>): void {
-    const key = `${name}-${Date.now()}`;
-    this.metrics.set(key, {
-      name,
-      value,
-      timestamp: Date.now(),
-      metadata
-    });
-    
-    // Keep only recent metrics
-    if (this.metrics.size > 1000) {
-      const entries = Array.from(this.metrics.entries());
-      const toDelete = entries.slice(0, entries.length - 1000);
-      for (const [key] of toDelete) {
-        this.metrics.delete(key);
-      }
-    }
-  }
-
-  /**
-   * Get metrics summary
-   */
-  getMetricsSummary(): Record<string, any> {
-    const now = Date.now();
-    const recent = Array.from(this.metrics.values())
-      .filter(metric => now - metric.timestamp < 300000); // Last 5 minutes
-    
+  getStatus(): { activePromises: number } {
     return {
-      totalMetrics: recent.length,
-      circuitBreakers: this.circuitBreakers.size,
-      activePromises: this.activePromises.size,
-      recentErrors: recent.filter(m => m.name.includes('error')).length
+      activePromises: this.activePromises.size
     };
   }
 
-  private getCircuitBreaker(key: string): CircuitBreakerState {
-    if (!this.circuitBreakers.has(key)) {
-      this.circuitBreakers.set(key, {
-        failures: 0,
-        lastFailure: 0,
-        state: 'closed'
-      });
-    }
-    return this.circuitBreakers.get(key)!;
-  }
 
   private categorizeError(error: Error) {
     const message = error.message.toLowerCase();
@@ -333,39 +205,6 @@ class AnalysisErrorHandler {
 
   private delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-  private cleanupCircuitBreakers(): void {
-    const now = Date.now();
-    const cutoff = now - (this.CIRCUIT_TIMEOUT * 2);
-    
-    for (const [key, breaker] of this.circuitBreakers.entries()) {
-      if (breaker.lastFailure < cutoff && breaker.state === 'closed') {
-        this.circuitBreakers.delete(key);
-      }
-    }
-    
-    // Enforce max limit
-    if (this.circuitBreakers.size > this.MAX_CIRCUIT_BREAKERS) {
-      const entries = Array.from(this.circuitBreakers.entries())
-        .sort(([,a], [,b]) => a.lastFailure - b.lastFailure);
-      
-      const toDelete = entries.slice(0, entries.length - this.MAX_CIRCUIT_BREAKERS);
-      for (const [key] of toDelete) {
-        this.circuitBreakers.delete(key);
-      }
-    }
-  }
-
-  private cleanupMetrics(): void {
-    const now = Date.now();
-    const cutoff = now - 600000; // 10 minutes
-    
-    for (const [key, metric] of this.metrics.entries()) {
-      if (metric.timestamp < cutoff) {
-        this.metrics.delete(key);
-      }
-    }
   }
 }
 

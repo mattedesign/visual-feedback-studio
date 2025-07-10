@@ -130,15 +130,9 @@ export const useConsolidatedAnalysis = () => {
     });
 
     try {
-      return await analysisErrorHandler.withCircuitBreaker(
-        async () => {
-          return await analysisErrorHandler.withTimeout(
-            executeAnalysisSteps(input),
-            120000, // 2 minute timeout
-            'complete-analysis'
-          );
-        },
-        'main-analysis',
+      return await analysisErrorHandler.withSimpleTimeout(
+        async () => executeAnalysisSteps(input),
+        120000, // 2 minute timeout
         {
           component: 'ConsolidatedAnalysis',
           operation: 'executeAnalysis',
@@ -238,7 +232,7 @@ export const useConsolidatedAnalysis = () => {
     setIsAnalyzing(false);
     setAnalysisStartTime(null);
     updateProgress({ phase: 'idle', progress: 0, message: '', researchSourcesFound: 0 });
-    analysisErrorHandler.resetCircuitBreakers();
+    // Removed circuit breaker reset - no longer needed
   }, [updateProgress]);
 
   return {

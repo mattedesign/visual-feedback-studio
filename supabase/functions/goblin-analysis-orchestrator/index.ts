@@ -9,151 +9,49 @@ const corsHeaders = {
 
 console.log('🧝‍♂️ Goblin Analysis Orchestrator - Multi-persona UX analysis v2.0');
 
-// Enhanced retry configuration
-const RETRY_CONFIG = {
-  maxRetries: 3,
-  retryDelay: 1000,
-  backoffMultiplier: 2,
-  retryableErrors: ['timeout', 'network', 'api_error', 'rate_limit']
+// Simplified configuration
+const SIMPLE_CONFIG = {
+  maxRetries: 1, // Only one retry
+  retryDelay: 2000 // 2 second delay
 };
 
-// Enhanced circuit breaker for external services with memory management
-const CIRCUIT_BREAKER = {
-  failureThreshold: 3,
-  resetTimeout: 60000,
-  failures: new Map(),
-  lastFailureTime: new Map(),
-  maxEntries: 100, // Prevent memory leaks
-  cleanupInterval: 300000 // 5 minutes
-};
-
-// Model configuration and fallback hierarchy
+// Simplified model configuration
 const MODEL_CONFIG = {
   primary: {
     name: 'claude-sonnet-4-20250514',
     function: 'goblin-model-claude-analyzer',
-    timeout: 30000
+    timeout: 45000  // More generous timeout
   },
   fallback: {
     name: 'gpt-4.1-2025-04-14',
     function: 'goblin-model-gpt-analyzer',
-    timeout: 25000
+    timeout: 40000  // More generous timeout
   }
 };
 
-async function withRetry<T>(
+async function withSimpleRetry<T>(
   operation: () => Promise<T>,
-  context: string,
-  maxRetries = RETRY_CONFIG.maxRetries
+  context: string
 ): Promise<T> {
-  let lastError: Error;
-  
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      return await operation();
-    } catch (error) {
-      lastError = error;
-      console.warn(`⚠️ ${context} attempt ${attempt}/${maxRetries} failed:`, error.message);
-      
-      if (attempt === maxRetries) break;
-      
-      const delay = RETRY_CONFIG.retryDelay * Math.pow(RETRY_CONFIG.backoffMultiplier, attempt - 1);
-      console.log(`🔄 Retrying ${context} in ${delay}ms...`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-    }
-  }
-  
-  throw new Error(`${context} failed after ${maxRetries} attempts: ${lastError.message}`);
-}
-
-function updateCircuitBreaker(service: string, success: boolean) {
-  cleanupOldEntries(); // Prevent memory leaks
-  
-  if (success) {
-    CIRCUIT_BREAKER.failures.delete(service);
-    CIRCUIT_BREAKER.lastFailureTime.delete(service);
-    console.log(`✅ Circuit breaker reset for ${service}`);
-  } else {
-    const current = CIRCUIT_BREAKER.failures.get(service) || 0;
-    CIRCUIT_BREAKER.failures.set(service, current + 1);
-    CIRCUIT_BREAKER.lastFailureTime.set(service, Date.now());
-    console.warn(`⚠️ Circuit breaker failure count for ${service}: ${current + 1}/${CIRCUIT_BREAKER.failureThreshold}`);
-  }
-}
-
-function cleanupOldEntries() {
-  const now = Date.now();
-  const cutoff = now - (CIRCUIT_BREAKER.resetTimeout * 2); // Clean entries older than 2x reset timeout
-  
-  // Cleanup old failure times
-  for (const [service, lastFailure] of CIRCUIT_BREAKER.lastFailureTime.entries()) {
-    if (lastFailure < cutoff) {
-      CIRCUIT_BREAKER.failures.delete(service);
-      CIRCUIT_BREAKER.lastFailureTime.delete(service);
-    }
-  }
-  
-  // Enforce max entries limit
-  if (CIRCUIT_BREAKER.failures.size > CIRCUIT_BREAKER.maxEntries) {
-    const entries = Array.from(CIRCUIT_BREAKER.lastFailureTime.entries())
-      .sort(([,a], [,b]) => a - b); // Sort by oldest first
+  try {
+    return await operation();
+  } catch (error) {
+    console.warn(`⚠️ ${context} failed, trying once more:`, error.message);
     
-    const toDelete = entries.slice(0, entries.length - CIRCUIT_BREAKER.maxEntries);
-    for (const [service] of toDelete) {
-      CIRCUIT_BREAKER.failures.delete(service);
-      CIRCUIT_BREAKER.lastFailureTime.delete(service);
-    }
+    // Simple retry after delay
+    await new Promise(resolve => setTimeout(resolve, SIMPLE_CONFIG.retryDelay));
+    return await operation(); // Final attempt
   }
 }
 
-// Enhanced metrics collection
-function collectMetrics(sessionId: string, stage: string, duration: number, success: boolean, metadata: any = {}) {
-  const metrics = {
-    sessionId: sessionId.substring(0, 8),
-    stage,
-    duration,
-    success,
-    timestamp: Date.now(),
-    ...metadata
-  };
-  
-  // Log for monitoring systems
-  console.log(`📊 METRICS: ${JSON.stringify(metrics)}`);
-  return metrics;
-}
-
-function isCircuitOpen(service: string): boolean {
-  const failures = CIRCUIT_BREAKER.failures.get(service) || 0;
-  if (failures >= CIRCUIT_BREAKER.failureThreshold) {
-    const lastFailureTime = CIRCUIT_BREAKER.lastFailureTime.get(service) || 0;
-    const timeSinceLastFailure = Date.now() - lastFailureTime;
-    
-    // Reset circuit breaker after timeout
-    if (timeSinceLastFailure > CIRCUIT_BREAKER.resetTimeout) {
-      console.log(`🔄 Circuit breaker timeout reached for ${service}, attempting reset`);
-      CIRCUIT_BREAKER.failures.delete(service);
-      CIRCUIT_BREAKER.lastFailureTime.delete(service);
-      return false;
-    }
-    
-    console.warn(`🚫 Circuit breaker OPEN for ${service} (failures: ${failures})`);
-    return true;
-  }
-  return false;
+// Simple logging function
+function logMetrics(sessionId: string, stage: string, duration: number, success: boolean, metadata: any = {}) {
+  console.log(`📊 ${sessionId.substring(0, 8)} | ${stage} | ${duration}ms | ${success ? 'SUCCESS' : 'FAIL'} |`, metadata);
 }
 
 async function attemptModelAnalysis(modelConfig: any, requestBody: any, supabase: any): Promise<any> {
   const startTime = Date.now();
   console.log(`🤖 Attempting analysis with ${modelConfig.name}...`);
-  
-  if (isCircuitOpen(modelConfig.function)) {
-    const error = new Error(`Circuit breaker open for ${modelConfig.function}`);
-    collectMetrics(requestBody.sessionId, `model_${modelConfig.name}`, Date.now() - startTime, false, {
-      error: error.message,
-      reason: 'circuit_breaker_open'
-    });
-    throw error;
-  }
   
   try {
     const result = await Promise.race([
@@ -164,26 +62,24 @@ async function attemptModelAnalysis(modelConfig: any, requestBody: any, supabase
     ]);
     
     const duration = Date.now() - startTime;
-    updateCircuitBreaker(modelConfig.function, !result.error);
     
     if (result.error) {
-      collectMetrics(requestBody.sessionId, `model_${modelConfig.name}`, duration, false, {
+      logMetrics(requestBody.sessionId, `model_${modelConfig.name}`, duration, false, {
         error: result.error.message
       });
       throw new Error(`${modelConfig.name} analysis failed: ${result.error.message}`);
     }
     
-    collectMetrics(requestBody.sessionId, `model_${modelConfig.name}`, duration, true, {
+    logMetrics(requestBody.sessionId, `model_${modelConfig.name}`, duration, true, {
       modelUsed: modelConfig.name,
-      responseSize: JSON.stringify(result.data).length
+      responseSize: JSON.stringify(result.data || {}).length
     });
     
     console.log(`✅ Analysis completed with ${modelConfig.name} in ${duration}ms`);
     return result;
   } catch (error) {
     const duration = Date.now() - startTime;
-    updateCircuitBreaker(modelConfig.function, false);
-    collectMetrics(requestBody.sessionId, `model_${modelConfig.name}`, duration, false, {
+    logMetrics(requestBody.sessionId, `model_${modelConfig.name}`, duration, false, {
       error: error.message
     });
     throw error;
@@ -277,14 +173,14 @@ serve(async (req) => {
       
     } catch (supabaseError) {
       console.error('❌ Failed to initialize Supabase client:', supabaseError);
-      collectMetrics(sessionId || 'unknown', 'database_connection', Date.now() - startTime, false, {
+      logMetrics(sessionId || 'unknown', 'database_connection', Date.now() - startTime, false, {
         error: supabaseError.message
       });
       throw new Error(`Database connection failed: ${supabaseError.message}`);
     }
 
-    // Get session details with retry
-    const session = await withRetry(async () => {
+    // Get session details with simple retry
+    const session = await withSimpleRetry(async () => {
       const { data, error } = await supabase
         .from('goblin_analysis_sessions')
         .select('*')
@@ -311,16 +207,10 @@ serve(async (req) => {
     // Step 1: Fetch images with enhanced error recovery
     console.log('📸 Fetching images via get-images-by-session function...');
     
-    const imageUrls = await withRetry(async () => {
-      if (isCircuitOpen('get-images-by-session')) {
-        throw new Error('Circuit breaker open for image service');
-      }
-      
+    const imageUrls = await withSimpleRetry(async () => {
       const imagesResponse = await supabase.functions.invoke('get-images-by-session', {
         body: { sessionId }
       });
-
-      updateCircuitBreaker('get-images-by-session', !imagesResponse.error);
       
       if (imagesResponse.error) {
         throw new Error(`Failed to fetch images: ${imagesResponse.error.message}`);
@@ -354,11 +244,7 @@ serve(async (req) => {
       console.log(`🔍 Processing image ${i + 1}/${imageUrls.length}: ${imageData.file_name}`);
       
       try {
-        const visionResult = await withRetry(async () => {
-          if (isCircuitOpen('goblin-vision-screen-detector')) {
-            throw new Error('Circuit breaker open for vision service');
-          }
-          
+        const visionResult = await withSimpleRetry(async () => {
           const result = await supabase.functions.invoke('goblin-vision-screen-detector', {
             body: { 
               imageUrl: imageData.file_path,
@@ -366,9 +252,8 @@ serve(async (req) => {
             }
           });
           
-          updateCircuitBreaker('goblin-vision-screen-detector', !result.error);
           return result;
-        }, `Vision processing for image ${i + 1}`, 2);
+        }, `Vision processing for image ${i + 1}`);
         
         if (visionResult.error) {
           console.warn(`⚠️ Vision failed for image ${i + 1}:`, visionResult.error);
@@ -406,7 +291,7 @@ serve(async (req) => {
     }
 
     // Step 3: Build unified persona-specific prompt
-    const promptResult = await withRetry(async () => {
+    const promptResult = await withSimpleRetry(async () => {
       const result = await supabase.functions.invoke('goblin-unified-prompt-system', {
         body: { 
           persona, 
@@ -440,9 +325,9 @@ serve(async (req) => {
     
     try {
       // Try primary model (Claude) first
-      analysisResult = await withRetry(async () => {
+      analysisResult = await withSimpleRetry(async () => {
         return await attemptModelAnalysis(MODEL_CONFIG.primary, analysisRequestBody, supabase);
-      }, `Primary model analysis (${MODEL_CONFIG.primary.name})`, 2);
+      }, `Primary model analysis (${MODEL_CONFIG.primary.name})`);
       
       modelUsed = MODEL_CONFIG.primary.name;
       console.log(`✅ Primary model ${modelUsed} succeeded`);
@@ -454,9 +339,9 @@ serve(async (req) => {
       try {
         console.log(`🔄 Falling back to ${MODEL_CONFIG.fallback.name}...`);
         
-        analysisResult = await withRetry(async () => {
+        analysisResult = await withSimpleRetry(async () => {
           return await attemptModelAnalysis(MODEL_CONFIG.fallback, analysisRequestBody, supabase);
-        }, `Fallback model analysis (${MODEL_CONFIG.fallback.name})`, 1);
+        }, `Fallback model analysis (${MODEL_CONFIG.fallback.name})`);
         
         modelUsed = MODEL_CONFIG.fallback.name;
         fallbackUsed = true;
@@ -496,7 +381,7 @@ serve(async (req) => {
     }
 
     // Step 5: Synthesize results
-    const synthesisResult = await withRetry(async () => {
+    const synthesisResult = await withSimpleRetry(async () => {
       const result = await supabase.functions.invoke('goblin-model-synthesis', {
         body: {
           sessionId,
@@ -528,12 +413,7 @@ serve(async (req) => {
             processedAt: new Date().toISOString(),
             orchestratorVersion: '2.1',
             processingTimeMs: Date.now() - startTime,
-            fallbackUsed,
-            circuitBreakerStatus: {
-              claude: isCircuitOpen('goblin-model-claude-analyzer'),
-              gpt: isCircuitOpen('goblin-model-gpt-analyzer'),
-              vision: isCircuitOpen('goblin-vision-screen-detector')
-            }
+            fallbackUsed
           },
           processing_time_ms: Date.now() - startTime,
           goblin_gripe_level: persona === 'clarity' ? synthesisResult.data.gripeLevel : null
@@ -567,12 +447,7 @@ serve(async (req) => {
           orchestratorVersion: '2.1',
           modelUsed,
           fallbackUsed,
-          visionSuccessRate: visionResults.filter(r => !r.fallback).length / visionResults.length,
-          circuitBreakerStatus: {
-            claude: isCircuitOpen('goblin-model-claude-analyzer'),
-            gpt: isCircuitOpen('goblin-model-gpt-analyzer'),
-            vision: isCircuitOpen('goblin-vision-screen-detector')
-          }
+          visionSuccessRate: visionResults.filter(r => !r.fallback).length / visionResults.length
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -615,12 +490,7 @@ serve(async (req) => {
         metadata: {
           processingTimeMs: totalTime,
           orchestratorVersion: '2.1',
-          retryable: RETRY_CONFIG.retryableErrors.some(e => error.message.toLowerCase().includes(e)),
-          circuitBreakerStatus: {
-            claude: isCircuitOpen('goblin-model-claude-analyzer'),
-            gpt: isCircuitOpen('goblin-model-gpt-analyzer'),
-            vision: isCircuitOpen('goblin-vision-screen-detector')
-          }
+          retryable: ['timeout', 'network', 'api_error'].some(e => error.message.toLowerCase().includes(e))
         }
       }),
       { 
