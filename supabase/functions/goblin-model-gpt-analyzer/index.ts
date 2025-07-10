@@ -293,20 +293,54 @@ serve(async (req) => {
     let parsedData: any = {};
     if (!actualChatMode) {
       try {
-        const jsonMatch = summaryText.match(/\{[\s\S]*\}/);
+        // Enhanced JSON extraction - clean markdown code blocks and find valid JSON
+        let cleanedText = summaryText;
+        
+        // Remove markdown code blocks that might contain invalid JSON
+        cleanedText = cleanedText.replace(/```json\s*[\s\S]*?\s*```/g, '');
+        cleanedText = cleanedText.replace(/```[\s\S]*?```/g, '');
+        
+        // Try multiple JSON extraction approaches
+        let jsonString = null;
+        
+        // Method 1: Look for JSON objects (most common)
+        const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-          const rawParsed = JSON.parse(jsonMatch[0]);
+          // Find the largest valid JSON object
+          const startIndex = cleanedText.indexOf('{');
+          if (startIndex !== -1) {
+            let braceCount = 0;
+            let endIndex = startIndex;
+            
+            for (let i = startIndex; i < cleanedText.length; i++) {
+              if (cleanedText[i] === '{') braceCount++;
+              if (cleanedText[i] === '}') braceCount--;
+              if (braceCount === 0) {
+                endIndex = i;
+                break;
+              }
+            }
+            
+            if (braceCount === 0) {
+              jsonString = cleanedText.substring(startIndex, endIndex + 1);
+            }
+          }
+        }
+        
+        if (jsonString) {
+          const rawParsed = JSON.parse(jsonString);
           console.log('✅ Raw parsed data fields:', Object.keys(rawParsed));
           
           // Validate persona-specific fields and create fallback if needed
           parsedData = validateAndNormalizePersonaData(rawParsed, persona, summaryText);
           console.log('✅ Validated structured data for persona:', persona, 'Fields:', Object.keys(parsedData));
         } else {
-          console.warn('❌ No JSON found in response, creating fallback data');
+          console.warn('❌ No valid JSON found in response, creating fallback data');
           parsedData = createPersonaFallbackData(persona, summaryText);
         }
       } catch (parseError) {
         console.error('❌ Failed to parse structured data:', parseError);
+        console.error('❌ Raw response excerpt:', summaryText.substring(0, 500));
         parsedData = createPersonaFallbackData(persona, summaryText);
       }
     }

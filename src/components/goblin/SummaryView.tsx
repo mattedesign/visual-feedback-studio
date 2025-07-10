@@ -62,6 +62,232 @@ const SummaryView: React.FC<SummaryViewProps> = ({
 
   const colors = getPersonaColors(session?.persona_type);
 
+  const renderPersonaSpecificContent = (personaData: any, personaType: string, fallbackSummary: string) => {
+    // Handle different persona types with their specific fields
+    const getPersonaContent = () => {
+      switch(personaType) {
+        case 'mirror':
+          return (
+            <>
+              <div>
+                <h4 className="font-semibold mb-3 text-purple-600">🔮 Empathetic Insights:</h4>
+                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+                  <ParsedText>
+                    {personaData?.insights || personaData?.analysis || fallbackSummary || 'Mirror is reflecting on the user experience...'}
+                  </ParsedText>
+                </p>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold mb-3 text-blue-600">💭 User Experience Reflection:</h4>
+                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+                  <ParsedText>
+                    {personaData?.reflection || personaData?.goblinWisdom || 'Reflecting on the emotional journey through this interface...'}
+                  </ParsedText>
+                </p>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold mb-3 text-pink-600">❤️ Emotional Impact:</h4>
+                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+                  <ParsedText>
+                    {personaData?.emotionalImpact || personaData?.biggestGripe || 'Users may experience mixed emotions with this design...'}
+                  </ParsedText>
+                </p>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold mb-3 text-indigo-600">📖 User Story:</h4>
+                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+                  <ParsedText>
+                    {personaData?.userStory || personaData?.goblinPrediction || 'Every user has a story with this interface...'}
+                  </ParsedText>
+                </p>
+              </div>
+            </>
+          );
+          
+        case 'mad':
+          return (
+            <>
+              <div>
+                <h4 className="font-semibold mb-3 text-red-600">🧪 Mad Science Hypothesis:</h4>
+                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+                  <ParsedText>
+                    {personaData?.hypothesis || personaData?.analysis || fallbackSummary || 'Mad scientist is formulating wild theories...'}
+                  </ParsedText>
+                </p>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold mb-3 text-orange-600">🔬 Mad Science Analysis:</h4>
+                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+                  <ParsedText>
+                    {personaData?.madScience || personaData?.goblinWisdom || 'Conducting wild experiments on UX patterns...'}
+                  </ParsedText>
+                </p>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold mb-3 text-yellow-600">🎭 Weird Findings:</h4>
+                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+                  <ParsedText>
+                    {personaData?.weirdFindings || personaData?.biggestGripe || 'Strange patterns detected in the interface wild...'}
+                  </ParsedText>
+                </p>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold mb-3 text-green-600">📝 Lab Notes:</h4>
+                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+                  <ParsedText>
+                    {personaData?.labNotes || personaData?.goblinPrediction || 'Mad scientist observations from the lab...'}
+                  </ParsedText>
+                </p>
+              </div>
+            </>
+          );
+          
+        case 'strategic':
+          return (
+            <>
+              <div>
+                <h4 className="font-semibold mb-3 text-foreground">📊 Strategic Analysis:</h4>
+                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+                  <ParsedText>
+                    {personaData?.analysis || fallbackSummary || 'Strategic analysis in progress...'}
+                  </ParsedText>
+                </p>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold mb-3 text-emerald-600">💼 Business Impact:</h4>
+                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+                  <ParsedText>
+                    {personaData?.businessImpact || personaData?.biggestGripe || 'Assessing business implications of current UX...'}
+                  </ParsedText>
+                </p>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold mb-3 text-blue-600">🎯 Strategic Priority:</h4>
+                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+                  <ParsedText>
+                    {personaData?.strategicPriority || personaData?.goblinWisdom || 'Identifying high-impact strategic priorities...'}
+                  </ParsedText>
+                </p>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold mb-3 text-purple-600">📈 Measurable Outcomes:</h4>
+                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+                  <ParsedText>
+                    {personaData?.measurableOutcomes || personaData?.goblinPrediction || 'Defining measurable success metrics...'}
+                  </ParsedText>
+                </p>
+              </div>
+            </>
+          );
+          
+        case 'exec':
+          return (
+            <>
+              <div>
+                <h4 className="font-semibold mb-3 text-foreground">📋 Executive Summary:</h4>
+                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+                  <ParsedText>
+                    {personaData?.executiveSummary || personaData?.analysis || fallbackSummary || 'Executive analysis in progress...'}
+                  </ParsedText>
+                </p>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold mb-3 text-red-600">⚠️ Business Risks:</h4>
+                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+                  <ParsedText>
+                    {Array.isArray(personaData?.businessRisks) ? personaData.businessRisks.join(', ') : 
+                     personaData?.businessRisks || personaData?.biggestGripe || 'Identifying critical business risks...'}
+                  </ParsedText>
+                </p>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold mb-3 text-green-600">💰 ROI Impact:</h4>
+                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+                  <ParsedText>
+                    {personaData?.roiImpact || personaData?.goblinWisdom || 'Calculating return on investment implications...'}
+                  </ParsedText>
+                </p>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold mb-3 text-blue-600">🏆 Competitive Implications:</h4>
+                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+                  <ParsedText>
+                    {personaData?.competitiveImplications || personaData?.goblinPrediction || 'Assessing competitive positioning impacts...'}
+                  </ParsedText>
+                </p>
+              </div>
+            </>
+          );
+          
+        default: // clarity and fallback
+          return (
+            <>
+              <div>
+                <h4 className="font-semibold mb-3 text-foreground">Analysis:</h4>
+                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+                  <ParsedText>
+                    {personaData?.analysis || fallbackSummary || 'Analysis completed - awaiting detailed feedback from the goblin...'}
+                  </ParsedText>
+                </p>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold mb-3 text-red-600">🤬 Biggest Gripe:</h4>
+                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+                  <ParsedText>
+                    {personaData?.biggestGripe || personaData?.wildCard || 'The goblin is still formulating their biggest complaint...'}
+                  </ParsedText>
+                </p>
+              </div>
+              
+              <div>
+                <h4 className={`font-semibold mb-3 ${colors.primary}`}>😈 What Actually Works:</h4>
+                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+                  <ParsedText>
+                    {personaData?.whatMakesGoblinHappy || 
+                     (Array.isArray(personaData?.experiments) ? personaData.experiments.join(", ") : personaData?.experiments) || 
+                     'The goblin is identifying what makes them happy...'}
+                  </ParsedText>
+                </p>
+              </div>
+              
+              <div>
+                <h4 className={`font-semibold mb-3 ${colors.primary}`}>💎 Goblin Wisdom:</h4>
+                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+                  <ParsedText>
+                    {personaData?.goblinWisdom || 'Goblin wisdom is being distilled...'}
+                  </ParsedText>
+                </p>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold mb-3 text-blue-600">🔮 Goblin Prediction:</h4>
+                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+                  <ParsedText>
+                    {personaData?.goblinPrediction || 'The goblin is peering into the future...'}
+                  </ParsedText>
+                </p>
+              </div>
+            </>
+          );
+      }
+    };
+
+    return getPersonaContent();
+  };
+
   const renderPriorityMatrix = (matrix: any) => {
     if (!matrix) return null;
 
@@ -166,132 +392,75 @@ const SummaryView: React.FC<SummaryViewProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div>
-            <h4 className="font-semibold mb-3 text-foreground">Analysis:</h4>
-            <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-              <ParsedText>
-                {personaData?.analysis || results?.synthesis_summary || 'Analysis completed - awaiting detailed feedback from the goblin...'}
-              </ParsedText>
-            </p>
-          </div>
-          
-          <div>
-            <h4 className="font-semibold mb-3 text-red-600">🤬 Biggest Gripe:</h4>
-            <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-              <ParsedText>
-                {personaData?.biggestGripe || personaData?.wildCard || 'The goblin is still formulating their biggest complaint...'}
-              </ParsedText>
-            </p>
-          </div>
-          
-          <div>
-            <h4 className={`font-semibold mb-3 ${colors.primary}`}>😈 What Actually Works:</h4>
-            <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-              <ParsedText>
-                {personaData?.whatMakesGoblinHappy || 
-                 (Array.isArray(personaData?.experiments) ? personaData.experiments.join(", ") : personaData?.experiments) || 
-                 'The goblin is identifying what makes them happy...'}
-              </ParsedText>
-            </p>
-          </div>
+          {/* Dynamic persona-specific content rendering */}
+          {renderPersonaSpecificContent(personaData, session?.persona_type, results?.synthesis_summary)}
 
-          {/* Strategic persona specific fields */}
-          {personaData?.businessImpact && (
-            <div>
-              <h4 className="font-semibold mb-3 text-emerald-600">💼 Business Impact:</h4>
-              <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                <ParsedText>{personaData.businessImpact}</ParsedText>
-              </p>
-            </div>
-          )}
-
-          {personaData?.implementation && (
-            <div>
-              <h4 className="font-semibold mb-3 text-blue-600">⚙️ Implementation Strategy:</h4>
-              <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                <ParsedText>{personaData.implementation}</ParsedText>
-              </p>
-            </div>
-          )}
-
-          {personaData?.visualStrategy && Array.isArray(personaData.visualStrategy) && personaData.visualStrategy.length > 0 && (
-            <div>
-              <h4 className="font-semibold mb-3 text-purple-600">🎨 Visual Strategy:</h4>
-              <ul className="space-y-2">
-                {personaData.visualStrategy.map((strategy: string, idx: number) => (
-                  <li key={idx} className="flex items-start gap-2 text-sm">
-                    <span className="text-purple-600 mt-1">•</span>
-                    <span className="text-muted-foreground">
-                      <ParsedText>{strategy}</ParsedText>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {personaData?.competitiveVisualEdge && Array.isArray(personaData.competitiveVisualEdge) && personaData.competitiveVisualEdge.length > 0 && (
-            <div>
-              <h4 className="font-semibold mb-3 text-orange-600">🏆 Competitive Visual Edge:</h4>
-              <ul className="space-y-2">
-                {personaData.competitiveVisualEdge.map((edge: string, idx: number) => (
-                  <li key={idx} className="flex items-start gap-2 text-sm">
-                    <span className="text-orange-600 mt-1">•</span>
-                    <span className="text-muted-foreground">
-                      <ParsedText>{edge}</ParsedText>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          
-          <div>
-            <h4 className={`font-semibold mb-3 ${colors.primary}`}>💎 Goblin Wisdom:</h4>
-            <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-              <ParsedText>
-                {personaData?.goblinWisdom || 'Goblin wisdom is being distilled...'}
-              </ParsedText>
-            </p>
-          </div>
-          
-          <div>
-            <h4 className="font-semibold mb-3 text-blue-600">🔮 Goblin Prediction:</h4>
-            <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-              <ParsedText>
-                {personaData?.goblinPrediction || 'The goblin is peering into the future...'}
-              </ParsedText>
-            </p>
-          </div>
         </CardContent>
       </Card>
 
-      {/* Recommendations - Always show */}
+          {/* Recommendations - Persona-specific rendering */}
       <Card className="border-0 shadow-sm bg-card">
         <CardHeader className="pb-4">
           <CardTitle className={`flex items-center gap-3 text-xl font-semibold ${colors.primary}`}>
-            🚀 Recommendations
+            {session?.persona_type === 'mad' ? '🧪 Crazy Experiments' :
+             session?.persona_type === 'mirror' ? '💭 Empathy Reflections' :
+             session?.persona_type === 'strategic' ? '📊 Strategic Recommendations' :
+             session?.persona_type === 'exec' ? '💼 Executive Recommendations' :
+             '🚀 Recommendations'}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {Array.isArray(personaData?.recommendations) && personaData.recommendations.length > 0 ? (
-            <ul className="space-y-3">
-              {personaData.recommendations.map((rec: string, idx: number) => (
-                <li key={idx} className="flex items-start gap-3">
-                  <span className={`${colors.primary} mt-1 text-lg`}>•</span>
-                  <span className="text-muted-foreground leading-relaxed">
-                    <ParsedText>{rec}</ParsedText>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : personaData?.recommendations && typeof personaData.recommendations === 'string' ? (
-            <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-              <ParsedText>{personaData.recommendations}</ParsedText>
-            </p>
-          ) : (
-            <p className="text-muted-foreground italic">The goblin is crafting personalized recommendations...</p>
-          )}
+          {(() => {
+            // Get the right recommendations field based on persona
+            let recommendations = null;
+            switch(session?.persona_type) {
+              case 'mad':
+                recommendations = personaData?.experiments || personaData?.crazyIdeas;
+                break;
+              case 'mirror':
+                recommendations = personaData?.visualReflections || personaData?.empathyGaps;
+                break;
+              case 'strategic':
+                recommendations = personaData?.recommendations;
+                break;
+              case 'exec':
+                recommendations = personaData?.strategicRecommendations || personaData?.businessRisks;
+                break;
+              default:
+                recommendations = personaData?.recommendations;
+            }
+            
+            if (Array.isArray(recommendations) && recommendations.length > 0) {
+              return (
+                <ul className="space-y-3">
+                  {recommendations.map((rec: string, idx: number) => (
+                    <li key={idx} className="flex items-start gap-3">
+                      <span className={`${colors.primary} mt-1 text-lg`}>•</span>
+                      <span className="text-muted-foreground leading-relaxed">
+                        <ParsedText>{rec}</ParsedText>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              );
+            } else if (recommendations && typeof recommendations === 'string') {
+              return (
+                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+                  <ParsedText>{recommendations}</ParsedText>
+                </p>
+              );
+            } else {
+              return (
+                <p className="text-muted-foreground italic">
+                  {session?.persona_type === 'mad' ? 'Mad scientist is brewing up wild experiments...' :
+                   session?.persona_type === 'mirror' ? 'Mirror is reflecting on empathetic insights...' :
+                   session?.persona_type === 'strategic' ? 'Strategic analyst is formulating recommendations...' :
+                   session?.persona_type === 'exec' ? 'Executive perspective is being prepared...' :
+                   'The goblin is crafting personalized recommendations...'}
+                </p>
+              );
+            }
+          })()}
         </CardContent>
       </Card>
 

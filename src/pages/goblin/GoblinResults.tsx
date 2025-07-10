@@ -16,19 +16,39 @@ import { NavigationProvider } from '@/contexts/NavigationContext';
 // Type definition for persona data
 interface PersonaData {
   analysis?: string;
-  recommendations?: string | string[];
+  recommendations?: string[];
   biggestGripe?: string;
   whatMakesGoblinHappy?: string;
   goblinWisdom?: string;
   goblinPrediction?: string;
   wildCard?: string;
-  experiments?: string | string[];
+  experiments?: string[];
   // Strategic persona specific fields
   businessImpact?: string;
   implementation?: string;
   visualStrategy?: string[];
   competitiveVisualEdge?: string[];
   metrics?: string[];
+  // Mirror persona specific fields
+  insights?: string;
+  reflection?: string;
+  visualReflections?: string[];
+  emotionalImpact?: string;
+  userStory?: string;
+  empathyGaps?: string[];
+  // Mad scientist persona specific fields
+  hypothesis?: string;
+  madScience?: string;
+  weirdFindings?: string;
+  crazyIdeas?: string[];
+  labNotes?: string;
+  // Executive persona specific fields
+  executiveSummary?: string;
+  businessRisks?: string[];
+  roiImpact?: string;
+  stakeholderConcerns?: string;
+  strategicRecommendations?: string[];
+  competitiveImplications?: string;
 }
 
 const GoblinResults: React.FC = () => {
@@ -211,7 +231,7 @@ const GoblinResults: React.FC = () => {
   // Parse the persona feedback correctly with proper typing
   let personaData: PersonaData = {
     analysis: '',
-    recommendations: '',
+    recommendations: [],
     biggestGripe: '',
     whatMakesGoblinHappy: '',
     goblinWisdom: '',
@@ -226,130 +246,89 @@ const GoblinResults: React.FC = () => {
     stringPreview: typeof rawPersonaData === 'string' ? rawPersonaData.substring(0, 100) : 'N/A'
   });
 
-  if (typeof rawPersonaData === 'string') {
-    // Try to parse JSON string first
-    try {
-      const parsed = JSON.parse(rawPersonaData);
-      if (parsed && typeof parsed === 'object') {
-        personaData = {
-          analysis: parsed.analysis || rawPersonaData,
-          recommendations: parsed.recommendations || '',
-          biggestGripe: parsed.biggestGripe || '',
-          whatMakesGoblinHappy: parsed.whatMakesGoblinHappy || '',
-          goblinWisdom: parsed.goblinWisdom || '',
-          goblinPrediction: parsed.goblinPrediction || '',
-          businessImpact: parsed.businessImpact || '',
-          implementation: parsed.implementation || '',
-          visualStrategy: parsed.visualStrategy || [],
-          competitiveVisualEdge: parsed.competitiveVisualEdge || [],
-          metrics: parsed.metrics || []
-        };
-        console.log('✅ PARSED JSON STRING: Successfully extracted structured data', {
-          analysisLength: personaData.analysis?.length,
-          hasOtherFields: !!(personaData.biggestGripe || personaData.goblinWisdom)
-        });
-      } else {
-        throw new Error('Not a valid object');
-      }
-    } catch (parseError) {
-      console.log('⚠️ JSON PARSE FAILED:', parseError.message, 'Raw data:', rawPersonaData.substring(0, 200));
+  // Enhanced persona data extraction with better error handling
+  const extractPersonaData = (data: any, personaType: string, fallbackSummary: string): PersonaData => {
+    const defaultPersonaData: PersonaData = {
+      analysis: fallbackSummary || 'Analysis completed',
+      recommendations: [],
+      biggestGripe: 'No specific issues identified',
+      whatMakesGoblinHappy: 'Overall design has potential',
+      goblinWisdom: 'Every design has opportunities for improvement',
+      goblinPrediction: 'With improvements, user experience will enhance',
+      businessImpact: '',
+      implementation: '',
+      visualStrategy: [],
+      competitiveVisualEdge: [],
+      metrics: []
+    };
+
+    if (typeof data === 'string') {
+      // Enhanced JSON parsing with markdown cleanup
+      let cleanData = data;
       
-      // Check if it contains JSON-like structure and extract the analysis value
-      const jsonMatch = rawPersonaData.match(/"analysis":\s*"([^"]+)"/);
-      if (jsonMatch && jsonMatch[1]) {
-        console.log('✅ EXTRACTED ANALYSIS FROM JSON STRING');
-        personaData = { 
-          ...personaData,
-          analysis: jsonMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"')
-        };
-      } else {
-        // If it's just a plain string, use it as the analysis
-        personaData = { 
-          ...personaData,
-          analysis: rawPersonaData || results?.synthesis_summary || 'Analysis completed'
-        };
-        console.log('✅ PLAIN STRING: Using raw string as analysis');
-      }
-    }
-  } else if (rawPersonaData && typeof rawPersonaData === 'object') {
-    // Check if the object has a nested analysis string that might be JSON
-    let analysisValue = rawPersonaData.analysis;
-    let nestedRecommendations = rawPersonaData.recommendations || [];
-    let nestedBusinessImpact = '';
-    let nestedImplementation = '';
-    let nestedVisualStrategy = [];
-    let nestedCompetitiveVisualEdge = [];
-    
-    if (typeof analysisValue === 'string' && analysisValue.includes('"analysis":')) {
-      console.log('🔍 Found nested JSON in analysis field, trying to parse...');
-      console.log('🔍 Raw analysis value:', analysisValue.substring(0, 200) + '...');
+      // Remove markdown code blocks
+      cleanData = cleanData.replace(/```json\s*[\s\S]*?\s*```/g, '');
+      cleanData = cleanData.replace(/```[\s\S]*?```/g, '');
+      
       try {
-        const parsed = JSON.parse(analysisValue);
-        console.log('🔍 Parsed nested JSON:', parsed);
-        console.log('🔍 Parsed recommendations:', parsed.recommendations);
+        const parsed = JSON.parse(cleanData);
+        if (parsed && typeof parsed === 'object') {
+          return {
+            ...defaultPersonaData,
+            ...parsed,
+            analysis: parsed.analysis || data || fallbackSummary,
+            recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : 
+                           parsed.recommendations ? [parsed.recommendations] : defaultPersonaData.recommendations
+          };
+        }
+      } catch (parseError) {
+        console.log('⚠️ JSON PARSE FAILED, trying pattern extraction:', parseError.message);
         
-        analysisValue = parsed.analysis || analysisValue;
-        // Extract all nested fields for strategic persona
-        if (parsed.recommendations && Array.isArray(parsed.recommendations)) {
-          nestedRecommendations = parsed.recommendations;
-          console.log('✅ Extracted nested recommendations:', nestedRecommendations);
+        // Try to extract specific fields using regex
+        const patterns = {
+          analysis: /"analysis":\s*"([^"]+)"/,
+          biggestGripe: /"biggestGripe":\s*"([^"]+)"/,
+          goblinWisdom: /"goblinWisdom":\s*"([^"]+)"/,
+          whatMakesGoblinHappy: /"whatMakesGoblinHappy":\s*"([^"]+)"/,
+          goblinPrediction: /"goblinPrediction":\s*"([^"]+)"/
+        };
+        
+        const extracted: Partial<PersonaData> = {};
+        Object.entries(patterns).forEach(([key, pattern]) => {
+          const match = data.match(pattern);
+          if (match && match[1]) {
+            (extracted as any)[key] = match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+          }
+        });
+        
+        if (Object.keys(extracted).length > 0) {
+          console.log('✅ EXTRACTED FIELDS FROM PATTERN MATCHING:', Object.keys(extracted));
+          return { ...defaultPersonaData, ...extracted };
         }
-        if (parsed.businessImpact) {
-          nestedBusinessImpact = parsed.businessImpact;
-        }
-        if (parsed.implementation) {
-          nestedImplementation = parsed.implementation;
-        }
-        if (parsed.visualStrategy && Array.isArray(parsed.visualStrategy)) {
-          nestedVisualStrategy = parsed.visualStrategy;
-        }
-        if (parsed.competitiveVisualEdge && Array.isArray(parsed.competitiveVisualEdge)) {
-          nestedCompetitiveVisualEdge = parsed.competitiveVisualEdge;
-        }
-        console.log('✅ Successfully parsed nested JSON, extracted analysis and strategic fields');
-      } catch (nestedParseError) {
-        console.log('⚠️ Failed to parse nested JSON, using as-is:', nestedParseError.message);
+        
+        // Final fallback - use the entire string as analysis
+        return { ...defaultPersonaData, analysis: data || fallbackSummary };
       }
+    } else if (data && typeof data === 'object') {
+      return {
+        ...defaultPersonaData,
+        ...data,
+        analysis: data.analysis || fallbackSummary,
+        recommendations: Array.isArray(data.recommendations) ? data.recommendations : 
+                       data.recommendations ? [data.recommendations] : defaultPersonaData.recommendations
+      };
     }
     
-    // Enhanced object property extraction with detailed logging
-    const extractedAnalysis = analysisValue || results?.synthesis_summary || 'Analysis completed';
-    const extractedRecommendations = nestedRecommendations.length > 0 ? nestedRecommendations : (Array.isArray(rawPersonaData.recommendations) && rawPersonaData.recommendations.length > 0 ? rawPersonaData.recommendations : []);
-    const extractedBiggestGripe = rawPersonaData.biggestGripe || rawPersonaData.wildCard || '';
-    const extractedWhatMakesGoblinHappy = rawPersonaData.whatMakesGoblinHappy || 
-                                         (Array.isArray(rawPersonaData.experiments) ? rawPersonaData.experiments.join(", ") : rawPersonaData.experiments) || '';
-    const extractedGoblinWisdom = rawPersonaData.goblinWisdom || '';
-    const extractedGoblinPrediction = rawPersonaData.goblinPrediction || '';
-    
-    // Extract strategic persona specific fields
-    const extractedBusinessImpact = nestedBusinessImpact || rawPersonaData.businessImpact || '';
-    const extractedImplementation = nestedImplementation || rawPersonaData.implementation || '';
-    const extractedVisualStrategy = nestedVisualStrategy.length > 0 ? nestedVisualStrategy : (rawPersonaData.visualStrategy || []);
-    const extractedCompetitiveVisualEdge = nestedCompetitiveVisualEdge.length > 0 ? nestedCompetitiveVisualEdge : (rawPersonaData.competitiveVisualEdge || []);
-    const extractedMetrics = rawPersonaData.metrics || [];
-    
-    personaData = {
-      analysis: extractedAnalysis,
-      recommendations: extractedRecommendations,
-      biggestGripe: extractedBiggestGripe,
-      whatMakesGoblinHappy: extractedWhatMakesGoblinHappy,
-      goblinWisdom: extractedGoblinWisdom,
-      goblinPrediction: extractedGoblinPrediction,
-      businessImpact: extractedBusinessImpact,
-      implementation: extractedImplementation,
-      visualStrategy: extractedVisualStrategy,
-      competitiveVisualEdge: extractedCompetitiveVisualEdge,
-      metrics: extractedMetrics
-    };
-    
-    console.log('✅ OBJECT FORMAT: Extracted persona data successfully');
+    return defaultPersonaData;
+  };
+
+  if (rawPersonaData) {
+    personaData = extractPersonaData(rawPersonaData, session?.persona_type, results?.synthesis_summary);
+    console.log('✅ Successfully extracted persona data');
   } else {
-    // Fallback to synthesis summary
-    personaData = {
-      ...personaData,
-      analysis: results?.synthesis_summary || 'Analysis completed'
-    };
-    console.log('⚠️ FALLBACK: Using synthesis_summary as analysis');
+    // Complete fallback
+    personaData = extractPersonaData(null, session?.persona_type, results?.synthesis_summary);
+    console.log('⚠️ FALLBACK: No valid persona data found, using defaults');
   }
   
   console.log('🎉 FINAL PERSONA DATA:', {
