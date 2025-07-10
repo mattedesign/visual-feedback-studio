@@ -22,6 +22,21 @@ class TextParsingErrorBoundaryInner extends React.Component<
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Text parsing component error:', error, errorInfo);
+    
+    // Enhanced logging for pipeline monitoring
+    console.error('TextParsingErrorBoundary caught error:', {
+      error: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      originalText: this.props.originalText,
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent
+    });
+    
+    // Report to monitoring if available
+    if (typeof window !== 'undefined' && (window as any).reportError) {
+      (window as any).reportError(error);
+    }
   }
 
   render() {
