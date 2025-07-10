@@ -13,17 +13,29 @@ export const useAnalysisErrorHandler = ({
 }: UseAnalysisErrorHandlerProps) => {
   
   const handleAnalysisError = useCallback(async (error: unknown) => {
-    console.error('❌ Analysis Error:', error);
+    console.error('=== Enhanced Analysis Error ===');
+    
+    // Type guard to safely access error properties
+    if (error && typeof error === 'object') {
+      const errorObj = error as Record<string, unknown>;
+      console.error('Error name:', errorObj.name);
+      console.error('Error message:', errorObj.message);
+      console.error('Error stack:', errorObj.stack);
+    } else {
+      console.error('Error:', error);
+    }
     
     // Update analysis status to failed
     try {
       if (currentAnalysis) {
         await updateAnalysisStatus(currentAnalysis.id, 'failed');
-        console.log(`✅ Analysis ${currentAnalysis.id.substring(0, 8)} marked as failed`);
       }
     } catch (statusError) {
       console.error('Failed to update analysis status:', statusError);
     }
+    
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Final error message:', errorMessage);
     
     setIsAnalyzing(false);
     

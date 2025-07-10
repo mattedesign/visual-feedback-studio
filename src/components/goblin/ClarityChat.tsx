@@ -312,7 +312,7 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
       case 'mirror': return 'Mirror 🪞✨';
       case 'strategic': return 'Strategist 📊🎯';
       case 'mad': return 'Mad Scientist 🔬⚡';
-      case 'exec': return 'Executive 💼📈';
+      case 'executive': return 'Executive 💼📈';
       default: return 'AI Assistant 🤖';
     }
   };
