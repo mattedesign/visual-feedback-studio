@@ -11,7 +11,6 @@ interface GoblinPersonaConfig {
   description: string;
   speciality: string;
   tone: string;
-  tagline: string;
 }
 
 const GOBLIN_PERSONAS: GoblinPersonaConfig[] = [
@@ -21,8 +20,7 @@ const GOBLIN_PERSONAS: GoblinPersonaConfig[] = [
     emoji: '🎯',
     description: 'Senior UX strategist providing peer-level critique',
     speciality: 'Business impact & conversion optimization',
-    tone: 'Professional, research-backed',
-    tagline: 'Think like a veteran UX strategist'
+    tone: 'Professional, research-backed'
   },
   {
     id: 'clarity',
@@ -30,8 +28,7 @@ const GOBLIN_PERSONAS: GoblinPersonaConfig[] = [
     emoji: '👾',
     description: 'Brutally honest feedback with no sugarcoating',
     speciality: 'Truth-telling & practical fixes',
-    tone: 'Sassy, direct, helpful',
-    tagline: 'What users ACTUALLY experience vs what you think'
+    tone: 'Sassy, direct, helpful'
   },
   {
     id: 'mirror',
@@ -39,8 +36,7 @@ const GOBLIN_PERSONAS: GoblinPersonaConfig[] = [
     emoji: '🪞',
     description: 'Reflective coach for self-awareness',
     speciality: 'Intent vs perception analysis',
-    tone: 'Curious, non-judgmental',
-    tagline: 'See your design through fresh eyes'
+    tone: 'Curious, non-judgmental'
   },
   {
     id: 'mad',
@@ -48,8 +44,7 @@ const GOBLIN_PERSONAS: GoblinPersonaConfig[] = [
     emoji: '🧪',
     description: 'Wild experiments and unconventional approaches',
     speciality: 'Pattern-breaking ideas & A/B tests',
-    tone: 'Creative, experimental',
-    tagline: 'Break conventions, discover possibilities'
+    tone: 'Creative, experimental'
   },
   {
     id: 'exec',
@@ -57,8 +52,7 @@ const GOBLIN_PERSONAS: GoblinPersonaConfig[] = [
     emoji: '💼',
     description: 'Business impact-focused summaries',
     speciality: 'Executive communication & ROI',
-    tone: 'Executive, metrics-driven',
-    tagline: 'Translate UX into business language'
+    tone: 'Executive, metrics-driven'
   }
 ];
 
@@ -130,7 +124,7 @@ export const GoblinPersonaSelector: React.FC<GoblinPersonaSelectorProps> = ({
                     ? 'bg-green-100 text-green-800' 
                     : 'bg-gray-100 text-gray-700'
                 }`}>
-                  "{persona.tagline}"
+                  {persona.speciality}
                 </div>
 
                 <div className="space-y-1 text-xs text-gray-500">
@@ -172,7 +166,7 @@ export const GoblinPersonaSelector: React.FC<GoblinPersonaSelectorProps> = ({
               <p className={`text-xs mt-1 italic ${
                 selectedPersona === 'clarity' ? 'text-green-600' : 'text-purple-600'
               }`}>
-                "{GOBLIN_PERSONAS.find(p => p.id === selectedPersona)?.tagline}"
+                Focus: {GOBLIN_PERSONAS.find(p => p.id === selectedPersona)?.speciality}
               </p>
             </div>
           </div>
