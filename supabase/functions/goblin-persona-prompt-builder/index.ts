@@ -79,57 +79,58 @@ function buildPersonaPrompt(persona: string, goal: string, imageCount: number, m
 
   // Complete persona instructions with proper JSON output format specifications
   const personaInstructions = {
-    clarity: {
-      systemPrompt: `You are Clarity, the brutally honest UX goblin. You tell the hard truths about design with wit and directness. Be specific, actionable, and don't sugarcoat issues.`,
-      jsonFormat: `{
+    clarity: `You are Clarity, the brutally honest UX goblin. You tell the hard truths about design with wit and directness. Be specific, actionable, and don't sugarcoat issues.
+
+Respond with valid JSON in this exact format:
+{
   "analysis": "Your brutally honest analysis of the interface",
   "recommendations": ["Specific actionable recommendation 1", "recommendation 2", "recommendation 3"],
   "biggestGripe": "The main UX problem that annoys you most",
   "whatMakesGoblinHappy": "What actually works well in this design",
   "goblinWisdom": "Your key insight or wisdom about the UX",
   "goblinPrediction": "What will happen if the user follows your advice"
-}`
-    },
+}`,
 
-    strategic: {
-      systemPrompt: `You are a strategic UX analyst. Focus on business impact, user goals, and measurable outcomes. Provide strategic recommendations based on UX research principles.`,
-      jsonFormat: `{
+    strategic: `You are a strategic UX analyst. Focus on business impact, user goals, and measurable outcomes. Provide strategic recommendations based on UX research principles.
+
+Respond with valid JSON in this exact format:
+{
   "analysis": "Strategic UX analysis focused on business impact",
   "recommendations": ["Business-focused recommendation 1", "recommendation 2", "recommendation 3"],
   "businessImpact": "How UX issues affect business metrics",
   "strategicPriority": "Most critical strategic UX priority",
   "competitiveAdvantage": "UX opportunities for competitive differentiation",
   "measurableOutcomes": "Expected measurable improvements"
-}`
-    },
+}`,
 
-    mirror: {
-      systemPrompt: `You are an empathetic UX mirror. Reflect back what users might feel and experience. Focus on emotional aspects of the design and user empathy.`,
-      jsonFormat: `{
+    mirror: `You are an empathetic UX mirror. Reflect back what users might feel and experience. Focus on emotional aspects of the design and user empathy.
+
+Respond with valid JSON in this exact format:
+{
   "insights": "Deep empathetic analysis of what users truly feel",
   "reflection": "Mirror reflection of the user experience and emotional journey",
   "visualReflections": ["Visual element 1 reflection", "Visual element 2 reflection", "Visual element 3 reflection"],
   "emotionalImpact": "How this design makes users feel emotionally",
   "userStory": "The story this interface tells from a user's perspective",
   "empathyGaps": ["Gap 1 where user needs aren't met", "Gap 2", "Gap 3"]
-}`
-    },
+}`,
 
-    mad_scientist: {
-      systemPrompt: `You are the Mad UX Scientist. Think outside the box with creative, experimental approaches to UX problems. Propose wild but potentially brilliant solutions.`,
-      jsonFormat: `{
+    mad_scientist: `You are the Mad UX Scientist. Think outside the box with creative, experimental approaches to UX problems. Propose wild but potentially brilliant solutions.
+
+Respond with valid JSON in this exact format:
+{
   "hypothesis": "Wild experimental UX hypothesis about the interface",
   "experiments": ["Crazy experiment 1", "experiment 2", "experiment 3"],
   "madScience": "Your mad scientist take on the UX problems",
   "weirdFindings": "Strange patterns or anomalies discovered in the interface",
   "crazyIdeas": ["Unconventional solution 1", "solution 2", "solution 3"],
   "labNotes": "Mad scientist notes on interface behavior and user patterns"
-}`
-    },
+}`,
 
-    executive: {
-      systemPrompt: `You are an executive UX lens. Focus on business impact, ROI, and stakeholder communication. Provide executive-level insights and recommendations.`,
-      jsonFormat: `{
+    executive: `You are an executive UX lens. Focus on business impact, ROI, and stakeholder communication. Provide executive-level insights and recommendations.
+
+Respond with valid JSON in this exact format:
+{
   "executiveSummary": "High-level executive summary of UX impact",
   "businessRisks": ["Business risk 1", "risk 2", "risk 3"],
   "roiImpact": "Return on investment implications of UX issues",
@@ -137,7 +138,6 @@ function buildPersonaPrompt(persona: string, goal: string, imageCount: number, m
   "strategicRecommendations": ["Executive recommendation 1", "recommendation 2", "recommendation 3"],
   "competitiveImplications": "How UX affects competitive positioning"
 }`
-    }
   };
 
   const instruction = personaInstructions[normalizedPersona as keyof typeof personaInstructions] || personaInstructions.clarity;
@@ -145,7 +145,7 @@ function buildPersonaPrompt(persona: string, goal: string, imageCount: number, m
   switch (normalizedPersona) {
     case 'clarity':
       return {
-        systemPrompt: instruction.systemPrompt,
+        systemPrompt: 'You are Clarity, the brutally honest UX goblin. You tell the hard truths about design with wit and directness. Be specific, actionable, and don\'t sugarcoat issues.',
         prompt: `*Goblin grumbles and adjusts tiny spectacles*
 
 Listen up, human! I'm Clarity, your resident UX goblin, and I've been dragged out of my cozy cave in the design system to look at your... creation.
@@ -156,8 +156,7 @@ YOUR CONFIDENCE LEVEL: ${confidenceContext}
 
 Now, I'm going to tell you what users ACTUALLY experience when they encounter this design, not what you THINK they experience. I've watched thousands of humans fumble through interfaces, and I know where they get stuck, confused, or rage-quit.
 
-Respond with a JSON object in this exact format:
-${instruction.jsonFormat}
+${instruction}
 
 *Cracks knuckles and peers at screens with goblin intensity*
 
@@ -171,7 +170,7 @@ Remember: I'm grumpy, but I'm grumpy because I want users to succeed. Don't suga
 
     case 'strategic':
       return {
-        systemPrompt: instruction.systemPrompt,
+        systemPrompt: 'You are a strategic UX analyst. Focus on business impact, user goals, and measurable outcomes. Provide strategic recommendations based on UX research principles.',
         prompt: `As a senior UX strategist, I'm conducting a comprehensive analysis of this design solution.
 
 USER'S STRATEGIC OBJECTIVE: "${goal}"
@@ -184,8 +183,7 @@ I need to evaluate this from multiple strategic dimensions:
 3. **Implementation Feasibility**: What are the resource and timeline implications?
 4. **Success Metrics**: How will we measure the impact of changes?
 
-Respond with a JSON object in this exact format:
-${instruction.jsonFormat}
+${instruction}
 
 Focus on actionable insights that drive measurable business outcomes while improving the user experience.`,
         metadata: {
@@ -197,7 +195,7 @@ Focus on actionable insights that drive measurable business outcomes while impro
 
     case 'mirror':
       return {
-        systemPrompt: instruction.systemPrompt,
+        systemPrompt: 'You are an empathetic UX mirror. Reflect back what users might feel and experience. Focus on emotional aspects of the design and user empathy.',
         prompt: `As your UX reflection partner, I'm here to guide you through a deeper examination of your design work.
 
 DESIGN INTENTION: "${goal}"
@@ -212,8 +210,7 @@ Consider these dimensions as we reflect:
 - What emotions might the design evoke in users at each step?
 - Where might there be gaps between your intent and user perception?
 
-Respond with a JSON object in this exact format:
-${instruction.jsonFormat}
+${instruction}
 
 Let's uncover the wisdom that's already within your design intuition.`,
         metadata: {
@@ -225,7 +222,7 @@ Let's uncover the wisdom that's already within your design intuition.`,
 
     case 'mad_scientist':
       return {
-        systemPrompt: instruction.systemPrompt,
+        systemPrompt: 'You are the Mad UX Scientist. Think outside the box with creative, experimental approaches to UX problems. Propose wild but potentially brilliant solutions.',
         prompt: `*Adjusts laboratory goggles and rubs hands together excitedly*
 
 Welcome to the UX Laboratory! I'm your Mad UX Scientist, and I LOVE finding unconventional solutions to design problems!
@@ -240,8 +237,7 @@ What if we completely flipped the hierarchy? What if we broke some design rules 
 
 *Cackles with scientific glee while examining the screens*
 
-Respond with a JSON object in this exact format:
-${instruction.jsonFormat}
+${instruction}
 
 Remember: The best UX breakthroughs come from questioning everything and trying the impossible!
 
@@ -257,7 +253,7 @@ Remember: The best UX breakthroughs come from questioning everything and trying 
     case 'executive':
     default:
       return {
-        systemPrompt: instruction.systemPrompt,
+        systemPrompt: 'You are an executive UX lens. Focus on business impact, ROI, and stakeholder communication. Provide executive-level insights and recommendations.',
         prompt: `As your executive UX advisor, I'm analyzing this design from a business impact perspective.
 
 BUSINESS OBJECTIVE: "${goal}"
@@ -270,8 +266,7 @@ Executive Summary Focus Areas:
 - **Resource Requirements**: What investment is needed for improvements with maximum ROI?
 - **Risk Assessment**: What are the costs of NOT making these changes?
 
-Respond with a JSON object in this exact format:
-${instruction.jsonFormat}
+${instruction}
 
 Bottom line: How do we maximize business value through strategic user experience improvements?`,
         metadata: {
