@@ -427,6 +427,22 @@ function buildPrompt(persona: string, userPrompt: string, chatMode: boolean, con
       "whatMakesGoblinHappy": "What actually works well in this design",
       "goblinWisdom": "Your key insight or wisdom about the UX",
       "goblinPrediction": "What will happen if the user follows your advice"
+    },
+    mad: {
+      "hypothesis": "Wild experimental UX hypothesis about the interface",
+      "experiments": ["Crazy experiment 1", "experiment 2", "experiment 3"],
+      "madScience": "Your mad scientist take on the UX problems",
+      "weirdFindings": "Strange patterns or anomalies discovered in the interface",
+      "crazyIdeas": ["Unconventional solution 1", "solution 2", "solution 3"],
+      "labNotes": "Mad scientist notes on interface behavior and user patterns"
+    },
+    exec: {
+      "executiveSummary": "High-level executive summary of UX impact",
+      "businessRisks": ["Business risk 1", "risk 2", "risk 3"],
+      "roiImpact": "Return on investment implications of UX issues",
+      "stakeholderConcerns": "Key concerns for executive stakeholders",
+      "strategicRecommendations": ["Executive recommendation 1", "recommendation 2", "recommendation 3"],
+      "competitiveImplications": "How UX affects competitive positioning"
     }
   };
 
@@ -478,7 +494,9 @@ function validateAndNormalizePersonaData(rawData: any, persona: string, summaryT
   const expectedFields = {
     mirror: ['insights', 'reflection', 'visualReflections', 'emotionalImpact', 'userStory', 'empathyGaps'],
     strategic: ['analysis', 'recommendations', 'businessImpact', 'strategicPriority', 'competitiveAdvantage', 'measurableOutcomes'],
-    clarity: ['analysis', 'recommendations', 'biggestGripe', 'whatMakesGoblinHappy', 'goblinWisdom', 'goblinPrediction']
+    clarity: ['analysis', 'recommendations', 'biggestGripe', 'whatMakesGoblinHappy', 'goblinWisdom', 'goblinPrediction'],
+    mad: ['hypothesis', 'experiments', 'madScience', 'weirdFindings', 'crazyIdeas', 'labNotes'],
+    exec: ['executiveSummary', 'businessRisks', 'roiImpact', 'stakeholderConcerns', 'strategicRecommendations', 'competitiveImplications']
   };
   
   const expected = expectedFields[persona as keyof typeof expectedFields] || expectedFields.clarity;
@@ -535,6 +553,40 @@ function mapGenericToPersonaSpecific(genericData: any, persona: string, summaryT
       competitiveAdvantage: genericData.whatMakesGoblinHappy || "Opportunity to differentiate through superior UX",
       measurableOutcomes: genericData.goblinPrediction || "Expect improved user engagement and conversion"
     };
+  } else if (persona === 'mad') {
+    return {
+      hypothesis: genericData.analysis || summaryText,
+      experiments: Array.isArray(genericData.recommendations) ? genericData.recommendations : [
+        "Try radical interface redesign",
+        "Experiment with unconventional patterns",
+        "Test wild user interaction approaches"
+      ],
+      madScience: genericData.goblinWisdom || "Mad scientist analysis of UX anomalies",
+      weirdFindings: genericData.biggestGripe || "Strange UX patterns discovered in the wild",
+      crazyIdeas: Array.isArray(genericData.recommendations) ? genericData.recommendations.slice(0, 3) : [
+        "Completely unconventional approach 1",
+        "Wild experimental solution 2", 
+        "Crazy but might work idea 3"
+      ],
+      labNotes: genericData.goblinPrediction || "Experimental observations on user behavior patterns"
+    };
+  } else if (persona === 'exec') {
+    return {
+      executiveSummary: genericData.analysis || summaryText,
+      businessRisks: Array.isArray(genericData.recommendations) ? genericData.recommendations : [
+        "User experience friction impacts revenue",
+        "Competitive disadvantage from poor UX",
+        "Brand reputation risk from usability issues"
+      ],
+      roiImpact: genericData.biggestGripe || "Poor UX directly affects return on investment",
+      stakeholderConcerns: genericData.goblinWisdom || "Executive stakeholders need UX clarity",
+      strategicRecommendations: Array.isArray(genericData.recommendations) ? genericData.recommendations.slice(0, 3) : [
+        "Prioritize high-impact UX improvements",
+        "Invest in user experience optimization",
+        "Align UX strategy with business goals"
+      ],
+      competitiveImplications: genericData.goblinPrediction || "UX improvements will enhance competitive position"
+    };
   } else {
     // Default to clarity format
     return {
@@ -584,6 +636,40 @@ function createPersonaFallbackData(persona: string, summaryText: string): any {
       strategicPriority: "Focus on high-impact user experience improvements",
       competitiveAdvantage: "Superior UX creates competitive differentiation",
       measurableOutcomes: "Improved engagement, conversion, and retention"
+    };
+  } else if (persona === 'mad') {
+    return {
+      hypothesis: summaryText || "Mad scientist hypothesis about interface chaos",
+      experiments: [
+        "Test radical interface overhaul",
+        "Try completely unconventional navigation",
+        "Experiment with impossible interaction patterns"
+      ],
+      madScience: "Wild scientific analysis of UX anomalies and pattern disruptions",
+      weirdFindings: "Strange behavioral patterns and interface quirks discovered",
+      crazyIdeas: [
+        "Revolutionary interface concept that breaks all rules",
+        "Experimental user flow that defies convention",
+        "Insane but potentially brilliant UX solution"
+      ],
+      labNotes: "Mad scientist observations on user chaos and interface madness"
+    };
+  } else if (persona === 'exec') {
+    return {
+      executiveSummary: summaryText || "Executive overview of UX business impact",
+      businessRisks: [
+        "Revenue loss due to poor user experience",
+        "Competitive disadvantage in marketplace",
+        "Brand reputation damage from usability failures"
+      ],
+      roiImpact: "UX issues significantly impact return on investment and profitability",
+      stakeholderConcerns: "Critical executive concerns about user experience affecting business outcomes",
+      strategicRecommendations: [
+        "Invest in comprehensive UX improvement initiative",
+        "Prioritize user experience in business strategy",
+        "Allocate resources for UX optimization"
+      ],
+      competitiveImplications: "Superior UX will create significant competitive advantage and market differentiation"
     };
   } else {
     return {
