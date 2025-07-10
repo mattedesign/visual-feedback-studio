@@ -111,7 +111,7 @@ serve(async (req) => {
           JSON.stringify({
             success: true,
             sessionId,
-            persona,
+            persona: normalizedPersona,
             message: 'Initial message saved successfully',
             timestamp: new Date().toISOString()
           }),
@@ -484,7 +484,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         sessionId,
-        persona,
+        persona: normalizedPersona,
         modelUsed: 'claude-sonnet-4-20250514',
         analysisData: actualChatMode ? { analysis: summaryText } : parsedData,
         rawResponse: summaryText,
