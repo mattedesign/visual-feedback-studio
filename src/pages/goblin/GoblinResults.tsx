@@ -1,18 +1,16 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useImageLoader } from '@/hooks/goblin/useImageLoader';
-import { parseNestedJson } from '@/components/goblin/utils/typeGuards';
+// ✅ REMOVED: parseNestedJson import as per Nuclear Fix
 
 // ✅ Tab components
 import DetailedModeView from '@/components/goblin/DetailedModeView';
 import ClarityChat from '@/components/goblin/ClarityChat';
 import SummaryView from '@/components/goblin/SummaryView';
 import { NavigationProvider } from '@/contexts/NavigationContext';
-
 
 // Type definition for persona data
 interface PersonaData {
@@ -228,6 +226,90 @@ const GoblinResults: React.FC = () => {
     keys: rawPersonaData && typeof rawPersonaData === 'object' ? Object.keys(rawPersonaData) : [],
     sample: rawPersonaData
   });
+
+  // ✅ NUCLEAR FIX: Replace complex extractPersonaData with simple version
+  const extractPersonaData = (data: any, personaType: string, fallbackSummary: string): PersonaData => {
+    console.log(`🎭 Simple extraction for: ${personaType}`, typeof data);
+    
+    const defaultPersonaData: PersonaData = {
+      analysis: fallbackSummary || 'Analysis completed successfully',
+      recommendations: [],
+      biggestGripe: 'No specific issues identified',
+      whatMakesGoblinHappy: 'Design has positive aspects',
+      goblinWisdom: 'Every design can be improved',
+      goblinPrediction: 'Better UX with targeted improvements',
+      businessImpact: '',
+      implementation: '',
+      visualStrategy: [],
+      competitiveVisualEdge: [],
+      metrics: [],
+      insights: '',
+      reflection: '',
+      visualReflections: [],
+      emotionalImpact: '',
+      userStory: '',
+      empathyGaps: [],
+      hypothesis: '',
+      madScience: '',
+      weirdFindings: '',
+      crazyIdeas: [],
+      labNotes: '',
+      executiveSummary: '',
+      businessRisks: [],
+      roiImpact: '',
+      stakeholderConcerns: '',
+      strategicRecommendations: [],
+      competitiveImplications: ''
+    };
+
+    // Simple object handling - NO complex parsing
+    if (!data) return defaultPersonaData;
+    
+    if (typeof data === 'object' && data !== null) {
+      return {
+        analysis: data.analysis || data.insights || data.executiveSummary || data.hypothesis || defaultPersonaData.analysis,
+        recommendations: Array.isArray(data.recommendations) ? data.recommendations : 
+                       Array.isArray(data.experiments) ? data.experiments :
+                       Array.isArray(data.strategicRecommendations) ? data.strategicRecommendations :
+                       Array.isArray(data.visualReflections) ? data.visualReflections :
+                       defaultPersonaData.recommendations,
+        biggestGripe: data.biggestGripe || data.roiImpact || data.weirdFindings || defaultPersonaData.biggestGripe,
+        whatMakesGoblinHappy: data.whatMakesGoblinHappy || data.userStory || data.hypothesis || defaultPersonaData.whatMakesGoblinHappy,
+        goblinWisdom: data.goblinWisdom || data.reflection || data.labNotes || defaultPersonaData.goblinWisdom,
+        goblinPrediction: data.goblinPrediction || data.emotionalImpact || data.competitiveImplications || defaultPersonaData.goblinPrediction,
+        businessImpact: data.businessImpact || '',
+        implementation: data.implementation || '',
+        visualStrategy: Array.isArray(data.visualStrategy) ? data.visualStrategy : [],
+        competitiveVisualEdge: Array.isArray(data.competitiveVisualEdge) ? data.competitiveVisualEdge : [],
+        metrics: Array.isArray(data.metrics) ? data.metrics : [],
+        insights: data.insights || '',
+        reflection: data.reflection || '',
+        visualReflections: Array.isArray(data.visualReflections) ? data.visualReflections : [],
+        emotionalImpact: data.emotionalImpact || '',
+        userStory: data.userStory || '',
+        empathyGaps: Array.isArray(data.empathyGaps) ? data.empathyGaps : [],
+        hypothesis: data.hypothesis || '',
+        madScience: data.madScience || '',
+        weirdFindings: data.weirdFindings || '',
+        crazyIdeas: Array.isArray(data.crazyIdeas) ? data.crazyIdeas : [],
+        labNotes: data.labNotes || '',
+        wildCard: data.wildCard || '',
+        experiments: Array.isArray(data.experiments) ? data.experiments : [],
+        executiveSummary: data.executiveSummary || '',
+        businessRisks: Array.isArray(data.businessRisks) ? data.businessRisks : [],
+        roiImpact: data.roiImpact || '',
+        stakeholderConcerns: data.stakeholderConcerns || '',
+        strategicRecommendations: Array.isArray(data.strategicRecommendations) ? data.strategicRecommendations : [],
+        competitiveImplications: data.competitiveImplications || ''
+      };
+    }
+    
+    if (typeof data === 'string') {
+      return { ...defaultPersonaData, analysis: data };
+    }
+    
+    return defaultPersonaData;
+  };
   
   // Parse the persona feedback correctly with proper typing
   let personaData: PersonaData = {
@@ -246,109 +328,6 @@ const GoblinResults: React.FC = () => {
     stringLength: typeof rawPersonaData === 'string' ? rawPersonaData.length : 'N/A',
     stringPreview: typeof rawPersonaData === 'string' ? rawPersonaData.substring(0, 100) : 'N/A'
   });
-
-  const extractPersonaData = (data: any, personaType: string, fallbackSummary: string): PersonaData => {
-    console.log(`🎭 Persona-specific extraction for: ${personaType}`, data);
-    
-    const defaultPersonaData: PersonaData = {
-      analysis: fallbackSummary || 'Analysis completed successfully',
-      recommendations: [],
-      biggestGripe: 'No specific issues identified',
-      whatMakesGoblinHappy: 'Design has positive aspects',
-      goblinWisdom: 'Every design can be improved',
-      goblinPrediction: 'Better UX with targeted improvements',
-      // Strategic fields
-      businessImpact: '',
-      implementation: '',
-      visualStrategy: [],
-      competitiveVisualEdge: [],
-      metrics: [],
-      // Mirror fields
-      insights: '',
-      reflection: '',
-      visualReflections: [],
-      emotionalImpact: '',
-      userStory: '',
-      empathyGaps: [],
-      // Mad scientist fields
-      hypothesis: '',
-      madScience: '',
-      weirdFindings: '',
-      crazyIdeas: [],
-      labNotes: '',
-      // Executive fields
-      executiveSummary: '',
-      businessRisks: [],
-      roiImpact: '',
-      stakeholderConcerns: '',
-      strategicRecommendations: [],
-      competitiveImplications: ''
-    };
-
-    // If data is null/undefined, return defaults
-    if (!data) {
-      return defaultPersonaData;
-    }
-
-    // Parse nested JSON if it's wrapped in markdown or escaped
-    const parsedData = parseNestedJson(data);
-    console.log(`🔄 Parsed data for ${personaType}:`, { original: data, parsed: parsedData });
-
-    // If parsed data is an object, extract fields
-    if (typeof parsedData === 'object' && parsedData !== null) {
-      return {
-        // Common fields
-        analysis: parsedData.analysis || parsedData.insights || parsedData.executiveSummary || parsedData.hypothesis || defaultPersonaData.analysis,
-        recommendations: Array.isArray(parsedData.recommendations) ? parsedData.recommendations : defaultPersonaData.recommendations,
-        biggestGripe: parsedData.biggestGripe || defaultPersonaData.biggestGripe,
-        whatMakesGoblinHappy: parsedData.whatMakesGoblinHappy || defaultPersonaData.whatMakesGoblinHappy,
-        goblinWisdom: parsedData.goblinWisdom || defaultPersonaData.goblinWisdom,
-        goblinPrediction: parsedData.goblinPrediction || defaultPersonaData.goblinPrediction,
-        
-        // Strategic persona fields
-        businessImpact: parsedData.businessImpact || '',
-        implementation: parsedData.implementation || '',
-        visualStrategy: Array.isArray(parsedData.visualStrategy) ? parsedData.visualStrategy : [],
-        competitiveVisualEdge: Array.isArray(parsedData.competitiveVisualEdge) ? parsedData.competitiveVisualEdge : [],
-        metrics: Array.isArray(parsedData.metrics) ? parsedData.metrics : [],
-        
-        // Mirror persona fields
-        insights: parsedData.insights || '',
-        reflection: parsedData.reflection || '',
-        visualReflections: Array.isArray(parsedData.visualReflections) ? parsedData.visualReflections : [],
-        emotionalImpact: parsedData.emotionalImpact || '',
-        userStory: parsedData.userStory || '',
-        empathyGaps: Array.isArray(parsedData.empathyGaps) ? parsedData.empathyGaps : [],
-        
-        // Mad scientist persona fields
-        hypothesis: parsedData.hypothesis || '',
-        madScience: parsedData.madScience || '',
-        weirdFindings: parsedData.weirdFindings || '',
-        crazyIdeas: Array.isArray(parsedData.crazyIdeas) ? parsedData.crazyIdeas : [],
-        labNotes: parsedData.labNotes || '',
-        wildCard: parsedData.wildCard || '',
-        experiments: Array.isArray(parsedData.experiments) ? parsedData.experiments : [],
-        
-        // Executive persona fields
-        executiveSummary: parsedData.executiveSummary || '',
-        businessRisks: Array.isArray(parsedData.businessRisks) ? parsedData.businessRisks : [],
-        roiImpact: parsedData.roiImpact || '',
-        stakeholderConcerns: parsedData.stakeholderConcerns || '',
-        strategicRecommendations: Array.isArray(parsedData.strategicRecommendations) ? parsedData.strategicRecommendations : [],
-        competitiveImplications: parsedData.competitiveImplications || ''
-      };
-    }
-
-    // If parsed data is a string (cleaned), use it as analysis text
-    if (typeof parsedData === 'string') {
-      return {
-        ...defaultPersonaData,
-        analysis: parsedData
-      };
-    }
-
-    return defaultPersonaData;
-  };
 
   if (rawPersonaData) {
     personaData = extractPersonaData(rawPersonaData, session?.persona_type, results?.synthesis_summary);
@@ -382,8 +361,6 @@ const GoblinResults: React.FC = () => {
       setTotalImages(finalImageCount);
     }
   }, [results, personaData, images.length]);
-
-  // Remove the complex normalizePersonaData function entirely - it's not needed with the new approach
 
   const handleExport = () => {
     if (!results || !session || !personaData) return;
