@@ -255,8 +255,35 @@ serve(async (req) => {
       }
     }
 
-    // Build enhanced prompt
-    const enhancedPrompt = buildPrompt(persona, prompt, actualChatMode, conversationHistory, originalAnalysis);
+    // Build enhanced prompt using unified prompt system
+    const promptResponse = await fetch(`${supabaseUrl}/functions/v1/goblin-unified-prompt-system`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseServiceKey}`
+      },
+      body: JSON.stringify({
+        persona: persona,
+        goal: prompt || 'Analyze this interface for UX improvements',
+        imageCount: imageContent.length,
+        mode: actualChatMode ? 'chat' : 'analysis',
+        confidence: 2,
+        visionResults: [],
+        chatMode: actualChatMode,
+        conversationHistory: conversationHistory ? [{ role: 'assistant', content: conversationHistory }] : [],
+        previousContext: originalAnalysis || null
+      })
+    });
+
+    let enhancedPrompt = prompt;
+    if (promptResponse.ok) {
+      const promptData = await promptResponse.json();
+      enhancedPrompt = promptData.prompt || prompt;
+      console.log(`✅ Using unified prompt system for persona: ${persona}`);
+    } else {
+      console.warn(`⚠️ Unified prompt system failed, using fallback for persona: ${persona}`);
+      enhancedPrompt = buildPrompt(persona, prompt, actualChatMode, conversationHistory, originalAnalysis);
+    }
     
     console.log("🧙‍♂️ Sending message to Claude with", imageContent.length, "images");
 

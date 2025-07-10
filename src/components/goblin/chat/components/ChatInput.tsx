@@ -27,7 +27,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
       case 'mirror': return 'Mirror';
       case 'strategic': return 'the Strategist';
       case 'mad': return 'the Mad Scientist';
-      case 'executive': return 'the Executive';
+      case 'exec': return 'the Executive';
       default: return 'the AI Assistant';
     }
   };

@@ -11,7 +11,7 @@ const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({ session }) => {
       case 'mirror': return '🪞 Mirror';
       case 'strategic': return '📊 Strategist';
       case 'mad': return '🔬 Mad Scientist';
-      case 'executive': return '💼 Executive';
+      case 'exec': return '💼 Executive';
       default: return '🤖 AI Assistant';
     }
   };
