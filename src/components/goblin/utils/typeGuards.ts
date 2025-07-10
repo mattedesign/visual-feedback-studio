@@ -176,3 +176,39 @@ export function safeJsonStringify(value: unknown, fallback = '{}'): string {
     return fallback;
   }
 }
+
+/**
+ * Parse nested JSON strings wrapped in markdown code blocks
+ * Handles cases where JSON is wrapped in ```json``` blocks or escaped as strings
+ */
+export function parseNestedJson(value: unknown): any {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  let content = value;
+
+  // Remove markdown code block wrapper if present
+  const codeBlockRegex = /```(?:json)?\s*([\s\S]*?)\s*```/g;
+  const codeBlockMatch = codeBlockRegex.exec(content);
+  if (codeBlockMatch) {
+    content = codeBlockMatch[1].trim();
+  }
+
+  // Try to parse as JSON
+  try {
+    const parsed = JSON.parse(content);
+    return parsed;
+  } catch {
+    // If JSON parsing fails, try to extract readable content
+    // Remove common JSON artifacts and return as plain text
+    const cleanText = content
+      .replace(/^["']|["']$/g, '') // Remove outer quotes
+      .replace(/\\n/g, '\n') // Convert escaped newlines
+      .replace(/\\"/g, '"') // Convert escaped quotes
+      .replace(/\\\\/g, '\\') // Convert escaped backslashes
+      .trim();
+    
+    return cleanText;
+  }
+}

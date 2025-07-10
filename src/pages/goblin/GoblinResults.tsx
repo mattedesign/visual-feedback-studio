@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useImageLoader } from '@/hooks/goblin/useImageLoader';
+import { parseNestedJson } from '@/components/goblin/utils/typeGuards';
 
 // ✅ Tab components
 import DetailedModeView from '@/components/goblin/DetailedModeView';
@@ -289,56 +290,60 @@ const GoblinResults: React.FC = () => {
       return defaultPersonaData;
     }
 
-    // If data is already a proper object, preserve ALL fields
-    if (typeof data === 'object' && data !== null) {
+    // Parse nested JSON if it's wrapped in markdown or escaped
+    const parsedData = parseNestedJson(data);
+    console.log(`🔄 Parsed data for ${personaType}:`, { original: data, parsed: parsedData });
+
+    // If parsed data is an object, extract fields
+    if (typeof parsedData === 'object' && parsedData !== null) {
       return {
         // Common fields
-        analysis: data.analysis || data.insights || data.executiveSummary || data.hypothesis || defaultPersonaData.analysis,
-        recommendations: Array.isArray(data.recommendations) ? data.recommendations : defaultPersonaData.recommendations,
-        biggestGripe: data.biggestGripe || defaultPersonaData.biggestGripe,
-        whatMakesGoblinHappy: data.whatMakesGoblinHappy || defaultPersonaData.whatMakesGoblinHappy,
-        goblinWisdom: data.goblinWisdom || defaultPersonaData.goblinWisdom,
-        goblinPrediction: data.goblinPrediction || defaultPersonaData.goblinPrediction,
+        analysis: parsedData.analysis || parsedData.insights || parsedData.executiveSummary || parsedData.hypothesis || defaultPersonaData.analysis,
+        recommendations: Array.isArray(parsedData.recommendations) ? parsedData.recommendations : defaultPersonaData.recommendations,
+        biggestGripe: parsedData.biggestGripe || defaultPersonaData.biggestGripe,
+        whatMakesGoblinHappy: parsedData.whatMakesGoblinHappy || defaultPersonaData.whatMakesGoblinHappy,
+        goblinWisdom: parsedData.goblinWisdom || defaultPersonaData.goblinWisdom,
+        goblinPrediction: parsedData.goblinPrediction || defaultPersonaData.goblinPrediction,
         
         // Strategic persona fields
-        businessImpact: data.businessImpact || '',
-        implementation: data.implementation || '',
-        visualStrategy: Array.isArray(data.visualStrategy) ? data.visualStrategy : [],
-        competitiveVisualEdge: Array.isArray(data.competitiveVisualEdge) ? data.competitiveVisualEdge : [],
-        metrics: Array.isArray(data.metrics) ? data.metrics : [],
+        businessImpact: parsedData.businessImpact || '',
+        implementation: parsedData.implementation || '',
+        visualStrategy: Array.isArray(parsedData.visualStrategy) ? parsedData.visualStrategy : [],
+        competitiveVisualEdge: Array.isArray(parsedData.competitiveVisualEdge) ? parsedData.competitiveVisualEdge : [],
+        metrics: Array.isArray(parsedData.metrics) ? parsedData.metrics : [],
         
         // Mirror persona fields
-        insights: data.insights || '',
-        reflection: data.reflection || '',
-        visualReflections: Array.isArray(data.visualReflections) ? data.visualReflections : [],
-        emotionalImpact: data.emotionalImpact || '',
-        userStory: data.userStory || '',
-        empathyGaps: Array.isArray(data.empathyGaps) ? data.empathyGaps : [],
+        insights: parsedData.insights || '',
+        reflection: parsedData.reflection || '',
+        visualReflections: Array.isArray(parsedData.visualReflections) ? parsedData.visualReflections : [],
+        emotionalImpact: parsedData.emotionalImpact || '',
+        userStory: parsedData.userStory || '',
+        empathyGaps: Array.isArray(parsedData.empathyGaps) ? parsedData.empathyGaps : [],
         
         // Mad scientist persona fields
-        hypothesis: data.hypothesis || '',
-        madScience: data.madScience || '',
-        weirdFindings: data.weirdFindings || '',
-        crazyIdeas: Array.isArray(data.crazyIdeas) ? data.crazyIdeas : [],
-        labNotes: data.labNotes || '',
-        wildCard: data.wildCard || '',
-        experiments: Array.isArray(data.experiments) ? data.experiments : [],
+        hypothesis: parsedData.hypothesis || '',
+        madScience: parsedData.madScience || '',
+        weirdFindings: parsedData.weirdFindings || '',
+        crazyIdeas: Array.isArray(parsedData.crazyIdeas) ? parsedData.crazyIdeas : [],
+        labNotes: parsedData.labNotes || '',
+        wildCard: parsedData.wildCard || '',
+        experiments: Array.isArray(parsedData.experiments) ? parsedData.experiments : [],
         
         // Executive persona fields
-        executiveSummary: data.executiveSummary || '',
-        businessRisks: Array.isArray(data.businessRisks) ? data.businessRisks : [],
-        roiImpact: data.roiImpact || '',
-        stakeholderConcerns: data.stakeholderConcerns || '',
-        strategicRecommendations: Array.isArray(data.strategicRecommendations) ? data.strategicRecommendations : [],
-        competitiveImplications: data.competitiveImplications || ''
+        executiveSummary: parsedData.executiveSummary || '',
+        businessRisks: Array.isArray(parsedData.businessRisks) ? parsedData.businessRisks : [],
+        roiImpact: parsedData.roiImpact || '',
+        stakeholderConcerns: parsedData.stakeholderConcerns || '',
+        strategicRecommendations: Array.isArray(parsedData.strategicRecommendations) ? parsedData.strategicRecommendations : [],
+        competitiveImplications: parsedData.competitiveImplications || ''
       };
     }
 
-    // If data is a string, DON'T try to parse JSON - just use it as analysis text
-    if (typeof data === 'string') {
+    // If parsed data is a string (cleaned), use it as analysis text
+    if (typeof parsedData === 'string') {
       return {
         ...defaultPersonaData,
-        analysis: data
+        analysis: parsedData
       };
     }
 
