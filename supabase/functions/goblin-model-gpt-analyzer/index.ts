@@ -111,7 +111,7 @@ serve(async (req) => {
           JSON.stringify({
             success: true,
             sessionId,
-            persona,
+            persona: normalizedPersona,
             message: 'Initial message saved successfully (GPT fallback)',
             timestamp: new Date().toISOString()
           }),
@@ -405,7 +405,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         sessionId,
-        persona,
+        persona: normalizedPersona,
         modelUsed: 'gpt-4.1-2025-04-14',
         fallbackModel: true,
         analysisData: actualChatMode ? { analysis: summaryText } : parsedData,
