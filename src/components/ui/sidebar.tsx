@@ -132,7 +132,7 @@ const Sidebar = React.forwardRef<HTMLDivElement, React.ComponentProps<"div"> & {
   }
   if (isMobile) {
     return <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
-          <SheetContent data-sidebar="sidebar" data-mobile="true" className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden" style={{
+          <SheetContent data-sidebar="sidebar" data-mobile="true" className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden touch-manipulation" style={{
         "--sidebar-width": SIDEBAR_WIDTH_MOBILE
       } as React.CSSProperties} side={side}>
             <div className="flex h-full w-full flex-col">{children}</div>
@@ -160,7 +160,7 @@ const SidebarTrigger = React.forwardRef<React.ElementRef<typeof Button>, React.C
   const {
     toggleSidebar
   } = useSidebar();
-  return <Button ref={ref} data-sidebar="trigger" variant="ghost" size="icon" className={cn("h-7 w-7", className)} onClick={event => {
+  return <Button ref={ref} data-sidebar="trigger" variant="ghost" size="icon" className={cn("h-7 w-7 min-h-[44px] min-w-[44px] touch-manipulation md:h-7 md:w-7 md:min-h-0 md:min-w-0", className)} onClick={event => {
     onClick?.(event);
     toggleSidebar();
   }} {...props}>
