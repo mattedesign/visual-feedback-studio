@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-console.log('🧝‍♂️ Goblin Unified Prompt System - Enhanced prompt generation v1.0');
+console.log('🧝‍♂️ Goblin Unified Prompt System - Enhanced prompt generation v1.1 with robust validation');
 
 // Unified prompt templates for different personas and contexts
 const PROMPT_TEMPLATES = {
@@ -99,7 +99,76 @@ Critical Questions: What assumptions might you be making? How might users percei
   }
 };
 
-// Enhanced prompt building with context awareness
+// Template validation function
+function validateTemplate(persona: string): boolean {
+  const template = PROMPT_TEMPLATES[persona];
+  if (!template) return false;
+  
+  const requiredFields = ['base', 'imageContext', 'goalSpecific', 'confidenceAdjustment'];
+  const hasAllFields = requiredFields.every(field => template[field]);
+  const hasValidConfidence = template.confidenceAdjustment && 
+    template.confidenceAdjustment[1] && 
+    template.confidenceAdjustment[2] && 
+    template.confidenceAdjustment[3];
+  
+  return hasAllFields && hasValidConfidence;
+}
+
+// Parameter logging and validation
+function logAndValidateParams(params: any): { isValid: boolean; errors: string[] } {
+  const errors: string[] = [];
+  
+  console.log('🔍 Parameter validation for:', {
+    persona: params.persona,
+    goal: params.goal?.substring(0, 50) + '...',
+    imageCount: params.imageCount,
+    mode: params.mode,
+    confidence: params.confidence,
+    chatMode: params.chatMode,
+    hasVisionResults: Array.isArray(params.visionResults),
+    visionResultsCount: params.visionResults?.length || 0
+  });
+  
+  // Validate persona
+  if (!params.persona || typeof params.persona !== 'string') {
+    errors.push('Missing or invalid persona parameter');
+  } else if (!PROMPT_TEMPLATES[params.persona.toLowerCase()]) {
+    errors.push(`Invalid persona "${params.persona}". Available: ${Object.keys(PROMPT_TEMPLATES).join(', ')}`);
+  } else if (!validateTemplate(params.persona.toLowerCase())) {
+    errors.push(`Template validation failed for persona "${params.persona}"`);
+  }
+  
+  // Validate image count
+  if (params.imageCount !== undefined && (isNaN(params.imageCount) || params.imageCount < 0)) {
+    errors.push('Invalid imageCount - must be a non-negative number');
+  }
+  
+  // Validate confidence level
+  if (params.confidence !== undefined && (isNaN(params.confidence) || params.confidence < 1 || params.confidence > 3)) {
+    errors.push('Invalid confidence level - must be 1, 2, or 3');
+  }
+  
+  // Validate mode
+  const validModes = ['single', 'comprehensive', 'quick'];
+  if (params.mode && !validModes.includes(params.mode.toLowerCase())) {
+    errors.push(`Invalid mode "${params.mode}". Valid modes: ${validModes.join(', ')}`);
+  }
+  
+  // Validate vision results structure
+  if (params.visionResults && !Array.isArray(params.visionResults)) {
+    errors.push('visionResults must be an array');
+  }
+  
+  if (errors.length > 0) {
+    console.warn('⚠️ Parameter validation errors:', errors);
+  } else {
+    console.log('✅ All parameters valid');
+  }
+  
+  return { isValid: errors.length === 0, errors };
+}
+
+// Enhanced prompt building with context awareness and robust error handling
 function buildUnifiedPrompt(
   persona: string, 
   goal: string, 
@@ -231,21 +300,22 @@ serve(async (req) => {
 
   try {
     const requestBody = await req.json();
-    console.log('📝 Building unified prompt for:', {
-      persona: requestBody.persona,
-      imageCount: requestBody.imageCount,
-      chatMode: requestBody.chatMode || false
+    console.log('📝 Raw request received:', {
+      hasPersona: !!requestBody.persona,
+      personaType: requestBody.persona,
+      rawBody: Object.keys(requestBody)
     });
 
-    // Extract and validate context
-    const context = extractPromptContext(requestBody);
-    
-    // Validate required fields
-    if (!context.persona || !PROMPT_TEMPLATES[context.persona]) {
+    // Comprehensive parameter validation
+    const validation = logAndValidateParams(requestBody);
+    if (!validation.isValid) {
+      console.error('🚨 Parameter validation failed:', validation.errors);
       return new Response(
         JSON.stringify({
           success: false,
-          error: `Invalid persona: ${context.persona}. Must be one of: ${Object.keys(PROMPT_TEMPLATES).join(', ')}`
+          error: 'Invalid request parameters',
+          validationErrors: validation.errors,
+          availablePersonas: Object.keys(PROMPT_TEMPLATES)
         }),
         { 
           status: 400,
@@ -254,25 +324,113 @@ serve(async (req) => {
       );
     }
 
-    // Build the unified prompt
-    let prompt = buildUnifiedPrompt(
-      context.persona,
-      context.goal,
-      context.imageCount,
-      context.mode,
-      context.confidence,
-      context.visionResults,
-      context.chatMode
-    );
+    // Extract and validate context with defensive programming
+    const context = extractPromptContext(requestBody);
+    
+    console.log('🔧 Context extraction result:', {
+      extractedPersona: context.persona,
+      hasTemplate: !!PROMPT_TEMPLATES[context.persona],
+      templateValid: validateTemplate(context.persona),
+      processedImageCount: context.imageCount,
+      processedConfidence: context.confidence,
+      processedMode: context.mode
+    });
+    
+    // Additional validation for Mirror persona specifically
+    if (context.persona === 'mirror') {
+      console.log('🪞 Mirror persona specific validation');
+      const mirrorTemplate = PROMPT_TEMPLATES.mirror;
+      
+      if (!mirrorTemplate) {
+        console.error('❌ Mirror template missing from PROMPT_TEMPLATES');
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Mirror persona template not found',
+            fallback: 'strategic'
+          }),
+          { 
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+      
+      if (!validateTemplate('mirror')) {
+        console.error('❌ Mirror template validation failed');
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Mirror persona template is malformed',
+            fallback: 'strategic'
+          }),
+          { 
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+      
+      console.log('✅ Mirror persona validation passed');
+    }
+
+    // Final template existence check with fallback
+    if (!context.persona || !PROMPT_TEMPLATES[context.persona]) {
+      console.warn(`⚠️ Invalid persona "${context.persona}", falling back to strategic`);
+      context.persona = 'strategic';
+    }
+
+    // Build the unified prompt with error handling
+    let prompt;
+    try {
+      prompt = buildUnifiedPrompt(
+        context.persona,
+        context.goal,
+        context.imageCount,
+        context.mode,
+        context.confidence,
+        context.visionResults,
+        context.chatMode
+      );
+      
+      console.log('🏗️ Prompt building successful:', {
+        persona: context.persona,
+        promptLength: prompt.length,
+        hasGoal: !!context.goal,
+        hasVisionResults: context.visionResults.length > 0
+      });
+    } catch (buildError) {
+      console.error('❌ Prompt building failed:', buildError);
+      
+      // Fallback to strategic persona
+      console.log('🔄 Attempting fallback to strategic persona');
+      prompt = buildUnifiedPrompt(
+        'strategic',
+        context.goal,
+        context.imageCount,
+        context.mode,
+        context.confidence,
+        context.visionResults,
+        context.chatMode
+      );
+      context.persona = 'strategic';
+      context.fallbackUsed = true;
+    }
 
     // Enhance with chat context if provided
     if (context.chatMode && context.previousContext?.conversationHistory) {
-      prompt = buildChatPrompt(prompt, context.previousContext.conversationHistory);
+      try {
+        prompt = buildChatPrompt(prompt, context.previousContext.conversationHistory);
+        console.log('💬 Chat context added successfully');
+      } catch (chatError) {
+        console.warn('⚠️ Chat context enhancement failed:', chatError);
+        // Continue without chat context
+      }
     }
 
     const processingTime = Date.now() - startTime;
     
-    console.log(`✅ Unified prompt built in ${processingTime}ms for ${context.persona} persona`);
+    console.log(`✅ Unified prompt completed in ${processingTime}ms for ${context.persona} persona`);
 
     return new Response(
       JSON.stringify({
