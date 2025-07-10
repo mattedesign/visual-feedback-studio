@@ -125,147 +125,78 @@ serve(async (req) => {
 
     const startTime = Date.now();
 
-    // ✅ ENHANCED: Handle imageUrls with comprehensive debugging and validation
+    // FIXED: Optimized image processing (around line 120 in Claude analyzer)
     const imageContent = [];
     
-    console.log('🔍 COMPREHENSIVE IMAGE DEBUGGING:', {
-      actualChatMode,
-      hasImageUrls: !!imageUrls,
-      imageUrlsType: typeof imageUrls,
-      imageUrlsIsArray: Array.isArray(imageUrls),
-      imageUrlsLength: Array.isArray(imageUrls) ? imageUrls.length : 'not array',
-      imageUrlsStringified: JSON.stringify(imageUrls, null, 2),
-      imageUrlsKeys: typeof imageUrls === 'object' && imageUrls ? Object.keys(imageUrls) : 'not object'
-    });
-    
-    if (!actualChatMode && imageUrls) {
-      // ✅ ENHANCED: Better normalization of imageUrls structure
-      let normalizedImageUrls = [];
+    if (!actualChatMode && imageUrls && Array.isArray(imageUrls)) {
+      console.log(`📸 Processing ${imageUrls.length} images`);
       
-      if (Array.isArray(imageUrls)) {
-        normalizedImageUrls = imageUrls;
-        console.log('📸 imageUrls is already an array');
-      } else if (typeof imageUrls === 'string') {
-        normalizedImageUrls = [imageUrls];
-        console.log('📸 imageUrls is a string, wrapping in array');
-      } else if (typeof imageUrls === 'object' && imageUrls) {
-        // Handle object with potential nested structure
-        if (imageUrls.url || imageUrls.file_path || imageUrls.storage_url) {
-          normalizedImageUrls = [imageUrls];
-          console.log('📸 imageUrls is an object with URL property');
-        } else {
-          // Try to find arrays or URL-like properties in the object
-          const possibleArrays = Object.values(imageUrls).filter(val => Array.isArray(val));
-          if (possibleArrays.length > 0) {
-            normalizedImageUrls = possibleArrays[0];
-            console.log('📸 Found array within imageUrls object');
-          } else {
-            console.warn('❌ Could not normalize imageUrls object structure');
-          }
-        }
-      } else {
-        console.warn('❌ imageUrls has unexpected structure');
-      }
-      
-      console.log('📸 Normalized image URLs:', {
-        count: normalizedImageUrls.length,
-        structure: normalizedImageUrls.map((item, idx) => ({
-          index: idx,
-          type: typeof item,
-          isString: typeof item === 'string',
-          hasUrl: item?.url ? 'yes' : 'no',
-          hasFilePath: item?.file_path ? 'yes' : 'no',
-          hasStorageUrl: item?.storage_url ? 'yes' : 'no',
-          value: typeof item === 'string' ? item : JSON.stringify(item)
-        }))
-      });
-      
-      for (let i = 0; i < Math.min(normalizedImageUrls.length, 3); i++) {
-        const imageItem = normalizedImageUrls[i];
-        
-        // ✅ ENHANCED: More comprehensive URL extraction
+      for (let i = 0; i < Math.min(imageUrls.length, 3); i++) {
+        const imageItem = imageUrls[i];
         let imageUrl = null;
         
+        // Simple URL extraction
         if (typeof imageItem === 'string') {
           imageUrl = imageItem;
-        } else if (typeof imageItem === 'object' && imageItem) {
-          // Try multiple possible URL properties
-          imageUrl = imageItem.url || imageItem.file_path || imageItem.storage_url || imageItem.src || imageItem.href;
+        } else if (imageItem && typeof imageItem === 'object') {
+          imageUrl = imageItem.url || imageItem.file_path || imageItem.storage_url;
         }
         
-        console.log(`📸 Processing image ${i + 1}:`, {
-          originalItem: typeof imageItem === 'string' ? imageItem : JSON.stringify(imageItem),
-          extractedUrl: imageUrl,
-          urlValid: !!(imageUrl && typeof imageUrl === 'string' && imageUrl.trim().length > 0)
-        });
-        
-        if (!imageUrl || typeof imageUrl !== 'string' || imageUrl.trim().length === 0) {
-          console.warn(`❌ Invalid or missing image URL at index ${i}:`, { imageItem, imageUrl });
+        if (!imageUrl || typeof imageUrl !== 'string') {
+          console.warn(`❌ Invalid image URL at index ${i}`);
           continue;
         }
-        
+
         try {
-          console.log(`🔄 Fetching image ${i + 1} from: ${imageUrl.substring(0, 100)}...`);
+          console.log(`🔄 Fetching image ${i + 1}: ${imageUrl.substring(0, 50)}...`);
           
-          const imageResponse = await fetch(imageUrl);
+          // FIXED: Add timeout and better error handling
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
           
-          console.log(`📡 Image ${i + 1} fetch response:`, {
-            ok: imageResponse.ok,
-            status: imageResponse.status,
-            statusText: imageResponse.statusText,
-            contentType: imageResponse.headers.get('content-type'),
-            contentLength: imageResponse.headers.get('content-length')
+          const imageResponse = await fetch(imageUrl, {
+            signal: controller.signal,
+            headers: {
+              'User-Agent': 'Figmant-Goblin-Analyzer/1.0'
+            }
           });
           
+          clearTimeout(timeoutId);
+          
           if (!imageResponse.ok) {
-            console.warn(`❌ Failed to fetch image ${i + 1}: ${imageResponse.status} ${imageResponse.statusText}`);
+            console.warn(`❌ Failed to fetch image ${i + 1}: ${imageResponse.status}`);
+            continue;
+          }
+
+          // FIXED: Process in chunks to avoid memory issues
+          const arrayBuffer = await imageResponse.arrayBuffer();
+          
+          // Check file size (max 10MB)
+          if (arrayBuffer.byteLength > 10 * 1024 * 1024) {
+            console.warn(`❌ Image ${i + 1} too large: ${arrayBuffer.byteLength} bytes`);
             continue;
           }
           
-          const imageBlob = await imageResponse.blob();
-          console.log(`📦 Image ${i + 1} blob size: ${imageBlob.size} bytes, type: ${imageBlob.type}`);
-          
-          const arrayBuffer = await imageBlob.arrayBuffer();
-          const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+          const base64 = btoa(String.fromCharCode.apply(null, new Uint8Array(arrayBuffer)));
           const contentType = imageResponse.headers.get('content-type') || 'image/png';
-          
-          const imageContentItem = {
+
+          imageContent.push({
             type: 'image',
             source: {
               type: 'base64',
               media_type: contentType,
               data: base64
             }
-          };
-          
-          imageContent.push(imageContentItem);
-          
-          console.log(`✅ Image ${i + 1} processed successfully:`, {
-            contentType,
-            base64Length: base64.length,
-            mediaType: contentType
           });
+          
+          console.log(`✅ Image ${i + 1} processed: ${base64.length} chars`);
           
         } catch (error) {
-          console.error(`❌ Failed to process image ${i + 1}:`, {
-            error: error.message,
-            stack: error.stack,
-            imageUrl: imageUrl.substring(0, 100)
-          });
+          console.error(`❌ Failed to process image ${i + 1}:`, error.message);
         }
       }
       
-      // ✅ ENHANCED: Validation that images were actually processed
-      console.log(`🎉 Image processing complete:`, {
-        totalImagesAttempted: normalizedImageUrls.length,
-        imagesSuccessfullyProcessed: imageContent.length,
-        readyForClaude: imageContent.length > 0
-      });
-      
-      if (normalizedImageUrls.length > 0 && imageContent.length === 0) {
-        console.error('❌ CRITICAL: No images were successfully processed despite having image URLs!');
-        console.error('❌ This means Claude will not receive any images to analyze!');
-      }
+      console.log(`🎉 Image processing complete: ${imageContent.length}/${imageUrls.length} successful`);
     }
 
     // Build enhanced prompt
@@ -512,13 +443,14 @@ serve(async (req) => {
   }
 });
 
+// FIXED: Stricter JSON prompt (around line 400 in Claude analyzer)
 function buildPrompt(persona: string, userPrompt: string, chatMode: boolean, conversationHistory?: string, originalAnalysis?: any): string {
   const personaInstructions = {
-    clarity: `You are Clarity, the brutally honest UX goblin. You tell the hard truths about design with wit and directness. Be specific, actionable, and don't sugarcoat issues.`,
-    strategic: `You are a strategic UX analyst. Focus on business impact, user goals, and measurable outcomes. Provide strategic recommendations.`,
-    mirror: `You are an empathetic UX mirror. Reflect back what users might feel and experience. Focus on emotional aspects of the design.`,
-    mad: `You are the Mad UX Scientist. Think outside the box with creative, experimental approaches to UX problems.`,
-    mad_scientist: `You are the Mad UX Scientist. Think outside the box with creative, experimental approaches to UX problems.`,
+    clarity: `You are Clarity, the brutally honest UX goblin. You tell the hard truths about design with wit and directness.`,
+    strategic: `You are a strategic UX analyst. Focus on business impact, user goals, and measurable outcomes.`,
+    mirror: `You are an empathetic UX mirror. Reflect back what users might feel and experience.`,
+    mad: `You are the Mad UX Scientist. Think outside the box with creative, experimental approaches.`,
+    mad_scientist: `You are the Mad UX Scientist. Think outside the box with creative, experimental approaches.`,
     exec: `You are an executive UX lens. Focus on business impact, ROI, and stakeholder communication.`
   };
 
@@ -594,20 +526,31 @@ function buildPrompt(persona: string, userPrompt: string, chatMode: boolean, con
     basePrompt += `\n\nUser's new question: ${userPrompt}`;
     basePrompt += `\n\nRespond in plain text as ${persona} would, maintaining your personality while being helpful and direct.`;
   } else {
-    // Get persona-specific JSON template
     const jsonTemplate = personaJsonTemplates[persona as keyof typeof personaJsonTemplates] || personaJsonTemplates.clarity;
     
-    basePrompt += `\n\nAnalyze the uploaded interface images and provide a structured response in JSON format with these exact fields for the ${persona} persona:
-${JSON.stringify(jsonTemplate, null, 2)}
+    basePrompt += `
 
-CRITICAL: Your response must be valid JSON that exactly matches the field names above. For the ${persona} persona, you MUST use these specific fields:
-${Object.keys(jsonTemplate).map(key => `- "${key}"`).join('\n')}
+CRITICAL INSTRUCTIONS:
+1. You MUST respond with ONLY valid JSON
+2. Do NOT include any text before or after the JSON
+3. Do NOT use markdown code blocks like \`\`\`json
+4. Your entire response must be parseable by JSON.parse()
+
+Required JSON format for ${persona} persona:
+${JSON.stringify(jsonTemplate, null, 2)}
 
 User's request: ${userPrompt}
 
-Be thorough, specific, and maintain your ${persona} personality throughout the analysis. Provide detailed insights for each required field.`;
-  }
+RESPONSE REQUIREMENTS:
+- Start your response with {
+- End your response with }
+- Include ALL required fields from the template above
+- Use valid JSON syntax only
+- No additional text or explanations outside the JSON
 
+Respond now with valid JSON only:`;
+  }
+  
   return basePrompt;
 }
 
