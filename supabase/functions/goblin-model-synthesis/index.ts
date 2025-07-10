@@ -227,12 +227,24 @@ function extractAnalysisData(analysisData: any) {
   // If no recommendations found, try parsing rawResponse as JSON
   if (extractedRecommendations.length === 0 && analysisData.rawResponse) {
     try {
-      const jsonMatch = analysisData.rawResponse.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
+      // First try to extract JSON from markdown code blocks
+      let jsonContent = analysisData.rawResponse;
+      const jsonBlockMatch = jsonContent.match(/```json\s*\n?({[\s\S]*?})\s*\n?```/);
+      if (jsonBlockMatch) {
+        jsonContent = jsonBlockMatch[1];
+      } else {
+        // Try to find any JSON object in the response
+        const jsonMatch = jsonContent.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          jsonContent = jsonMatch[0];
+        }
+      }
+      
+      if (jsonContent) {
+        const parsed = JSON.parse(jsonContent);
         if (parsed.recommendations && Array.isArray(parsed.recommendations)) {
           extractedRecommendations = parsed.recommendations;
-          console.log('✅ Extracted recommendations from rawResponse:', extractedRecommendations);
+          console.log('✅ Extracted recommendations from rawResponse JSON:', extractedRecommendations);
         }
         if (parsed.analysis && !extractedAnalysis) {
           extractedAnalysis = parsed.analysis;
@@ -245,14 +257,40 @@ function extractAnalysisData(analysisData: any) {
     }
   }
   
+  // Try to extract from rawResponse as plain text if still no recommendations
+  if (extractedRecommendations.length === 0 && analysisData.rawResponse) {
+    try {
+      // Look for recommendations in plain text format
+      const responseText = analysisData.rawResponse.toLowerCase();
+      if (responseText.includes('recommendation')) {
+        // Extract lines that look like recommendations
+        const lines = analysisData.rawResponse.split('\n');
+        const recommendationLines = lines.filter(line => 
+          line.trim().length > 20 && 
+          (line.includes('recommend') || line.includes('improve') || line.includes('enhance') || 
+           line.includes('implement') || line.includes('redesign') || line.includes('optimize'))
+        );
+        
+        if (recommendationLines.length > 0) {
+          extractedRecommendations = recommendationLines.map(line => line.trim()).slice(0, 5);
+          console.log('✅ Extracted recommendations from plain text:', extractedRecommendations);
+        }
+      }
+    } catch (error) {
+      console.log('⚠️ Failed to extract recommendations from plain text:', error.message);
+    }
+  }
+  
   // Final fallbacks
   if (!extractedAnalysis) {
     extractedAnalysis = analysisData.rawResponse || 'Analysis completed';
   }
   
   if (extractedRecommendations.length === 0) {
-    console.log('⚠️ No recommendations found, using fallback');
+    console.log('🚨 No specific recommendations found in any format, using fallback');
     extractedRecommendations = ['Improve user experience clarity', 'Enhance interface usability'];
+  } else {
+    console.log('🎯 Using extracted specific recommendations:', extractedRecommendations);
   }
 
   const result = {
