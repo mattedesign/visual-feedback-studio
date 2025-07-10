@@ -17,11 +17,26 @@ const RETRY_CONFIG = {
   retryableErrors: ['timeout', 'network', 'api_error', 'rate_limit']
 };
 
-// Circuit breaker for external services
+// Enhanced circuit breaker for external services
 const CIRCUIT_BREAKER = {
-  failureThreshold: 5,
+  failureThreshold: 3,
   resetTimeout: 60000,
-  failures: new Map()
+  failures: new Map(),
+  lastFailureTime: new Map()
+};
+
+// Model configuration and fallback hierarchy
+const MODEL_CONFIG = {
+  primary: {
+    name: 'claude-sonnet-4-20250514',
+    function: 'goblin-model-claude-analyzer',
+    timeout: 30000
+  },
+  fallback: {
+    name: 'gpt-4.1-2025-04-14',
+    function: 'goblin-model-gpt-analyzer',
+    timeout: 25000
+  }
 };
 
 async function withRetry<T>(
@@ -52,15 +67,55 @@ async function withRetry<T>(
 function updateCircuitBreaker(service: string, success: boolean) {
   if (success) {
     CIRCUIT_BREAKER.failures.delete(service);
+    CIRCUIT_BREAKER.lastFailureTime.delete(service);
+    console.log(`✅ Circuit breaker reset for ${service}`);
   } else {
     const current = CIRCUIT_BREAKER.failures.get(service) || 0;
     CIRCUIT_BREAKER.failures.set(service, current + 1);
+    CIRCUIT_BREAKER.lastFailureTime.set(service, Date.now());
+    console.warn(`⚠️ Circuit breaker failure count for ${service}: ${current + 1}/${CIRCUIT_BREAKER.failureThreshold}`);
   }
 }
 
 function isCircuitOpen(service: string): boolean {
   const failures = CIRCUIT_BREAKER.failures.get(service) || 0;
-  return failures >= CIRCUIT_BREAKER.failureThreshold;
+  if (failures >= CIRCUIT_BREAKER.failureThreshold) {
+    const lastFailureTime = CIRCUIT_BREAKER.lastFailureTime.get(service) || 0;
+    const timeSinceLastFailure = Date.now() - lastFailureTime;
+    
+    // Reset circuit breaker after timeout
+    if (timeSinceLastFailure > CIRCUIT_BREAKER.resetTimeout) {
+      console.log(`🔄 Circuit breaker timeout reached for ${service}, attempting reset`);
+      CIRCUIT_BREAKER.failures.delete(service);
+      CIRCUIT_BREAKER.lastFailureTime.delete(service);
+      return false;
+    }
+    
+    console.warn(`🚫 Circuit breaker OPEN for ${service} (failures: ${failures})`);
+    return true;
+  }
+  return false;
+}
+
+async function attemptModelAnalysis(modelConfig: any, requestBody: any, supabase: any): Promise<any> {
+  console.log(`🤖 Attempting analysis with ${modelConfig.name}...`);
+  
+  if (isCircuitOpen(modelConfig.function)) {
+    throw new Error(`Circuit breaker open for ${modelConfig.function}`);
+  }
+  
+  const result = await supabase.functions.invoke(modelConfig.function, {
+    body: requestBody
+  });
+  
+  updateCircuitBreaker(modelConfig.function, !result.error);
+  
+  if (result.error) {
+    throw new Error(`${modelConfig.name} analysis failed: ${result.error.message}`);
+  }
+  
+  console.log(`✅ Analysis completed with ${modelConfig.name}`);
+  return result;
 }
 
 serve(async (req) => {
@@ -265,31 +320,77 @@ serve(async (req) => {
       return result;
     }, `Prompt building for ${persona}`);
 
-    // Step 4: Analyze with Claude - Enhanced validation and recovery
-    console.log('🤖 Calling Claude analyzer with verified parameters...');
+    // Step 4: AI Analysis with Enhanced Fallback System
+    console.log('🤖 Starting AI analysis with intelligent fallback...');
     
-    const analysisResult = await withRetry(async () => {
-      if (isCircuitOpen('goblin-model-claude-analyzer')) {
-        throw new Error('Circuit breaker open for Claude service');
+    let analysisResult;
+    let modelUsed = 'unknown';
+    let fallbackUsed = false;
+    
+    const analysisRequestBody = {
+      sessionId,
+      imageUrls: validImageUrls,
+      prompt: promptResult.data.prompt,
+      persona,
+      chatMode: false
+    };
+    
+    try {
+      // Try primary model (Claude) first
+      analysisResult = await withRetry(async () => {
+        return await attemptModelAnalysis(MODEL_CONFIG.primary, analysisRequestBody, supabase);
+      }, `Primary model analysis (${MODEL_CONFIG.primary.name})`, 2);
+      
+      modelUsed = MODEL_CONFIG.primary.name;
+      console.log(`✅ Primary model ${modelUsed} succeeded`);
+      
+    } catch (primaryError) {
+      console.warn(`⚠️ Primary model failed: ${primaryError.message}`);
+      
+      // Fallback to GPT
+      try {
+        console.log(`🔄 Falling back to ${MODEL_CONFIG.fallback.name}...`);
+        
+        analysisResult = await withRetry(async () => {
+          return await attemptModelAnalysis(MODEL_CONFIG.fallback, analysisRequestBody, supabase);
+        }, `Fallback model analysis (${MODEL_CONFIG.fallback.name})`, 1);
+        
+        modelUsed = MODEL_CONFIG.fallback.name;
+        fallbackUsed = true;
+        console.log(`✅ Fallback model ${modelUsed} succeeded`);
+        
+      } catch (fallbackError) {
+        console.error(`❌ Both primary and fallback models failed:`, {
+          primary: primaryError.message,
+          fallback: fallbackError.message
+        });
+        
+        // Create minimal fallback response
+        analysisResult = {
+          data: {
+            success: true,
+            analysisData: {
+              analysis: "Analysis temporarily unavailable due to service issues. Please try again in a few minutes.",
+              recommendations: [
+                "Try refreshing the page and uploading your images again",
+                "Ensure your images are clear and properly formatted",
+                "Contact support if the issue persists"
+              ],
+              biggestGripe: "Technical difficulties prevent proper analysis right now",
+              whatMakesGoblinHappy: "When all systems work smoothly",
+              goblinWisdom: "Even goblins need a break sometimes",
+              goblinPrediction: "Service will be restored shortly"
+            },
+            modelUsed: 'fallback-static',
+            timestamp: new Date().toISOString()
+          }
+        };
+        
+        modelUsed = 'fallback-static';
+        fallbackUsed = true;
+        console.log('⚠️ Using static fallback response');
       }
-      
-      const claudeRequestBody = {
-        sessionId,
-        imageUrls: validImageUrls,
-        prompt: promptResult.data.prompt,
-        persona,
-        chatMode: false
-      };
-      
-      const result = await supabase.functions.invoke('goblin-model-claude-analyzer', {
-        body: claudeRequestBody
-      });
-      
-      updateCircuitBreaker('goblin-model-claude-analyzer', !result.error);
-      
-      if (result.error) throw new Error(`Claude analysis failed: ${result.error.message}`);
-      return result;
-    }, `Claude analysis for ${persona}`, 2);
+    }
 
     // Step 5: Synthesize results
     const synthesisResult = await withRetry(async () => {
@@ -318,12 +419,18 @@ serve(async (req) => {
           priority_matrix: synthesisResult.data.priorityMatrix,
           annotations: synthesisResult.data.annotations,
           model_metadata: {
-            model: 'claude-sonnet-4-20250514',
+            model: modelUsed,
             persona,
             confidence,
             processedAt: new Date().toISOString(),
-            orchestratorVersion: '2.0',
-            processingTimeMs: Date.now() - startTime
+            orchestratorVersion: '2.1',
+            processingTimeMs: Date.now() - startTime,
+            fallbackUsed,
+            circuitBreakerStatus: {
+              claude: isCircuitOpen('goblin-model-claude-analyzer'),
+              gpt: isCircuitOpen('goblin-model-gpt-analyzer'),
+              vision: isCircuitOpen('goblin-vision-screen-detector')
+            }
           },
           processing_time_ms: Date.now() - startTime,
           goblin_gripe_level: persona === 'clarity' ? synthesisResult.data.gripeLevel : null
@@ -354,8 +461,15 @@ serve(async (req) => {
         results: synthesisResult.data,
         metadata: {
           processingTimeMs: totalTime,
-          orchestratorVersion: '2.0',
-          visionSuccessRate: visionResults.filter(r => !r.fallback).length / visionResults.length
+          orchestratorVersion: '2.1',
+          modelUsed,
+          fallbackUsed,
+          visionSuccessRate: visionResults.filter(r => !r.fallback).length / visionResults.length,
+          circuitBreakerStatus: {
+            claude: isCircuitOpen('goblin-model-claude-analyzer'),
+            gpt: isCircuitOpen('goblin-model-gpt-analyzer'),
+            vision: isCircuitOpen('goblin-vision-screen-detector')
+          }
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -397,8 +511,13 @@ serve(async (req) => {
         stage: 'orchestration',
         metadata: {
           processingTimeMs: totalTime,
-          orchestratorVersion: '2.0',
-          retryable: RETRY_CONFIG.retryableErrors.some(e => error.message.toLowerCase().includes(e))
+          orchestratorVersion: '2.1',
+          retryable: RETRY_CONFIG.retryableErrors.some(e => error.message.toLowerCase().includes(e)),
+          circuitBreakerStatus: {
+            claude: isCircuitOpen('goblin-model-claude-analyzer'),
+            gpt: isCircuitOpen('goblin-model-gpt-analyzer'),
+            vision: isCircuitOpen('goblin-vision-screen-detector')
+          }
         }
       }),
       { 
