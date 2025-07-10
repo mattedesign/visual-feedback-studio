@@ -227,88 +227,27 @@ const GoblinResults: React.FC = () => {
     sample: rawPersonaData
   });
 
-  // ✅ NUCLEAR FIX: Replace complex extractPersonaData with simple version
+  // Simplified approach: extract persona data from results.persona_feedback
   const extractPersonaData = (data: any, personaType: string, fallbackSummary: string): PersonaData => {
-    console.log(`🎭 Simple extraction for: ${personaType}`, typeof data);
+    console.log('🔍 Extracting persona data for:', personaType, data);
     
-    const defaultPersonaData: PersonaData = {
-      analysis: fallbackSummary || 'Analysis completed successfully',
-      recommendations: [],
-      biggestGripe: 'No specific issues identified',
-      whatMakesGoblinHappy: 'Design has positive aspects',
-      goblinWisdom: 'Every design can be improved',
-      goblinPrediction: 'Better UX with targeted improvements',
-      businessImpact: '',
-      implementation: '',
-      visualStrategy: [],
-      competitiveVisualEdge: [],
-      metrics: [],
-      insights: '',
-      reflection: '',
-      visualReflections: [],
-      emotionalImpact: '',
-      userStory: '',
-      empathyGaps: [],
-      hypothesis: '',
-      madScience: '',
-      weirdFindings: '',
-      crazyIdeas: [],
-      labNotes: '',
-      executiveSummary: '',
-      businessRisks: [],
-      roiImpact: '',
-      stakeholderConcerns: '',
-      strategicRecommendations: [],
-      competitiveImplications: ''
-    };
+    if (!data) {
+      console.warn('⚠️ No data provided, using fallback');
+      return { analysis: fallbackSummary };
+    }
 
-    // Simple object handling - NO complex parsing
-    if (!data) return defaultPersonaData;
+    // Direct persona type access or use data as-is
+    const personaData = data[personaType] || data;
     
-    if (typeof data === 'object' && data !== null) {
-      return {
-        analysis: data.analysis || data.insights || data.executiveSummary || data.hypothesis || defaultPersonaData.analysis,
-        recommendations: Array.isArray(data.recommendations) ? data.recommendations : 
-                       Array.isArray(data.experiments) ? data.experiments :
-                       Array.isArray(data.strategicRecommendations) ? data.strategicRecommendations :
-                       Array.isArray(data.visualReflections) ? data.visualReflections :
-                       defaultPersonaData.recommendations,
-        biggestGripe: data.biggestGripe || data.roiImpact || data.weirdFindings || defaultPersonaData.biggestGripe,
-        whatMakesGoblinHappy: data.whatMakesGoblinHappy || data.userStory || data.hypothesis || defaultPersonaData.whatMakesGoblinHappy,
-        goblinWisdom: data.goblinWisdom || data.reflection || data.labNotes || defaultPersonaData.goblinWisdom,
-        goblinPrediction: data.goblinPrediction || data.emotionalImpact || data.competitiveImplications || defaultPersonaData.goblinPrediction,
-        businessImpact: data.businessImpact || '',
-        implementation: data.implementation || '',
-        visualStrategy: Array.isArray(data.visualStrategy) ? data.visualStrategy : [],
-        competitiveVisualEdge: Array.isArray(data.competitiveVisualEdge) ? data.competitiveVisualEdge : [],
-        metrics: Array.isArray(data.metrics) ? data.metrics : [],
-        insights: data.insights || '',
-        reflection: data.reflection || '',
-        visualReflections: Array.isArray(data.visualReflections) ? data.visualReflections : [],
-        emotionalImpact: data.emotionalImpact || '',
-        userStory: data.userStory || '',
-        empathyGaps: Array.isArray(data.empathyGaps) ? data.empathyGaps : [],
-        hypothesis: data.hypothesis || '',
-        madScience: data.madScience || '',
-        weirdFindings: data.weirdFindings || '',
-        crazyIdeas: Array.isArray(data.crazyIdeas) ? data.crazyIdeas : [],
-        labNotes: data.labNotes || '',
-        wildCard: data.wildCard || '',
-        experiments: Array.isArray(data.experiments) ? data.experiments : [],
-        executiveSummary: data.executiveSummary || '',
-        businessRisks: Array.isArray(data.businessRisks) ? data.businessRisks : [],
-        roiImpact: data.roiImpact || '',
-        stakeholderConcerns: data.stakeholderConcerns || '',
-        strategicRecommendations: Array.isArray(data.strategicRecommendations) ? data.strategicRecommendations : [],
-        competitiveImplications: data.competitiveImplications || ''
-      };
+    // If it's a string, treat as analysis
+    if (typeof personaData === 'string') {
+      console.log('✅ Using string data as analysis');
+      return { analysis: personaData };
     }
-    
-    if (typeof data === 'string') {
-      return { ...defaultPersonaData, analysis: data };
-    }
-    
-    return defaultPersonaData;
+
+    // Use the data as-is
+    console.log('✅ Using persona data as-is');
+    return personaData || { analysis: fallbackSummary };
   };
   
   // Parse the persona feedback correctly with proper typing

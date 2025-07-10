@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, AlertTriangle, Rocket } from 'lucide-react';
-import { ParsedText } from '@/utils/textParsing';
 import { useNavigation } from '@/contexts/NavigationContext';
 
 interface SummaryViewProps {
@@ -72,36 +71,28 @@ const SummaryView: React.FC<SummaryViewProps> = ({
               <div>
                 <h4 className="font-semibold mb-3 text-purple-600">🔮 Empathetic Insights:</h4>
                 <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                  <ParsedText>
-                    {personaData?.insights || personaData?.analysis || fallbackSummary || 'Mirror is reflecting on the user experience...'}
-                  </ParsedText>
+                  {personaData?.insights || personaData?.analysis || fallbackSummary || 'Mirror is reflecting on the user experience...'}
                 </p>
               </div>
               
               <div>
                 <h4 className="font-semibold mb-3 text-blue-600">💭 User Experience Reflection:</h4>
                 <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                  <ParsedText>
-                    {personaData?.reflection || personaData?.goblinWisdom || 'Reflecting on the emotional journey through this interface...'}
-                  </ParsedText>
+                  {personaData?.reflection || personaData?.goblinWisdom || 'Reflecting on the emotional journey through this interface...'}
                 </p>
               </div>
               
               <div>
                 <h4 className="font-semibold mb-3 text-pink-600">❤️ Emotional Impact:</h4>
                 <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                  <ParsedText>
-                    {personaData?.emotionalImpact || personaData?.biggestGripe || 'Users may experience mixed emotions with this design...'}
-                  </ParsedText>
+                  {personaData?.emotionalImpact || personaData?.biggestGripe || 'Users may experience mixed emotions with this design...'}
                 </p>
               </div>
               
               <div>
                 <h4 className="font-semibold mb-3 text-indigo-600">📖 User Story:</h4>
                 <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                  <ParsedText>
-                    {personaData?.userStory || personaData?.goblinPrediction || 'Every user has a story with this interface...'}
-                  </ParsedText>
+                  {personaData?.userStory || personaData?.goblinPrediction || 'Every user has a story with this interface...'}
                 </p>
               </div>
             </>
@@ -113,36 +104,28 @@ const SummaryView: React.FC<SummaryViewProps> = ({
               <div>
                 <h4 className="font-semibold mb-3 text-red-600">🧪 Mad Science Hypothesis:</h4>
                 <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                  <ParsedText>
-                    {personaData?.hypothesis || personaData?.analysis || fallbackSummary || 'Mad scientist is formulating wild theories...'}
-                  </ParsedText>
+                  {personaData?.hypothesis || personaData?.analysis || fallbackSummary || 'Mad scientist is formulating wild theories...'}
                 </p>
               </div>
               
               <div>
                 <h4 className="font-semibold mb-3 text-orange-600">🔬 Mad Science Analysis:</h4>
                 <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                  <ParsedText>
-                    {personaData?.madScience || personaData?.goblinWisdom || 'Conducting wild experiments on UX patterns...'}
-                  </ParsedText>
+                  {personaData?.madScience || personaData?.goblinWisdom || 'Conducting wild experiments on UX patterns...'}
                 </p>
               </div>
               
               <div>
                 <h4 className="font-semibold mb-3 text-yellow-600">🎭 Weird Findings:</h4>
                 <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                  <ParsedText>
-                    {personaData?.weirdFindings || personaData?.biggestGripe || 'Strange patterns detected in the interface wild...'}
-                  </ParsedText>
+                  {personaData?.weirdFindings || personaData?.biggestGripe || 'Strange patterns detected in the interface wild...'}
                 </p>
               </div>
               
               <div>
                 <h4 className="font-semibold mb-3 text-green-600">📝 Lab Notes:</h4>
                 <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                  <ParsedText>
-                    {personaData?.labNotes || personaData?.goblinPrediction || 'Mad scientist observations from the lab...'}
-                  </ParsedText>
+                  {personaData?.labNotes || personaData?.goblinPrediction || 'Mad scientist observations from the lab...'}
                 </p>
               </div>
             </>
@@ -154,36 +137,28 @@ const SummaryView: React.FC<SummaryViewProps> = ({
               <div>
                 <h4 className="font-semibold mb-3 text-foreground">📊 Strategic Analysis:</h4>
                 <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                  <ParsedText>
-                    {personaData?.analysis || fallbackSummary || 'Strategic analysis in progress...'}
-                  </ParsedText>
+                  {personaData?.analysis || fallbackSummary || 'Strategic analysis in progress...'}
                 </p>
               </div>
               
               <div>
                 <h4 className="font-semibold mb-3 text-emerald-600">💼 Business Impact:</h4>
                 <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                  <ParsedText>
-                    {personaData?.businessImpact || personaData?.biggestGripe || 'Assessing business implications of current UX...'}
-                  </ParsedText>
+                  {personaData?.businessImpact || personaData?.biggestGripe || 'Assessing business implications of current UX...'}
                 </p>
               </div>
               
               <div>
                 <h4 className="font-semibold mb-3 text-blue-600">🎯 Strategic Priority:</h4>
                 <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                  <ParsedText>
-                    {personaData?.strategicPriority || personaData?.goblinWisdom || 'Identifying high-impact strategic priorities...'}
-                  </ParsedText>
+                  {personaData?.strategicPriority || personaData?.goblinWisdom || 'Identifying high-impact strategic priorities...'}
                 </p>
               </div>
               
               <div>
                 <h4 className="font-semibold mb-3 text-purple-600">📈 Measurable Outcomes:</h4>
                 <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                  <ParsedText>
-                    {personaData?.measurableOutcomes || personaData?.goblinPrediction || 'Defining measurable success metrics...'}
-                  </ParsedText>
+                  {personaData?.measurableOutcomes || personaData?.goblinPrediction || 'Defining measurable success metrics...'}
                 </p>
               </div>
             </>
@@ -195,37 +170,29 @@ const SummaryView: React.FC<SummaryViewProps> = ({
               <div>
                 <h4 className="font-semibold mb-3 text-foreground">📋 Executive Summary:</h4>
                 <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                  <ParsedText>
-                    {personaData?.executiveSummary || personaData?.analysis || fallbackSummary || 'Executive analysis in progress...'}
-                  </ParsedText>
+                  {personaData?.executiveSummary || personaData?.analysis || fallbackSummary || 'Executive analysis in progress...'}
                 </p>
               </div>
               
               <div>
                 <h4 className="font-semibold mb-3 text-red-600">⚠️ Business Risks:</h4>
                 <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                  <ParsedText>
-                    {Array.isArray(personaData?.businessRisks) ? personaData.businessRisks.join(', ') : 
-                     personaData?.businessRisks || personaData?.biggestGripe || 'Identifying critical business risks...'}
-                  </ParsedText>
+                  {Array.isArray(personaData?.businessRisks) ? personaData.businessRisks.join(', ') : 
+                   personaData?.businessRisks || personaData?.biggestGripe || 'Identifying critical business risks...'}
                 </p>
               </div>
               
               <div>
                 <h4 className="font-semibold mb-3 text-green-600">💰 ROI Impact:</h4>
                 <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                  <ParsedText>
-                    {personaData?.roiImpact || personaData?.goblinWisdom || 'Calculating return on investment implications...'}
-                  </ParsedText>
+                  {personaData?.roiImpact || personaData?.goblinWisdom || 'Calculating return on investment implications...'}
                 </p>
               </div>
               
               <div>
                 <h4 className="font-semibold mb-3 text-blue-600">🏆 Competitive Implications:</h4>
                 <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                  <ParsedText>
-                    {personaData?.competitiveImplications || personaData?.goblinPrediction || 'Assessing competitive positioning impacts...'}
-                  </ParsedText>
+                  {personaData?.competitiveImplications || personaData?.goblinPrediction || 'Assessing competitive positioning impacts...'}
                 </p>
               </div>
             </>
@@ -237,47 +204,37 @@ const SummaryView: React.FC<SummaryViewProps> = ({
               <div>
                 <h4 className="font-semibold mb-3 text-foreground">Analysis:</h4>
                 <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                  <ParsedText>
-                    {personaData?.analysis || fallbackSummary || 'Analysis completed - awaiting detailed feedback from the goblin...'}
-                  </ParsedText>
+                  {personaData?.analysis || fallbackSummary || 'Analysis completed - awaiting detailed feedback from the goblin...'}
                 </p>
               </div>
               
               <div>
                 <h4 className="font-semibold mb-3 text-red-600">🤬 Biggest Gripe:</h4>
                 <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                  <ParsedText>
-                    {personaData?.biggestGripe || personaData?.wildCard || 'The goblin is still formulating their biggest complaint...'}
-                  </ParsedText>
+                  {personaData?.biggestGripe || personaData?.wildCard || 'The goblin is still formulating their biggest complaint...'}
                 </p>
               </div>
               
               <div>
                 <h4 className={`font-semibold mb-3 ${colors.primary}`}>😈 What Actually Works:</h4>
                 <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                  <ParsedText>
-                    {personaData?.whatMakesGoblinHappy || 
-                     (Array.isArray(personaData?.experiments) ? personaData.experiments.join(", ") : personaData?.experiments) || 
-                     'The goblin is identifying what makes them happy...'}
-                  </ParsedText>
+                  {personaData?.whatMakesGoblinHappy || 
+                   (Array.isArray(personaData?.experiments) ? personaData.experiments.join(", ") : personaData?.experiments) || 
+                   'The goblin is identifying what makes them happy...'}
                 </p>
               </div>
               
               <div>
                 <h4 className={`font-semibold mb-3 ${colors.primary}`}>💎 Goblin Wisdom:</h4>
                 <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                  <ParsedText>
-                    {personaData?.goblinWisdom || 'Goblin wisdom is being distilled...'}
-                  </ParsedText>
+                  {personaData?.goblinWisdom || 'Goblin wisdom is being distilled...'}
                 </p>
               </div>
               
               <div>
                 <h4 className="font-semibold mb-3 text-blue-600">🔮 Goblin Prediction:</h4>
                 <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                  <ParsedText>
-                    {personaData?.goblinPrediction || 'The goblin is peering into the future...'}
-                  </ParsedText>
+                  {personaData?.goblinPrediction || 'The goblin is peering into the future...'}
                 </p>
               </div>
             </>
@@ -338,7 +295,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
                       <li key={itemIdx} className="flex items-start gap-2 text-sm">
                         <span className={`${section.color} mt-1`}>•</span>
                         <span className="text-foreground">
-                          <ParsedText>{item}</ParsedText>
+                          {item}
                         </span>
                       </li>
                     ))}
@@ -436,18 +393,18 @@ const SummaryView: React.FC<SummaryViewProps> = ({
                   {recommendations.map((rec: string, idx: number) => (
                     <li key={idx} className="flex items-start gap-3">
                       <span className={`${colors.primary} mt-1 text-lg`}>•</span>
-                      <span className="text-muted-foreground leading-relaxed">
-                        <ParsedText>{rec}</ParsedText>
-                      </span>
+                       <span className="text-muted-foreground leading-relaxed">
+                         {rec}
+                       </span>
                     </li>
                   ))}
                 </ul>
               );
             } else if (recommendations && typeof recommendations === 'string') {
               return (
-                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                  <ParsedText>{recommendations}</ParsedText>
-                </p>
+                 <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+                   {recommendations}
+                 </p>
               );
             } else {
               return (
@@ -483,9 +440,9 @@ const SummaryView: React.FC<SummaryViewProps> = ({
             <CardTitle className={`text-xl font-semibold ${colors.primary}`}>📋 Synthesis Summary</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-              <ParsedText>{results.synthesis_summary}</ParsedText>
-            </p>
+             <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+               {results.synthesis_summary}
+             </p>
           </CardContent>
         </Card>
       )}
