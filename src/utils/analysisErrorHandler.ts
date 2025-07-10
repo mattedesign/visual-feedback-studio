@@ -25,7 +25,10 @@ class AnalysisErrorHandler {
   private circuitBreakers = new Map<string, CircuitBreakerState>();
   private readonly CIRCUIT_THRESHOLD = 3;
   private readonly CIRCUIT_TIMEOUT = 30000; // 30 seconds
+  private readonly MAX_CIRCUIT_BREAKERS = 100; // Prevent memory leaks
   private activePromises = new Map<string, AbortController>();
+  private metrics = new Map<string, any>();
+  private cleanupTimer?: number;
 
   /**
    * Wrap promises with timeout and cancellation
@@ -203,6 +206,66 @@ class AnalysisErrorHandler {
     this.circuitBreakers.clear();
   }
 
+  /**
+   * Start memory management and metrics collection
+   */
+  startCleanupTimer(): void {
+    if (this.cleanupTimer) return;
+    
+    this.cleanupTimer = window.setInterval(() => {
+      this.cleanupCircuitBreakers();
+      this.cleanupMetrics();
+    }, 60000); // Every minute
+  }
+
+  /**
+   * Stop cleanup timer
+   */
+  stopCleanupTimer(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = undefined;
+    }
+  }
+
+  /**
+   * Collect performance metrics
+   */
+  collectMetric(name: string, value: number, metadata?: Record<string, any>): void {
+    const key = `${name}-${Date.now()}`;
+    this.metrics.set(key, {
+      name,
+      value,
+      timestamp: Date.now(),
+      metadata
+    });
+    
+    // Keep only recent metrics
+    if (this.metrics.size > 1000) {
+      const entries = Array.from(this.metrics.entries());
+      const toDelete = entries.slice(0, entries.length - 1000);
+      for (const [key] of toDelete) {
+        this.metrics.delete(key);
+      }
+    }
+  }
+
+  /**
+   * Get metrics summary
+   */
+  getMetricsSummary(): Record<string, any> {
+    const now = Date.now();
+    const recent = Array.from(this.metrics.values())
+      .filter(metric => now - metric.timestamp < 300000); // Last 5 minutes
+    
+    return {
+      totalMetrics: recent.length,
+      circuitBreakers: this.circuitBreakers.size,
+      activePromises: this.activePromises.size,
+      recentErrors: recent.filter(m => m.name.includes('error')).length
+    };
+  }
+
   private getCircuitBreaker(key: string): CircuitBreakerState {
     if (!this.circuitBreakers.has(key)) {
       this.circuitBreakers.set(key, {
@@ -270,6 +333,39 @@ class AnalysisErrorHandler {
 
   private delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  private cleanupCircuitBreakers(): void {
+    const now = Date.now();
+    const cutoff = now - (this.CIRCUIT_TIMEOUT * 2);
+    
+    for (const [key, breaker] of this.circuitBreakers.entries()) {
+      if (breaker.lastFailure < cutoff && breaker.state === 'closed') {
+        this.circuitBreakers.delete(key);
+      }
+    }
+    
+    // Enforce max limit
+    if (this.circuitBreakers.size > this.MAX_CIRCUIT_BREAKERS) {
+      const entries = Array.from(this.circuitBreakers.entries())
+        .sort(([,a], [,b]) => a.lastFailure - b.lastFailure);
+      
+      const toDelete = entries.slice(0, entries.length - this.MAX_CIRCUIT_BREAKERS);
+      for (const [key] of toDelete) {
+        this.circuitBreakers.delete(key);
+      }
+    }
+  }
+
+  private cleanupMetrics(): void {
+    const now = Date.now();
+    const cutoff = now - 600000; // 10 minutes
+    
+    for (const [key, metric] of this.metrics.entries()) {
+      if (metric.timestamp < cutoff) {
+        this.metrics.delete(key);
+      }
+    }
   }
 }
 

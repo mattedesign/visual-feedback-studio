@@ -17,12 +17,14 @@ const RETRY_CONFIG = {
   retryableErrors: ['timeout', 'network', 'api_error', 'rate_limit']
 };
 
-// Enhanced circuit breaker for external services
+// Enhanced circuit breaker for external services with memory management
 const CIRCUIT_BREAKER = {
   failureThreshold: 3,
   resetTimeout: 60000,
   failures: new Map(),
-  lastFailureTime: new Map()
+  lastFailureTime: new Map(),
+  maxEntries: 100, // Prevent memory leaks
+  cleanupInterval: 300000 // 5 minutes
 };
 
 // Model configuration and fallback hierarchy
@@ -65,6 +67,8 @@ async function withRetry<T>(
 }
 
 function updateCircuitBreaker(service: string, success: boolean) {
+  cleanupOldEntries(); // Prevent memory leaks
+  
   if (success) {
     CIRCUIT_BREAKER.failures.delete(service);
     CIRCUIT_BREAKER.lastFailureTime.delete(service);
@@ -75,6 +79,47 @@ function updateCircuitBreaker(service: string, success: boolean) {
     CIRCUIT_BREAKER.lastFailureTime.set(service, Date.now());
     console.warn(`⚠️ Circuit breaker failure count for ${service}: ${current + 1}/${CIRCUIT_BREAKER.failureThreshold}`);
   }
+}
+
+function cleanupOldEntries() {
+  const now = Date.now();
+  const cutoff = now - (CIRCUIT_BREAKER.resetTimeout * 2); // Clean entries older than 2x reset timeout
+  
+  // Cleanup old failure times
+  for (const [service, lastFailure] of CIRCUIT_BREAKER.lastFailureTime.entries()) {
+    if (lastFailure < cutoff) {
+      CIRCUIT_BREAKER.failures.delete(service);
+      CIRCUIT_BREAKER.lastFailureTime.delete(service);
+    }
+  }
+  
+  // Enforce max entries limit
+  if (CIRCUIT_BREAKER.failures.size > CIRCUIT_BREAKER.maxEntries) {
+    const entries = Array.from(CIRCUIT_BREAKER.lastFailureTime.entries())
+      .sort(([,a], [,b]) => a - b); // Sort by oldest first
+    
+    const toDelete = entries.slice(0, entries.length - CIRCUIT_BREAKER.maxEntries);
+    for (const [service] of toDelete) {
+      CIRCUIT_BREAKER.failures.delete(service);
+      CIRCUIT_BREAKER.lastFailureTime.delete(service);
+    }
+  }
+}
+
+// Enhanced metrics collection
+function collectMetrics(sessionId: string, stage: string, duration: number, success: boolean, metadata: any = {}) {
+  const metrics = {
+    sessionId: sessionId.substring(0, 8),
+    stage,
+    duration,
+    success,
+    timestamp: Date.now(),
+    ...metadata
+  };
+  
+  // Log for monitoring systems
+  console.log(`📊 METRICS: ${JSON.stringify(metrics)}`);
+  return metrics;
 }
 
 function isCircuitOpen(service: string): boolean {
@@ -98,24 +143,51 @@ function isCircuitOpen(service: string): boolean {
 }
 
 async function attemptModelAnalysis(modelConfig: any, requestBody: any, supabase: any): Promise<any> {
+  const startTime = Date.now();
   console.log(`🤖 Attempting analysis with ${modelConfig.name}...`);
   
   if (isCircuitOpen(modelConfig.function)) {
-    throw new Error(`Circuit breaker open for ${modelConfig.function}`);
+    const error = new Error(`Circuit breaker open for ${modelConfig.function}`);
+    collectMetrics(requestBody.sessionId, `model_${modelConfig.name}`, Date.now() - startTime, false, {
+      error: error.message,
+      reason: 'circuit_breaker_open'
+    });
+    throw error;
   }
   
-  const result = await supabase.functions.invoke(modelConfig.function, {
-    body: requestBody
-  });
-  
-  updateCircuitBreaker(modelConfig.function, !result.error);
-  
-  if (result.error) {
-    throw new Error(`${modelConfig.name} analysis failed: ${result.error.message}`);
+  try {
+    const result = await Promise.race([
+      supabase.functions.invoke(modelConfig.function, { body: requestBody }),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error(`Model timeout: ${modelConfig.name}`)), modelConfig.timeout)
+      )
+    ]);
+    
+    const duration = Date.now() - startTime;
+    updateCircuitBreaker(modelConfig.function, !result.error);
+    
+    if (result.error) {
+      collectMetrics(requestBody.sessionId, `model_${modelConfig.name}`, duration, false, {
+        error: result.error.message
+      });
+      throw new Error(`${modelConfig.name} analysis failed: ${result.error.message}`);
+    }
+    
+    collectMetrics(requestBody.sessionId, `model_${modelConfig.name}`, duration, true, {
+      modelUsed: modelConfig.name,
+      responseSize: JSON.stringify(result.data).length
+    });
+    
+    console.log(`✅ Analysis completed with ${modelConfig.name} in ${duration}ms`);
+    return result;
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    updateCircuitBreaker(modelConfig.function, false);
+    collectMetrics(requestBody.sessionId, `model_${modelConfig.name}`, duration, false, {
+      error: error.message
+    });
+    throw error;
   }
-  
-  console.log(`✅ Analysis completed with ${modelConfig.name}`);
-  return result;
 }
 
 serve(async (req) => {
@@ -170,14 +242,44 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Supabase with enhanced error handling
+    // Initialize Supabase with enhanced error handling and connection resilience
     try {
       supabase = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+        {
+          db: {
+            schema: 'public',
+          },
+          global: {
+            headers: {
+              'x-client-info': 'goblin-orchestrator@2.1',
+            },
+          },
+          realtime: {
+            channels: {},
+            eventsTimeout: 10000,
+            heartbeatIntervalMs: 30000,
+            heartbeatTimeout: 10000,
+          }
+        }
       );
+      
+      // Test connection with a lightweight query
+      const { error: connectionTest } = await supabase
+        .from('goblin_analysis_sessions')
+        .select('id')
+        .limit(1);
+      
+      if (connectionTest) {
+        throw new Error(`Database connection test failed: ${connectionTest.message}`);
+      }
+      
     } catch (supabaseError) {
       console.error('❌ Failed to initialize Supabase client:', supabaseError);
+      collectMetrics(sessionId || 'unknown', 'database_connection', Date.now() - startTime, false, {
+        error: supabaseError.message
+      });
       throw new Error(`Database connection failed: ${supabaseError.message}`);
     }
 
@@ -303,22 +405,23 @@ serve(async (req) => {
       }
     }
 
-    // Step 3: Build persona-specific prompt
+    // Step 3: Build unified persona-specific prompt
     const promptResult = await withRetry(async () => {
-      const result = await supabase.functions.invoke('goblin-persona-prompt-builder', {
+      const result = await supabase.functions.invoke('goblin-unified-prompt-system', {
         body: { 
           persona, 
           goal, 
           imageCount: validImageUrls.length,
           mode, 
           confidence,
-          visionResults
+          visionResults,
+          chatMode: false
         }
       });
       
-      if (result.error) throw new Error(`Prompt building failed: ${result.error.message}`);
+      if (result.error) throw new Error(`Unified prompt building failed: ${result.error.message}`);
       return result;
-    }, `Prompt building for ${persona}`);
+    }, `Unified prompt building for ${persona}`);
 
     // Step 4: AI Analysis with Enhanced Fallback System
     console.log('🤖 Starting AI analysis with intelligent fallback...');
