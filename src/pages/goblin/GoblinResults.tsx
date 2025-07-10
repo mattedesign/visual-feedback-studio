@@ -456,9 +456,24 @@ const GoblinResults: React.FC = () => {
           
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'summary' | 'detailed' | 'clarity')}>
             <TabsList className="sticky top-0 z-10 flex w-auto items-center gap-4 rounded-xl border border-gray-200 bg-gray-100 p-1 backdrop-blur-sm" style={{ boxShadow: '0px 1px 1.9px 0px rgba(50, 50, 50, 0.10) inset' }}>
-              <TabsTrigger value="summary" className="text-sm font-medium">Summary</TabsTrigger>
-              <TabsTrigger value="detailed" className="text-sm font-medium">Detailed ({annotationCount})</TabsTrigger>
-              <TabsTrigger value="clarity" className="text-sm font-medium">Clarity Chat</TabsTrigger>
+              <TabsTrigger 
+                value="summary" 
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset]"
+              >
+                Summary
+              </TabsTrigger>
+              <TabsTrigger 
+                value="detailed" 
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset]"
+              >
+                Detailed ({annotationCount})
+              </TabsTrigger>
+              <TabsTrigger 
+                value="clarity" 
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset]"
+              >
+                Clarity Chat
+              </TabsTrigger>
             </TabsList>
 
           <TabsContent value="summary" className="mt-8">
