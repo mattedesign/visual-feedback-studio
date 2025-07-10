@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AnnotationDialog from './AnnotationDialog';
+import { useNavigation } from '@/contexts/NavigationContext';
 
 interface DetailedModeViewProps {
   images: any[];
@@ -27,6 +28,16 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
 }) => {
   const [selectedAnnotation, setSelectedAnnotation] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { setTotalImages, setCurrentImageIndex: setNavigationImageIndex } = useNavigation();
+
+  // Sync with navigation context
+  useEffect(() => {
+    setTotalImages(images.length);
+  }, [images.length, setTotalImages]);
+
+  useEffect(() => {
+    setNavigationImageIndex(currentImageIndex);
+  }, [currentImageIndex, setNavigationImageIndex]);
   
   const currentImage = images[currentImageIndex];
   // Filter annotations by current image

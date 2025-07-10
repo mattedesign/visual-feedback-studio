@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useNavigation } from '@/contexts/NavigationContext';
 
 // Import refactored components and hooks
 import { ClarityChatProps, ChatMessage } from './chat/types';
@@ -18,10 +19,34 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
   const [isLoading, setIsLoading] = useState(false);
   const [feedbackMode, setFeedbackMode] = useState<string | null>(null);
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
+  const { setTotalImages } = useNavigation();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const { messages, setMessages, analyzeMessageQuality, reloadMessages } = useChatHistory({ session, personaData });
   const { validateMessagePersistence } = useMessagePersistence(session?.id);
+
+  // Set total images count for navigation context
+  useEffect(() => {
+    const fetchImageCount = async () => {
+      if (!session?.id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('goblin_analysis_images')
+          .select('id')
+          .eq('session_id', session.id);
+        
+        if (!error) {
+          setTotalImages(data?.length || 0);
+        }
+      } catch (error) {
+        console.error('Failed to fetch image count:', error);
+        setTotalImages(0);
+      }
+    };
+    
+    fetchImageCount();
+  }, [session?.id, setTotalImages]);
 
   // Auto-scroll to bottom when messages load or change
   const scrollToBottom = () => {

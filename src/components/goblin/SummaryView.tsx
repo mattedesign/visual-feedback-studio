@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, AlertTriangle, Rocket } from 'lucide-react';
+import { ParsedText } from '@/utils/textParsing';
+import { useNavigation } from '@/contexts/NavigationContext';
 
 interface SummaryViewProps {
   results: any;
@@ -23,6 +25,13 @@ const SummaryView: React.FC<SummaryViewProps> = ({
   copied,
   chatFeedbackAnchors = {}
 }) => {
+  const { setTotalImages } = useNavigation();
+
+  // Set total images count for navigation context
+  useEffect(() => {
+    const imageCount = results?.images?.length || 0;
+    setTotalImages(imageCount);
+  }, [results?.images, setTotalImages]);
   const getGripeEmoji = (level: string) => {
     switch(level) {
       case 'low': return '😤';
@@ -102,7 +111,9 @@ const SummaryView: React.FC<SummaryViewProps> = ({
                     {items.map((item: string, itemIdx: number) => (
                       <li key={itemIdx} className="flex items-start gap-2 text-sm">
                         <span className={`${section.color} mt-1`}>•</span>
-                        <span className="text-foreground">{item}</span>
+                        <span className="text-foreground">
+                          <ParsedText>{item}</ParsedText>
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -158,23 +169,29 @@ const SummaryView: React.FC<SummaryViewProps> = ({
           <div>
             <h4 className="font-semibold mb-3 text-foreground">Analysis:</h4>
             <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-              {personaData?.analysis || results?.synthesis_summary || 'Analysis completed - awaiting detailed feedback from the goblin...'}
+              <ParsedText>
+                {personaData?.analysis || results?.synthesis_summary || 'Analysis completed - awaiting detailed feedback from the goblin...'}
+              </ParsedText>
             </p>
           </div>
           
           <div>
             <h4 className="font-semibold mb-3 text-red-600">🤬 Biggest Gripe:</h4>
             <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-              {personaData?.biggestGripe || personaData?.wildCard || 'The goblin is still formulating their biggest complaint...'}
+              <ParsedText>
+                {personaData?.biggestGripe || personaData?.wildCard || 'The goblin is still formulating their biggest complaint...'}
+              </ParsedText>
             </p>
           </div>
           
           <div>
             <h4 className={`font-semibold mb-3 ${colors.primary}`}>😈 What Actually Works:</h4>
             <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-              {personaData?.whatMakesGoblinHappy || 
-               (Array.isArray(personaData?.experiments) ? personaData.experiments.join(", ") : personaData?.experiments) || 
-               'The goblin is identifying what makes them happy...'}
+              <ParsedText>
+                {personaData?.whatMakesGoblinHappy || 
+                 (Array.isArray(personaData?.experiments) ? personaData.experiments.join(", ") : personaData?.experiments) || 
+                 'The goblin is identifying what makes them happy...'}
+              </ParsedText>
             </p>
           </div>
 
@@ -183,7 +200,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
             <div>
               <h4 className="font-semibold mb-3 text-emerald-600">💼 Business Impact:</h4>
               <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                {personaData.businessImpact}
+                <ParsedText>{personaData.businessImpact}</ParsedText>
               </p>
             </div>
           )}
@@ -192,7 +209,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
             <div>
               <h4 className="font-semibold mb-3 text-blue-600">⚙️ Implementation Strategy:</h4>
               <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                {personaData.implementation}
+                <ParsedText>{personaData.implementation}</ParsedText>
               </p>
             </div>
           )}
@@ -204,7 +221,9 @@ const SummaryView: React.FC<SummaryViewProps> = ({
                 {personaData.visualStrategy.map((strategy: string, idx: number) => (
                   <li key={idx} className="flex items-start gap-2 text-sm">
                     <span className="text-purple-600 mt-1">•</span>
-                    <span className="text-muted-foreground">{strategy}</span>
+                    <span className="text-muted-foreground">
+                      <ParsedText>{strategy}</ParsedText>
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -218,7 +237,9 @@ const SummaryView: React.FC<SummaryViewProps> = ({
                 {personaData.competitiveVisualEdge.map((edge: string, idx: number) => (
                   <li key={idx} className="flex items-start gap-2 text-sm">
                     <span className="text-orange-600 mt-1">•</span>
-                    <span className="text-muted-foreground">{edge}</span>
+                    <span className="text-muted-foreground">
+                      <ParsedText>{edge}</ParsedText>
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -228,14 +249,18 @@ const SummaryView: React.FC<SummaryViewProps> = ({
           <div>
             <h4 className={`font-semibold mb-3 ${colors.primary}`}>💎 Goblin Wisdom:</h4>
             <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-              {personaData?.goblinWisdom || 'Goblin wisdom is being distilled...'}
+              <ParsedText>
+                {personaData?.goblinWisdom || 'Goblin wisdom is being distilled...'}
+              </ParsedText>
             </p>
           </div>
           
           <div>
             <h4 className="font-semibold mb-3 text-blue-600">🔮 Goblin Prediction:</h4>
             <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-              {personaData?.goblinPrediction || 'The goblin is peering into the future...'}
+              <ParsedText>
+                {personaData?.goblinPrediction || 'The goblin is peering into the future...'}
+              </ParsedText>
             </p>
           </div>
         </CardContent>
@@ -254,12 +279,16 @@ const SummaryView: React.FC<SummaryViewProps> = ({
               {personaData.recommendations.map((rec: string, idx: number) => (
                 <li key={idx} className="flex items-start gap-3">
                   <span className={`${colors.primary} mt-1 text-lg`}>•</span>
-                  <span className="text-muted-foreground leading-relaxed">{rec}</span>
+                  <span className="text-muted-foreground leading-relaxed">
+                    <ParsedText>{rec}</ParsedText>
+                  </span>
                 </li>
               ))}
             </ul>
           ) : personaData?.recommendations && typeof personaData.recommendations === 'string' ? (
-            <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">{personaData.recommendations}</p>
+            <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+              <ParsedText>{personaData.recommendations}</ParsedText>
+            </p>
           ) : (
             <p className="text-muted-foreground italic">The goblin is crafting personalized recommendations...</p>
           )}
@@ -285,7 +314,9 @@ const SummaryView: React.FC<SummaryViewProps> = ({
             <CardTitle className={`text-xl font-semibold ${colors.primary}`}>📋 Synthesis Summary</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">{results.synthesis_summary}</p>
+            <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+              <ParsedText>{results.synthesis_summary}</ParsedText>
+            </p>
           </CardContent>
         </Card>
       )}

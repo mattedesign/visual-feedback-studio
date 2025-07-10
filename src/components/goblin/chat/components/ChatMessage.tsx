@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ChatMessage as ChatMessageType } from '../types';
+import { ParsedText } from '@/utils/textParsing';
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -67,7 +68,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
         )}
         
         <div className="whitespace-pre-wrap text-sm">
-          {message.content}
+          <ParsedText>{message.content}</ParsedText>
         </div>
         
         {message.role === 'clarity' && (message.parsed_problems?.length || message.suggested_fixes?.length) && (
