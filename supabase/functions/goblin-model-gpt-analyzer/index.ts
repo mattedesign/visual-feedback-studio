@@ -289,43 +289,25 @@ serve(async (req) => {
       }
     }
 
-    // Parse structured response for non-chat mode
+    // Parse structured response for non-chat mode with persona-specific validation
     let parsedData: any = {};
     if (!actualChatMode) {
       try {
         const jsonMatch = summaryText.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-          parsedData = JSON.parse(jsonMatch[0]);
-          console.log('✅ Parsed structured data:', Object.keys(parsedData));
+          const rawParsed = JSON.parse(jsonMatch[0]);
+          console.log('✅ Raw parsed data fields:', Object.keys(rawParsed));
+          
+          // Validate persona-specific fields and create fallback if needed
+          parsedData = validateAndNormalizePersonaData(rawParsed, persona, summaryText);
+          console.log('✅ Validated structured data for persona:', persona, 'Fields:', Object.keys(parsedData));
         } else {
-          // Fallback: create structured data from text
-          parsedData = {
-            analysis: summaryText,
-            recommendations: [
-              "Improve interface clarity and user guidance",
-              "Enhance visual hierarchy for better content scanning",
-              "Optimize user flow and navigation patterns"
-            ],
-            biggestGripe: "Your interface needs some clarity improvements!",
-            whatMakesGoblinHappy: "Clear, obvious design that doesn't make users think",
-            goblinWisdom: "The best UX is invisible - users should focus on their goals, not figuring out your interface",
-            goblinPrediction: "Once you fix the confusing parts, users will complete tasks faster and with less frustration"
-          };
+          console.warn('❌ No JSON found in response, creating fallback data');
+          parsedData = createPersonaFallbackData(persona, summaryText);
         }
       } catch (parseError) {
         console.error('❌ Failed to parse structured data:', parseError);
-        parsedData = {
-          analysis: summaryText,
-          recommendations: [
-            "Improve interface clarity and user guidance",
-            "Enhance visual hierarchy for better content scanning",
-            "Optimize user flow and navigation patterns"
-          ],
-          biggestGripe: "Your interface needs some clarity improvements!",
-          whatMakesGoblinHappy: "Clear, obvious design that doesn't make users think",
-          goblinWisdom: "The best UX is invisible",
-          goblinPrediction: "Fix the UX issues and watch user satisfaction improve"
-        };
+        parsedData = createPersonaFallbackData(persona, summaryText);
       }
     }
 
@@ -410,31 +392,48 @@ serve(async (req) => {
   }
 });
 
-// Unified prompt builder (same as Claude analyzer)
+// Unified prompt builder with persona-specific JSON templates
 function buildPrompt(persona: string, userPrompt: string, chatMode: boolean, conversationHistory?: string, originalAnalysis?: any): string {
-  let systemInstructions = "";
-  
-  if (persona === 'clarity') {
-    systemInstructions = `You are Clarity, the UX Goblin - a sharp-tongued but brilliant UX critic who helps users improve their designs. You're honest, direct, and sometimes sarcastic, but always helpful.
+  const personaInstructions = {
+    clarity: `You are Clarity, the brutally honest UX goblin. You tell the hard truths about design with wit and directness. Be specific, actionable, and don't sugarcoat issues.`,
+    strategic: `You are a strategic UX analyst. Focus on business impact, user goals, and measurable outcomes. Provide strategic recommendations.`,
+    mirror: `You are an empathetic UX mirror. Reflect back what users might feel and experience. Focus on emotional aspects of the design.`,
+    mad: `You are the Mad UX Scientist. Think outside the box with creative, experimental approaches to UX problems.`,
+    exec: `You are an executive UX lens. Focus on business impact, ROI, and stakeholder communication.`
+  };
 
-Key traits:
-- Direct and honest feedback, no sugarcoating
-- Use goblin-like expressions occasionally ("goblin wisdom", "makes the goblin happy/grumpy")
-- Focus on practical, actionable insights
-- Spot usability issues quickly
-- Care deeply about user experience
+  // Persona-specific JSON templates (matching Claude analyzer)
+  const personaJsonTemplates = {
+    mirror: {
+      "insights": "Deep empathetic analysis of what users truly feel when using this interface",
+      "reflection": "Mirror reflection of the user experience and emotional journey",
+      "visualReflections": ["Visual element 1 reflection", "Visual element 2 reflection", "Visual element 3 reflection"],
+      "emotionalImpact": "How this design makes users feel emotionally",
+      "userStory": "The story this interface tells from a user's perspective",
+      "empathyGaps": ["Gap 1 where user needs aren't met", "Gap 2", "Gap 3"]
+    },
+    strategic: {
+      "analysis": "Strategic UX analysis focused on business impact",
+      "recommendations": ["Business-focused recommendation 1", "recommendation 2", "recommendation 3"],
+      "businessImpact": "How UX issues affect business metrics",
+      "strategicPriority": "Most critical strategic UX priority",
+      "competitiveAdvantage": "UX opportunities for competitive differentiation",
+      "measurableOutcomes": "Expected measurable improvements"
+    },
+    clarity: {
+      "analysis": "Brutally honest UX analysis of the interface",
+      "recommendations": ["Specific actionable recommendation 1", "recommendation 2", "recommendation 3"],
+      "biggestGripe": "The main UX problem that annoys you most",
+      "whatMakesGoblinHappy": "What actually works well in this design",
+      "goblinWisdom": "Your key insight or wisdom about the UX",
+      "goblinPrediction": "What will happen if the user follows your advice"
+    }
+  };
 
-Your analysis should be structured and include:
-- What's working well
-- What needs improvement
-- Specific actionable recommendations
-- Goblin wisdom/predictions about user behavior`;
-  } else {
-    systemInstructions = `You are a UX analysis assistant with the "${persona}" persona. Provide thorough, professional analysis focused on practical improvements.`;
-  }
+  let basePrompt = personaInstructions[persona as keyof typeof personaInstructions] || personaInstructions.clarity;
 
   if (chatMode && conversationHistory) {
-    return `${systemInstructions}
+    return `${basePrompt}
 
 Previous conversation context:
 ${conversationHistory}
@@ -443,29 +442,161 @@ Original analysis context: ${originalAnalysis ? JSON.stringify(originalAnalysis)
 
 Current user question: ${userPrompt}
 
-Respond as the goblin persona, continuing the conversation naturally.`;
+Respond as the ${persona} persona, continuing the conversation naturally.`;
   } else if (chatMode && originalAnalysis) {
-    return `${systemInstructions}
+    return `${basePrompt}
 
 You're continuing a conversation about this analysis:
 ${JSON.stringify(originalAnalysis)}
 
 User's follow-up question: ${userPrompt}
 
-Respond as the goblin persona, building on the previous analysis.`;
+Respond as the ${persona} persona, building on the previous analysis.`;
   } else {
-    return `${systemInstructions}
+    // Get persona-specific JSON template
+    const jsonTemplate = personaJsonTemplates[persona as keyof typeof personaJsonTemplates] || personaJsonTemplates.clarity;
+    
+    return `${basePrompt}
 
 User context: ${userPrompt}
 
-Please analyze the provided interface images and provide structured feedback. Return a JSON object with:
-{
-  "analysis": "Main analysis text",
-  "recommendations": ["actionable recommendation 1", "recommendation 2", "recommendation 3"],
-  "biggestGripe": "What annoys the goblin most",
-  "whatMakesGoblinHappy": "What the goblin likes",
-  "goblinWisdom": "Key insight or prediction",
-  "goblinPrediction": "What will happen if changes are made"
-}`;
+Please analyze the provided interface images and provide structured feedback in JSON format with these exact fields for the ${persona} persona:
+${JSON.stringify(jsonTemplate, null, 2)}
+
+CRITICAL: Your response must be valid JSON that exactly matches the field names above. For the ${persona} persona, you MUST use these specific fields:
+${Object.keys(jsonTemplate).map(key => `- "${key}"`).join('\n')}
+
+Be thorough, specific, and maintain your ${persona} personality throughout the analysis. Provide detailed insights for each required field.`;
+  }
+}
+
+// Validation and normalization functions for persona-specific data (matching Claude analyzer)
+function validateAndNormalizePersonaData(rawData: any, persona: string, summaryText: string): any {
+  console.log(`🔍 GPT Validating ${persona} persona data. Raw fields:`, Object.keys(rawData));
+  
+  // Define expected fields for each persona
+  const expectedFields = {
+    mirror: ['insights', 'reflection', 'visualReflections', 'emotionalImpact', 'userStory', 'empathyGaps'],
+    strategic: ['analysis', 'recommendations', 'businessImpact', 'strategicPriority', 'competitiveAdvantage', 'measurableOutcomes'],
+    clarity: ['analysis', 'recommendations', 'biggestGripe', 'whatMakesGoblinHappy', 'goblinWisdom', 'goblinPrediction']
+  };
+  
+  const expected = expectedFields[persona as keyof typeof expectedFields] || expectedFields.clarity;
+  const hasExpectedFields = expected.every(field => rawData.hasOwnProperty(field));
+  
+  console.log(`🔍 GPT Persona ${persona} validation:`, {
+    expectedFields: expected,
+    receivedFields: Object.keys(rawData),
+    hasAllExpectedFields: hasExpectedFields,
+    missingFields: expected.filter(field => !rawData.hasOwnProperty(field))
+  });
+  
+  if (hasExpectedFields) {
+    console.log(`✅ GPT ${persona} data has all expected fields, using as-is`);
+    return rawData;
+  } else {
+    // Try to map generic fields to persona-specific fields
+    const mappedData = mapGenericToPersonaSpecific(rawData, persona, summaryText);
+    console.log(`🔄 GPT Mapped generic data to ${persona} format:`, Object.keys(mappedData));
+    return mappedData;
+  }
+}
+
+function mapGenericToPersonaSpecific(genericData: any, persona: string, summaryText: string): any {
+  console.log(`🔄 GPT Mapping generic data to ${persona} persona format`);
+  
+  if (persona === 'mirror') {
+    return {
+      insights: genericData.analysis || summaryText,
+      reflection: genericData.goblinWisdom || genericData.analysis || "Reflecting on user experience through empathetic lens",
+      visualReflections: Array.isArray(genericData.recommendations) ? genericData.recommendations.slice(0, 3) : [
+        "Visual element needs empathetic consideration",
+        "Interface should reflect user emotions",
+        "Design lacks emotional connection"
+      ],
+      emotionalImpact: genericData.biggestGripe || "Users may feel confused or frustrated",
+      userStory: genericData.goblinPrediction || "Users journey through this interface needs emotional consideration",
+      empathyGaps: Array.isArray(genericData.recommendations) ? genericData.recommendations : [
+        "Lack of emotional guidance",
+        "Missing user sentiment indicators",
+        "Insufficient empathetic feedback"
+      ]
+    };
+  } else if (persona === 'strategic') {
+    return {
+      analysis: genericData.analysis || summaryText,
+      recommendations: Array.isArray(genericData.recommendations) ? genericData.recommendations : [
+        "Improve strategic user flow",
+        "Enhance business goal alignment",
+        "Optimize conversion opportunities"
+      ],
+      businessImpact: genericData.biggestGripe || "Current UX issues may impact business metrics",
+      strategicPriority: genericData.goblinWisdom || "Focus on high-impact UX improvements",
+      competitiveAdvantage: genericData.whatMakesGoblinHappy || "Opportunity to differentiate through superior UX",
+      measurableOutcomes: genericData.goblinPrediction || "Expect improved user engagement and conversion"
+    };
+  } else {
+    // Default to clarity format
+    return {
+      analysis: genericData.analysis || summaryText,
+      recommendations: Array.isArray(genericData.recommendations) ? genericData.recommendations : [
+        "Improve interface clarity",
+        "Enhance user guidance",
+        "Optimize usability"
+      ],
+      biggestGripe: genericData.biggestGripe || "Interface needs clarity improvements",
+      whatMakesGoblinHappy: genericData.whatMakesGoblinHappy || "Clear, intuitive design",
+      goblinWisdom: genericData.goblinWisdom || "Best UX is invisible",
+      goblinPrediction: genericData.goblinPrediction || "Fix UX issues for better user experience"
+    };
+  }
+}
+
+function createPersonaFallbackData(persona: string, summaryText: string): any {
+  console.log(`🆘 GPT Creating fallback data for ${persona} persona`);
+  
+  if (persona === 'mirror') {
+    return {
+      insights: summaryText || "Deep empathetic analysis of user experience",
+      reflection: "Reflecting user emotions and journey through interface",
+      visualReflections: [
+        "Interface elements need emotional consideration",
+        "Visual design should reflect user feelings",
+        "Missing empathetic visual cues"
+      ],
+      emotionalImpact: "Users may experience confusion and frustration",
+      userStory: "Users navigate with uncertainty, seeking emotional connection",
+      empathyGaps: [
+        "Lack of emotional guidance in interface",
+        "Missing user sentiment feedback",
+        "Insufficient empathetic design elements"
+      ]
+    };
+  } else if (persona === 'strategic') {
+    return {
+      analysis: summaryText || "Strategic analysis of business impact",
+      recommendations: [
+        "Align UX with business objectives",
+        "Optimize conversion funnel",
+        "Improve strategic user pathways"
+      ],
+      businessImpact: "UX issues negatively affect business metrics",
+      strategicPriority: "Focus on high-impact user experience improvements",
+      competitiveAdvantage: "Superior UX creates competitive differentiation",
+      measurableOutcomes: "Improved engagement, conversion, and retention"
+    };
+  } else {
+    return {
+      analysis: summaryText || "Clarity analysis of interface",
+      recommendations: [
+        "Improve interface clarity and guidance",
+        "Enhance visual hierarchy",
+        "Optimize user flow patterns"
+      ],
+      biggestGripe: "Interface lacks clarity and intuitive design",
+      whatMakesGoblinHappy: "Clear, obvious design that users understand",
+      goblinWisdom: "Best UX is invisible - users focus on goals, not interface",
+      goblinPrediction: "Clear UX improvements will reduce user frustration"
+    };
   }
 }
