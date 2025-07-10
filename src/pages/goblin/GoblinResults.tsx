@@ -274,10 +274,10 @@ const GoblinResults: React.FC = () => {
             recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : 
                            Array.isArray(parsed.strategicRecommendations) ? parsed.strategicRecommendations :
                            defaultPersonaData.recommendations,
-            biggestGripe: parsed.businessImpact || parsed.roiImpact || defaultPersonaData.biggestGripe,
-            whatMakesGoblinHappy: parsed.competitiveAdvantage || parsed.strategicPriority || defaultPersonaData.whatMakesGoblinHappy,
-            goblinWisdom: parsed.strategicPriority || parsed.measurableOutcomes || defaultPersonaData.goblinWisdom,
-            goblinPrediction: parsed.measurableOutcomes || parsed.competitiveImplications || defaultPersonaData.goblinPrediction,
+            biggestGripe: parsed.businessImpact || parsed.biggestGripe || defaultPersonaData.biggestGripe,
+            whatMakesGoblinHappy: parsed.competitiveAdvantage || parsed.whatMakesGoblinHappy || defaultPersonaData.whatMakesGoblinHappy,
+            goblinWisdom: parsed.strategicPriority || parsed.goblinWisdom || defaultPersonaData.goblinWisdom,
+            goblinPrediction: parsed.measurableOutcomes || parsed.goblinPrediction || defaultPersonaData.goblinPrediction,
             businessImpact: parsed.businessImpact || '',
             implementation: parsed.strategicPriority || ''
           };
@@ -299,14 +299,15 @@ const GoblinResults: React.FC = () => {
         case 'mad':
           return {
             ...defaultPersonaData,
-            analysis: parsed.hypothesis || parsed.madScience || fallbackSummary,
+            analysis: parsed.hypothesis || parsed.madScience || parsed.analysis || fallbackSummary,
             recommendations: Array.isArray(parsed.experiments) ? parsed.experiments : 
                            Array.isArray(parsed.crazyIdeas) ? parsed.crazyIdeas :
+                           Array.isArray(parsed.recommendations) ? parsed.recommendations :
                            defaultPersonaData.recommendations,
-            biggestGripe: parsed.weirdFindings || parsed.madScience || defaultPersonaData.biggestGripe,
-            whatMakesGoblinHappy: parsed.hypothesis || parsed.crazyIdeas?.[0] || defaultPersonaData.whatMakesGoblinHappy,
-            goblinWisdom: parsed.labNotes || parsed.madScience || defaultPersonaData.goblinWisdom,
-            goblinPrediction: parsed.hypothesis || parsed.weirdFindings || defaultPersonaData.goblinPrediction
+            biggestGripe: parsed.weirdFindings || parsed.biggestGripe || defaultPersonaData.biggestGripe,
+            whatMakesGoblinHappy: parsed.hypothesis || parsed.crazyIdeas?.[0] || parsed.whatMakesGoblinHappy || defaultPersonaData.whatMakesGoblinHappy,
+            goblinWisdom: parsed.labNotes || parsed.goblinWisdom || defaultPersonaData.goblinWisdom,
+            goblinPrediction: parsed.hypothesis || parsed.goblinPrediction || defaultPersonaData.goblinPrediction
           };
           
         case 'exec':
@@ -330,11 +331,13 @@ const GoblinResults: React.FC = () => {
             ...defaultPersonaData,
             analysis: parsed.analysis || fallbackSummary,
             recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : 
-                           parsed.recommendations ? [parsed.recommendations] : defaultPersonaData.recommendations,
-            biggestGripe: parsed.biggestGripe || defaultPersonaData.biggestGripe,
-            whatMakesGoblinHappy: parsed.whatMakesGoblinHappy || defaultPersonaData.whatMakesGoblinHappy,
-            goblinWisdom: parsed.goblinWisdom || defaultPersonaData.goblinWisdom,
-            goblinPrediction: parsed.goblinPrediction || defaultPersonaData.goblinPrediction
+                           parsed.recommendations ? [parsed.recommendations] : 
+                           Array.isArray(parsed.experiments) ? parsed.experiments :
+                           defaultPersonaData.recommendations,
+            biggestGripe: parsed.biggestGripe || parsed.weirdFindings || defaultPersonaData.biggestGripe,
+            whatMakesGoblinHappy: parsed.whatMakesGoblinHappy || parsed.hypothesis || defaultPersonaData.whatMakesGoblinHappy,
+            goblinWisdom: parsed.goblinWisdom || parsed.labNotes || defaultPersonaData.goblinWisdom,
+            goblinPrediction: parsed.goblinPrediction || parsed.madScience || defaultPersonaData.goblinPrediction
           };
       }
     };

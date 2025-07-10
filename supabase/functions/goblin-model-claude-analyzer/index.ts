@@ -666,20 +666,22 @@ function mapGenericToPersonaSpecific(genericData: any, persona: string, summaryT
     };
   } else if (persona === 'mad' || persona === 'mad_scientist') {
     return {
-      hypothesis: genericData.analysis || summaryText,
-      experiments: Array.isArray(genericData.recommendations) ? genericData.recommendations : [
+      hypothesis: genericData.analysis || genericData.hypothesis || summaryText,
+      experiments: Array.isArray(genericData.experiments) ? genericData.experiments : 
+                   Array.isArray(genericData.recommendations) ? genericData.recommendations : [
         "Try radical interface redesign",
         "Experiment with unconventional patterns",
         "Test wild user interaction approaches"
       ],
-      madScience: genericData.goblinWisdom || "Mad scientist analysis of UX anomalies",
-      weirdFindings: genericData.biggestGripe || "Strange UX patterns discovered in the wild",
-      crazyIdeas: Array.isArray(genericData.recommendations) ? genericData.recommendations.slice(0, 3) : [
+      madScience: genericData.madScience || genericData.goblinWisdom || "Mad scientist analysis of UX anomalies",
+      weirdFindings: genericData.weirdFindings || genericData.biggestGripe || "Strange UX patterns discovered in the wild",
+      crazyIdeas: Array.isArray(genericData.crazyIdeas) ? genericData.crazyIdeas :
+                  Array.isArray(genericData.recommendations) ? genericData.recommendations.slice(0, 3) : [
         "Completely unconventional approach 1",
         "Wild experimental solution 2", 
         "Crazy but might work idea 3"
       ],
-      labNotes: genericData.goblinPrediction || "Experimental observations on user behavior patterns"
+      labNotes: genericData.labNotes || genericData.goblinPrediction || "Experimental observations on user behavior patterns"
     };
   } else if (persona === 'exec') {
     return {
