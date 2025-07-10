@@ -57,10 +57,10 @@ function buildPersonaPrompt(persona: string, goal: string, imageCount: number, m
   const confidenceContext = getConfidenceContext(confidence);
   const modeContext = `${mode === 'journey' ? 'Multi-screen user journey analysis' : 'Single screen analysis'}`;
 
-  // Add persona mapping to handle frontend/backend persona name mismatches
+  // FIXED: Use original persona names for consistency
   const personaMapping: { [key: string]: string } = {
-    'mad': 'mad_scientist',
-    'exec': 'executive',
+    'mad': 'mad',
+    'exec': 'exec',
     'strategic': 'strategic', 
     'clarity': 'clarity',
     'mirror': 'mirror'
