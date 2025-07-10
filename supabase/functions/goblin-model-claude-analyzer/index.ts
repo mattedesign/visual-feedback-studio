@@ -17,10 +17,23 @@ serve(async (req) => {
   try {
     const { sessionId, imageUrls, prompt, persona, chatMode, conversationHistory, originalAnalysis, saveInitialOnly, initialContent } = await req.json();
 
+    // Add persona mapping to fix frontend/backend persona name mismatches
+    const personaMapping: { [key: string]: string } = {
+      'mad': 'mad_scientist',
+      'exec': 'executive',
+      'strategic': 'strategic', 
+      'clarity': 'clarity',
+      'mirror': 'mirror'
+    };
+
+    // Normalize persona name
+    const normalizedPersona = personaMapping[persona] || persona;
+    console.log(`🎭 Persona mapping: ${persona} → ${normalizedPersona}`);
+
     // CRITICAL FIX: Ensure chatMode is properly defaulted for image processing
     const actualChatMode = chatMode === true;
     
-    console.log(`🎯 Processing request - Session: ${sessionId?.substring(0, 8)}, Persona: ${persona}, Chat: ${actualChatMode}, HasImages: ${!!imageUrls}`);
+    console.log(`🎯 Processing request - Session: ${sessionId?.substring(0, 8)}, Persona: ${normalizedPersona}, Chat: ${actualChatMode}, HasImages: ${!!imageUrls}`);
 
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
     if (!anthropicApiKey) {
@@ -77,7 +90,7 @@ serve(async (req) => {
               model_used: 'claude-sonnet-4-20250514',
               processing_time_ms: 0,
               metadata: {
-                used_persona: persona,
+                used_persona: normalizedPersona,
                 is_initial_analysis: true,
                 save_initial_only: true
               }
@@ -256,7 +269,7 @@ serve(async (req) => {
     }
 
     // Build enhanced prompt
-    const enhancedPrompt = buildPrompt(persona, prompt, actualChatMode, conversationHistory, originalAnalysis);
+    const enhancedPrompt = buildPrompt(normalizedPersona, prompt, actualChatMode, conversationHistory, originalAnalysis);
     
     console.log("🧙‍♂️ Sending message to Claude with", imageContent.length, "images");
 
@@ -279,7 +292,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
-        temperature: persona === 'clarity' ? 0.3 : 0.7,
+        temperature: normalizedPersona === 'clarity' ? 0.3 : 0.7,
         messages
       })
     });
@@ -352,7 +365,7 @@ serve(async (req) => {
             model_used: 'claude-sonnet-4-20250514',
             processing_time_ms: processingTime,
             metadata: {
-              used_persona: persona,
+              used_persona: normalizedPersona,
               is_chat_response: true
             }
           });
@@ -411,16 +424,16 @@ serve(async (req) => {
           console.log('✅ Raw parsed data fields:', Object.keys(rawParsed));
           
           // Validate persona-specific fields and create fallback if needed
-          parsedData = validateAndNormalizePersonaData(rawParsed, persona, summaryText);
-          console.log('✅ Validated structured data for persona:', persona, 'Fields:', Object.keys(parsedData));
+          parsedData = validateAndNormalizePersonaData(rawParsed, normalizedPersona, summaryText);
+          console.log('✅ Validated structured data for persona:', normalizedPersona, 'Fields:', Object.keys(parsedData));
         } else {
           console.warn('❌ No valid JSON found in response, creating fallback data');
-          parsedData = createPersonaFallbackData(persona, summaryText);
+          parsedData = createPersonaFallbackData(normalizedPersona, summaryText);
         }
       } catch (parseError) {
         console.error('❌ Failed to parse structured data:', parseError);
         console.error('❌ Raw response excerpt:', summaryText.substring(0, 500));
-        parsedData = createPersonaFallbackData(persona, summaryText);
+        parsedData = createPersonaFallbackData(normalizedPersona, summaryText);
       }
     }
 
@@ -450,7 +463,7 @@ serve(async (req) => {
               model_used: 'claude-sonnet-4-20250514',
               processing_time_ms: processingTime,
               metadata: {
-                used_persona: persona,
+                used_persona: normalizedPersona,
                 is_initial_analysis: true,
                 parsed_data: parsedData
               }
