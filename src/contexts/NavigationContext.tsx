@@ -51,7 +51,11 @@ export function NavigationProvider({
     const imageIndex = screenNumber - 1;
     
     if (imageIndex >= 0 && imageIndex < totalImages) {
-      setActiveTab('detailed');
+      // Ensure we switch to detailed tab first
+      if (activeTab !== 'detailed') {
+        setActiveTab('detailed');
+      }
+      // Then update the image index
       setCurrentImageIndex(imageIndex);
     }
   };

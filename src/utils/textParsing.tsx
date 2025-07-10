@@ -63,7 +63,7 @@ export function ParsedText({ children, className }: ParsedTextProps) {
   return (
     <span className={className}>
       {parsedContent.map((part, index) => (
-        <React.Fragment key={index}>{part}</React.Fragment>
+        <React.Fragment key={`parsed-text-${index}`}>{part}</React.Fragment>
       ))}
     </span>
   );

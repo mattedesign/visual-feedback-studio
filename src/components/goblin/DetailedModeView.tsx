@@ -116,8 +116,12 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
         {images.map((img, idx) => (
           <button
             key={img.id || `img-${idx}`}
-            onClick={() => setCurrentImageIndex(idx)}
-            className={`w-20 h-20 rounded border-2 overflow-hidden ${
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setCurrentImageIndex(idx);
+            }}
+            className={`w-20 h-20 rounded border-2 overflow-hidden transition-all duration-200 hover:scale-105 ${
               idx === currentImageIndex ? 'border-green-500' : 'border-gray-300'
             }`}
           >
@@ -149,7 +153,9 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
             height = annotation.height || 4;
           }
 
-          const handleAnnotationClick = () => {
+          const handleAnnotationClick = (e: React.MouseEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
             setSelectedAnnotation(annotation);
             setDialogOpen(true);
           };

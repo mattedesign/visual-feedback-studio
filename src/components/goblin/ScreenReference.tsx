@@ -13,7 +13,9 @@ export function ScreenReference({ screenNumber, className }: ScreenReferenceProp
   
   const isValidScreen = screenNumber > 0 && screenNumber <= totalImages;
   
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (isValidScreen) {
       navigateToImage(screenNumber);
     }
@@ -38,7 +40,7 @@ export function ScreenReference({ screenNumber, className }: ScreenReferenceProp
       onKeyDown={(e) => {
         if ((e.key === 'Enter' || e.key === ' ') && isValidScreen) {
           e.preventDefault();
-          handleClick();
+          handleClick(e as any);
         }
       }}
     >
