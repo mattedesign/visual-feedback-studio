@@ -503,6 +503,7 @@ function buildPrompt(persona: string, userPrompt: string, chatMode: boolean, con
     strategic: `You are a strategic UX analyst. Focus on business impact, user goals, and measurable outcomes. Provide strategic recommendations.`,
     mirror: `You are an empathetic UX mirror. Reflect back what users might feel and experience. Focus on emotional aspects of the design.`,
     mad: `You are the Mad UX Scientist. Think outside the box with creative, experimental approaches to UX problems.`,
+    mad_scientist: `You are the Mad UX Scientist. Think outside the box with creative, experimental approaches to UX problems.`,
     exec: `You are an executive UX lens. Focus on business impact, ROI, and stakeholder communication.`
   };
 
@@ -533,6 +534,14 @@ function buildPrompt(persona: string, userPrompt: string, chatMode: boolean, con
       "goblinPrediction": "What will happen if the user follows your advice"
     },
     mad: {
+      "hypothesis": "Wild experimental UX hypothesis about the interface",
+      "experiments": ["Crazy experiment 1", "experiment 2", "experiment 3"],
+      "madScience": "Your mad scientist take on the UX problems",
+      "weirdFindings": "Strange patterns or anomalies discovered in the interface",
+      "crazyIdeas": ["Unconventional solution 1", "solution 2", "solution 3"],
+      "labNotes": "Mad scientist notes on interface behavior and user patterns"
+    },
+    mad_scientist: {
       "hypothesis": "Wild experimental UX hypothesis about the interface",
       "experiments": ["Crazy experiment 1", "experiment 2", "experiment 3"],
       "madScience": "Your mad scientist take on the UX problems",
@@ -597,6 +606,7 @@ function validateAndNormalizePersonaData(rawData: any, persona: string, summaryT
     strategic: ['analysis', 'recommendations', 'businessImpact', 'strategicPriority', 'competitiveAdvantage', 'measurableOutcomes'],
     clarity: ['analysis', 'recommendations', 'biggestGripe', 'whatMakesGoblinHappy', 'goblinWisdom', 'goblinPrediction'],
     mad: ['hypothesis', 'experiments', 'madScience', 'weirdFindings', 'crazyIdeas', 'labNotes'],
+    mad_scientist: ['hypothesis', 'experiments', 'madScience', 'weirdFindings', 'crazyIdeas', 'labNotes'],
     exec: ['executiveSummary', 'businessRisks', 'roiImpact', 'stakeholderConcerns', 'strategicRecommendations', 'competitiveImplications']
   };
   
@@ -654,7 +664,7 @@ function mapGenericToPersonaSpecific(genericData: any, persona: string, summaryT
       competitiveAdvantage: genericData.whatMakesGoblinHappy || "Opportunity to differentiate through superior UX",
       measurableOutcomes: genericData.goblinPrediction || "Expect improved user engagement and conversion"
     };
-  } else if (persona === 'mad') {
+  } else if (persona === 'mad' || persona === 'mad_scientist') {
     return {
       hypothesis: genericData.analysis || summaryText,
       experiments: Array.isArray(genericData.recommendations) ? genericData.recommendations : [
@@ -738,7 +748,7 @@ function createPersonaFallbackData(persona: string, summaryText: string): any {
       competitiveAdvantage: "Superior UX creates competitive differentiation",
       measurableOutcomes: "Improved engagement, conversion, and retention"
     };
-  } else if (persona === 'mad') {
+  } else if (persona === 'mad' || persona === 'mad_scientist') {
     return {
       hypothesis: summaryText || "Mad scientist hypothesis about interface chaos",
       experiments: [
