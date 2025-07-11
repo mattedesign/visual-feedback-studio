@@ -45,45 +45,45 @@ const SummaryView: React.FC<SummaryViewProps> = ({
     switch(personaType) {
       case 'clarity':
         return {
-          primary: 'text-green-600',
-          bg: 'bg-green-50',
-          border: 'border-green-200',
-          badge: 'bg-green-100 text-green-700'
+          primary: 'text-primary',
+          bg: 'bg-warm-cream',
+          border: 'border-warm-tan',
+          badge: 'bg-warm-beige text-professional-brown'
         };
       case 'exec':
         return {
-          primary: 'text-blue-600',
-          bg: 'bg-blue-50',
-          border: 'border-blue-200',
-          badge: 'bg-blue-100 text-blue-700'
+          primary: 'text-primary',
+          bg: 'bg-warm-cream',
+          border: 'border-warm-tan',
+          badge: 'bg-warm-beige text-professional-brown'
         };
       case 'strategic':
         return {
-          primary: 'text-purple-600',
-          bg: 'bg-purple-50',
-          border: 'border-purple-200',
-          badge: 'bg-purple-100 text-purple-700'
+          primary: 'text-primary',
+          bg: 'bg-warm-cream',
+          border: 'border-warm-tan',
+          badge: 'bg-warm-beige text-professional-brown'
         };
       case 'mirror':
         return {
-          primary: 'text-indigo-600',
-          bg: 'bg-indigo-50',
-          border: 'border-indigo-200',
-          badge: 'bg-indigo-100 text-indigo-700'
+          primary: 'text-primary',
+          bg: 'bg-warm-cream',
+          border: 'border-warm-tan',
+          badge: 'bg-warm-beige text-professional-brown'
         };
       case 'mad':
         return {
-          primary: 'text-orange-600',
-          bg: 'bg-orange-50',
-          border: 'border-orange-200',
-          badge: 'bg-orange-100 text-orange-700'
+          primary: 'text-primary',
+          bg: 'bg-warm-cream',
+          border: 'border-warm-tan',
+          badge: 'bg-warm-beige text-professional-brown'
         };
       default:
         return {
-          primary: 'text-purple-600',
-          bg: 'bg-purple-50',
-          border: 'border-purple-200',
-          badge: 'bg-purple-100 text-purple-700'
+          primary: 'text-primary',
+          bg: 'bg-warm-cream',
+          border: 'border-warm-tan',
+          badge: 'bg-warm-beige text-professional-brown'
         };
     }
   };
@@ -209,84 +209,108 @@ const SummaryView: React.FC<SummaryViewProps> = ({
             <div className="space-y-6">
               {/* Insights */}
               {(parsedData?.insights || parsedData?.analysis || fallbackSummary) && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                    🔍 Mirror Insights
-                  </h4>
-                  <p className="text-blue-700 leading-relaxed whitespace-pre-wrap">
-                    {parsedData?.insights || parsedData?.analysis || fallbackSummary || 'Mirror is reflecting on the user experience...'}
-                  </p>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      🔍 Mirror Insights
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {parsedData?.insights || parsedData?.analysis || fallbackSummary || 'Mirror is reflecting on the user experience...'}
+                    </p>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Reflection */}
               {(parsedData?.reflection || parsedData?.goblinWisdom) && (
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-purple-800 mb-3 flex items-center gap-2">
-                    🪞 Reflection
-                  </h4>
-                  <p className="text-purple-700 leading-relaxed italic whitespace-pre-wrap">
-                    {parsedData?.reflection || parsedData?.goblinWisdom || 'Reflecting on the emotional journey through this interface...'}
-                  </p>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      🪞 Reflection
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground leading-relaxed italic whitespace-pre-wrap">
+                      {parsedData?.reflection || parsedData?.goblinWisdom || 'Reflecting on the emotional journey through this interface...'}
+                    </p>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Visual Reflections */}
               {parsedData?.visualReflections && Array.isArray(parsedData.visualReflections) && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-green-800 mb-3 flex items-center gap-2">
-                    👁️ Visual Reflections
-                  </h4>
-                  <ul className="space-y-2">
-                    {parsedData.visualReflections.map((reflection: string, idx: number) => (
-                      <li key={idx} className="flex items-start gap-3">
-                        <span className="text-green-600 mt-1">✨</span>
-                        <span className="text-green-700 leading-relaxed">{reflection}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      👁️ Visual Reflections
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-3">
+                      {parsedData.visualReflections.map((reflection: string, idx: number) => (
+                        <li key={idx} className="flex items-start gap-3">
+                          <span className="text-accent-warm mt-1 text-lg">✨</span>
+                          <span className="text-muted-foreground leading-relaxed">{reflection}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Emotional Impact */}
               {(parsedData?.emotionalImpact || parsedData?.biggestGripe) && (
-                <div className="bg-pink-50 border border-pink-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-pink-800 mb-3 flex items-center gap-2">
-                    💝 Emotional Impact
-                  </h4>
-                  <p className="text-pink-700 leading-relaxed whitespace-pre-wrap">
-                    {parsedData?.emotionalImpact || parsedData?.biggestGripe || 'Users may experience mixed emotions with this design...'}
-                  </p>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      💝 Emotional Impact
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {parsedData?.emotionalImpact || parsedData?.biggestGripe || 'Users may experience mixed emotions with this design...'}
+                    </p>
+                  </CardContent>
+                </Card>
               )}
 
               {/* User Story */}
               {(parsedData?.userStory || parsedData?.goblinPrediction) && (
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-orange-800 mb-3 flex items-center gap-2">
-                    📖 User Story
-                  </h4>
-                  <p className="text-orange-700 leading-relaxed whitespace-pre-wrap">
-                    {parsedData?.userStory || parsedData?.goblinPrediction || 'Every user has a story with this interface...'}
-                  </p>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      📖 User Story
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {parsedData?.userStory || parsedData?.goblinPrediction || 'Every user has a story with this interface...'}
+                    </p>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Empathy Gaps */}
               {parsedData?.empathyGaps && Array.isArray(parsedData.empathyGaps) && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-red-800 mb-3 flex items-center gap-2">
-                    💔 Empathy Gaps
-                  </h4>
-                  <ul className="space-y-2">
-                    {parsedData.empathyGaps.map((gap: string, idx: number) => (
-                      <li key={idx} className="flex items-start gap-3">
-                        <span className="text-red-600 mt-1">⚠️</span>
-                        <span className="text-red-700 leading-relaxed">{gap}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      💔 Empathy Gaps
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-3">
+                      {parsedData.empathyGaps.map((gap: string, idx: number) => (
+                        <li key={idx} className="flex items-start gap-3">
+                          <span className="text-destructive mt-1 text-lg">⚠️</span>
+                          <span className="text-muted-foreground leading-relaxed">{gap}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
               )}
             </div>
           );
@@ -296,96 +320,124 @@ const SummaryView: React.FC<SummaryViewProps> = ({
             <div className="space-y-6">
               {/* Mad Science Hypothesis */}
               {(parsedData?.hypothesis || parsedData?.analysis || fallbackSummary) && (
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-purple-800 mb-3 flex items-center gap-2">
-                    🧪 Mad Science Hypothesis
-                  </h4>
-                  <p className="text-purple-700 leading-relaxed whitespace-pre-wrap">
-                    {parsedData?.hypothesis || parsedData?.analysis || fallbackSummary || 'Mad scientist is formulating wild theories...'}
-                  </p>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      🧪 Mad Science Hypothesis
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {parsedData?.hypothesis || parsedData?.analysis || fallbackSummary || 'Mad scientist is formulating wild theories...'}
+                    </p>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Crazy Experiments */}
               {parsedData?.experiments && Array.isArray(parsedData.experiments) && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                    ⚗️ Crazy Experiments
-                  </h4>
-                  <ul className="space-y-2">
-                    {parsedData.experiments.map((experiment: string, idx: number) => (
-                      <li key={idx} className="flex items-start gap-3">
-                        <span className="text-blue-600 mt-1 text-lg font-bold">{idx + 1}.</span>
-                        <span className="text-blue-700 leading-relaxed">{experiment}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      ⚗️ Crazy Experiments
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-3">
+                      {parsedData.experiments.map((experiment: string, idx: number) => (
+                        <li key={idx} className="flex items-start gap-3">
+                          <span className="text-accent-warm mt-1 text-lg font-bold">{idx + 1}.</span>
+                          <span className="text-muted-foreground leading-relaxed">{experiment}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Mad Science Insights */}
               {(parsedData?.madScience || parsedData?.goblinWisdom) && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-green-800 mb-3 flex items-center gap-2">
-                    🔬 Mad Science Discovery
-                  </h4>
-                  <p className="text-green-700 leading-relaxed whitespace-pre-wrap">
-                    {parsedData?.madScience || parsedData?.goblinWisdom || 'Conducting wild experiments on UX patterns...'}
-                  </p>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      🔬 Mad Science Discovery
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {parsedData?.madScience || parsedData?.goblinWisdom || 'Conducting wild experiments on UX patterns...'}
+                    </p>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Weird Findings */}
               {(parsedData?.weirdFindings || parsedData?.biggestGripe) && (
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-orange-800 mb-3 flex items-center gap-2">
-                    🔍 Weird Findings
-                  </h4>
-                  <p className="text-orange-700 leading-relaxed whitespace-pre-wrap">
-                    {parsedData?.weirdFindings || parsedData?.biggestGripe || 'Strange patterns detected in the interface...'}
-                  </p>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      🔍 Weird Findings
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {parsedData?.weirdFindings || parsedData?.biggestGripe || 'Strange patterns detected in the interface...'}
+                    </p>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Crazy Ideas */}
               {parsedData?.crazyIdeas && Array.isArray(parsedData.crazyIdeas) && (
-                <div className="bg-pink-50 border border-pink-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-pink-800 mb-3 flex items-center gap-2">
-                    💡 Crazy Ideas
-                  </h4>
-                  <ul className="space-y-2">
-                    {parsedData.crazyIdeas.map((idea: string, idx: number) => (
-                      <li key={idx} className="flex items-start gap-3">
-                        <span className="text-pink-600 mt-1">💥</span>
-                        <span className="text-pink-700 leading-relaxed">{idea}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      💡 Crazy Ideas
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-3">
+                      {parsedData.crazyIdeas.map((idea: string, idx: number) => (
+                        <li key={idx} className="flex items-start gap-3">
+                          <span className="text-accent-warm mt-1 text-lg">💥</span>
+                          <span className="text-muted-foreground leading-relaxed">{idea}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Lab Notes */}
               {(parsedData?.labNotes || parsedData?.goblinPrediction) && (
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                    📝 Lab Notes
-                  </h4>
-                  <p className="text-gray-700 leading-relaxed font-mono text-sm whitespace-pre-wrap">
-                    {parsedData?.labNotes || parsedData?.goblinPrediction || 'Mad scientist observations from the lab...'}
-                  </p>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      📝 Lab Notes
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground leading-relaxed font-mono text-sm whitespace-pre-wrap">
+                      {parsedData?.labNotes || parsedData?.goblinPrediction || 'Mad scientist observations from the lab...'}
+                    </p>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Fallback for simple experiments string */}
               {!parsedData?.hypothesis && !parsedData?.experiments && !parsedData?.madScience && (parsedData?.experiments || parsedData?.crazyIdeas) && typeof (parsedData?.experiments || parsedData?.crazyIdeas) === 'string' && (
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-purple-800 mb-3 flex items-center gap-2">
-                    🧪 Mad Experiments
-                  </h4>
-                  <p className="text-purple-700 leading-relaxed whitespace-pre-wrap">
-                    {parsedData?.experiments || parsedData?.crazyIdeas}
-                  </p>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      🧪 Mad Experiments
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {parsedData?.experiments || parsedData?.crazyIdeas}
+                    </p>
+                  </CardContent>
+                </Card>
               )}
             </div>
           );
@@ -395,62 +447,82 @@ const SummaryView: React.FC<SummaryViewProps> = ({
             <div className="space-y-6">
               {/* Strategic Analysis */}
               {(parsedData?.analysis || fallbackSummary) && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                    🎯 Strategic Analysis
-                  </h4>
-                  <p className="text-blue-700 leading-relaxed whitespace-pre-wrap">
-                    {parsedData?.analysis || fallbackSummary || 'Strategic analysis in progress...'}
-                  </p>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      🎯 Strategic Analysis
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {parsedData?.analysis || fallbackSummary || 'Strategic analysis in progress...'}
+                    </p>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Business Impact */}
               {(parsedData?.businessImpact || parsedData?.biggestGripe) && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-green-800 mb-3 flex items-center gap-2">
-                    💰 Business Impact
-                  </h4>
-                  <p className="text-green-700 leading-relaxed whitespace-pre-wrap">
-                    {parsedData?.businessImpact || parsedData?.biggestGripe || 'Assessing business implications of current UX...'}
-                  </p>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      💰 Business Impact
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {parsedData?.businessImpact || parsedData?.biggestGripe || 'Assessing business implications of current UX...'}
+                    </p>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Strategic Priority */}
               {(parsedData?.strategicPriority || parsedData?.goblinWisdom) && (
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-orange-800 mb-3 flex items-center gap-2">
-                    ⭐ Strategic Priority
-                  </h4>
-                  <p className="text-orange-700 leading-relaxed whitespace-pre-wrap">
-                    {parsedData?.strategicPriority || parsedData?.goblinWisdom || 'Identifying high-impact strategic priorities...'}
-                  </p>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      ⭐ Strategic Priority
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {parsedData?.strategicPriority || parsedData?.goblinWisdom || 'Identifying high-impact strategic priorities...'}
+                    </p>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Competitive Advantage */}
               {parsedData?.competitiveAdvantage && (
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-purple-800 mb-3 flex items-center gap-2">
-                    🏆 Competitive Advantage
-                  </h4>
-                  <p className="text-purple-700 leading-relaxed whitespace-pre-wrap">
-                    {parsedData.competitiveAdvantage}
-                  </p>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      🏆 Competitive Advantage
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {parsedData.competitiveAdvantage}
+                    </p>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Measurable Outcomes */}
               {(parsedData?.measurableOutcomes || parsedData?.goblinPrediction) && (
-                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-indigo-800 mb-3 flex items-center gap-2">
-                    📊 Measurable Outcomes
-                  </h4>
-                  <p className="text-indigo-700 leading-relaxed whitespace-pre-wrap">
-                    {parsedData?.measurableOutcomes || parsedData?.goblinPrediction || 'Defining measurable success metrics...'}
-                  </p>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      📊 Measurable Outcomes
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {parsedData?.measurableOutcomes || parsedData?.goblinPrediction || 'Defining measurable success metrics...'}
+                    </p>
+                  </CardContent>
+                </Card>
               )}
             </div>
           );
@@ -460,96 +532,120 @@ const SummaryView: React.FC<SummaryViewProps> = ({
             <div className="space-y-6">
               {/* Executive Summary */}
               {(parsedData?.executiveSummary || parsedData?.analysis || fallbackSummary) && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                    💼 Executive Summary
-                  </h4>
-                  <p className="text-blue-700 leading-relaxed whitespace-pre-wrap">
-                    {parsedData?.executiveSummary || parsedData?.analysis || fallbackSummary || 'Executive analysis in progress...'}
-                  </p>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      💼 Executive Summary
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {parsedData?.executiveSummary || parsedData?.analysis || fallbackSummary || 'Executive analysis in progress...'}
+                    </p>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Business Risks */}
               {(parsedData?.businessRisks || parsedData?.biggestGripe) && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-red-800 mb-3 flex items-center gap-2">
-                    ⚠️ Business Risks
-                  </h4>
-                  {Array.isArray(parsedData?.businessRisks) ? (
-                    <ul className="space-y-2">
-                      {parsedData.businessRisks.map((risk: string, idx: number) => (
-                        <li key={idx} className="flex items-start gap-3">
-                          <span className="text-red-600 mt-1">🚨</span>
-                          <span className="text-red-700 leading-relaxed">{risk}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-red-700 leading-relaxed whitespace-pre-wrap">
-                      {parsedData?.businessRisks || parsedData?.biggestGripe || 'Identifying critical business risks...'}
-                    </p>
-                  )}
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      ⚠️ Business Risks
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {Array.isArray(parsedData?.businessRisks) ? (
+                      <ul className="space-y-3">
+                        {parsedData.businessRisks.map((risk: string, idx: number) => (
+                          <li key={idx} className="flex items-start gap-3">
+                            <span className="text-destructive mt-1 text-lg">🚨</span>
+                            <span className="text-muted-foreground leading-relaxed">{risk}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                        {parsedData?.businessRisks || parsedData?.biggestGripe || 'Identifying critical business risks...'}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
               )}
 
               {/* ROI Impact */}
               {(parsedData?.roiImpact || parsedData?.goblinWisdom) && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-green-800 mb-3 flex items-center gap-2">
-                    💰 ROI Impact
-                  </h4>
-                  <p className="text-green-700 leading-relaxed whitespace-pre-wrap">
-                    {parsedData?.roiImpact || parsedData?.goblinWisdom || 'Calculating return on investment implications...'}
-                  </p>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      💰 ROI Impact
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {parsedData?.roiImpact || parsedData?.goblinWisdom || 'Calculating return on investment implications...'}
+                    </p>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Stakeholder Concerns */}
               {(parsedData?.stakeholderConcerns || parsedData?.teamAlignment) && (
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-orange-800 mb-3 flex items-center gap-2">
-                    👥 Stakeholder Concerns
-                  </h4>
-                  <p className="text-orange-700 leading-relaxed whitespace-pre-wrap">
-                    {parsedData?.stakeholderConcerns || parsedData?.teamAlignment || 'Identifying stakeholder alignment issues...'}
-                  </p>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      👥 Stakeholder Concerns
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {parsedData?.stakeholderConcerns || parsedData?.teamAlignment || 'Identifying stakeholder alignment issues...'}
+                    </p>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Strategic Recommendations */}
               {parsedData?.strategicRecommendations && (
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-purple-800 mb-3 flex items-center gap-2">
-                    📋 Strategic Recommendations
-                  </h4>
-                  {Array.isArray(parsedData.strategicRecommendations) ? (
-                    <ol className="space-y-2">
-                      {parsedData.strategicRecommendations.map((rec: string, idx: number) => (
-                        <li key={idx} className="flex items-start gap-3">
-                          <span className="text-purple-600 mt-1 font-bold">{idx + 1}.</span>
-                          <span className="text-purple-700 leading-relaxed">{rec}</span>
-                        </li>
-                      ))}
-                    </ol>
-                  ) : (
-                    <p className="text-purple-700 leading-relaxed whitespace-pre-wrap">
-                      {parsedData.strategicRecommendations}
-                    </p>
-                  )}
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      📋 Strategic Recommendations
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {Array.isArray(parsedData.strategicRecommendations) ? (
+                      <ol className="space-y-3">
+                        {parsedData.strategicRecommendations.map((rec: string, idx: number) => (
+                          <li key={idx} className="flex items-start gap-3">
+                            <span className="text-accent-warm mt-1 text-lg font-bold">{idx + 1}.</span>
+                            <span className="text-muted-foreground leading-relaxed">{rec}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    ) : (
+                      <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                        {parsedData.strategicRecommendations}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
               )}
 
               {/* Competitive Implications */}
               {(parsedData?.competitiveImplications || parsedData?.goblinPrediction) && (
-                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-indigo-800 mb-3 flex items-center gap-2">
-                    🏆 Competitive Implications
-                  </h4>
-                  <p className="text-indigo-700 leading-relaxed whitespace-pre-wrap">
-                    {parsedData?.competitiveImplications || parsedData?.goblinPrediction || 'Assessing competitive positioning impacts...'}
-                  </p>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      🏆 Competitive Implications
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {parsedData?.competitiveImplications || parsedData?.goblinPrediction || 'Assessing competitive positioning impacts...'}
+                    </p>
+                  </CardContent>
+                </Card>
               )}
             </div>
           );
@@ -559,76 +655,100 @@ const SummaryView: React.FC<SummaryViewProps> = ({
             <div className="space-y-6">
               {/* Analysis */}
               {(parsedData?.analysis || fallbackSummary) && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-green-800 mb-3 flex items-center gap-2">
-                    👾 Goblin Analysis
-                  </h4>
-                  <p className="text-green-700 leading-relaxed whitespace-pre-wrap">
-                    {parsedData?.analysis || fallbackSummary || 'Analysis completed - awaiting detailed feedback from the goblin...'}
-                  </p>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      👾 Goblin Analysis
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {parsedData?.analysis || fallbackSummary || 'Analysis completed - awaiting detailed feedback from the goblin...'}
+                    </p>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Biggest Gripe */}
               {parsedData?.biggestGripe && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-red-800 mb-3 flex items-center gap-2">
-                    😤 Biggest Gripe
-                  </h4>
-                  <p className="text-red-700 leading-relaxed font-medium whitespace-pre-wrap">
-                    {parsedData.biggestGripe}
-                  </p>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      😤 Biggest Gripe
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground leading-relaxed font-medium whitespace-pre-wrap">
+                      {parsedData.biggestGripe}
+                    </p>
+                  </CardContent>
+                </Card>
               )}
 
               {/* What Makes Goblin Happy */}
               {parsedData?.whatMakesGoblinHappy && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-green-800 mb-3 flex items-center gap-2">
-                    😊 What Makes Goblin Happy
-                  </h4>
-                  <p className="text-green-700 leading-relaxed whitespace-pre-wrap">
-                    {parsedData.whatMakesGoblinHappy}
-                  </p>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      😊 What Makes Goblin Happy
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {parsedData.whatMakesGoblinHappy}
+                    </p>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Goblin Wisdom */}
               {parsedData?.goblinWisdom && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                    🧠 Goblin Wisdom
-                  </h4>
-                  <p className="text-blue-700 leading-relaxed italic whitespace-pre-wrap">
-                    {parsedData.goblinWisdom}
-                  </p>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      🧠 Goblin Wisdom
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground leading-relaxed italic whitespace-pre-wrap">
+                      {parsedData.goblinWisdom}
+                    </p>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Goblin Prediction */}
               {parsedData?.goblinPrediction && (
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-purple-800 mb-3 flex items-center gap-2">
-                    🔮 Goblin Prediction
-                  </h4>
-                  <p className="text-purple-700 leading-relaxed whitespace-pre-wrap">
-                    {parsedData.goblinPrediction}
-                  </p>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      🔮 Goblin Prediction
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {parsedData.goblinPrediction}
+                    </p>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Fallback for simple string data */}
               {!parsedData?.analysis && !parsedData?.biggestGripe && (parsedData?.wildCard || parsedData?.experiments) && (
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                    🔮 Goblin Insights
-                  </h4>
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                    {parsedData?.wildCard || 
-                     (Array.isArray(parsedData?.experiments) ? parsedData.experiments.join(", ") : parsedData?.experiments) || 
-                     'The goblin is formulating insights...'}
-                  </p>
-                </div>
+                <Card className="bg-card border-border shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-primary mb-0 flex items-center gap-2">
+                      🔮 Goblin Insights
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {parsedData?.wildCard || 
+                       (Array.isArray(parsedData?.experiments) ? parsedData.experiments.join(", ") : parsedData?.experiments) || 
+                       'The goblin is formulating insights...'}
+                    </p>
+                  </CardContent>
+                </Card>
               )}
             </div>
           );
@@ -645,25 +765,25 @@ const SummaryView: React.FC<SummaryViewProps> = ({
       {
         title: "What's Working",
         icon: CheckCircle,
-        color: 'text-emerald-600',
-        bgColor: 'bg-emerald-50 border-emerald-200',
-        borderColor: 'border-emerald-200',
+        color: 'text-primary',
+        bgColor: 'bg-card',
+        borderColor: 'border-border',
         items: matrix.whatWorks || []
       },
       {
         title: "What Needs Attention",
         icon: AlertTriangle,
-        color: 'text-amber-600',
-        bgColor: 'bg-amber-50 border-amber-200',
-        borderColor: 'border-amber-200',
+        color: 'text-primary',
+        bgColor: 'bg-card',
+        borderColor: 'border-border',
         items: matrix.whatHurts || []
       },
       {
         title: "Next Steps",
         icon: Rocket,
-        color: 'text-blue-600',
-        bgColor: 'bg-blue-50 border-blue-200',
-        borderColor: 'border-blue-200',
+        color: 'text-primary',
+        bgColor: 'bg-card',
+        borderColor: 'border-border',
         items: matrix.whatNext || []
       }
     ];
@@ -675,7 +795,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
           const items = Array.isArray(section.items) ? section.items : [];
           
           return (
-            <Card key={idx} className={`${section.bgColor} border-0 shadow-sm`}>
+            <Card key={idx} className={`${section.bgColor} ${section.borderColor} shadow-sm`}>
               <CardHeader className="pb-3">
                 <CardTitle className={`text-sm font-medium ${section.color} flex items-center gap-2`}>
                   <Icon className="w-4 h-4" />
@@ -687,8 +807,8 @@ const SummaryView: React.FC<SummaryViewProps> = ({
                   <ul className="space-y-2">
                     {items.map((item: string, itemIdx: number) => (
                       <li key={itemIdx} className="flex items-start gap-2 text-sm">
-                        <span className={`${section.color} mt-1`}>•</span>
-                        <span className="text-foreground">
+                        <span className="text-accent-warm mt-1">•</span>
+                        <span className="text-muted-foreground">
                           {item}
                         </span>
                       </li>
@@ -706,29 +826,29 @@ const SummaryView: React.FC<SummaryViewProps> = ({
   };
 
   return (
-    <div className="space-y-8">
+    <div className="max-w-5xl mx-auto space-y-8 p-6">
       {/* Header with actions */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
         <div>
-          <h2 className="text-3xl font-semibold tracking-tight text-foreground">
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
             {session?.title || 'Goblin Analysis'}
-          </h2>
+          </h1>
           <div className="flex items-center gap-3 mt-3">
             <Badge variant="outline" className={colors.badge}>
               {session?.persona_type?.charAt(0).toUpperCase() + session?.persona_type?.slice(1) || 'Analysis'}
             </Badge>
             {results?.goblin_gripe_level && (
-              <Badge variant="secondary" className="bg-green-100 text-green-700">
+              <Badge variant="secondary" className={colors.badge}>
                 {getGripeEmoji(results.goblin_gripe_level)} {results.goblin_gripe_level}
               </Badge>
             )}
           </div>
         </div>
         <div className="flex gap-3">
-          <Button onClick={onCopyLink} variant="outline" className="border-border hover:bg-accent">
+          <Button onClick={onCopyLink} variant="outline" className="border-border hover:bg-accent hover:text-accent-foreground">
             {copied ? '✅ Copied!' : 'Copy Link'}
           </Button>
-          <Button onClick={onExport} className={`${colors.primary.replace('text-', 'bg-')} hover:opacity-90 text-white`}>
+          <Button onClick={onExport} className="bg-primary hover:bg-primary/90 text-primary-foreground">
             Export Results
           </Button>
         </div>
