@@ -45,17 +45,45 @@ const SummaryView: React.FC<SummaryViewProps> = ({
     switch(personaType) {
       case 'clarity':
         return {
-          primary: 'text-professional-brown',
-          bg: 'bg-card',
-          border: 'border-border',
-          badge: 'bg-accent-warm text-professional-brown'
+          primary: 'text-green-600',
+          bg: 'bg-green-50',
+          border: 'border-green-200',
+          badge: 'bg-green-100 text-green-700'
+        };
+      case 'exec':
+        return {
+          primary: 'text-blue-600',
+          bg: 'bg-blue-50',
+          border: 'border-blue-200',
+          badge: 'bg-blue-100 text-blue-700'
+        };
+      case 'strategic':
+        return {
+          primary: 'text-purple-600',
+          bg: 'bg-purple-50',
+          border: 'border-purple-200',
+          badge: 'bg-purple-100 text-purple-700'
+        };
+      case 'mirror':
+        return {
+          primary: 'text-indigo-600',
+          bg: 'bg-indigo-50',
+          border: 'border-indigo-200',
+          badge: 'bg-indigo-100 text-indigo-700'
+        };
+      case 'mad':
+        return {
+          primary: 'text-orange-600',
+          bg: 'bg-orange-50',
+          border: 'border-orange-200',
+          badge: 'bg-orange-100 text-orange-700'
         };
       default:
         return {
-          primary: 'text-professional-brown',
-          bg: 'bg-card',
-          border: 'border-border',
-          badge: 'bg-accent-warm text-professional-brown'
+          primary: 'text-purple-600',
+          bg: 'bg-purple-50',
+          border: 'border-purple-200',
+          badge: 'bg-purple-100 text-purple-700'
         };
     }
   };
@@ -65,7 +93,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
   const renderPersonaSpecificContent = (personaData: any, personaType: string, fallbackSummary: string) => {
     console.log('🎭 Rendering persona content:', { personaType, personaData });
 
-    // Parse JSON if it's a string - handles markdown code blocks and raw JSON
+    // Enhanced JSON parsing with better error handling
     let parsedData = personaData;
     if (typeof personaData === 'string') {
       try {
@@ -73,74 +101,57 @@ const SummaryView: React.FC<SummaryViewProps> = ({
         const jsonMatch = personaData.match(/```json\s*\n?({[\s\S]*?})\s*\n?```/);
         if (jsonMatch) {
           parsedData = JSON.parse(jsonMatch[1]);
+          console.log('✅ Successfully parsed JSON from markdown block');
         } else {
           // Try parsing the string directly
           parsedData = JSON.parse(personaData);
+          console.log('✅ Successfully parsed JSON string');
         }
       } catch (e) {
-        console.warn('Failed to parse persona data as JSON:', e);
+        console.warn('⚠️ Failed to parse persona data as JSON:', e);
         parsedData = { analysis: personaData };
       }
     }
 
-    // Special handling for executive persona nested JSON structure
-    if (personaType === 'exec' && parsedData?.analysis) {
-      try {
-        // Handle case where analysis is a string containing JSON
-        if (typeof parsedData.analysis === 'string') {
-          parsedData.analysis = JSON.parse(parsedData.analysis);
-          console.log('🎯 Successfully parsed executive nested JSON from string:', parsedData.analysis);
-        }
-        
-        // Now extract the specific fields from the parsed analysis object
-        if (typeof parsedData.analysis === 'object' && parsedData.analysis !== null) {
-          const analysis = parsedData.analysis;
-          
-          // Move nested fields to top level for easier rendering
-          if (!parsedData.executiveSummary && analysis.executiveSummary) {
-            parsedData.executiveSummary = analysis.executiveSummary;
-          }
-          if (!parsedData.businessRisks && analysis.businessRisks) {
-            parsedData.businessRisks = analysis.businessRisks;
-          }
-          if (!parsedData.roiImpact && analysis.roiImpact) {
-            parsedData.roiImpact = analysis.roiImpact;
-          }
-          if (!parsedData.stakeholderConcerns && analysis.stakeholderConcerns) {
-            parsedData.stakeholderConcerns = analysis.stakeholderConcerns;
-          }
-          if (!parsedData.strategicRecommendations && analysis.strategicRecommendations) {
-            parsedData.strategicRecommendations = analysis.strategicRecommendations;
-          }
-          if (!parsedData.competitiveImplications && analysis.competitiveImplications) {
-            parsedData.competitiveImplications = analysis.competitiveImplications;
-          }
-          
-          // Use the first available text field as the main analysis if no specific summary exists
-          if (!parsedData.executiveSummary && !parsedData.analysis && typeof analysis === 'string') {
-            parsedData.analysis = analysis;
-          }
-          
-          console.log('🎯 Executive persona fields extracted:', {
-            executiveSummary: !!parsedData.executiveSummary,
-            businessRisks: !!parsedData.businessRisks,
-            roiImpact: !!parsedData.roiImpact,
-            stakeholderConcerns: !!parsedData.stakeholderConcerns,
-            strategicRecommendations: !!parsedData.strategicRecommendations,
-            competitiveImplications: !!parsedData.competitiveImplications
-          });
-        }
-      } catch (e) {
-        console.warn('Failed to parse executive persona nested analysis JSON:', e);
-        // Keep the original analysis as a fallback
-        if (typeof parsedData.analysis === 'object') {
-          // Convert object to string to prevent React rendering errors
-          parsedData.analysis = JSON.stringify(parsedData.analysis, null, 2);
-        }
+    // Special handling for executive persona - extract nested analysis fields
+    if (personaType === 'exec' && parsedData?.analysis && typeof parsedData.analysis === 'object') {
+      console.log('🔄 Processing executive nested data structure');
+      const analysisData = parsedData.analysis;
+      
+      // Extract executive-specific fields to top level if they don't exist
+      if (!parsedData.executiveSummary && analysisData.executiveSummary) {
+        parsedData.executiveSummary = analysisData.executiveSummary;
       }
+      if (!parsedData.businessRisks && analysisData.businessRisks) {
+        parsedData.businessRisks = analysisData.businessRisks;
+      }
+      if (!parsedData.roiImpact && analysisData.roiImpact) {
+        parsedData.roiImpact = analysisData.roiImpact;
+      }
+      if (!parsedData.stakeholderConcerns && analysisData.stakeholderConcerns) {
+        parsedData.stakeholderConcerns = analysisData.stakeholderConcerns;
+      }
+      if (!parsedData.strategicRecommendations && analysisData.strategicRecommendations) {
+        parsedData.strategicRecommendations = analysisData.strategicRecommendations;
+      }
+      if (!parsedData.competitiveImplications && analysisData.competitiveImplications) {
+        parsedData.competitiveImplications = analysisData.competitiveImplications;
+      }
+      
+      console.log('✅ Successfully extracted executive persona data');
     }
 
-    // Handle different persona types with their specific fields
+    // Convert any remaining objects to strings to prevent React rendering errors
+    Object.keys(parsedData).forEach(key => {
+      if (typeof parsedData[key] === 'object' && parsedData[key] !== null && !Array.isArray(parsedData[key])) {
+        try {
+          parsedData[key] = JSON.stringify(parsedData[key], null, 2);
+        } catch (e) {
+          parsedData[key] = String(parsedData[key]);
+        }
+      }
+    });
+
     const getPersonaContent = () => {
       switch(personaType) {
         case 'mirror':
@@ -445,31 +456,37 @@ const SummaryView: React.FC<SummaryViewProps> = ({
               )}
 
               {/* Stakeholder Concerns */}
-              {parsedData?.stakeholderConcerns && (
+              {(parsedData?.stakeholderConcerns || parsedData?.teamAlignment) && (
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                   <h4 className="text-lg font-semibold text-orange-800 mb-3 flex items-center gap-2">
                     👥 Stakeholder Concerns
                   </h4>
                   <p className="text-orange-700 leading-relaxed whitespace-pre-wrap">
-                    {parsedData.stakeholderConcerns}
+                    {parsedData?.stakeholderConcerns || parsedData?.teamAlignment || 'Identifying stakeholder alignment issues...'}
                   </p>
                 </div>
               )}
 
               {/* Strategic Recommendations */}
-              {parsedData?.strategicRecommendations && Array.isArray(parsedData.strategicRecommendations) && (
+              {parsedData?.strategicRecommendations && (
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                   <h4 className="text-lg font-semibold text-purple-800 mb-3 flex items-center gap-2">
                     📋 Strategic Recommendations
                   </h4>
-                  <ul className="space-y-2">
-                    {parsedData.strategicRecommendations.map((rec: string, idx: number) => (
-                      <li key={idx} className="flex items-start gap-3">
-                        <span className="text-purple-600 mt-1 font-bold">{idx + 1}.</span>
-                        <span className="text-purple-700 leading-relaxed">{rec}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  {Array.isArray(parsedData.strategicRecommendations) ? (
+                    <ol className="space-y-2">
+                      {parsedData.strategicRecommendations.map((rec: string, idx: number) => (
+                        <li key={idx} className="flex items-start gap-3">
+                          <span className="text-purple-600 mt-1 font-bold">{idx + 1}.</span>
+                          <span className="text-purple-700 leading-relaxed">{rec}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <p className="text-purple-700 leading-relaxed whitespace-pre-wrap">
+                      {parsedData.strategicRecommendations}
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -602,7 +619,8 @@ const SummaryView: React.FC<SummaryViewProps> = ({
     ];
 
     return (
-      <div className="grid gap-6 md:grid-cols-3">{sections.map((section, idx) => {
+      <div className="grid gap-6 md:grid-cols-3">
+        {sections.map((section, idx) => {
           const Icon = section.icon;
           const items = Array.isArray(section.items) ? section.items : [];
           
@@ -642,11 +660,15 @@ const SummaryView: React.FC<SummaryViewProps> = ({
       {/* Header with actions */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
         <div>
-          <h2 className="text-3xl font-semibold tracking-tight text-foreground">{session?.title || 'Goblin Analysis'}</h2>
+          <h2 className="text-3xl font-semibold tracking-tight text-foreground">
+            {session?.title || 'Goblin Analysis'}
+          </h2>
           <div className="flex items-center gap-3 mt-3">
-            <Badge variant="outline" className={colors.badge}>{session?.persona_type}</Badge>
+            <Badge variant="outline" className={colors.badge}>
+              {session?.persona_type?.charAt(0).toUpperCase() + session?.persona_type?.slice(1) || 'Analysis'}
+            </Badge>
             {results?.goblin_gripe_level && (
-              <Badge variant="secondary" className={colors.badge}>
+              <Badge variant="secondary" className="bg-green-100 text-green-700">
                 {getGripeEmoji(results.goblin_gripe_level)} {results.goblin_gripe_level}
               </Badge>
             )}
@@ -654,21 +676,26 @@ const SummaryView: React.FC<SummaryViewProps> = ({
         </div>
         <div className="flex gap-3">
           <Button onClick={onCopyLink} variant="outline" className="border-border hover:bg-accent">
-            {copied ? 'Copied!' : 'Copy Link'}
+            {copied ? '✅ Copied!' : 'Copy Link'}
           </Button>
-          <Button onClick={onExport} className="bg-professional-brown hover:bg-professional-brown/90">
+          <Button onClick={onExport} className={`${colors.primary.replace('text-', 'bg-')} hover:opacity-90 text-white`}>
             Export Results
           </Button>
         </div>
       </div>
 
       {/* Goblin Feedback Section - Always show if we have session data */}
-      <Card className="border-0 shadow-sm bg-card">
+      <Card className={`border-0 shadow-sm ${colors.bg}`}>
         <CardHeader className="pb-4">
           <CardTitle className={`flex items-center gap-3 text-xl font-semibold ${colors.primary}`}>
-            👾 Goblin Feedback
-            {results?.goblin_gripe_level && (
-              <Badge variant="outline" className={colors.badge}>
+            {session?.persona_type === 'clarity' ? '👾 Goblin Feedback' :
+             session?.persona_type === 'exec' ? '💼 Executive Analysis' :
+             session?.persona_type === 'strategic' ? '🎯 Strategic Analysis' :
+             session?.persona_type === 'mirror' ? '🪞 Mirror Insights' :
+             session?.persona_type === 'mad' ? '🧪 Mad Science Results' :
+             '👾 Analysis Results'}
+            {results?.goblin_gripe_level && session?.persona_type === 'clarity' && (
+              <Badge variant="outline" className="bg-green-100 text-green-700">
                 {getGripeEmoji(results.goblin_gripe_level)} {results.goblin_gripe_level}
               </Badge>
             )}
@@ -687,7 +714,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
             {session?.persona_type === 'mad' ? '🧪 Crazy Experiments' :
              session?.persona_type === 'mirror' ? '💭 Empathy Reflections' :
              session?.persona_type === 'strategic' ? '📊 Strategic Recommendations' :
-             session?.persona_type === 'exec' ? '💼 Executive Recommendations' :
+             session?.persona_type === 'exec' ? '💼 Executive Action Items' :
              '🚀 Recommendations'}
           </CardTitle>
         </CardHeader>
@@ -706,7 +733,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
                 recommendations = personaData?.recommendations;
                 break;
               case 'exec':
-                recommendations = personaData?.strategicRecommendations || personaData?.businessRisks;
+                recommendations = personaData?.strategicRecommendations || personaData?.actionItems;
                 break;
               default:
                 recommendations = personaData?.recommendations;
@@ -737,7 +764,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
                   {session?.persona_type === 'mad' ? 'Mad scientist is brewing up wild experiments...' :
                    session?.persona_type === 'mirror' ? 'Mirror is reflecting on empathetic insights...' :
                    session?.persona_type === 'strategic' ? 'Strategic analyst is formulating recommendations...' :
-                   session?.persona_type === 'exec' ? 'Executive perspective is being prepared...' :
+                   session?.persona_type === 'exec' ? 'Executive action items are being prioritized...' :
                    'The goblin is crafting personalized recommendations...'}
                 </p>
               );
