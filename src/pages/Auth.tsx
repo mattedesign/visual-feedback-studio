@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { AlertTriangle, ArrowRight, Users, Sparkles } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Users, Sparkles, UserPlus, LogIn } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -279,7 +279,8 @@ const Auth = () => {
             </Button>
           </div>
 
-          <div className="mt-4 text-center">
+          {/* Desktop toggle - simple text button */}
+          <div className="mt-4 text-center hidden md:block">
             <button
               onClick={() => {
                 setIsSignUp(!isSignUp);
@@ -294,6 +295,32 @@ const Auth = () => {
                 : "Don't have an account? Sign up"
               }
             </button>
+          </div>
+
+          {/* Mobile toggle - prominent button */}
+          <div className="mt-6 md:hidden">
+            <Button
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setAuthError('');
+                setFullName('');
+                setSelectedRole('');
+              }}
+              variant="outline"
+              className="w-full h-12 text-base font-medium flex items-center justify-center gap-2"
+            >
+              {isSignUp ? (
+                <>
+                  <LogIn className="w-5 h-5" />
+                  Sign In Instead
+                </>
+              ) : (
+                <>
+                  <UserPlus className="w-5 h-5" />
+                  Create Account
+                </>
+              )}
+            </Button>
           </div>
         </CardContent>
         </Card>
