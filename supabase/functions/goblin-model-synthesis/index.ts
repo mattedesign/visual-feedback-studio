@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 
 // ============================================================================
 // TYPES & CONFIGURATION
@@ -6,6 +7,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 interface SynthesisRequest {
   sessionId: string;
+  userId: string;
   persona: string;
   analysisData: any;
   goal: string;
@@ -21,6 +23,7 @@ interface SynthesisResponse {
   priorityMatrix: PriorityMatrix;
   annotations: Annotation[];
   gripeLevel: string | null;
+  maturityData?: any; // ✅ Optional maturity data
   metadata: {
     synthesisVersion: string;
     model: string;
@@ -84,6 +87,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Supabase client for maturity score calculations
+const supabaseClient = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+);
+
 console.log('🔬 Goblin Model Synthesis - Combining and structuring analysis results');
 
 // ============================================================================
@@ -107,6 +116,20 @@ serve(async (req) => {
 
     const synthesizedResults = await synthesizeResults(requestData);
 
+    // ✅ MATURITY SCORE CALCULATION
+    let maturityData = null;
+    try {
+      maturityData = await calculateMaturityScore(
+        requestData.sessionId,
+        requestData.userId,
+        synthesizedResults
+      );
+      console.log('✅ Maturity score calculated:', maturityData?.overallScore);
+    } catch (maturityError) {
+      console.error('⚠️ Maturity score calculation failed:', maturityError);
+      // Don't fail the entire request if maturity calculation fails
+    }
+
     const response: SynthesisResponse = {
       success: true,
       sessionId: requestData.sessionId,
@@ -116,6 +139,7 @@ serve(async (req) => {
       priorityMatrix: synthesizedResults.priorityMatrix,
       annotations: synthesizedResults.annotations,
       gripeLevel: synthesizedResults.gripeLevel,
+      maturityData: maturityData, // ✅ Include maturity data in response
       metadata: {
         synthesisVersion: SYNTHESIS_CONFIG.version,
         model: SYNTHESIS_CONFIG.model,
@@ -666,4 +690,411 @@ class AnnotationGenerator {
       priority: index < 2 ? 'high' : 'medium'
     };
   }
+}
+
+// ============================================================================
+// MATURITY SCORE CALCULATION SYSTEM
+// ============================================================================
+
+async function calculateMaturityScore(sessionId: string, userId: string, synthesizedResults: any) {
+  console.log('🎯 Starting maturity score calculation for user:', userId.substring(0, 8));
+  
+  try {
+    // Calculate dimension scores based on feedback patterns
+    const dimensionScores = calculateDimensionScores(synthesizedResults);
+    const overallScore = Object.values(dimensionScores).reduce((sum: number, score: number) => sum + score, 0);
+    
+    // Get previous score for comparison
+    const { data: previousScores } = await supabaseClient
+      .from('goblin_maturity_scores')
+      .select('overall_score')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    const previousScore = previousScores?.[0]?.overall_score || null;
+
+    // Calculate percentile
+    const percentile = await calculatePercentile(userId, overallScore);
+
+    // Determine maturity level
+    const maturityLevel = getMaturityLevel(overallScore);
+
+    // Calculate streak
+    const streak = await calculateStreak(userId);
+
+    // Save maturity score
+    const { data: scoreData, error: scoreError } = await supabaseClient
+      .from('goblin_maturity_scores')
+      .insert({
+        user_id: userId,
+        session_id: sessionId,
+        overall_score: overallScore,
+        previous_score: previousScore,
+        score_change: previousScore ? overallScore - previousScore : 0,
+        usability_score: dimensionScores.usability,
+        accessibility_score: dimensionScores.accessibility,
+        performance_score: dimensionScores.performance,
+        clarity_score: dimensionScores.clarity,
+        delight_score: dimensionScores.delight,
+        percentile_rank: percentile,
+        maturity_level: maturityLevel.level,
+        streak_days: streak
+      })
+      .select()
+      .single();
+
+    if (scoreError) {
+      console.error('Error saving maturity score:', scoreError);
+      throw scoreError;
+    }
+
+    // Generate improvement roadmap
+    const roadmapItems = await generateRoadmap(userId, dimensionScores);
+
+    // Save roadmap items
+    if (roadmapItems.length > 0) {
+      const { error: roadmapError } = await supabaseClient
+        .from('goblin_roadmap_items')
+        .insert(
+          roadmapItems.map((item, index) => ({
+            user_id: userId,
+            priority: index + 1,
+            dimension: item.dimension,
+            title: item.title,
+            description: item.description,
+            estimated_impact: item.estimated_impact,
+            difficulty: item.difficulty
+          }))
+        );
+        
+      if (roadmapError) {
+        console.error('Error saving roadmap:', roadmapError);
+      }
+    }
+
+    // Check for achievements
+    const achievements = await checkAchievements(userId, overallScore, previousScore);
+
+    // Save achievements
+    if (achievements.length > 0) {
+      const { error: achievementError } = await supabaseClient
+        .from('goblin_achievements')
+        .insert(
+          achievements.map(achievement => ({
+            user_id: userId,
+            ...achievement
+          }))
+        );
+        
+      if (achievementError) {
+        console.error('Error saving achievements:', achievementError);
+      }
+    }
+
+    return {
+      overallScore,
+      previousScore,
+      scoreChange: previousScore ? overallScore - previousScore : 0,
+      percentileRank: percentile,
+      maturityLevel,
+      newAchievements: achievements,
+      streakDays: streak,
+      dimensionScores
+    };
+
+  } catch (error) {
+    console.error('Error in maturity score calculation:', error);
+    throw error;
+  }
+}
+
+function calculateDimensionScores(synthesizedResults: any) {
+  const feedback = synthesizedResults.personaFeedback;
+  const gripeLevel = synthesizedResults.gripeLevel;
+  
+  // Base scores from gripe level
+  const baseScore = gripeLevel === 'low' ? 15 : gripeLevel === 'medium' ? 10 : 5;
+  
+  return {
+    usability: calculateUsabilityScore(feedback, baseScore),
+    accessibility: calculateAccessibilityScore(feedback, baseScore),
+    performance: calculatePerformanceScore(feedback, baseScore),
+    clarity: calculateClarityScore(feedback, baseScore),
+    delight: calculateDelightScore(feedback, baseScore)
+  };
+}
+
+function calculateUsabilityScore(feedback: any, base: number): number {
+  let score = base;
+  const feedbackText = JSON.stringify(feedback).toLowerCase();
+  
+  if (feedbackText.includes('intuitive')) score += 2;
+  if (feedbackText.includes('confusing')) score -= 3;
+  if (feedbackText.includes('easy to use')) score += 3;
+  if (feedbackText.includes('friction')) score -= 2;
+  if (feedbackText.includes('clear navigation')) score += 2;
+  if (feedbackText.includes('lost')) score -= 3;
+  
+  return Math.max(0, Math.min(20, score));
+}
+
+function calculateAccessibilityScore(feedback: any, base: number): number {
+  let score = base;
+  const feedbackText = JSON.stringify(feedback).toLowerCase();
+  
+  if (feedbackText.includes('contrast')) score -= 3;
+  if (feedbackText.includes('accessible')) score += 3;
+  if (feedbackText.includes('screen reader')) score += 2;
+  if (feedbackText.includes('color blind')) score += 1;
+  if (feedbackText.includes('touch target')) score -= 2;
+  if (feedbackText.includes('keyboard')) score += 2;
+  
+  return Math.max(0, Math.min(20, score));
+}
+
+function calculatePerformanceScore(feedback: any, base: number): number {
+  let score = base;
+  const feedbackText = JSON.stringify(feedback).toLowerCase();
+  
+  if (feedbackText.includes('slow')) score -= 4;
+  if (feedbackText.includes('loading')) score -= 2;
+  if (feedbackText.includes('responsive')) score += 3;
+  if (feedbackText.includes('snappy')) score += 3;
+  if (feedbackText.includes('lag')) score -= 3;
+  if (feedbackText.includes('instant')) score += 2;
+  
+  return Math.max(0, Math.min(20, score));
+}
+
+function calculateClarityScore(feedback: any, base: number): number {
+  let score = base;
+  
+  // Clarity is the goblin's specialty!
+  if (feedback.clarity?.biggestGripe?.includes('unclear')) score -= 4;
+  if (feedback.clarity?.biggestGripe?.includes('obvious')) score += 3;
+  if (feedback.clarity?.recommendations?.some((i: string) => i.includes('label'))) score -= 2;
+  if (feedback.clarity?.whatMakesGoblinHappy?.includes('clear')) score += 3;
+  
+  return Math.max(0, Math.min(20, score));
+}
+
+function calculateDelightScore(feedback: any, base: number): number {
+  let score = base;
+  const feedbackText = JSON.stringify(feedback).toLowerCase();
+  
+  if (feedbackText.includes('delight')) score += 4;
+  if (feedbackText.includes('boring')) score -= 3;
+  if (feedbackText.includes('engaging')) score += 3;
+  if (feedbackText.includes('fun')) score += 2;
+  if (feedbackText.includes('personality')) score += 2;
+  if (feedbackText.includes('generic')) score -= 2;
+  
+  return Math.max(0, Math.min(20, score));
+}
+
+function getMaturityLevel(score: number) {
+  const levels = [
+    { level: 'Novice', minScore: 0, badge: '🌱', description: 'Just starting your UX journey' },
+    { level: 'Developing', minScore: 20, badge: '🌿', description: 'Building foundational skills' },
+    { level: 'Competent', minScore: 40, badge: '🌳', description: 'Solid UX understanding' },
+    { level: 'Advanced', minScore: 60, badge: '🎯', description: 'Sophisticated design thinking' },
+    { level: 'Expert', minScore: 80, badge: '🏆', description: 'UX mastery achieved' }
+  ];
+  
+  return levels
+    .slice()
+    .reverse()
+    .find(level => score >= level.minScore) || levels[0];
+}
+
+async function calculatePercentile(userId: string, score: number): Promise<number> {
+  const { data, error } = await supabaseClient
+    .from('goblin_maturity_scores')
+    .select('overall_score')
+    .order('overall_score', { ascending: true });
+    
+  if (!data || error || data.length === 0) return 50; // Default to median
+  
+  const scores = data.map(d => d.overall_score);
+  const position = scores.filter(s => s < score).length;
+  
+  return Math.round((position / scores.length) * 100);
+}
+
+async function generateRoadmap(userId: string, currentScores: any): Promise<any[]> {
+  const roadmapItems = [];
+  
+  // Find weakest dimensions
+  const dimensions = Object.entries(currentScores)
+    .sort(([, a]: any, [, b]: any) => a - b)
+    .slice(0, 3); // Focus on top 3 weakest areas
+  
+  for (const [dimension, score] of dimensions) {
+    const improvements = getImprovementsForDimension(dimension, score);
+    roadmapItems.push(...improvements);
+  }
+  
+  // Sort by impact and difficulty
+  return roadmapItems
+    .sort((a, b) => {
+      // Prioritize high impact, low difficulty
+      const scoreA = a.estimated_impact / (a.difficulty === 'Quick Win' ? 1 : a.difficulty === 'Moderate' ? 2 : 3);
+      const scoreB = b.estimated_impact / (b.difficulty === 'Quick Win' ? 1 : b.difficulty === 'Moderate' ? 2 : 3);
+      return scoreB - scoreA;
+    })
+    .slice(0, 5); // Top 5 recommendations
+}
+
+function getImprovementsForDimension(dimension: string, currentScore: any): any[] {
+  const improvements = {
+    usability: [
+      {
+        title: 'Simplify primary navigation',
+        description: 'Reduce cognitive load by limiting main nav to 5-7 items',
+        estimated_impact: 3,
+        difficulty: 'Moderate'
+      },
+      {
+        title: 'Add clear CTAs above the fold',
+        description: 'Users should immediately know what action to take',
+        estimated_impact: 4,
+        difficulty: 'Quick Win'
+      }
+    ],
+    accessibility: [
+      {
+        title: 'Fix color contrast issues',
+        description: 'Ensure all text meets WCAG AA standards (4.5:1 ratio)',
+        estimated_impact: 5,
+        difficulty: 'Quick Win'
+      },
+      {
+        title: 'Add keyboard navigation',
+        description: 'All interactive elements should be keyboard accessible',
+        estimated_impact: 4,
+        difficulty: 'Moderate'
+      }
+    ],
+    performance: [
+      {
+        title: 'Implement skeleton loading states',
+        description: 'Show users that content is loading with visual feedback',
+        estimated_impact: 3,
+        difficulty: 'Quick Win'
+      },
+      {
+        title: 'Optimize image loading',
+        description: 'Use lazy loading and responsive images',
+        estimated_impact: 4,
+        difficulty: 'Moderate'
+      }
+    ],
+    clarity: [
+      {
+        title: 'Rewrite error messages',
+        description: 'Make errors human-friendly and actionable',
+        estimated_impact: 4,
+        difficulty: 'Quick Win'
+      },
+      {
+        title: 'Add contextual help text',
+        description: 'Guide users with inline hints and tooltips',
+        estimated_impact: 3,
+        difficulty: 'Quick Win'
+      }
+    ],
+    delight: [
+      {
+        title: 'Add micro-interactions',
+        description: 'Small animations on hover and click for feedback',
+        estimated_impact: 3,
+        difficulty: 'Moderate'
+      },
+      {
+        title: 'Implement success celebrations',
+        description: 'Celebrate user achievements with delightful animations',
+        estimated_impact: 2,
+        difficulty: 'Quick Win'
+      }
+    ]
+  };
+  
+  return improvements[dimension]?.map(item => ({
+    ...item,
+    dimension,
+    priority: 0 // Will be set later
+  })) || [];
+}
+
+async function checkAchievements(userId: string, newScore: number, previousScore: number): Promise<any[]> {
+  const achievements = [];
+  
+  // First analysis
+  if (!previousScore) {
+    achievements.push({
+      achievement_type: 'milestone',
+      achievement_name: 'UX Journey Begins',
+      achievement_description: 'Completed your first design analysis',
+      badge_emoji: '🚀'
+    });
+  }
+  
+  // Score milestones
+  const milestones = [25, 50, 75, 90];
+  for (const milestone of milestones) {
+    if (previousScore < milestone && newScore >= milestone) {
+      achievements.push({
+        achievement_type: 'score',
+        achievement_name: `${milestone} Club`,
+        achievement_description: `Achieved a maturity score of ${milestone}+`,
+        badge_emoji: milestone >= 75 ? '🏆' : '⭐'
+      });
+    }
+  }
+  
+  // Improvement achievements
+  if (previousScore && newScore > previousScore + 10) {
+    achievements.push({
+      achievement_type: 'improvement',
+      achievement_name: 'Rapid Learner',
+      achievement_description: 'Improved your score by 10+ points',
+      badge_emoji: '📈'
+    });
+  }
+  
+  return achievements;
+}
+
+async function calculateStreak(userId: string): Promise<number> {
+  const { data } = await supabaseClient
+    .from('goblin_maturity_scores')
+    .select('created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(30);
+
+  if (!data || data.length === 0) return 0;
+
+  let streak = 1;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  for (let i = 1; i < data.length; i++) {
+    const current = new Date(data[i].created_at);
+    const previous = new Date(data[i - 1].created_at);
+    
+    current.setHours(0, 0, 0, 0);
+    previous.setHours(0, 0, 0, 0);
+    
+    const dayDiff = (previous.getTime() - current.getTime()) / (1000 * 60 * 60 * 24);
+    
+    if (dayDiff === 1) {
+      streak++;
+    } else {
+      break;
+    }
+  }
+
+  return streak;
 }
