@@ -979,6 +979,45 @@ export type Database = {
         }
         Relationships: []
       }
+      products: {
+        Row: {
+          analyses_limit: number
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          price_monthly: number | null
+          price_yearly: number | null
+          stripe_product_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          analyses_limit?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          price_monthly?: number | null
+          price_yearly?: number | null
+          stripe_product_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          analyses_limit?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_monthly?: number | null
+          price_yearly?: number | null
+          stripe_product_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null

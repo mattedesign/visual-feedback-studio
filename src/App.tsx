@@ -17,6 +17,7 @@ import HybridEngineTest from "./pages/HybridEngineTest";
 import History from "./pages/History";
 import Settings from "./pages/Settings";
 import Help from "./pages/Help";
+import { AdminPanel } from "./pages/AdminPanel";
 import GoblinStudio from "./pages/goblin/GoblinStudio";
 import GoblinResults from "./pages/goblin/GoblinResults";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
@@ -74,6 +75,7 @@ const App = () => {
                             <Route path="history" element={<History />} />
                             <Route path="settings" element={<Settings />} />
                             <Route path="help" element={<Help />} />
+                            <Route path="admin" element={<AdminPanel />} />
                             <Route path="upgrade-success" element={<UpgradeSuccess />} />
                             <Route path="vector-test" element={<VectorTest />} />
                             <Route path="hybrid-engine-test" element={<HybridEngineTest />} />
