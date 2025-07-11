@@ -363,7 +363,7 @@ class PersonaDataMapper {
       strategic: this.mapStrategicData.bind(this),
       mirror: this.mapMirrorData.bind(this),
       mad: this.mapMadData.bind(this),
-      executive: this.mapExecutiveData.bind(this)
+      exec: this.mapExecutiveData.bind(this)
     };
 
     return mappers[persona as keyof typeof mappers] || this.mapDefaultData.bind(this);
