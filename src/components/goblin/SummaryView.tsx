@@ -84,12 +84,59 @@ const SummaryView: React.FC<SummaryViewProps> = ({
     }
 
     // Special handling for executive persona nested JSON structure
-    if (personaType === 'exec' && parsedData?.analysis && typeof parsedData.analysis === 'string') {
+    if (personaType === 'exec' && parsedData?.analysis) {
       try {
-        parsedData.analysis = JSON.parse(parsedData.analysis);
-        console.log('🎯 Successfully parsed executive nested JSON:', parsedData.analysis);
+        // Handle case where analysis is a string containing JSON
+        if (typeof parsedData.analysis === 'string') {
+          parsedData.analysis = JSON.parse(parsedData.analysis);
+          console.log('🎯 Successfully parsed executive nested JSON from string:', parsedData.analysis);
+        }
+        
+        // Now extract the specific fields from the parsed analysis object
+        if (typeof parsedData.analysis === 'object' && parsedData.analysis !== null) {
+          const analysis = parsedData.analysis;
+          
+          // Move nested fields to top level for easier rendering
+          if (!parsedData.executiveSummary && analysis.executiveSummary) {
+            parsedData.executiveSummary = analysis.executiveSummary;
+          }
+          if (!parsedData.businessRisks && analysis.businessRisks) {
+            parsedData.businessRisks = analysis.businessRisks;
+          }
+          if (!parsedData.roiImpact && analysis.roiImpact) {
+            parsedData.roiImpact = analysis.roiImpact;
+          }
+          if (!parsedData.stakeholderConcerns && analysis.stakeholderConcerns) {
+            parsedData.stakeholderConcerns = analysis.stakeholderConcerns;
+          }
+          if (!parsedData.strategicRecommendations && analysis.strategicRecommendations) {
+            parsedData.strategicRecommendations = analysis.strategicRecommendations;
+          }
+          if (!parsedData.competitiveImplications && analysis.competitiveImplications) {
+            parsedData.competitiveImplications = analysis.competitiveImplications;
+          }
+          
+          // Use the first available text field as the main analysis if no specific summary exists
+          if (!parsedData.executiveSummary && !parsedData.analysis && typeof analysis === 'string') {
+            parsedData.analysis = analysis;
+          }
+          
+          console.log('🎯 Executive persona fields extracted:', {
+            executiveSummary: !!parsedData.executiveSummary,
+            businessRisks: !!parsedData.businessRisks,
+            roiImpact: !!parsedData.roiImpact,
+            stakeholderConcerns: !!parsedData.stakeholderConcerns,
+            strategicRecommendations: !!parsedData.strategicRecommendations,
+            competitiveImplications: !!parsedData.competitiveImplications
+          });
+        }
       } catch (e) {
         console.warn('Failed to parse executive persona nested analysis JSON:', e);
+        // Keep the original analysis as a fallback
+        if (typeof parsedData.analysis === 'object') {
+          // Convert object to string to prevent React rendering errors
+          parsedData.analysis = JSON.stringify(parsedData.analysis, null, 2);
+        }
       }
     }
 
