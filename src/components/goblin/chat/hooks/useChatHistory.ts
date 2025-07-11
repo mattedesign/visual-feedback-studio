@@ -27,14 +27,59 @@ export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) =>
     return greetings[persona] || greetings.clarity;
   };
 
+  // Extract context from analysis for enhanced greeting
+  const getAnalysisContext = () => {
+    if (!personaData) return null;
+
+    const analysisText = safeExtractAnalysisContent(personaData);
+    let context = '';
+    
+    // Look for screen references
+    const screenMentions = [];
+    if (analysisText.includes('Screen 1')) screenMentions.push('Screen 1');
+    if (analysisText.includes('Screen 2')) screenMentions.push('Screen 2');
+    if (analysisText.includes('Screen 3')) screenMentions.push('Screen 3');
+    
+    // Look for UI elements mentioned
+    const uiElements = [];
+    const commonElements = ['checkout', 'dashboard', 'form', 'navigation', 'button', 'signup', 'login', 'onboarding'];
+    commonElements.forEach(element => {
+      if (analysisText.toLowerCase().includes(element)) {
+        if (!uiElements.includes(element)) {
+          uiElements.push(element);
+        }
+      }
+    });
+
+    if (screenMentions.length > 0) {
+      context += `I've analyzed your ${screenMentions.join(' and ')}`;
+    } else if (uiElements.length > 0) {
+      context += `I've analyzed your ${uiElements.slice(0, 2).join(' and ')} interface`;
+    } else {
+      context += `I've analyzed your uploaded screens`;
+    }
+
+    return context;
+  };
+
   const createGreetingMessage = (persona: string): ChatMessage => {
+    const baseGreeting = getPersonaGreeting(persona);
+    const analysisContext = getAnalysisContext();
+    
+    // Enhanced greeting with context about what was analyzed
+    let contextualGreeting = baseGreeting;
+    
+    if (analysisContext) {
+      contextualGreeting += `\n\n💡 *${analysisContext} and have insights ready. Feel free to ask about specific screens, UI elements, or business impact!*`;
+    }
+
     const greetingMessage: ChatMessage = {
       id: 'greeting_' + Date.now(),
       role: 'clarity',
-      content: getPersonaGreeting(persona),
+      content: contextualGreeting,
       timestamp: new Date(),
       conversation_stage: 'greeting',
-      quality_tags: ['friendly', 'helpful']
+      quality_tags: ['friendly', 'helpful', 'contextual']
     };
 
     trackChatMessage(true, greetingMessage);
@@ -133,7 +178,7 @@ export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) =>
 
       if (error) {
         console.warn('⚠️ Failed to load conversation history:', error);
-        // Fall back to greeting message
+        // Fall back to enhanced greeting message
         const greetingMessage = createGreetingMessage(session?.persona_type || 'clarity');
         setMessages([greetingMessage]);
         
@@ -173,9 +218,9 @@ export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) =>
             })
           }));
 
-        // If no actual chat messages exist (only initial was filtered out), start with greeting
+        // If no actual chat messages exist (only initial was filtered out), start with enhanced greeting
         if (chatMessages.length === 0) {
-          console.log('📝 No chat messages found, creating greeting message');
+          console.log('📝 No chat messages found, creating enhanced greeting message');
           const greetingMessage = createGreetingMessage(session?.persona_type || 'clarity');
           setMessages([greetingMessage]);
         } else {
@@ -192,8 +237,8 @@ export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) =>
           }
         }
       } else {
-        // No history found, create greeting message
-        console.log('📝 No conversation history found, creating greeting message');
+        // No history found, create enhanced greeting message
+        console.log('📝 No conversation history found, creating enhanced greeting message');
         const greetingMessage = createGreetingMessage(session?.persona_type || 'clarity');
         setMessages([greetingMessage]);
         
@@ -216,7 +261,7 @@ export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) =>
         });
       }
       
-      // Fall back to greeting message
+      // Fall back to enhanced greeting message
       const greetingMessage = createGreetingMessage(session?.persona_type || 'clarity');
       setMessages([greetingMessage]);
     }
@@ -257,7 +302,7 @@ export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) =>
             })
           }));
 
-        // If only initial messages were filtered out, add greeting
+        // If only initial messages were filtered out, add enhanced greeting
         if (chatMessages.length === 0) {
           const greetingMessage = createGreetingMessage(session?.persona_type || 'clarity');
           setMessages([greetingMessage]);
@@ -267,14 +312,14 @@ export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) =>
         }
         return true;
       } else {
-        // No messages or error - fall back to greeting
+        // No messages or error - fall back to enhanced greeting
         const greetingMessage = createGreetingMessage(session?.persona_type || 'clarity');
         setMessages([greetingMessage]);
         return false;
       }
     } catch (error) {
       console.error('❌ Failed to reload messages:', error);
-      // Fall back to greeting on error
+      // Fall back to enhanced greeting on error
       const greetingMessage = createGreetingMessage(session?.persona_type || 'clarity');
       setMessages([greetingMessage]);
       return false;
