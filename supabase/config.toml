@@ -71,3 +71,9 @@ verify_jwt = true
 
 [functions.goblin-model-gpt-analyzer]
 verify_jwt = true
+
+[functions.goblin-backfill-maturity-scores]
+verify_jwt = true
+
+[functions.goblin-maturity-monitor]
+verify_jwt = false

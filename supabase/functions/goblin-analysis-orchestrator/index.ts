@@ -495,11 +495,12 @@ serve(async (req) => {
       }
     }
 
-    // Step 5: Synthesize results
+    // Step 5: Synthesize results (now includes maturity score calculation)
     const synthesisResult = await withRetry(async () => {
       const result = await supabase.functions.invoke('goblin-model-synthesis', {
         body: {
           sessionId,
+          userId: session.user_id,
           persona,
           analysisData: analysisResult.data,
           goal,
@@ -529,6 +530,7 @@ serve(async (req) => {
             orchestratorVersion: '2.1',
             processingTimeMs: Date.now() - startTime,
             fallbackUsed,
+            maturityData: synthesisResult.data.maturityData, // ✅ Include maturity data
             circuitBreakerStatus: {
               claude: isCircuitOpen('goblin-model-claude-analyzer'),
               gpt: isCircuitOpen('goblin-model-gpt-analyzer'),
@@ -555,6 +557,11 @@ serve(async (req) => {
 
     const totalTime = Date.now() - startTime;
     console.log(`✅ Goblin analysis orchestration completed in ${totalTime}ms`);
+    
+    // Log maturity score if calculated
+    if (synthesisResult.data.maturityData) {
+      console.log(`🎯 Maturity score calculated: ${synthesisResult.data.maturityData.overallScore}/100`);
+    }
 
     return new Response(
       JSON.stringify({
