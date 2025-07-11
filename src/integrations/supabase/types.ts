@@ -452,6 +452,42 @@ export type Database = {
         }
         Relationships: []
       }
+      goblin_achievements: {
+        Row: {
+          achievement_description: string | null
+          achievement_name: string
+          achievement_type: string
+          badge_emoji: string | null
+          id: string
+          share_token: string | null
+          times_shared: number | null
+          unlocked_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          achievement_description?: string | null
+          achievement_name: string
+          achievement_type: string
+          badge_emoji?: string | null
+          id?: string
+          share_token?: string | null
+          times_shared?: number | null
+          unlocked_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          achievement_description?: string | null
+          achievement_name?: string
+          achievement_type?: string
+          badge_emoji?: string | null
+          id?: string
+          share_token?: string | null
+          times_shared?: number | null
+          unlocked_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       goblin_analysis_images: {
         Row: {
           created_at: string | null
@@ -582,6 +618,95 @@ export type Database = {
         }
         Relationships: []
       }
+      goblin_industry_benchmarks: {
+        Row: {
+          average_score: number
+          dimension: string
+          id: string
+          industry: string
+          top_10_percent_score: number
+          updated_at: string | null
+        }
+        Insert: {
+          average_score: number
+          dimension: string
+          id?: string
+          industry: string
+          top_10_percent_score: number
+          updated_at?: string | null
+        }
+        Update: {
+          average_score?: number
+          dimension?: string
+          id?: string
+          industry?: string
+          top_10_percent_score?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      goblin_maturity_scores: {
+        Row: {
+          accessibility_score: number | null
+          clarity_score: number | null
+          created_at: string | null
+          delight_score: number | null
+          id: string
+          maturity_level: string | null
+          overall_score: number
+          percentile_rank: number | null
+          performance_score: number | null
+          previous_score: number | null
+          score_change: number | null
+          session_id: string | null
+          streak_days: number | null
+          usability_score: number | null
+          user_id: string | null
+        }
+        Insert: {
+          accessibility_score?: number | null
+          clarity_score?: number | null
+          created_at?: string | null
+          delight_score?: number | null
+          id?: string
+          maturity_level?: string | null
+          overall_score: number
+          percentile_rank?: number | null
+          performance_score?: number | null
+          previous_score?: number | null
+          score_change?: number | null
+          session_id?: string | null
+          streak_days?: number | null
+          usability_score?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          accessibility_score?: number | null
+          clarity_score?: number | null
+          created_at?: string | null
+          delight_score?: number | null
+          id?: string
+          maturity_level?: string | null
+          overall_score?: number
+          percentile_rank?: number | null
+          performance_score?: number | null
+          previous_score?: number | null
+          score_change?: number | null
+          session_id?: string | null
+          streak_days?: number | null
+          usability_score?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goblin_maturity_scores_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "goblin_analysis_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       goblin_refinement_history: {
         Row: {
           content: string
@@ -646,6 +771,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      goblin_roadmap_items: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          description: string
+          difficulty: string | null
+          dimension: string
+          estimated_impact: number | null
+          id: string
+          priority: number
+          session_id_completed: string | null
+          status: string | null
+          title: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          description: string
+          difficulty?: string | null
+          dimension: string
+          estimated_impact?: number | null
+          id?: string
+          priority: number
+          session_id_completed?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string
+          difficulty?: string | null
+          dimension?: string
+          estimated_impact?: number | null
+          id?: string
+          priority?: number
+          session_id_completed?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       knowledge_entries: {
         Row: {
