@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Calendar, BarChart3, Brain, Sparkles, Eye, Timer } from 'lucide-react';
+import { Plus, Calendar, BarChart3, Brain, Sparkles, Eye, Timer, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,15 +17,23 @@ interface GoblinSession {
   created_at: string;
   updated_at: string;
 }
+
+interface MaturityScore {
+  overall_score: number;
+  streak_days: number;
+  maturity_level: string;
+}
 const GoblinDashboard = () => {
   const navigate = useNavigate();
   const {
     user
   } = useAuth();
   const [sessions, setSessions] = useState<GoblinSession[]>([]);
+  const [maturityScore, setMaturityScore] = useState<MaturityScore | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
     loadGoblinSessions();
+    loadMaturityScore();
   }, [user]);
   const loadGoblinSessions = async () => {
     if (!user) return;
@@ -48,6 +56,31 @@ const GoblinDashboard = () => {
       toast.error('Error loading goblin sessions');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadMaturityScore = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('goblin_maturity_scores')
+        .select('overall_score, streak_days, maturity_level')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error loading maturity score:', error);
+        return;
+      }
+
+      if (data) {
+        setMaturityScore(data);
+      }
+    } catch (error) {
+      console.error('Error loading maturity data:', error);
     }
   };
   const formatDate = (dateString: string) => {
@@ -138,7 +171,7 @@ const GoblinDashboard = () => {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           <Card className="border-0 shadow-sm bg-card">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
@@ -181,6 +214,39 @@ const GoblinDashboard = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Maturity Score with Streak */}
+          {maturityScore && (
+            <Card className="border-0 shadow-sm bg-card">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-accent-warm rounded-xl">
+                    <TrendingUp className="w-6 h-6 text-professional-brown" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-sm font-medium text-muted-foreground">Maturity Score</p>
+                      {maturityScore.streak_days > 0 && (
+                        <div className="flex items-center gap-1 px-2 py-1 bg-orange-100 rounded-full">
+                          <Sparkles className="w-3 h-3 text-orange-600" />
+                          <span className="text-xs font-medium text-orange-700">{maturityScore.streak_days}d</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-3xl font-semibold text-foreground">{maturityScore.overall_score}</p>
+                      <span className="text-sm text-muted-foreground">/100</span>
+                    </div>
+                    {maturityScore.maturity_level && (
+                      <p className="text-xs text-muted-foreground mt-1 capitalize">
+                        {maturityScore.maturity_level} Level
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Sessions Grid */}
