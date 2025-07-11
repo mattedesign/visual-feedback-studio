@@ -49,11 +49,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
             <div className="flex items-center gap-3 md:gap-6">
               {/* Mobile menu dropdown */}
               {isMobile && (
-                <MobileNavigation
-                  user={user}
-                  onSignOut={onSignOut}
-                  onHistoryToggle={() => setIsHistorySidebarOpen(true)}
-                />
+                <MobileNavigation />
               )}
 
               {isAnalysisResultsPage && (

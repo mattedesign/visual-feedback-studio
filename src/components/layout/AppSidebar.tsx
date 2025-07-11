@@ -36,6 +36,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileNavigation } from './MobileNavigation';
 
 const mainNavItems = [
   {
@@ -109,9 +110,9 @@ export function AppSidebar({}: AppSidebarProps) {
       : "flex py-4 px-3 items-center gap-2 self-stretch rounded-xl text-muted-foreground hover:bg-[#BECDED] hover:text-foreground focus:bg-[#BECDED] focus:text-foreground transition-colors min-h-[40px]";
   };
 
-  // Hide sidebar on mobile - mobile nav is handled by dropdown
+  // Show mobile navigation on mobile and tablet
   if (isMobile) {
-    return null;
+    return <MobileNavigation />;
   }
 
   return (

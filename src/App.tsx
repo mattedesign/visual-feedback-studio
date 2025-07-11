@@ -47,8 +47,8 @@ const App = () => {
                     <>
                       <AppSidebar />
                       <SidebarInset className="ml-0 md:ml-[16px] mr-0 bg-transparent mx-0">
-                        {/* Main content area */}
-                        <div className="flex flex-col items-start flex-1 self-stretch rounded-[20px] border-8 overflow-auto m-2 md:m-4 bg-white" style={{
+                        {/* Main content area with mobile spacing */}
+                        <div className="flex flex-col items-start flex-1 self-stretch rounded-[20px] border-8 overflow-auto m-2 md:m-4 mt-16 md:mt-2 bg-white" style={{
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'flex-start',
