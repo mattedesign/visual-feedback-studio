@@ -113,32 +113,55 @@ const SummaryView: React.FC<SummaryViewProps> = ({
       }
     }
 
-    // Special handling for executive persona - extract nested analysis fields
-    if (personaType === 'exec' && parsedData?.analysis && typeof parsedData.analysis === 'object') {
-      console.log('🔄 Processing executive nested data structure');
-      const analysisData = parsedData.analysis;
+    // Enhanced handling for executive and mad personas - handle multiple nested structures
+    if (personaType === 'exec') {
+      console.log('🔄 Processing executive persona data structure');
       
-      // Extract executive-specific fields to top level if they don't exist
-      if (!parsedData.executiveSummary && analysisData.executiveSummary) {
-        parsedData.executiveSummary = analysisData.executiveSummary;
-      }
-      if (!parsedData.businessRisks && analysisData.businessRisks) {
-        parsedData.businessRisks = analysisData.businessRisks;
-      }
-      if (!parsedData.roiImpact && analysisData.roiImpact) {
-        parsedData.roiImpact = analysisData.roiImpact;
-      }
-      if (!parsedData.stakeholderConcerns && analysisData.stakeholderConcerns) {
-        parsedData.stakeholderConcerns = analysisData.stakeholderConcerns;
-      }
-      if (!parsedData.strategicRecommendations && analysisData.strategicRecommendations) {
-        parsedData.strategicRecommendations = analysisData.strategicRecommendations;
-      }
-      if (!parsedData.competitiveImplications && analysisData.competitiveImplications) {
-        parsedData.competitiveImplications = analysisData.competitiveImplications;
+      // Check if analysis field contains nested executive data
+      if (parsedData?.analysis && typeof parsedData.analysis === 'object') {
+        const analysisData = parsedData.analysis;
+        
+        // Extract executive-specific fields to top level
+        if (analysisData.executiveSummary) parsedData.executiveSummary = analysisData.executiveSummary;
+        if (analysisData.businessRisks) parsedData.businessRisks = analysisData.businessRisks;
+        if (analysisData.roiImpact) parsedData.roiImpact = analysisData.roiImpact;
+        if (analysisData.stakeholderConcerns) parsedData.stakeholderConcerns = analysisData.stakeholderConcerns;
+        if (analysisData.strategicRecommendations) parsedData.strategicRecommendations = analysisData.strategicRecommendations;
+        if (analysisData.competitiveImplications) parsedData.competitiveImplications = analysisData.competitiveImplications;
       }
       
-      console.log('✅ Successfully extracted executive persona data');
+      // Handle direct nested executive fields (alternative structure)
+      if (parsedData?.executiveAnalysis && typeof parsedData.executiveAnalysis === 'object') {
+        const execData = parsedData.executiveAnalysis;
+        if (execData.executiveSummary) parsedData.executiveSummary = execData.executiveSummary;
+        if (execData.businessRisks) parsedData.businessRisks = execData.businessRisks;
+        if (execData.roiImpact) parsedData.roiImpact = execData.roiImpact;
+        if (execData.stakeholderConcerns) parsedData.stakeholderConcerns = execData.stakeholderConcerns;
+        if (execData.strategicRecommendations) parsedData.strategicRecommendations = execData.strategicRecommendations;
+        if (execData.competitiveImplications) parsedData.competitiveImplications = execData.competitiveImplications;
+      }
+      
+      console.log('✅ Executive persona data processed:', { executiveSummary: !!parsedData.executiveSummary, businessRisks: !!parsedData.businessRisks });
+    }
+    
+    // Enhanced handling for mad scientist persona
+    if (personaType === 'mad') {
+      console.log('🔄 Processing mad scientist persona data structure');
+      
+      // Check if analysis field contains nested mad scientist data
+      if (parsedData?.analysis && typeof parsedData.analysis === 'object') {
+        const analysisData = parsedData.analysis;
+        
+        // Extract mad scientist-specific fields to top level
+        if (analysisData.hypothesis) parsedData.hypothesis = analysisData.hypothesis;
+        if (analysisData.madScience) parsedData.madScience = analysisData.madScience;
+        if (analysisData.weirdFindings) parsedData.weirdFindings = analysisData.weirdFindings;
+        if (analysisData.crazyIdeas) parsedData.crazyIdeas = analysisData.crazyIdeas;
+        if (analysisData.labNotes) parsedData.labNotes = analysisData.labNotes;
+        if (analysisData.experiments) parsedData.experiments = analysisData.experiments;
+      }
+      
+      console.log('✅ Mad scientist persona data processed:', { hypothesis: !!parsedData.hypothesis, experiments: !!parsedData.experiments });
     }
 
     // Convert any remaining objects to strings to prevent React rendering errors
