@@ -19,8 +19,8 @@ serve(async (req) => {
 
     // Add persona mapping to fix frontend/backend persona name mismatches
     const personaMapping: { [key: string]: string } = {
-      'mad': 'mad_scientist',
-      'exec': 'executive',
+      'mad': 'mad',
+      'exec': 'exec',
       'strategic': 'strategic', 
       'clarity': 'clarity',
       'mirror': 'mirror'

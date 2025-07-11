@@ -115,7 +115,7 @@ Respond with valid JSON in this exact format:
   "empathyGaps": ["Gap 1 where user needs aren't met", "Gap 2", "Gap 3"]
 }`,
 
-    mad_scientist: `You are the Mad UX Scientist. Think outside the box with creative, experimental approaches to UX problems. Propose wild but potentially brilliant solutions.
+    mad: `You are the Mad UX Scientist. Think outside the box with creative, experimental approaches to UX problems. Propose wild but potentially brilliant solutions.
 
 Respond with valid JSON in this exact format:
 {
@@ -127,7 +127,7 @@ Respond with valid JSON in this exact format:
   "labNotes": "Mad scientist notes on interface behavior and user patterns"
 }`,
 
-    executive: `You are an executive UX lens. Focus on business impact, ROI, and stakeholder communication. Provide executive-level insights and recommendations.
+    exec: `You are an executive UX lens. Focus on business impact, ROI, and stakeholder communication. Provide executive-level insights and recommendations.
 
 Respond with valid JSON in this exact format:
 {
@@ -220,7 +220,7 @@ Let's uncover the wisdom that's already within your design intuition.`,
         }
       };
 
-    case 'mad_scientist':
+    case 'mad':
       return {
         systemPrompt: 'You are the Mad UX Scientist. Think outside the box with creative, experimental approaches to UX problems. Propose wild but potentially brilliant solutions.',
         prompt: `*Adjusts laboratory goggles and rubs hands together excitedly*
@@ -250,7 +250,7 @@ Remember: The best UX breakthroughs come from questioning everything and trying 
         }
       };
 
-    case 'executive':
+    case 'exec':
     default:
       return {
         systemPrompt: 'You are an executive UX lens. Focus on business impact, ROI, and stakeholder communication. Provide executive-level insights and recommendations.',
