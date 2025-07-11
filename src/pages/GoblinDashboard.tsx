@@ -216,37 +216,43 @@ const GoblinDashboard = () => {
           </Card>
 
           {/* Maturity Score with Streak */}
-          {maturityScore && (
-            <Card className="border-0 shadow-sm bg-card">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-accent-warm rounded-xl">
-                    <TrendingUp className="w-6 h-6 text-professional-brown" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-sm font-medium text-muted-foreground">Maturity Score</p>
-                      {maturityScore.streak_days > 0 && (
-                        <div className="flex items-center gap-1 px-2 py-1 bg-orange-100 rounded-full">
-                          <Sparkles className="w-3 h-3 text-orange-600" />
-                          <span className="text-xs font-medium text-orange-700">{maturityScore.streak_days}d</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-baseline gap-2">
-                      <p className="text-3xl font-semibold text-foreground">{maturityScore.overall_score}</p>
-                      <span className="text-sm text-muted-foreground">/100</span>
-                    </div>
-                    {maturityScore.maturity_level && (
-                      <p className="text-xs text-muted-foreground mt-1 capitalize">
-                        {maturityScore.maturity_level} Level
-                      </p>
+          <Card className="border-0 shadow-sm bg-card">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-accent-warm rounded-xl">
+                  <TrendingUp className="w-6 h-6 text-professional-brown" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-sm font-medium text-muted-foreground">Maturity Score</p>
+                    {maturityScore?.streak_days > 0 && (
+                      <div className="flex items-center gap-1 px-2 py-1 bg-orange-100 rounded-full">
+                        <Sparkles className="w-3 h-3 text-orange-600" />
+                        <span className="text-xs font-medium text-orange-700">{maturityScore.streak_days}d</span>
+                      </div>
                     )}
                   </div>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-3xl font-semibold text-foreground">
+                      {maturityScore?.overall_score || '—'}
+                    </p>
+                    {maturityScore?.overall_score && (
+                      <span className="text-sm text-muted-foreground">/100</span>
+                    )}
+                  </div>
+                  {maturityScore?.maturity_level ? (
+                    <p className="text-xs text-muted-foreground mt-1 capitalize">
+                      {maturityScore.maturity_level} Level
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Complete an analysis to see your score
+                    </p>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Sessions Grid */}
