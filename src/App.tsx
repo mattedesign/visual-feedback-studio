@@ -21,6 +21,7 @@ import GoblinStudio from "./pages/goblin/GoblinStudio";
 import GoblinResults from "./pages/goblin/GoblinResults";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { DatabaseSeeder } from "@/components/admin/DatabaseSeeder";
+import { PublicAchievement } from "@/pages/public/Achievement";
 import { useAuth } from "@/hooks/useAuth";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
@@ -41,6 +42,7 @@ const App = () => {
               <Routes>
                 {/* Public routes - no sidebar */}
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/achievement/:shareToken" element={<PublicAchievement />} />
                 
                 {/* Protected routes with sidebar layout */}
                 <Route path="/*" element={<AuthGuard>

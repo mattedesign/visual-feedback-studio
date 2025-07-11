@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Trophy } from 'lucide-react';
 import { useImageLoader } from '@/hooks/goblin/useImageLoader';
 // ✅ REMOVED: parseNestedJson import as per Nuclear Fix
 
@@ -11,6 +14,11 @@ import DetailedModeView from '@/components/goblin/DetailedModeView';
 import ClarityChat from '@/components/goblin/ClarityChat';
 import SummaryView from '@/components/goblin/SummaryView';
 import { NavigationProvider } from '@/contexts/NavigationContext';
+
+// ✅ Maturity components
+import { MaturityScoreDashboard } from '@/components/goblin/maturity/MaturityScoreDashboard';
+import { ImprovementRoadmap } from '@/components/goblin/maturity/ImprovementRoadmap';
+import { AchievementShowcase } from '@/components/goblin/maturity/AchievementShowcase';
 
 // Type definition for persona data
 interface PersonaData {
@@ -52,6 +60,7 @@ interface PersonaData {
 
 const GoblinResults: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
+  const navigate = useNavigate();
   const [results, setResults] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   
@@ -67,7 +76,7 @@ const GoblinResults: React.FC = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [copied, setCopied] = useState(false);
   const [showAnnotations, setShowAnnotations] = useState(true);
-  const [activeTab, setActiveTab] = useState<'summary' | 'detailed' | 'clarity'>('summary');
+  const [activeTab, setActiveTab] = useState<'summary' | 'detailed' | 'maturity' | 'clarity'>('summary');
   const [chatFeedbackAnchors, setChatFeedbackAnchors] = useState<{[messageId: string]: any[]}>({});
   const [totalImages, setTotalImages] = useState(0);
 
@@ -490,7 +499,7 @@ const GoblinResults: React.FC = () => {
       <div className="min-h-screen bg-white">
         <div className="flex flex-col items-start flex-1 self-stretch rounded-[20px] max-w-7xl mx-auto px-8 py-6">
           
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'summary' | 'detailed' | 'clarity')}>
+           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'summary' | 'detailed' | 'maturity' | 'clarity')}>
             <TabsList className="sticky top-0 z-10 flex w-auto items-center gap-4 rounded-xl border border-gray-200 bg-gray-100 p-1 backdrop-blur-sm" style={{ boxShadow: '0px 1px 1.9px 0px rgba(50, 50, 50, 0.10) inset' }}>
               <TabsTrigger 
                 value="summary" 
@@ -503,6 +512,13 @@ const GoblinResults: React.FC = () => {
                 className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset]"
               >
                 Detailed ({annotationCount})
+              </TabsTrigger>
+              <TabsTrigger 
+                value="maturity" 
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset]"
+              >
+                <Trophy className="w-4 h-4" />
+                Maturity Score
               </TabsTrigger>
               <TabsTrigger 
                 value="clarity" 
@@ -573,6 +589,24 @@ const GoblinResults: React.FC = () => {
               setShowAnnotations={setShowAnnotations}
               chatFeedbackAnchors={chatFeedbackAnchors}
             />
+          </TabsContent>
+
+          <TabsContent value="maturity" className="mt-8">
+            <div className="space-y-6">
+              <MaturityScoreDashboard />
+              <ImprovementRoadmap />
+              <AchievementShowcase />
+              
+              <Card className="p-6 bg-gradient-to-r from-purple-50 to-blue-50 text-center">
+                <h3 className="font-semibold mb-2">Ready to improve your score?</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Upload a revised design to see your progress
+                </p>
+                <Button onClick={() => navigate('/goblin')}>
+                  Run New Analysis
+                </Button>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="clarity" className="mt-8">
