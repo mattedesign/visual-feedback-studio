@@ -85,38 +85,38 @@ export function MobileNavigation() {
 
   const getNavClassName = (active: boolean) => {
     return active 
-      ? "flex py-4 px-4 items-center gap-3 self-stretch rounded-xl bg-[#5C3C90] text-white font-medium min-h-[48px] w-full text-left" 
-      : "flex py-4 px-4 items-center gap-3 self-stretch rounded-xl text-gray-700 hover:bg-gray-100 focus:bg-gray-100 transition-colors min-h-[48px] w-full text-left";
+      ? "flex py-4 px-4 items-center gap-3 self-stretch rounded-xl bg-gradient-to-r from-[#5C3C90] to-[#4A2F7A] text-white font-medium min-h-[48px] w-full text-left shadow-lg" 
+      : "flex py-4 px-4 items-center gap-3 self-stretch rounded-xl text-purple-200 hover:bg-white/10 hover:text-white focus:bg-white/10 focus:text-white transition-colors min-h-[48px] w-full text-left";
   };
 
   return (
     <>
       {/* Mobile Header with Menu Button */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between md:hidden">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-[#5C3C90] to-[#4A2F7A] border-b border-purple-600 px-4 py-3 flex items-center justify-between md:hidden shadow-lg">
         <div className="flex items-center gap-2">
           <div className="text-2xl">👾</div>
           <div className="flex flex-col">
-            <span className="font-semibold text-sm">Goblin UX</span>
-            <span className="text-xs text-muted-foreground">Analysis Studio</span>
+            <span className="font-semibold text-sm text-white">Goblin UX</span>
+            <span className="text-xs text-purple-200">Analysis Studio</span>
           </div>
         </div>
         
         <Drawer open={isOpen} onOpenChange={setIsOpen}>
           <DrawerTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-10 w-10 p-0">
+            <Button variant="ghost" size="sm" className="h-10 w-10 p-0 text-white hover:bg-white/20">
               <Menu className="h-5 w-5" />
             </Button>
           </DrawerTrigger>
           
-          <DrawerContent className="max-h-[85vh]">
-            <DrawerHeader className="text-left">
+          <DrawerContent className="max-h-[85vh] bg-gradient-to-b from-[#2A1B47] to-[#1F1535] border-t border-purple-600">
+            <DrawerHeader className="text-left border-b border-purple-600/30">
               <div className="flex items-center justify-between">
-                <DrawerTitle className="flex items-center gap-2">
+                <DrawerTitle className="flex items-center gap-2 text-white">
                   <div className="text-2xl">👾</div>
                   <span>Navigation</span>
                 </DrawerTitle>
                 <DrawerClose asChild>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-purple-300 hover:bg-white/10 hover:text-white">
                     <X className="h-4 w-4" />
                   </Button>
                 </DrawerClose>
@@ -126,7 +126,7 @@ export function MobileNavigation() {
             <div className="px-4 pb-8 space-y-6">
               {/* Main Navigation */}
               <div className="space-y-2">
-                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">
+                <h3 className="text-sm font-medium text-purple-300 uppercase tracking-wider mb-3">
                   Main
                 </h3>
                 {mainNavItems.map((item) => (
@@ -153,7 +153,7 @@ export function MobileNavigation() {
               
               {/* Bottom Navigation */}
               <div className="space-y-2">
-                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">
+                <h3 className="text-sm font-medium text-purple-300 uppercase tracking-wider mb-3">
                   Account
                 </h3>
                 {bottomNavItems.map((item) => (
@@ -170,7 +170,7 @@ export function MobileNavigation() {
                 
                 {/* Profile Actions */}
                 <button
-                  className="flex py-4 px-4 items-center gap-3 self-stretch rounded-xl text-gray-700 hover:bg-gray-100 focus:bg-gray-100 transition-colors min-h-[48px] w-full text-left"
+                  className="flex py-4 px-4 items-center gap-3 self-stretch rounded-xl text-purple-200 hover:bg-white/10 hover:text-white focus:bg-white/10 focus:text-white transition-colors min-h-[48px] w-full text-left"
                   onClick={() => {/* Add profile action */}}
                 >
                   <User className="h-5 w-5 flex-shrink-0" />
@@ -178,7 +178,7 @@ export function MobileNavigation() {
                 </button>
                 
                 <button
-                  className="flex py-4 px-4 items-center gap-3 self-stretch rounded-xl text-red-600 hover:bg-red-50 focus:bg-red-50 transition-colors min-h-[48px] w-full text-left"
+                  className="flex py-4 px-4 items-center gap-3 self-stretch rounded-xl text-red-300 hover:bg-red-900/30 hover:text-red-200 focus:bg-red-900/30 focus:text-red-200 transition-colors min-h-[48px] w-full text-left"
                   onClick={handleLogout}
                 >
                   <LogOut className="h-5 w-5 flex-shrink-0" />
