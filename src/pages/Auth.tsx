@@ -142,10 +142,15 @@ const Auth = () => {
   // The useEffect will handle the redirect
   if (user && session) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <LoadingSpinner />
-          <p className="text-gray-600 mt-4">Redirecting to dashboard...</p>
+      <div className="min-h-screen flex w-full bg-transparent">
+        <div className="flex flex-col items-center justify-center flex-1 self-stretch rounded-[20px] border-8 overflow-auto m-2 md:m-4 bg-white" style={{
+          borderColor: '#5C3C90',
+          background: '#FFF'
+        }}>
+          <div className="text-center">
+            <LoadingSpinner />
+            <p className="text-muted-foreground mt-4">Redirecting to dashboard...</p>
+          </div>
         </div>
       </div>
     );
@@ -153,29 +158,33 @@ const Auth = () => {
 
   // Only show auth form for non-authenticated users
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-white border-gray-200 shadow-lg">
-        <CardHeader className="text-center space-y-2">
-          <div className="flex items-center justify-center gap-2 text-blue-600 mb-2">
-            <Sparkles className="w-5 h-5" />
-            <span className="font-semibold">Figmant</span>
-          </div>
-          <CardTitle className="text-2xl text-gray-900">
-            {isSignUp ? 'Join Our Community' : 'Welcome Back'}
-          </CardTitle>
-          <CardDescription className="text-gray-600">
-            {isSignUp 
-              ? 'Get personalized UX insights tailored to your role' 
-              : 'Sign in to continue your UX analysis journey'
-            }
-          </CardDescription>
-          {isSignUp && (
-            <div className="flex items-center justify-center gap-2 text-sm text-gray-500 bg-blue-50 p-2 rounded-lg mt-3">
-              <Users className="w-4 h-4" />
-              <span>We'll customize your experience based on your role</span>
+    <div className="min-h-screen flex w-full bg-transparent">
+      <div className="flex flex-col items-center justify-center flex-1 self-stretch rounded-[20px] border-8 overflow-auto m-2 md:m-4 bg-white" style={{
+        borderColor: '#5C3C90',
+        background: '#FFF'
+      }}>
+        <Card className="w-full max-w-md bg-transparent border-0 shadow-none">
+          <CardHeader className="text-center space-y-2">
+            <div className="flex items-center justify-center gap-2 text-primary mb-2">
+              <Sparkles className="w-5 h-5" />
+              <span className="font-semibold">Figmant</span>
             </div>
-          )}
-        </CardHeader>
+            <CardTitle className="text-2xl text-foreground">
+              {isSignUp ? 'Join Our Community' : 'Welcome Back'}
+            </CardTitle>
+            <CardDescription className="text-muted-foreground">
+              {isSignUp 
+                ? 'Get personalized UX insights tailored to your role' 
+                : 'Sign in to continue your UX analysis journey'
+              }
+            </CardDescription>
+            {isSignUp && (
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground bg-muted p-2 rounded-lg mt-3">
+                <Users className="w-4 h-4" />
+                <span>We'll customize your experience based on your role</span>
+              </div>
+            )}
+          </CardHeader>
         <CardContent>
           {authError && (
             <Alert className="mb-4" variant="destructive">
@@ -189,7 +198,7 @@ const Auth = () => {
           <form onSubmit={handleAuth} className="space-y-4">
             {isSignUp && (
               <div>
-                <Label htmlFor="fullName" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="fullName" className="text-sm font-medium text-foreground">
                   Full Name
                 </Label>
                 <Input
@@ -199,7 +208,7 @@ const Auth = () => {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required
-                  className="mt-1 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-1"
                 />
               </div>
             )}
@@ -211,7 +220,6 @@ const Auth = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
             
@@ -223,17 +231,16 @@ const Auth = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
 
             {isSignUp && (
               <div>
-                <Label htmlFor="role" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="role" className="text-sm font-medium text-foreground">
                   What's your role?
                 </Label>
                 <Select value={selectedRole} onValueChange={(value: UserRole) => setSelectedRole(value)}>
-                  <SelectTrigger className="mt-1 bg-white border-gray-300 text-gray-900 focus:border-blue-500 focus:ring-blue-500">
+                  <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Select your primary role" />
                   </SelectTrigger>
                   <SelectContent>
@@ -241,13 +248,13 @@ const Auth = () => {
                       <SelectItem key={role.value} value={role.value}>
                         <div className="flex flex-col">
                           <span className="font-medium">{role.label}</span>
-                          <span className="text-xs text-gray-500">{role.description}</span>
+                          <span className="text-xs text-muted-foreground">{role.description}</span>
                         </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   This helps us personalize your UX analysis experience
                 </p>
               </div>
@@ -255,7 +262,7 @@ const Auth = () => {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+              className="w-full"
             >
               {loading ? 'Loading...' : (isSignUp ? 'Create Account' : 'Sign In')}
             </Button>
@@ -266,7 +273,7 @@ const Auth = () => {
               onClick={handleMagicLink}
               disabled={loading}
               variant="outline"
-              className="w-full border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="w-full"
             >
               {loading ? 'Sending...' : 'Send Magic Link'}
             </Button>
@@ -280,7 +287,7 @@ const Auth = () => {
                 setFullName('');
                 setSelectedRole('');
               }}
-              className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+              className="text-primary hover:text-primary/80 text-sm font-medium transition-colors"
             >
               {isSignUp 
                 ? 'Already have an account? Sign in' 
@@ -289,7 +296,8 @@ const Auth = () => {
             </button>
           </div>
         </CardContent>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 };
