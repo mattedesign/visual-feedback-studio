@@ -113,15 +113,30 @@ const SummaryView: React.FC<SummaryViewProps> = ({
       }
     }
 
-    // Enhanced handling for executive and mad personas - handle multiple nested structures
+    // GUARANTEED FIX: Handle the JSON string analysis field for exec and mad personas
     if (personaType === 'exec') {
       console.log('🔄 Processing executive persona data structure');
       
-      // Check if analysis field contains nested executive data
-      if (parsedData?.analysis && typeof parsedData.analysis === 'object') {
+      // THE ISSUE: analysis field is a JSON STRING, not object - parse it first
+      if (parsedData?.analysis && typeof parsedData.analysis === 'string') {
+        try {
+          const analysisData = JSON.parse(parsedData.analysis);
+          console.log('🎯 Successfully parsed JSON string analysis for exec:', analysisData);
+          
+          // Extract executive-specific fields to top level
+          if (analysisData.executiveSummary) parsedData.executiveSummary = analysisData.executiveSummary;
+          if (analysisData.businessRisks) parsedData.businessRisks = analysisData.businessRisks;
+          if (analysisData.roiImpact) parsedData.roiImpact = analysisData.roiImpact;
+          if (analysisData.stakeholderConcerns) parsedData.stakeholderConcerns = analysisData.stakeholderConcerns;
+          if (analysisData.strategicRecommendations) parsedData.strategicRecommendations = analysisData.strategicRecommendations;
+          if (analysisData.competitiveImplications) parsedData.competitiveImplications = analysisData.competitiveImplications;
+        } catch (e) {
+          console.error('❌ Failed to parse exec analysis JSON string:', e);
+        }
+      }
+      // Fallback: if analysis is already an object
+      else if (parsedData?.analysis && typeof parsedData.analysis === 'object') {
         const analysisData = parsedData.analysis;
-        
-        // Extract executive-specific fields to top level
         if (analysisData.executiveSummary) parsedData.executiveSummary = analysisData.executiveSummary;
         if (analysisData.businessRisks) parsedData.businessRisks = analysisData.businessRisks;
         if (analysisData.roiImpact) parsedData.roiImpact = analysisData.roiImpact;
@@ -130,29 +145,37 @@ const SummaryView: React.FC<SummaryViewProps> = ({
         if (analysisData.competitiveImplications) parsedData.competitiveImplications = analysisData.competitiveImplications;
       }
       
-      // Handle direct nested executive fields (alternative structure)
-      if (parsedData?.executiveAnalysis && typeof parsedData.executiveAnalysis === 'object') {
-        const execData = parsedData.executiveAnalysis;
-        if (execData.executiveSummary) parsedData.executiveSummary = execData.executiveSummary;
-        if (execData.businessRisks) parsedData.businessRisks = execData.businessRisks;
-        if (execData.roiImpact) parsedData.roiImpact = execData.roiImpact;
-        if (execData.stakeholderConcerns) parsedData.stakeholderConcerns = execData.stakeholderConcerns;
-        if (execData.strategicRecommendations) parsedData.strategicRecommendations = execData.strategicRecommendations;
-        if (execData.competitiveImplications) parsedData.competitiveImplications = execData.competitiveImplications;
-      }
-      
-      console.log('✅ Executive persona data processed:', { executiveSummary: !!parsedData.executiveSummary, businessRisks: !!parsedData.businessRisks });
+      console.log('✅ Executive persona data processed:', { 
+        executiveSummary: !!parsedData.executiveSummary, 
+        businessRisks: !!parsedData.businessRisks,
+        roiImpact: !!parsedData.roiImpact 
+      });
     }
     
-    // Enhanced handling for mad scientist persona
+    // GUARANTEED FIX: Handle the JSON string analysis field for mad persona
     if (personaType === 'mad') {
       console.log('🔄 Processing mad scientist persona data structure');
       
-      // Check if analysis field contains nested mad scientist data
-      if (parsedData?.analysis && typeof parsedData.analysis === 'object') {
+      // THE ISSUE: analysis field is a JSON STRING, not object - parse it first
+      if (parsedData?.analysis && typeof parsedData.analysis === 'string') {
+        try {
+          const analysisData = JSON.parse(parsedData.analysis);
+          console.log('🎯 Successfully parsed JSON string analysis for mad:', analysisData);
+          
+          // Extract mad scientist-specific fields to top level
+          if (analysisData.hypothesis) parsedData.hypothesis = analysisData.hypothesis;
+          if (analysisData.madScience) parsedData.madScience = analysisData.madScience;
+          if (analysisData.weirdFindings) parsedData.weirdFindings = analysisData.weirdFindings;
+          if (analysisData.crazyIdeas) parsedData.crazyIdeas = analysisData.crazyIdeas;
+          if (analysisData.labNotes) parsedData.labNotes = analysisData.labNotes;
+          if (analysisData.experiments) parsedData.experiments = analysisData.experiments;
+        } catch (e) {
+          console.error('❌ Failed to parse mad analysis JSON string:', e);
+        }
+      }
+      // Fallback: if analysis is already an object
+      else if (parsedData?.analysis && typeof parsedData.analysis === 'object') {
         const analysisData = parsedData.analysis;
-        
-        // Extract mad scientist-specific fields to top level
         if (analysisData.hypothesis) parsedData.hypothesis = analysisData.hypothesis;
         if (analysisData.madScience) parsedData.madScience = analysisData.madScience;
         if (analysisData.weirdFindings) parsedData.weirdFindings = analysisData.weirdFindings;
@@ -161,7 +184,11 @@ const SummaryView: React.FC<SummaryViewProps> = ({
         if (analysisData.experiments) parsedData.experiments = analysisData.experiments;
       }
       
-      console.log('✅ Mad scientist persona data processed:', { hypothesis: !!parsedData.hypothesis, experiments: !!parsedData.experiments });
+      console.log('✅ Mad scientist persona data processed:', { 
+        hypothesis: !!parsedData.hypothesis, 
+        experiments: !!parsedData.experiments,
+        madScience: !!parsedData.madScience 
+      });
     }
 
     // Convert any remaining objects to strings to prevent React rendering errors
