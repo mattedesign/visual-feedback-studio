@@ -83,6 +83,16 @@ const SummaryView: React.FC<SummaryViewProps> = ({
       }
     }
 
+    // Special handling for executive persona nested JSON structure
+    if (personaType === 'exec' && parsedData?.analysis && typeof parsedData.analysis === 'string') {
+      try {
+        parsedData.analysis = JSON.parse(parsedData.analysis);
+        console.log('🎯 Successfully parsed executive nested JSON:', parsedData.analysis);
+      } catch (e) {
+        console.warn('Failed to parse executive persona nested analysis JSON:', e);
+      }
+    }
+
     // Handle different persona types with their specific fields
     const getPersonaContent = () => {
       switch(personaType) {
