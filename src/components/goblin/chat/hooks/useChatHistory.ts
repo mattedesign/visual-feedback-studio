@@ -12,6 +12,35 @@ interface UseChatHistoryProps {
 export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
+  // Persona-specific greetings
+  const getPersonaGreeting = (persona: string): string => {
+    const greetings = {
+      clarity: "👾 Hey there! I'm Clarity, your brutally honest UX goblin. What design disaster can I help you fix today?",
+      strategic: "🎯 Hello! I'm your Strategic advisor. I'm here to help you align UX decisions with business impact. What would you like to explore?",
+      mirror: "🪞 Hi! I'm Mirror, here to reflect on the user experience from an empathetic perspective. How can I help you understand your users better?",
+      mad: "🔬 EUREKA! Mad Scientist here, ready to experiment with wild UX solutions! What impossible problem shall we tackle?",
+      mad_scientist: "🔬 EUREKA! Mad Scientist here, ready to experiment with wild UX solutions! What impossible problem shall we tackle?",
+      executive: "💼 Good day! I'm your Executive consultant, focused on UX business impact and ROI. What strategic UX questions do you have?",
+      exec: "💼 Good day! I'm your Executive consultant, focused on UX business impact and ROI. What strategic UX questions do you have?"
+    };
+
+    return greetings[persona] || greetings.clarity;
+  };
+
+  const createGreetingMessage = (persona: string): ChatMessage => {
+    const greetingMessage: ChatMessage = {
+      id: 'greeting_' + Date.now(),
+      role: 'clarity',
+      content: getPersonaGreeting(persona),
+      timestamp: new Date(),
+      conversation_stage: 'greeting',
+      quality_tags: ['friendly', 'helpful']
+    };
+
+    trackChatMessage(true, greetingMessage);
+    return greetingMessage;
+  };
+
   const analyzeMessageQuality = (message: ChatMessage) => {
     const content = message.content.toLowerCase();
     const qualityTags = [];
@@ -104,10 +133,13 @@ export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) =>
 
       if (error) {
         console.warn('⚠️ Failed to load conversation history:', error);
-        // Fall back to initial message from persona data
+        // Fall back to greeting message
+        const greetingMessage = createGreetingMessage(session?.persona_type || 'clarity');
+        setMessages([greetingMessage]);
+        
+        // Still save initial analysis for reference (but don't show in chat)
         const initialMessage = createInitialMessageFromPersonaData();
         if (initialMessage) {
-          setMessages([initialMessage]);
           await saveInitialMessageToDatabase(initialMessage.content);
         }
         return;
@@ -117,17 +149,10 @@ export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) =>
       console.timeEnd('loadConversationHistory');
 
       if (historyData && historyData.length > 0) {
-        // Convert database records to ChatMessage format
-        const loadedMessages = historyData.map(record => ({
-          id: record.id,
-          role: record.role as 'user' | 'clarity',
-          content: record.content,
-          timestamp: new Date(record.created_at),
-          refinement_score: record.refinement_score,
-          conversation_stage: record.conversation_stage,
-          parsed_problems: record.parsed_problems,
-          suggested_fixes: record.suggested_fixes,
-          quality_tags: analyzeMessageQuality({
+        // Filter out initial analysis messages and convert to ChatMessage format
+        const chatMessages = historyData
+          .filter(record => record.conversation_stage !== 'initial') // Remove initial JSON dumps
+          .map(record => ({
             id: record.id,
             role: record.role as 'user' | 'clarity',
             content: record.content,
@@ -135,18 +160,46 @@ export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) =>
             refinement_score: record.refinement_score,
             conversation_stage: record.conversation_stage,
             parsed_problems: record.parsed_problems,
-            suggested_fixes: record.suggested_fixes
-          })
-        }));
+            suggested_fixes: record.suggested_fixes,
+            quality_tags: analyzeMessageQuality({
+              id: record.id,
+              role: record.role as 'user' | 'clarity',
+              content: record.content,
+              timestamp: new Date(record.created_at),
+              refinement_score: record.refinement_score,
+              conversation_stage: record.conversation_stage,
+              parsed_problems: record.parsed_problems,
+              suggested_fixes: record.suggested_fixes
+            })
+          }));
 
-        console.log('✅ Loaded messages from database:', loadedMessages.length);
-        setMessages(loadedMessages);
+        // If no actual chat messages exist (only initial was filtered out), start with greeting
+        if (chatMessages.length === 0) {
+          console.log('📝 No chat messages found, creating greeting message');
+          const greetingMessage = createGreetingMessage(session?.persona_type || 'clarity');
+          setMessages([greetingMessage]);
+        } else {
+          console.log('✅ Loaded chat messages from database:', chatMessages.length);
+          setMessages(chatMessages);
+        }
+
+        // Ensure initial analysis is saved to database (for other tabs) if not already there
+        const hasInitialMessage = historyData.some(record => record.conversation_stage === 'initial');
+        if (!hasInitialMessage) {
+          const initialMessage = createInitialMessageFromPersonaData();
+          if (initialMessage) {
+            await saveInitialMessageToDatabase(initialMessage.content);
+          }
+        }
       } else {
-        // No history found, create initial message from persona data
-        console.log('📝 No conversation history found, creating initial message');
+        // No history found, create greeting message
+        console.log('📝 No conversation history found, creating greeting message');
+        const greetingMessage = createGreetingMessage(session?.persona_type || 'clarity');
+        setMessages([greetingMessage]);
+        
+        // Save initial analysis for other tabs
         const initialMessage = createInitialMessageFromPersonaData();
         if (initialMessage) {
-          setMessages([initialMessage]);
           await saveInitialMessageToDatabase(initialMessage.content);
         }
       }
@@ -163,11 +216,9 @@ export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) =>
         });
       }
       
-      // Fall back to initial message
-      const initialMessage = createInitialMessageFromPersonaData();
-      if (initialMessage) {
-        setMessages([initialMessage]);
-      }
+      // Fall back to greeting message
+      const greetingMessage = createGreetingMessage(session?.persona_type || 'clarity');
+      setMessages([greetingMessage]);
     }
   };
 
@@ -182,16 +233,10 @@ export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) =>
         .order('message_order', { ascending: true });
 
       if (!error && historyData && historyData.length > 0) {
-        const reloadedMessages = historyData.map(record => ({
-          id: record.id,
-          role: record.role as 'user' | 'clarity',
-          content: record.content,
-          timestamp: new Date(record.created_at),
-          refinement_score: record.refinement_score,
-          conversation_stage: record.conversation_stage,
-          parsed_problems: record.parsed_problems,
-          suggested_fixes: record.suggested_fixes,
-          quality_tags: analyzeMessageQuality({
+        // Filter out initial analysis messages
+        const chatMessages = historyData
+          .filter(record => record.conversation_stage !== 'initial')
+          .map(record => ({
             id: record.id,
             role: record.role as 'user' | 'clarity',
             content: record.content,
@@ -199,17 +244,39 @@ export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) =>
             refinement_score: record.refinement_score,
             conversation_stage: record.conversation_stage,
             parsed_problems: record.parsed_problems,
-            suggested_fixes: record.suggested_fixes
-          })
-        }));
+            suggested_fixes: record.suggested_fixes,
+            quality_tags: analyzeMessageQuality({
+              id: record.id,
+              role: record.role as 'user' | 'clarity',
+              content: record.content,
+              timestamp: new Date(record.created_at),
+              refinement_score: record.refinement_score,
+              conversation_stage: record.conversation_stage,
+              parsed_problems: record.parsed_problems,
+              suggested_fixes: record.suggested_fixes
+            })
+          }));
 
-        console.log(`✅ Reloaded ${reloadedMessages.length} messages`);
-        setMessages(reloadedMessages);
+        // If only initial messages were filtered out, add greeting
+        if (chatMessages.length === 0) {
+          const greetingMessage = createGreetingMessage(session?.persona_type || 'clarity');
+          setMessages([greetingMessage]);
+        } else {
+          console.log(`✅ Reloaded ${chatMessages.length} chat messages`);
+          setMessages(chatMessages);
+        }
         return true;
+      } else {
+        // No messages or error - fall back to greeting
+        const greetingMessage = createGreetingMessage(session?.persona_type || 'clarity');
+        setMessages([greetingMessage]);
+        return false;
       }
-      return false;
     } catch (error) {
       console.error('❌ Failed to reload messages:', error);
+      // Fall back to greeting on error
+      const greetingMessage = createGreetingMessage(session?.persona_type || 'clarity');
+      setMessages([greetingMessage]);
       return false;
     }
   };
