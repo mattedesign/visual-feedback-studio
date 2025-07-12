@@ -56,7 +56,7 @@ export const AdminPanel = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="w-full py-8">
+      <div className="w-full px-4 py-8">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <Shield className="w-8 h-8 text-primary" />
@@ -68,7 +68,7 @@ export const AdminPanel = () => {
         </div>
 
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-3 max-w-none">
             <TabsTrigger value="users" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
               User Management
