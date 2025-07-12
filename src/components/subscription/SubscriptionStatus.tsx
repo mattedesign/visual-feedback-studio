@@ -26,6 +26,13 @@ export const SubscriptionStatus = () => {
   const remaining = getRemainingAnalyses();
   const usagePercentage = getUsagePercentage();
   const isNearLimit = usagePercentage >= 80;
+  
+  // Get plan display name - prioritize product name if available
+  const planDisplayName = subscription.product?.name || 
+    subscription.plan_type.charAt(0).toUpperCase() + subscription.plan_type.slice(1);
+  
+  // Get effective analyses limit
+  const effectiveLimit = subscription.product?.analyses_limit || subscription.analyses_limit;
 
   const getPlanIcon = () => {
     switch (subscription.plan_type) {
@@ -57,7 +64,7 @@ export const SubscriptionStatus = () => {
             Your Plan
           </span>
           <Badge variant={getPlanBadgeVariant()}>
-            {subscription.plan_type.charAt(0).toUpperCase() + subscription.plan_type.slice(1)}
+            {planDisplayName}
           </Badge>
         </CardTitle>
       </CardHeader>
@@ -66,7 +73,7 @@ export const SubscriptionStatus = () => {
           <div className="flex justify-between text-sm">
             <span>Analyses Used</span>
             <span className={`font-medium ${isNearLimit ? 'text-orange-600' : ''}`}>
-              {subscription.analyses_used} / {subscription.analyses_limit}
+              {subscription.analyses_used} / {effectiveLimit}
             </span>
           </div>
           

@@ -12,6 +12,14 @@ interface Subscription {
   current_period_end?: string;
   stripe_customer_id?: string;
   stripe_subscription_id?: string;
+  product_id?: string;
+  product?: {
+    id: string;
+    name: string;
+    analyses_limit: number;
+    price_monthly?: number;
+    price_yearly?: number;
+  };
 }
 
 export const useSubscription = () => {
@@ -38,7 +46,16 @@ export const useSubscription = () => {
       
       const { data, error } = await supabase
         .from('user_subscriptions')
-        .select('*')
+        .select(`
+          *,
+          products:product_id (
+            id,
+            name,
+            analyses_limit,
+            price_monthly,
+            price_yearly
+          )
+        `)
         .eq('user_id', user.id)
         .single();
 
@@ -74,6 +91,14 @@ export const useSubscription = () => {
           current_period_end: data.current_period_end,
           stripe_customer_id: data.stripe_customer_id,
           stripe_subscription_id: data.stripe_subscription_id,
+          product_id: data.product_id,
+          product: data.products ? {
+            id: data.products.id,
+            name: data.products.name,
+            analyses_limit: data.products.analyses_limit,
+            price_monthly: data.products.price_monthly,
+            price_yearly: data.products.price_yearly,
+          } : undefined,
         };
         
         console.log('useSubscription: Processed subscription data:', subscriptionData);
@@ -237,14 +262,20 @@ export const useSubscription = () => {
       return 999999; // Show a very high number
     }
     
-    // Active monthly/yearly subscribers have 25 per month
-    if (isActiveSubscriber()) {
-      return Math.max(0, subscription.analyses_limit - subscription.analyses_used);
+    // Determine effective limit - prioritize product-based limit if available
+    let effectiveLimit = subscription.analyses_limit;
+    if (subscription.product?.analyses_limit) {
+      effectiveLimit = subscription.product.analyses_limit;
     }
     
-    // Trial users have 3 total
+    // Active monthly/yearly subscribers use product or fallback limit
+    if (isActiveSubscriber()) {
+      return Math.max(0, effectiveLimit - subscription.analyses_used);
+    }
+    
+    // Trial users have product-defined or default limit
     if (isTrialUser()) {
-      return Math.max(0, subscription.analyses_limit - subscription.analyses_used);
+      return Math.max(0, effectiveLimit - subscription.analyses_used);
     }
     
     return 0;
@@ -258,9 +289,15 @@ export const useSubscription = () => {
       return 0;
     }
     
+    // Determine effective limit - prioritize product-based limit if available
+    let effectiveLimit = subscription.analyses_limit;
+    if (subscription.product?.analyses_limit) {
+      effectiveLimit = subscription.product.analyses_limit;
+    }
+    
     // All users (trial and paid) show actual percentage now
-    if (subscription.analyses_limit > 0) {
-      return (subscription.analyses_used / subscription.analyses_limit) * 100;
+    if (effectiveLimit > 0) {
+      return (subscription.analyses_used / effectiveLimit) * 100;
     }
     
     return 100; // No subscription = 100% used

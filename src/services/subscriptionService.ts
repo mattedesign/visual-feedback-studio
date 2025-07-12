@@ -22,16 +22,42 @@ export const subscriptionService = {
       }
 
       if (!data) {
-        // Check if user is on trial plan and has reached limit
+        // Enhanced limit checking with product-based system
         const { data: subscription } = await supabase
           .from('user_subscriptions')
-          .select('plan_type, analyses_used, analyses_limit')
+          .select(`
+            plan_type, 
+            analyses_used, 
+            analyses_limit,
+            product_id,
+            products:product_id (
+              name,
+              analyses_limit
+            )
+          `)
           .eq('user_id', user.id)
           .single();
 
-        if (subscription?.plan_type === 'trial' && subscription.analyses_used >= subscription.analyses_limit) {
-          toast.error('You have used all 3 free analyses. Please upgrade to continue.');
-          return { canCreate: false, shouldRedirect: true };
+        if (subscription) {
+          // Determine effective limit - prioritize product-based limit if available
+          let effectiveLimit = subscription.analyses_limit;
+          let planDescription = subscription.plan_type;
+
+          // Type guard to ensure products is an object, not an array
+          if (subscription.product_id && subscription.products && 
+              typeof subscription.products === 'object' && 
+              'analyses_limit' in subscription.products) {
+            effectiveLimit = (subscription.products as any).analyses_limit;
+            planDescription = (subscription.products as any).name;
+          }
+
+          if (subscription.plan_type === 'trial' && subscription.analyses_used >= effectiveLimit) {
+            toast.error(`You have used all ${effectiveLimit} free analyses. Please upgrade to continue.`);
+            return { canCreate: false, shouldRedirect: true };
+          } else if (subscription.analyses_used >= effectiveLimit) {
+            toast.error(`You have reached your analysis limit for ${planDescription}. Please upgrade your plan.`);
+            return { canCreate: false, shouldRedirect: true };
+          }
         }
 
         toast.error('You have reached your analysis limit. Please upgrade your plan.');
