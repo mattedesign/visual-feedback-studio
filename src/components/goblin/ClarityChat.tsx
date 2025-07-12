@@ -211,8 +211,7 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
         id: Date.now().toString() + '_expansion',
         role: 'clarity',
         content: `💡 **Here are better ways to ask that question:**\n\n${data.rawResponse}`,
-        timestamp: new Date(),
-        expansion_suggestions: data.rawResponse?.split('\n').filter((line: string) => line.trim())
+        timestamp: new Date()
       };
       
       setMessages(prev => [...prev, expansionMessage]);

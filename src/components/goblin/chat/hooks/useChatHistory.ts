@@ -91,15 +91,7 @@ export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) =>
     if (content.includes('because') || content.includes('reason') || content.includes('why')) {
       qualityTags.push('explanatory');
     }
-    if (message.refinement_score && message.refinement_score > 0.8) {
-      qualityTags.push('high-quality');
-    }
-    if (message.parsed_problems?.length > 0) {
-      qualityTags.push('problem-focused');
-    }
-    if (message.suggested_fixes?.length > 0) {
-      qualityTags.push('solution-oriented');
-    }
+    // Remove refinement_score and other removed properties
     
     return qualityTags;
   };
@@ -203,10 +195,7 @@ export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) =>
               role: record.role as 'user' | 'clarity',
               content: record.content,
               timestamp: new Date(record.created_at),
-              refinement_score: record.refinement_score,
-              conversation_stage: record.conversation_stage,
-              parsed_problems: record.parsed_problems,
-              suggested_fixes: record.suggested_fixes
+              conversation_stage: record.conversation_stage
             })
           }));
 
@@ -287,10 +276,7 @@ export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) =>
               role: record.role as 'user' | 'clarity',
               content: record.content,
               timestamp: new Date(record.created_at),
-              refinement_score: record.refinement_score,
-              conversation_stage: record.conversation_stage,
-              parsed_problems: record.parsed_problems,
-              suggested_fixes: record.suggested_fixes
+              conversation_stage: record.conversation_stage
             })
           }));
 
