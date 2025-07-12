@@ -1360,6 +1360,10 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: string
       }
+      is_super_admin: {
+        Args: { user_uuid: string }
+        Returns: boolean
+      }
       ivfflat_bit_support: {
         Args: { "": unknown }
         Returns: unknown
