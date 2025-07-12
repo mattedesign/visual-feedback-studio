@@ -22,7 +22,7 @@ export default function Subscription() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 w-full">
       <div className="container mx-auto py-8">
         {subscription && subscription.status === 'active' ? (
           <div className="max-w-2xl mx-auto">
