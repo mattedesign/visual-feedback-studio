@@ -12,16 +12,16 @@ interface UseChatHistoryProps {
 export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
-  // Persona-specific greetings
+  // Persona-specific greetings - BRIEF & HELPFUL
   const getPersonaGreeting = (persona: string): string => {
     const greetings = {
-      clarity: "👾 Hey there! I'm Clarity, your brutally honest UX goblin. What design disaster can I help you fix today?",
-      strategic: "🎯 Hello! I'm your Strategic advisor. I'm here to help you align UX decisions with business impact. What would you like to explore?",
-      mirror: "🪞 Hi! I'm Mirror, here to reflect on the user experience from an empathetic perspective. How can I help you understand your users better?",
-      mad: "🔬 EUREKA! Mad Scientist here, ready to experiment with wild UX solutions! What impossible problem shall we tackle?",
-      mad_scientist: "🔬 EUREKA! Mad Scientist here, ready to experiment with wild UX solutions! What impossible problem shall we tackle?",
-      executive: "💼 Good day! I'm your Executive consultant, focused on UX business impact and ROI. What strategic UX questions do you have?",
-      exec: "💼 Good day! I'm your Executive consultant, focused on UX business impact and ROI. What strategic UX questions do you have?"
+      clarity: "👾 I'm Clarity! Ask me about:\n• Usability issues in your design\n• User confusion points\n• Quick UX fixes",
+      strategic: "🎯 I'm your Strategic advisor. Ask me about:\n• Business impact of UX decisions\n• User research insights\n• Competitive advantages",
+      mirror: "🪞 I'm Mirror. Ask me about:\n• User emotions and feelings\n• Empathy gaps in your design\n• User journey pain points",
+      mad: "🔬 I'm Mad Scientist! Ask me about:\n• Creative UX experiments\n• Unconventional solutions\n• Innovation opportunities",
+      mad_scientist: "🔬 I'm Mad Scientist! Ask me about:\n• Creative UX experiments\n• Unconventional solutions\n• Innovation opportunities",
+      executive: "💼 I'm your Executive consultant. Ask me about:\n• ROI of UX improvements\n• Business metrics impact\n• Strategic UX decisions",
+      exec: "💼 I'm your Executive consultant. Ask me about:\n• ROI of UX improvements\n• Business metrics impact\n• Strategic UX decisions"
     };
 
     return greetings[persona] || greetings.clarity;
@@ -64,22 +64,14 @@ export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) =>
 
   const createGreetingMessage = (persona: string): ChatMessage => {
     const baseGreeting = getPersonaGreeting(persona);
-    const analysisContext = getAnalysisContext();
     
-    // Enhanced greeting with context about what was analyzed
-    let contextualGreeting = baseGreeting;
-    
-    if (analysisContext) {
-      contextualGreeting += `\n\n💡 *${analysisContext} and have insights ready. Feel free to ask about specific screens, UI elements, or business impact!*`;
-    }
-
     const greetingMessage: ChatMessage = {
       id: 'greeting_' + Date.now(),
       role: 'clarity',
-      content: contextualGreeting,
+      content: baseGreeting,
       timestamp: new Date(),
       conversation_stage: 'greeting',
-      quality_tags: ['friendly', 'helpful', 'contextual']
+      quality_tags: ['helpful', 'contextual']
     };
 
     trackChatMessage(true, greetingMessage);
