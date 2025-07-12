@@ -188,7 +188,6 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
     }
   };
 
-
   const handleExpandPrompt = async () => {
     if (!inputValue.trim()) return;
     
@@ -234,9 +233,7 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
         role: m.role,
         content: m.content,
         timestamp: m.timestamp,
-        feedback_anchors: m.feedback_anchors,
-        quality_tags: m.quality_tags,
-        refinement_score: m.refinement_score
+        quality_tags: m.quality_tags
       }))
     };
 
