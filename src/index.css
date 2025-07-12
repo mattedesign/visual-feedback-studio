@@ -24,6 +24,7 @@
     --destructive-foreground: 35 25% 96%;
     --border: 35 12% 85%;
     --input: 35 12% 85%;
+    --input-background: 0 0% 100%;
     --ring: 266 24% 37%;
     
     /* V128 Brand Colors */
@@ -66,6 +67,7 @@
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
+    --input-background: 0 0% 100%;
     --ring: 224.3 76.3% 94.1%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
