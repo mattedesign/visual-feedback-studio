@@ -717,10 +717,32 @@ const SummaryView: React.FC<SummaryViewProps> = ({
   return <div className="max-w-5xl mx-auto space-y-8 p-6 mobile-content-card px-[8px] py-[8px]">
       {/* Header with actions */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground mobile-text-content">
-            {session?.title || 'Goblin Analysis'}
-          </h1>
+        <div className="flex-1">
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground mobile-text-content">
+              {session?.title || 'Goblin Analysis'}
+            </h1>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={onCopyLink}
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 hover:bg-accent hover:text-accent-foreground"
+                title={copied ? 'Copied!' : 'Copy Link'}
+              >
+                {copied ? '✅' : '📋'}
+              </Button>
+              <Button
+                onClick={onExport}
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 hover:bg-accent hover:text-accent-foreground"
+                title="Export Results"
+              >
+                📤
+              </Button>
+            </div>
+          </div>
           <div className="flex items-center gap-3 mt-3">
             <Badge variant="outline" className={`${colors.badge} mobile-badge`}>
               {session?.persona_type?.charAt(0).toUpperCase() + session?.persona_type?.slice(1) || 'Analysis'}
@@ -729,14 +751,6 @@ const SummaryView: React.FC<SummaryViewProps> = ({
                 {getGripeEmoji(results.goblin_gripe_level)} {results.goblin_gripe_level}
               </Badge>}
           </div>
-        </div>
-        <div className="flex gap-3 mobile-button-group">
-          <Button onClick={onCopyLink} variant="outline" className="border-border hover:bg-accent hover:text-accent-foreground">
-            {copied ? '✅ Copied!' : 'Copy Link'}
-          </Button>
-          <Button onClick={onExport} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-            Export Results
-          </Button>
         </div>
       </div>
 
