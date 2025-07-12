@@ -43,12 +43,25 @@ export const SubscriptionProductLinker = () => {
           plan_type,
           analyses_limit,
           product_id,
-          profiles:user_id (
-            email
-          )
+          user_id
         `)
         .is('product_id', null)
         .limit(20);
+
+      // Get user emails separately
+      let subscriptionsWithEmails = [];
+      if (subsData && subsData.length > 0) {
+        const userIds = subsData.map(sub => sub.user_id);
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('user_id, email')
+          .in('user_id', userIds);
+        
+        subscriptionsWithEmails = subsData.map(sub => ({
+          ...sub,
+          user_profiles: profilesData?.find(profile => profile.user_id === sub.user_id)
+        }));
+      }
 
       if (subsError) throw subsError;
 
@@ -61,7 +74,7 @@ export const SubscriptionProductLinker = () => {
 
       if (productsError) throw productsError;
 
-      setSubscriptions(subsData || []);
+      setSubscriptions(subscriptionsWithEmails || []);
       setProducts(productsData || []);
     } catch (error) {
       console.error('Error fetching data:', error);
