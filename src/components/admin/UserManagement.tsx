@@ -103,14 +103,14 @@ export const UserManagement = () => {
 
   return (
     <div className="space-y-6 w-full">
-      <Card className="w-full">
+      <Card className="w-full max-w-none">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <User className="w-5 h-5" />
             User Management
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="w-full max-w-none">
           <div className="mb-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
