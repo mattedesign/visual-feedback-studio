@@ -17,8 +17,6 @@ import LoadingIndicator from './chat/components/LoadingIndicator';
 const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedbackUpdate }) => {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [feedbackMode, setFeedbackMode] = useState<string | null>(null);
-  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const { setTotalImages } = useNavigation();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
@@ -190,61 +188,6 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
     }
   };
 
-  const handleRefineFeedback = async (messageId: string, feedbackType: string) => {
-    setSelectedMessageId(messageId);
-    setFeedbackMode(feedbackType);
-    
-    const message = messages.find(m => m.id === messageId);
-    if (!message) return;
-
-    try {
-      // Call edge function to generate refined feedback
-      const { data, error } = await supabase.functions.invoke('goblin-model-claude-analyzer', {
-        body: {
-          sessionId: session.id,
-          chatMode: true,
-          prompt: `Please provide ${feedbackType} feedback for this message: "${message.content}"`,
-          persona: session?.persona_type || 'clarity',
-          conversationHistory: '',
-          originalAnalysis: personaData,
-          feedbackType
-        }
-      });
-
-      if (error) throw error;
-
-      // Update message with feedback anchors
-      const updatedMessages = messages.map(m => {
-        if (m.id === messageId) {
-          const newAnchors = [...(m.feedback_anchors || []), `${feedbackType}: ${data.rawResponse?.slice(0, 100)}...`];
-          return { ...m, feedback_anchors: newAnchors };
-        }
-        return m;
-      });
-      
-      setMessages(updatedMessages);
-      onFeedbackUpdate?.(messageId, feedbackType, data);
-      toast.success(`${feedbackType} feedback added!`);
-    } catch (error) {
-      console.error('Feedback refinement error:', error);
-      toast.error('Failed to generate refined feedback');
-    } finally {
-      setFeedbackMode(null);
-      setSelectedMessageId(null);
-    }
-  };
-
-  const handleAddFeedbackAnchor = (messageId: string, anchor: string) => {
-    const updatedMessages = messages.map(m => {
-      if (m.id === messageId) {
-        const newAnchors = [...(m.feedback_anchors || []), anchor];
-        return { ...m, feedback_anchors: newAnchors };
-      }
-      return m;
-    });
-    setMessages(updatedMessages);
-    onFeedbackUpdate?.(messageId, 'anchor', anchor);
-  };
 
   const handleExpandPrompt = async () => {
     if (!inputValue.trim()) return;
@@ -336,11 +279,7 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
                   key={message.id}
                   message={message}
                   session={session}
-                  onRefineFeedback={handleRefineFeedback}
-                  onAddFeedbackAnchor={handleAddFeedbackAnchor}
                   analyzeMessageQuality={analyzeMessageQuality}
-                  feedbackMode={feedbackMode}
-                  selectedMessageId={selectedMessageId}
                 />
               ))}
               {isLoading && <LoadingIndicator session={session} />}

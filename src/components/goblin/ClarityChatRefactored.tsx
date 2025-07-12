@@ -17,8 +17,6 @@ import LoadingIndicator from './chat/components/LoadingIndicator';
 const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedbackUpdate }) => {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [feedbackMode, setFeedbackMode] = useState<string | null>(null);
-  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const { messages, setMessages, analyzeMessageQuality, reloadMessages } = useChatHistory({ session, personaData });
@@ -121,84 +119,6 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
     }
   };
 
-  const handleRefineFeedback = async (messageId: string, feedbackType: string) => {
-    setSelectedMessageId(messageId);
-    setFeedbackMode(feedbackType);
-    
-    const message = messages.find(m => m.id === messageId);
-    if (!message) return;
-
-    try {
-      // FIXED: Use original analysis data instead of greeting message
-      const originalAnalysisText = safeExtractAnalysisContent(personaData);
-      const analysisContext = `
-Original Analysis Results:
-${originalAnalysisText}
-
-Images Analyzed: ${session?.goblin_analysis_images?.map((img: any) => `Screen ${img.upload_order}: ${img.screen_type}`).join(', ') || 'Multiple screens'}
-Goal: ${session?.goal_description || 'UX improvement'}
-Confidence Level: ${session?.confidence_level}/3
-      `;
-
-      // Call edge function to generate refined feedback based on ORIGINAL ANALYSIS
-      const { data, error } = await supabase.functions.invoke('goblin-model-claude-analyzer', {
-        body: {
-          sessionId: session.id,
-          chatMode: true,
-          prompt: `The user wants you to make the analysis MORE ${feedbackType.toUpperCase()}. 
-          
-IMPORTANT: Focus on the original analysis results, not this chat conversation.
-
-${analysisContext}
-
-Please provide a more ${feedbackType} version of the analysis above. Structure your response with:
-- **Impact Framing** - One punchy sentence about business/user impact
-- **Key Improvements** - 2-5 specific, actionable fixes tied to concrete UI elements
-- **Next Actions** - 1-3 numbered, stakeholder-ready steps
-
-Make it more ${feedbackType} while maintaining the ${session?.persona_type || 'clarity'} persona voice.`,
-          persona: session?.persona_type || 'clarity',
-          conversationHistory: '',
-          originalAnalysis: personaData,
-          feedbackType
-        }
-      });
-
-      if (error) throw error;
-
-      // Add the refined feedback as a new message instead of updating anchors
-      const refinedMessage: ChatMessage = {
-        id: Date.now().toString() + '_refined',
-        role: 'clarity',
-        content: `🔄 **${feedbackType.charAt(0).toUpperCase() + feedbackType.slice(1)} Refinement:**\n\n${data.rawResponse}`,
-        timestamp: new Date(),
-        conversation_stage: 'refinement',
-        quality_tags: [feedbackType, 'refined']
-      };
-
-      setMessages(prev => [...prev, refinedMessage]);
-      onFeedbackUpdate?.(messageId, feedbackType, data);
-      toast.success(`${feedbackType} refinement added!`);
-    } catch (error) {
-      console.error('Feedback refinement error:', error);
-      toast.error('Failed to generate refined feedback');
-    } finally {
-      setFeedbackMode(null);
-      setSelectedMessageId(null);
-    }
-  };
-
-  const handleAddFeedbackAnchor = (messageId: string, anchor: string) => {
-    const updatedMessages = messages.map(m => {
-      if (m.id === messageId) {
-        const newAnchors = [...(m.feedback_anchors || []), anchor];
-        return { ...m, feedback_anchors: newAnchors };
-      }
-      return m;
-    });
-    setMessages(updatedMessages);
-    onFeedbackUpdate?.(messageId, 'anchor', anchor);
-  };
 
   const handleExpandPrompt = async () => {
     if (!inputValue.trim()) return;
@@ -290,11 +210,7 @@ Make it more ${feedbackType} while maintaining the ${session?.persona_type || 'c
                   key={message.id}
                   message={message}
                   session={session}
-                  onRefineFeedback={handleRefineFeedback}
-                  onAddFeedbackAnchor={handleAddFeedbackAnchor}
                   analyzeMessageQuality={analyzeMessageQuality}
-                  feedbackMode={feedbackMode}
-                  selectedMessageId={selectedMessageId}
                 />
               ))}
               {isLoading && <LoadingIndicator session={session} />}
