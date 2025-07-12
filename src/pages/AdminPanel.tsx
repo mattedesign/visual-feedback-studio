@@ -8,37 +8,29 @@ import { Shield, Users, Package, BarChart3 } from 'lucide-react';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { ProductManagement } from '@/components/admin/ProductManagement';
 import { UsageTracking } from '@/components/admin/UsageTracking';
-
 export const AdminPanel = () => {
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
-
   useEffect(() => {
     const checkAdminAccess = async () => {
       if (!user) {
         setIsAuthorized(false);
         return;
       }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('super_admin')
-        .eq('user_id', user.id)
-        .single();
-
+      const {
+        data: profile
+      } = await supabase.from('profiles').select('super_admin').eq('user_id', user.id).single();
       setIsAuthorized(profile?.super_admin === true);
     };
-
     checkAdminAccess();
   }, [user]);
-
   if (isAuthorized === null) {
     return <LoadingSpinner />;
   }
-
   if (!isAuthorized) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+    return <div className="min-h-screen flex items-center justify-center bg-background">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <Shield className="w-12 h-12 mx-auto text-destructive mb-4" />
@@ -50,13 +42,10 @@ export const AdminPanel = () => {
             </p>
           </CardContent>
         </Card>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen bg-background w-full">
-      <div className="w-full px-4 py-8">
+  return <div className="min-h-screen bg-background w-full">
+      <div className="w-full px-4 py-8 bg-white">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <Shield className="w-8 h-8 text-primary" />
@@ -96,6 +85,5 @@ export const AdminPanel = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
-  );
+    </div>;
 };
