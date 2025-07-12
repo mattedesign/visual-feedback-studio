@@ -27,7 +27,7 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex flex-1 items-center justify-center gap-2 px-3 py-2 text-[13px] font-medium leading-4 tracking-[-0.13px] text-[rgba(18,18,18,0.70)] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:rounded-lg data-[state=active]:bg-[#FCFCFC] data-[state=active]:text-[#121212] data-[state=active]:text-[14px] data-[state=active]:font-semibold data-[state=active]:leading-5 data-[state=active]:tracking-[-0.28px] data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset]",
+      "flex flex-1 items-center justify-center gap-2 px-3 py-2 text-[14px] font-medium leading-5 tracking-[-0.28px] text-[rgba(18,18,18,0.70)] font-['Instrument_Sans'] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:rounded-lg data-[state=active]:bg-[#FCFCFC] data-[state=active]:text-[#121212] data-[state=active]:text-[14px] data-[state=active]:font-semibold data-[state=active]:leading-5 data-[state=active]:tracking-[-0.28px] data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset]",
       className
     )}
     {...props}
