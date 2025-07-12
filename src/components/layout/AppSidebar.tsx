@@ -14,7 +14,8 @@ import {
   ChevronDown,
   LogOut,
   X,
-  Menu
+  Menu,
+  Crown
 } from 'lucide-react';
 import {
   Sidebar,
@@ -57,16 +58,25 @@ const mainNavItems = [
 
 const bottomNavItems = [
   {
+    title: "Subscription",
+    url: "/subscription",
+    icon: Crown,
+    badge: null,
+    emoji: "💎"
+  },
+  {
     title: "Settings",
     url: "/settings",
     icon: Settings,
-    badge: null
+    badge: null,
+    emoji: "⚙️"
   },
   {
     title: "Help",
     url: "/help",
     icon: HelpCircle,
-    badge: null
+    badge: null,
+    emoji: "❓"
   }
 ];
 
@@ -201,8 +211,19 @@ export function AppSidebar({}: AppSidebarProps) {
                        className={getNavClassName(isActive(item.url))}
                        onClick={handleNavClick}
                      >
-                      <item.icon className="h-4 w-4 flex-shrink-0" />
-                      {!collapsed && <span>{item.title}</span>}
+                        <div className="flex items-center gap-2">
+                          {collapsed ? (
+                            <span className="text-lg">{item.emoji}</span>
+                          ) : (
+                            <item.icon className="h-4 w-4 flex-shrink-0" />
+                          )}
+                        </div>
+                        {!collapsed && (
+                          <span className="flex-1 flex items-center gap-2">
+                            <span className="text-sm">{item.emoji}</span>
+                            {item.title}
+                          </span>
+                        )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { UsageLimitPrompt } from '@/components/subscription/UsageLimitPrompt';
 interface GoblinSession {
   id: string;
   title: string;
@@ -153,7 +154,7 @@ const GoblinDashboard = () => {
     return <div className="min-h-screen">
       <div className="max-w-7xl mx-auto p-8">
         {/* Header */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-12">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-8">
           <div className="space-y-2">
             <h1 className="text-4xl font-semibold tracking-tight text-foreground flex items-center gap-3">
               <Brain className="w-9 h-9 text-professional-brown" />
@@ -169,6 +170,9 @@ const GoblinDashboard = () => {
             New Goblin Analysis
           </Button>
         </div>
+
+        {/* Usage Limit Prompt */}
+        <UsageLimitPrompt className="mb-8" />
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">

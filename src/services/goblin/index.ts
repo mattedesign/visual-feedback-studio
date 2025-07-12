@@ -121,6 +121,25 @@ export async function startGoblinAnalysis(sessionId: string): Promise<any> {
   console.log('🚀 Starting goblin analysis for session:', sessionId);
   
   try {
+    // First, increment usage counter before starting analysis
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: usageIncremented, error: usageError } = await supabase.rpc('increment_analysis_usage', {
+        p_user_id: user.id
+      });
+      
+      if (usageError) {
+        console.error('❌ Failed to increment usage:', usageError);
+        throw new Error('Failed to track analysis usage');
+      }
+      
+      if (!usageIncremented) {
+        throw new Error('Analysis limit reached. Please upgrade your subscription.');
+      }
+      
+      console.log('✅ Usage incremented for goblin analysis');
+    }
+
     // Call the orchestrator with ONLY the sessionId
     const { data, error } = await supabase.functions.invoke('goblin-analysis-orchestrator', {
       body: { sessionId }

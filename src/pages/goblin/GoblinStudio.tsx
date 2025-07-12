@@ -15,6 +15,8 @@ import { createGoblinSession, uploadGoblinImage, startGoblinAnalysis } from '@/s
 import { supabase } from '@/integrations/supabase/client';
 import { GoblinPersonaSelector } from '@/components/goblin/personas/PersonaSelector';
 import PersonaLoadingQuips from '@/components/goblin/PersonaLoadingQuips';
+import { useSubscription } from '@/hooks/useSubscription';
+import { UsageLimitPrompt } from '@/components/subscription/UsageLimitPrompt';
 export type GoblinPersonaType = 'strategic' | 'mirror' | 'mad' | 'exec' | 'clarity';
 const GOBLIN_PERSONAS = [{
   value: 'strategic',
@@ -37,6 +39,7 @@ const GoblinStudio: React.FC = () => {
     user,
     loading
   } = useAuth();
+  const { canCreateAnalysis, needsSubscription } = useSubscription();
   const navigate = useNavigate();
   const [title, setTitle] = useState('');
   const [goal, setGoal] = useState('');
@@ -71,6 +74,19 @@ const GoblinStudio: React.FC = () => {
       toast.error('Please fill in all fields and upload at least one image.');
       return;
     }
+
+    // Check usage limit before starting analysis
+    if (!canCreateAnalysis()) {
+      if (needsSubscription()) {
+        toast.error('Analysis limit reached. Please upgrade your subscription to continue.');
+        navigate('/subscription');
+        return;
+      } else {
+        toast.error('Unable to create analysis at this time.');
+        return;
+      }
+    }
+
     setIsAnalyzing(true);
     setAnalysisProgress(10);
     setAnalysisStage('Creating analysis session...');
@@ -150,11 +166,19 @@ const GoblinStudio: React.FC = () => {
                 {images.length > 0 && <p className="text-sm text-muted-foreground mt-2">
                     {images.length} image{images.length > 1 ? 's' : ''} selected
                   </p>}
-              </div>
+          </div>
 
-              <Button className="w-full mt-8 py-4 text-base font-medium bg-professional-brown hover:bg-professional-brown/90" disabled={isAnalyzing} onClick={handleSubmit} size="lg">
-                {isAnalyzing ? 'Analyzing...' : 'Run Goblin Analysis'}
-              </Button>
+          {/* Usage Limit Check */}
+          <UsageLimitPrompt className="mt-6" />
+
+          <Button 
+            className="w-full mt-8 py-4 text-base font-medium bg-professional-brown hover:bg-professional-brown/90" 
+            disabled={isAnalyzing || !canCreateAnalysis()} 
+            onClick={handleSubmit} 
+            size="lg"
+          >
+            {isAnalyzing ? 'Analyzing...' : 'Run Goblin Analysis'}
+          </Button>
 
               {isAnalyzing && <div className="space-y-6 mt-8">
                   <PersonaLoadingQuips persona={persona} />

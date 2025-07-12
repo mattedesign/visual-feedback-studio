@@ -18,6 +18,7 @@ import History from "./pages/History";
 import Settings from "./pages/Settings";
 import Help from "./pages/Help";
 import { AdminPanel } from "./pages/AdminPanel";
+import Subscription from "./pages/Subscription";
 import GoblinStudio from "./pages/goblin/GoblinStudio";
 import GoblinResults from "./pages/goblin/GoblinResults";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
@@ -74,6 +75,7 @@ const App = () => {
                             <Route path="goblin/results/:sessionId" element={<GoblinResults />} />
                             <Route path="history" element={<History />} />
                             <Route path="settings" element={<Settings />} />
+                            <Route path="subscription" element={<Subscription />} />
                             <Route path="help" element={<Help />} />
                             <Route path="admin" element={<AdminPanel />} />
                             <Route path="upgrade-success" element={<UpgradeSuccess />} />
