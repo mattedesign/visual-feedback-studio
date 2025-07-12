@@ -7,9 +7,7 @@ export interface ChatMessage {
   conversation_stage?: string;
   parsed_problems?: any[];
   suggested_fixes?: any[];
-  feedback_anchors?: string[];
   quality_tags?: string[];
-  expansion_suggestions?: string[];
 }
 
 export interface ClarityChatProps {
