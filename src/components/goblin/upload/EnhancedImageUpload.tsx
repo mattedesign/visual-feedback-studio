@@ -75,8 +75,8 @@ export const EnhancedImageUpload = ({
 
   return (
     <div className={cn("space-y-4", className)}>
-      {/* Upload Zone */}
-      {canUploadMore && (
+      {/* Upload Zone - Only show when no images */}
+      {value.length === 0 && (
         <div
           {...getRootProps()}
           className={cn(
@@ -110,15 +110,8 @@ export const EnhancedImageUpload = ({
             </div>
 
             <h3 className="text-lg font-medium text-foreground mb-2">
-              {isDragActive ? 'Drop your images here' : 'Upload Screenshots'}
+              {isDragActive ? 'Drop your images here' : 'Drag and drop images, code or Browse'}
             </h3>
-            
-            <p className="text-sm text-muted-foreground mb-1">
-              {value.length === 0 
-                ? 'Drag and drop your images, or click to browse'
-                : `Add more images (${value.length}/${maxFiles} uploaded)`
-              }
-            </p>
             
             <p className="text-xs text-muted-foreground">
               Supports PNG, JPG, WebP, SVG • Max 10MB each • Up to {maxFiles} images
@@ -127,89 +120,82 @@ export const EnhancedImageUpload = ({
         </div>
       )}
 
-      {/* Image Previews */}
+      {/* Horizontal Image Display with Add Button */}
       {value.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-foreground">
-              Uploaded Images ({value.length}/{maxFiles})
-            </p>
-            {canUploadMore && (
-              <Button
-                {...getRootProps()}
-                variant="outline"
-                size="sm"
-                className="h-8 px-3 text-xs hover:scale-105 transition-transform"
-              >
-                <input {...getInputProps()} />
-                <Plus className="w-3 h-3 mr-1" />
-                Add More
-              </Button>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="border-2 border-dashed border-border rounded-xl p-6">
+          <div className="flex items-center gap-4 overflow-x-auto">
+            {/* Display uploaded images */}
             {value.map((file, index) => {
               const imageUrl = URL.createObjectURL(file);
               const isLoading = loadingImages.has(imageUrl);
               const isLoaded = loadedImages.has(imageUrl);
               
               return (
-                <Card key={index} className="group relative overflow-hidden border-0 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.02]">
-                  <CardContent className="p-0">
-                    <div className="aspect-square relative bg-muted">
-                      <img
-                        src={imageUrl}
-                        alt={`Upload ${index + 1}`}
-                        className={cn(
-                          "w-full h-full object-cover transition-all duration-300",
-                          isLoading && "opacity-50 blur-sm"
-                        )}
-                      />
-                      
-                      {/* Loading Overlay */}
-                      {isLoading && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-background/50">
-                          <div className="bg-background rounded-full p-2 shadow-sm">
-                            <Loader2 className="w-4 h-4 text-primary animate-spin" />
-                          </div>
-                        </div>
+                <div key={index} className="flex-shrink-0 group relative">
+                  <div className="w-32 h-32 rounded-lg overflow-hidden bg-muted border relative">
+                    <img
+                      src={imageUrl}
+                      alt={`Upload ${index + 1}`}
+                      className={cn(
+                        "w-full h-full object-cover transition-all duration-300",
+                        isLoading && "opacity-50 blur-sm"
                       )}
-                      
-                      {/* Success Indicator */}
-                      {isLoaded && (
-                        <div className="absolute inset-0 flex items-center justify-center animate-fade-in">
-                          <div className="bg-green-500 text-white rounded-full p-2 shadow-lg animate-scale-in">
-                            <Check className="w-4 h-4" />
-                          </div>
+                    />
+                    
+                    {/* Loading Overlay */}
+                    {isLoading && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-background/50">
+                        <div className="bg-background rounded-full p-2 shadow-sm">
+                          <Loader2 className="w-4 h-4 text-primary animate-spin" />
                         </div>
-                      )}
-
-                      {/* Remove Button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeImage(index);
-                        }}
-                        className={cn(
-                          "absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1",
-                          "opacity-0 group-hover:opacity-100 transition-all duration-200",
-                          "hover:scale-110 hover:bg-destructive/90",
-                          "focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-destructive/20"
-                        )}
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-
-                      {/* Image Number Badge */}
-                      <div className="absolute bottom-2 left-2 bg-background/80 text-foreground text-xs font-medium px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
-                        {index + 1}
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    )}
+                    
+                    {/* Success Indicator */}
+                    {isLoaded && (
+                      <div className="absolute inset-0 flex items-center justify-center animate-fade-in">
+                        <div className="bg-green-500 text-white rounded-full p-2 shadow-lg animate-scale-in">
+                          <Check className="w-4 h-4" />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Remove Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeImage(index);
+                      }}
+                      className={cn(
+                        "absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1",
+                        "opacity-0 group-hover:opacity-100 transition-all duration-200",
+                        "hover:scale-110 hover:bg-destructive/90",
+                        "focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-destructive/20"
+                      )}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
               );
             })}
+
+            {/* Add More Button - Only show if can upload more */}
+            {canUploadMore && (
+              <div
+                {...getRootProps()}
+                className="flex-shrink-0 w-32 h-32 border-2 border-dashed border-border rounded-lg flex items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-accent/30 transition-all duration-200"
+              >
+                <input {...getInputProps()} />
+                <Plus className="w-8 h-8 text-muted-foreground" />
+              </div>
+            )}
+          </div>
+
+          {/* Image count and limit info */}
+          <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
+            <span>{value.length}/{maxFiles} images uploaded</span>
+            <span>Max 10MB each</span>
           </div>
         </div>
       )}
