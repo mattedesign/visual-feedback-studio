@@ -72,15 +72,15 @@ export const AdminPanel = () => {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="users" className="w-full">
+          <TabsContent value="users" className="w-full mt-8">
             <UserManagement />
           </TabsContent>
 
-          <TabsContent value="products" className="w-full">
+          <TabsContent value="products" className="w-full mt-8">
             <ProductManagement />
           </TabsContent>
 
-          <TabsContent value="usage" className="w-full">
+          <TabsContent value="usage" className="w-full mt-8">
             <UsageTracking />
           </TabsContent>
         </Tabs>
