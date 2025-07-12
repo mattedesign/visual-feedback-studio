@@ -42,29 +42,66 @@ serve(async (req) => {
     logStep("User authenticated", { userId: user.id, email: user.email });
 
     const requestBody = await req.json();
-    const { planType, customerId, successUrl, cancelUrl, metadata } = requestBody;
+    const { planType, customerId, successUrl, cancelUrl, metadata, productId } = requestBody;
     
-    if (!planType) throw new Error("Plan type is required");
-    logStep("Request validated", { planType, customerId });
+    logStep("Request validated", { planType, customerId, productId });
     
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     
-    // Define plan pricing and analysis limits
-    const planConfig = {
-      monthly: {
-        price: 2900, // $29/month
-        analyses: 25,
-        interval: 'month'
-      },
-      yearly: {
-        price: 29000, // $290/year (save ~$58)
-        analyses: 25,
-        interval: 'year'
+    let config;
+    let productName = `Figmant ${planType} Plan`;
+    let description = `Professional UX analysis subscription`;
+    
+    if (productId) {
+      // New product-based system
+      logStep("Using product-based pricing", { productId });
+      
+      const { data: product, error: productError } = await supabaseClient
+        .from('products')
+        .select('*')
+        .eq('id', productId)
+        .eq('is_active', true)
+        .single();
+      
+      if (productError || !product) {
+        throw new Error("Product not found or inactive");
       }
-    };
+      
+      const price = planType === 'yearly' ? product.price_yearly : product.price_monthly;
+      if (!price || price <= 0) {
+        throw new Error(`${planType} pricing not available for this product`);
+      }
+      
+      config = {
+        price: Math.round(price * 100), // Convert to cents
+        analyses: product.analyses_limit,
+        interval: planType === 'yearly' ? 'year' : 'month'
+      };
+      
+      productName = product.name;
+      description = product.description || `${product.analyses_limit} UX analyses per ${config.interval}`;
+      
+      logStep("Product config loaded", { product: product.name, price: config.price, analyses: config.analyses });
+    } else {
+      // Legacy hardcoded plans fallback
+      logStep("Using legacy hardcoded pricing");
+      
+      const planConfig = {
+        monthly: {
+          price: 2900, // $29/month
+          analyses: 25,
+          interval: 'month'
+        },
+        yearly: {
+          price: 29000, // $290/year (save ~$58)
+          analyses: 25,
+          interval: 'year'
+        }
+      };
 
-    const config = planConfig[planType as keyof typeof planConfig];
-    if (!config) throw new Error("Invalid plan type");
+      config = planConfig[planType as keyof typeof planConfig];
+      if (!config) throw new Error("Invalid plan type");
+    }
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -74,8 +111,8 @@ serve(async (req) => {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: `Figmant ${planType.charAt(0).toUpperCase() + planType.slice(1)} Plan`,
-              description: `${config.analyses} UX analyses per ${config.interval}`
+              name: productName,
+              description: description
             },
             unit_amount: config.price,
             recurring: {
@@ -92,7 +129,8 @@ serve(async (req) => {
         ...metadata,
         user_id: user.id,
         plan_type: planType,
-        analyses_limit: config.analyses.toString()
+        analyses_limit: config.analyses.toString(),
+        product_id: productId || 'legacy'
       },
     });
 
