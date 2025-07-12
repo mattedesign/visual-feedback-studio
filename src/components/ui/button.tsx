@@ -10,7 +10,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "flex justify-center items-center gap-2 self-stretch rounded-[12px] px-5 py-3 text-center font-semibold text-sm leading-5 tracking-[-0.28px] text-[#FCFCFC] transition-all duration-200 enhanced-button-primary",
+        default: "flex justify-center items-center gap-2 self-stretch rounded-[10px] px-5 py-3 text-center font-semibold text-sm leading-5 tracking-[-0.28px] text-[#FCFCFC] transition-all duration-200 enhanced-button-primary",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline:
