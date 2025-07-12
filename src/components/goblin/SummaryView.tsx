@@ -826,25 +826,25 @@ const SummaryView: React.FC<SummaryViewProps> = ({
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 p-6">
+    <div className="max-w-5xl mx-auto space-y-8 p-6 mobile-content-card">
       {/* Header with actions */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground mobile-text-content">
             {session?.title || 'Goblin Analysis'}
           </h1>
           <div className="flex items-center gap-3 mt-3">
-            <Badge variant="outline" className={colors.badge}>
+            <Badge variant="outline" className={`${colors.badge} mobile-badge`}>
               {session?.persona_type?.charAt(0).toUpperCase() + session?.persona_type?.slice(1) || 'Analysis'}
             </Badge>
             {results?.goblin_gripe_level && (
-              <Badge variant="secondary" className={colors.badge}>
+              <Badge variant="secondary" className={`${colors.badge} mobile-badge`}>
                 {getGripeEmoji(results.goblin_gripe_level)} {results.goblin_gripe_level}
               </Badge>
             )}
           </div>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 mobile-button-group">
           <Button onClick={onCopyLink} variant="outline" className="border-border hover:bg-accent hover:text-accent-foreground">
             {copied ? '✅ Copied!' : 'Copy Link'}
           </Button>
@@ -855,9 +855,9 @@ const SummaryView: React.FC<SummaryViewProps> = ({
       </div>
 
       {/* Goblin Feedback Section - Always show if we have session data */}
-      <Card className={`border-0 shadow-sm ${colors.bg}`}>
+      <Card className={`border-0 shadow-sm ${colors.bg} insights-card-mobile`}>
         <CardHeader className="pb-4">
-          <CardTitle className={`flex items-center gap-3 text-xl font-semibold ${colors.primary}`}>
+          <CardTitle className={`flex items-center gap-3 text-xl font-semibold ${colors.primary} mobile-text-content`}>
             {session?.persona_type === 'clarity' ? '👾 Goblin Feedback' :
              session?.persona_type === 'exec' ? '💼 Executive Analysis' :
              session?.persona_type === 'strategic' ? '🎯 Strategic Analysis' :
@@ -865,13 +865,13 @@ const SummaryView: React.FC<SummaryViewProps> = ({
              session?.persona_type === 'mad' ? '🧪 Mad Science Results' :
              '👾 Analysis Results'}
             {results?.goblin_gripe_level && session?.persona_type === 'clarity' && (
-              <Badge variant="outline" className="bg-green-100 text-green-700">
+              <Badge variant="outline" className="bg-green-100 text-green-700 mobile-badge">
                 {getGripeEmoji(results.goblin_gripe_level)} {results.goblin_gripe_level}
               </Badge>
             )}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 mobile-text-content">
           {/* Dynamic persona-specific content rendering */}
           {renderPersonaSpecificContent(personaData, session?.persona_type, results?.synthesis_summary)}
         </CardContent>

@@ -88,6 +88,120 @@
   }
 }
 
+/* Mobile viewport optimizations for screens 768px and below */
+@media (max-width: 768px) {
+  /* Page container improvements */
+  .min-h-screen {
+    min-height: 100vh;
+    padding: 0 !important;
+  }
+
+  /* Header and navigation improvements */
+  .goblin-header {
+    padding: 0.75rem 1rem !important;
+    min-height: 3.5rem;
+  }
+
+  /* Tab navigation mobile optimizations */
+  .tabs-list-mobile {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+  
+  .tabs-list-mobile::-webkit-scrollbar {
+    display: none !important;
+  }
+  
+  .tabs-trigger-mobile {
+    white-space: nowrap !important;
+    min-width: fit-content !important;
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.875rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Content card improvements */
+  .mobile-content-card {
+    margin: 0.5rem !important;
+    padding: 1rem !important;
+    border-radius: 0.5rem !important;
+  }
+
+  /* Button improvements for mobile */
+  .mobile-button-group {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+  }
+  
+  .mobile-button-group button {
+    width: 100% !important;
+    padding: 0.75rem 1rem !important;
+    justify-content: center !important;
+  }
+
+  /* Text content improvements */
+  .mobile-text-content {
+    font-size: 0.9rem !important;
+    line-height: 1.5 !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  /* Insights card mobile optimizations */
+  .insights-card-mobile {
+    padding: 1rem !important;
+    margin-bottom: 1rem !important;
+  }
+  
+  .insights-card-mobile .card-header {
+    padding-bottom: 0.75rem !important;
+  }
+  
+  .insights-card-mobile .card-content {
+    padding-top: 0 !important;
+  }
+
+  /* Badge and pill mobile improvements */
+  .mobile-badge {
+    font-size: 0.75rem !important;
+    padding: 0.25rem 0.5rem !important;
+    white-space: nowrap !important;
+  }
+
+  /* Container spacing adjustments */
+  .space-y-6 > * + * {
+    margin-top: 1rem !important;
+  }
+  
+  .space-y-4 > * + * {
+    margin-top: 0.75rem !important;
+  }
+
+  /* Prevent horizontal overflow */
+  .container, .max-w-7xl, .max-w-6xl, .max-w-4xl {
+    max-width: 100% !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Ensure full width on mobile */
+  .w-full {
+    width: 100% !important;
+  }
+
+  /* Text sizing improvements */
+  .text-xl {
+    font-size: 1.125rem !important;
+  }
+  
+  .text-lg {
+    font-size: 1rem !important;
+  }
+}
+
 /* Force consistent font rendering for annotation markers */
 .annotation-marker-number {
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif !important;

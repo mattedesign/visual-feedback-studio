@@ -497,34 +497,37 @@ const GoblinResults: React.FC = () => {
       initialTotalImages={totalImages}
     >
       <div className="min-h-screen bg-white">
-        <div className="flex flex-col items-start flex-1 self-stretch rounded-[20px] max-w-7xl mx-auto px-3 md:px-4 lg:px-8 py-6">
+        <div className="flex flex-col items-start flex-1 self-stretch rounded-[20px] max-w-7xl mx-auto px-3 md:px-4 lg:px-8 py-6 mobile-content-card">
           
            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'summary' | 'detailed' | 'maturity' | 'clarity')}>
-            <TabsList className="sticky top-6 z-10 flex w-auto items-center gap-4 rounded-xl border border-gray-200 bg-gray-100 p-1 backdrop-blur-sm" style={{ boxShadow: '0px 1px 1.9px 0px rgba(50, 50, 50, 0.10) inset' }}>
+            <TabsList className="sticky top-6 z-10 flex w-auto items-center gap-4 rounded-xl border border-gray-200 bg-gray-100 p-1 backdrop-blur-sm tabs-list-mobile" style={{ boxShadow: '0px 1px 1.9px 0px rgba(50, 50, 50, 0.10) inset' }}>
               <TabsTrigger 
                 value="summary" 
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset]"
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset] tabs-trigger-mobile"
               >
                 Summary
               </TabsTrigger>
               <TabsTrigger 
                 value="detailed" 
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset]"
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset] tabs-trigger-mobile"
               >
-                Detailed ({annotationCount})
+                <span className="hidden sm:inline">Detailed</span>
+                <span className="sm:hidden">Details</span> ({annotationCount})
               </TabsTrigger>
               <TabsTrigger 
                 value="maturity" 
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset]"
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset] tabs-trigger-mobile"
               >
                 <Trophy className="w-4 h-4" />
-                Maturity Score
+                <span className="hidden sm:inline">Maturity Score</span>
+                <span className="sm:hidden">Score</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="clarity" 
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset]"
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset] tabs-trigger-mobile"
               >
-                Clarity Chat
+                <span className="hidden sm:inline">Clarity Chat</span>
+                <span className="sm:hidden">Clarity</span>
               </TabsTrigger>
             </TabsList>
 
