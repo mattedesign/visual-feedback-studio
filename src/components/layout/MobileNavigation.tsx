@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Drawer,
   DrawerContent,
@@ -64,11 +65,23 @@ export function MobileNavigation() {
 
   const handleLogout = async () => {
     try {
+      // Check if user is already logged out
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        // User is already logged out, just navigate to auth
+        navigate('/auth');
+        setIsOpen(false);
+        return;
+      }
+      
       await signOut();
       navigate('/auth');
       setIsOpen(false);
     } catch (error) {
       console.error('Logout failed:', error);
+      // Even if logout fails, redirect to auth page
+      navigate('/auth');
+      setIsOpen(false);
     }
   };
 
@@ -171,7 +184,10 @@ export function MobileNavigation() {
                 {/* Profile Actions */}
                 <button
                   className="flex py-4 px-4 items-center gap-3 self-stretch rounded-xl text-purple-200 hover:bg-white/10 hover:text-white focus:bg-white/10 focus:text-white transition-colors min-h-[48px] w-full text-left"
-                  onClick={() => {/* Add profile action */}}
+                  onClick={() => {
+                    navigate('/settings');
+                    setIsOpen(false);
+                  }}
                 >
                   <User className="h-5 w-5 flex-shrink-0" />
                   <span>Profile</span>

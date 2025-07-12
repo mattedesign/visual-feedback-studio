@@ -38,6 +38,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileNavigation } from './MobileNavigation';
+import { supabase } from '@/integrations/supabase/client';
 
 const mainNavItems = [
   {
@@ -93,10 +94,20 @@ export function AppSidebar({}: AppSidebarProps) {
 
   const handleLogout = async () => {
     try {
+      // Check if user is already logged out
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        // User is already logged out, just navigate to auth
+        navigate('/auth');
+        return;
+      }
+      
       await signOut();
       navigate('/auth');
     } catch (error) {
       console.error('Logout failed:', error);
+      // Even if logout fails, redirect to auth page
+      navigate('/auth');
     }
   };
 
@@ -248,7 +259,10 @@ export function AppSidebar({}: AppSidebarProps) {
                   <SidebarMenuSub>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton asChild>
-                        <button className="w-full">
+                        <button 
+                          className="w-full" 
+                          onClick={() => navigate('/settings')}
+                        >
                           <User className="h-4 w-4" />
                           <span>View Profile</span>
                         </button>
