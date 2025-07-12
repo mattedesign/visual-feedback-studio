@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Package, Plus, Edit, Trash2 } from 'lucide-react';
+import { Package, Plus, Edit, Trash2, Settings, X } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 
@@ -23,12 +23,22 @@ interface Product {
   created_at: string;
 }
 
+interface ProductFeature {
+  id: string;
+  product_id: string;
+  feature_key: string;
+  feature_value: any;
+  created_at: string;
+  updated_at: string;
+}
+
 export const ProductManagement = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [productFeatures, setProductFeatures] = useState<Record<string, ProductFeature[]>>({});
 
   useEffect(() => {
     fetchProducts();
@@ -43,6 +53,26 @@ export const ProductManagement = () => {
 
       if (error) throw error;
       setProducts(data || []);
+      
+      // Fetch features for all products
+      if (data && data.length > 0) {
+        const { data: featuresData, error: featuresError } = await supabase
+          .from('product_features')
+          .select('*')
+          .in('product_id', data.map(p => p.id));
+        
+        if (featuresError) throw featuresError;
+        
+        // Group features by product_id
+        const featuresByProduct: Record<string, ProductFeature[]> = {};
+        featuresData?.forEach(feature => {
+          if (!featuresByProduct[feature.product_id]) {
+            featuresByProduct[feature.product_id] = [];
+          }
+          featuresByProduct[feature.product_id].push(feature);
+        });
+        setProductFeatures(featuresByProduct);
+      }
     } catch (error) {
       console.error('Error fetching products:', error);
       toast.error('Failed to fetch products');
@@ -142,6 +172,7 @@ export const ProductManagement = () => {
                   product={selectedProduct}
                   onSave={saveProduct}
                   isCreating={isCreating}
+                  onProductSaved={fetchProducts}
                 />
               </DialogContent>
             </Dialog>
@@ -177,6 +208,17 @@ export const ProductManagement = () => {
                           </code></span>
                         )}
                       </div>
+                      {productFeatures[product.id] && productFeatures[product.id].length > 0 && (
+                        <div className="mt-2">
+                          <div className="flex flex-wrap gap-1">
+                            {productFeatures[product.id].map(feature => (
+                              <Badge key={feature.id} variant="outline" className="text-xs">
+                                {feature.feature_key}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <Button
@@ -209,9 +251,10 @@ interface ProductFormProps {
   product: Product | null;
   onSave: (productData: Omit<Product, 'id' | 'created_at'>) => void;
   isCreating: boolean;
+  onProductSaved: () => void;
 }
 
-const ProductForm = ({ product, onSave, isCreating }: ProductFormProps) => {
+const ProductForm = ({ product, onSave, isCreating, onProductSaved }: ProductFormProps) => {
   const [name, setName] = useState(product?.name || '');
   const [description, setDescription] = useState(product?.description || '');
   const [stripeProductId, setStripeProductId] = useState(product?.stripe_product_id || '');
@@ -219,6 +262,91 @@ const ProductForm = ({ product, onSave, isCreating }: ProductFormProps) => {
   const [priceYearly, setPriceYearly] = useState(product?.price_yearly || 0);
   const [analysesLimit, setAnalysesLimit] = useState(product?.analyses_limit || 25);
   const [isActive, setIsActive] = useState(product?.is_active ?? true);
+  const [features, setFeatures] = useState<ProductFeature[]>([]);
+  const [newFeatureKey, setNewFeatureKey] = useState('');
+  const [newFeatureValue, setNewFeatureValue] = useState('');
+
+  useEffect(() => {
+    if (product && !isCreating) {
+      fetchProductFeatures();
+    } else {
+      setFeatures([]);
+    }
+  }, [product, isCreating]);
+
+  const fetchProductFeatures = async () => {
+    if (!product) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('product_features')
+        .select('*')
+        .eq('product_id', product.id);
+      
+      if (error) throw error;
+      setFeatures(data || []);
+    } catch (error) {
+      console.error('Error fetching product features:', error);
+    }
+  };
+
+  const addFeature = async () => {
+    if (!newFeatureKey.trim() || !product) return;
+    
+    try {
+      let featureValue: any = newFeatureValue;
+      
+      // Try to parse as JSON if it looks like JSON
+      if (newFeatureValue.startsWith('{') || newFeatureValue.startsWith('[')) {
+        try {
+          featureValue = JSON.parse(newFeatureValue);
+        } catch {
+          // Keep as string if not valid JSON
+        }
+      } else if (newFeatureValue === 'true' || newFeatureValue === 'false') {
+        featureValue = newFeatureValue === 'true';
+      } else if (!isNaN(Number(newFeatureValue)) && newFeatureValue !== '') {
+        featureValue = Number(newFeatureValue);
+      }
+
+      const { error } = await supabase
+        .from('product_features')
+        .insert([{
+          product_id: product.id,
+          feature_key: newFeatureKey.trim(),
+          feature_value: featureValue
+        }]);
+
+      if (error) throw error;
+      
+      setNewFeatureKey('');
+      setNewFeatureValue('');
+      fetchProductFeatures();
+      onProductSaved();
+      toast.success('Feature added successfully');
+    } catch (error) {
+      console.error('Error adding feature:', error);
+      toast.error('Failed to add feature');
+    }
+  };
+
+  const removeFeature = async (featureId: string) => {
+    try {
+      const { error } = await supabase
+        .from('product_features')
+        .delete()
+        .eq('id', featureId);
+
+      if (error) throw error;
+      
+      fetchProductFeatures();
+      onProductSaved();
+      toast.success('Feature removed successfully');
+    } catch (error) {
+      console.error('Error removing feature:', error);
+      toast.error('Failed to remove feature');
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -310,6 +438,55 @@ const ProductForm = ({ product, onSave, isCreating }: ProductFormProps) => {
           <Label htmlFor="isActive">Active</Label>
         </div>
       </div>
+
+      {!isCreating && product && (
+        <div className="space-y-4 border-t pt-4">
+          <h3 className="text-lg font-medium flex items-center gap-2">
+            <Settings className="w-4 h-4" />
+            Product Features
+          </h3>
+          
+          <div className="space-y-2">
+            {features.map(feature => (
+              <div key={feature.id} className="flex items-center justify-between p-2 border rounded">
+                <div className="flex-1">
+                  <span className="font-medium">{feature.feature_key}:</span>{' '}
+                  <span className="text-sm text-muted-foreground">
+                    {typeof feature.feature_value === 'object' 
+                      ? JSON.stringify(feature.feature_value)
+                      : String(feature.feature_value)}
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeFeature(feature.id)}
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-2">
+            <Input
+              placeholder="Feature key (e.g., max_users)"
+              value={newFeatureKey}
+              onChange={(e) => setNewFeatureKey(e.target.value)}
+              className="flex-1"
+            />
+            <Input
+              placeholder="Value (string, number, JSON)"
+              value={newFeatureValue}
+              onChange={(e) => setNewFeatureValue(e.target.value)}
+              className="flex-1"
+            />
+            <Button onClick={addFeature} variant="outline">
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       <Button type="submit" className="w-full">
         {isCreating ? 'Create Product' : 'Update Product'}
