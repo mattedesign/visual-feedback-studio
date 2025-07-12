@@ -138,7 +138,7 @@ export const GoblinPersonaSelector: React.FC<GoblinPersonaSelectorProps> = ({
       </div>
 
       {selectedPersona && (
-        <div className={`p-4 rounded-lg border-2 ${
+        <div className={`p-4 rounded-lg border-2 hidden ${
           selectedPersona === 'clarity' 
             ? 'bg-green-50 border-green-200' 
             : 'bg-purple-50 border-purple-200'
