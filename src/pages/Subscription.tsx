@@ -1,5 +1,5 @@
 
-import { SubscriptionCheckout } from '@/components/subscription/SubscriptionCheckout';
+import { ProductSelection } from '@/components/subscription/ProductSelection';
 import { SubscriptionStatus } from '@/components/subscription/SubscriptionStatus';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Card, CardContent } from '@/components/ui/card';
@@ -30,7 +30,7 @@ export default function Subscription() {
             <SubscriptionStatus />
           </div>
         ) : (
-          <SubscriptionCheckout />
+          <ProductSelection />
         )}
       </div>
     </div>

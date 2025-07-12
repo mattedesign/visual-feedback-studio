@@ -38,6 +38,7 @@ export interface CreateCheckoutSessionParams {
   successUrl: string;
   cancelUrl: string;
   metadata?: Record<string, string>;
+  productId?: string; // New optional field for product-based subscriptions
 }
 
 // Initialize Stripe client
@@ -102,6 +103,7 @@ export const stripeService = {
           planType: params.planType,
           successUrl: params.successUrl,
           cancelUrl: params.cancelUrl,
+          productId: params.productId, // Include product ID for new system
           metadata: params.metadata || {}
         }
       });

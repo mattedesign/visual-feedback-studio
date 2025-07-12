@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Package, Plus, Edit, Trash2, Settings, X } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { SubscriptionProductLinker } from './SubscriptionProductLinker';
 import { toast } from 'sonner';
 
 interface Product {
@@ -243,6 +244,9 @@ export const ProductManagement = () => {
           </div>
         </CardContent>
       </Card>
+      
+      {/* Subscription-Product Linker */}
+      <SubscriptionProductLinker />
     </div>
   );
 };
