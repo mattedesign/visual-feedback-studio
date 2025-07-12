@@ -17,6 +17,8 @@ const buttonVariants = cva(
           "border border-input bg-background hover:bg-accent hover:text-accent-foreground enhanced-button-secondary",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary/80 enhanced-button-secondary",
+        "secondary-auth":
+          "flex h-[44px] px-5 py-2 justify-center items-center gap-2 self-stretch rounded-[10px] text-center font-medium text-sm leading-5 tracking-[-0.14px] text-[#121212] transition-all duration-200 enhanced-button-secondary-auth",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
       },

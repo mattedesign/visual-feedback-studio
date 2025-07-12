@@ -272,7 +272,7 @@ const Auth = () => {
             <Button
               onClick={handleMagicLink}
               disabled={loading}
-              variant="outline"
+              variant="secondary-auth"
               className="w-full"
             >
               {loading ? 'Sending...' : 'Send Magic Link'}
