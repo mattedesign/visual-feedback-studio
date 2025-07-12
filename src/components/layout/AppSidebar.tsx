@@ -119,7 +119,7 @@ export function AppSidebar({}: AppSidebarProps) {
     <Sidebar 
       variant="sidebar" 
       collapsible="icon"
-      className="border-r"
+      className="border-none"
     >
       <SidebarContent className="flex flex-col h-full">
         {/* Logo/Header */}
