@@ -719,15 +719,15 @@ const SummaryView: React.FC<SummaryViewProps> = ({
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
         <div className="flex-1">
           <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground mobile-text-content">
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground mobile-text-content flex-1">
               {session?.title || 'Goblin Analysis'}
             </h1>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 bg-accent/20 rounded-md p-1">
               <Button
                 onClick={onCopyLink}
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 hover:bg-accent hover:text-accent-foreground"
+                className="h-6 w-6 p-0 hover:bg-accent hover:text-accent-foreground"
                 title={copied ? 'Copied!' : 'Copy Link'}
               >
                 {copied ? '✅' : '📋'}
@@ -736,7 +736,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
                 onClick={onExport}
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 hover:bg-accent hover:text-accent-foreground"
+                className="h-6 w-6 p-0 hover:bg-accent hover:text-accent-foreground"
                 title="Export Results"
               >
                 📤
