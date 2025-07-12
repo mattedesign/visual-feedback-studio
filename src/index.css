@@ -151,3 +151,18 @@
   background: linear-gradient(180deg, #E0E0E0 0%, #DDDDDD 100%);
   transform: translateY(-1px);
 }
+
+/* Secondary Goblin Button Styles */
+.enhanced-button-secondary-goblin {
+  background: linear-gradient(180deg, #E5E5E5 0%, #E2E2E2 100%);
+  box-shadow: 0px 3px 4px -1px rgba(0, 0, 0, 0.15), 
+              0px 1px 0px 0px rgba(255, 255, 255, 0.33) inset, 
+              0px 0px 0px 1px #D4D4D4;
+  font-family: "Instrument Sans", system-ui, -apple-system, sans-serif;
+  color: #121212 !important;
+}
+
+.enhanced-button-secondary-goblin:hover {
+  background: linear-gradient(180deg, #E0E0E0 0%, #DDDDDD 100%);
+  transform: translateY(-1px);
+}

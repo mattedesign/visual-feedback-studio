@@ -296,7 +296,7 @@ const GoblinDashboard = () => {
                       {session.goal_description}
                     </p>}
                   
-                  <Button variant="outline" size="sm" className="w-full border-border hover:bg-accent" onClick={e => {
+                  <Button variant="secondary-goblin" size="sm" className="w-full" onClick={e => {
               e.stopPropagation();
               handleViewSession(session.id);
             }}>
