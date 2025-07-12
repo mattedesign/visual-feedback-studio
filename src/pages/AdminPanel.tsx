@@ -45,7 +45,7 @@ export const AdminPanel = () => {
       </div>;
   }
   return <div className="min-h-screen bg-background w-full">
-      <div className="w-full px-4 py-8 bg-white">
+      <div className="w-full px-4 bg-white py-[20px]">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <Shield className="w-8 h-8 text-primary" />
