@@ -55,7 +55,7 @@ export const AdminPanel = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background w-full">
       <div className="w-full px-4 py-8">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
