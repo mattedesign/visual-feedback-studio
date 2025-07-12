@@ -155,7 +155,7 @@ const GoblinStudio: React.FC = () => {
               </div>
 
               <div>
-                <Label className="text-base font-medium text-foreground mb-4 block">Analysis Persona</Label>
+                <Label className="text-base font-medium text-foreground mb-4 block hidden">Analysis Persona</Label>
                 <GoblinPersonaSelector selectedPersona={persona} onPersonaChange={val => setPersona(val as GoblinPersonaType)} />
               </div>
 
