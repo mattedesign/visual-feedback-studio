@@ -39,7 +39,10 @@ const GoblinStudio: React.FC = () => {
     user,
     loading
   } = useAuth();
-  const { canCreateAnalysis, needsSubscription } = useSubscription();
+  const {
+    canCreateAnalysis,
+    needsSubscription
+  } = useSubscription();
   const navigate = useNavigate();
   const [title, setTitle] = useState('');
   const [goal, setGoal] = useState('');
@@ -86,7 +89,6 @@ const GoblinStudio: React.FC = () => {
         return;
       }
     }
-
     setIsAnalyzing(true);
     setAnalysisProgress(10);
     setAnalysisStage('Creating analysis session...');
@@ -128,8 +130,8 @@ const GoblinStudio: React.FC = () => {
       setIsAnalyzing(false);
     }
   };
-    return <div className="min-h-screen">{/* Removed bg-white */}
-      <div className="w-full mx-auto px-8 py-6 rounded-[20px]">
+  return <div className="min-h-screen">{/* Removed bg-white */}
+      <div className="w-full mx-auto rounded-[20px] px-[20px] py-[20px]">
         <div className="mb-12">
           <h1 className="text-4xl font-semibold tracking-tight text-foreground flex items-center gap-3 mb-3">
             <Sparkles className="text-professional-brown w-9 h-9" /> Goblin UX Analysis
@@ -171,12 +173,7 @@ const GoblinStudio: React.FC = () => {
           {/* Usage Limit Check */}
           <UsageLimitPrompt className="mt-6" />
 
-          <Button 
-            className="w-full mt-8 py-4 text-base font-medium bg-professional-brown hover:bg-professional-brown/90" 
-            disabled={isAnalyzing || !canCreateAnalysis()} 
-            onClick={handleSubmit} 
-            size="lg"
-          >
+          <Button className="w-full mt-8 py-4 text-base font-medium bg-professional-brown hover:bg-professional-brown/90" disabled={isAnalyzing || !canCreateAnalysis()} onClick={handleSubmit} size="lg">
             {isAnalyzing ? 'Analyzing...' : 'Run Goblin Analysis'}
           </Button>
 
