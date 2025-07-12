@@ -56,7 +56,7 @@ export const AdminPanel = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="w-full py-8">
+      <div className="w-full px-4 py-8">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <Shield className="w-8 h-8 text-primary" />
@@ -83,15 +83,15 @@ export const AdminPanel = () => {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="users">
+          <TabsContent value="users" className="w-full">
             <UserManagement />
           </TabsContent>
 
-          <TabsContent value="products">
+          <TabsContent value="products" className="w-full">
             <ProductManagement />
           </TabsContent>
 
-          <TabsContent value="usage">
+          <TabsContent value="usage" className="w-full">
             <UsageTracking />
           </TabsContent>
         </Tabs>
