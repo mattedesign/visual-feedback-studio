@@ -714,7 +714,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
       })}
       </div>;
   };
-  return <div className="max-w-5xl mx-auto space-y-8 p-6 mobile-content-card px-[8px]">
+  return <div className="max-w-5xl mx-auto space-y-8 p-6 mobile-content-card px-[8px] py-[8px]">
       {/* Header with actions */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
         <div>
