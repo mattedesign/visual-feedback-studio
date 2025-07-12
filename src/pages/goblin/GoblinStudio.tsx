@@ -142,7 +142,7 @@ const GoblinStudio: React.FC = () => {
         </div>
 
         <Card className="border-0 shadow-sm bg-card">
-          <CardContent className="p-8">
+          <CardContent className="p-8 px-[20px] py-[16px]">
             <div className="space-y-8">
               <div>
                 <Label className="text-base font-medium text-foreground mb-2 block">Analysis Title</Label>
