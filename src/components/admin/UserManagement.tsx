@@ -102,8 +102,8 @@ export const UserManagement = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
+    <div className="space-y-6 w-full">
+      <Card className="w-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <User className="w-5 h-5" />
