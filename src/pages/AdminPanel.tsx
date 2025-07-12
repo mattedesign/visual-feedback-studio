@@ -58,7 +58,7 @@ export const AdminPanel = () => {
 
         <Tabs defaultValue="users" className="w-full">
           <TabsList className="grid w-full grid-cols-3 h-auto">
-            <TabsTrigger value="users" className="flex items-center gap-2">
+            <TabsTrigger value="users" className="flex items-center gap-2 text-[13px]">
               <Users className="w-4 h-4" />
               User Management
             </TabsTrigger>
