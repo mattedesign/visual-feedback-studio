@@ -979,6 +979,41 @@ export type Database = {
         }
         Relationships: []
       }
+      product_features: {
+        Row: {
+          created_at: string
+          feature_key: string
+          feature_value: Json
+          id: string
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          feature_key: string
+          feature_value?: Json
+          id?: string
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          feature_key?: string
+          feature_value?: Json
+          id?: string
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_features_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           analyses_limit: number
@@ -1200,6 +1235,7 @@ export type Database = {
           current_period_start: string | null
           id: string
           plan_type: string | null
+          product_id: string | null
           status: string | null
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
@@ -1214,6 +1250,7 @@ export type Database = {
           current_period_start?: string | null
           id?: string
           plan_type?: string | null
+          product_id?: string | null
           status?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -1228,13 +1265,22 @@ export type Database = {
           current_period_start?: string | null
           id?: string
           plan_type?: string | null
+          product_id?: string | null
           status?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
