@@ -82,26 +82,10 @@
   * {
     @apply border-border;
   }
-  
-  html {
-    width: 100% !important;
-    min-width: 100% !important;
-    direction: ltr !important;
-  }
-  
   body {
     @apply text-foreground;
-    width: 100% !important;
-    min-width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
     border-radius: 32px !important;
     background: linear-gradient(0deg, #FFEBE4 0%, #FFEBE4 100%), linear-gradient(56deg, #FFEEE5 2.46%, #FFF0E3 30%, #FFEDE8 61.59%, #FCD7FD 98.19%) !important;
-  }
-  
-  #root {
-    width: 100% !important;
-    min-width: 100% !important;
   }
 }
 
