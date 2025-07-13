@@ -86,7 +86,15 @@ export function AppSidebar({}: AppSidebarProps) {
     return currentPath.startsWith(path);
   };
   const getNavClassName = (active: boolean) => {
-    return active ? "flex py-4 px-3 items-center gap-2 self-stretch rounded-xl bg-white text-foreground font-medium min-h-[40px] hover:!bg-white hover:!text-[#5C3C90] focus:!bg-white focus:!text-[#5C3C90]" : "flex py-4 px-3 items-center gap-2 self-stretch rounded-xl text-muted-foreground hover:!bg-[#5C3C90] hover:!text-[#ffffff] focus:!bg-[#5C3C90] focus:!text-[#ffffff] transition-colors min-h-[40px]";
+    const baseClasses = collapsed 
+      ? "flex py-4 px-3 items-center justify-center self-stretch rounded-xl min-h-[40px]"
+      : "flex py-4 px-3 items-center gap-2 self-stretch rounded-xl min-h-[40px]";
+    
+    const colorClasses = active 
+      ? "bg-white text-foreground font-medium hover:!bg-white hover:!text-[#5C3C90] focus:!bg-white focus:!text-[#5C3C90]"
+      : "text-muted-foreground hover:!bg-[#5C3C90] hover:!text-[#ffffff] focus:!bg-[#5C3C90] focus:!text-[#ffffff] transition-colors";
+    
+    return `${baseClasses} ${colorClasses}`;
   };
 
   // Show mobile navigation on mobile and tablet
