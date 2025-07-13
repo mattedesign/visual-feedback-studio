@@ -202,20 +202,6 @@ const GoblinDashboard = () => {
             </CardContent>
           </Card>
           
-          <Card className="flex-1 border-0 shadow-sm bg-card">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-accent-warm rounded-xl">
-                  <BarChart3 className="w-6 h-6 text-professional-brown" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Completed</p>
-                  <p className="text-3xl font-semibold text-foreground">{sessions.filter(s => s.status === 'completed').length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
           
 
           {/* Maturity Score with Streak */}
