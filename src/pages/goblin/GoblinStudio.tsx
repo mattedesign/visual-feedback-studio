@@ -172,7 +172,7 @@ const GoblinStudio: React.FC = () => {
           {/* Usage Limit Check */}
           <UsageLimitPrompt className="mt-6" />
 
-          <Button className="w-full mt-8 py-4 text-base font-medium bg-professional-brown hover:bg-professional-brown/90 text-professional-brown-foreground" disabled={isAnalyzing || !canCreateAnalysis()} onClick={handleSubmit} size="lg">
+          <Button className="w-full mt-8 py-4 text-base font-medium bg-professional-brown hover:bg-professional-brown/90" disabled={isAnalyzing || !canCreateAnalysis()} onClick={handleSubmit} size="lg">
             {isAnalyzing ? 'Analyzing...' : 'Run Goblin Analysis'}
           </Button>
 

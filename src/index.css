@@ -15,7 +15,6 @@
     --popover-foreground: 25 15% 15%;
     --primary: 266 24% 37%;
     --primary-foreground: 35 25% 96%;
-    --professional-brown-foreground: 258 43% 40%;
     --secondary: 35 20% 92%;
     --secondary-foreground: 25 15% 15%;
     --muted: 35 15% 90%;
@@ -33,7 +32,7 @@
     --warm-cream: 266 24% 95%;
     --warm-beige: 266 24% 90%;
     --warm-tan: 266 24% 85%;
-    --professional-brown: 234 100% 95%;
+    --professional-brown: 266 24% 37%;
     --soft-gray: 25 8% 45%;
     --accent-warm: 266 24% 80%;
     
@@ -306,4 +305,23 @@
 
 .main-page-action-button svg {
   color: #5C3C90 !important;
+}
+
+/* Outline Button with new styling */
+.btn-outline-styled {
+  background: #EEF2FF !important;
+  color: #5C3C90 !important;
+  border: 1px solid #EEF2FF !important;
+}
+
+.btn-outline-styled:hover {
+  background: #EEF2FF !important;
+  color: #5C3C90 !important;
+  border: 1px solid #EEF2FF !important;
+}
+
+.btn-outline-styled:focus {
+  background: #EEF2FF !important;
+  color: #5C3C90 !important;
+  border: 1px solid #EEF2FF !important;
 }

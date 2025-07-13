@@ -68,7 +68,6 @@ export default {
 				'warm-beige': 'hsl(var(--warm-beige))',
 				'warm-tan': 'hsl(var(--warm-tan))',
 				'professional-brown': 'hsl(var(--professional-brown))',
-				'professional-brown-foreground': 'hsl(var(--professional-brown-foreground))',
 				'soft-gray': 'hsl(var(--soft-gray))',
 				'accent-warm': 'hsl(var(--accent-warm))'
 			},
