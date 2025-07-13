@@ -14,7 +14,7 @@ import Auth from "./pages/Auth";
 import UpgradeSuccess from "./pages/UpgradeSuccess";
 import VectorTest from "./pages/VectorTest";
 import HybridEngineTest from "./pages/HybridEngineTest";
-import History from "./pages/History";
+import GoblinHistory from "./pages/GoblinHistory";
 import Settings from "./pages/Settings";
 import Help from "./pages/Help";
 import { AdminPanel } from "./pages/AdminPanel";
@@ -73,7 +73,7 @@ const App = () => {
                             <Route path="analyze-results/:id" element={<AnalyzeResults />} />
                             <Route path="goblin" element={<GoblinStudio />} />
                             <Route path="goblin/results/:sessionId" element={<GoblinResults />} />
-                            <Route path="history" element={<History />} />
+                            <Route path="history" element={<GoblinHistory />} />
                             <Route path="settings" element={<Settings />} />
                             <Route path="subscription" element={<Subscription />} />
                             <Route path="help" element={<Help />} />
