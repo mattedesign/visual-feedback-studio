@@ -129,7 +129,7 @@ export function AppSidebar({}: AppSidebarProps) {
   const getNavClassName = (active: boolean) => {
     return active 
       ? "flex py-4 px-3 items-center gap-2 self-stretch rounded-xl bg-white text-foreground font-medium min-h-[40px]" 
-      : "flex py-4 px-3 items-center gap-2 self-stretch rounded-xl text-muted-foreground hover:bg-[#BECDED] hover:text-foreground focus:bg-[#BECDED] focus:text-foreground transition-colors min-h-[40px]";
+      : "flex py-4 px-3 items-center gap-2 self-stretch rounded-xl text-muted-foreground hover:bg-[#5C3C90] hover:text-[#ffffff] focus:bg-[#5C3C90] focus:text-[#ffffff] transition-colors min-h-[40px]";
   };
 
   // Show mobile navigation on mobile and tablet
