@@ -106,12 +106,12 @@ export function MobileNavigation() {
     <>
       {/* Mobile Header with Menu Button */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-[#5C3C90] to-[#4A2F7A] border-b border-purple-600 px-4 py-3 flex items-center justify-between md:hidden shadow-lg">
-        <div className="flex items-center gap-2">
-          <div className="text-2xl">👾</div>
-          <div className="flex flex-col">
-            <span className="font-semibold text-sm text-white">Goblin UX</span>
-            <span className="text-xs text-purple-200">Analysis Studio</span>
-          </div>
+        <div className="flex items-center">
+          <img 
+            src="/lovable-uploads/199d425a-673f-4163-ab3e-43459fafdaa6.png" 
+            alt="Figmant Logo" 
+            className="h-8 w-auto object-contain"
+          />
         </div>
         
         <Drawer open={isOpen} onOpenChange={setIsOpen}>
@@ -125,7 +125,11 @@ export function MobileNavigation() {
             <DrawerHeader className="text-left border-b border-purple-600/30">
               <div className="flex items-center justify-between">
                 <DrawerTitle className="flex items-center gap-2 text-white">
-                  <div className="text-2xl">👾</div>
+                  <img 
+                    src="/lovable-uploads/199d425a-673f-4163-ab3e-43459fafdaa6.png" 
+                    alt="Figmant Logo" 
+                    className="h-6 w-auto object-contain"
+                  />
                   <span>Navigation</span>
                 </DrawerTitle>
                 <DrawerClose asChild>
