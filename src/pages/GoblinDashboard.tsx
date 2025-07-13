@@ -186,9 +186,6 @@ const GoblinDashboard = () => {
               <LayoutDashboard className="w-9 h-9 text-professional-brown" />
               Dashboard
             </h1>
-            <p className="text-lg text-muted-foreground font-medium">
-              Multi-persona UX analysis with brutally honest feedback
-            </p>
           </div>
           
           <Button onClick={handleNewAnalysis} size="lg" className="bg-professional-brown hover:bg-professional-brown/90 text-primary-foreground px-8 py-3 text-base font-medium shadow-sm">
