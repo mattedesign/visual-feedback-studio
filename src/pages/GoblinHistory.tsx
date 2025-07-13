@@ -169,7 +169,7 @@ const GoblinHistory = () => {
             </h1>
           </div>
           
-          <Button onClick={handleNewAnalysis} size="lg" className="bg-professional-brown hover:bg-professional-brown/90 text-primary-foreground px-8 py-3 text-base font-medium shadow-sm">
+          <Button onClick={handleNewAnalysis} size="lg" className="bg-professional-brown hover:bg-professional-brown/90 text-professional-brown-foreground px-8 py-3 text-base font-medium shadow-sm">
             <Plus className="w-5 h-5 mr-2" />
             New Analysis
           </Button>
@@ -185,7 +185,7 @@ const GoblinHistory = () => {
             <p className="text-muted-foreground text-lg mb-8 max-w-md mx-auto">
               Start your first multi-persona UX analysis to see results here
             </p>
-            <Button onClick={handleNewAnalysis} size="lg" className="bg-professional-brown hover:bg-professional-brown/90 text-primary-foreground px-8 py-3 text-base font-medium">
+            <Button onClick={handleNewAnalysis} size="lg" className="bg-professional-brown hover:bg-professional-brown/90 text-professional-brown-foreground px-8 py-3 text-base font-medium">
               <Plus className="w-5 h-5 mr-2" />
               Create First Goblin Analysis
             </Button>
