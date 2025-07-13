@@ -105,7 +105,7 @@ export function MobileNavigation() {
   return (
     <>
       {/* Mobile Header with Menu Button */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-[#5C3C90] to-[#4A2F7A] border-b border-purple-600 px-4 py-3 flex items-center justify-between md:hidden shadow-lg">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-transparent px-4 py-3 flex items-center justify-between md:hidden">
         <div className="flex items-center">
           <img 
             src="/lovable-uploads/199d425a-673f-4163-ab3e-43459fafdaa6.png" 
