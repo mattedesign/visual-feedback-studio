@@ -375,8 +375,7 @@ const GoblinDashboard = () => {
                     </h3>
                     
                     <div className="flex items-center gap-1 text-xs text-muted-foreground mb-3">
-                      <Calendar className="w-3 h-3" />
-                      <span>{formatDate(session.created_at)}</span>
+                      <span className="capitalize">{session.analysis_mode} Analysis</span>
                     </div>
 
                     {session.goal_description && (
