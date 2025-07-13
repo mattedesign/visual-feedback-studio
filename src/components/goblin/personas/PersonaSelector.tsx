@@ -72,9 +72,6 @@ export const GoblinPersonaSelector: React.FC<GoblinPersonaSelectorProps> = ({
       <div className="text-center space-y-2">
         <h3 className="text-xl font-bold text-gray-900">Choose Your Analysis Persona</h3>
         <p className="text-gray-600">Each persona provides a unique perspective on your design</p>
-        <Badge variant="secondary" className="bg-purple-100 text-purple-700 border-purple-200">
-          5 Expert Personas Available
-        </Badge>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
