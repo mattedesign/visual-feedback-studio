@@ -97,7 +97,7 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
   const totalFeedbackAnchors = Object.values(chatFeedbackAnchors).flat().length;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full">
       {/* Controls */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Image Analysis ({currentImageIndex + 1} of {images.length})</h3>

@@ -97,7 +97,7 @@ export function AchievementShowcase() {
   }
 
   return (
-    <Card className="p-6">
+    <Card className="p-6 w-full">
       <div className="mb-6">
         <h3 className="text-xl font-bold mb-1">Achievements</h3>
         <p className="text-gray-600 text-sm">

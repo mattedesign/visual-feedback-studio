@@ -497,7 +497,7 @@ const GoblinResults: React.FC = () => {
       initialTotalImages={totalImages}
     >
       <div className="min-h-screen bg-white">
-        <div className="flex flex-col items-start flex-1 self-stretch rounded-[20px] max-w-7xl mx-auto px-3 md:px-4 lg:px-8 py-6 mobile-content-card">
+        <div className="flex flex-col items-start flex-1 self-stretch rounded-[20px] w-full max-w-none mx-auto px-3 md:px-4 lg:px-8 py-6 mobile-content-card">
           
            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'summary' | 'detailed' | 'maturity' | 'clarity')}>
             <TabsList className="sticky top-6 z-10 flex w-auto items-center gap-4 rounded-xl border border-gray-200 bg-gray-100 p-1 backdrop-blur-sm tabs-list-mobile" style={{ boxShadow: '0px 1px 1.9px 0px rgba(50, 50, 50, 0.10) inset' }}>
@@ -531,7 +531,7 @@ const GoblinResults: React.FC = () => {
               </TabsTrigger>
             </TabsList>
 
-          <TabsContent value="summary" className="mt-8">
+          <TabsContent value="summary" className="mt-8 w-full">
             <SummaryView
               results={results}
               session={session}
@@ -543,7 +543,7 @@ const GoblinResults: React.FC = () => {
             />
           </TabsContent>
 
-          <TabsContent value="detailed" className="mt-8">
+          <TabsContent value="detailed" className="mt-8 w-full">
             {isImagesLoading && (
               <div className="flex items-center justify-center p-8 text-muted-foreground">
                 <div className="animate-spin mr-3 h-5 w-5 border-2 border-primary border-t-transparent rounded-full"></div>
@@ -594,13 +594,13 @@ const GoblinResults: React.FC = () => {
             />
           </TabsContent>
 
-          <TabsContent value="maturity" className="mt-8">
-            <div className="space-y-6">
+          <TabsContent value="maturity" className="mt-8 w-full">
+            <div className="space-y-6 w-full">
               <MaturityScoreDashboard />
               <ImprovementRoadmap />
               <AchievementShowcase />
               
-              <Card className="p-6 bg-gradient-to-r from-purple-50 to-blue-50 text-center">
+              <Card className="p-6 bg-gradient-to-r from-purple-50 to-blue-50 text-center w-full">
                 <h3 className="font-semibold mb-2">Ready to improve your score?</h3>
                 <p className="text-sm text-gray-600 mb-4">
                   Upload a revised design to see your progress
@@ -612,7 +612,7 @@ const GoblinResults: React.FC = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="clarity" className="mt-8">
+          <TabsContent value="clarity" className="mt-8 w-full">
             <ClarityChat
               session={session}
               personaData={personaData}

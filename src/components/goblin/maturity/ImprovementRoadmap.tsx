@@ -116,7 +116,7 @@ export function ImprovementRoadmap() {
     .reduce((sum, item) => sum + item.estimated_impact, 0);
 
   return (
-    <Card className="p-6">
+    <Card className="p-6 w-full">
       <div className="mb-6">
         <div className="flex justify-between items-start mb-2">
           <h3 className="text-xl font-bold">Your Improvement Roadmap</h3>
