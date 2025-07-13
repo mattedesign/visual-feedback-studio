@@ -187,7 +187,7 @@ const GoblinDashboard = () => {
         <UsageLimitPrompt className="mb-8" />
 
         {/* Quick Stats */}
-        <div className="flex flex-wrap gap-6 mb-12">
+        <div className="flex gap-6 mb-12 w-full">
           <Card className="flex-1 border-0 shadow-sm bg-card">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
@@ -237,22 +237,22 @@ const GoblinDashboard = () => {
         </div>
 
         {/* Sessions Grid - Removed and moved to History page */}
-        {sessions.length === 0 ? <div className="text-center py-16 bg-card rounded-2xl border-0 shadow-sm">
+        {sessions.length === 0 ? <div className="text-center py-16 bg-card rounded-2xl border-0 shadow-sm w-full">
             <Brain className="w-20 h-20 text-soft-gray mx-auto mb-6" />
             <h3 className="text-2xl font-semibold text-foreground mb-3">
               No goblin sessions yet
             </h3>
-            <p className="text-muted-foreground text-lg mb-8 max-w-md mx-auto">
+            <p className="text-muted-foreground text-lg mb-8 mx-auto">
               Start your first multi-persona UX analysis to see results here
             </p>
             <Button onClick={handleNewAnalysis} size="lg" className="bg-professional-brown hover:bg-professional-brown/90 text-primary-foreground px-8 py-3 text-base font-medium">
               <Plus className="w-5 h-5 mr-2" />
               Create First Goblin Analysis
             </Button>
-          </div> : <div className="text-center py-16 bg-card rounded-2xl border-0 shadow-sm">
+          </div> : <div className="text-center py-16 bg-card rounded-2xl border-0 shadow-sm w-full">
             <Brain className="w-20 h-20 text-soft-gray mx-auto mb-6" />
             <h3 className="text-2xl font-semibold text-foreground mb-3">Welcome to Figmant.ai</h3>
-            <p className="text-muted-foreground text-lg mb-8 max-w-md mx-auto">
+            <p className="text-muted-foreground text-lg mb-8 mx-auto">
               View your analysis history or start a new analysis
             </p>
             <div className="flex gap-4 justify-center">
