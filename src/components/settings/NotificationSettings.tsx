@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Bell, Mail, MessageSquare, AlertTriangle, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
+import { NotificationService } from '@/services/notificationService';
+import { CreateNotificationPreferencesData } from '@/types/notifications';
 
 interface NotificationPreferences {
   emailNotifications: boolean;
@@ -16,7 +19,9 @@ interface NotificationPreferences {
 }
 
 export const NotificationSettings = () => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [initialLoad, setInitialLoad] = useState(true);
   const [preferences, setPreferences] = useState<NotificationPreferences>({
     emailNotifications: true,
     analysisComplete: true,
@@ -26,13 +31,55 @@ export const NotificationSettings = () => {
     marketingEmails: false
   });
 
+  // Load preferences on component mount
+  useEffect(() => {
+    const loadPreferences = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const savedPreferences = await NotificationService.getPreferences(user.id);
+        if (savedPreferences) {
+          setPreferences({
+            emailNotifications: savedPreferences.email_notifications,
+            analysisComplete: savedPreferences.analysis_complete,
+            analysisError: savedPreferences.analysis_error,
+            weeklyDigest: savedPreferences.weekly_digest,
+            systemUpdates: savedPreferences.system_updates,
+            marketingEmails: savedPreferences.marketing_emails
+          });
+        }
+      } catch (error) {
+        console.error('Error loading notification preferences:', error);
+      } finally {
+        setInitialLoad(false);
+      }
+    };
+
+    loadPreferences();
+  }, [user?.id]);
+
   const handleSave = async () => {
+    if (!user?.id) return;
+    
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('Notification preferences saved');
+      const preferencesData: CreateNotificationPreferencesData = {
+        email_notifications: preferences.emailNotifications,
+        analysis_complete: preferences.analysisComplete,
+        analysis_error: preferences.analysisError,
+        weekly_digest: preferences.weeklyDigest,
+        system_updates: preferences.systemUpdates,
+        marketing_emails: preferences.marketingEmails
+      };
+
+      const result = await NotificationService.upsertPreferences(user.id, preferencesData);
+      if (result) {
+        toast.success('Notification preferences saved');
+      } else {
+        toast.error('Failed to save preferences');
+      }
     } catch (error) {
+      console.error('Notification preferences save error:', error);
       toast.error('Failed to save preferences');
     } finally {
       setLoading(false);
@@ -45,6 +92,10 @@ export const NotificationSettings = () => {
       [key]: value
     }));
   };
+
+  if (initialLoad) {
+    return <div className="space-y-6">Loading preferences...</div>;
+  }
 
   return (
     <div className="space-y-6">

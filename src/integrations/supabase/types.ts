@@ -901,6 +901,45 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          analysis_complete: boolean
+          analysis_error: boolean
+          created_at: string
+          email_notifications: boolean
+          id: string
+          marketing_emails: boolean
+          system_updates: boolean
+          updated_at: string
+          user_id: string
+          weekly_digest: boolean
+        }
+        Insert: {
+          analysis_complete?: boolean
+          analysis_error?: boolean
+          created_at?: string
+          email_notifications?: boolean
+          id?: string
+          marketing_emails?: boolean
+          system_updates?: boolean
+          updated_at?: string
+          user_id: string
+          weekly_digest?: boolean
+        }
+        Update: {
+          analysis_complete?: boolean
+          analysis_error?: boolean
+          created_at?: string
+          email_notifications?: boolean
+          id?: string
+          marketing_emails?: boolean
+          system_updates?: boolean
+          updated_at?: string
+          user_id?: string
+          weekly_digest?: boolean
+        }
+        Relationships: []
+      }
       pipeline_configurations: {
         Row: {
           created_at: string
