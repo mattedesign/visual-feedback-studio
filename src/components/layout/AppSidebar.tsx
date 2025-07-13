@@ -48,7 +48,7 @@ const mainNavItems = [
     badge: null
   },
   {
-    title: "Goblin Analysis", 
+    title: "New Analysis", 
     url: "/goblin",
     icon: Zap,
     badge: "👾"
