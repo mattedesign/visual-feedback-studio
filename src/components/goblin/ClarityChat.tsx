@@ -257,7 +257,7 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
   };
 
   return (
-    <div className="flex flex-col h-[600px] space-y-4">
+    <div className="flex flex-col h-[600px]">
       <Card className="flex-1 flex flex-col overflow-hidden">
         <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-xl">
@@ -284,15 +284,17 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
         </CardContent>
       </Card>
 
-      <ChatInput
-        inputValue={inputValue}
-        setInputValue={setInputValue}
-        onSendMessage={handleSendMessage}
-        onExpandPrompt={handleExpandPrompt}
-        onKeyPress={handleKeyPress}
-        isLoading={isLoading}
-        session={session}
-      />
+      <div className="border-t bg-background p-4 mt-auto">
+        <ChatInput
+          inputValue={inputValue}
+          setInputValue={setInputValue}
+          onSendMessage={handleSendMessage}
+          onExpandPrompt={handleExpandPrompt}
+          onKeyPress={handleKeyPress}
+          isLoading={isLoading}
+          session={session}
+        />
+      </div>
     </div>
   );
 };
