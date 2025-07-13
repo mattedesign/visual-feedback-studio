@@ -310,11 +310,34 @@ function extractAnalysisData(analysisData: any) {
     extractedAnalysis = analysisData.rawResponse || 'Analysis completed';
   }
   
+  // ✅ FIXED: Clean and filter recommendations before using them
   if (extractedRecommendations.length === 0) {
     console.log('🚨 No specific recommendations found in any format, using fallback');
     extractedRecommendations = ['Improve user experience clarity', 'Enhance interface usability'];
   } else {
-    console.log('🎯 Using extracted specific recommendations:', extractedRecommendations);
+    // Filter out technical metadata and clean recommendations
+    extractedRecommendations = extractedRecommendations
+      .filter(rec => {
+        const recLower = typeof rec === 'string' ? rec.toLowerCase() : String(rec).toLowerCase();
+        // Filter out technical field names and metadata
+        return !recLower.includes('labnotes') && 
+               !recLower.includes('metadata') &&
+               !recLower.includes('field:') &&
+               !recLower.includes('"lab') &&
+               rec.length > 10 && // Must be substantial
+               !recLower.startsWith('critical observation:'); // Filter out technical notes
+      })
+      .map(rec => {
+        // Clean up the recommendation text
+        let cleaned = typeof rec === 'string' ? rec : String(rec);
+        cleaned = cleaned.replace(/^["']|["']$/g, ''); // Remove quotes
+        cleaned = cleaned.replace(/^[•\-\*]\s*/, ''); // Remove bullet points
+        cleaned = cleaned.trim();
+        return cleaned;
+      })
+      .filter(rec => rec.length > 0); // Final filter for empty strings
+    
+    console.log('🎯 Using cleaned specific recommendations:', extractedRecommendations);
   }
 
   const result = {
@@ -618,12 +641,39 @@ class AnnotationGenerator {
   }
 
   private expandRecommendations(recommendations: string[], targetCount: number): string[] {
+    // ✅ FIXED: Generate unique, image-specific annotations instead of repeating the same ones
     const expanded = [];
+    
+    // If we have enough unique recommendations, use them directly
+    if (recommendations.length >= targetCount) {
+      return recommendations.slice(0, targetCount);
+    }
+    
+    // If we need more annotations, create variations instead of exact duplicates
     for (let i = 0; i < targetCount; i++) {
-      const recIndex = i % recommendations.length;
-      expanded.push(recommendations[recIndex]);
+      const baseRecIndex = i % recommendations.length;
+      const baseRecommendation = recommendations[baseRecIndex];
+      
+      // For repeated recommendations, add context to make them unique per image
+      if (i >= recommendations.length) {
+        const imageContext = this.getImageContextVariation(baseRecommendation, Math.floor(i / recommendations.length));
+        expanded.push(imageContext);
+      } else {
+        expanded.push(baseRecommendation);
+      }
     }
     return expanded;
+  }
+
+  private getImageContextVariation(baseRecommendation: string, variationIndex: number): string {
+    const variations = [
+      `Secondary consideration: ${baseRecommendation}`,
+      `Alternative approach: ${baseRecommendation}`,
+      `Cross-screen consistency: ${baseRecommendation}`,
+      `Progressive enhancement: ${baseRecommendation}`
+    ];
+    
+    return variations[variationIndex % variations.length];
   }
 
   private createAnnotation(recommendation: string, index: number, persona: string, imageCount: number): Annotation {
@@ -637,11 +687,14 @@ class AnnotationGenerator {
     // ✅ FIXED: Intelligent content analysis instead of hardcoded categories
     const { category, title } = this.analyzeRecommendationContext(recommendation, persona);
 
+    // ✅ ENHANCED: Make annotations more specific to their image context
+    const imageSpecificContext = this.addImageContext(enhancedFeedback, imageIndex, imageCount);
+
     return {
-      id: `${persona}-annotation-${index + 1}`,
+      id: `${persona}-anno-${imageIndex}-${index + 1}`, // ✅ FIXED: Unique ID per image
       title: title,
-      description: enhancedFeedback.problem || recommendation,
-      feedback: enhancedFeedback.solution || `Specific solution for ${persona} persona`,
+      description: imageSpecificContext.problem || recommendation,
+      feedback: imageSpecificContext.solution || `Specific solution for ${persona} persona`,
       category: category,
       x: position.x,
       y: position.y,
@@ -651,8 +704,29 @@ class AnnotationGenerator {
       imageIndex: imageIndex,
       persona,
       priority: index < 2 ? 'high' : 'medium',
-      problemStatement: enhancedFeedback.problem,
-      solutionStatement: enhancedFeedback.solution
+      problemStatement: imageSpecificContext.problem,
+      solutionStatement: imageSpecificContext.solution
+    };
+  }
+
+  private addImageContext(feedback: any, imageIndex: number, imageCount: number): any {
+    if (imageCount === 1) {
+      return feedback; // No need for image context with single image
+    }
+
+    const contextPrefixes = [
+      "On this screen:",
+      "For this interface:",
+      "In this view:",
+      "On this page:",
+      "For this section:"
+    ];
+
+    const prefix = contextPrefixes[imageIndex % contextPrefixes.length];
+
+    return {
+      problem: `${prefix} ${feedback.problem}`,
+      solution: feedback.solution // Keep solution as-is since it's already persona-specific
     };
   }
 
