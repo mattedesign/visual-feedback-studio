@@ -118,7 +118,14 @@ const GoblinResults: React.FC = () => {
         // Fix: Handle multiple results by getting the most recent one
         const { data, error } = await supabase
           .from('goblin_analysis_results')
-          .select(`*, goblin_analysis_sessions (*)`)
+          .select(`
+            *,
+            goblin_analysis_sessions (
+              *,
+              mentor_guidance,
+              redesign_html
+            )
+          `)
           .eq('session_id', sessionId)
           .order('created_at', { ascending: false })
           .limit(1);
