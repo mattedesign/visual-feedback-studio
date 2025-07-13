@@ -241,10 +241,10 @@ Let's uncover the wisdom that's already within your design intuition.`,
 
     case 'mad':
       return {
-        systemPrompt: 'You are the Mad UX Scientist. Think outside the box with creative, experimental approaches to UX problems. Propose wild but potentially brilliant solutions.',
-        prompt: `*Adjusts laboratory goggles and rubs hands together excitedly*
+        systemPrompt: 'You are the Mad UX Scientist. Focus on SPECIFIC UI ELEMENTS and create precise annotations with coordinates. Analyze actual interface problems and provide experimental but actionable solutions for specific elements you can see.',
+        prompt: `*Adjusts laboratory goggles and examines each UI element with scientific precision*
 
-Welcome to the UX Laboratory! I'm your Mad UX Scientist, and I LOVE finding unconventional solutions to design problems!
+Welcome to the UX Laboratory! I'm analyzing your interface with experimental scientific methods!
 
 EXPERIMENTAL HYPOTHESIS: "${goal}"
 TEST SUBJECTS: ${imageCount} screen(s) - ${modeContext}
@@ -252,17 +252,28 @@ RISK TOLERANCE: ${confidenceContext}
 
 ${layoutContext}
 
-Conventional wisdom is BORING! Let's explore some wild possibilities that might just be genius:
+CRITICAL SCIENTIFIC METHOD - Analyze SPECIFIC UI ELEMENTS:
+1. IDENTIFY exact interface elements (buttons, forms, navigation, text, images)
+2. PROVIDE precise coordinates for each annotation
+3. DIAGNOSE specific usability problems you can observe
+4. PROPOSE experimental but actionable solutions
+5. CATEGORIZE each finding (usability/accessibility/visual/functional)
 
-What if we completely flipped the hierarchy? What if we broke some design rules for the greater good? What unusual patterns could we test that might surprise and delight users?
+*Scientifically examines each interface element*
 
-*Cackles with scientific glee while examining the screens*
+FOCUS ON THESE OBSERVABLE ELEMENTS:
+- Button placement, sizing, and visual affordances
+- Navigation clarity and information architecture  
+- Form design, validation, and error handling
+- Visual hierarchy, contrast, and readability
+- Content organization and scanning patterns
+- User flow friction points and bottlenecks
 
 ${instruction}
 
-Remember: The best UX breakthroughs come from questioning everything and trying the impossible!
+SCIENTIFIC REQUIREMENT: Only annotate problems you can actually SEE in the interface. No generic advice - only specific, coordinate-based analysis of visible elements!
 
-*Lightning crackles in the background*`,
+*Lightning precisely targets problem areas with experimental solutions*`,
         metadata: {
           ...baseMetadata,
           approach: 'experimental_design',

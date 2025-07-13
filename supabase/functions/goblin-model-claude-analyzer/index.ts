@@ -522,12 +522,23 @@ function buildPrompt(persona: string, userPrompt: string, chatMode: boolean, con
       "goblinPrediction": "What will happen if the user follows your advice"
     },
     mad: {
-      "hypothesis": "Wild experimental UX hypothesis about the interface",
-      "experiments": ["Crazy experiment 1", "experiment 2", "experiment 3"],
-      "madScience": "Your mad scientist take on the UX problems",
-      "weirdFindings": "Strange patterns or anomalies discovered in the interface",
-      "crazyIdeas": ["Unconventional solution 1", "solution 2", "solution 3"],
-      "labNotes": "Mad scientist notes on interface behavior and user patterns"
+      "hypothesis": "Specific experimental hypothesis about actual interface problems observed",
+      "experiments": ["Precise experiment targeting visible element 1", "experiment for specific UI issue 2", "targeted test for observed problem 3"],
+      "madScience": "Scientific analysis of specific UI problems in the uploaded interface",
+      "weirdFindings": "Specific anomalies or patterns found in the actual interface elements",
+      "crazyIdeas": ["Actionable experimental solution for specific problem 1", "targeted fix for observed issue 2", "specific improvement for visible element 3"],
+      "labNotes": "Precise observations about specific interface elements and their usability issues",
+      "annotations": [
+        {
+          "x": 100,
+          "y": 200,
+          "title": "Specific Element Problem",
+          "description": "Precise description of what's wrong with this specific element",
+          "solution": "Actionable experimental fix",
+          "category": "usability",
+          "priority": "high"
+        }
+      ]
     },
     mad_scientist: {
       "hypothesis": "Wild experimental UX hypothesis about the interface",
@@ -588,6 +599,9 @@ RESPONSE REQUIREMENTS:
 - Include ALL required fields from the template above
 - Use valid JSON syntax only
 - No additional text or explanations outside the JSON
+- ANALYZE THE ACTUAL UPLOADED INTERFACE: Focus on specific, observable problems
+- PROVIDE COORDINATE-BASED ANNOTATIONS: Include x,y coordinates for problem areas
+- GIVE ACTIONABLE SOLUTIONS: Specific fixes for each identified issue, not generic advice
 
 Respond now with valid JSON only:`;
   }
