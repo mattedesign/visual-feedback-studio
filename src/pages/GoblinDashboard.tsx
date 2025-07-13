@@ -187,8 +187,8 @@ const GoblinDashboard = () => {
         <UsageLimitPrompt className="mb-8" />
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          <Card className="border-0 shadow-sm bg-card">
+        <div className="flex flex-wrap gap-6 mb-12">
+          <Card className="flex-1 border-0 shadow-sm bg-card">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-accent-warm rounded-xl">
@@ -202,7 +202,7 @@ const GoblinDashboard = () => {
             </CardContent>
           </Card>
           
-          <Card className="border-0 shadow-sm bg-card">
+          <Card className="flex-1 border-0 shadow-sm bg-card">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-accent-warm rounded-xl">
@@ -219,7 +219,7 @@ const GoblinDashboard = () => {
           
 
           {/* Maturity Score with Streak */}
-          <Card className="border-0 shadow-sm bg-card">
+          <Card className="flex-1 border-0 shadow-sm bg-card">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-accent-warm rounded-xl">
