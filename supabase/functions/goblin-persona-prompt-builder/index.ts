@@ -56,6 +56,13 @@ serve(async (req) => {
 function buildPersonaPrompt(persona: string, goal: string, imageCount: number, mode: string, confidence: number) {
   const confidenceContext = getConfidenceContext(confidence);
   const modeContext = `${mode === 'journey' ? 'Multi-screen user journey analysis' : 'Single screen analysis'}`;
+  
+  const layoutContext = `
+LAYOUT CONTEXT: You are analyzing ${imageCount} screens displayed horizontally as thumbnails. 
+When referencing screens, use:
+- "Image 1" (leftmost)
+- "Image 2", "Image 3", etc.
+- NEVER use "top/bottom" - images are side-by-side`;
 
   // FIXED: Use original persona names for consistency
   const personaMapping: { [key: string]: string } = {
@@ -158,6 +165,8 @@ USER'S GOAL: "${goal}"
 WHAT I'M EXAMINING: ${imageCount} screen(s) - ${modeContext}
 YOUR CONFIDENCE LEVEL: ${confidenceContext}
 
+${layoutContext}
+
 Now, I'm going to tell you what users ACTUALLY experience when they encounter this design, not what you THINK they experience. I've watched thousands of humans fumble through interfaces, and I know where they get stuck, confused, or rage-quit.
 
 FOCUS ONLY ON THE ACTUAL INTERFACE: Analyze only what you can see in the uploaded images. Do not make assumptions about features, flows, or functionality not visible.
@@ -183,6 +192,8 @@ USER'S STRATEGIC OBJECTIVE: "${goal}"
 ANALYSIS SCOPE: ${imageCount} screen(s) - ${modeContext}  
 STAKEHOLDER CONFIDENCE: ${confidenceContext}
 
+${layoutContext}
+
 I need to evaluate this from multiple strategic dimensions:
 1. **User Experience Strategy**: How well does the design serve user needs and business objectives?
 2. **Competitive Positioning**: How does the design compare in the market context?
@@ -207,6 +218,8 @@ Focus on actionable insights that drive measurable business outcomes while impro
 DESIGN INTENTION: "${goal}"
 REFLECTION SCOPE: ${imageCount} screen(s) - ${modeContext}
 CURRENT CONFIDENCE: ${confidenceContext}
+
+${layoutContext}
 
 Rather than telling you what's right or wrong, I want to help you discover insights about your own work through reflection. Let's explore this together:
 
@@ -237,6 +250,8 @@ EXPERIMENTAL HYPOTHESIS: "${goal}"
 TEST SUBJECTS: ${imageCount} screen(s) - ${modeContext}
 RISK TOLERANCE: ${confidenceContext}
 
+${layoutContext}
+
 Conventional wisdom is BORING! Let's explore some wild possibilities that might just be genius:
 
 What if we completely flipped the hierarchy? What if we broke some design rules for the greater good? What unusual patterns could we test that might surprise and delight users?
@@ -265,6 +280,8 @@ Remember: The best UX breakthroughs come from questioning everything and trying 
 BUSINESS OBJECTIVE: "${goal}"
 SCOPE OF REVIEW: ${imageCount} screen(s) - ${modeContext}
 INVESTMENT CONFIDENCE: ${confidenceContext}
+
+${layoutContext}
 
 Executive Summary Focus Areas:
 - **Revenue Impact**: How will UX changes affect conversion, retention, and growth?
