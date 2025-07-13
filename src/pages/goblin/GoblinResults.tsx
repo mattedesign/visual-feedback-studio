@@ -496,7 +496,7 @@ const GoblinResults: React.FC = () => {
       onImageChange={setCurrentImageIndex}
       initialTotalImages={totalImages}
     >
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-white min-w-full" style={{ minWidth: '100%' }}>
         <div className="flex flex-col items-start flex-1 self-stretch w-full mx-0 px-4 py-6">
           
            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'summary' | 'detailed' | 'maturity' | 'clarity')}>
