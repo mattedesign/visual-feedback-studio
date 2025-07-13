@@ -10,6 +10,10 @@ export interface Annotation {
   title?: string;
   description?: string;
   
+  // NEW: Separate problem and solution statements
+  problemStatement?: string;
+  solutionStatement?: string;
+  
   implementationEffort: 'low' | 'medium' | 'high';
   businessImpact: 'low' | 'medium' | 'high';
   imageIndex?: number; // For multi-image analysis

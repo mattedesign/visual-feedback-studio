@@ -86,27 +86,31 @@ export const AnnotationMarker = ({
       {/* Enhanced content overlay when active */}
       {isActive && (
         <div className="absolute top-10 left-1/2 transform -translate-x-1/2 w-80 bg-white border-2 border-gray-300 rounded-lg p-4 shadow-xl z-30">
-          {/* NEW: Display title prominently if using separated fields */}
-          {useSeparatedFields && (
-            <h4 className="text-lg font-bold text-gray-900 mb-2">
-              {title}
+          <div className="annotation-content">
+            {/* Problem Statement */}
+            <h4 className="font-semibold text-red-600 mb-2">
+              🚨 {annotation.problemStatement || annotation.description || annotation.feedback}
             </h4>
-          )}
-          
-          <div className="flex items-center gap-2 mb-3">
-            <span className={`w-3 h-3 rounded-full ${getSeverityColor(annotation.severity).split(' ')[0]}`}></span>
-            <span className="text-sm font-semibold capitalize text-gray-900">
-              {annotation.severity} • {annotation.category}
-            </span>
-          </div>
-          
-          <p className="text-sm text-gray-800 leading-relaxed mb-3 whitespace-pre-wrap">
-            {displayText}
-          </p>
-          
-          <div className="flex items-center gap-4 text-xs text-gray-600">
-            <span>Effort: {annotation.implementationEffort}</span>
-            <span>Impact: {annotation.businessImpact}</span>
+            
+            {/* Solution Statement */}
+            {(annotation.solutionStatement || (useSeparatedFields && description && description !== (annotation.problemStatement || annotation.description))) && (
+              <p className="text-green-600 mt-2 mb-3">
+                ✅ {annotation.solutionStatement || (useSeparatedFields ? description : annotation.feedback)}
+              </p>
+            )}
+            
+            {/* Metadata */}
+            <div className="flex items-center gap-2 mb-3">
+              <span className={`w-3 h-3 rounded-full ${getSeverityColor(annotation.severity).split(' ')[0]}`}></span>
+              <span className="text-xs text-gray-500">
+                {annotation.severity} • {annotation.category}
+              </span>
+            </div>
+            
+            <div className="flex items-center gap-4 text-xs text-gray-600">
+              <span>Effort: {annotation.implementationEffort}</span>
+              <span>Impact: {annotation.businessImpact}</span>
+            </div>
           </div>
           
           {/* Arrow pointing to annotation */}
