@@ -249,8 +249,8 @@ export function AppSidebar({}: AppSidebarProps) {
                         <button 
                           className={`w-full flex py-2 px-3 items-center gap-2 self-stretch rounded-xl transition-colors min-h-[36px] ${
                             currentPath === '/settings' 
-                              ? 'bg-[#FFDACF] text-[#5C3C90]' 
-                              : 'text-muted-foreground hover:bg-[#FFDACF] hover:text-[#5C3C90] focus:bg-[#FFDACF] focus:text-[#5C3C90]'
+                              ? 'bg-white/80 text-[#5C3C90]' 
+                              : 'text-muted-foreground hover:bg-[#EEE3FF] hover:text-[#5C3C90] focus:bg-[#EEE3FF] focus:text-[#5C3C90]'
                           }`}
                           onClick={() => navigate('/settings')}
                         >
@@ -262,7 +262,7 @@ export function AppSidebar({}: AppSidebarProps) {
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton asChild>
                         <button 
-                          className="w-full flex py-2 px-3 items-center gap-2 self-stretch rounded-xl text-muted-foreground hover:bg-[#FFDACF] hover:text-[#5C3C90] focus:bg-[#FFDACF] focus:text-[#5C3C90] transition-colors min-h-[36px]" 
+                          className="w-full flex py-2 px-3 items-center gap-2 self-stretch rounded-xl text-muted-foreground hover:bg-[#EEE3FF] hover:text-[#5C3C90] focus:bg-[#EEE3FF] focus:text-[#5C3C90] transition-colors min-h-[36px]" 
                           onClick={handleLogout}
                         >
                           <LogOut className="h-4 w-4" />
