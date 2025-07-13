@@ -177,7 +177,7 @@ const GoblinDashboard = () => {
             </h1>
           </div>
           
-          <Button onClick={handleNewAnalysis} size="lg" className="!rounded-xl !bg-gradient-to-b !from-[#EEF2FF] !to-[#D8DFF5] !shadow-[0px_3px_4px_-1px_rgba(88,71,116,0.15),0px_1px_0px_0px_#FFF_inset,0px_0px_0px_1px_#C2C8D9] !border-0 !text-[#382B4E] !text-center !font-['Instrument_Sans'] !text-sm !font-semibold !leading-5 !tracking-[-0.28px]" style={{background: 'linear-gradient(180deg, #EEF2FF 0%, #D8DFF5 100%)', borderRadius: '12px', boxShadow: '0px 3px 4px -1px rgba(88, 71, 116, 0.15), 0px 1px 0px 0px #FFF inset, 0px 0px 0px 1px #C2C8D9', color: '#382B4E', textAlign: 'center', fontFamily: 'Instrument Sans', fontSize: '14px', fontWeight: '600', lineHeight: '20px', letterSpacing: '-0.28px'}}>
+          <Button onClick={handleNewAnalysis} variant="tertiary" size="lg">
             <Plus className="w-5 h-5 mr-2" />
             New Analysis
           </Button>
