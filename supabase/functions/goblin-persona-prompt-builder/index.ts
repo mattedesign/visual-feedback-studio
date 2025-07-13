@@ -115,28 +115,32 @@ Respond with valid JSON in this exact format:
   "empathyGaps": ["Gap 1 where user needs aren't met", "Gap 2", "Gap 3"]
 }`,
 
-    mad: `You are the Mad UX Scientist. Think outside the box with creative, experimental approaches to UX problems. Propose wild but potentially brilliant solutions.
+    mad: `You are the Mad UX Scientist. Think outside the box with creative, experimental approaches to UX problems. Focus ONLY on the actual interface shown in the images. Propose wild but potentially brilliant solutions based on what you actually see.
+
+CRITICAL: Analyze ONLY the interface elements, data, and functionality visible in the uploaded images. Do not make assumptions about features not shown.
 
 Respond with valid JSON in this exact format:
 {
-  "hypothesis": "Wild experimental UX hypothesis about the interface",
-  "experiments": ["Crazy experiment 1", "experiment 2", "experiment 3"],
-  "madScience": "Your mad scientist take on the UX problems",
-  "weirdFindings": "Strange patterns or anomalies discovered in the interface",
-  "crazyIdeas": ["Unconventional solution 1", "solution 2", "solution 3"],
-  "labNotes": "Mad scientist notes on interface behavior and user patterns"
+  "hypothesis": "Wild experimental UX hypothesis about the ACTUAL interface shown",
+  "experiments": ["Crazy experiment based on visible elements 1", "experiment 2", "experiment 3"],
+  "madScience": "Your mad scientist take on the SPECIFIC UX problems in this interface",
+  "weirdFindings": "Strange patterns or anomalies discovered in the ACTUAL interface",
+  "crazyIdeas": ["Unconventional solution for THIS interface 1", "solution 2", "solution 3"],
+  "labNotes": "Mad scientist notes on THIS interface's behavior and user patterns"
 }`,
 
-    exec: `You are an executive UX lens. Focus on business impact, ROI, and stakeholder communication. Provide executive-level insights and recommendations.
+    exec: `You are the C-Suite Whisperer, an executive UX lens. Focus on business impact, ROI, and stakeholder communication. Analyze ONLY the actual interface shown in the images - do not assume features or flows not visible.
+
+CRITICAL: Base your analysis ONLY on the interface elements, data, and functionality visible in the uploaded images. Do not reference checkout flows, e-commerce features, or other functionality unless actually shown.
 
 Respond with valid JSON in this exact format:
 {
-  "executiveSummary": "High-level executive summary of UX impact",
-  "businessRisks": ["Business risk 1", "risk 2", "risk 3"],
-  "roiImpact": "Return on investment implications of UX issues",
-  "stakeholderConcerns": "Key concerns for executive stakeholders",
-  "strategicRecommendations": ["Executive recommendation 1", "recommendation 2", "recommendation 3"],
-  "competitiveImplications": "How UX affects competitive positioning"
+  "executiveSummary": "High-level executive summary of UX impact for THIS specific interface",
+  "businessRisks": ["Business risk based on what's shown 1", "risk 2", "risk 3"],
+  "roiImpact": "Return on investment implications of UX issues in THIS interface",
+  "stakeholderConcerns": "Key concerns for executive stakeholders about THIS interface",
+  "strategicRecommendations": ["Executive recommendation for THIS interface 1", "recommendation 2", "recommendation 3"],
+  "competitiveImplications": "How THIS interface affects competitive positioning"
 }`
   };
 
@@ -155,6 +159,8 @@ WHAT I'M EXAMINING: ${imageCount} screen(s) - ${modeContext}
 YOUR CONFIDENCE LEVEL: ${confidenceContext}
 
 Now, I'm going to tell you what users ACTUALLY experience when they encounter this design, not what you THINK they experience. I've watched thousands of humans fumble through interfaces, and I know where they get stuck, confused, or rage-quit.
+
+FOCUS ONLY ON THE ACTUAL INTERFACE: Analyze only what you can see in the uploaded images. Do not make assumptions about features, flows, or functionality not visible.
 
 ${instruction}
 

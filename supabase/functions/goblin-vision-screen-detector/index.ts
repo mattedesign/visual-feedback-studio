@@ -21,16 +21,21 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T
 }
 
 const SCREEN_PATTERNS = {
-  dashboard: ['dashboard', 'analytics', 'metrics', 'chart', 'data', 'graph', 'statistics'],
-  checkout: ['checkout', 'payment', 'billing', 'cart', 'purchase', 'buy now', 'credit card'],
-  onboarding: ['welcome', 'get started', 'setup', 'tutorial', 'introduction', 'guide'],
-  signup: ['sign up', 'register', 'create account', 'join', 'email', 'password'],
-  login: ['sign in', 'login', 'log in', 'welcome back', 'password', 'forgot'],
-  profile: ['profile', 'account', 'settings', 'preferences', 'personal', 'user'],
-  listing: ['list', 'results', 'search', 'filter', 'sort', 'browse', 'catalog'],
-  form: ['form', 'input', 'submit', 'contact', 'field', 'required', 'textarea'],
-  landing: ['hero', 'cta', 'features', 'testimonial', 'pricing', 'demo'],
-  interface: ['interface', 'screen', 'page', 'view'] // default fallback
+  dashboard: ['dashboard', 'analytics', 'metrics', 'chart', 'data', 'graph', 'statistics', 'performance', 'kpi', 'overview', 'insights', 'reports', 'sales', 'revenue', 'customers', 'orders', 'traffic', 'conversions'],
+  admin: ['admin', 'management', 'control panel', 'settings', 'configuration', 'users', 'permissions', 'system', 'database', 'logs', 'monitoring'],
+  checkout: ['checkout', 'payment', 'billing', 'cart', 'purchase', 'buy now', 'credit card', 'order', 'total', 'shipping', 'delivery'],
+  onboarding: ['welcome', 'get started', 'setup', 'tutorial', 'introduction', 'guide', 'wizard', 'step', 'complete', 'progress'],
+  signup: ['sign up', 'register', 'create account', 'join', 'email', 'password', 'verify', 'confirm'],
+  login: ['sign in', 'login', 'log in', 'welcome back', 'password', 'forgot', 'remember', 'username'],
+  profile: ['profile', 'account', 'settings', 'preferences', 'personal', 'user', 'edit', 'update', 'manage'],
+  listing: ['list', 'results', 'search', 'filter', 'sort', 'browse', 'catalog', 'products', 'items', 'gallery'],
+  form: ['form', 'input', 'submit', 'contact', 'field', 'required', 'textarea', 'select', 'checkbox', 'radio'],
+  landing: ['hero', 'cta', 'features', 'testimonial', 'pricing', 'demo', 'benefits', 'solution', 'product'],
+  ecommerce: ['shop', 'store', 'product', 'price', 'add to cart', 'wishlist', 'compare', 'reviews', 'rating'],
+  social: ['feed', 'post', 'comment', 'like', 'share', 'follow', 'profile', 'timeline', 'notification'],
+  messaging: ['chat', 'message', 'conversation', 'inbox', 'send', 'reply', 'thread', 'notification'],
+  content: ['article', 'blog', 'news', 'read', 'content', 'story', 'author', 'publish', 'edit'],
+  interface: ['interface', 'screen', 'page', 'view', 'app', 'website'] // default fallback
 }
 
 async function detectGoblinScreenType(imageUrl: string, retryCount = 0): Promise<any> {
@@ -107,24 +112,40 @@ async function detectGoblinScreenType(imageUrl: string, retryCount = 0): Promise
     console.log('📝 Detected text preview:', detectedText.substring(0, 100))
     console.log('🏷️ Detected labels:', labels)
     
-    // Score each screen type
+    // Enhanced scoring algorithm with contextual weight
     const typeScores: { [key: string]: number } = {}
     
     for (const [screenType, patterns] of Object.entries(SCREEN_PATTERNS)) {
       let score = 0
       
-      // Check text patterns
+      // Check text patterns with position weight
       for (const pattern of patterns) {
-        if (detectedText.includes(pattern)) {
-          score += 2 // Text matches are weighted higher
-        }
-        
-        // Check labels too
-        for (const label of labels) {
-          if (label.includes(pattern)) {
-            score += 1
+        const textOccurrences = (detectedText.match(new RegExp(pattern, 'gi')) || []).length;
+        if (textOccurrences > 0) {
+          // Higher weight for multiple occurrences and specific patterns
+          score += textOccurrences * (pattern.length > 4 ? 3 : 2);
+          
+          // Bonus for early occurrence (likely header/title)
+          if (detectedText.indexOf(pattern) < detectedText.length / 3) {
+            score += 2;
           }
         }
+        
+        // Check labels with confidence weighting
+        for (const label of labels) {
+          if (label.includes(pattern) || pattern.includes(label)) {
+            score += 1;
+          }
+        }
+      }
+      
+      // Apply contextual bonuses
+      if (screenType === 'dashboard' && (detectedText.includes('total') || detectedText.includes('view') || detectedText.includes('overview'))) {
+        score += 3;
+      }
+      
+      if (screenType === 'admin' && (detectedText.includes('manage') || detectedText.includes('control'))) {
+        score += 2;
       }
       
       typeScores[screenType] = score
@@ -138,13 +159,20 @@ async function detectGoblinScreenType(imageUrl: string, retryCount = 0): Promise
     console.log('🎯 Screen type detected:', screenType, 'confidence:', confidence)
     console.log('📊 All scores:', typeScores)
 
+    // Enhanced interface classification
+    const interfaceCategory = classifyInterface(screenType, detectedText, labels);
+    
     return {
-      screenType: confidence > 0.3 ? screenType : 'interface',
+      screenType: confidence > 0.2 ? screenType : 'interface',
       confidence,
-      detectedText: detectedText.substring(0, 200),
+      detectedText: detectedText.substring(0, 300),
+      interfaceCategory,
+      context: extractInterfaceContext(screenType, detectedText),
       metadata: {
-        labels: labels.slice(0, 5),
-        topScores: sortedScores.slice(0, 3).map(([type, score]) => ({ type, score }))
+        labels: labels.slice(0, 8),
+        topScores: sortedScores.slice(0, 5).map(([type, score]) => ({ type, score })),
+        textLength: detectedText.length,
+        labelCount: labels.length
       }
     }
 
@@ -174,6 +202,113 @@ async function detectGoblinScreenType(imageUrl: string, retryCount = 0): Promise
       }
     }
   }
+}
+
+// Enhanced interface classification system
+function classifyInterface(screenType: string, detectedText: string, labels: string[]): string {
+  const businessKeywords = ['revenue', 'sales', 'profit', 'growth', 'customers', 'conversion', 'roi', 'metrics'];
+  const technicalKeywords = ['api', 'database', 'system', 'logs', 'configuration', 'admin', 'monitoring'];
+  const userKeywords = ['user', 'profile', 'account', 'personal', 'preferences', 'settings'];
+  const contentKeywords = ['content', 'articles', 'posts', 'media', 'images', 'videos'];
+  
+  let category = 'general';
+  
+  // Business-focused interfaces
+  if (businessKeywords.some(kw => detectedText.includes(kw)) || screenType === 'dashboard') {
+    category = 'business';
+  }
+  // Technical/admin interfaces  
+  else if (technicalKeywords.some(kw => detectedText.includes(kw)) || screenType === 'admin') {
+    category = 'technical';
+  }
+  // User-focused interfaces
+  else if (userKeywords.some(kw => detectedText.includes(kw)) || ['profile', 'signup', 'login'].includes(screenType)) {
+    category = 'user';
+  }
+  // Content-focused interfaces
+  else if (contentKeywords.some(kw => detectedText.includes(kw)) || ['content', 'social'].includes(screenType)) {
+    category = 'content';
+  }
+  // E-commerce interfaces
+  else if (['checkout', 'ecommerce', 'listing'].includes(screenType)) {
+    category = 'commerce';
+  }
+  
+  return category;
+}
+
+// Extract contextual information about the interface
+function extractInterfaceContext(screenType: string, detectedText: string): any {
+  const context: any = {
+    primaryPurpose: screenType,
+    keyElements: [],
+    userActions: [],
+    businessValue: []
+  };
+  
+  // Extract key elements based on screen type
+  switch (screenType) {
+    case 'dashboard':
+      context.keyElements = extractDashboardElements(detectedText);
+      context.userActions = ['analyze', 'monitor', 'track', 'report'];
+      context.businessValue = ['data-driven decisions', 'performance monitoring', 'trend analysis'];
+      break;
+      
+    case 'admin':
+      context.keyElements = extractAdminElements(detectedText);
+      context.userActions = ['manage', 'configure', 'monitor', 'control'];
+      context.businessValue = ['system efficiency', 'user management', 'security'];
+      break;
+      
+    case 'checkout':
+      context.keyElements = extractCheckoutElements(detectedText);
+      context.userActions = ['purchase', 'pay', 'confirm', 'complete'];
+      context.businessValue = ['revenue generation', 'conversion optimization', 'customer acquisition'];
+      break;
+      
+    default:
+      context.keyElements = extractGeneralElements(detectedText);
+      context.userActions = ['navigate', 'interact', 'complete'];
+      context.businessValue = ['user engagement', 'task completion'];
+  }
+  
+  return context;
+}
+
+function extractDashboardElements(text: string): string[] {
+  const elements = [];
+  if (text.includes('chart') || text.includes('graph')) elements.push('data_visualization');
+  if (text.includes('metric') || text.includes('kpi')) elements.push('key_metrics');
+  if (text.includes('total') || text.includes('sum')) elements.push('summary_data');
+  if (text.includes('revenue') || text.includes('sales')) elements.push('financial_data');
+  if (text.includes('user') || text.includes('customer')) elements.push('user_analytics');
+  return elements;
+}
+
+function extractAdminElements(text: string): string[] {
+  const elements = [];
+  if (text.includes('user') || text.includes('member')) elements.push('user_management');
+  if (text.includes('setting') || text.includes('config')) elements.push('configuration');
+  if (text.includes('permission') || text.includes('role')) elements.push('access_control');
+  if (text.includes('log') || text.includes('activity')) elements.push('monitoring');
+  return elements;
+}
+
+function extractCheckoutElements(text: string): string[] {
+  const elements = [];
+  if (text.includes('payment') || text.includes('card')) elements.push('payment_method');
+  if (text.includes('shipping') || text.includes('delivery')) elements.push('fulfillment');
+  if (text.includes('total') || text.includes('amount')) elements.push('order_summary');
+  if (text.includes('address') || text.includes('billing')) elements.push('customer_info');
+  return elements;
+}
+
+function extractGeneralElements(text: string): string[] {
+  const elements = [];
+  if (text.includes('button') || text.includes('click')) elements.push('interactive_elements');
+  if (text.includes('form') || text.includes('input')) elements.push('data_entry');
+  if (text.includes('menu') || text.includes('navigation')) elements.push('navigation');
+  return elements;
 }
 
 serve(async (req) => {

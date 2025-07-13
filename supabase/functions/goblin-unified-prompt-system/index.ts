@@ -240,20 +240,51 @@ function buildUnifiedPrompt(
   // Add image context
   prompt += "\n\n" + template.imageContext.replace('{imageCount}', imageCount.toString());
   
-  // Add vision analysis context
+  // Add enhanced vision analysis context with interface classification
   if (visionResults && visionResults.length > 0) {
     const screenTypes = visionResults.map(v => v.screenType || 'interface').join(', ');
     const avgConfidence = visionResults.reduce((sum, v) => sum + (v.confidence || 0), 0) / visionResults.length;
+    const interfaceCategories = visionResults.map(v => v.interfaceCategory || 'general').join(', ');
     
     prompt += `\n\nDetected Screen Types: ${screenTypes}`;
+    prompt += `\nInterface Categories: ${interfaceCategories}`;
     prompt += `\nVision Confidence: ${Math.round(avgConfidence * 100)}%`;
     
-    // Add specific screen context
-    const screenContext = visionResults.map((v, i) => 
-      `Screen ${i + 1}: ${v.screenType} (${v.confidence ? Math.round(v.confidence * 100) : 0}% confidence)`
-    ).join('\n');
+    // Add detailed screen context with interface understanding
+    const screenContext = visionResults.map((v, i) => {
+      let context = `Screen ${i + 1}: ${v.screenType} (${v.confidence ? Math.round(v.confidence * 100) : 0}% confidence)`;
+      
+      if (v.interfaceCategory) {
+        context += `\n  Interface Category: ${v.interfaceCategory}`;
+      }
+      
+      if (v.context) {
+        context += `\n  Primary Purpose: ${v.context.primaryPurpose}`;
+        if (v.context.keyElements && v.context.keyElements.length > 0) {
+          context += `\n  Key Elements: ${v.context.keyElements.join(', ')}`;
+        }
+        if (v.context.userActions && v.context.userActions.length > 0) {
+          context += `\n  User Actions: ${v.context.userActions.join(', ')}`;
+        }
+        if (v.context.businessValue && v.context.businessValue.length > 0) {
+          context += `\n  Business Value: ${v.context.businessValue.join(', ')}`;
+        }
+      }
+      
+      if (v.detectedText) {
+        const textPreview = v.detectedText.substring(0, 100);
+        context += `\n  Detected Text: "${textPreview}${v.detectedText.length > 100 ? '...' : ''}"`;
+      }
+      
+      return context;
+    }).join('\n\n');
     
-    prompt += `\n\nScreen Analysis:\n${screenContext}`;
+    prompt += `\n\nDetailed Screen Analysis:\n${screenContext}`;
+    
+    // Add persona-specific interface guidance
+    if (persona === 'exec' || persona === 'mad') {
+      prompt += `\n\nIMPORTANT: Focus your analysis ONLY on the actual interface elements, data, and functionality visible in these specific screens. Do not make assumptions about features, workflows, or capabilities not shown in the images.`;
+    }
   }
   
   // Add goal-specific guidance
