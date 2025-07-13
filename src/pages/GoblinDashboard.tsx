@@ -379,7 +379,7 @@ const GoblinDashboard = () => {
                     </div>
 
                     {session.goal_description && (
-                      <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+                      <p className="text-xs text-muted-foreground line-clamp-2 mb-3 hidden">
                         {session.goal_description}
                       </p>
                     )}
