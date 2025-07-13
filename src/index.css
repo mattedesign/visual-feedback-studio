@@ -278,3 +278,31 @@
   background: linear-gradient(180deg, #E0E0E0 0%, #DDDDDD 100%);
   transform: translateY(-1px);
 }
+
+/* Main Page Action Button - Top Right */
+.main-page-action-button {
+  display: flex;
+  padding: 10px 16px;
+  justify-content: center;
+  align-items: center;
+  gap: 0px;
+  border-radius: 9999px;
+  background: #EEF2FF !important;
+  color: #5C3C90 !important;
+  border: none !important;
+  font-weight: 500;
+}
+
+.main-page-action-button:hover {
+  background: #EEF2FF !important;
+  color: #5C3C90 !important;
+}
+
+.main-page-action-button:focus {
+  background: #EEF2FF !important;
+  color: #5C3C90 !important;
+}
+
+.main-page-action-button svg {
+  color: #5C3C90 !important;
+}
