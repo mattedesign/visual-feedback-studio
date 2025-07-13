@@ -630,8 +630,11 @@ class AnnotationGenerator {
     const imageIndex = index % imageCount;
     const positionInImage = Math.floor(index / imageCount);
     const position = SYNTHESIS_CONFIG.annotations.positions[positionInImage % SYNTHESIS_CONFIG.annotations.positions.length];
-    
-    // Determine category and title from recommendation content or use fallback
+
+    // Enhanced recommendation analysis for problem + solution
+    const enhancedFeedback = this.enhanceFeedbackWithSolution(recommendation, persona);
+
+    // Determine category and title from recommendation content
     const categoryMapping = {
       navigation: ['navigation', 'menu', 'nav', 'header', 'sidebar'],
       conversion: ['button', 'cta', 'call-to-action', 'convert', 'sign up', 'buy', 'purchase'],
@@ -642,43 +645,42 @@ class AnnotationGenerator {
       performance: ['loading', 'speed', 'performance', 'wait', 'fast'],
       validation: ['error', 'validation', 'form', 'mistake', 'prevent']
     };
-    
+
     const fallbackTypes = [
-      { title: 'Navigation Clarity', category: 'navigation' },
-      { title: 'Call-to-Action', category: 'conversion' },
-      { title: 'Content Hierarchy', category: 'readability' },
-      { title: 'User Flow', category: 'usability' },
-      { title: 'Visual Feedback', category: 'interaction' },
-      { title: 'Mobile Experience', category: 'responsive' },
-      { title: 'Loading States', category: 'performance' },
-      { title: 'Error Prevention', category: 'validation' }
+      { title: 'Navigation Issue', category: 'navigation' },
+      { title: 'Conversion Problem', category: 'conversion' },
+      { title: 'Content Clarity', category: 'readability' },
+      { title: 'Usability Issue', category: 'usability' },
+      { title: 'Interaction Problem', category: 'interaction' },
+      { title: 'Mobile Issue', category: 'responsive' },
+      { title: 'Performance Issue', category: 'performance' },
+      { title: 'Form Problem', category: 'validation' }
     ];
-    
-    // Try to determine category from recommendation content
-    let detectedCategory = 'usability'; // default
-    let detectedTitle = 'UX Improvement';
-    
+
+    // Detect category from recommendation content
+    let detectedCategory = 'usability';
+    let detectedTitle = 'UX Issue & Solution';
     const recLower = recommendation.toLowerCase();
+
     for (const [category, keywords] of Object.entries(categoryMapping)) {
       if (keywords.some(keyword => recLower.includes(keyword))) {
         detectedCategory = category;
-        detectedTitle = fallbackTypes.find(type => type.category === category)?.title || 'UX Improvement';
+        detectedTitle = fallbackTypes.find(type => type.category === category)?.title || 'UX Issue';
         break;
       }
     }
-    
-    // If no category detected, use fallback rotation
+
     if (detectedCategory === 'usability' && !recLower.includes('user') && !recLower.includes('flow')) {
       const fallbackType = fallbackTypes[index % fallbackTypes.length];
       detectedCategory = fallbackType.category;
       detectedTitle = fallbackType.title;
     }
-    
+
     return {
       id: `${persona}-annotation-${index + 1}`,
       title: detectedTitle,
-      description: recommendation || `Improve user experience for ${persona} persona`,
-      feedback: recommendation || `Improve user experience for ${persona} persona`,
+      description: enhancedFeedback.problem || recommendation,
+      feedback: enhancedFeedback.solution || `Specific solution for ${persona} persona`,
       category: detectedCategory,
       x: position.x,
       y: position.y,
@@ -687,8 +689,118 @@ class AnnotationGenerator {
       image_index: imageIndex,
       imageIndex: imageIndex,
       persona,
-      priority: index < 2 ? 'high' : 'medium'
+      priority: index < 2 ? 'high' : 'medium',
+      problemStatement: enhancedFeedback.problem,
+      solutionStatement: enhancedFeedback.solution
     };
+  }
+
+  // New method to enhance feedback with solutions
+  private enhanceFeedbackWithSolution(recommendation: string, persona: string) {
+    // If recommendation already contains solution language, split it
+    if (recommendation.includes(' - ') || recommendation.includes(': ')) {
+      const parts = recommendation.split(/\s*[-:]\s*/);
+      if (parts.length >= 2) {
+        return {
+          problem: parts[0].trim(),
+          solution: parts.slice(1).join(' - ').trim()
+        };
+      }
+    }
+
+    // Generate persona-appropriate solution
+    const solutions = {
+      clarity: this.getClaritySolution(recommendation),
+      strategic: this.getStrategicSolution(recommendation),
+      mirror: this.getMirrorSolution(recommendation),
+      mad: this.getMadSolution(recommendation),
+      exec: this.getExecutiveSolution(recommendation)
+    };
+
+    return {
+      problem: recommendation,
+      solution: solutions[persona] || `Improve ${recommendation.toLowerCase()}`
+    };
+  }
+
+  private getClaritySolution(problem: string) {
+    const solutions = {
+      'navigation': 'Make navigation obvious - use clear labels, highlight current page, add breadcrumbs',
+      'button': 'Make buttons scream "CLICK ME" - bigger, brighter, action words like "Get Started"',
+      'form': 'Simplify forms - one thing per screen, clear error messages, obvious required fields',
+      'content': 'Write like you\'re talking to a busy person - short sentences, bullet points, scannable',
+      'default': 'Make it so obvious that your grandma could use it without instructions'
+    };
+
+    const problemLower = problem.toLowerCase();
+    for (const [key, solution] of Object.entries(solutions)) {
+      if (problemLower.includes(key)) return solution;
+    }
+    return solutions.default;
+  }
+
+  private getStrategicSolution(problem: string) {
+    const solutions = {
+      'navigation': 'Implement user-tested navigation patterns with clear information architecture',
+      'conversion': 'A/B test button placement and copy to optimize conversion funnel',
+      'onboarding': 'Create progressive disclosure onboarding with measurable completion rates',
+      'mobile': 'Prioritize mobile-first design with touch-optimized interactions',
+      'default': 'Apply user research insights and test implementation against success metrics'
+    };
+
+    const problemLower = problem.toLowerCase();
+    for (const [key, solution] of Object.entries(solutions)) {
+      if (problemLower.includes(key)) return solution;
+    }
+    return solutions.default;
+  }
+
+  private getMirrorSolution(problem: string) {
+    const solutions = {
+      'user': 'Ask: "What assumptions am I making about user behavior here?"',
+      'navigation': 'Question: "Would a first-time user understand this navigation instantly?"',
+      'content': 'Reflect: "Am I writing for my users or for myself?"',
+      'design': 'Consider: "What would happen if I removed this entirely?"',
+      'default': 'Step back and see this through your users\' eyes - what do they really need?'
+    };
+
+    const problemLower = problem.toLowerCase();
+    for (const [key, solution] of Object.entries(solutions)) {
+      if (problemLower.includes(key)) return solution;
+    }
+    return solutions.default;
+  }
+
+  private getMadSolution(problem: string) {
+    const solutions = {
+      'navigation': 'Try: Floating action navigation, or gesture-based controls, or voice commands',
+      'form': 'Experiment: Single-field forms, conversational UI, or progressive web app approach',
+      'onboarding': 'Test: Interactive tutorials, gamified setup, or AI-powered personalization',
+      'layout': 'Break rules: Asymmetrical layouts, scroll-jacking, or immersive experiences',
+      'default': 'What if we completely ignored conventional UX wisdom and tried something wild?'
+    };
+
+    const problemLower = problem.toLowerCase();
+    for (const [key, solution] of Object.entries(solutions)) {
+      if (problemLower.includes(key)) return solution;
+    }
+    return solutions.default;
+  }
+
+  private getExecutiveSolution(problem: string) {
+    const solutions = {
+      'conversion': 'Implement conversion optimization with 20% revenue impact target',
+      'onboarding': 'Reduce time-to-value with streamlined activation flow',
+      'navigation': 'Optimize user journey to reduce support tickets by 30%',
+      'mobile': 'Capture mobile market share with responsive-first approach',
+      'default': 'Focus on highest-impact changes that drive measurable business outcomes'
+    };
+
+    const problemLower = problem.toLowerCase();
+    for (const [key, solution] of Object.entries(solutions)) {
+      if (problemLower.includes(key)) return solution;
+    }
+    return solutions.default;
   }
 }
 
