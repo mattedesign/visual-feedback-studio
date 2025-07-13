@@ -725,11 +725,16 @@ class AnnotationGenerator {
 
   private getClaritySolution(problem: string) {
     const solutions = {
-      'navigation': 'Make navigation obvious - use clear labels, highlight current page, add breadcrumbs',
-      'button': 'Make buttons scream "CLICK ME" - bigger, brighter, action words like "Get Started"',
-      'form': 'Simplify forms - one thing per screen, clear error messages, obvious required fields',
-      'content': 'Write like you\'re talking to a busy person - short sentences, bullet points, scannable',
-      'default': 'Make it so obvious that your grandma could use it without instructions'
+      'navigation': 'Scrap the fancy menu - users need BIG, OBVIOUS links that scream where they go!',
+      'button': 'Make buttons IMPOSSIBLE to miss - bright colors, action words like "GET STARTED NOW!"',
+      'form': 'One damn field at a time! Clear labels, obvious errors, no clever BS',
+      'content': 'Write like you\'re texting a friend - short, snappy, get to the point!',
+      'search': 'Put the search box where people EXPECT it - top right, make it BIG',
+      'menu': 'Stop hiding your menu! Users shouldn\'t play hide-and-seek with navigation',
+      'flow': 'Kill the 47-step process - make it 3 steps MAX or users will bounce',
+      'modal': 'Dialogs should have ONE purpose and a GIANT close button',
+      'mobile': 'Thumbs are fat! Make touch targets HUGE and easy to hit',
+      'default': 'If your grandma can\'t use it in 5 seconds, it\'s broken!'
     };
 
     const problemLower = problem.toLowerCase();
@@ -741,11 +746,15 @@ class AnnotationGenerator {
 
   private getStrategicSolution(problem: string) {
     const solutions = {
-      'navigation': 'Implement user-tested navigation patterns with clear information architecture',
-      'conversion': 'A/B test button placement and copy to optimize conversion funnel',
-      'onboarding': 'Create progressive disclosure onboarding with measurable completion rates',
-      'mobile': 'Prioritize mobile-first design with touch-optimized interactions',
-      'default': 'Apply user research insights and test implementation against success metrics'
+      'navigation': 'Redesign IA based on user journey analytics - map conversion paths to guide structure',
+      'conversion': 'A/B test strategic placement: above-fold CTAs show 47% higher conversion rates',
+      'onboarding': 'Build progressive disclosure system: 3-step activation drives 65% completion vs 8-step',
+      'mobile': 'Mobile-first approach: 70% of conversions happen on mobile, optimize accordingly',
+      'form': 'Implement smart forms with conditional logic to reduce abandonment by 40%',
+      'search': 'Add intelligent search with filters - drives 23% higher engagement per session',
+      'content': 'Apply content hierarchy based on user research - F-pattern scanning optimization',
+      'checkout': 'Streamline checkout funnel - every extra step costs 20% conversion rate',
+      'default': 'Apply behavioral design principles backed by user research and conversion data'
     };
 
     const problemLower = problem.toLowerCase();
@@ -757,11 +766,15 @@ class AnnotationGenerator {
 
   private getMirrorSolution(problem: string) {
     const solutions = {
-      'user': 'Ask: "What assumptions am I making about user behavior here?"',
-      'navigation': 'Question: "Would a first-time user understand this navigation instantly?"',
-      'content': 'Reflect: "Am I writing for my users or for myself?"',
-      'design': 'Consider: "What would happen if I removed this entirely?"',
-      'default': 'Step back and see this through your users\' eyes - what do they really need?'
+      'user': 'Ask yourself: "What assumptions am I making about user behavior here?"',
+      'navigation': 'Reflect deeply: "Would a first-time user understand this navigation instantly?"',
+      'content': 'Question honestly: "Am I writing for my users or showing off my vocabulary?"',
+      'design': 'Consider: "What would happen if I removed this entirely? Would users even notice?"',
+      'form': 'Examine: "Am I asking for this data because I need it, or because I can?"',
+      'button': 'Wonder: "Is this button where users expect to find it, or where I think it looks good?"',
+      'layout': 'Challenge: "Does this layout serve my users\' mental model or my aesthetic preference?"',
+      'flow': 'Ponder: "Am I designing this flow for how I think, or how my users actually behave?"',
+      'default': 'Stop. Breathe. See this through your users\' eyes - what do they actually need vs. what you think they need?'
     };
 
     const problemLower = problem.toLowerCase();
@@ -773,11 +786,15 @@ class AnnotationGenerator {
 
   private getMadSolution(problem: string) {
     const solutions = {
-      'navigation': 'Try: Floating action navigation, or gesture-based controls, or voice commands',
-      'form': 'Experiment: Single-field forms, conversational UI, or progressive web app approach',
-      'onboarding': 'Test: Interactive tutorials, gamified setup, or AI-powered personalization',
-      'layout': 'Break rules: Asymmetrical layouts, scroll-jacking, or immersive experiences',
-      'default': 'What if we completely ignored conventional UX wisdom and tried something wild?'
+      'navigation': 'Wild idea: Try floating action bubbles, gesture-based controls, or voice-activated navigation!',
+      'form': 'Experiment time: Single-field conversational forms, or progressive web app with smart pre-filling!',
+      'onboarding': 'Go crazy: Interactive story-based tutorials, gamified setup with rewards, or AI-powered personalization!',
+      'layout': 'Break ALL rules: Asymmetrical layouts, scroll-jacking experiences, or immersive 3D interfaces!',
+      'button': 'Test wild stuff: Animated morphing buttons, physics-based interactions, or gesture-controlled actions!',
+      'search': 'Try something nuts: Visual search with drag-and-drop, AI-powered semantic search, or voice queries!',
+      'mobile': 'Experimental approach: Haptic feedback patterns, tilting gestures, or AR overlay interfaces!',
+      'content': 'Radical idea: Interactive storytelling, dynamic content that adapts to reading speed, or collaborative editing!',
+      'default': 'Screw conventional wisdom! What if we completely flipped user expectations and created something they\'ve never seen before?'
     };
 
     const problemLower = problem.toLowerCase();
@@ -789,11 +806,15 @@ class AnnotationGenerator {
 
   private getExecutiveSolution(problem: string) {
     const solutions = {
-      'conversion': 'Implement conversion optimization with 20% revenue impact target',
-      'onboarding': 'Reduce time-to-value with streamlined activation flow',
-      'navigation': 'Optimize user journey to reduce support tickets by 30%',
-      'mobile': 'Capture mobile market share with responsive-first approach',
-      'default': 'Focus on highest-impact changes that drive measurable business outcomes'
+      'conversion': 'ROI-focused: Implement conversion optimization targeting 15-25% revenue increase within Q1',
+      'onboarding': 'Business impact: Reduce time-to-value from setup to first success - target 40% faster activation',
+      'navigation': 'Efficiency play: Optimize user journey to reduce support tickets by 30% and increase task completion',
+      'mobile': 'Market capture: Mobile-first responsive design to capture 70% mobile user base and increase engagement',
+      'form': 'Lead generation: Streamline forms to reduce abandonment - every field costs 11% conversion rate',
+      'search': 'User retention: Implement smart search to increase session duration and reduce bounce rate by 25%',
+      'checkout': 'Revenue protection: Optimize checkout funnel - current industry standard is 30% cart abandonment',
+      'performance': 'Competitive advantage: Page speed optimization - every 100ms delay costs 1% conversion',
+      'default': 'Strategic focus: Prioritize highest-ROI UX improvements that deliver measurable business outcomes within 90 days'
     };
 
     const problemLower = problem.toLowerCase();
