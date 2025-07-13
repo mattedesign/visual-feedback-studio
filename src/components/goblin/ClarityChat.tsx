@@ -257,8 +257,8 @@ const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedb
   };
 
   return (
-    <div className="flex flex-col h-[600px]">
-      <Card className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex flex-col h-full min-h-[600px] w-full">
+      <Card className="flex-1 flex flex-col overflow-hidden w-full">
         <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-xl">
             Chat with {getPersonaTitle(session?.persona_type)}
