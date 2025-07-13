@@ -69,12 +69,6 @@ const bottomNavItems = [
     badge: null
   },
   {
-    title: "Settings",
-    url: "/settings",
-    icon: Settings,
-    badge: null
-  },
-  {
     title: "Help",
     url: "/help",
     icon: HelpCircle,
