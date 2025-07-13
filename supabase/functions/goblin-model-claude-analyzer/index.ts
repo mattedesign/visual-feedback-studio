@@ -202,7 +202,21 @@ serve(async (req) => {
             continue;
           }
           
-          const base64 = btoa(String.fromCharCode.apply(null, new Uint8Array(arrayBuffer)));
+          // FIXED: Process in chunks to avoid stack overflow
+          const uint8Array = new Uint8Array(arrayBuffer);
+          let binaryString = '';
+          
+          // Process in small chunks to avoid stack overflow
+          const chunkSize = 1024;
+          for (let k = 0; k < uint8Array.length; k += chunkSize) {
+            const chunk = uint8Array.slice(k, k + chunkSize);
+            // Use loop instead of apply to avoid stack overflow
+            for (let j = 0; j < chunk.length; j++) {
+              binaryString += String.fromCharCode(chunk[j]);
+            }
+          }
+          
+          const base64 = btoa(binaryString);
           const contentType = imageResponse.headers.get('content-type') || 'image/png';
 
           imageContent.push({
