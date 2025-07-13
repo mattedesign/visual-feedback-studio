@@ -10,7 +10,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "inline-flex py-2 px-5 justify-center items-center gap-2 rounded-xl bg-gradient-to-b from-[#323232] to-[#222] shadow-[0px_0.5px_1px_0px_rgba(255,255,255,0.15)_inset,0px_2px_4px_-1px_rgba(13,13,13,0.50),0px_-1px_1.2px_0.35px_#121212_inset,0px_0px_0px_1px_#333] text-[#FCFCFC] text-center font-['Instrument_Sans'] text-sm font-semibold leading-5 tracking-[-0.28px] transition-all duration-200",
+        default: "inline-flex py-2 px-5 justify-center items-center gap-2 rounded-xl bg-gradient-to-b from-[#323232] to-[#222] shadow-[0px_0.5px_1px_0px_rgba(255,255,255,0.15)_inset,0px_2px_4px_-1px_rgba(13,13,13,0.50),0px_-1px_1.2px_0.35px_#121212_inset,0px_0px_0px_1px_#333] text-[#FCFCFC] text-center font-['Instrument_Sans'] text-sm font-semibold leading-5 tracking-[-0.28px] hover:rounded-[10px] hover:bg-gradient-to-b hover:from-[#323232] hover:to-[#222] hover:shadow-[0px_0.5px_1px_0px_rgba(255,255,255,0.15)_inset,0px_2px_4px_-1px_rgba(13,13,13,0.50),0px_-1px_1.2px_0.35px_#121212_inset,0px_0px_0px_1px_#333] transition-all duration-200",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline:
