@@ -247,12 +247,6 @@ const GoblinHistory = () => {
                     <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-sm">
                       <span className="text-lg">{getPersonaIcon(session.persona_type)}</span>
                     </div>
-                    
-                    <Badge 
-                      className={`absolute top-3 right-3 ${getStatusColor(session.status)} border-0 shadow-sm`}
-                    >
-                      {session.status}
-                    </Badge>
                   </div>
 
                   {/* Content Area */}
