@@ -2,10 +2,8 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { HelpCircle, BookOpen, MessageCircle, FileText } from 'lucide-react';
-
 const Help = () => {
-  return (
-    <div className="w-full p-6">
+  return <div className="w-full p-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Help & Support</h1>
         <p className="text-muted-foreground mt-2">
@@ -25,7 +23,7 @@ const Help = () => {
             <p className="text-muted-foreground mb-4">
               Learn the basics of UX analysis and how to use our AI-powered tools.
             </p>
-            <Button variant="outline">View Guide</Button>
+            <Button variant="outline" className="bg-[744757] bg-cyan-200 hover:bg-cyan-100">View Guide</Button>
           </CardContent>
         </Card>
 
@@ -40,7 +38,7 @@ const Help = () => {
             <p className="text-muted-foreground mb-4">
               Comprehensive documentation covering all features and workflows.
             </p>
-            <Button variant="outline">Browse Docs</Button>
+            <Button variant="outline" className="bg-cyan-200 hover:bg-cyan-100">Browse Docs</Button>
           </CardContent>
         </Card>
 
@@ -55,7 +53,7 @@ const Help = () => {
             <p className="text-muted-foreground mb-4">
               Need help? Our support team is here to assist you.
             </p>
-            <Button variant="outline">Get Support</Button>
+            <Button variant="outline" className="bg-cyan-200 hover:bg-cyan-100">Get Support</Button>
           </CardContent>
         </Card>
 
@@ -70,12 +68,10 @@ const Help = () => {
             <p className="text-muted-foreground mb-4">
               Find answers to frequently asked questions.
             </p>
-            <Button variant="outline">View FAQ</Button>
+            <Button variant="outline" className="bg-cyan-200 hover:bg-cyan-100">View FAQ</Button>
           </CardContent>
         </Card>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Help;
