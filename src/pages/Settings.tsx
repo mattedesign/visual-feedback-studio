@@ -41,7 +41,7 @@ const Settings = () => {
   }
 
   return (
-    <div className="py-6 max-w-6xl mx-auto">
+    <div className="p-5 w-full">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
         <p className="text-muted-foreground mt-2">
@@ -49,7 +49,7 @@ const Settings = () => {
         </p>
       </div>
 
-      <Tabs defaultValue={defaultTab} className="space-y-6">
+      <Tabs defaultValue={defaultTab} className="w-full space-y-6">
         <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'}`}>
           {availableTabs.map((tab) => (
             <TabsTrigger key={tab.value} value={tab.value} className="flex items-center gap-2">
@@ -59,20 +59,20 @@ const Settings = () => {
           ))}
         </TabsList>
 
-        <TabsContent value="profile" className="px-6">
+        <TabsContent value="profile" className="w-full">
           <ProfileSettings />
         </TabsContent>
 
-        <TabsContent value="notifications" className="px-6">
+        <TabsContent value="notifications" className="w-full">
           <NotificationSettings />
         </TabsContent>
 
-        <TabsContent value="privacy" className="px-6">
+        <TabsContent value="privacy" className="w-full">
           <PrivacySettings />
         </TabsContent>
 
         {isAdmin && (
-          <TabsContent value="health" className="px-6">
+          <TabsContent value="health" className="w-full">
             <AdminHealthDashboard />
           </TabsContent>
         )}
