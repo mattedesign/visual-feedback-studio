@@ -743,7 +743,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
               </Button>
             </div>
           </div>
-          <div className="flex items-center gap-3 mt-3">
+          <div className="flex items-center gap-3 mt-3 hidden">
             <Badge variant="outline" className={`${colors.badge} mobile-badge`}>
               {session?.persona_type?.charAt(0).toUpperCase() + session?.persona_type?.slice(1) || 'Analysis'}
             </Badge>
