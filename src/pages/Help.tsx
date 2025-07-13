@@ -23,7 +23,7 @@ const Help = () => {
             <p className="text-muted-foreground mb-4">
               Learn the basics of UX analysis and how to use our AI-powered tools.
             </p>
-            <Button variant="outline" className="bg-[744757] bg-cyan-200 hover:bg-cyan-100">View Guide</Button>
+            <Button variant="outline" className="rounded-xl bg-gradient-to-b from-[#EEF2FF] to-[#D8DFF5] shadow-[0px_3px_4px_-1px_rgba(88,71,116,0.15),0px_1px_0px_0px_#FFF_inset,0px_0px_0px_1px_#C2C8D9] inline-flex px-6 py-2.5 justify-center items-center gap-2 border-0 hover:from-[#E6EDFF] hover:to-[#D0D7F0]">View Guide</Button>
           </CardContent>
         </Card>
 
@@ -38,7 +38,7 @@ const Help = () => {
             <p className="text-muted-foreground mb-4">
               Comprehensive documentation covering all features and workflows.
             </p>
-            <Button variant="outline" className="bg-cyan-200 hover:bg-cyan-100">Browse Docs</Button>
+            <Button variant="outline" className="rounded-xl bg-gradient-to-b from-[#EEF2FF] to-[#D8DFF5] shadow-[0px_3px_4px_-1px_rgba(88,71,116,0.15),0px_1px_0px_0px_#FFF_inset,0px_0px_0px_1px_#C2C8D9] inline-flex px-6 py-2.5 justify-center items-center gap-2 border-0 hover:from-[#E6EDFF] hover:to-[#D0D7F0]">Browse Docs</Button>
           </CardContent>
         </Card>
 
@@ -53,7 +53,7 @@ const Help = () => {
             <p className="text-muted-foreground mb-4">
               Need help? Our support team is here to assist you.
             </p>
-            <Button variant="outline" className="bg-cyan-200 hover:bg-cyan-100">Get Support</Button>
+            <Button variant="outline" className="rounded-xl bg-gradient-to-b from-[#EEF2FF] to-[#D8DFF5] shadow-[0px_3px_4px_-1px_rgba(88,71,116,0.15),0px_1px_0px_0px_#FFF_inset,0px_0px_0px_1px_#C2C8D9] inline-flex px-6 py-2.5 justify-center items-center gap-2 border-0 hover:from-[#E6EDFF] hover:to-[#D0D7F0]">Get Support</Button>
           </CardContent>
         </Card>
 
@@ -68,7 +68,7 @@ const Help = () => {
             <p className="text-muted-foreground mb-4">
               Find answers to frequently asked questions.
             </p>
-            <Button variant="outline" className="bg-cyan-200 hover:bg-cyan-100">View FAQ</Button>
+            <Button variant="outline" className="rounded-xl bg-gradient-to-b from-[#EEF2FF] to-[#D8DFF5] shadow-[0px_3px_4px_-1px_rgba(88,71,116,0.15),0px_1px_0px_0px_#FFF_inset,0px_0px_0px_1px_#C2C8D9] inline-flex px-6 py-2.5 justify-center items-center gap-2 border-0 hover:from-[#E6EDFF] hover:to-[#D0D7F0]">View FAQ</Button>
           </CardContent>
         </Card>
       </div>
