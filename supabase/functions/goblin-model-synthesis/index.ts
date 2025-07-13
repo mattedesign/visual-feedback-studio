@@ -695,16 +695,6 @@ class AnnotationGenerator {
       title: personaTitles[persona as keyof typeof personaTitles] || 'UX Enhancement' 
     };
   }
-      width: 8,
-      height: 4,
-      image_index: imageIndex,
-      imageIndex: imageIndex,
-      persona,
-      priority: index < 2 ? 'high' : 'medium',
-      problemStatement: enhancedFeedback.problem,
-      solutionStatement: enhancedFeedback.solution
-    };
-  }
 
   // Enhanced method to analyze problem and generate persona-specific solutions
   private enhanceFeedbackWithSolution(recommendation: string, persona: string) {
