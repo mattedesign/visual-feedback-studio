@@ -116,7 +116,7 @@ export function MobileNavigation() {
         
         <Drawer open={isOpen} onOpenChange={setIsOpen}>
           <DrawerTrigger asChild>
-            <Button variant="ghost" size="sm" className="w-10 h-10 p-2 justify-center items-center gap-2 flex-shrink-0 rounded-[10px] bg-gradient-to-b from-[#EEF2FF] to-[#D8DFF5] shadow-[0px_3px_4px_-1px_rgba(88,71,116,0.15),0px_1px_0px_0px_#FFF_inset,0px_0px_0px_1px_#C2C8D9] text-[#382B4E] hover:from-[#E6EDFF] hover:to-[#D0D7F0]">
+            <Button variant="ghost" size="sm" className="inline-flex p-2.5 justify-center items-center gap-2 rounded-[10px] bg-[#F1F1F1]">
               <Menu className="h-5 w-5" />
             </Button>
           </DrawerTrigger>
