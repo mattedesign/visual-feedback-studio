@@ -54,6 +54,13 @@ const mainNavItems = [
     icon: Zap,
     badge: "👾",
     emoji: "🧠"
+  },
+  {
+    title: "History",
+    url: "/history",
+    icon: History,
+    badge: null,
+    emoji: "📋"
   }
 ];
 

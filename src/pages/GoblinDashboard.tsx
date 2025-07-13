@@ -282,7 +282,7 @@ const GoblinDashboard = () => {
           </Card>
         </div>
 
-        {/* Sessions Grid */}
+        {/* Sessions Grid - Removed and moved to History page */}
         {sessions.length === 0 ? (
           <div className="text-center py-16 bg-card rounded-2xl border-0 shadow-sm">
             <Brain className="w-20 h-20 text-soft-gray mx-auto mb-6" />
@@ -298,91 +298,22 @@ const GoblinDashboard = () => {
             </Button>
           </div>
         ) : (
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-semibold text-foreground">Recent Analyses</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {sessions.map(session => (
-                <Card 
-                  key={session.id} 
-                  className="group relative bg-card border border-border rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-lg hover:border-accent-warm hover:-translate-y-1" 
-                  onClick={() => handleViewSession(session.id)}
-                >
-                  {/* Thumbnail/Visual Area */}
-                  <div className="aspect-[4/3] bg-gradient-to-br from-accent-warm to-accent-secondary relative overflow-hidden">
-                    {session.thumbnail_image ? (
-                      <>
-                        <img 
-                          src={session.thumbnail_image} 
-                          alt={session.title}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            // Fallback to persona icon if image fails to load
-                            const img = e.currentTarget;
-                            const container = img.closest('.aspect-\\[4\\/3\\]');
-                            if (container) {
-                              img.style.display = 'none';
-                              const fallback = container.querySelector('.fallback-content');
-                              if (fallback) {
-                                fallback.classList.remove('hidden');
-                              }
-                            }
-                          }}
-                        />
-                        <div className="fallback-content absolute inset-0 bg-gradient-to-br from-accent-warm to-accent-secondary p-6 flex items-center justify-center hidden">
-                          <div className="relative z-10 text-center">
-                            <div className="text-4xl mb-2">{getPersonaIcon(session.persona_type)}</div>
-                            <div className="text-sm font-medium text-professional-brown">
-                              {getPersonaLabel(session.persona_type)}
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="absolute inset-0 bg-gradient-to-br from-accent-warm to-accent-secondary p-6 flex items-center justify-center">
-                        <div className="relative z-10 text-center">
-                          <div className="text-4xl mb-2">{getPersonaIcon(session.persona_type)}</div>
-                          <div className="text-sm font-medium text-professional-brown">
-                            {getPersonaLabel(session.persona_type)}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Overlay for better readability */}
-                    <div className="absolute inset-0 bg-black/5 group-hover:bg-black/10 transition-colors duration-300" />
-                    
-                    {/* Persona badge overlay */}
-                    <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-sm">
-                      <span className="text-lg">{getPersonaIcon(session.persona_type)}</span>
-                    </div>
-                    
-                    <Badge 
-                      className={`absolute top-3 right-3 ${getStatusColor(session.status)} border-0 shadow-sm`}
-                    >
-                      {session.status}
-                    </Badge>
-                  </div>
-
-                  {/* Content Area */}
-                  <div className="p-4">
-                    <h3 className="font-semibold text-foreground mb-2 line-clamp-2 text-sm leading-relaxed">
-                      {session.title}
-                    </h3>
-                    
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mb-3">
-                      <span>{getPersonaLabel(session.persona_type)} Analysis</span>
-                    </div>
-
-                    {session.goal_description && (
-                      <p className="text-xs text-muted-foreground line-clamp-2 mb-3 hidden">
-                        {session.goal_description}
-                      </p>
-                    )}
-                  </div>
-                </Card>
-              ))}
+          <div className="text-center py-16 bg-card rounded-2xl border-0 shadow-sm">
+            <Brain className="w-20 h-20 text-soft-gray mx-auto mb-6" />
+            <h3 className="text-2xl font-semibold text-foreground mb-3">
+              Welcome to Goblin UX
+            </h3>
+            <p className="text-muted-foreground text-lg mb-8 max-w-md mx-auto">
+              View your analysis history or start a new analysis
+            </p>
+            <div className="flex gap-4 justify-center">
+              <Button onClick={() => navigate('/history')} variant="outline" size="lg" className="px-8 py-3 text-base font-medium">
+                View History
+              </Button>
+              <Button onClick={handleNewAnalysis} size="lg" className="bg-professional-brown hover:bg-professional-brown/90 text-primary-foreground px-8 py-3 text-base font-medium">
+                <Plus className="w-5 h-5 mr-2" />
+                New Analysis
+              </Button>
             </div>
           </div>
         )}
