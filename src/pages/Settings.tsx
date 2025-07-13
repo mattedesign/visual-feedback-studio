@@ -8,6 +8,10 @@ import { SystemHealthMonitor } from '@/components/monitoring/SystemHealthMonitor
 import { SecurityDashboard } from '@/components/security/SecurityDashboard';
 
 const Settings = () => {
+  // Get tab from URL params
+  const searchParams = new URLSearchParams(window.location.search);
+  const defaultTab = searchParams.get('tab') || 'monitor';
+
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <div className="mb-8">
@@ -17,7 +21,7 @@ const Settings = () => {
         </p>
       </div>
 
-      <Tabs defaultValue="monitor" className="space-y-6">
+      <Tabs defaultValue={defaultTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>

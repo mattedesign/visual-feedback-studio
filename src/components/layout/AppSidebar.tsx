@@ -252,7 +252,7 @@ export function AppSidebar({}: AppSidebarProps) {
                               ? 'bg-white/80 text-[#5C3C90]' 
                               : 'text-muted-foreground hover:bg-[#EEE3FF] hover:text-[#5C3C90] focus:bg-[#EEE3FF] focus:text-[#5C3C90]'
                           }`}
-                          onClick={() => navigate('/settings')}
+                          onClick={() => navigate('/settings?tab=profile')}
                         >
                           <User className="h-4 w-4" />
                           <span>View Profile</span>
