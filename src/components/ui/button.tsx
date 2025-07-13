@@ -22,7 +22,7 @@ const buttonVariants = cva(
         "secondary-goblin":
           "inline-flex justify-center items-center gap-2 rounded-[12px] px-6 py-[10px] text-center font-semibold text-sm leading-5 tracking-[-0.28px] text-[#121212] transition-all duration-200 enhanced-button-secondary-goblin",
         tertiary:
-          "inline-flex py-2.5 px-6 justify-center items-center gap-2 rounded-xl bg-gradient-to-b from-[#EEF2FF] to-[#D8DFF5] shadow-[0px_3px_4px_-1px_rgba(88,71,116,0.15),0px_1px_0px_0px_#FFF_inset,0px_0px_0px_1px_#C2C8D9] text-[#382B4E] text-center font-['Instrument_Sans'] text-sm font-semibold leading-5 tracking-[-0.28px] border-0 hover:from-[#E6EDFF] hover:to-[#D0D7F0] transition-all duration-200",
+          "inline-flex py-[10px] px-6 justify-center items-center gap-2 rounded-[12px] bg-gradient-to-b from-[#F5F6F9] to-[#EAECF4] shadow-[0px_3px_4px_-1px_rgba(0,0,0,0.15),0px_1px_0px_0px_#FFF_inset,0px_0px_0px_1px_#DEE0E3] text-[#121212] text-center font-['Instrument_Sans'] text-sm font-semibold leading-5 tracking-[-0.28px] transition-all duration-200",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
       },
