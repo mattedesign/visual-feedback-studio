@@ -531,7 +531,7 @@ const GoblinResults: React.FC = () => {
               </TabsTrigger>
             </TabsList>
 
-          <TabsContent value="summary" className="mt-8 w-full">
+          <TabsContent value="summary" className="mt-8 w-full" style={{ width: '100%', maxWidth: 'none' }}>
             <SummaryView
               results={results}
               session={session}
@@ -543,7 +543,7 @@ const GoblinResults: React.FC = () => {
             />
           </TabsContent>
 
-          <TabsContent value="detailed" className="mt-8 w-full">
+          <TabsContent value="detailed" className="mt-8 w-full" style={{ width: '100%', maxWidth: 'none' }}>
             {isImagesLoading && (
               <div className="flex items-center justify-center p-8 text-muted-foreground">
                 <div className="animate-spin mr-3 h-5 w-5 border-2 border-primary border-t-transparent rounded-full"></div>
@@ -594,8 +594,8 @@ const GoblinResults: React.FC = () => {
             />
           </TabsContent>
 
-          <TabsContent value="maturity" className="mt-8 w-full min-w-full" style={{ width: '100%', minWidth: '100%' }}>
-            <div className="space-y-6 w-full min-w-full" style={{ width: '100%', minWidth: '100%' }}>
+          <TabsContent value="maturity" className="mt-8 w-full" style={{ width: '100%', maxWidth: 'none' }}>
+            <div className="space-y-6 w-full" style={{ width: '100%', maxWidth: 'none' }}>
               <MaturityScoreDashboard />
               <ImprovementRoadmap />
               <AchievementShowcase />
@@ -612,7 +612,7 @@ const GoblinResults: React.FC = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="clarity" className="mt-8 w-full">
+          <TabsContent value="clarity" className="mt-8 w-full" style={{ width: '100%', maxWidth: 'none' }}>
             <ClarityChat
               session={session}
               personaData={personaData}
