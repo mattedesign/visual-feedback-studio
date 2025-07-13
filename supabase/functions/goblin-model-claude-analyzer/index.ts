@@ -498,28 +498,61 @@ function buildPrompt(persona: string, userPrompt: string, chatMode: boolean, con
   // Persona-specific JSON templates
   const personaJsonTemplates = {
     mirror: {
-      "insights": "Deep empathetic analysis of what users truly feel when using this interface",
-      "reflection": "Mirror reflection of the user experience and emotional journey",
-      "visualReflections": ["Visual element 1 reflection", "Visual element 2 reflection", "Visual element 3 reflection"],
-      "emotionalImpact": "How this design makes users feel emotionally",
-      "userStory": "The story this interface tells from a user's perspective",
-      "empathyGaps": ["Gap 1 where user needs aren't met", "Gap 2", "Gap 3"]
+      "insights": "Deep empathetic analysis of specific interface elements and their emotional impact",
+      "reflection": "Mirror reflection of how specific UI elements affect user emotions",
+      "visualReflections": ["Specific visual element 1 reflection", "Element 2 emotional impact", "Element 3 user feeling"],
+      "emotionalImpact": "How specific design elements make users feel emotionally",
+      "userStory": "The emotional journey through specific interface elements",
+      "empathyGaps": ["Specific gap 1 where interface lacks empathy", "Specific emotional disconnect 2", "Missing empathy element 3"],
+      "annotations": [
+        {
+          "x": 100,
+          "y": 200,
+          "title": "Emotional Design Issue",
+          "description": "Specific description of how this element affects user emotions",
+          "solution": "Empathetic improvement for this specific element",
+          "category": "emotional_design",
+          "priority": "medium"
+        }
+      ]
     },
     strategic: {
-      "analysis": "Strategic UX analysis focused on business impact",
-      "recommendations": ["Business-focused recommendation 1", "recommendation 2", "recommendation 3"],
-      "businessImpact": "How UX issues affect business metrics",
-      "strategicPriority": "Most critical strategic UX priority",
-      "competitiveAdvantage": "UX opportunities for competitive differentiation",
-      "measurableOutcomes": "Expected measurable improvements"
+      "analysis": "Strategic UX analysis of specific interface elements and business impact",
+      "recommendations": ["Specific business-focused fix for element 1", "Strategic improvement for component 2", "ROI-focused change for element 3"],
+      "businessImpact": "How specific UX issues in visible elements affect business metrics",
+      "strategicPriority": "Most critical UX element needing strategic attention",
+      "competitiveAdvantage": "Specific UX opportunities for differentiation in visible interface",
+      "measurableOutcomes": "Expected improvements from fixing specific identified issues",
+      "annotations": [
+        {
+          "x": 150,
+          "y": 300,
+          "title": "Strategic UX Issue",
+          "description": "Specific business impact of this interface element",
+          "solution": "Strategic fix with measurable business outcome",
+          "category": "business_impact",
+          "priority": "high"
+        }
+      ]
     },
     clarity: {
-      "analysis": "Brutally honest UX analysis of the interface",
-      "recommendations": ["Specific actionable recommendation 1", "recommendation 2", "recommendation 3"],
-      "biggestGripe": "The main UX problem that annoys you most",
-      "whatMakesGoblinHappy": "What actually works well in this design",
-      "goblinWisdom": "Your key insight or wisdom about the UX",
-      "goblinPrediction": "What will happen if the user follows your advice"
+      "analysis": "Brutally honest analysis of specific interface problems",
+      "recommendations": ["Specific actionable fix for visible problem 1", "Clear solution for element 2", "Direct improvement for issue 3"],
+      "biggestGripe": "The most annoying specific UX problem in the visible interface",
+      "whatMakesGoblinHappy": "Specific elements that actually work well in this design",
+      "goblinWisdom": "Key insight about specific interface problems and solutions",
+      "goblinPrediction": "What will happen when specific identified problems are fixed",
+      "annotations": [
+        {
+          "x": 200,
+          "y": 400,
+          "title": "Clarity Problem",
+          "description": "Specific description of what's confusing about this element",
+          "solution": "Clear, actionable fix for this specific problem",
+          "category": "usability",
+          "priority": "high"
+        }
+      ]
     },
     mad: {
       "hypothesis": "Specific experimental hypothesis about actual interface problems observed",
@@ -541,20 +574,42 @@ function buildPrompt(persona: string, userPrompt: string, chatMode: boolean, con
       ]
     },
     mad_scientist: {
-      "hypothesis": "Wild experimental UX hypothesis about the interface",
-      "experiments": ["Crazy experiment 1", "experiment 2", "experiment 3"],
-      "madScience": "Your mad scientist take on the UX problems",
-      "weirdFindings": "Strange patterns or anomalies discovered in the interface",
-      "crazyIdeas": ["Unconventional solution 1", "solution 2", "solution 3"],
-      "labNotes": "Mad scientist notes on interface behavior and user patterns"
+      "hypothesis": "Specific experimental hypothesis about actual interface problems observed",
+      "experiments": ["Precise experiment targeting visible element 1", "experiment for specific UI issue 2", "targeted test for observed problem 3"],
+      "madScience": "Scientific analysis of specific UI problems in the uploaded interface",
+      "weirdFindings": "Specific anomalies or patterns found in the actual interface elements",
+      "crazyIdeas": ["Actionable experimental solution for specific problem 1", "targeted fix for observed issue 2", "specific improvement for visible element 3"],
+      "labNotes": "Precise observations about specific interface elements and their usability issues",
+      "annotations": [
+        {
+          "x": 100,
+          "y": 200,
+          "title": "Specific Element Problem",
+          "description": "Precise description of what's wrong with this specific element",
+          "solution": "Actionable experimental fix",
+          "category": "usability",
+          "priority": "high"
+        }
+      ]
     },
     exec: {
-      "executiveSummary": "High-level executive summary of UX impact",
-      "businessRisks": ["Business risk 1", "risk 2", "risk 3"],
-      "roiImpact": "Return on investment implications of UX issues",
-      "stakeholderConcerns": "Key concerns for executive stakeholders",
-      "strategicRecommendations": ["Executive recommendation 1", "recommendation 2", "recommendation 3"],
-      "competitiveImplications": "How UX affects competitive positioning"
+      "executiveSummary": "High-level executive summary of specific UX impact on business",
+      "businessRisks": ["Specific revenue risk from visible UX issue 1", "Business impact from interface problem 2", "Strategic risk from usability issue 3"],
+      "roiImpact": "Return on investment implications of specific interface problems",
+      "stakeholderConcerns": "Key executive concerns about specific UX issues affecting business",
+      "strategicRecommendations": ["Executive fix for specific problem 1", "Strategic solution for issue 2", "ROI-focused improvement for element 3"],
+      "competitiveImplications": "How specific UX problems affect competitive positioning",
+      "annotations": [
+        {
+          "x": 250,
+          "y": 500,
+          "title": "Executive UX Concern",
+          "description": "Specific business impact of this interface element",
+          "solution": "Executive-level strategic fix for this problem",
+          "category": "business_impact",
+          "priority": "high"
+        }
+      ]
     }
   };
 
