@@ -182,25 +182,12 @@
     margin-top: 0.75rem !important;
   }
 
-  /* Prevent horizontal overflow */
-  .container, .max-w-7xl, .max-w-6xl, .max-w-4xl {
+  /* Force full width everywhere */
+  .container, .max-w-7xl, .max-w-6xl, .max-w-4xl, .max-w-none {
     max-width: 100% !important;
-    padding-left: 0.5rem !important;
-    padding-right: 0.5rem !important;
-  }
-
-  /* Ensure full width on mobile */
-  .w-full {
     width: 100% !important;
-  }
-
-  /* Force full width for main container and children */
-  .min-h-screen.bg-white {
-    width: 100% !important;
-  }
-  
-  .min-h-screen.bg-white > div {
-    width: 100% !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
   }
 
   /* Text sizing improvements */
