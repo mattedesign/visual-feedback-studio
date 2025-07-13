@@ -260,7 +260,8 @@ const GoblinDashboard = () => {
         </div>
 
         {/* Sessions Grid */}
-        {sessions.length === 0 ? <div className="text-center py-16 bg-card rounded-2xl border-0 shadow-sm">
+        {sessions.length === 0 ? (
+          <div className="text-center py-16 bg-card rounded-2xl border-0 shadow-sm">
             <Brain className="w-20 h-20 text-soft-gray mx-auto mb-6" />
             <h3 className="text-2xl font-semibold text-foreground mb-3">
               No goblin sessions yet
@@ -272,44 +273,57 @@ const GoblinDashboard = () => {
               <Plus className="w-5 h-5 mr-2" />
               Create First Goblin Analysis
             </Button>
-          </div> : <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {sessions.map(session => <Card key={session.id} className="hover:shadow-md transition-all duration-200 cursor-pointer border-0 shadow-sm bg-card hover:scale-[1.02]" onClick={() => handleViewSession(session.id)}>
-                <CardHeader className="pb-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg font-semibold text-foreground mb-3">
-                        {session.title}
-                      </CardTitle>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                        <Calendar className="w-4 h-4" />
-                        <span>{formatDate(session.created_at)}</span>
-                      </div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xl">{getPersonaIcon(session.persona_type)}</span>
-                        <span className="text-sm font-medium text-foreground">{getPersonaLabel(session.persona_type)}</span>
+          </div>
+        ) : (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-semibold text-foreground">Recent Analyses</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {sessions.map(session => (
+                <Card 
+                  key={session.id} 
+                  className="group relative bg-card border border-border rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-lg hover:border-accent-warm hover:-translate-y-1" 
+                  onClick={() => handleViewSession(session.id)}
+                >
+                  {/* Thumbnail/Visual Area */}
+                  <div className="aspect-[4/3] bg-gradient-to-br from-accent-warm to-accent-secondary p-6 flex items-center justify-center relative overflow-hidden">
+                    <div className="absolute inset-0 bg-black/5 group-hover:bg-black/10 transition-colors duration-300" />
+                    <div className="relative z-10 text-center">
+                      <div className="text-4xl mb-2">{getPersonaIcon(session.persona_type)}</div>
+                      <div className="text-sm font-medium text-professional-brown">
+                        {getPersonaLabel(session.persona_type)}
                       </div>
                     </div>
-                    <Badge className={getStatusColor(session.status)}>
+                    <Badge 
+                      className={`absolute top-3 right-3 ${getStatusColor(session.status)} border-0 shadow-sm`}
+                    >
                       {session.status}
                     </Badge>
                   </div>
-                </CardHeader>
-                
-                <CardContent>
-                  {session.goal_description && <p className="text-sm text-muted-foreground mb-6 line-clamp-2">
-                      {session.goal_description}
-                    </p>}
-                  
-                  <Button variant="secondary-goblin" size="sm" className="w-full" onClick={e => {
-              e.stopPropagation();
-              handleViewSession(session.id);
-            }}>
-                    <Eye className="w-4 h-4 mr-2" />
-                    View Analysis
-                  </Button>
-                </CardContent>
-              </Card>)}
-          </div>}
+
+                  {/* Content Area */}
+                  <div className="p-4">
+                    <h3 className="font-semibold text-foreground mb-2 line-clamp-2 text-sm leading-relaxed">
+                      {session.title}
+                    </h3>
+                    
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground mb-3">
+                      <Calendar className="w-3 h-3" />
+                      <span>{formatDate(session.created_at)}</span>
+                    </div>
+
+                    {session.goal_description && (
+                      <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+                        {session.goal_description}
+                      </p>
+                    )}
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>;
 };
