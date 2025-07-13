@@ -217,19 +217,6 @@ const GoblinDashboard = () => {
           </Card>
           
           
-          <Card className="border-0 shadow-sm bg-card">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-accent-warm rounded-xl">
-                  <Sparkles className="w-6 h-6 text-professional-brown" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Clarity Goblins</p>
-                  <p className="text-3xl font-semibold text-foreground">{sessions.filter(s => s.persona_type === 'clarity').length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Maturity Score with Streak */}
           <Card className="border-0 shadow-sm bg-card">
