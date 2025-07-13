@@ -646,7 +646,13 @@ CRITICAL INSTRUCTIONS:
 Required JSON format for ${persona} persona:
 ${JSON.stringify(jsonTemplate, null, 2)}
 
-User's request: ${userPrompt}
+User's specific goal/context: ${userPrompt}
+
+CONTEXT-AWARE SOLUTION REQUIREMENTS:
+- Every annotation solution MUST directly address how it helps achieve the user's specific goal stated above
+- Tailor each "businessImpact" field to explain how the fix supports the user's stated objective
+- Reference the user's context when describing why each problem matters
+- Solutions should be prioritized based on their relevance to the user's goal
 
 RESPONSE REQUIREMENTS:
 - Start your response with {
