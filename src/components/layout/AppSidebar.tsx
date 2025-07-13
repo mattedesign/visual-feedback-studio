@@ -1,37 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Zap, 
-  BarChart3, 
-  Settings, 
-  HelpCircle,
-  Brain,
-  History,
-  Image,
-  Database,
-  User,
-  ChevronDown,
-  LogOut,
-  X,
-  Menu,
-  Crown
-} from 'lucide-react';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
-  SidebarTrigger,
-  useSidebar,
-} from '@/components/ui/sidebar';
+import { LayoutDashboard, Zap, BarChart3, Settings, HelpCircle, Brain, History, Image, Database, User, ChevronDown, LogOut, X, Menu, Crown } from 'lucide-react';
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton, SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
@@ -39,64 +9,62 @@ import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileNavigation } from './MobileNavigation';
 import { supabase } from '@/integrations/supabase/client';
-
-const mainNavItems = [
-  {
-    title: "Dashboard",
-    url: "/",
-    icon: LayoutDashboard,
-    badge: null
-  },
-  {
-    title: "New Analysis", 
-    url: "/goblin",
-    icon: Zap,
-    badge: "👾"
-  },
-  {
-    title: "History",
-    url: "/history",
-    icon: History,
-    badge: null
-  }
-];
-
-const bottomNavItems = [
-  {
-    title: "Subscription",
-    url: "/subscription",
-    icon: Crown,
-    badge: null
-  },
-  {
-    title: "Help",
-    url: "/help",
-    icon: HelpCircle,
-    badge: null
-  }
-];
-
+const mainNavItems = [{
+  title: "Dashboard",
+  url: "/",
+  icon: LayoutDashboard,
+  badge: null
+}, {
+  title: "New Analysis",
+  url: "/goblin",
+  icon: Zap,
+  badge: "👾"
+}, {
+  title: "History",
+  url: "/history",
+  icon: History,
+  badge: null
+}];
+const bottomNavItems = [{
+  title: "Subscription",
+  url: "/subscription",
+  icon: Crown,
+  badge: null
+}, {
+  title: "Help",
+  url: "/help",
+  icon: HelpCircle,
+  badge: null
+}];
 interface AppSidebarProps {}
-
 export function AppSidebar({}: AppSidebarProps) {
-  const { state, setOpen, open, isMobile } = useSidebar();
+  const {
+    state,
+    setOpen,
+    open,
+    isMobile
+  } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
   const collapsed = state === 'collapsed';
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const { signOut } = useAuth();
+  const {
+    signOut
+  } = useAuth();
   const navigate = useNavigate();
-
   const handleLogout = async () => {
     try {
       // Check if user is already logged out
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: {
+          session
+        }
+      } = await supabase.auth.getSession();
       if (!session) {
         // User is already logged out, just navigate to auth
         navigate('/auth');
         return;
       }
-      
       await signOut();
       navigate('/auth');
     } catch (error) {
@@ -105,62 +73,41 @@ export function AppSidebar({}: AppSidebarProps) {
       navigate('/auth');
     }
   };
-
   const handleNavClick = () => {
     // Close mobile sidebar when navigating
     if (isMobile) {
       setOpen(false);
     }
   };
-
   const isActive = (path: string) => {
     if (path === '/') {
       return currentPath === '/';
     }
     return currentPath.startsWith(path);
   };
-
   const getNavClassName = (active: boolean) => {
-    return active 
-      ? "flex py-4 px-3 items-center gap-2 self-stretch rounded-xl bg-white text-foreground font-medium min-h-[40px] hover:!bg-white hover:!text-[#5C3C90] focus:!bg-white focus:!text-[#5C3C90]" 
-      : "flex py-4 px-3 items-center gap-2 self-stretch rounded-xl text-muted-foreground hover:!bg-[#5C3C90] hover:!text-[#ffffff] focus:!bg-[#5C3C90] focus:!text-[#ffffff] transition-colors min-h-[40px]";
+    return active ? "flex py-4 px-3 items-center gap-2 self-stretch rounded-xl bg-white text-foreground font-medium min-h-[40px] hover:!bg-white hover:!text-[#5C3C90] focus:!bg-white focus:!text-[#5C3C90]" : "flex py-4 px-3 items-center gap-2 self-stretch rounded-xl text-muted-foreground hover:!bg-[#5C3C90] hover:!text-[#ffffff] focus:!bg-[#5C3C90] focus:!text-[#ffffff] transition-colors min-h-[40px]";
   };
 
   // Show mobile navigation on mobile and tablet
   if (isMobile) {
     return <MobileNavigation />;
   }
-
-  return (
-    <Sidebar 
-      variant="sidebar" 
-      collapsible="icon"
-      className="border-none"
-    >
+  return <Sidebar variant="sidebar" collapsible="icon" className="border-none">
       <SidebarContent className="flex flex-col h-full">
         {/* Logo/Header */}
         <div className="p-4">
-          {collapsed ? (
-            // When collapsed: trigger on top, logo below
-            <div className="flex flex-col items-center gap-2">
+          {collapsed ?
+        // When collapsed: trigger on top, logo below
+        <div className="flex flex-col items-center gap-2">
               <SidebarTrigger className="h-6 w-6 self-center" />
-              <img 
-                src="/lovable-uploads/98212443-148e-456f-9f43-13d33737ddd8.png" 
-                alt="Figmant" 
-                className="h-8 w-8 object-contain"
-              />
-            </div>
-          ) : (
-            // When expanded: logo and trigger side by side
-            <div className="flex items-center justify-between gap-2">
-              <img 
-                src="/lovable-uploads/98212443-148e-456f-9f43-13d33737ddd8.png" 
-                alt="Figmant" 
-                className="h-8 object-contain"
-              />
+              <img src="/lovable-uploads/98212443-148e-456f-9f43-13d33737ddd8.png" alt="Figmant" className="h-8 w-8 object-contain" />
+            </div> :
+        // When expanded: logo and trigger side by side
+        <div className="flex items-center justify-between gap-2">
+              <img src="/lovable-uploads/98212443-148e-456f-9f43-13d33737ddd8.png" alt="Figmant" className="h-8 object-contain" />
               <SidebarTrigger className="h-6 w-6 flex-shrink-0" />
-            </div>
-          )}
+            </div>}
         </div>
 
         {/* Main Navigation */}
@@ -170,34 +117,23 @@ export function AppSidebar({}: AppSidebarProps) {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainNavItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+              {mainNavItems.map(item => <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                     <NavLink 
-                       to={item.url} 
-                       className={getNavClassName(isActive(item.url))}
-                       end={item.url === '/'}
-                       onClick={handleNavClick}
-                      >
+                     <NavLink to={item.url} className={getNavClassName(isActive(item.url))} end={item.url === '/'} onClick={handleNavClick}>
                         <div className="flex items-center gap-2">
                           <item.icon className="h-4 w-4 flex-shrink-0" />
                         </div>
-                        {!collapsed && (
-                          <>
+                        {!collapsed && <>
                             <span className="flex-1 flex items-center gap-2">
                               {item.title}
                             </span>
-                            {item.badge && (
-                              <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 border-0">
+                            {item.badge && <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 border-0">
                                 {item.badge}
-                              </Badge>
-                            )}
-                          </>
-                        )}
+                              </Badge>}
+                          </>}
                     </NavLink>
                   </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+                </SidebarMenuItem>)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -206,54 +142,33 @@ export function AppSidebar({}: AppSidebarProps) {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-               {bottomNavItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+               {bottomNavItems.map(item => <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                     <NavLink 
-                       to={item.url} 
-                       className={getNavClassName(isActive(item.url))}
-                       onClick={handleNavClick}
-                      >
+                     <NavLink to={item.url} className={getNavClassName(isActive(item.url))} onClick={handleNavClick}>
                          <div className="flex items-center gap-2">
                            <item.icon className="h-4 w-4 flex-shrink-0" />
                          </div>
-                         {!collapsed && (
-                           <span className="flex-1 flex items-center gap-2">
+                         {!collapsed && <span className="flex-1 flex items-center gap-2">
                              {item.title}
-                           </span>
-                         )}
+                           </span>}
                     </NavLink>
                   </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+                </SidebarMenuItem>)}
               
               {/* Profile Menu */}
               <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className={getNavClassName(isActive('/settings'))}
-                >
+                <SidebarMenuButton onClick={() => setIsProfileOpen(!isProfileOpen)} className={getNavClassName(isActive('/settings'))}>
                   <User className="h-4 w-4 flex-shrink-0" />
-                  {!collapsed && (
-                    <>
-                      <span className="flex-1">Profile</span>
+                  {!collapsed && <>
+                      <span className="flex-1">Account</span>
                       <ChevronDown className={`h-4 w-4 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
-                    </>
-                  )}
+                    </>}
                 </SidebarMenuButton>
                 
-                {!collapsed && isProfileOpen && (
-                  <SidebarMenuSub>
+                {!collapsed && isProfileOpen && <SidebarMenuSub>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton asChild>
-                        <button 
-                          className={`w-full flex py-2 px-3 items-center gap-2 self-stretch rounded-xl transition-colors min-h-[36px] ${
-                            currentPath === '/settings' 
-                              ? 'bg-white/80 text-[#5C3C90]' 
-                              : 'text-muted-foreground hover:bg-[#EEE3FF] hover:text-[#5C3C90] focus:bg-[#EEE3FF] focus:text-[#5C3C90]'
-                          }`}
-                          onClick={() => navigate('/settings?tab=profile')}
-                        >
+                        <button className={`w-full flex py-2 px-3 items-center gap-2 self-stretch rounded-xl transition-colors min-h-[36px] ${currentPath === '/settings' ? 'bg-white/80 text-[#5C3C90]' : 'text-muted-foreground hover:bg-[#EEE3FF] hover:text-[#5C3C90] focus:bg-[#EEE3FF] focus:text-[#5C3C90]'}`} onClick={() => navigate('/settings?tab=profile')}>
                           <User className="h-4 w-4" />
                           <span>View Profile</span>
                         </button>
@@ -261,22 +176,17 @@ export function AppSidebar({}: AppSidebarProps) {
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton asChild>
-                        <button 
-                          className="w-full flex py-2 px-3 items-center gap-2 self-stretch rounded-xl text-muted-foreground hover:bg-[#EEE3FF] hover:text-[#5C3C90] focus:bg-[#EEE3FF] focus:text-[#5C3C90] transition-colors min-h-[36px]" 
-                          onClick={handleLogout}
-                        >
+                        <button className="w-full flex py-2 px-3 items-center gap-2 self-stretch rounded-xl text-muted-foreground hover:bg-[#EEE3FF] hover:text-[#5C3C90] focus:bg-[#EEE3FF] focus:text-[#5C3C90] transition-colors min-h-[36px]" onClick={handleLogout}>
                           <LogOut className="h-4 w-4" />
                           <span>Logout</span>
                         </button>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
-                  </SidebarMenuSub>
-                )}
+                  </SidebarMenuSub>}
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-    </Sidebar>
-  );
+    </Sidebar>;
 }
