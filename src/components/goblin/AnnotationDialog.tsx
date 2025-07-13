@@ -78,9 +78,26 @@ const AnnotationDialog: React.FC<AnnotationDialogProps> = ({
         </DialogHeader>
         
         <div className="bg-purple-50 rounded-lg p-6 border-0">
-          <p className="text-gray-900 whitespace-pre-wrap leading-relaxed text-base">
-            {annotationText}
-          </p>
+          <div className="annotation-content">
+            {/* Problem Statement */}
+            <h4 className="font-semibold text-red-600 mb-2">
+              🚨 {annotation.problemStatement || annotation.description || annotation.feedback || annotationText}
+            </h4>
+            
+            {/* Solution Statement */}
+            {(annotation.solutionStatement || (annotation.description && annotation.problemStatement)) && (
+              <p className="text-green-600 mt-2 mb-3">
+                ✅ {annotation.solutionStatement || annotation.feedback}
+              </p>
+            )}
+            
+            {/* Fallback for legacy annotations without separate statements */}
+            {!annotation.problemStatement && !annotation.solutionStatement && (
+              <p className="text-gray-900 whitespace-pre-wrap leading-relaxed text-base">
+                {annotationText}
+              </p>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
