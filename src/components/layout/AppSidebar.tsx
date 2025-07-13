@@ -235,7 +235,7 @@ export function AppSidebar({}: AppSidebarProps) {
               <SidebarMenuItem>
                 <SidebarMenuButton
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="flex py-4 px-3 items-center gap-2 self-stretch rounded-xl text-muted-foreground hover:bg-[#584774] hover:text-white focus:bg-[#584774] focus:text-white transition-colors"
+                  className="flex py-4 px-3 items-center gap-2 self-stretch rounded-xl text-muted-foreground hover:bg-[#5C3C90] hover:text-[#ffffff] focus:bg-[#5C3C90] focus:text-[#ffffff] transition-colors min-h-[40px]"
                 >
                   <User className="h-4 w-4 flex-shrink-0" />
                   {!collapsed && (
