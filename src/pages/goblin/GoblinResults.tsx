@@ -13,6 +13,7 @@ import { useImageLoader } from '@/hooks/goblin/useImageLoader';
 import DetailedModeView from '@/components/goblin/DetailedModeView';
 import ClarityChat from '@/components/goblin/ClarityChat';
 import SummaryView from '@/components/goblin/SummaryView';
+import { MentorGuidanceCard } from '@/components/goblin/results/MentorGuidanceCard';
 import { NavigationProvider } from '@/contexts/NavigationContext';
 
 // ✅ Maturity components
@@ -547,6 +548,13 @@ const GoblinResults: React.FC = () => {
               onCopyLink={handleCopyLink}
               copied={copied}
               chatFeedbackAnchors={chatFeedbackAnchors}
+            />
+            <MentorGuidanceCard
+              sessionId={sessionId!}
+              persona={session?.persona_type || 'clarity'}
+              mentorGuidance={session?.mentor_guidance}
+              redesignHtml={session?.redesign_html}
+              className="mt-6"
             />
           </TabsContent>
 
