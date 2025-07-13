@@ -124,12 +124,12 @@ export const ProfileSettings = () => {
                 <SelectTrigger>
                   <SelectValue placeholder="Select your role" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   {ROLE_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      <div className="space-y-1">
-                        <div className="font-medium">{option.label}</div>
-                        <div className="text-xs text-muted-foreground">
+                    <SelectItem key={option.value} value={option.value} className="text-left">
+                      <div className="space-y-1 text-left">
+                        <div className="font-medium text-left">{option.label}</div>
+                        <div className="text-xs text-muted-foreground text-left">
                           {option.description}
                         </div>
                       </div>
