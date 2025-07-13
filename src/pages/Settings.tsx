@@ -6,44 +6,47 @@ import { ProfileSettings } from '@/components/settings/ProfileSettings';
 import { NotificationSettings } from '@/components/settings/NotificationSettings';
 import { PrivacySettings } from '@/components/settings/PrivacySettings';
 import { AdminHealthDashboard } from '@/components/settings/AdminHealthDashboard';
-
 const Settings = () => {
-  const { profile, loading } = useAuth();
+  const {
+    profile,
+    loading
+  } = useAuth();
   const searchParams = new URLSearchParams(window.location.search);
   const defaultTab = searchParams.get('tab') || 'profile';
-  
   const isAdmin = profile?.super_admin || false;
 
   // Define available tabs based on user role
-  const userTabs = [
-    { value: 'profile', label: 'Profile', icon: User },
-    { value: 'notifications', label: 'Notifications', icon: Bell },
-    { value: 'privacy', label: 'Privacy', icon: Shield }
-  ];
-
-  const adminTabs = [
-    ...userTabs,
-    { value: 'health', label: 'System Health', icon: Activity }
-  ];
-
+  const userTabs = [{
+    value: 'profile',
+    label: 'Profile',
+    icon: User
+  }, {
+    value: 'notifications',
+    label: 'Notifications',
+    icon: Bell
+  }, {
+    value: 'privacy',
+    label: 'Privacy',
+    icon: Shield
+  }];
+  const adminTabs = [...userTabs, {
+    value: 'health',
+    label: 'System Health',
+    icon: Activity
+  }];
   const availableTabs = isAdmin ? adminTabs : userTabs;
-
   if (loading) {
-    return (
-      <div className="p-6 max-w-6xl mx-auto">
+    return <div className="p-6 max-w-6xl mx-auto">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-muted rounded w-48"></div>
           <div className="h-4 bg-muted rounded w-96"></div>
           <div className="h-12 bg-muted rounded"></div>
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="p-5 w-full">
+  return <div className="p-5 w-full">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Account</h1>
         <p className="text-muted-foreground mt-2">
           Manage your account preferences{isAdmin && ' and monitor system health'}
         </p>
@@ -51,12 +54,10 @@ const Settings = () => {
 
       <Tabs defaultValue={defaultTab} className="w-full space-y-6">
         <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'}`}>
-          {availableTabs.map((tab) => (
-            <TabsTrigger key={tab.value} value={tab.value} className="flex items-center gap-2">
+          {availableTabs.map(tab => <TabsTrigger key={tab.value} value={tab.value} className="flex items-center gap-2">
               <tab.icon className="h-4 w-4" />
               {tab.label}
-            </TabsTrigger>
-          ))}
+            </TabsTrigger>)}
         </TabsList>
 
         <TabsContent value="profile" className="w-full">
@@ -71,14 +72,10 @@ const Settings = () => {
           <PrivacySettings />
         </TabsContent>
 
-        {isAdmin && (
-          <TabsContent value="health" className="w-full">
+        {isAdmin && <TabsContent value="health" className="w-full">
             <AdminHealthDashboard />
-          </TabsContent>
-        )}
+          </TabsContent>}
       </Tabs>
-    </div>
-  );
+    </div>;
 };
-
 export default Settings;
