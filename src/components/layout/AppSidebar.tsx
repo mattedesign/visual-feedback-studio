@@ -150,18 +150,20 @@ export function AppSidebar({}: AppSidebarProps) {
             // When collapsed: trigger on top, logo below
             <div className="flex flex-col items-center gap-2">
               <SidebarTrigger className="h-6 w-6 self-center" />
-              <div className="text-2xl">👾</div>
+              <img 
+                src="/lovable-uploads/98212443-148e-456f-9f43-13d33737ddd8.png" 
+                alt="Figmant" 
+                className="h-8 w-8 object-contain"
+              />
             </div>
           ) : (
             // When expanded: logo and trigger side by side
             <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <div className="text-2xl flex-shrink-0">👾</div>
-                <div className="flex flex-col">
-                  <span className="font-semibold text-sm">Goblin UX</span>
-                  <span className="text-xs text-muted-foreground">Analysis Studio</span>
-                </div>
-              </div>
+              <img 
+                src="/lovable-uploads/98212443-148e-456f-9f43-13d33737ddd8.png" 
+                alt="Figmant" 
+                className="h-8 object-contain"
+              />
               <SidebarTrigger className="h-6 w-6 flex-shrink-0" />
             </div>
           )}
