@@ -586,7 +586,9 @@ export type Database = {
           created_at: string | null
           goal_description: string | null
           id: string
+          mentor_guidance: string | null
           persona_type: string
+          redesign_html: string | null
           status: string | null
           title: string
           updated_at: string | null
@@ -598,7 +600,9 @@ export type Database = {
           created_at?: string | null
           goal_description?: string | null
           id?: string
+          mentor_guidance?: string | null
           persona_type?: string
+          redesign_html?: string | null
           status?: string | null
           title?: string
           updated_at?: string | null
@@ -610,7 +614,9 @@ export type Database = {
           created_at?: string | null
           goal_description?: string | null
           id?: string
+          mentor_guidance?: string | null
           persona_type?: string
+          redesign_html?: string | null
           status?: string | null
           title?: string
           updated_at?: string | null
