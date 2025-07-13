@@ -125,9 +125,10 @@
 
   /* Content card improvements */
   .mobile-content-card {
-    margin: 0.5rem !important;
+    margin: 0 !important;
     padding: 1rem !important;
     border-radius: 0.5rem !important;
+    width: 100% !important;
   }
 
   /* Button improvements for mobile */
