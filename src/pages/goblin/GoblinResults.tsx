@@ -57,36 +57,43 @@ interface PersonaData {
   strategicRecommendations?: string[];
   competitiveImplications?: string;
 }
-
 const GoblinResults: React.FC = () => {
-  const { sessionId } = useParams<{ sessionId: string }>();
+  const {
+    sessionId
+  } = useParams<{
+    sessionId: string;
+  }>();
   const navigate = useNavigate();
   const [results, setResults] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  
+
   // Use the robust image loader hook
-  const { 
-    images, 
-    loading: imagesLoading, 
-    error: imageError, 
+  const {
+    images,
+    loading: imagesLoading,
+    error: imageError,
     retry: retryImages,
     hasAccessibleImages,
     accessibilityReport
-  } = useImageLoader({ sessionId, autoLoad: true });
+  } = useImageLoader({
+    sessionId,
+    autoLoad: true
+  });
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [copied, setCopied] = useState(false);
   const [showAnnotations, setShowAnnotations] = useState(true);
   const [activeTab, setActiveTab] = useState<'summary' | 'detailed' | 'maturity' | 'clarity'>('summary');
-  const [chatFeedbackAnchors, setChatFeedbackAnchors] = useState<{[messageId: string]: any[]}>({});
+  const [chatFeedbackAnchors, setChatFeedbackAnchors] = useState<{
+    [messageId: string]: any[];
+  }>({});
   const [totalImages, setTotalImages] = useState(0);
 
   // Function to extract maximum screen number from analysis text
   const extractMaxScreenNumber = (analysisData: any): number => {
     if (!analysisData) return 0;
-    
     let maxScreenNumber = 0;
     const screenRegex = /\b(?:screen|Screen)\s+(\d+)\b/gi;
-    
+
     // Search through all text content in the analysis data
     const searchInObject = (obj: any) => {
       if (typeof obj === 'string') {
@@ -103,46 +110,41 @@ const GoblinResults: React.FC = () => {
         Object.values(obj).forEach(value => searchInObject(value));
       }
     };
-    
     searchInObject(analysisData);
     return maxScreenNumber;
   };
-
   useEffect(() => {
     const loadResults = async () => {
       if (!sessionId) return;
-
       try {
         console.log('🔍 Loading results for session:', sessionId);
-        
-        // Fix: Handle multiple results by getting the most recent one
-        const { data, error } = await supabase
-          .from('goblin_analysis_results')
-          .select(`*, goblin_analysis_sessions (*)`)
-          .eq('session_id', sessionId)
-          .order('created_at', { ascending: false })
-          .limit(1);
 
-        console.log('📊 Query response:', { data, error });
-        
+        // Fix: Handle multiple results by getting the most recent one
+        const {
+          data,
+          error
+        } = await supabase.from('goblin_analysis_results').select(`*, goblin_analysis_sessions (*)`).eq('session_id', sessionId).order('created_at', {
+          ascending: false
+        }).limit(1);
+        console.log('📊 Query response:', {
+          data,
+          error
+        });
         if (error) {
           console.error('❌ Database error:', error);
           throw error;
         }
-        
+
         // Get the first (most recent) result
         const latestResult = data?.[0] || null;
-        
         console.log('🎯 Latest result:', latestResult);
         console.log('🧠 Persona feedback:', latestResult?.persona_feedback);
         console.log('📝 Synthesis summary:', latestResult?.synthesis_summary);
-        
         if (!latestResult) {
           throw new Error('No results found for this session');
         }
-        
         setResults(latestResult);
-        
+
         // Images are now handled by useImageLoader hook
       } catch (error) {
         console.error('Failed to load results:', error);
@@ -151,13 +153,12 @@ const GoblinResults: React.FC = () => {
         setLoading(false);
       }
     };
-
     loadResults();
   }, [sessionId]);
 
   // Extract session and persona data early for use in handlers
   const session = results?.goblin_analysis_sessions;
-  
+
   // 🔍 DEBUG: Enhanced logging for data extraction debugging
   console.log('🔍 GOBLIN RESULTS - DATA EXTRACTION DEBUG:', {
     hasResults: !!results,
@@ -169,7 +170,7 @@ const GoblinResults: React.FC = () => {
     hasSynthesis: !!results?.synthesis_summary,
     sessionId: sessionId
   });
-  
+
   // Additional detailed logging for debugging
   if (results?.persona_feedback) {
     console.log('📊 DETAILED PERSONA FEEDBACK ANALYSIS:', {
@@ -180,17 +181,16 @@ const GoblinResults: React.FC = () => {
       firstValuePreview: results.persona_feedback[Object.keys(results.persona_feedback)[0]] ? JSON.stringify(results.persona_feedback[Object.keys(results.persona_feedback)[0]]).substring(0, 200) : 'none'
     });
   }
-  
+
   // Enhanced persona data extraction with comprehensive debugging
   let rawPersonaData = null;
-  
   console.log('🔍 PERSONA DATA EXTRACTION - Starting extraction:', {
     hasPersonaFeedback: !!results?.persona_feedback,
     personaType: session?.persona_type,
     personaFeedbackStructure: results?.persona_feedback ? Object.keys(results.persona_feedback) : [],
     fullPersonaFeedback: results?.persona_feedback
   });
-  
+
   // Strategy 1: Try direct persona type access
   if (results?.persona_feedback && session?.persona_type) {
     rawPersonaData = results.persona_feedback[session.persona_type];
@@ -201,7 +201,7 @@ const GoblinResults: React.FC = () => {
       rawData: rawPersonaData
     });
   }
-  
+
   // Strategy 2: If Strategy 1 failed, try first available persona data
   if (!rawPersonaData && results?.persona_feedback) {
     const availablePersonas = Object.keys(results.persona_feedback);
@@ -216,7 +216,7 @@ const GoblinResults: React.FC = () => {
       });
     }
   }
-  
+
   // Strategy 3: Direct analysis property fallback
   if (!rawPersonaData && results?.persona_feedback) {
     rawPersonaData = results.persona_feedback;
@@ -227,7 +227,6 @@ const GoblinResults: React.FC = () => {
       rawData: rawPersonaData
     });
   }
-  
   console.log('🔍 Final rawPersonaData extraction result:', {
     found: !!rawPersonaData,
     dataType: typeof rawPersonaData,
@@ -239,7 +238,7 @@ const GoblinResults: React.FC = () => {
   // Helper function to clean JSON markdown blocks from strings
   const cleanMarkdownJson = (text: string): string => {
     if (typeof text !== 'string') return text;
-    
+
     // Remove JSON markdown code blocks: ```json\n{...}\n```
     let cleaned = text.replace(/```json\s*\n?({[\s\S]*?})\s*\n?```/g, (match, jsonContent) => {
       try {
@@ -255,45 +254,48 @@ const GoblinResults: React.FC = () => {
         return jsonContent;
       }
     });
-    
+
     // Also handle plain markdown code blocks: ```\n...\n```
     cleaned = cleaned.replace(/```\s*\n?([\s\S]*?)\s*\n?```/g, '$1');
-    
     return cleaned.trim();
   };
 
   // Simplified approach: extract persona data from results.persona_feedback
   const extractPersonaData = (data: any, personaType: string, fallbackSummary: string): PersonaData => {
     console.log('🔍 Extracting persona data for:', personaType, data);
-    
     if (!data) {
       console.warn('⚠️ No data provided, using fallback');
-      return { analysis: fallbackSummary };
+      return {
+        analysis: fallbackSummary
+      };
     }
 
     // Direct persona type access or use data as-is
     const personaData = data[personaType] || data;
-    
+
     // If it's a string, treat as analysis and clean markdown
     if (typeof personaData === 'string') {
       console.log('✅ Using string data as analysis, cleaning markdown');
       const cleanedAnalysis = cleanMarkdownJson(personaData);
-      return { analysis: cleanedAnalysis };
+      return {
+        analysis: cleanedAnalysis
+      };
     }
 
     // If it's an object, clean any string fields that might contain markdown
     if (typeof personaData === 'object' && personaData !== null) {
-      const cleanedData = { ...personaData };
-      
+      const cleanedData = {
+        ...personaData
+      };
+
       // Clean common fields that might contain markdown
       const fieldsToClean = ['analysis', 'biggestGripe', 'goblinWisdom', 'goblinPrediction', 'whatMakesGoblinHappy'];
-      
       fieldsToClean.forEach(field => {
         if (typeof cleanedData[field] === 'string') {
           cleanedData[field] = cleanMarkdownJson(cleanedData[field]);
         }
       });
-      
+
       // Clean recommendations array if it exists
       if (Array.isArray(cleanedData.recommendations)) {
         cleanedData.recommendations = cleanedData.recommendations.map((rec: any) => {
@@ -301,7 +303,9 @@ const GoblinResults: React.FC = () => {
             return cleanMarkdownJson(rec);
           }
           if (typeof rec === 'object' && rec !== null) {
-            const cleanedRec = { ...rec };
+            const cleanedRec = {
+              ...rec
+            };
             Object.keys(cleanedRec).forEach(key => {
               if (typeof cleanedRec[key] === 'string') {
                 cleanedRec[key] = cleanMarkdownJson(cleanedRec[key]);
@@ -312,16 +316,17 @@ const GoblinResults: React.FC = () => {
           return rec;
         });
       }
-      
       console.log('✅ Using cleaned object data');
       return cleanedData;
     }
 
     // Use the data as-is
     console.log('✅ Using persona data as-is');
-    return personaData || { analysis: fallbackSummary };
+    return personaData || {
+      analysis: fallbackSummary
+    };
   };
-  
+
   // Parse the persona feedback correctly with proper typing
   let personaData: PersonaData = {
     analysis: '',
@@ -331,7 +336,6 @@ const GoblinResults: React.FC = () => {
     goblinWisdom: '',
     goblinPrediction: ''
   };
-  
   console.log('🔍 DEBUGGING RAW PERSONA DATA:', {
     rawPersonaDataType: typeof rawPersonaData,
     rawPersonaDataValue: rawPersonaData,
@@ -339,7 +343,6 @@ const GoblinResults: React.FC = () => {
     stringLength: typeof rawPersonaData === 'string' ? rawPersonaData.length : 'N/A',
     stringPreview: typeof rawPersonaData === 'string' ? rawPersonaData.substring(0, 100) : 'N/A'
   });
-
   if (rawPersonaData) {
     personaData = extractPersonaData(rawPersonaData, session?.persona_type, results?.synthesis_summary);
     console.log('✅ Successfully extracted persona data');
@@ -348,7 +351,6 @@ const GoblinResults: React.FC = () => {
     personaData = extractPersonaData(null, session?.persona_type, results?.synthesis_summary);
     console.log('⚠️ FALLBACK: No valid persona data found, using defaults');
   }
-  
   console.log('🎉 FINAL PERSONA DATA:', {
     hasAnalysis: !!personaData.analysis,
     analysisLength: personaData.analysis?.length || 0,
@@ -372,7 +374,6 @@ const GoblinResults: React.FC = () => {
       setTotalImages(finalImageCount);
     }
   }, [results, personaData, images.length]);
-
   const handleExport = () => {
     if (!results || !session || !personaData) return;
     const exportData = {
@@ -390,14 +391,15 @@ const GoblinResults: React.FC = () => {
       synthesissSummary: results.synthesis_summary
     };
     const dataStr = JSON.stringify(exportData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const dataBlob = new Blob([dataStr], {
+      type: 'application/json'
+    });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(dataBlob);
     link.download = `goblin-analysis-${session.id}-${new Date().toISOString().split('T')[0]}.json`;
     link.click();
     toast.success('Analysis exported! 📥');
   };
-
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
@@ -408,32 +410,37 @@ const GoblinResults: React.FC = () => {
       toast.error('Failed to copy link');
     }
   };
-
   const handleChatFeedbackUpdate = (messageId: string, feedbackType: string, data: any) => {
     setChatFeedbackAnchors(prev => ({
       ...prev,
-      [messageId]: [...(prev[messageId] || []), { type: feedbackType, data, timestamp: new Date() }]
+      [messageId]: [...(prev[messageId] || []), {
+        type: feedbackType,
+        data,
+        timestamp: new Date()
+      }]
     }));
-    
+
     // If user clicked "Add to Detailed", switch to detailed tab
     if (feedbackType === 'anchor') {
       setActiveTab('detailed');
     }
   };
-
   const getGripeEmoji = (level: string) => {
-    switch(level) {
-      case 'low': return '😤';
-      case 'medium': return '🤬';
-      case 'rage-cranked': return '🌋';
-      default: return '👾';
+    switch (level) {
+      case 'low':
+        return '😤';
+      case 'medium':
+        return '🤬';
+      case 'rage-cranked':
+        return '🌋';
+      default:
+        return '👾';
     }
   };
 
   // Enhanced loading state
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
+    return <div className="min-h-screen flex items-center justify-center">
         <div className="text-center max-w-md mx-auto">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
           <h2 className="text-xl font-semibold mb-2">Loading Analysis...</h2>
@@ -446,14 +453,12 @@ const GoblinResults: React.FC = () => {
             Processing images and running analysis pipeline...
           </p>
         </div>
-      </div>
-    );
+      </div>;
   }
 
   // Enhanced no results state
   if (!results) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+    return <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center max-w-md mx-auto">
           <div className="text-6xl mb-4">🧙‍♂️❓</div>
           <h2 className="text-xl font-semibold mb-2">No Analysis Found</h2>
@@ -462,140 +467,108 @@ const GoblinResults: React.FC = () => {
           </p>
           
           <div className="space-y-2">
-            <button 
-              onClick={() => window.location.reload()} 
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 rounded-md"
-            >
+            <button onClick={() => window.location.reload()} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 rounded-md">
               Refresh Results
             </button>
             
-            <button 
-              onClick={() => window.location.href = '/goblin'} 
-              className="w-full border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 rounded-md"
-            >
+            <button onClick={() => window.location.href = '/goblin'} className="w-full border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 rounded-md">
               Start New Analysis
             </button>
           </div>
         </div>
-      </div>
-    );
+      </div>;
   }
-  
+
   // Show loading state for images
   const isImagesLoading = imagesLoading && images.length === 0;
-  
+
   // Show image error with retry option
   const showImageError = imageError && !isImagesLoading;
 
   // Get annotation count for badge
   const annotationCount = results?.annotations?.length || 0;
-
-  return (
-    <NavigationProvider 
-      onTabChange={setActiveTab} 
-      onImageChange={setCurrentImageIndex}
-      initialTotalImages={totalImages}
-    >
-      <div className="min-h-screen bg-white min-w-full" style={{ minWidth: '100%' }}>
-        <div className="flex flex-col items-start flex-1 self-stretch w-full px-0 py-6 min-w-full" style={{ minWidth: '100%', margin: 0, padding: '1.5rem 0' }}>
+  return <NavigationProvider onTabChange={setActiveTab} onImageChange={setCurrentImageIndex} initialTotalImages={totalImages}>
+      <div className="min-h-screen bg-white min-w-full" style={{
+      minWidth: '100%'
+    }}>
+        <div style={{
+        minWidth: '100%',
+        margin: 0,
+        padding: '1.5rem 0'
+      }} className="flex flex-col items-start flex-1 self-stretch w-full py-6 min-w-full px-[20px]">
           
-           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'summary' | 'detailed' | 'maturity' | 'clarity')}>
-            <TabsList className="sticky top-6 z-10 flex w-full items-center gap-4 rounded-xl border border-gray-200 bg-gray-100 p-1 backdrop-blur-sm tabs-list-mobile" style={{ boxShadow: '0px 1px 1.9px 0px rgba(50, 50, 50, 0.10) inset', width: '100%' }}>
-              <TabsTrigger 
-                value="summary" 
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset] tabs-trigger-mobile"
-              >
+           <Tabs value={activeTab} onValueChange={value => setActiveTab(value as 'summary' | 'detailed' | 'maturity' | 'clarity')}>
+            <TabsList className="sticky top-6 z-10 flex w-full items-center gap-4 rounded-xl border border-gray-200 bg-gray-100 p-1 backdrop-blur-sm tabs-list-mobile" style={{
+            boxShadow: '0px 1px 1.9px 0px rgba(50, 50, 50, 0.10) inset',
+            width: '100%'
+          }}>
+              <TabsTrigger value="summary" className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset] tabs-trigger-mobile">
                 Summary
               </TabsTrigger>
-              <TabsTrigger 
-                value="detailed" 
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset] tabs-trigger-mobile"
-              >
+              <TabsTrigger value="detailed" className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset] tabs-trigger-mobile">
                 <span className="hidden sm:inline">Detailed</span>
                 <span className="sm:hidden">Details</span> ({annotationCount})
               </TabsTrigger>
-              <TabsTrigger 
-                value="maturity" 
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset] tabs-trigger-mobile"
-              >
+              <TabsTrigger value="maturity" className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset] tabs-trigger-mobile">
                 <Trophy className="w-4 h-4" />
                 <span className="hidden sm:inline">Maturity Score</span>
                 <span className="sm:hidden">Score</span>
               </TabsTrigger>
-              <TabsTrigger 
-                value="clarity" 
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset] tabs-trigger-mobile"
-              >
+              <TabsTrigger value="clarity" className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset] tabs-trigger-mobile">
                 <span className="hidden sm:inline">Clarity Chat</span>
                 <span className="sm:hidden">Clarity</span>
               </TabsTrigger>
             </TabsList>
 
-          <TabsContent value="summary" className="mt-8 w-full" style={{ width: '100%', maxWidth: 'none' }}>
-            <SummaryView
-              results={results}
-              session={session}
-              personaData={personaData}
-              onExport={handleExport}
-              onCopyLink={handleCopyLink}
-              copied={copied}
-              chatFeedbackAnchors={chatFeedbackAnchors}
-            />
+          <TabsContent value="summary" className="mt-8 w-full" style={{
+            width: '100%',
+            maxWidth: 'none'
+          }}>
+            <SummaryView results={results} session={session} personaData={personaData} onExport={handleExport} onCopyLink={handleCopyLink} copied={copied} chatFeedbackAnchors={chatFeedbackAnchors} />
           </TabsContent>
 
-          <TabsContent value="detailed" className="mt-8 w-full" style={{ width: '100%', maxWidth: 'none' }}>
-            {isImagesLoading && (
-              <div className="flex items-center justify-center p-8 text-muted-foreground">
+          <TabsContent value="detailed" className="mt-8 w-full" style={{
+            width: '100%',
+            maxWidth: 'none'
+          }}>
+            {isImagesLoading && <div className="flex items-center justify-center p-8 text-muted-foreground">
                 <div className="animate-spin mr-3 h-5 w-5 border-2 border-primary border-t-transparent rounded-full"></div>
                 Loading images... ({accessibilityReport.total > 0 ? `${accessibilityReport.total} found` : 'searching'})
-              </div>
-            )}
+              </div>}
             
-            {showImageError && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            {showImageError && <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-red-800 font-medium">Failed to load images</p>
                     <p className="text-red-600 text-sm mt-1">{imageError}</p>
-                    {accessibilityReport.total > 0 && (
-                      <p className="text-red-600 text-xs mt-1">
+                    {accessibilityReport.total > 0 && <p className="text-red-600 text-xs mt-1">
                         Found {accessibilityReport.total} images, {accessibilityReport.accessible} accessible
-                      </p>
-                    )}
+                      </p>}
                   </div>
-                  <button
-                    onClick={retryImages}
-                    className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-800 rounded text-sm"
-                  >
+                  <button onClick={retryImages} className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-800 rounded text-sm">
                     Retry
                   </button>
                 </div>
-              </div>
-            )}
+              </div>}
             
-            {!hasAccessibleImages && images.length > 0 && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+            {!hasAccessibleImages && images.length > 0 && <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
                 <p className="text-yellow-800 font-medium">Image accessibility issues detected</p>
                 <p className="text-yellow-600 text-sm mt-1">
                   {accessibilityReport.inaccessible} of {accessibilityReport.total} images cannot be displayed properly.
                 </p>
-              </div>
-            )}
+              </div>}
             
-            <DetailedModeView
-              images={images}
-              session={session}
-              results={results}
-              showAnnotations={showAnnotations}
-              currentImageIndex={currentImageIndex}
-              setCurrentImageIndex={setCurrentImageIndex}
-              setShowAnnotations={setShowAnnotations}
-              chatFeedbackAnchors={chatFeedbackAnchors}
-            />
+            <DetailedModeView images={images} session={session} results={results} showAnnotations={showAnnotations} currentImageIndex={currentImageIndex} setCurrentImageIndex={setCurrentImageIndex} setShowAnnotations={setShowAnnotations} chatFeedbackAnchors={chatFeedbackAnchors} />
           </TabsContent>
 
-          <TabsContent value="maturity" className="mt-8 w-full" style={{ width: '100%', maxWidth: 'none' }}>
-            <div className="space-y-6 w-full" style={{ width: '100%', maxWidth: 'none' }}>
+          <TabsContent value="maturity" className="mt-8 w-full" style={{
+            width: '100%',
+            maxWidth: 'none'
+          }}>
+            <div className="space-y-6 w-full" style={{
+              width: '100%',
+              maxWidth: 'none'
+            }}>
               <MaturityScoreDashboard />
               <ImprovementRoadmap />
               <AchievementShowcase />
@@ -612,18 +585,15 @@ const GoblinResults: React.FC = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="clarity" className="mt-8 w-full" style={{ width: '100%', maxWidth: 'none' }}>
-            <ClarityChat
-              session={session}
-              personaData={personaData}
-              onFeedbackUpdate={handleChatFeedbackUpdate}
-            />
+          <TabsContent value="clarity" className="mt-8 w-full" style={{
+            width: '100%',
+            maxWidth: 'none'
+          }}>
+            <ClarityChat session={session} personaData={personaData} onFeedbackUpdate={handleChatFeedbackUpdate} />
           </TabsContent>
           </Tabs>
         </div>
       </div>
-    </NavigationProvider>
-  );
+    </NavigationProvider>;
 };
-
 export default GoblinResults;
