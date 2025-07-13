@@ -196,7 +196,7 @@ export default function Analyze() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
+    <div className="w-full p-6">
       <h1 className="text-3xl font-bold mb-2">Design Analysis</h1>
       <p className="text-muted-foreground mb-8">Upload your designs and get AI-powered UX feedback</p>
       

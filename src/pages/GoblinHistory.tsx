@@ -159,7 +159,7 @@ const GoblinHistory = () => {
 
   return (
     <div className="min-h-screen">
-      <div className="max-w-7xl mx-auto p-8">
+      <div className="w-full p-8">
         {/* Header */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-8">
           <div className="space-y-2">
@@ -182,7 +182,7 @@ const GoblinHistory = () => {
             <h3 className="text-2xl font-semibold text-foreground mb-3">
               No goblin sessions yet
             </h3>
-            <p className="text-muted-foreground text-lg mb-8 max-w-md mx-auto">
+            <p className="text-muted-foreground text-lg mb-8 mx-auto">
               Start your first multi-persona UX analysis to see results here
             </p>
             <Button onClick={handleNewAnalysis} size="lg" className="bg-professional-brown hover:bg-professional-brown/90 text-primary-foreground px-8 py-3 text-base font-medium">

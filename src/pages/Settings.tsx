@@ -36,7 +36,7 @@ const Settings = () => {
   }];
   const availableTabs = isAdmin ? adminTabs : userTabs;
   if (loading) {
-    return <div className="p-6 max-w-6xl mx-auto">
+    return <div className="w-full p-6">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-muted rounded w-48"></div>
           <div className="h-4 bg-muted rounded w-96"></div>

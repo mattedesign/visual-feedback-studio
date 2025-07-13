@@ -5,7 +5,7 @@ import { HelpCircle, BookOpen, MessageCircle, FileText } from 'lucide-react';
 
 const Help = () => {
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="w-full p-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Help & Support</h1>
         <p className="text-muted-foreground mt-2">
