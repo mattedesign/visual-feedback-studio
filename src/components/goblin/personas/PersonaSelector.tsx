@@ -119,13 +119,6 @@ export const GoblinPersonaSelector: React.FC<GoblinPersonaSelectorProps> = ({
 
                 <p className="text-sm text-gray-600 leading-relaxed">{persona.description}</p>
                 
-                <div className={`text-xs font-medium p-2 rounded-md ${
-                  isGoblin 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-gray-100 text-gray-700'
-                }`}>
-                  {persona.speciality}
-                </div>
 
                 <div className="space-y-1 text-xs text-gray-500">
                   <div><strong>Focus:</strong> {persona.speciality}</div>
