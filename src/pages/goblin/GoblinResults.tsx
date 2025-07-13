@@ -500,7 +500,7 @@ const GoblinResults: React.FC = () => {
         <div className="flex flex-col items-start flex-1 self-stretch w-full px-0 py-6 min-w-full" style={{ minWidth: '100%', margin: 0, padding: '1.5rem 0' }}>
           
            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'summary' | 'detailed' | 'maturity' | 'clarity')}>
-            <TabsList className="sticky top-6 z-10 flex w-auto items-center gap-4 rounded-xl border border-gray-200 bg-gray-100 p-1 backdrop-blur-sm tabs-list-mobile" style={{ boxShadow: '0px 1px 1.9px 0px rgba(50, 50, 50, 0.10) inset' }}>
+            <TabsList className="sticky top-6 z-10 flex w-full items-center gap-4 rounded-xl border border-gray-200 bg-gray-100 p-1 backdrop-blur-sm tabs-list-mobile" style={{ boxShadow: '0px 1px 1.9px 0px rgba(50, 50, 50, 0.10) inset', width: '100%' }}>
               <TabsTrigger 
                 value="summary" 
                 className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset] tabs-trigger-mobile"

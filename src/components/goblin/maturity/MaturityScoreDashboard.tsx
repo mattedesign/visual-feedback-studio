@@ -118,9 +118,9 @@ export function MaturityScoreDashboard() {
   const nextLevel = MATURITY_LEVELS.find(l => l.minScore > score.overall_score);
 
   return (
-    <div className="space-y-6" style={{ width: '100vw', maxWidth: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
+    <div className="space-y-6 w-full">
       {/* Main Score Card */}
-      <Card className="p-8 bg-gradient-to-br from-purple-50 to-white border-purple-200" style={{ width: '100%' }}>
+      <Card className="p-8 bg-gradient-to-br from-purple-50 to-white border-purple-200 w-full">
         <div className="flex justify-between items-start mb-6">
           <div>
             <h2 className="text-2xl font-bold mb-1">Design Maturity Score</h2>
