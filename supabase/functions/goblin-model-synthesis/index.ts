@@ -695,17 +695,6 @@ class AnnotationGenerator {
       title: personaTitles[persona as keyof typeof personaTitles] || 'UX Enhancement' 
     };
   }
-
-    const { category, title } = this.analyzeRecommendationContext(recommendation, persona);
-
-    return {
-      id: `${persona}-annotation-${index + 1}`,
-      title: title,
-      description: enhancedFeedback.problem || recommendation,
-      feedback: enhancedFeedback.solution || `Specific solution for ${persona} persona`,
-      category: category,
-      x: position.x,
-      y: position.y,
       width: 8,
       height: 4,
       image_index: imageIndex,
