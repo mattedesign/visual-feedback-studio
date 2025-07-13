@@ -12,12 +12,20 @@ import { ROLE_OPTIONS, UserRole } from '@/types/profiles';
 import { toast } from 'sonner';
 
 export const ProfileSettings = () => {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     full_name: profile?.full_name || '',
     role: profile?.role || 'other' as UserRole
   });
+
+  // Update form data when profile changes
+  React.useEffect(() => {
+    setFormData({
+      full_name: profile?.full_name || '',
+      role: profile?.role || 'other' as UserRole
+    });
+  }, [profile]);
 
   const handleSave = async () => {
     if (!user?.id) return;
@@ -27,6 +35,8 @@ export const ProfileSettings = () => {
       const updatedProfile = await ProfileService.updateProfile(user.id, formData);
       if (updatedProfile) {
         toast.success('Profile updated successfully');
+        // Refresh the profile data in useAuth to reflect changes
+        await refreshProfile();
       } else {
         toast.error('Failed to update profile');
       }

@@ -22,6 +22,22 @@ export const useAuth = () => {
     error: null
   });
 
+  // Helper function to safely update auth state - moved outside useEffect for reusability
+  const updateAuthState = (updates: Partial<AuthState>) => {
+    setAuthState(prev => ({ ...prev, ...updates }));
+  };
+
+  // Helper function to fetch profile - moved outside useEffect for reusability
+  const fetchProfile = async (userId: string): Promise<UserProfile | null> => {
+    try {
+      const profile = await ProfileService.getProfile(userId);
+      return profile;
+    } catch (error) {
+      console.warn('Profile fetch failed:', error);
+      return null;
+    }
+  };
+
   useEffect(() => {
     let mounted = true;
     let profileFetchAbortController: AbortController | null = null;
@@ -29,15 +45,8 @@ export const useAuth = () => {
     let lastSessionId: string | null = null;
     let initializationComplete = false;
 
-    // Helper function to safely update auth state
-    const updateAuthState = (updates: Partial<AuthState>) => {
-      if (mounted) {
-        setAuthState(prev => ({ ...prev, ...updates }));
-      }
-    };
-
-    // Helper function to fetch profile with abort signal
-    const fetchProfile = async (userId: string): Promise<UserProfile | null> => {
+    // Internal fetch with abort signal for useEffect
+    const fetchProfileWithAbort = async (userId: string): Promise<UserProfile | null> => {
       if (profileFetchAbortController) {
         profileFetchAbortController.abort();
       }
@@ -53,6 +62,13 @@ export const useAuth = () => {
         }
         console.warn('Profile fetch failed:', error);
         return null;
+      }
+    };
+
+    // Helper function to safely update auth state within useEffect
+    const safeUpdateAuthState = (updates: Partial<AuthState>) => {
+      if (mounted) {
+        setAuthState(prev => ({ ...prev, ...updates }));
       }
     };
 
@@ -83,7 +99,7 @@ export const useAuth = () => {
         
         if (session?.user) {
           // Update auth state immediately (synchronously)
-          updateAuthState({
+          safeUpdateAuthState({
             session,
             user: session.user,
             loading: false,
@@ -92,14 +108,14 @@ export const useAuth = () => {
           
           // Fetch profile asynchronously without blocking
           setTimeout(async () => {
-            const profile = await fetchProfile(session.user.id);
+            const profile = await fetchProfileWithAbort(session.user.id);
             if (mounted && profile) {
-              updateAuthState({ profile });
+              safeUpdateAuthState({ profile });
             }
           }, 0);
         } else {
           // Clear auth state immediately
-          updateAuthState({
+          safeUpdateAuthState({
             session: null,
             user: null,
             profile: null,
@@ -122,7 +138,7 @@ export const useAuth = () => {
         
         if (error) {
           console.error('❌ Session check error:', error);
-          updateAuthState({
+          safeUpdateAuthState({
             error: error.message,
             loading: false
           });
@@ -131,7 +147,7 @@ export const useAuth = () => {
           lastSessionId = session.user.id;
           
           // Set basic auth state first
-          updateAuthState({
+          safeUpdateAuthState({
             session,
             user: session.user,
             loading: false,
@@ -139,13 +155,13 @@ export const useAuth = () => {
           });
           
           // Fetch profile separately to avoid blocking
-          const profile = await fetchProfile(session.user.id);
+          const profile = await fetchProfileWithAbort(session.user.id);
           if (mounted && profile) {
-            updateAuthState({ profile });
+            safeUpdateAuthState({ profile });
           }
         } else {
           console.log('📭 No existing session');
-          updateAuthState({
+          safeUpdateAuthState({
             session: null,
             user: null,
             profile: null,
@@ -158,7 +174,7 @@ export const useAuth = () => {
       } catch (err) {
         console.error('❌ Auth initialization error:', err);
         if (mounted) {
-          updateAuthState({
+          safeUpdateAuthState({
             error: err instanceof Error ? err.message : 'Session check failed',
             loading: false
           });
@@ -210,8 +226,22 @@ export const useAuth = () => {
     }
   };
 
+  const refreshProfile = async () => {
+    if (!authState.user?.id) return;
+    
+    try {
+      const profile = await fetchProfile(authState.user.id);
+      if (profile) {
+        updateAuthState({ profile });
+      }
+    } catch (error) {
+      console.error('Profile refresh failed:', error);
+    }
+  };
+
   return { 
     ...authState,
-    signOut
+    signOut,
+    refreshProfile
   };
 };
