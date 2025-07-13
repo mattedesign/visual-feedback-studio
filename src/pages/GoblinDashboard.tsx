@@ -375,7 +375,7 @@ const GoblinDashboard = () => {
                     </h3>
                     
                     <div className="flex items-center gap-1 text-xs text-muted-foreground mb-3">
-                      <span className="capitalize">{session.analysis_mode} Analysis</span>
+                      <span>{getPersonaLabel(session.persona_type)} Analysis</span>
                     </div>
 
                     {session.goal_description && (
