@@ -256,7 +256,7 @@ const GoblinDashboard = () => {
               View your analysis history or start a new analysis
             </p>
             <div className="flex gap-4 justify-center">
-              <Button onClick={() => navigate('/history')} variant="outline" size="lg" className="px-8 py-3 text-base font-medium btn-outline-styled">
+              <Button onClick={() => navigate('/history')} variant="tertiary" size="lg">
                 View History
               </Button>
               <Button onClick={handleNewAnalysis} size="lg" className="bg-professional-brown hover:bg-professional-brown/90 text-primary-foreground px-8 py-3 text-base font-medium">
