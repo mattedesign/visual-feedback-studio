@@ -125,14 +125,39 @@ serve(async (req) => {
 
     const startTime = Date.now();
 
-    // FIXED: Optimized image processing (around line 120 in Claude analyzer)
+    // FIXED: Image processing for both analysis and chat modes
     const imageContent = [];
+    let actualImageUrls = imageUrls;
     
-    if (!actualChatMode && imageUrls && Array.isArray(imageUrls)) {
-      console.log(`📸 Processing ${imageUrls.length} images`);
+    // If in chat mode and no imageUrls provided, fetch from database
+    if (actualChatMode && sessionId && (!imageUrls || !Array.isArray(imageUrls))) {
+      console.log(`🔍 Chat mode - fetching images from database for session: ${sessionId.substring(0, 8)}`);
       
-      for (let i = 0; i < Math.min(imageUrls.length, 3); i++) {
-        const imageItem = imageUrls[i];
+      try {
+        const { data: sessionImages, error: imagesError } = await supabase
+          .from('goblin_analysis_images')
+          .select('file_path, file_name')
+          .eq('session_id', sessionId)
+          .order('upload_order', { ascending: true });
+
+        if (imagesError) {
+          console.warn('⚠️ Failed to fetch session images:', imagesError);
+        } else if (sessionImages && sessionImages.length > 0) {
+          actualImageUrls = sessionImages.map(img => img.file_path);
+          console.log(`✅ Found ${actualImageUrls.length} images in database for chat mode`);
+        } else {
+          console.log('📭 No images found in database for this session');
+        }
+      } catch (error) {
+        console.error('❌ Error fetching session images:', error);
+      }
+    }
+    
+    if (actualImageUrls && Array.isArray(actualImageUrls)) {
+      console.log(`📸 Processing ${actualImageUrls.length} images`);
+      
+      for (let i = 0; i < Math.min(actualImageUrls.length, 3); i++) {
+        const imageItem = actualImageUrls[i];
         let imageUrl = null;
         
         // Simple URL extraction
@@ -196,7 +221,7 @@ serve(async (req) => {
         }
       }
       
-      console.log(`🎉 Image processing complete: ${imageContent.length}/${imageUrls.length} successful`);
+      console.log(`🎉 Image processing complete: ${imageContent.length}/${actualImageUrls.length} successful`);
     }
 
     // Build enhanced prompt
