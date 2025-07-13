@@ -45,22 +45,19 @@ const mainNavItems = [
     title: "Dashboard",
     url: "/",
     icon: LayoutDashboard,
-    badge: null,
-    emoji: "📊"
+    badge: null
   },
   {
     title: "Goblin Analysis", 
     url: "/goblin",
     icon: Zap,
-    badge: "👾",
-    emoji: "🧠"
+    badge: "👾"
   },
   {
     title: "History",
     url: "/history",
     icon: History,
-    badge: null,
-    emoji: "📋"
+    badge: null
   }
 ];
 
@@ -69,22 +66,19 @@ const bottomNavItems = [
     title: "Subscription",
     url: "/subscription",
     icon: Crown,
-    badge: null,
-    emoji: "💎"
+    badge: null
   },
   {
     title: "Settings",
     url: "/settings",
     icon: Settings,
-    badge: null,
-    emoji: "⚙️"
+    badge: null
   },
   {
     title: "Help",
     url: "/help",
     icon: HelpCircle,
-    badge: null,
-    emoji: "❓"
+    badge: null
   }
 ];
 
@@ -188,27 +182,22 @@ export function AppSidebar({}: AppSidebarProps) {
                        className={getNavClassName(isActive(item.url))}
                        end={item.url === '/'}
                        onClick={handleNavClick}
-                     >
-                       <div className="flex items-center gap-2">
-                         {collapsed ? (
-                           <span className="text-lg">{item.emoji}</span>
-                         ) : (
-                           <item.icon className="h-4 w-4 flex-shrink-0" />
-                         )}
-                       </div>
-                       {!collapsed && (
-                         <>
-                           <span className="flex-1 flex items-center gap-2">
-                             <span className="text-sm">{item.emoji}</span>
-                             {item.title}
-                           </span>
-                           {item.badge && (
-                             <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 border-0">
-                               {item.badge}
-                             </Badge>
-                           )}
-                         </>
-                       )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <item.icon className="h-4 w-4 flex-shrink-0" />
+                        </div>
+                        {!collapsed && (
+                          <>
+                            <span className="flex-1 flex items-center gap-2">
+                              {item.title}
+                            </span>
+                            {item.badge && (
+                              <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 border-0">
+                                {item.badge}
+                              </Badge>
+                            )}
+                          </>
+                        )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -228,20 +217,15 @@ export function AppSidebar({}: AppSidebarProps) {
                        to={item.url} 
                        className={getNavClassName(isActive(item.url))}
                        onClick={handleNavClick}
-                     >
-                        <div className="flex items-center gap-2">
-                          {collapsed ? (
-                            <span className="text-lg">{item.emoji}</span>
-                          ) : (
-                            <item.icon className="h-4 w-4 flex-shrink-0" />
-                          )}
-                        </div>
-                        {!collapsed && (
-                          <span className="flex-1 flex items-center gap-2">
-                            <span className="text-sm">{item.emoji}</span>
-                            {item.title}
-                          </span>
-                        )}
+                      >
+                         <div className="flex items-center gap-2">
+                           <item.icon className="h-4 w-4 flex-shrink-0" />
+                         </div>
+                         {!collapsed && (
+                           <span className="flex-1 flex items-center gap-2">
+                             {item.title}
+                           </span>
+                         )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
