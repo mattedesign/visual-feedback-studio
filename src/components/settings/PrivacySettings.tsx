@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -7,6 +7,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Shield, Eye, Download, Trash2, AlertTriangle, Lock } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
+import { PrivacyService } from '@/services/privacyService';
+import { CreatePrivacyPreferencesData } from '@/types/privacy';
 
 interface PrivacyPreferences {
   dataSharing: boolean;
@@ -16,7 +19,9 @@ interface PrivacyPreferences {
 }
 
 export const PrivacySettings = () => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [initialLoad, setInitialLoad] = useState(true);
   const [preferences, setPreferences] = useState<PrivacyPreferences>({
     dataSharing: false,
     analyticsTracking: true,
@@ -24,12 +29,51 @@ export const PrivacySettings = () => {
     publicProfile: false
   });
 
+  // Load preferences on component mount
+  useEffect(() => {
+    const loadPreferences = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const savedPreferences = await PrivacyService.getPreferences(user.id);
+        if (savedPreferences) {
+          setPreferences({
+            analyticsTracking: savedPreferences.analytics_tracking,
+            improveProduct: savedPreferences.improve_product,
+            dataSharing: savedPreferences.data_sharing,
+            publicProfile: savedPreferences.public_profile
+          });
+        }
+      } catch (error) {
+        console.error('Error loading privacy preferences:', error);
+      } finally {
+        setInitialLoad(false);
+      }
+    };
+
+    loadPreferences();
+  }, [user?.id]);
+
   const handleSave = async () => {
+    if (!user?.id) return;
+    
     setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('Privacy settings saved');
+      const preferencesData: CreatePrivacyPreferencesData = {
+        analytics_tracking: preferences.analyticsTracking,
+        improve_product: preferences.improveProduct,
+        data_sharing: preferences.dataSharing,
+        public_profile: preferences.publicProfile
+      };
+
+      const result = await PrivacyService.upsertPreferences(user.id, preferencesData);
+      if (result) {
+        toast.success('Privacy settings saved');
+      } else {
+        toast.error('Failed to save settings');
+      }
     } catch (error) {
+      console.error('Privacy settings save error:', error);
       toast.error('Failed to save settings');
     } finally {
       setLoading(false);
@@ -58,6 +102,10 @@ export const PrivacySettings = () => {
       toast.error('Failed to process deletion request');
     }
   };
+
+  if (initialLoad) {
+    return <div className="space-y-6">Loading preferences...</div>;
+  }
 
   return (
     <div className="space-y-6">

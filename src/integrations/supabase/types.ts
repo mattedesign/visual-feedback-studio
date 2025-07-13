@@ -979,6 +979,39 @@ export type Database = {
         }
         Relationships: []
       }
+      privacy_preferences: {
+        Row: {
+          analytics_tracking: boolean
+          created_at: string
+          data_sharing: boolean
+          id: string
+          improve_product: boolean
+          public_profile: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          analytics_tracking?: boolean
+          created_at?: string
+          data_sharing?: boolean
+          id?: string
+          improve_product?: boolean
+          public_profile?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          analytics_tracking?: boolean
+          created_at?: string
+          data_sharing?: boolean
+          id?: string
+          improve_product?: boolean
+          public_profile?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       problem_statements: {
         Row: {
           category: string
