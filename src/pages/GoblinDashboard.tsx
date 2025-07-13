@@ -188,8 +188,8 @@ const GoblinDashboard = () => {
             </h1>
           </div>
           
-          <Button onClick={handleNewAnalysis} size="lg" className="flex py-2.5 px-4 justify-center items-center gap-0 rounded-full text-base font-medium shadow-sm !text-[#584774] !bg-[#EEF2FF] hover:!bg-[#EEF2FF] focus:!bg-[#EEF2FF]">
-            <Plus className="w-5 h-5 mr-2 !text-[#584774]" />
+          <Button onClick={handleNewAnalysis} size="lg" className="flex py-2.5 px-4 justify-center items-center gap-0 rounded-full text-base font-medium shadow-sm !text-[#5C3C90] !bg-[#EEF2FF] hover:!bg-[#EEF2FF] focus:!bg-[#EEF2FF]">
+            <Plus className="w-5 h-5 mr-2 !text-[#5C3C90]" />
             New Analysis
           </Button>
         </div>
