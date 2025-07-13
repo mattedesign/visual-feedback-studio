@@ -695,7 +695,7 @@ class AnnotationGenerator {
     };
   }
 
-  // New method to enhance feedback with solutions
+  // Enhanced method to analyze problem and generate persona-specific solutions
   private enhanceFeedbackWithSolution(recommendation: string, persona: string) {
     // If recommendation already contains solution language, split it
     if (recommendation.includes(' - ') || recommendation.includes(': ')) {
@@ -703,24 +703,43 @@ class AnnotationGenerator {
       if (parts.length >= 2) {
         return {
           problem: parts[0].trim(),
-          solution: parts.slice(1).join(' - ').trim()
+          solution: this.generatePersonaSolution(parts.slice(1).join(' - ').trim(), persona)
         };
       }
     }
 
-    // Generate persona-appropriate solution
-    const solutions = {
-      clarity: this.getClaritySolution(recommendation),
-      strategic: this.getStrategicSolution(recommendation),
-      mirror: this.getMirrorSolution(recommendation),
-      mad: this.getMadSolution(recommendation),
-      exec: this.getExecutiveSolution(recommendation)
-    };
+    // For single problem statements, generate persona-specific solution
+    const problem = recommendation.trim();
+    const solution = this.generatePersonaSolution(problem, persona);
 
     return {
-      problem: recommendation,
-      solution: solutions[persona] || `Improve ${recommendation.toLowerCase()}`
+      problem: problem,
+      solution: solution
     };
+  }
+
+  // New method to generate truly persona-specific solutions based on problem analysis
+  private generatePersonaSolution(problemText: string, persona: string) {
+    const problemLower = problemText.toLowerCase();
+    
+    // Analyze the problem to understand what type of issue it is
+    const problemType = this.analyzeProblemType(problemLower);
+    
+    // Generate solution based on persona and specific problem content
+    switch (persona) {
+      case 'clarity':
+        return this.generateClaritySolution(problemText, problemType);
+      case 'strategic':
+        return this.generateStrategicSolution(problemText, problemType);
+      case 'mirror':
+        return this.generateMirrorSolution(problemText, problemType);
+      case 'mad':
+        return this.generateMadSolution(problemText, problemType);
+      case 'exec':
+        return this.generateExecutiveSolution(problemText, problemType);
+      default:
+        return this.generateDefaultSolution(problemText, problemType);
+    }
   }
 
   private getClaritySolution(problem: string) {
@@ -822,6 +841,128 @@ class AnnotationGenerator {
       if (problemLower.includes(key)) return solution;
     }
     return solutions.default;
+  }
+
+  // New problem type analyzer
+  private analyzeProblemType(problemLower: string): string {
+    const problemTypes = {
+      'savings': ['savings', 'callout', 'value', 'proposition', 'price'],
+      'navigation': ['navigation', 'menu', 'nav', 'header', 'link'],
+      'button': ['button', 'cta', 'call-to-action', 'click'],
+      'form': ['form', 'field', 'input', 'submit'],
+      'content': ['content', 'text', 'copy', 'read'],
+      'layout': ['layout', 'design', 'visual', 'structure'],
+      'onboarding': ['onboarding', 'tutorial', 'setup', 'welcome'],
+      'search': ['search', 'find', 'filter'],
+      'mobile': ['mobile', 'responsive', 'tablet', 'touch'],
+      'flow': ['flow', 'journey', 'process', 'step'],
+      'checkout': ['checkout', 'purchase', 'buy', 'payment'],
+      'performance': ['loading', 'speed', 'performance', 'slow']
+    };
+
+    for (const [type, keywords] of Object.entries(problemTypes)) {
+      if (keywords.some(keyword => problemLower.includes(keyword))) {
+        return type;
+      }
+    }
+    return 'general';
+  }
+
+  // Enhanced persona-specific solution generators
+  private generateClaritySolution(problemText: string, problemType: string): string {
+    const problemLower = problemText.toLowerCase();
+    
+    // Analyze the specific problem context for Clarity's sassy solutions
+    if (problemType === 'savings' || problemLower.includes('savings') || problemLower.includes('value')) {
+      return 'Scream the savings! Put a BIG, BRIGHT banner above the fold that says "SAVE $X" - no hiding discounts in fine print!';
+    }
+    
+    if (problemType === 'navigation') {
+      return 'Stop playing hide-and-seek with navigation! Make it OBVIOUS where users can go - big buttons, clear labels, no mystery meat!';
+    }
+    
+    if (problemType === 'button') {
+      return 'Make buttons IMPOSSIBLE to ignore - bright colors, action words like "GET YOURS NOW!" - if users squint to find it, you failed!';
+    }
+    
+    // Use original method as fallback but enhanced
+    return this.getClaritySolution(problemText);
+  }
+
+  private generateStrategicSolution(problemText: string, problemType: string): string {
+    const problemLower = problemText.toLowerCase();
+    
+    if (problemType === 'savings' || problemLower.includes('savings') || problemLower.includes('value')) {
+      return 'Strategic value communication: A/B test prominent value callouts vs. subtle messaging - data shows 32% higher conversion with above-fold value props';
+    }
+    
+    if (problemType === 'navigation') {
+      return 'Implement data-driven navigation: analyze user journey heat maps to restructure IA based on actual user behavior patterns';
+    }
+    
+    if (problemType === 'conversion') {
+      return 'Optimize conversion funnel: implement progressive disclosure with exit-intent capture - reduce abandonment by 25%';
+    }
+    
+    return this.getStrategicSolution(problemText);
+  }
+
+  private generateMirrorSolution(problemText: string, problemType: string): string {
+    const problemLower = problemText.toLowerCase();
+    
+    if (problemType === 'savings' || problemLower.includes('savings') || problemLower.includes('value')) {
+      return 'Ask yourself: "Am I communicating value the way customers think about it, or the way my business thinks about it?"';
+    }
+    
+    if (problemType === 'navigation') {
+      return 'Reflect: "Would someone who\'s never seen my site understand this navigation structure instantly, or am I relying on internal company logic?"';
+    }
+    
+    if (problemType === 'content') {
+      return 'Question deeply: "Am I writing this content to serve my users\' needs, or to sound impressive to my colleagues?"';
+    }
+    
+    return this.getMirrorSolution(problemText);
+  }
+
+  private generateMadSolution(problemText: string, problemType: string): string {
+    const problemLower = problemText.toLowerCase();
+    
+    if (problemType === 'savings' || problemLower.includes('savings') || problemLower.includes('value')) {
+      return 'Go WILD: Animated savings counter that counts up in real-time, or AR overlay showing money flying into their pocket!';
+    }
+    
+    if (problemType === 'navigation') {
+      return 'Experimental madness: Try gesture-controlled navigation, voice commands, or floating action bubbles that follow scroll behavior!';
+    }
+    
+    if (problemType === 'button') {
+      return 'Break the rules: Morphing buttons that animate based on urgency, physics-based interactions, or buttons that grow when you hesitate!';
+    }
+    
+    return this.getMadSolution(problemText);
+  }
+
+  private generateExecutiveSolution(problemText: string, problemType: string): string {
+    const problemLower = problemText.toLowerCase();
+    
+    if (problemType === 'savings' || problemLower.includes('savings') || problemLower.includes('value')) {
+      return 'ROI opportunity: Prominent value messaging drives 20-35% higher conversion rates - implement within 2 weeks for immediate revenue impact';
+    }
+    
+    if (problemType === 'navigation') {
+      return 'Business efficiency: Optimize navigation to reduce user friction - target 25% decrease in support tickets and 15% increase in task completion';
+    }
+    
+    if (problemType === 'conversion') {
+      return 'Revenue optimization: Strategic conversion improvements typically deliver 12-28% revenue increase - prioritize high-traffic pages first';
+    }
+    
+    return this.getExecutiveSolution(problemText);
+  }
+
+  private generateDefaultSolution(problemText: string, problemType: string): string {
+    return `Improve the ${problemType} experience based on user needs and business objectives`;
   }
 }
 
