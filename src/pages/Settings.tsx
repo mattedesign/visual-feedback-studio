@@ -59,20 +59,20 @@ const Settings = () => {
           ))}
         </TabsList>
 
-        <TabsContent value="profile" className="bg-card rounded-lg border">
+        <TabsContent value="profile">
           <ProfileSettings />
         </TabsContent>
 
-        <TabsContent value="notifications" className="bg-card rounded-lg border">
+        <TabsContent value="notifications">
           <NotificationSettings />
         </TabsContent>
 
-        <TabsContent value="privacy" className="bg-card rounded-lg border">
+        <TabsContent value="privacy">
           <PrivacySettings />
         </TabsContent>
 
         {isAdmin && (
-          <TabsContent value="health" className="bg-card rounded-lg border">
+          <TabsContent value="health">
             <AdminHealthDashboard />
           </TabsContent>
         )}
