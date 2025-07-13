@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Calendar, BarChart3, Brain, Sparkles, Eye, Timer, TrendingUp } from 'lucide-react';
+import { Plus, Calendar, BarChart3, Brain, Sparkles, Eye, Timer, TrendingUp, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -183,8 +183,8 @@ const GoblinDashboard = () => {
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-8">
           <div className="space-y-2">
             <h1 className="text-4xl font-semibold tracking-tight text-foreground flex items-center gap-3">
-              <Brain className="w-9 h-9 text-professional-brown" />
-              Goblin UX Studio
+              <LayoutDashboard className="w-9 h-9 text-professional-brown" />
+              Dashboard
             </h1>
             <p className="text-lg text-muted-foreground font-medium">
               Multi-persona UX analysis with brutally honest feedback
