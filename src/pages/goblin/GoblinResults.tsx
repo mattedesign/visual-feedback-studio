@@ -594,8 +594,8 @@ const GoblinResults: React.FC = () => {
             />
           </TabsContent>
 
-          <TabsContent value="maturity" className="mt-8 w-full">
-            <div className="space-y-6 w-full">
+          <TabsContent value="maturity" className="mt-8 w-full min-w-full" style={{ width: '100%', minWidth: '100%' }}>
+            <div className="space-y-6 w-full min-w-full" style={{ width: '100%', minWidth: '100%' }}>
               <MaturityScoreDashboard />
               <ImprovementRoadmap />
               <AchievementShowcase />
