@@ -156,7 +156,9 @@ serve(async (req) => {
     if (actualImageUrls && Array.isArray(actualImageUrls)) {
       console.log(`📸 Processing ${actualImageUrls.length} images`);
       
-      for (let i = 0; i < Math.min(actualImageUrls.length, 3); i++) {
+      // Process up to 5 images (Claude's practical limit)
+      const maxImages = Math.min(actualImageUrls.length, 5);
+      for (let i = 0; i < maxImages; i++) {
         const imageItem = actualImageUrls[i];
         let imageUrl = null;
         
