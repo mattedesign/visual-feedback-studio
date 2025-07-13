@@ -143,7 +143,7 @@ const GoblinStudio: React.FC = () => {
         </div>
 
         <Card className="border-0 shadow-sm bg-card">
-          <CardContent className="p-8 px-[20px] py-[16px]">
+          <CardContent className="p-8 px-0 py-0 bg-white">
             <div className="space-y-8">
               <div>
                 <Label className="text-base font-medium text-foreground mb-2 block">Analysis Title</Label>
@@ -162,11 +162,7 @@ const GoblinStudio: React.FC = () => {
 
               <div>
                 <Label className="text-base font-medium text-foreground mb-4 block">Upload Screenshots</Label>
-                <EnhancedImageUpload
-                  value={images}
-                  onChange={setImages}
-                  maxFiles={5}
-                />
+                <EnhancedImageUpload value={images} onChange={setImages} maxFiles={5} />
               </div>
 
           {/* Usage Limit Check */}
