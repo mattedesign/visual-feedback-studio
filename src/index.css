@@ -194,6 +194,15 @@
     width: 100% !important;
   }
 
+  /* Force full width for main container and children */
+  .min-h-screen.bg-white {
+    width: 100% !important;
+  }
+  
+  .min-h-screen.bg-white > div {
+    width: 100% !important;
+  }
+
   /* Text sizing improvements */
   .text-xl {
     font-size: 1.125rem !important;
