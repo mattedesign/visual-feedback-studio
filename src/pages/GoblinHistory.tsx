@@ -243,10 +243,6 @@ const GoblinHistory = () => {
                     {/* Overlay for better readability */}
                     <div className="absolute inset-0 bg-black/5 group-hover:bg-black/10 transition-colors duration-300" />
                     
-                    {/* Persona badge overlay */}
-                    <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-sm">
-                      <span className="text-lg">{getPersonaIcon(session.persona_type)}</span>
-                    </div>
                   </div>
 
                   {/* Content Area */}
@@ -255,7 +251,8 @@ const GoblinHistory = () => {
                       {session.title}
                     </h3>
                     
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mb-3">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
+                      <span className="text-sm">{getPersonaIcon(session.persona_type)}</span>
                       <span>{getPersonaLabel(session.persona_type)} Analysis</span>
                     </div>
 
