@@ -497,7 +497,7 @@ const GoblinResults: React.FC = () => {
       initialTotalImages={totalImages}
     >
       <div className="min-h-screen bg-white min-w-full" style={{ minWidth: '100%' }}>
-        <div className="flex flex-col items-start flex-1 self-stretch w-full mx-0 px-4 py-6">
+        <div className="flex flex-col items-start flex-1 self-stretch w-full mx-0 px-4 py-6 min-w-full" style={{ minWidth: '100%' }}>
           
            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'summary' | 'detailed' | 'maturity' | 'clarity')}>
             <TabsList className="sticky top-6 z-10 flex w-auto items-center gap-4 rounded-xl border border-gray-200 bg-gray-100 p-1 backdrop-blur-sm tabs-list-mobile" style={{ boxShadow: '0px 1px 1.9px 0px rgba(50, 50, 50, 0.10) inset' }}>
