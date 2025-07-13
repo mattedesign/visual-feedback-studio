@@ -7,6 +7,7 @@ export interface UserProfile {
   full_name: string | null;
   role: UserRole | null;
   onboarding_completed: boolean;
+  super_admin: boolean | null;
   created_at: string;
   updated_at: string;
 }

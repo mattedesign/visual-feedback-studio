@@ -1,98 +1,81 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings as SettingsIcon, User, Bell, Shield, Activity } from 'lucide-react';
-import { AnalysisHealthDashboard } from '@/components/analysis/AnalysisHealthDashboard';
-import { SystemHealthMonitor } from '@/components/monitoring/SystemHealthMonitor';
-import { SecurityDashboard } from '@/components/security/SecurityDashboard';
+import { User, Bell, Shield, Activity } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { ProfileSettings } from '@/components/settings/ProfileSettings';
+import { NotificationSettings } from '@/components/settings/NotificationSettings';
+import { PrivacySettings } from '@/components/settings/PrivacySettings';
+import { AdminHealthDashboard } from '@/components/settings/AdminHealthDashboard';
 
 const Settings = () => {
-  // Get tab from URL params
+  const { profile, loading } = useAuth();
   const searchParams = new URLSearchParams(window.location.search);
-  const defaultTab = searchParams.get('tab') || 'monitor';
+  const defaultTab = searchParams.get('tab') || 'profile';
+  
+  const isAdmin = profile?.super_admin || false;
+
+  // Define available tabs based on user role
+  const userTabs = [
+    { value: 'profile', label: 'Profile', icon: User },
+    { value: 'notifications', label: 'Notifications', icon: Bell },
+    { value: 'privacy', label: 'Privacy', icon: Shield }
+  ];
+
+  const adminTabs = [
+    ...userTabs,
+    { value: 'health', label: 'System Health', icon: Activity }
+  ];
+
+  const availableTabs = isAdmin ? adminTabs : userTabs;
+
+  if (loading) {
+    return (
+      <div className="p-6 max-w-6xl mx-auto">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-muted rounded w-48"></div>
+          <div className="h-4 bg-muted rounded w-96"></div>
+          <div className="h-12 bg-muted rounded"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
         <p className="text-muted-foreground mt-2">
-          Manage your account and monitor system health
+          Manage your account preferences{isAdmin && ' and monitor system health'}
         </p>
       </div>
 
       <Tabs defaultValue={defaultTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="privacy">Privacy</TabsTrigger>
-          <TabsTrigger value="health">Analysis Health</TabsTrigger>
-          <TabsTrigger value="monitor">System Monitor</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
+        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'}`}>
+          {availableTabs.map((tab) => (
+            <TabsTrigger key={tab.value} value={tab.value} className="flex items-center gap-2">
+              <tab.icon className="h-4 w-4" />
+              {tab.label}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         <TabsContent value="profile">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Profile Settings
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
-                Manage your profile information and preferences.
-              </p>
-              <Button variant="outline">Edit Profile</Button>
-            </CardContent>
-          </Card>
+          <ProfileSettings />
         </TabsContent>
 
         <TabsContent value="notifications">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                Notifications
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
-                Configure how you receive notifications about analysis results.
-              </p>
-              <Button variant="outline">Manage Notifications</Button>
-            </CardContent>
-          </Card>
+          <NotificationSettings />
         </TabsContent>
 
         <TabsContent value="privacy">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Privacy & Security
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
-                Control your privacy settings and security options.
-              </p>
-              <Button variant="outline">Privacy Settings</Button>
-            </CardContent>
-          </Card>
+          <PrivacySettings />
         </TabsContent>
 
-        <TabsContent value="health">
-          <AnalysisHealthDashboard />
-        </TabsContent>
-
-        <TabsContent value="monitor">
-          <SystemHealthMonitor />
-        </TabsContent>
-
-        <TabsContent value="security">
-          <SecurityDashboard />
-        </TabsContent>
+        {isAdmin && (
+          <TabsContent value="health">
+            <AdminHealthDashboard />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
