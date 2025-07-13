@@ -11,10 +11,10 @@ export default {
 	prefix: "",
 	theme: {
 		container: {
-			center: false,
-			padding: '0',
+			center: true,
+			padding: '2rem',
 			screens: {
-				'2xl': '100%'
+				'2xl': '1400px'
 			}
 		},
 		extend: {
