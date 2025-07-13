@@ -17,6 +17,7 @@ interface GoblinSession {
   status: string;
   created_at: string;
   updated_at: string;
+  thumbnail_image?: string; // Add thumbnail image field
 }
 
 interface MaturityScore {
@@ -40,18 +41,43 @@ const GoblinDashboard = () => {
     if (!user) return;
     try {
       setIsLoading(true);
-      const {
-        data,
-        error
-      } = await supabase.from('goblin_analysis_sessions').select('*').eq('user_id', user.id).order('created_at', {
-        ascending: false
-      });
-      if (error) {
-        console.error('Failed to load goblin sessions:', error);
+      
+      // Fetch sessions
+      const { data: sessionsData, error: sessionsError } = await supabase
+        .from('goblin_analysis_sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (sessionsError) {
+        console.error('Failed to load goblin sessions:', sessionsError);
         toast.error('Failed to load your goblin sessions');
-      } else {
-        setSessions(data || []);
+        return;
       }
+
+      // Fetch images for each session and add thumbnail
+      const sessionsWithThumbnails = await Promise.all(
+        (sessionsData || []).map(async (session) => {
+          try {
+            const { data: imagesData } = await supabase
+              .from('goblin_analysis_images')
+              .select('file_path')
+              .eq('session_id', session.id)
+              .order('upload_order', { ascending: true })
+              .limit(1);
+
+            return {
+              ...session,
+              thumbnail_image: imagesData?.[0]?.file_path || null
+            };
+          } catch (error) {
+            console.error('Error loading image for session:', session.id, error);
+            return session;
+          }
+        })
+      );
+
+      setSessions(sessionsWithThumbnails);
     } catch (error) {
       console.error('Error loading goblin sessions:', error);
       toast.error('Error loading goblin sessions');
@@ -287,14 +313,54 @@ const GoblinDashboard = () => {
                   onClick={() => handleViewSession(session.id)}
                 >
                   {/* Thumbnail/Visual Area */}
-                  <div className="aspect-[4/3] bg-gradient-to-br from-accent-warm to-accent-secondary p-6 flex items-center justify-center relative overflow-hidden">
-                    <div className="absolute inset-0 bg-black/5 group-hover:bg-black/10 transition-colors duration-300" />
-                    <div className="relative z-10 text-center">
-                      <div className="text-4xl mb-2">{getPersonaIcon(session.persona_type)}</div>
-                      <div className="text-sm font-medium text-professional-brown">
-                        {getPersonaLabel(session.persona_type)}
+                  <div className="aspect-[4/3] bg-gradient-to-br from-accent-warm to-accent-secondary relative overflow-hidden">
+                    {session.thumbnail_image ? (
+                      <>
+                        <img 
+                          src={session.thumbnail_image} 
+                          alt={session.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Fallback to persona icon if image fails to load
+                            const img = e.currentTarget;
+                            const container = img.closest('.aspect-\\[4\\/3\\]');
+                            if (container) {
+                              img.style.display = 'none';
+                              const fallback = container.querySelector('.fallback-content');
+                              if (fallback) {
+                                fallback.classList.remove('hidden');
+                              }
+                            }
+                          }}
+                        />
+                        <div className="fallback-content absolute inset-0 bg-gradient-to-br from-accent-warm to-accent-secondary p-6 flex items-center justify-center hidden">
+                          <div className="relative z-10 text-center">
+                            <div className="text-4xl mb-2">{getPersonaIcon(session.persona_type)}</div>
+                            <div className="text-sm font-medium text-professional-brown">
+                              {getPersonaLabel(session.persona_type)}
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-accent-warm to-accent-secondary p-6 flex items-center justify-center">
+                        <div className="relative z-10 text-center">
+                          <div className="text-4xl mb-2">{getPersonaIcon(session.persona_type)}</div>
+                          <div className="text-sm font-medium text-professional-brown">
+                            {getPersonaLabel(session.persona_type)}
+                          </div>
+                        </div>
                       </div>
+                    )}
+                    
+                    {/* Overlay for better readability */}
+                    <div className="absolute inset-0 bg-black/5 group-hover:bg-black/10 transition-colors duration-300" />
+                    
+                    {/* Persona badge overlay */}
+                    <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-sm">
+                      <span className="text-lg">{getPersonaIcon(session.persona_type)}</span>
                     </div>
+                    
                     <Badge 
                       className={`absolute top-3 right-3 ${getStatusColor(session.status)} border-0 shadow-sm`}
                     >
