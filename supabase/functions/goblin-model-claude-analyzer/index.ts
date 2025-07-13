@@ -656,7 +656,7 @@ RESPONSE REQUIREMENTS:
 - No additional text or explanations outside the JSON
 - ANALYZE THE ACTUAL UPLOADED INTERFACE: Focus on specific, observable problems
 - PROVIDE COORDINATE-BASED ANNOTATIONS: Include x,y coordinates for problem areas
-- GIVE ACTIONABLE SOLUTIONS: Specific fixes for each identified issue, not generic advice
+- GIVE SPECIFIC ACTIONABLE SOLUTIONS: For each annotation, include "problemStatement" (what's wrong), "solutionStatement" (specific fix), "implementationSteps" (how to implement), and "businessImpact" (why it matters). Avoid generic advice like "make it obvious" - provide concrete solutions like "Move button 20px left to align with form fields"
 
 Respond now with valid JSON only:`;
   }
