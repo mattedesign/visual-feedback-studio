@@ -78,24 +78,78 @@ const AnnotationDialog: React.FC<AnnotationDialogProps> = ({
         </DialogHeader>
         
         <div className="bg-purple-50 rounded-lg p-6 border-0">
-          <div className="annotation-content">
+          <div className="annotation-content space-y-4">
             {/* Problem Statement */}
-            <h4 className="font-semibold text-red-600 mb-2">
-              🚨 {annotation.problemStatement || annotation.description || annotation.feedback || annotationText}
-            </h4>
-            
-            {/* Solution Statement */}
-            {(annotation.solutionStatement || (annotation.description && annotation.problemStatement)) && (
-              <p className="text-green-600 mt-2 mb-3">
-                ✅ {annotation.solutionStatement || annotation.feedback}
-              </p>
+            {(annotation.problemStatement || annotation.problem || annotation.issue) && (
+              <div>
+                <h4 className="font-semibold text-red-600 mb-2 flex items-center gap-2">
+                  🚨 Problem Identified
+                </h4>
+                <p className="text-gray-800 bg-red-50 p-3 rounded border-l-4 border-red-400">
+                  {annotation.problemStatement || annotation.problem || annotation.issue}
+                </p>
+              </div>
             )}
             
-            {/* Fallback for legacy annotations without separate statements */}
-            {!annotation.problemStatement && !annotation.solutionStatement && (
-              <p className="text-gray-900 whitespace-pre-wrap leading-relaxed text-base">
-                {annotationText}
-              </p>
+            {/* Specific Solution */}
+            {(annotation.solutionStatement || annotation.solution || annotation.recommendation) && (
+              <div>
+                <h4 className="font-semibold text-green-600 mb-2 flex items-center gap-2">
+                  ✅ Specific Solution
+                </h4>
+                <p className="text-gray-800 bg-green-50 p-3 rounded border-l-4 border-green-400">
+                  {annotation.solutionStatement || annotation.solution || annotation.recommendation}
+                </p>
+              </div>
+            )}
+            
+            {/* Implementation Steps */}
+            {(annotation.implementationSteps || annotation.steps || annotation.howTo) && (
+              <div>
+                <h4 className="font-semibold text-blue-600 mb-2 flex items-center gap-2">
+                  🔧 How to Implement
+                </h4>
+                <div className="text-gray-800 bg-blue-50 p-3 rounded border-l-4 border-blue-400">
+                  {Array.isArray(annotation.implementationSteps || annotation.steps || annotation.howTo) ? (
+                    <ol className="list-decimal list-inside space-y-1">
+                      {(annotation.implementationSteps || annotation.steps || annotation.howTo).map((step: string, idx: number) => (
+                        <li key={idx}>{step}</li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <p>{annotation.implementationSteps || annotation.steps || annotation.howTo}</p>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {/* Business Impact */}
+            {(annotation.businessImpact || annotation.impact || annotation.why) && (
+              <div>
+                <h4 className="font-semibold text-purple-600 mb-2 flex items-center gap-2">
+                  📈 Business Impact
+                </h4>
+                <p className="text-gray-800 bg-purple-50 p-3 rounded border-l-4 border-purple-400">
+                  {annotation.businessImpact || annotation.impact || annotation.why}
+                </p>
+              </div>
+            )}
+            
+            {/* Fallback for legacy annotations without structured data */}
+            {!annotation.problemStatement && !annotation.problem && !annotation.issue && 
+             !annotation.solutionStatement && !annotation.solution && !annotation.recommendation && (
+              <div>
+                <h4 className="font-semibold text-gray-600 mb-2">📝 Feedback</h4>
+                <p className="text-gray-800 whitespace-pre-wrap leading-relaxed bg-gray-50 p-3 rounded">
+                  {annotationText}
+                </p>
+                <div className="mt-3 p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded">
+                  <p className="text-sm text-yellow-800">
+                    💡 <strong>Note:</strong> This annotation uses a legacy format. For more detailed, actionable insights, 
+                    try running a new analysis which will provide structured problem statements, specific solutions, and implementation steps.
+                  </p>
+                </div>
+              </div>
             )}
           </div>
         </div>
