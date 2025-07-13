@@ -120,9 +120,7 @@ export function AppSidebar({}: AppSidebarProps) {
               {mainNavItems.map(item => <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                      <NavLink to={item.url} className={getNavClassName(isActive(item.url))} end={item.url === '/'} onClick={handleNavClick}>
-                        <div className="flex items-center gap-2">
-                          <item.icon className="h-4 w-4 flex-shrink-0" />
-                        </div>
+                        <item.icon className="h-4 w-4 flex-shrink-0" />
                         {!collapsed && <>
                             <span className="flex-1 flex items-center gap-2">
                               {item.title}
@@ -145,9 +143,7 @@ export function AppSidebar({}: AppSidebarProps) {
                {bottomNavItems.map(item => <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                      <NavLink to={item.url} className={getNavClassName(isActive(item.url))} onClick={handleNavClick}>
-                         <div className="flex items-center gap-2">
-                           <item.icon className="h-4 w-4 flex-shrink-0" />
-                         </div>
+                         <item.icon className="h-4 w-4 flex-shrink-0" />
                          {!collapsed && <span className="flex-1 flex items-center gap-2">
                              {item.title}
                            </span>}
@@ -168,10 +164,10 @@ export function AppSidebar({}: AppSidebarProps) {
                 {!collapsed && isProfileOpen && <SidebarMenuSub>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton asChild>
-                        <button className={`w-full flex py-2 px-3 items-center gap-2 self-stretch rounded-xl transition-colors min-h-[36px] ${currentPath === '/settings' ? 'bg-white/80 text-[#5C3C90]' : 'text-muted-foreground hover:bg-[#EEE3FF] hover:text-[#5C3C90] focus:bg-[#EEE3FF] focus:text-[#5C3C90]'}`} onClick={() => navigate('/settings?tab=profile')}>
+                        <NavLink to="/settings?tab=profile" className={`w-full flex py-2 px-3 items-center gap-2 self-stretch rounded-xl transition-colors min-h-[36px] ${currentPath === '/settings' ? 'bg-white/80 text-[#5C3C90]' : 'text-muted-foreground hover:bg-[#EEE3FF] hover:text-[#5C3C90] focus:bg-[#EEE3FF] focus:text-[#5C3C90]'}`} onClick={handleNavClick}>
                           <User className="h-4 w-4" />
                           <span>View Profile</span>
-                        </button>
+                        </NavLink>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
