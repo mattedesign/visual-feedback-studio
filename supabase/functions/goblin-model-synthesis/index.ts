@@ -634,54 +634,76 @@ class AnnotationGenerator {
     // Enhanced recommendation analysis for problem + solution
     const enhancedFeedback = this.enhanceFeedbackWithSolution(recommendation, persona);
 
-    // Determine category and title from recommendation content
-    const categoryMapping = {
-      navigation: ['navigation', 'menu', 'nav', 'header', 'sidebar'],
-      conversion: ['button', 'cta', 'call-to-action', 'convert', 'sign up', 'buy', 'purchase'],
-      readability: ['content', 'text', 'hierarchy', 'typography', 'font', 'read'],
-      usability: ['flow', 'path', 'journey', 'user', 'ease', 'simple'],
-      interaction: ['feedback', 'response', 'click', 'hover', 'interaction'],
-      responsive: ['mobile', 'tablet', 'responsive', 'touch', 'device'],
-      performance: ['loading', 'speed', 'performance', 'wait', 'fast'],
-      validation: ['error', 'validation', 'form', 'mistake', 'prevent']
-    };
-
-    const fallbackTypes = [
-      { title: 'Navigation Issue', category: 'navigation' },
-      { title: 'Conversion Problem', category: 'conversion' },
-      { title: 'Content Clarity', category: 'readability' },
-      { title: 'Usability Issue', category: 'usability' },
-      { title: 'Interaction Problem', category: 'interaction' },
-      { title: 'Mobile Issue', category: 'responsive' },
-      { title: 'Performance Issue', category: 'performance' },
-      { title: 'Form Problem', category: 'validation' }
-    ];
-
-    // Detect category from recommendation content
-    let detectedCategory = 'usability';
-    let detectedTitle = 'UX Issue & Solution';
-    const recLower = recommendation.toLowerCase();
-
-    for (const [category, keywords] of Object.entries(categoryMapping)) {
-      if (keywords.some(keyword => recLower.includes(keyword))) {
-        detectedCategory = category;
-        detectedTitle = fallbackTypes.find(type => type.category === category)?.title || 'UX Issue';
-        break;
-      }
-    }
-
-    if (detectedCategory === 'usability' && !recLower.includes('user') && !recLower.includes('flow')) {
-      const fallbackType = fallbackTypes[index % fallbackTypes.length];
-      detectedCategory = fallbackType.category;
-      detectedTitle = fallbackType.title;
-    }
+    // ✅ FIXED: Intelligent content analysis instead of hardcoded categories
+    const { category, title } = this.analyzeRecommendationContext(recommendation, persona);
 
     return {
       id: `${persona}-annotation-${index + 1}`,
-      title: detectedTitle,
+      title: title,
       description: enhancedFeedback.problem || recommendation,
       feedback: enhancedFeedback.solution || `Specific solution for ${persona} persona`,
-      category: detectedCategory,
+      category: category,
+      x: position.x,
+      y: position.y,
+      width: 8,
+      height: 4,
+      image_index: imageIndex,
+      imageIndex: imageIndex,
+      persona,
+      priority: index < 2 ? 'high' : 'medium',
+      problemStatement: enhancedFeedback.problem,
+      solutionStatement: enhancedFeedback.solution
+    };
+  }
+
+  // ✅ NEW: Intelligent content analysis method
+  private analyzeRecommendationContext(recommendation: string, persona: string): { category: string, title: string } {
+    const recLower = recommendation.toLowerCase();
+    
+    // Analyze content for actual interface elements mentioned
+    if (recLower.includes('dashboard') || recLower.includes('metric') || recLower.includes('chart') || recLower.includes('data')) {
+      return { category: 'data-visualization', title: 'Dashboard Optimization' };
+    }
+    
+    if (recLower.includes('navigation') || recLower.includes('menu') || recLower.includes('sidebar')) {
+      return { category: 'navigation', title: 'Navigation Enhancement' };
+    }
+    
+    if (recLower.includes('hierarchy') || recLower.includes('visual') || recLower.includes('layout')) {
+      return { category: 'visual-hierarchy', title: 'Visual Hierarchy Issue' };
+    }
+    
+    if (recLower.includes('button') || recLower.includes('cta') || recLower.includes('action')) {
+      return { category: 'interaction', title: 'Interaction Design' };
+    }
+    
+    if (recLower.includes('content') || recLower.includes('text') || recLower.includes('readability')) {
+      return { category: 'content', title: 'Content Strategy' };
+    }
+    
+    // Fallback based on persona instead of random categories
+    const personaTitles = {
+      strategic: 'Strategic UX Issue',
+      clarity: 'Clarity Enhancement',
+      mirror: 'User Experience Reflection',
+      mad: 'Experimental Opportunity',
+      exec: 'Business Impact Issue'
+    };
+    
+    return { 
+      category: 'usability', 
+      title: personaTitles[persona as keyof typeof personaTitles] || 'UX Enhancement' 
+    };
+  }
+
+    const { category, title } = this.analyzeRecommendationContext(recommendation, persona);
+
+    return {
+      id: `${persona}-annotation-${index + 1}`,
+      title: title,
+      description: enhancedFeedback.problem || recommendation,
+      feedback: enhancedFeedback.solution || `Specific solution for ${persona} persona`,
+      category: category,
       x: position.x,
       y: position.y,
       width: 8,
@@ -743,44 +765,59 @@ class AnnotationGenerator {
   }
 
   private getClaritySolution(problem: string) {
-    const solutions = {
-      'navigation': 'Scrap the fancy menu - users need BIG, OBVIOUS links that scream where they go!',
-      'button': 'Make buttons IMPOSSIBLE to miss - bright colors, action words like "GET STARTED NOW!"',
-      'form': 'One damn field at a time! Clear labels, obvious errors, no clever BS',
-      'content': 'Write like you\'re texting a friend - short, snappy, get to the point!',
-      'search': 'Put the search box where people EXPECT it - top right, make it BIG',
-      'menu': 'Stop hiding your menu! Users shouldn\'t play hide-and-seek with navigation',
-      'flow': 'Kill the 47-step process - make it 3 steps MAX or users will bounce',
-      'modal': 'Dialogs should have ONE purpose and a GIANT close button',
-      'mobile': 'Thumbs are fat! Make touch targets HUGE and easy to hit',
-      'default': 'If your grandma can\'t use it in 5 seconds, it\'s broken!'
-    };
-
     const problemLower = problem.toLowerCase();
-    for (const [key, solution] of Object.entries(solutions)) {
-      if (problemLower.includes(key)) return solution;
+    
+    // ✅ FIXED: Context-aware Clarity solutions
+    if (problemLower.includes('dashboard') || problemLower.includes('metric')) {
+      return 'Make those numbers SCREAM what they mean! Big, bold metric cards with clear labels - no corporate jargon!';
     }
-    return solutions.default;
+    
+    if (problemLower.includes('navigation') || problemLower.includes('menu')) {
+      return 'Scrap the fancy menu - users need BIG, OBVIOUS links that scream where they go!';
+    }
+    
+    if (problemLower.includes('button') || problemLower.includes('action')) {
+      return 'Make buttons IMPOSSIBLE to miss - bright colors, action words like "GET STARTED NOW!"';
+    }
+    
+    if (problemLower.includes('data') || problemLower.includes('chart')) {
+      return 'Charts should tell a story in 3 seconds flat - label everything, use colors that make sense!';
+    }
+    
+    if (problemLower.includes('hierarchy') || problemLower.includes('layout')) {
+      return 'Stop hiding important stuff! Big headings, clear sections, obvious flow from top to bottom!';
+    }
+    
+    if (problemLower.includes('form') || problemLower.includes('input')) {
+      return 'One damn field at a time! Clear labels, obvious errors, no clever BS';
+    }
+    
+    // Clarity fallback
+    return 'Make it so obvious a goblin could use it while angry - clear, simple, no thinking required!';
   }
 
   private getStrategicSolution(problem: string) {
-    const solutions = {
-      'navigation': 'Redesign IA based on user journey analytics - map conversion paths to guide structure',
-      'conversion': 'A/B test strategic placement: above-fold CTAs show 47% higher conversion rates',
-      'onboarding': 'Build progressive disclosure system: 3-step activation drives 65% completion vs 8-step',
-      'mobile': 'Mobile-first approach: 70% of conversions happen on mobile, optimize accordingly',
-      'form': 'Implement smart forms with conditional logic to reduce abandonment by 40%',
-      'search': 'Add intelligent search with filters - drives 23% higher engagement per session',
-      'content': 'Apply content hierarchy based on user research - F-pattern scanning optimization',
-      'checkout': 'Streamline checkout funnel - every extra step costs 20% conversion rate',
-      'default': 'Apply behavioral design principles backed by user research and conversion data'
-    };
-
     const problemLower = problem.toLowerCase();
-    for (const [key, solution] of Object.entries(solutions)) {
-      if (problemLower.includes(key)) return solution;
+    
+    // ✅ FIXED: Context-aware solutions instead of generic templates
+    if (problemLower.includes('dashboard') || problemLower.includes('metric') || problemLower.includes('chart')) {
+      return 'Prioritize key metrics above fold - move high-impact data higher, add executive summary card for quick decisions';
     }
-    return solutions.default;
+    
+    if (problemLower.includes('navigation') || problemLower.includes('sidebar')) {
+      return 'Redesign information architecture based on user task flow - group related functions, reduce navigation depth';
+    }
+    
+    if (problemLower.includes('hierarchy') || problemLower.includes('visual')) {
+      return 'Apply strategic visual hierarchy - emphasize primary actions, de-emphasize secondary functions, guide attention to conversion points';
+    }
+    
+    if (problemLower.includes('data') || problemLower.includes('information')) {
+      return 'Implement progressive disclosure - show summary first, detailed data on demand, optimize for executive decision-making';
+    }
+    
+    // Context-aware fallback
+    return 'Apply strategic UX principles based on business objectives and user research insights';
   }
 
   private getMirrorSolution(problem: string) {
