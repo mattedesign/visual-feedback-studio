@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, AlertTriangle, Rocket } from 'lucide-react';
 import { useNavigation } from '@/contexts/NavigationContext';
+import { MentorGuidanceCard } from './results/MentorGuidanceCard';
 interface SummaryViewProps {
   results: any;
   session: any;
@@ -769,6 +770,15 @@ const SummaryView: React.FC<SummaryViewProps> = ({
           {renderPersonaSpecificContent(personaData, session?.persona_type, results?.synthesis_summary)}
         </CardContent>
       </Card>
+
+      {/* Goblin Mentor Section - Add after main analysis results */}
+      <MentorGuidanceCard
+        sessionId={session.id}
+        persona={session.persona_type}
+        mentorGuidance={session.mentor_guidance}
+        redesignHtml={session.redesign_html}
+        className="mt-6"
+      />
 
       {/* Recommendations - Persona-specific rendering */}
       <Card className="border-0 shadow-sm bg-card">
