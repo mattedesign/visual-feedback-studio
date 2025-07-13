@@ -187,7 +187,7 @@ const GoblinDashboard = () => {
         <UsageLimitPrompt className="mb-8" />
 
         {/* Quick Stats */}
-        <div className="flex gap-6 mb-12 w-full">
+        <div className="flex flex-col md:flex-row gap-6 mb-12 w-full">
           <Card className="flex-1 border-0 shadow-sm bg-card">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
