@@ -110,6 +110,7 @@ serve(async (req) => {
 
   try {
     const requestData: SynthesisRequest = await req.json();
+    console.error('🔴 DEBUG_GOBLIN: Synthesis request invalid', requestData);
     
     console.log('🧪 Synthesizing results for:', {
       sessionId: requestData.sessionId?.substring(0, 8),

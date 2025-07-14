@@ -514,32 +514,39 @@ serve(async (req) => {
 
     // Step 6: Save final results with transaction-like behavior
     try {
-      await supabase
+      const resultData = {
+        session_id: sessionId,
+        persona_feedback: synthesisResult.data.personaFeedback,
+        synthesis_summary: synthesisResult.data.summary,
+        priority_matrix: synthesisResult.data.priorityMatrix,
+        annotations: synthesisResult.data.annotations,
+        model_metadata: {
+          model: modelUsed,
+          persona,
+          confidence,
+          processedAt: new Date().toISOString(),
+          orchestratorVersion: '2.1',
+          processingTimeMs: Date.now() - startTime,
+          fallbackUsed,
+          maturityData: synthesisResult.data.maturityData,
+          circuitBreakerStatus: {
+            claude: isCircuitOpen('goblin-model-claude-analyzer'),
+            gpt: isCircuitOpen('goblin-model-gpt-analyzer'),
+            vision: isCircuitOpen('goblin-vision-screen-detector')
+          }
+        },
+        processing_time_ms: Date.now() - startTime,
+        goblin_gripe_level: persona === 'clarity' ? synthesisResult.data.gripeLevel : null
+      };
+      
+      const dbResult = await supabase
         .from('goblin_analysis_results')
-        .insert({
-          session_id: sessionId,
-          persona_feedback: synthesisResult.data.personaFeedback,
-          synthesis_summary: synthesisResult.data.summary,
-          priority_matrix: synthesisResult.data.priorityMatrix,
-          annotations: synthesisResult.data.annotations,
-          model_metadata: {
-            model: modelUsed,
-            persona,
-            confidence,
-            processedAt: new Date().toISOString(),
-            orchestratorVersion: '2.1',
-            processingTimeMs: Date.now() - startTime,
-            fallbackUsed,
-            maturityData: synthesisResult.data.maturityData, // ✅ Include maturity data
-            circuitBreakerStatus: {
-              claude: isCircuitOpen('goblin-model-claude-analyzer'),
-              gpt: isCircuitOpen('goblin-model-gpt-analyzer'),
-              vision: isCircuitOpen('goblin-vision-screen-detector')
-            }
-          },
-          processing_time_ms: Date.now() - startTime,
-          goblin_gripe_level: persona === 'clarity' ? synthesisResult.data.gripeLevel : null
-        });
+        .insert(resultData);
+        
+      if (dbResult.error) {
+        console.error('🔴 DEBUG_GOBLIN: DB save failed', dbResult.error, resultData);
+        throw dbResult.error;
+      }
 
       // Update session to completed
       await supabase
@@ -587,6 +594,7 @@ serve(async (req) => {
 
   } catch (error) {
     const totalTime = Date.now() - startTime;
+    console.error('🔴 DEBUG_GOBLIN: Orchestrator failed', error);
     console.error('❌ Goblin orchestration failed:', {
       error: error.message,
       stack: error.stack,
