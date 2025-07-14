@@ -659,36 +659,38 @@ class AnnotationGenerator {
   }
 
   private expandRecommendations(recommendations: any[], targetCount: number): any[] {
-    // ✅ FIXED: Generate unique, image-specific annotations instead of repeating the same ones
-    const expanded = [];
+    // ✅ PRIORITIZE CLAUDE'S DETAILED ISSUES: Use original recommendations without generic variations
+    console.log('🎯 expandRecommendations input:', recommendations.length, 'target:', targetCount);
     
-    // If we have enough unique recommendations, use them directly
-    if (recommendations.length >= targetCount) {
-      return recommendations.slice(0, targetCount);
+    // Log the first recommendation to understand the data structure
+    if (recommendations.length > 0) {
+      console.log('📊 First recommendation structure:', {
+        type: typeof recommendations[0],
+        hasSuggestedFix: !!recommendations[0]?.suggested_fix,
+        hasDescription: !!recommendations[0]?.description,
+        keys: recommendations[0] && typeof recommendations[0] === 'object' ? Object.keys(recommendations[0]) : 'not object'
+      });
     }
     
-    // If we need more annotations, create variations instead of exact duplicates
+    // If we have enough unique recommendations with detailed data, use them directly
+    if (recommendations.length >= targetCount) {
+      const selected = recommendations.slice(0, targetCount);
+      console.log('✅ Using', selected.length, 'original detailed recommendations');
+      return selected;
+    }
+    
+    // If we need more annotations, prefer reusing detailed recommendations over creating generic ones
+    const expanded = [];
     for (let i = 0; i < targetCount; i++) {
       const baseRecIndex = i % recommendations.length;
       const baseRecommendation = recommendations[baseRecIndex];
       
-      // For repeated recommendations, add context to make them unique per image
-      if (i >= recommendations.length) {
-        // Handle both string and object recommendations
-        if (typeof baseRecommendation === 'object' && baseRecommendation.suggested_fix) {
-          // For object recommendations, create variations of the suggested_fix
-          const variatedRec = { ...baseRecommendation };
-          variatedRec.suggested_fix = this.getImageContextVariation(baseRecommendation.suggested_fix, Math.floor(i / recommendations.length));
-          expanded.push(variatedRec);
-        } else {
-          const recText = typeof baseRecommendation === 'string' ? baseRecommendation : baseRecommendation.description || 'UX improvement needed';
-          const imageContext = this.getImageContextVariation(recText, Math.floor(i / recommendations.length));
-          expanded.push(imageContext);
-        }
-      } else {
-        expanded.push(baseRecommendation);
-      }
+      // Always use the original recommendation to preserve Claude's detailed analysis
+      expanded.push(baseRecommendation);
     }
+    
+    console.log('✅ expandRecommendations result:', expanded.length, 'annotations, with detailed issues:', 
+      expanded.filter(r => r?.suggested_fix).length);
     return expanded;
   }
 
@@ -708,7 +710,13 @@ class AnnotationGenerator {
     const positionInImage = Math.floor(index / imageCount);
     const position = SYNTHESIS_CONFIG.annotations.positions[positionInImage % SYNTHESIS_CONFIG.annotations.positions.length];
 
-    console.log('🎯 Creating annotation from:', typeof recommendation, recommendation.suggested_fix ? 'with suggested_fix' : 'basic format');
+    console.log('🎯 Creating annotation #' + index + ' from:', {
+      type: typeof recommendation,
+      hasSuggestedFix: !!recommendation.suggested_fix,
+      suggestedFixPreview: recommendation.suggested_fix?.substring(0, 100),
+      hasDescription: !!recommendation.description,
+      descriptionPreview: recommendation.description?.substring(0, 50)
+    });
 
     // Enhanced recommendation analysis for problem + solution
     const enhancedFeedback = this.enhanceFeedbackWithSolution(recommendation, persona);
@@ -805,12 +813,12 @@ class AnnotationGenerator {
   private enhanceFeedbackWithSolution(recommendation: any, persona: string) {
     console.log('🔍 enhanceFeedbackWithSolution input:', typeof recommendation, Object.keys(recommendation || {}));
 
-    // PRIORITY 1: Use Claude's suggested_fix if available
+    // PRIORITY 1: Use Claude's suggested_fix if available - this is the detailed analysis we want!
     if (typeof recommendation === 'object' && recommendation.suggested_fix) {
-      console.log('✅ Using Claude suggested_fix:', recommendation.suggested_fix.substring(0, 100));
+      console.log('✅ Using Claude suggested_fix from detailed analysis:', recommendation.suggested_fix.substring(0, 100));
       return {
         problem: recommendation.description || recommendation.problem || recommendation.problemStatement || 'Interface issue detected',
-        solution: recommendation.suggested_fix // Direct from Claude analysis
+        solution: recommendation.suggested_fix // Direct from Claude's detailed analysis - this is the key fix!
       };
     }
 
@@ -861,10 +869,11 @@ class AnnotationGenerator {
       }
     }
 
-    // Last resort: use the text as problem and generate basic solution
+    // Last resort: use the text as problem and avoid generic solutions
+    console.log('⚠️ FALLBACK TO GENERIC: No Claude suggested_fix found, using generic solution');
     return {
       problem: recommendationText.trim(),
-      solution: `Improve this ${persona === 'clarity' ? 'for better user understanding' : 'based on ' + persona + ' principles'}`
+      solution: `Apply specific ${persona} persona improvements to address this issue`
     };
   }
 
