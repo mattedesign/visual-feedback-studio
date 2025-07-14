@@ -287,6 +287,13 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
     // Prioritize persona annotations, but include legacy ones if no persona annotations exist
     return personaAnnotations.length > 0 ? personaAnnotations : legacyAnnotations;
   }, [results?.persona_feedback, results?.annotations, session?.persona_type]);
+
+  // Just add this logging to verify annotations are coming through
+  console.log('📊 DetailedModeView annotations:', {
+    annotationCount: allAnnotations.length,
+    sampleAnnotation: allAnnotations[0],
+    annotationTitles: allAnnotations.map(a => a.title || a.feedback?.substring(0, 30))
+  });
   
   console.log('📊 Annotation extraction summary:', {
     totalUsed: allAnnotations.length,

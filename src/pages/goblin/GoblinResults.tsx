@@ -374,6 +374,105 @@ const GoblinResults: React.FC = () => {
     recommendations: personaData.recommendations
   });
 
+  // ✅ SIMPLE FIX: Add this after your existing persona data extraction
+  useEffect(() => {
+    if (results?.persona_feedback && session?.persona_type) {
+      console.log('🔧 Extracting annotations from parsed persona data');
+      
+      try {
+        // Use your existing extraction logic (the one that works)
+        const personaData = extractPersonaData(
+          results.persona_feedback, 
+          session.persona_type, 
+          results?.synthesis_summary || ''
+        );
+        
+        // NEW: Extract annotations from the parsed data
+        const extractedAnnotations = extractAnnotationsFromPersonaData(personaData, session.persona_type);
+        
+        if (extractedAnnotations.length > 0) {
+          console.log('✅ Extracted annotations:', extractedAnnotations.length);
+          
+          // Update results with extracted annotations
+          setResults(prev => ({
+            ...prev,
+            annotations: extractedAnnotations
+          }));
+        }
+      } catch (error) {
+        console.error('🚨 Annotation extraction error:', error);
+      }
+    }
+  }, [results?.persona_feedback, session?.persona_type]);
+
+  // NEW: Simple annotation extraction function
+  const extractAnnotationsFromPersonaData = (personaData: any, personaType: string) => {
+    const annotations = [];
+    
+    console.log('🔍 Looking for annotations in persona data:', personaData);
+    
+    // Strategy 1: Direct annotations array (if Claude provided it)
+    if (personaData?.annotations && Array.isArray(personaData.annotations)) {
+      console.log('✅ Found direct annotations array');
+      personaData.annotations.forEach((ann, index) => {
+        annotations.push({
+          id: `${personaType}_${index}`,
+          x: Number(ann.x) || 50,
+          y: Number(ann.y) || 30 + (index * 20),
+          category: ann.category || 'ux',
+          severity: ann.severity || 'suggested',
+          feedback: ann.description || ann.title || ann.feedback || 'UX insight available',
+          title: ann.title || `${personaType} Issue ${index + 1}`,
+          description: ann.description || ann.solution || 'See detailed analysis',
+          implementationEffort: 'medium',
+          businessImpact: 'medium',
+          imageIndex: 0
+        });
+      });
+    }
+    
+    // Strategy 2: Issues array (convert to annotations)
+    if (personaData?.issues && Array.isArray(personaData.issues)) {
+      console.log('✅ Found issues array, converting to annotations');
+      personaData.issues.forEach((issue, index) => {
+        annotations.push({
+          id: `${personaType}_issue_${index}`,
+          x: 30 + (index % 3) * 30,
+          y: 25 + Math.floor(index / 3) * 25,
+          category: issue.type || 'ux',
+          severity: issue.priority === 'high' ? 'critical' : 'suggested',
+          feedback: issue.description || 'UX improvement needed',
+          title: issue.description?.split('.')[0] || `${personaType} Issue ${index + 1}`,
+          description: issue.suggested_fix || issue.impact || 'Improvement recommended',
+          implementationEffort: 'medium',
+          businessImpact: 'medium',
+          imageIndex: 0
+        });
+      });
+    }
+    
+    // Strategy 3: Analysis text (create summary annotation)
+    if (annotations.length === 0 && personaData?.analysis) {
+      console.log('✅ Creating annotation from analysis text');
+      annotations.push({
+        id: `${personaType}_analysis`,
+        x: 50,
+        y: 30,
+        category: 'ux',
+        severity: 'suggested',
+        feedback: personaData.analysis.substring(0, 100) + '...',
+        title: `${personaType} Analysis Available`,
+        description: 'Click to view detailed analysis in Summary tab',
+        implementationEffort: 'medium',
+        businessImpact: 'medium',
+        imageIndex: 0
+      });
+    }
+    
+    console.log(`🎯 Extracted ${annotations.length} annotations for ${personaType}`);
+    return annotations;
+  };
+
   // Extract total images count from analysis data and update navigation context
   useEffect(() => {
     if (results && personaData) {
