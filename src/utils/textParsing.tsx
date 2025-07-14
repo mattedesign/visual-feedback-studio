@@ -115,9 +115,9 @@ export function ParsedText({ children, className }: ParsedTextProps) {
         >
           <span className={className}>
             {parsedParts.map((part, index) => (
-              <React.Fragment key={`parsed-text-fragment-${index}-${typeof part === 'string' ? part.slice(0, 10) : 'component'}`}>
+              <span key={`parsed-text-fragment-${index}-${typeof part === 'string' ? part.slice(0, 10) : 'component'}`}>
                 {part}
-              </React.Fragment>
+              </span>
             ))}
           </span>
         </TextParsingErrorBoundary>
@@ -132,9 +132,9 @@ export function ParsedText({ children, className }: ParsedTextProps) {
       >
         <>
           {parsedParts.map((part, index) => (
-            <React.Fragment key={`parsed-text-pure-fragment-${index}-${typeof part === 'string' ? part.slice(0, 10) : 'component'}`}>
+            <span key={`parsed-text-pure-fragment-${index}-${typeof part === 'string' ? part.slice(0, 10) : 'component'}`}>
               {part}
-            </React.Fragment>
+            </span>
           ))}
         </>
       </TextParsingErrorBoundary>

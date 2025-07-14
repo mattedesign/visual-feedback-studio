@@ -21,7 +21,7 @@ import { MaturityScoreDashboard } from '@/components/goblin/maturity/MaturitySco
 import { ImprovementRoadmap } from '@/components/goblin/maturity/ImprovementRoadmap';
 import { AchievementShowcase } from '@/components/goblin/maturity/AchievementShowcase';
 
-// Type definition for persona data
+// Type definition for persona data with enhanced fields
 interface PersonaData {
   analysis?: string;
   recommendations?: string[];
@@ -31,6 +31,16 @@ interface PersonaData {
   goblinPrediction?: string;
   wildCard?: string;
   experiments?: string[];
+  // Enhanced fields from bullet-proof prompt
+  issues?: Array<{
+    id: string;
+    type: string;
+    description: string;
+    impact: string;
+    priority: 'high' | 'medium' | 'low';
+    suggested_fix: string;
+  }>;
+  top_fix_summary?: string[];
   // Strategic persona specific fields
   businessImpact?: string;
   implementation?: string;
