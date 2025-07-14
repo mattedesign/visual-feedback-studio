@@ -41,38 +41,114 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
   
   const currentImage = images[currentImageIndex];
   
-  // Enhanced annotation extraction: prioritize new issues format over legacy annotations
+  // Enhanced annotation extraction: prioritize Claude's detailed analysis from persona_feedback
   const extractAnnotationsFromPersonaData = () => {
     const personaFeedback = results?.persona_feedback;
     const personaType = session?.persona_type || 'strategic';
     
-    if (!personaFeedback) return [];
+    console.log('🔍 extractAnnotationsFromPersonaData debug:', {
+      hasPersonaFeedback: !!personaFeedback,
+      personaType,
+      personaFeedbackKeys: personaFeedback ? Object.keys(personaFeedback) : [],
+      personaSpecificData: personaFeedback?.[personaType] ? Object.keys(personaFeedback[personaType]) : []
+    });
+    
+    if (!personaFeedback) {
+      console.log('❌ No persona feedback found');
+      return [];
+    }
     
     // Get the persona-specific data
     const personaData = personaFeedback[personaType] || personaFeedback;
     
-    // Check for new format with issues array
-    if (personaData?.issues && Array.isArray(personaData.issues)) {
-      console.log('🎯 Using new issues format with suggested_fix fields');
-      return personaData.issues.map((issue: any, index: number) => ({
-        id: issue.id || `issue-${index}`,
-        title: issue.type?.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || 'UX Issue',
-        description: issue.description,
-        suggested_fix: issue.suggested_fix,
-        priority: issue.priority,
-        category: issue.type,
-        x: 20 + (index % 3) * 30, // Spread annotations across the image
-        y: 20 + Math.floor(index / 3) * 25,
-        width: 8,
-        height: 4,
-        image_index: Math.floor(index / 2), // Distribute across images
-        imageIndex: Math.floor(index / 2)
-      }));
+    console.log('🔍 Persona data structure:', {
+      hasPersonaData: !!personaData,
+      personaDataKeys: personaData ? Object.keys(personaData) : [],
+      hasIssues: !!personaData?.issues,
+      issuesType: personaData?.issues ? typeof personaData.issues : 'undefined',
+      issuesLength: Array.isArray(personaData?.issues) ? personaData.issues.length : 'not array',
+      hasRecommendations: !!personaData?.recommendations,
+      recommendationsType: personaData?.recommendations ? typeof personaData.recommendations : 'undefined',
+      recommendationsLength: Array.isArray(personaData?.recommendations) ? personaData.recommendations.length : 'not array'
+    });
+    
+    // PRIORITY 1: Check for issues array with Claude's detailed analysis
+    if (personaData?.issues && Array.isArray(personaData.issues) && personaData.issues.length > 0) {
+      console.log('✅ Using Claude issues array with detailed analysis:', personaData.issues.length, 'issues');
+      const annotations = personaData.issues.map((issue: any, index: number) => {
+        console.log(`🎯 Processing issue ${index}:`, {
+          id: issue.id,
+          type: issue.type,
+          description: issue.description?.substring(0, 100),
+          suggested_fix: issue.suggested_fix?.substring(0, 100),
+          priority: issue.priority
+        });
+        
+        return {
+          id: issue.id || `claude-issue-${index}`,
+          title: issue.type?.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || 'UX Issue',
+          description: issue.description || 'Interface issue detected',
+          feedback: issue.suggested_fix || issue.description || 'Improvement recommended',
+          suggested_fix: issue.suggested_fix,
+          priority: issue.priority || 'medium',
+          category: issue.type || 'general',
+          x: 20 + (index % 3) * 30, // Spread annotations across the image
+          y: 20 + Math.floor(index / 3) * 25,
+          width: 8,
+          height: 4,
+          image_index: Math.floor(index / 2), // Distribute across images
+          imageIndex: Math.floor(index / 2)
+        };
+      });
+      
+      console.log('✅ Generated', annotations.length, 'annotations from Claude issues');
+      return annotations;
     }
     
-    // Check for annotations in persona data
-    if (personaData?.annotations && Array.isArray(personaData.annotations)) {
-      console.log('🎯 Using persona-specific annotations');
+    // PRIORITY 2: Check for recommendations array with detailed data
+    if (personaData?.recommendations && Array.isArray(personaData.recommendations) && personaData.recommendations.length > 0) {
+      console.log('✅ Using persona recommendations array:', personaData.recommendations.length, 'recommendations');
+      
+      // Filter and process recommendations that have detailed structure
+      const detailedRecommendations = personaData.recommendations.filter((rec: any) => 
+        typeof rec === 'object' && (rec.description || rec.suggested_fix || rec.problem)
+      );
+      
+      if (detailedRecommendations.length > 0) {
+        console.log('✅ Found', detailedRecommendations.length, 'detailed recommendations');
+        const annotations = detailedRecommendations.map((rec: any, index: number) => {
+          console.log(`🎯 Processing recommendation ${index}:`, {
+            type: typeof rec,
+            description: rec.description?.substring(0, 100),
+            suggested_fix: rec.suggested_fix?.substring(0, 100),
+            problem: rec.problem?.substring(0, 100)
+          });
+          
+          return {
+            id: rec.id || `claude-rec-${index}`,
+            title: rec.title || rec.type?.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || 'UX Recommendation',
+            description: rec.description || rec.problem || 'UX improvement needed',
+            feedback: rec.suggested_fix || rec.solution || rec.impact || 'Apply recommended improvements',
+            suggested_fix: rec.suggested_fix,
+            priority: rec.priority || 'medium',
+            category: rec.category || rec.type || 'general',
+            x: 20 + (index % 3) * 30,
+            y: 20 + Math.floor(index / 3) * 25,
+            width: 8,
+            height: 4,
+            image_index: Math.floor(index / 2),
+            imageIndex: Math.floor(index / 2)
+          };
+        });
+        
+        console.log('✅ Generated', annotations.length, 'annotations from detailed recommendations');
+        return annotations;
+      }
+    }
+    
+    // PRIORITY 3: Check for pre-generated annotations in persona data
+    if (personaData?.annotations && Array.isArray(personaData.annotations) && personaData.annotations.length > 0) {
+      console.log('✅ Using pre-generated persona annotations:', personaData.annotations.length);
       return personaData.annotations.map((ann: any, index: number) => ({
         ...ann,
         id: ann.id || `persona-ann-${index}`,
@@ -81,6 +157,18 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
       }));
     }
     
+    // PRIORITY 4: Check the root annotations data structure
+    if (results?.annotations && Array.isArray(results.annotations) && results.annotations.length > 0) {
+      console.log('⚠️ Using root-level annotations as fallback:', results.annotations.length);
+      return results.annotations.map((ann: any, index: number) => ({
+        ...ann,
+        id: ann.id || `root-ann-${index}`,
+        image_index: ann.image_index !== undefined ? ann.image_index : Math.floor(index / 2),
+        imageIndex: ann.imageIndex !== undefined ? ann.imageIndex : Math.floor(index / 2)
+      }));
+    }
+    
+    console.log('❌ No Claude detailed analysis found in any expected data structure');
     return [];
   };
   
