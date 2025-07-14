@@ -639,11 +639,13 @@ class SummaryGenerator {
 // ============================================================================
 
 class AnnotationGenerator {
-  generate(recommendations: string[], persona: string, imageCount: number = 1): Annotation[] {
+  generate(recommendations: any[], persona: string, imageCount: number = 1): Annotation[] {
     const targetAnnotationCount = Math.min(
       imageCount * SYNTHESIS_CONFIG.annotations.minPerImage, 
       SYNTHESIS_CONFIG.annotations.maxTotal
     );
+    
+    console.log('🎯 AnnotationGenerator received:', recommendations.length, 'items, first item type:', typeof recommendations[0]);
     
     const availableRecs = recommendations.length > 0 
       ? recommendations 
@@ -656,7 +658,7 @@ class AnnotationGenerator {
     );
   }
 
-  private expandRecommendations(recommendations: string[], targetCount: number): string[] {
+  private expandRecommendations(recommendations: any[], targetCount: number): any[] {
     // ✅ FIXED: Generate unique, image-specific annotations instead of repeating the same ones
     const expanded = [];
     
@@ -672,8 +674,17 @@ class AnnotationGenerator {
       
       // For repeated recommendations, add context to make them unique per image
       if (i >= recommendations.length) {
-        const imageContext = this.getImageContextVariation(baseRecommendation, Math.floor(i / recommendations.length));
-        expanded.push(imageContext);
+        // Handle both string and object recommendations
+        if (typeof baseRecommendation === 'object' && baseRecommendation.suggested_fix) {
+          // For object recommendations, create variations of the suggested_fix
+          const variatedRec = { ...baseRecommendation };
+          variatedRec.suggested_fix = this.getImageContextVariation(baseRecommendation.suggested_fix, Math.floor(i / recommendations.length));
+          expanded.push(variatedRec);
+        } else {
+          const recText = typeof baseRecommendation === 'string' ? baseRecommendation : baseRecommendation.description || 'UX improvement needed';
+          const imageContext = this.getImageContextVariation(recText, Math.floor(i / recommendations.length));
+          expanded.push(imageContext);
+        }
       } else {
         expanded.push(baseRecommendation);
       }
@@ -692,16 +703,20 @@ class AnnotationGenerator {
     return variations[variationIndex % variations.length];
   }
 
-  private createAnnotation(recommendation: string, index: number, persona: string, imageCount: number): Annotation {
+  private createAnnotation(recommendation: any, index: number, persona: string, imageCount: number): Annotation {
     const imageIndex = index % imageCount;
     const positionInImage = Math.floor(index / imageCount);
     const position = SYNTHESIS_CONFIG.annotations.positions[positionInImage % SYNTHESIS_CONFIG.annotations.positions.length];
 
+    console.log('🎯 Creating annotation from:', typeof recommendation, recommendation.suggested_fix ? 'with suggested_fix' : 'basic format');
+
     // Enhanced recommendation analysis for problem + solution
     const enhancedFeedback = this.enhanceFeedbackWithSolution(recommendation, persona);
 
-    // ✅ FIXED: Intelligent content analysis instead of hardcoded categories
-    const { category, title } = this.analyzeRecommendationContext(recommendation, persona);
+    // ✅ FIXED: Intelligent content analysis instead of hardcoded categories  
+    const recommendationText = typeof recommendation === 'string' ? recommendation : 
+                              (recommendation?.description || recommendation?.problemStatement || 'UX improvement needed');
+    const { category, title } = this.analyzeRecommendationContext(recommendationText, persona);
 
     // ✅ ENHANCED: Make annotations more specific to their image context
     const imageSpecificContext = this.addImageContext(enhancedFeedback, imageIndex, imageCount);
