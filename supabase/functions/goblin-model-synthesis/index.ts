@@ -794,9 +794,9 @@ class AnnotationGenerator {
       problemStatement: imageSpecificContext.problem,
       solutionStatement: imageSpecificContext.solution,
       // Preserve detailed content for frontend display
-      suggested_fix: rec.suggested_fix || imageSpecificContext.solution,
-      impact: rec.impact || `Affects ${persona} user experience`,
-      type: rec.type || category
+      suggested_fix: recommendation.suggested_fix || imageSpecificContext.solution,
+      impact: recommendation.impact || `Affects ${persona} user experience`,
+      type: recommendation.type || category
     };
   }
 
