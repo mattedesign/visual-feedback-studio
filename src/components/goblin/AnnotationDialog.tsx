@@ -60,17 +60,17 @@ const AnnotationDialog: React.FC<AnnotationDialogProps> = ({
             </DialogClose>
           </div>
           
-          <div className="flex items-center gap-2 pt-3">
+            <div className="flex items-center gap-2 pt-3">
             <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-0 rounded-full px-3 py-1">
               {persona}
             </Badge>
-            {annotation.priority && (
-              <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-0 rounded-full px-3 py-1">
-                {annotation.priority} priority
+            {annotation.impact && (
+              <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-0 rounded-full px-3 py-1">
+                {annotation.impact}
               </Badge>
             )}
             {annotation.category && (
-              <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-0 rounded-full px-3 py-1">
+              <Badge className="bg-gray-100 text-gray-700 hover:bg-gray-100 border-0 rounded-full px-3 py-1">
                 {annotation.category}
               </Badge>
             )}

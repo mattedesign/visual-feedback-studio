@@ -800,12 +800,14 @@ const SummaryView: React.FC<SummaryViewProps> = ({
                       <h5 className="font-medium text-slate-900 dark:text-slate-100">
                         {issue.type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} Issue
                       </h5>
-                      <Badge 
-                        variant={issue.priority === 'high' ? 'destructive' : issue.priority === 'medium' ? 'default' : 'secondary'}
-                        className="text-xs"
-                      >
-                        {issue.priority}
-                      </Badge>
+                      {issue.impact && (
+                        <Badge 
+                          variant="secondary"
+                          className="text-xs"
+                        >
+                          {issue.impact}
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-sm text-slate-600 dark:text-slate-300 mb-3">
                       <ParsedText>{issue.description}</ParsedText>

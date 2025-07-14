@@ -37,7 +37,6 @@ interface PersonaData {
     type: string;
     description: string;
     impact: string;
-    priority: 'high' | 'medium' | 'low';
     suggested_fix: string;
   }>;
   top_fix_summary?: string[];
