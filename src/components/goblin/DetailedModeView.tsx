@@ -40,8 +40,63 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
   }, [currentImageIndex, setNavigationImageIndex]);
   
   const currentImage = images[currentImageIndex];
-  // Filter annotations by current image
-  const allAnnotations = results?.annotations || [];
+  
+  // Enhanced annotation extraction: prioritize new issues format over legacy annotations
+  const extractAnnotationsFromPersonaData = () => {
+    const personaFeedback = results?.persona_feedback;
+    const personaType = session?.persona_type || 'strategic';
+    
+    if (!personaFeedback) return [];
+    
+    // Get the persona-specific data
+    const personaData = personaFeedback[personaType] || personaFeedback;
+    
+    // Check for new format with issues array
+    if (personaData?.issues && Array.isArray(personaData.issues)) {
+      console.log('🎯 Using new issues format with suggested_fix fields');
+      return personaData.issues.map((issue: any, index: number) => ({
+        id: issue.id || `issue-${index}`,
+        title: issue.type?.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || 'UX Issue',
+        description: issue.description,
+        suggested_fix: issue.suggested_fix,
+        priority: issue.priority,
+        category: issue.type,
+        x: 20 + (index % 3) * 30, // Spread annotations across the image
+        y: 20 + Math.floor(index / 3) * 25,
+        width: 8,
+        height: 4,
+        image_index: Math.floor(index / 2), // Distribute across images
+        imageIndex: Math.floor(index / 2)
+      }));
+    }
+    
+    // Check for annotations in persona data
+    if (personaData?.annotations && Array.isArray(personaData.annotations)) {
+      console.log('🎯 Using persona-specific annotations');
+      return personaData.annotations.map((ann: any, index: number) => ({
+        ...ann,
+        id: ann.id || `persona-ann-${index}`,
+        image_index: ann.image_index !== undefined ? ann.image_index : Math.floor(index / 2),
+        imageIndex: ann.imageIndex !== undefined ? ann.imageIndex : Math.floor(index / 2)
+      }));
+    }
+    
+    return [];
+  };
+  
+  // Combine new persona-based annotations with legacy annotations
+  const personaAnnotations = extractAnnotationsFromPersonaData();
+  const legacyAnnotations = results?.annotations || [];
+  
+  // Prioritize persona annotations, but include legacy ones if no persona annotations exist
+  const allAnnotations = personaAnnotations.length > 0 ? personaAnnotations : legacyAnnotations;
+  
+  console.log('📊 Annotation extraction summary:', {
+    personaAnnotations: personaAnnotations.length,
+    legacyAnnotations: legacyAnnotations.length,
+    totalUsed: allAnnotations.length,
+    usingNewFormat: personaAnnotations.length > 0
+  });
   
   // ✅ ENHANCED: Enhanced annotation filtering with comprehensive debug logging
   const annotations = allAnnotations.filter((annotation: any) => {
