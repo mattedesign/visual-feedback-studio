@@ -87,7 +87,7 @@ serve(async (req) => {
               role: 'clarity',
               content: initialContent,
               conversation_stage: 'initial',
-              model_used: 'claude-3-5-sonnet-20241022',
+              model_used: 'claude-sonnet-4-20250514',
               processing_time_ms: 0,
               metadata: {
                 used_persona: normalizedPersona,
@@ -262,7 +262,7 @@ serve(async (req) => {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
         temperature: normalizedPersona === 'clarity' ? 0.3 : 0.7,
         messages
@@ -334,7 +334,7 @@ serve(async (req) => {
             role: 'clarity',
              content: summaryText,
             conversation_stage: 'chat',
-             model_used: 'claude-3-5-sonnet-20241022',
+             model_used: 'claude-sonnet-4-20250514',
             processing_time_ms: processingTime,
             metadata: {
               used_persona: normalizedPersona,
@@ -433,7 +433,7 @@ serve(async (req) => {
               role: 'clarity',
               content: summaryText,
               conversation_stage: 'initial',
-              model_used: 'claude-3-5-sonnet-20241022',
+              model_used: 'claude-sonnet-4-20250514',
               processing_time_ms: processingTime,
               metadata: {
                 used_persona: normalizedPersona,
@@ -459,7 +459,7 @@ serve(async (req) => {
         success: true,
         sessionId,
         persona: normalizedPersona,
-        modelUsed: 'claude-3-5-sonnet-20241022',
+        modelUsed: 'claude-sonnet-4-20250514',
         analysisData: actualChatMode ? { analysis: summaryText } : parsedData,
         rawResponse: summaryText,
         timestamp: new Date().toISOString()

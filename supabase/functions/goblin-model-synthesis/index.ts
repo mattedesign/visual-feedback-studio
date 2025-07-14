@@ -803,37 +803,68 @@ class AnnotationGenerator {
 
   // Enhanced method to analyze problem and generate persona-specific solutions
   private enhanceFeedbackWithSolution(recommendation: any, persona: string) {
-    // CRITICAL FIX: If recommendation is an object with suggested_fix, preserve it!
+    console.log('🔍 enhanceFeedbackWithSolution input:', typeof recommendation, Object.keys(recommendation || {}));
+
+    // PRIORITY 1: Use Claude's suggested_fix if available
     if (typeof recommendation === 'object' && recommendation.suggested_fix) {
-      console.log('🎯 Preserving existing suggested_fix:', recommendation.suggested_fix.substring(0, 100));
+      console.log('✅ Using Claude suggested_fix:', recommendation.suggested_fix.substring(0, 100));
       return {
-        problem: recommendation.description || recommendation.problemStatement || recommendation.problem || 'Interface improvement needed',
-        solution: recommendation.suggested_fix // Use the detailed AI-generated fix!
+        problem: recommendation.description || recommendation.problem || recommendation.problemStatement || 'Interface issue detected',
+        solution: recommendation.suggested_fix // Direct from Claude analysis
       };
     }
 
-    // Convert string recommendation to string for processing
-    const recommendationText = typeof recommendation === 'string' ? recommendation : 
-                              (recommendation?.description || recommendation?.problemStatement || 'UX improvement needed');
+    // PRIORITY 2: Use Claude's description field as the problem statement  
+    if (typeof recommendation === 'object' && recommendation.description) {
+      console.log('✅ Using Claude description as problem:', recommendation.description.substring(0, 100));
+      
+      // Check if description contains both problem and solution
+      if (recommendation.description.includes(' - ') || recommendation.description.includes(': ')) {
+        const parts = recommendation.description.split(/\s*[-:]\s*/);
+        if (parts.length >= 2) {
+          return {
+            problem: parts[0].trim(),
+            solution: parts.slice(1).join(' - ').trim()
+          };
+        }
+      }
 
-    // If recommendation already contains solution language, split it
+      return {
+        problem: recommendation.description,
+        solution: recommendation.impact || recommendation.solution || `Apply ${persona} persona-specific fix for this issue`
+      };
+    }
+
+    // PRIORITY 3: Use Claude's problem field directly
+    if (typeof recommendation === 'object' && recommendation.problem) {
+      console.log('✅ Using Claude problem field:', recommendation.problem.substring(0, 100));
+      return {
+        problem: recommendation.problem,
+        solution: recommendation.solution || recommendation.impact || `Apply ${persona} persona-specific solution`
+      };
+    }
+
+    // FALLBACK: Convert to string and process
+    const recommendationText = typeof recommendation === 'string' ? recommendation : 
+                              (recommendation?.title || recommendation?.problemStatement || 'UX improvement needed');
+
+    console.log('⚠️ Using fallback text processing for:', recommendationText.substring(0, 100));
+
+    // Try to split if it contains solution indicators
     if (recommendationText.includes(' - ') || recommendationText.includes(': ')) {
       const parts = recommendationText.split(/\s*[-:]\s*/);
       if (parts.length >= 2) {
         return {
           problem: parts[0].trim(),
-          solution: this.generatePersonaSolution(parts.slice(1).join(' - ').trim(), persona)
+          solution: parts.slice(1).join(' - ').trim()
         };
       }
     }
 
-    // For single problem statements, generate persona-specific solution
-    const problem = recommendationText.trim();
-    const solution = this.generatePersonaSolution(problem, persona);
-
+    // Last resort: use the text as problem and generate basic solution
     return {
-      problem: problem,
-      solution: solution
+      problem: recommendationText.trim(),
+      solution: `Improve this ${persona === 'clarity' ? 'for better user understanding' : 'based on ' + persona + ' principles'}`
     };
   }
 
