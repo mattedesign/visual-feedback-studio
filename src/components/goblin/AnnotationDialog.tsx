@@ -140,9 +140,11 @@ const AnnotationDialog: React.FC<AnnotationDialogProps> = ({
              !annotation.suggested_fix && !annotation.solutionStatement && !annotation.solution && !annotation.recommendation && (
               <div>
                 <h4 className="font-semibold text-gray-600 mb-2">📝 Feedback</h4>
-                <p className="text-gray-800 whitespace-pre-wrap leading-relaxed bg-gray-50 p-3 rounded">
-                  {annotationText}
-                </p>
+                {annotationText && (
+                  <p className="text-gray-800 whitespace-pre-wrap leading-relaxed bg-gray-50 p-3 rounded">
+                    {annotationText}
+                  </p>
+                )}
                 <div className="mt-3 p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded">
                   <p className="text-sm text-yellow-800">
                     💡 <strong>Note:</strong> This annotation uses a legacy format. For more detailed, actionable insights, 
