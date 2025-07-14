@@ -45,7 +45,7 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
   
   const currentImage = images[currentImageIndex];
   
-  // Enhanced annotation extraction: Parse JSON analysis and extract issues
+  // Enhanced annotation extraction: Parse JSON analysis and extract detailed issues
   const extractAnnotationsFromPersonaData = () => {
     const personaFeedback = results?.persona_feedback;
     const personaType = session?.persona_type || 'strategic';
@@ -70,65 +70,96 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
       personaDataKeys: personaData ? Object.keys(personaData) : [],
       hasAnalysis: !!personaData?.analysis,
       analysisType: personaData?.analysis ? typeof personaData.analysis : 'undefined',
+      analysisPreview: personaData?.analysis ? personaData.analysis.substring(0, 200) : 'N/A',
       hasIssues: !!personaData?.issues,
       issuesType: personaData?.issues ? typeof personaData.issues : 'undefined',
       issuesLength: Array.isArray(personaData?.issues) ? personaData.issues.length : 'not array'
     });
     
-    // PRIORITY 1: Parse JSON string in analysis field to extract detailed issues
-    if (personaData?.analysis && typeof personaData.analysis === 'string') {
+    // PRIORITY 1: Parse JSON string in analysis field to extract detailed Claude annotations
+    if (personaData?.analysis) {
+      let analysisData;
+      
       try {
-        console.log('🔍 Attempting to parse analysis JSON string...');
-        const analysisData = JSON.parse(personaData.analysis);
-        console.log('✅ Successfully parsed analysis JSON:', {
-          hasIssues: !!analysisData.issues,
-          issuesType: typeof analysisData.issues,
-          issuesLength: Array.isArray(analysisData.issues) ? analysisData.issues.length : 'not array',
-          keys: Object.keys(analysisData)
-        });
+        // Handle both string and object cases
+        if (typeof personaData.analysis === 'string') {
+          console.log('🔍 Parsing analysis JSON string...');
+          analysisData = JSON.parse(personaData.analysis);
+        } else if (typeof personaData.analysis === 'object') {
+          console.log('🔍 Using analysis object directly...');
+          analysisData = personaData.analysis;
+        }
         
-        // Check for both issues AND recommendations arrays in the parsed JSON
-        const issuesArray = analysisData.issues || [];
-        const recommendationsArray = analysisData.recommendations || [];
-        const allIssues = [...issuesArray, ...recommendationsArray];
-        
-        if (allIssues.length > 0) {
-          console.log('✅ Using parsed JSON - found:', issuesArray.length, 'issues,', recommendationsArray.length, 'recommendations');
-          const annotations = allIssues.map((issue: any, index: number) => {
-            console.log(`🎯 Processing issue ${index}:`, {
-              id: issue.id,
-              type: issue.type,
-              description: issue.description?.substring(0, 100),
-              suggested_fix: issue.suggested_fix?.substring(0, 100),
-              priority: issue.priority
-            });
-            
-            // Fix coordinate system - use percentage values that work across different image sizes
-            const baseX = 15 + (index % 4) * 20; // 15%, 35%, 55%, 75%
-            const baseY = 15 + Math.floor(index / 4) * 20; // 15%, 35%, 55%, 75%
-            
-            return {
-              id: issue.id || `claude-issue-${index}`,
-              title: issue.type?.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || 'UX Issue',
-              description: issue.description || 'Interface issue detected',
-              feedback: issue.suggested_fix || issue.description || 'Improvement recommended',
-              suggested_fix: issue.suggested_fix,
-              impact: issue.impact || 'Affects user experience',
-              category: issue.type || 'general',
-              x: baseX,
-              y: baseY,
-              width: 8,
-              height: 4,
-              image_index: Math.floor(index / 3), // Distribute across images (3 per image)
-              imageIndex: Math.floor(index / 3)
-            };
+        if (analysisData) {
+          console.log('✅ Analysis data found:', {
+            hasIssues: !!analysisData.issues,
+            issuesLength: Array.isArray(analysisData.issues) ? analysisData.issues.length : 'not array',
+            hasRecommendations: !!analysisData.recommendations,
+            recommendationsLength: Array.isArray(analysisData.recommendations) ? analysisData.recommendations.length : 'not array',
+            keys: Object.keys(analysisData)
           });
           
-          console.log('✅ Generated', annotations.length, 'annotations from parsed JSON issues');
-          return annotations;
+          // Extract all detailed issues/recommendations from Claude's analysis
+          const issuesArray = Array.isArray(analysisData.issues) ? analysisData.issues : [];
+          const recommendationsArray = Array.isArray(analysisData.recommendations) ? analysisData.recommendations : [];
+          const allIssues = [...issuesArray, ...recommendationsArray];
+          
+          if (allIssues.length > 0) {
+            console.log('✅ Using Claude\'s detailed analysis - found:', issuesArray.length, 'issues,', recommendationsArray.length, 'recommendations');
+            
+            const annotations = allIssues.map((issue: any, index: number) => {
+              console.log(`🎯 Processing Claude issue ${index}:`, {
+                id: issue.id,
+                type: issue.type,
+                description: issue.description?.substring(0, 100),
+                suggested_fix: issue.suggested_fix?.substring(0, 100),
+                priority: issue.priority,
+                coordinates: issue.coordinates
+              });
+              
+              // Use Claude's coordinates if available, otherwise use distribution pattern
+              let x, y;
+              if (issue.coordinates && typeof issue.coordinates === 'object') {
+                x = issue.coordinates.x || issue.coordinates.left;
+                y = issue.coordinates.y || issue.coordinates.top;
+              }
+              
+              // Fallback to distribution pattern if no coordinates
+              if (x === undefined || y === undefined) {
+                x = 15 + (index % 4) * 20; // 15%, 35%, 55%, 75%
+                y = 15 + Math.floor(index / 4) * 20; // 15%, 35%, 55%, 75%
+              }
+              
+              // Determine image index from Claude's data or distribute evenly
+              const imageIndex = issue.image_index !== undefined ? issue.image_index : Math.floor(index / 3);
+              
+              return {
+                id: issue.id || `claude-issue-${index}`,
+                title: issue.type?.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || 'UX Issue',
+                description: issue.description || 'Interface issue detected by Claude',
+                feedback: issue.suggested_fix || issue.description || 'Improvement recommended',
+                suggested_fix: issue.suggested_fix,
+                impact: issue.impact || 'Affects user experience',
+                category: issue.type || 'general',
+                priority: issue.priority || 'medium',
+                x: x,
+                y: y,
+                width: 8,
+                height: 4,
+                image_index: imageIndex,
+                imageIndex: imageIndex
+              };
+            });
+            
+            console.log('✅ Generated', annotations.length, 'annotations from Claude\'s detailed analysis');
+            return annotations;
+          }
         }
       } catch (error) {
-        console.warn('⚠️ Failed to parse analysis JSON:', error);
+        console.error('❌ Failed to parse Claude analysis:', error, {
+          analysisType: typeof personaData.analysis,
+          analysisPreview: typeof personaData.analysis === 'string' ? personaData.analysis.substring(0, 200) : 'Not string'
+        });
         // Continue to other extraction methods
       }
     }
