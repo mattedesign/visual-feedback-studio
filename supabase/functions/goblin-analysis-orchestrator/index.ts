@@ -191,7 +191,17 @@ async function attemptModelAnalysis(modelConfig: any, requestBody: any, supabase
 }
 
 serve(async (req) => {
+  console.log('🔴 DEBUG_ORCHESTRATOR: Function entry point reached');
+  console.log('🔴 DEBUG_ORCHESTRATOR: Request method:', req.method);
+  console.log('🔴 DEBUG_ORCHESTRATOR: Environment check:', {
+    hasSupabaseUrl: !!Deno.env.get('SUPABASE_URL'),
+    hasServiceKey: !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
+    hasAnthropicKey: !!Deno.env.get('ANTHROPIC_API_KEY'),
+    timestamp: new Date().toISOString()
+  });
+
   if (req.method === 'OPTIONS') {
+    console.log('🔴 DEBUG_ORCHESTRATOR: Returning CORS response');
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -199,6 +209,7 @@ serve(async (req) => {
   let sessionId;
   let supabase;
   const startTime = Date.now();
+  console.log('🔴 DEBUG_ORCHESTRATOR: Starting analysis orchestration');
 
   try {
     // Enhanced request parsing with validation

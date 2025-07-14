@@ -104,13 +104,23 @@ console.log('🔬 Goblin Model Synthesis - Combining and structuring analysis re
 // ============================================================================
 
 serve(async (req) => {
+  console.log('🔴 DEBUG_SYNTHESIS: Function entry point reached');
+  console.log('🔴 DEBUG_SYNTHESIS: Request method:', req.method);
+  
   if (req.method === 'OPTIONS') {
+    console.log('🔴 DEBUG_SYNTHESIS: Returning CORS response');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    console.log('🔴 DEBUG_SYNTHESIS: Parsing request body...');
     const requestData: SynthesisRequest = await req.json();
-    console.error('🔴 DEBUG_GOBLIN: Synthesis request invalid', requestData);
+    console.log('🔴 DEBUG_SYNTHESIS: Request received:', {
+      sessionId: requestData?.sessionId?.substring(0, 8),
+      persona: requestData?.persona,
+      hasAnalysisData: !!requestData?.analysisData,
+      timestamp: new Date().toISOString()
+    });
     
     console.log('🧪 Synthesizing results for:', {
       sessionId: requestData.sessionId?.substring(0, 8),
