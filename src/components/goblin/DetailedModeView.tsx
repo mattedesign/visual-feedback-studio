@@ -87,9 +87,14 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
           keys: Object.keys(analysisData)
         });
         
-        if (analysisData.issues && Array.isArray(analysisData.issues) && analysisData.issues.length > 0) {
-          console.log('✅ Using parsed JSON issues array:', analysisData.issues.length, 'issues');
-          const annotations = analysisData.issues.map((issue: any, index: number) => {
+        // Check for both issues AND recommendations arrays in the parsed JSON
+        const issuesArray = analysisData.issues || [];
+        const recommendationsArray = analysisData.recommendations || [];
+        const allIssues = [...issuesArray, ...recommendationsArray];
+        
+        if (allIssues.length > 0) {
+          console.log('✅ Using parsed JSON - found:', issuesArray.length, 'issues,', recommendationsArray.length, 'recommendations');
+          const annotations = allIssues.map((issue: any, index: number) => {
             console.log(`🎯 Processing issue ${index}:`, {
               id: issue.id,
               type: issue.type,

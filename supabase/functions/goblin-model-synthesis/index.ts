@@ -666,14 +666,13 @@ class AnnotationGenerator {
   generate(recommendations: any[], persona: string, imageCount: number = 1): Annotation[] {
     console.log('🎯 AnnotationGenerator received:', recommendations.length, 'items');
     
-    // CRITICAL FIX: Transform Claude's detailed issues into proper annotations
+    // CRITICAL FIX: Preserve Claude's detailed suggested_fix content
     if (recommendations.length > 0) {
       const hasDetailedIssues = recommendations.some((rec: any) => rec?.suggested_fix || rec?.description);
       
       if (hasDetailedIssues) {
-        console.log('✅ Claude detailed issues detected - transforming to annotations');
-        // Transform Claude's detailed issues into proper annotations for the frontend
-        return this.generateAnnotationsFromClaudeIssues(recommendations, persona, imageCount);
+        console.log('✅ Claude detailed issues detected - preserving detailed content in annotations');
+        // Generate annotations while preserving Claude's detailed content
       }
     }
     
@@ -695,46 +694,6 @@ class AnnotationGenerator {
     );
   }
 
-  // New method to transform Claude's detailed issues into proper annotations
-  private generateAnnotationsFromClaudeIssues(recommendations: any[], persona: string, imageCount: number): Annotation[] {
-    console.log('🎯 Transforming Claude issues to annotations:', recommendations.length);
-    
-    const targetAnnotationCount = Math.min(recommendations.length, SYNTHESIS_CONFIG.annotations.maxTotal);
-    const annotations: Annotation[] = [];
-    
-    for (let i = 0; i < targetAnnotationCount; i++) {
-      const issue = recommendations[i];
-      const imageIndex = i % imageCount;
-      const positionInImage = Math.floor(i / imageCount);
-      const position = SYNTHESIS_CONFIG.annotations.positions[positionInImage % SYNTHESIS_CONFIG.annotations.positions.length];
-      
-      // Create enhanced annotation with Claude's detailed content
-      const annotation: Annotation = {
-        id: `${persona}-claude-${imageIndex}-${i + 1}`,
-        title: issue.type ? issue.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : `${persona} Issue ${i + 1}`,
-        description: issue.description || issue.problem || 'Interface issue detected',
-        feedback: issue.suggested_fix || issue.solution || 'Apply recommended improvements',
-        category: issue.category || issue.type || 'usability',
-        x: position.x,
-        y: position.y,
-        width: 8,
-        height: 4,
-        image_index: imageIndex,
-        imageIndex: imageIndex,
-        persona,
-        priority: i < 2 ? 'high' : 'medium',
-        // Store additional Claude data for enhanced display
-        suggested_fix: issue.suggested_fix,
-        impact: issue.impact,
-        type: issue.type
-      };
-      
-      annotations.push(annotation);
-    }
-    
-    console.log(`✅ Generated ${annotations.length} annotations from Claude's detailed issues`);
-    return annotations;
-  }
 
   private expandRecommendations(recommendations: any[], targetCount: number): any[] {
     // ✅ PRIORITIZE CLAUDE'S DETAILED ISSUES: Use original recommendations without generic variations
@@ -823,10 +782,10 @@ class AnnotationGenerator {
       priority: index < 2 ? 'high' : 'medium',
       problemStatement: imageSpecificContext.problem,
       solutionStatement: imageSpecificContext.solution,
-      // Enhanced fields for consistency with Claude annotations
-      suggested_fix: imageSpecificContext.solution,
-      impact: `Affects ${persona} user experience`,
-      type: category
+      // Preserve detailed content for frontend display
+      suggested_fix: rec.suggested_fix || imageSpecificContext.solution,
+      impact: rec.impact || `Affects ${persona} user experience`,
+      type: rec.type || category
     };
   }
 
