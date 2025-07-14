@@ -238,12 +238,22 @@ function extractAnalysisData(analysisData: any) {
   // Try to get structured data from analysisData first
   if (analysisData.analysisData && typeof analysisData.analysisData === 'object') {
     extractedAnalysis = analysisData.analysisData.analysis || '';
-    extractedRecommendations = analysisData.analysisData.recommendations || [];
+    
+    // CRITICAL FIX: Prioritize detailed 'issues' with suggested_fix over generic 'recommendations'
+    if (analysisData.analysisData.issues && Array.isArray(analysisData.analysisData.issues) && analysisData.analysisData.issues.length > 0) {
+      extractedRecommendations = analysisData.analysisData.issues;
+      console.log('🎯 Using detailed issues with suggested_fix:', extractedRecommendations.map(i => i.suggested_fix?.substring(0, 50)));
+    } else if (analysisData.analysisData.recommendations && Array.isArray(analysisData.analysisData.recommendations)) {
+      extractedRecommendations = analysisData.analysisData.recommendations;
+      console.log('⚠️ Falling back to basic recommendations:', extractedRecommendations);
+    }
+    
     extractedRawData = analysisData.analysisData;
     
     console.log('✅ Extracted from analysisData:', {
       hasAnalysis: !!extractedAnalysis,
       recommendationsCount: extractedRecommendations.length,
+      usingDetailedIssues: extractedRecommendations.length > 0 && extractedRecommendations[0]?.suggested_fix,
       recommendations: extractedRecommendations
     });
   }
@@ -266,10 +276,16 @@ function extractAnalysisData(analysisData: any) {
       
       if (jsonContent) {
         const parsed = JSON.parse(jsonContent);
-        if (parsed.recommendations && Array.isArray(parsed.recommendations)) {
+        
+        // CRITICAL FIX: Prioritize detailed 'issues' with suggested_fix
+        if (parsed.issues && Array.isArray(parsed.issues) && parsed.issues.length > 0) {
+          extractedRecommendations = parsed.issues;
+          console.log('🎯 Extracted detailed issues from rawResponse JSON:', parsed.issues.map(i => i.suggested_fix?.substring(0, 50)));
+        } else if (parsed.recommendations && Array.isArray(parsed.recommendations)) {
           extractedRecommendations = parsed.recommendations;
-          console.log('✅ Extracted recommendations from rawResponse JSON:', extractedRecommendations);
+          console.log('⚠️ Extracted basic recommendations from rawResponse JSON:', extractedRecommendations);
         }
+        
         if (parsed.analysis && !extractedAnalysis) {
           extractedAnalysis = parsed.analysis;
         }
@@ -771,10 +787,23 @@ class AnnotationGenerator {
   }
 
   // Enhanced method to analyze problem and generate persona-specific solutions
-  private enhanceFeedbackWithSolution(recommendation: string, persona: string) {
+  private enhanceFeedbackWithSolution(recommendation: any, persona: string) {
+    // CRITICAL FIX: If recommendation is an object with suggested_fix, preserve it!
+    if (typeof recommendation === 'object' && recommendation.suggested_fix) {
+      console.log('🎯 Preserving existing suggested_fix:', recommendation.suggested_fix.substring(0, 100));
+      return {
+        problem: recommendation.description || recommendation.problemStatement || recommendation.problem || 'Interface improvement needed',
+        solution: recommendation.suggested_fix // Use the detailed AI-generated fix!
+      };
+    }
+
+    // Convert string recommendation to string for processing
+    const recommendationText = typeof recommendation === 'string' ? recommendation : 
+                              (recommendation?.description || recommendation?.problemStatement || 'UX improvement needed');
+
     // If recommendation already contains solution language, split it
-    if (recommendation.includes(' - ') || recommendation.includes(': ')) {
-      const parts = recommendation.split(/\s*[-:]\s*/);
+    if (recommendationText.includes(' - ') || recommendationText.includes(': ')) {
+      const parts = recommendationText.split(/\s*[-:]\s*/);
       if (parts.length >= 2) {
         return {
           problem: parts[0].trim(),
@@ -784,7 +813,7 @@ class AnnotationGenerator {
     }
 
     // For single problem statements, generate persona-specific solution
-    const problem = recommendation.trim();
+    const problem = recommendationText.trim();
     const solution = this.generatePersonaSolution(problem, persona);
 
     return {
