@@ -434,7 +434,40 @@ serve(async (req) => {
       return result;
     }, `Unified prompt building for ${persona}`);
 
-    // Step 4: AI Analysis with Enhanced Fallback System
+    // Step 4: Technical Forensic Integration (Enhanced Audit)
+    console.log('🔬 Starting technical forensic integration...');
+    let forensicData = null;
+    
+    try {
+      const forensicResult = await withRetry(async () => {
+        if (isCircuitOpen('goblin-forensic-integration')) {
+          throw new Error('Circuit breaker open for forensic integration');
+        }
+        
+        const result = await supabase.functions.invoke('goblin-forensic-integration', {
+          body: { 
+            sessionId,
+            visionResults
+          }
+        });
+        
+        updateCircuitBreaker('goblin-forensic-integration', !result.error);
+        return result;
+      }, `Forensic integration for session ${sessionId.substring(0, 8)}`, 1);
+      
+      if (forensicResult.error) {
+        console.warn(`⚠️ Forensic integration failed: ${forensicResult.error.message}`);
+      } else {
+        forensicData = forensicResult.data;
+        console.log('✅ Technical forensic integration completed');
+      }
+      
+    } catch (forensicError) {
+      console.warn(`⚠️ Forensic integration failed: ${forensicError.message}`);
+      // Continue without forensic data - it's an enhancement, not critical
+    }
+
+    // Step 5: AI Analysis with Enhanced Fallback System
     console.log('🤖 Starting AI analysis with intelligent fallback...');
     
     let analysisResult;
@@ -446,7 +479,8 @@ serve(async (req) => {
       imageUrls: validImageUrls,
       prompt: promptResult.data.prompt,
       persona,
-      chatMode: false
+      chatMode: false,
+      forensicData // Include technical audit data
     };
     
     try {
@@ -509,14 +543,15 @@ serve(async (req) => {
     // Step 5: Synthesize results (now includes maturity score calculation)
     const synthesisResult = await withRetry(async () => {
       const result = await supabase.functions.invoke('goblin-model-synthesis', {
-        body: {
-          sessionId,
-          userId: session.user_id,
-          persona,
-          analysisData: analysisResult.data,
-          goal,
-          imageCount: validImageUrls.length
-        }
+         body: {
+           sessionId,
+           userId: session.user_id,
+           persona,
+           analysisData: analysisResult.data,
+           goal,
+           imageCount: validImageUrls.length,
+           forensicData // Include technical audit summary
+         }
       });
       
       if (result.error) throw new Error(`Result synthesis failed: ${result.error.message}`);
