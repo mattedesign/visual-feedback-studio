@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Zap, 
+  Archive,
   Settings, 
   HelpCircle,
   User,
@@ -38,6 +39,13 @@ const mainNavItems = [
     icon: Zap,
     badge: "👾",
     emoji: "🧠"
+  },
+  {
+    title: "History",
+    url: "/archive",
+    icon: Archive,
+    badge: null,
+    emoji: "📚"
   }
 ];
 
