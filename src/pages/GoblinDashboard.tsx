@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { UsageLimitPrompt } from '@/components/subscription/UsageLimitPrompt';
+import { EnhancedMaturityDashboard } from '@/components/goblin/maturity/EnhancedMaturityDashboard';
 interface GoblinSession {
   id: string;
   title: string;
@@ -185,6 +186,17 @@ const GoblinDashboard = () => {
 
         {/* Usage Limit Prompt */}
         <UsageLimitPrompt className="mb-8" />
+
+        {/* Enhanced Maturity Dashboard */}
+        <section className="mb-12">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold">UX Maturity Dashboard</h2>
+            <p className="text-muted-foreground">
+              Track your design skills, identify strengths, and discover growth opportunities
+            </p>
+          </div>
+          <EnhancedMaturityDashboard />
+        </section>
 
         {/* Quick Stats */}
         <div className="flex flex-col md:flex-row gap-6 mb-12 w-full">

@@ -16,10 +16,7 @@ import { GoblinSummaryView } from '@/components/goblin/results/GoblinSummaryView
 
 import { NavigationProvider } from '@/contexts/NavigationContext';
 
-// ✅ Maturity components
-import { MaturityScoreDashboard } from '@/components/goblin/maturity/MaturityScoreDashboard';
-import { ImprovementRoadmap } from '@/components/goblin/maturity/ImprovementRoadmap';
-import { AchievementShowcase } from '@/components/goblin/maturity/AchievementShowcase';
+// ✅ REMOVED: Maturity components moved to dashboard-level feature
 
 // Type definition for persona data with enhanced fields
 interface PersonaData {
@@ -86,7 +83,7 @@ const GoblinResults: React.FC = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [copied, setCopied] = useState(false);
   const [showAnnotations, setShowAnnotations] = useState(true);
-  const [activeTab, setActiveTab] = useState<'summary' | 'detailed' | 'maturity' | 'clarity'>('summary');
+  const [activeTab, setActiveTab] = useState<'summary' | 'detailed' | 'clarity'>('summary');
   const [chatFeedbackAnchors, setChatFeedbackAnchors] = useState<{[messageId: string]: any[]}>({});
   const [totalImages, setTotalImages] = useState(0);
 
@@ -667,7 +664,7 @@ const GoblinResults: React.FC = () => {
       <div className="min-h-screen bg-white" style={{ minWidth: '100%' }}>
         <div className="flex flex-col items-start flex-1 self-stretch w-full mx-0 px-4 py-6" style={{ minWidth: '100%' }}>
           
-           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'summary' | 'detailed' | 'maturity' | 'clarity')}>
+           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'summary' | 'detailed' | 'clarity')}>
             <TabsList className="sticky top-6 z-10 flex w-auto items-center gap-4 rounded-xl border border-gray-200 bg-gray-100 p-1 backdrop-blur-sm tabs-list-mobile" style={{ boxShadow: '0px 1px 1.9px 0px rgba(50, 50, 50, 0.10) inset' }}>
               <TabsTrigger 
                 value="summary" 
@@ -681,14 +678,6 @@ const GoblinResults: React.FC = () => {
               >
                 <span className="hidden sm:inline">Detailed</span>
                 <span className="sm:hidden">Details</span> ({annotationCount})
-              </TabsTrigger>
-              <TabsTrigger 
-                value="maturity" 
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset] tabs-trigger-mobile"
-              >
-                <Trophy className="w-4 h-4" />
-                <span className="hidden sm:inline">Maturity Score</span>
-                <span className="sm:hidden">Score</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="clarity" 
@@ -757,24 +746,6 @@ const GoblinResults: React.FC = () => {
               setShowAnnotations={setShowAnnotations}
               chatFeedbackAnchors={chatFeedbackAnchors}
             />
-          </TabsContent>
-
-          <TabsContent value="maturity" className="mt-8 w-full">
-            <div className="space-y-6 w-full">
-              <MaturityScoreDashboard />
-              <ImprovementRoadmap />
-              <AchievementShowcase />
-              
-              <Card className="p-6 bg-gradient-to-r from-purple-50 to-blue-50 text-center w-full">
-                <h3 className="font-semibold mb-2">Ready to improve your score?</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Upload a revised design to see your progress
-                </p>
-                <Button onClick={() => navigate('/goblin')}>
-                  Run New Analysis
-                </Button>
-              </Card>
-            </div>
           </TabsContent>
 
           <TabsContent value="clarity" className="mt-8 w-full">
