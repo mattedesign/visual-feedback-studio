@@ -334,7 +334,7 @@ serve(async (req) => {
             role: 'clarity',
              content: summaryText,
             conversation_stage: 'chat',
-            model_used: 'claude-sonnet-4-20250514',
+             model_used: 'claude-sonnet-4-20250514',
             processing_time_ms: processingTime,
             metadata: {
               used_persona: normalizedPersona,
@@ -487,15 +487,15 @@ serve(async (req) => {
 // FIXED: Stricter JSON prompt (around line 400 in Claude analyzer)
 function buildPrompt(persona: string, userPrompt: string, chatMode: boolean, conversationHistory?: string, originalAnalysis?: any): string {
   const personaInstructions = {
-    clarity: `You are Clarity, the brutally honest UX goblin. You tell the hard truths about design with wit and directness.`,
-    strategic: `You are a strategic UX analyst. Focus on business impact, user goals, and measurable outcomes.`,
-    mirror: `You are an empathetic UX mirror. Reflect back what users might feel and experience.`,
-    mad: `You are the Mad UX Scientist. Think outside the box with creative, experimental approaches.`,
-    mad_scientist: `You are the Mad UX Scientist. Think outside the box with creative, experimental approaches.`,
-    exec: `You are an executive UX lens. Focus on business impact, ROI, and stakeholder communication.`
+    clarity: `You are "Clarity the Goblin Mentor," a seasoned senior UX strategist. You tell the hard truths about design with wit and directness.`,
+    strategic: `You are "Clarity the Goblin Mentor," a seasoned senior UX strategist. Focus on business impact, user goals, and measurable outcomes.`,
+    mirror: `You are "Clarity the Goblin Mentor," a seasoned senior UX strategist. Reflect back what users might feel and experience.`,
+    mad: `You are "Clarity the Goblin Mentor," a seasoned senior UX strategist. Think outside the box with creative, experimental approaches.`,
+    mad_scientist: `You are "Clarity the Goblin Mentor," a seasoned senior UX strategist. Think outside the box with creative, experimental approaches.`,
+    exec: `You are "Clarity the Goblin Mentor," a seasoned senior UX strategist. Focus on business impact, ROI, and stakeholder communication.`
   };
 
-  // Persona-specific JSON templates
+  // Enhanced persona-specific JSON templates with suggested_fix and top_fix_summary
   const personaJsonTemplates = {
     mirror: {
       "insights": "Deep empathetic analysis of specific interface elements and their emotional impact",
@@ -504,6 +504,21 @@ function buildPrompt(persona: string, userPrompt: string, chatMode: boolean, con
       "emotionalImpact": "How specific design elements make users feel emotionally",
       "userStory": "The emotional journey through specific interface elements",
       "empathyGaps": ["Specific gap 1 where interface lacks empathy", "Specific emotional disconnect 2", "Missing empathy element 3"],
+      "issues": [
+        {
+          "id": "empathy_issue_1",
+          "type": "emotional_design",
+          "description": "Specific description of how this element affects user emotions",
+          "impact": "How this impacts user emotional experience",
+          "priority": "medium",
+          "suggested_fix": "Concrete visual fix like 'Add warm color palette #FF6B35 to buttons and change font to friendly Nunito'"
+        }
+      ],
+      "top_fix_summary": [
+        "Most impactful emotional design improvement for user goal",
+        "Second highest priority empathetic enhancement",
+        "Third critical emotional connection fix"
+      ],
       "annotations": [
         {
           "x": 100,
@@ -523,6 +538,21 @@ function buildPrompt(persona: string, userPrompt: string, chatMode: boolean, con
       "strategicPriority": "Most critical UX element needing strategic attention",
       "competitiveAdvantage": "Specific UX opportunities for differentiation in visible interface",
       "measurableOutcomes": "Expected improvements from fixing specific identified issues",
+      "issues": [
+        {
+          "id": "strategic_issue_1",
+          "type": "business_impact",
+          "description": "Specific business impact of this interface element",
+          "impact": "How this affects business metrics and ROI",
+          "priority": "high",
+          "suggested_fix": "Strategic fix like 'Move CTA above fold at y:200 with #0055FF background to increase conversion by 15%'"
+        }
+      ],
+      "top_fix_summary": [
+        "Highest ROI strategic improvement for business goals",
+        "Critical business impact fix for competitive advantage",
+        "Essential strategic enhancement for measurable outcomes"
+      ],
       "annotations": [
         {
           "x": 150,
@@ -542,6 +572,21 @@ function buildPrompt(persona: string, userPrompt: string, chatMode: boolean, con
       "whatMakesGoblinHappy": "Specific elements that actually work well in this design",
       "goblinWisdom": "Key insight about specific interface problems and solutions",
       "goblinPrediction": "What will happen when specific identified problems are fixed",
+      "issues": [
+        {
+          "id": "clarity_issue_1",
+          "type": "usability",
+          "description": "Specific description of what's confusing about this element",
+          "impact": "How this confuses users and blocks their goals",
+          "priority": "high",
+          "suggested_fix": "Clear actionable fix like 'Change button text from \"Submit\" to \"Complete Purchase\" and move to top-right at position x:750'"
+        }
+      ],
+      "top_fix_summary": [
+        "Most critical clarity improvement for user success",
+        "Essential usability fix for interface comprehension", 
+        "Key improvement for eliminating user confusion"
+      ],
       "annotations": [
         {
           "x": 200,
@@ -561,6 +606,21 @@ function buildPrompt(persona: string, userPrompt: string, chatMode: boolean, con
       "weirdFindings": "Specific anomalies or patterns found in the actual interface elements",
       "crazyIdeas": ["Actionable experimental solution for specific problem 1", "targeted fix for observed issue 2", "specific improvement for visible element 3"],
       "labNotes": "Precise observations about specific interface elements and their usability issues",
+      "issues": [
+        {
+          "id": "mad_issue_1",
+          "type": "experimental",
+          "description": "Precise description of what's wrong with this specific element",
+          "impact": "How this interface anomaly affects user experimentation",
+          "priority": "high",
+          "suggested_fix": "Experimental fix like 'Replace standard button with interactive hover-morphing element at coordinates x:400 y:300'"
+        }
+      ],
+      "top_fix_summary": [
+        "Most radical experimental improvement for innovation",
+        "Wildest creative solution for user engagement",
+        "Most unconventional fix for interface breakthrough"
+      ],
       "annotations": [
         {
           "x": 100,
@@ -580,6 +640,21 @@ function buildPrompt(persona: string, userPrompt: string, chatMode: boolean, con
       "weirdFindings": "Specific anomalies or patterns found in the actual interface elements",
       "crazyIdeas": ["Actionable experimental solution for specific problem 1", "targeted fix for observed issue 2", "specific improvement for visible element 3"],
       "labNotes": "Precise observations about specific interface elements and their usability issues",
+      "issues": [
+        {
+          "id": "mad_scientist_issue_1",
+          "type": "experimental",
+          "description": "Precise description of what's wrong with this specific element",
+          "impact": "How this interface anomaly affects user experimentation",
+          "priority": "high",
+          "suggested_fix": "Experimental fix like 'Replace standard button with interactive hover-morphing element at coordinates x:400 y:300'"
+        }
+      ],
+      "top_fix_summary": [
+        "Most radical experimental improvement for innovation",
+        "Wildest creative solution for user engagement",
+        "Most unconventional fix for interface breakthrough"
+      ],
       "annotations": [
         {
           "x": 100,
@@ -599,6 +674,21 @@ function buildPrompt(persona: string, userPrompt: string, chatMode: boolean, con
       "stakeholderConcerns": "Key executive concerns about specific UX issues affecting business",
       "strategicRecommendations": ["Executive fix for specific problem 1", "Strategic solution for issue 2", "ROI-focused improvement for element 3"],
       "competitiveImplications": "How specific UX problems affect competitive positioning",
+      "issues": [
+        {
+          "id": "exec_issue_1",
+          "type": "business_impact",
+          "description": "Specific business impact of this interface element",
+          "impact": "How this affects executive KPIs and business outcomes",
+          "priority": "high",
+          "suggested_fix": "Executive fix like 'Redesign conversion funnel with 25% larger CTA at position x:600 to achieve 10% revenue increase'"
+        }
+      ],
+      "top_fix_summary": [
+        "Highest business impact strategic fix for revenue growth",
+        "Critical executive priority for competitive positioning",
+        "Essential ROI improvement for stakeholder satisfaction"
+      ],
       "annotations": [
         {
           "x": 250,
@@ -637,32 +727,33 @@ function buildPrompt(persona: string, userPrompt: string, chatMode: boolean, con
     
     basePrompt += `
 
-CRITICAL INSTRUCTIONS:
-1. You MUST respond with ONLY valid JSON
-2. Do NOT include any text before or after the JSON
-3. Do NOT use markdown code blocks like \`\`\`json
-4. Your entire response must be parseable by JSON.parse()
+You MUST produce JSON ONLY.
+You MUST follow the exact schema below.
+Do NOT add keys, do NOT change field names, do NOT return Markdown or narrative text.
 
+CONTEXT
+User Goal: ${userPrompt}
+Screen Data: [Analyzing uploaded interface images]
+
+INSTRUCTIONS
+For EACH screen object analyzed:
+  • Keep all existing keys.
+  • For every issue inside issues[], ADD a key "suggested_fix".
+  • "suggested_fix" must be 1-2 sentences, concrete and visual (e.g., "Move the CTA above the fold and use a contrasting #0055FF background").
+  • ADD a screen-level array "top_fix_summary" (2–3 bullets summarising the highest-impact fixes).
+  • Tailor fixes toward the user goal: ${userPrompt}.
+  • Priority field stays "high | medium | low" based on user goal impact.
+  • Do NOT mention these instructions.
+
+SCHEMA (unchanged keys in CAPS, new keys marked ➕)
 Required JSON format for ${persona} persona:
 ${JSON.stringify(jsonTemplate, null, 2)}
 
-User's specific goal/context: ${userPrompt}
-
-CONTEXT-AWARE SOLUTION REQUIREMENTS:
-- Every annotation solution MUST directly address how it helps achieve the user's specific goal stated above
-- Tailor each "businessImpact" field to explain how the fix supports the user's stated objective
-- Reference the user's context when describing why each problem matters
-- Solutions should be prioritized based on their relevance to the user's goal
-
-RESPONSE REQUIREMENTS:
-- Start your response with {
-- End your response with }
-- Include ALL required fields from the template above
-- Use valid JSON syntax only
-- No additional text or explanations outside the JSON
-- ANALYZE THE ACTUAL UPLOADED INTERFACE: Focus on specific, observable problems
-- PROVIDE COORDINATE-BASED ANNOTATIONS: Include x,y coordinates for problem areas
-- GIVE SPECIFIC ACTIONABLE SOLUTIONS: For each annotation, include "problemStatement" (what's wrong), "solutionStatement" (specific fix), "implementationSteps" (how to implement), and "businessImpact" (why it matters). Avoid generic advice like "make it obvious" - provide concrete solutions like "Move button 20px left to align with form fields"
+FAIL-SAFE RULES
+If any element is missing or uncertain:
+  • Still output valid JSON; leave value "".
+Never invent extra top-level keys.
+Never output Markdown, bullets, or prose outside JSON.
 
 Respond now with valid JSON only:`;
   }

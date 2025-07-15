@@ -141,11 +141,13 @@ export async function startGoblinAnalysis(sessionId: string): Promise<any> {
     }
 
     // Call the orchestrator with ONLY the sessionId
+    console.log('🔴 DEBUG_GOBLIN: Frontend calling orchestrator', { sessionId });
     const { data, error } = await supabase.functions.invoke('goblin-analysis-orchestrator', {
       body: { sessionId }
     });
 
     if (error) {
+      console.error('🔴 DEBUG_GOBLIN: Frontend orchestrator error', error);
       console.error('❌ Goblin analysis failed:', error);
       throw error;
     }

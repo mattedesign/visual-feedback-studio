@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, AlertTriangle, Rocket } from 'lucide-react';
 import { useNavigation } from '@/contexts/NavigationContext';
+import { ParsedText } from '@/utils/textParsing';
 
 interface SummaryViewProps {
   results: any;
@@ -768,6 +769,64 @@ const SummaryView: React.FC<SummaryViewProps> = ({
         <CardContent className="space-y-6 mobile-text-content">
           {/* Dynamic persona-specific content rendering */}
           {renderPersonaSpecificContent(personaData, session?.persona_type, results?.synthesis_summary)}
+          
+          {/* Enhanced Actionable Fixes Section */}
+          {personaData?.top_fix_summary && personaData.top_fix_summary.length > 0 && (
+            <div className="mt-6 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
+              <h4 className="flex items-center gap-2 font-semibold text-emerald-800 dark:text-emerald-300 mb-3">
+                🎯 Top Priority Fixes
+              </h4>
+              <ul className="space-y-2">
+                {personaData.top_fix_summary.map((fix, index) => (
+                  <li key={index} className="flex items-start gap-2 text-sm text-emerald-700 dark:text-emerald-300">
+                    <span className="text-emerald-600 dark:text-emerald-400 mt-0.5">•</span>
+                    <ParsedText>{fix}</ParsedText>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Detailed Issues with Suggested Fixes */}
+          {personaData?.issues && personaData.issues.length > 0 && (
+            <div className="mt-6">
+              <h4 className="flex items-center gap-2 font-semibold text-primary mb-4">
+                🔧 Actionable Fixes
+              </h4>
+              <div className="space-y-4">
+                {personaData.issues.map((issue, index) => (
+                  <div key={issue.id || index} className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <h5 className="font-medium text-slate-900 dark:text-slate-100">
+                        {issue.type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} Issue
+                      </h5>
+                      {issue.impact && (
+                        <Badge 
+                          variant="secondary"
+                          className="text-xs"
+                        >
+                          {issue.impact}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 mb-3">
+                      <ParsedText>{issue.description}</ParsedText>
+                    </p>
+                    {issue.suggested_fix && (
+                      <div className="bg-blue-50 dark:bg-blue-900/20 rounded p-3 border-l-4 border-blue-500">
+                        <p className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-1">
+                          💡 Suggested Fix:
+                        </p>
+                        <p className="text-sm text-blue-700 dark:text-blue-300">
+                          <ParsedText>{issue.suggested_fix}</ParsedText>
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
