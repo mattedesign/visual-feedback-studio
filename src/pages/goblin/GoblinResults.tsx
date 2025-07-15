@@ -300,8 +300,32 @@ const GoblinResults: React.FC = () => {
     if (typeof personaData === 'object' && personaData !== null) {
       const cleanedData = { ...personaData };
       
+      // ✅ STRATEGIC FIX: Parse JSON in analysis field for strategic persona
+      if (personaType === 'strategic' && cleanedData.analysis && typeof cleanedData.analysis === 'string') {
+        try {
+          const jsonMatch = cleanedData.analysis.match(/```json\s*\n?({[\s\S]*?})\s*\n?```/);
+          if (jsonMatch) {
+            const parsedAnalysis = JSON.parse(jsonMatch[1]);
+            console.log('🎯 Successfully parsed strategic analysis JSON:', parsedAnalysis);
+            
+            if (parsedAnalysis.analysis) cleanedData.analysis = parsedAnalysis.analysis;
+            if (parsedAnalysis.issues) cleanedData.issues = parsedAnalysis.issues;
+            if (parsedAnalysis.annotations) cleanedData.annotations = parsedAnalysis.annotations;
+            
+            console.log('✅ Strategic persona enhanced:', {
+              hasIssues: !!cleanedData.issues,
+              hasAnnotations: !!cleanedData.annotations,
+              issueCount: cleanedData.issues?.length || 0
+            });
+          }
+        } catch (e) {
+          console.error('❌ Failed to parse strategic JSON:', e);
+          cleanedData.analysis = cleanMarkdownJson(cleanedData.analysis);
+        }
+      }
+
       // Clean common fields that might contain markdown
-      const fieldsToClean = ['analysis', 'biggestGripe', 'goblinWisdom', 'goblinPrediction', 'whatMakesGoblinHappy'];
+      const fieldsToClean = ['biggestGripe', 'goblinWisdom', 'goblinPrediction', 'whatMakesGoblinHappy'];
       
       fieldsToClean.forEach(field => {
         if (typeof cleanedData[field] === 'string') {
