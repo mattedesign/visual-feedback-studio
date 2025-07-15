@@ -1,376 +1,296 @@
+import { BusinessImpactMetrics, QuickWin, MajorProject } from '@/types/businessImpact';
+
+interface TechnicalAuditData {
+  accessibility: {
+    averageScore: number;
+    criticalIssues: number;
+    totalIssues: number;
+  };
+  performance: {
+    averageScore: number;
+    failingMetrics: number;
+    totalMetrics: number;
+  };
+  components: {
+    totalComponents: number;
+    accessibilityIssues: number;
+  };
+  technical: {
+    htmlIssues: number;
+    seoIssues: number;
+  };
+}
+
+interface BusinessContext {
+  industry?: string;
+  userBase?: number;
+  averageOrderValue?: number;
+  conversionRate?: number;
+  trafficVolume?: number;
+}
+
 export interface BusinessMetrics {
-  impactScore: number; // 0-100
+  impactScore: number;
   revenueEstimate: {
     annual: number;
     confidence: number;
     assumptions: string[];
   };
   implementationTimeline: {
-    quickWins: number; // weeks
-    majorProjects: number; // weeks
-    total: number; // weeks
+    quickWins: number;
+    majorProjects: number;
+    total: number;
   };
   competitivePosition: {
-    score: number; // 1-10
+    score: number;
     strengths: string[];
     gaps: string[];
   };
   prioritizedRecommendations: {
-    quickWins: Array<{
-      title: string;
-      impact: string;
-      effort: string;
-      timeline: string;
-      description: string;
-    }>;
-    majorProjects: Array<{
-      title: string;
-      impact: string;
-      effort: string;
-      timeline: string;
-      description: string;
-      roi: string;
-    }>;
+    quickWins: QuickWin[];
+    majorProjects: MajorProject[];
   };
 }
 
 export class BusinessImpactCalculator {
-  private severityWeights = {
-    'critical': 25,
-    'high': 25,
-    'suggested': 15,
-    'medium': 15,
-    'enhancement': 8,
-    'low': 8,
-    'info': 3
-  };
+  /**
+   * Calculate business impact metrics from technical audit data
+   */
+  static calculateBusinessImpact(
+    technicalAudit: TechnicalAuditData,
+    businessContext: BusinessContext = {}
+  ): BusinessImpactMetrics {
+    const accessibilityImpact = this.calculateAccessibilityImpact(technicalAudit.accessibility, businessContext);
+    const performanceImpact = this.calculatePerformanceImpact(technicalAudit.performance, businessContext);
+    const technicalDebtImpact = this.calculateTechnicalDebtImpact(technicalAudit, businessContext);
 
-  private conversionImprovements = {
-    'critical': 0.20,      // 20% conversion improvement
-    'high': 0.20,
-    'suggested': 0.12,     // 12% improvement  
-    'medium': 0.12,
-    'enhancement': 0.05,   // 5% improvement
-    'low': 0.05
-  };
+    // Calculate overall impact score (0-100)
+    const impactScore = Math.round(
+      (accessibilityImpact.score * 0.3) +
+      (performanceImpact.score * 0.4) +
+      (technicalDebtImpact.score * 0.3)
+    );
 
-  calculateBusinessMetrics(annotations: any[]): BusinessMetrics {
-    console.log('🧮 BusinessImpactCalculator: Processing', annotations.length, 'annotations');
-    
-    if (!annotations || annotations.length === 0) {
-      return this.getOptimalMetrics();
-    }
-
-    const impactScore = this.calculateImpactScore(annotations);
-    const revenueEstimate = this.calculateRevenueEstimate(annotations, impactScore);
-    const timeline = this.calculateImplementationTimeline(annotations);
-    const competitivePosition = this.calculateCompetitivePosition(annotations, impactScore);
-    const prioritizedRecommendations = this.prioritizeRecommendations(annotations);
-
-    console.log('✅ BusinessImpactCalculator: Calculated metrics:', {
+    // Calculate revenue estimates
+    const revenueEstimate = this.calculateRevenueImpact(
       impactScore,
-      revenue: `$${(revenueEstimate.annual / 1000).toFixed(0)}K`,
-      timeline: `${timeline.total}w`,
-      competitive: competitivePosition.score
-    });
+      businessContext
+    );
+
+    // Calculate implementation timeline
+    const implementationTimeline = this.calculateImplementationTimeline(technicalAudit);
+
+    // Calculate competitive position
+    const competitivePosition = this.calculateCompetitivePosition(
+      technicalAudit,
+      businessContext
+    );
 
     return {
       impactScore,
       revenueEstimate,
-      implementationTimeline: timeline,
-      competitivePosition,
-      prioritizedRecommendations
+      implementationTimeline,
+      competitivePosition
     };
   }
 
-  private calculateImpactScore(annotations: any[]): number {
-    if (annotations.length === 0) return 95;
-    
-    // Count issues by severity
-    const severityCounts = annotations.reduce((counts, annotation) => {
-      const severity = annotation?.severity?.toLowerCase() || 'enhancement';
-      counts[severity] = (counts[severity] || 0) + 1;
-      return counts;
-    }, {} as Record<string, number>);
+  /**
+   * Generate quick wins from technical audit data
+   */
+  static generateQuickWins(technicalAudit: TechnicalAuditData): QuickWin[] {
+    const quickWins: QuickWin[] = [];
 
-    // Calculate deductions based on severity
-    let totalDeduction = 0;
-    Object.entries(severityCounts).forEach(([severity, count]) => {
-      const weight = this.severityWeights[severity as keyof typeof this.severityWeights] || 5;
-      const numericCount = Number(count) || 0;
-      totalDeduction += weight * numericCount;
-    });
+    // Accessibility quick wins
+    if (technicalAudit.accessibility.criticalIssues > 0) {
+      quickWins.push({
+        id: 'accessibility-critical',
+        title: 'Fix Critical Accessibility Issues',
+        impact: 'high',
+        effort: 'medium',
+        timeline: '2-3 weeks',
+        category: 'Accessibility',
+        priority: 1
+      });
+    }
 
-    // Factor in research backing
-    const researchBacked = annotations.filter(a => 
-      a?.researchBacking?.length > 0 || 
-      a?.confidence > 0.8
-    ).length;
-    const researchBonus = Math.min(15, Number(researchBacked) * 2);
+    // Performance quick wins
+    if (technicalAudit.performance.averageScore < 70) {
+      quickWins.push({
+        id: 'performance-optimization',
+        title: 'Optimize Core Web Vitals',
+        impact: 'high',
+        effort: 'medium',
+        timeline: '3-4 weeks',
+        category: 'Performance',
+        priority: 2
+      });
+    }
 
-    const finalScore = Math.max(20, Math.min(100, 100 - totalDeduction + researchBonus));
-    
-    console.log('📊 Impact Score Calculation:', {
-      totalIssues: annotations.length,
-      severityCounts,
-      totalDeduction,
-      researchBonus,
-      finalScore
-    });
+    // Technical debt quick wins
+    if (technicalAudit.technical.htmlIssues > 5) {
+      quickWins.push({
+        id: 'html-validation',
+        title: 'Fix HTML Validation Errors',
+        impact: 'medium',
+        effort: 'low',
+        timeline: '1-2 weeks',
+        category: 'Technical Quality',
+        priority: 3
+      });
+    }
 
-    return Math.round(finalScore);
+    return quickWins.sort((a, b) => a.priority - b.priority);
   }
 
-  private calculateRevenueEstimate(annotations: any[], impactScore: number): BusinessMetrics['revenueEstimate'] {
-    // Analyze issue types for targeted revenue calculations
-    const issueTypes = this.categorizeIssues(annotations);
-    
-    // Base calculation - opportunity gap from perfect score
-    const opportunityGap = Number(100 - impactScore) || 0;
-    const baseRevenue = opportunityGap * 1200; // $1.2K per point below 100
+  /**
+   * Generate major projects from technical audit data
+   */
+  static generateMajorProjects(technicalAudit: TechnicalAuditData): MajorProject[] {
+    const projects: MajorProject[] = [];
 
-    // Category-specific bonuses
-    const conversionRevenue = Number(issueTypes.conversion) * 15000; // $15K per conversion issue
-    const accessibilityRevenue = Number(issueTypes.accessibility) * 10000; // $10K per accessibility issue
-    const uxRevenue = Number(issueTypes.ux) * 8000; // $8K per UX issue
-    const visualRevenue = Number(issueTypes.visual) * 4000; // $4K per visual issue
+    // Comprehensive accessibility overhaul
+    if (technicalAudit.accessibility.averageScore < 60) {
+      projects.push({
+        id: 'accessibility-overhaul',
+        title: 'Comprehensive Accessibility Redesign',
+        impact: 'high',
+        resourceRequirements: ['UX Designer', 'Frontend Developer', 'Accessibility Specialist'],
+        timeline: '8-12 weeks',
+        roi: 15,
+        category: 'Accessibility'
+      });
+    }
 
-    const totalRevenue = baseRevenue + conversionRevenue + accessibilityRevenue + uxRevenue + visualRevenue;
-    
-    // Calculate confidence based on issue severity and research backing
-    const criticalIssues = annotations.filter(a => 
-      ['critical', 'high'].includes(a?.severity?.toLowerCase())
-    ).length;
-    const researchBacked = annotations.filter(a => a?.researchBacking?.length > 0).length;
-    
-    const confidence = Math.min(95, 65 + (Number(criticalIssues) * 5) + (Number(researchBacked) * 3));
+    // Performance architecture redesign
+    if (technicalAudit.performance.averageScore < 50) {
+      projects.push({
+        id: 'performance-architecture',
+        title: 'Performance Architecture Overhaul',
+        impact: 'high',
+        resourceRequirements: ['Senior Frontend Developer', 'DevOps Engineer', 'Performance Specialist'],
+        timeline: '12-16 weeks',
+        roi: 25,
+        category: 'Performance'
+      });
+    }
 
-    const assumptions = [
-      `Based on ${annotations.length} identified improvement opportunities`,
-      `${issueTypes.conversion} conversion-related issues found`,
-      `${issueTypes.accessibility} accessibility improvements needed`,
-      `Impact score: ${impactScore}/100 indicates ${100 - impactScore}% opportunity gap`
-    ];
+    return projects;
+  }
+
+  /**
+   * Calculate business metrics (legacy compatibility)
+   */
+  static calculateBusinessMetrics(
+    technicalAudit: TechnicalAuditData,
+    businessContext: BusinessContext = {}
+  ): BusinessMetrics {
+    const impact = this.calculateBusinessImpact(technicalAudit, businessContext);
+    return {
+      ...impact,
+      prioritizedRecommendations: {
+        quickWins: this.generateQuickWins(technicalAudit),
+        majorProjects: this.generateMajorProjects(technicalAudit)
+      }
+    };
+  }
+
+  // Private helper methods
+  private static calculateAccessibilityImpact(
+    accessibility: TechnicalAuditData['accessibility'],
+    businessContext: BusinessContext
+  ) {
+    const score = Math.max(0, 100 - (accessibility.criticalIssues * 10) - (accessibility.totalIssues * 2));
+    const userImpact = businessContext.userBase ? Math.round(businessContext.userBase * 0.15) : 0; // 15% of users affected by accessibility issues
+    
+    return { score, userImpact };
+  }
+
+  private static calculatePerformanceImpact(
+    performance: TechnicalAuditData['performance'],
+    businessContext: BusinessContext
+  ) {
+    const score = performance.averageScore;
+    const conversionImpact = performance.averageScore < 70 ? 0.1 : 0.05; // Performance directly impacts conversion
+    
+    return { score, conversionImpact };
+  }
+
+  private static calculateTechnicalDebtImpact(
+    technicalAudit: TechnicalAuditData,
+    businessContext: BusinessContext
+  ) {
+    const totalIssues = technicalAudit.technical.htmlIssues + technicalAudit.technical.seoIssues;
+    const score = Math.max(0, 100 - (totalIssues * 3));
+    
+    return { score };
+  }
+
+  private static calculateRevenueImpact(
+    impactScore: number,
+    businessContext: BusinessContext
+  ) {
+    const baseRevenue = (businessContext.trafficVolume || 10000) * 
+                       (businessContext.conversionRate || 0.02) * 
+                       (businessContext.averageOrderValue || 50) * 12; // Annual
+
+    const potentialIncrease = (100 - impactScore) / 100 * 0.2; // Up to 20% increase
+    const annual = Math.round(baseRevenue * potentialIncrease);
+    
+    return {
+      annual,
+      confidence: Math.round(impactScore * 0.8), // Higher impact score = higher confidence
+      assumptions: [
+        'Performance improvements increase conversion by 0.1% per 10-point score increase',
+        'Accessibility fixes expand addressable market by 15%',
+        'Technical debt reduction improves development velocity by 25%'
+      ]
+    };
+  }
+
+  private static calculateImplementationTimeline(technicalAudit: TechnicalAuditData) {
+    const quickWinWeeks = Math.ceil(
+      (technicalAudit.accessibility.criticalIssues * 0.5) +
+      (technicalAudit.technical.htmlIssues * 0.1) + 2
+    );
+
+    const majorProjectWeeks = Math.ceil(
+      (technicalAudit.accessibility.totalIssues * 0.2) +
+      (technicalAudit.performance.failingMetrics * 1.5) + 8
+    );
 
     return {
-      annual: Math.max(5000, Math.round(totalRevenue / 1000) * 1000), // Round to nearest $1K, min $5K
-      confidence: Math.round(confidence),
-      assumptions
+      quickWins: quickWinWeeks,
+      majorProjects: majorProjectWeeks,
+      total: quickWinWeeks + majorProjectWeeks
     };
   }
 
-  private categorizeIssues(annotations: any[]) {
-    const categories = {
-      conversion: 0,
-      accessibility: 0,
-      ux: 0,
-      visual: 0,
-      other: 0
+  private static calculateCompetitivePosition(
+    technicalAudit: TechnicalAuditData,
+    businessContext: BusinessContext
+  ) {
+    // Industry benchmarks (simplified)
+    const industryBenchmarks = {
+      accessibility: 75,
+      performance: 80
     };
 
-    annotations.forEach(annotation => {
-      const text = `${annotation?.feedback || ''} ${annotation?.description || ''} ${annotation?.title || ''}`.toLowerCase();
-      
-      if (text.includes('conversion') || text.includes('cta') || text.includes('button') || 
-          text.includes('checkout') || text.includes('purchase') || text.includes('form')) {
-        categories.conversion++;
-      } else if (text.includes('accessibility') || text.includes('contrast') || 
-                text.includes('readable') || text.includes('wcag') || text.includes('alt')) {
-        categories.accessibility++;
-      } else if (text.includes('navigation') || text.includes('usability') || 
-                text.includes('user experience') || text.includes('confusing') || 
-                text.includes('flow')) {
-        categories.ux++;
-      } else if (text.includes('color') || text.includes('font') || text.includes('spacing') || 
-                text.includes('layout') || text.includes('visual') || text.includes('design')) {
-        categories.visual++;
-      } else {
-        categories.other++;
-      }
-    });
+    const accessibilityGap = technicalAudit.accessibility.averageScore - industryBenchmarks.accessibility;
+    const performanceGap = technicalAudit.performance.averageScore - industryBenchmarks.performance;
 
-    return categories;
-  }
-
-  private calculateImplementationTimeline(annotations: any[]): BusinessMetrics['implementationTimeline'] {
-    if (annotations.length === 0) {
-      return { quickWins: 1, majorProjects: 0, total: 1 };
-    }
-
-    const quickWinKeywords = ['color', 'spacing', 'copy', 'font', 'text', 'contrast', 'alt'];
-    const majorProjectKeywords = ['architecture', 'redesign', 'rebuild', 'restructure', 'navigation', 'conversion'];
-
-    let quickWinTasks = 0;
-    let moderateTasks = 0;
-    let majorTasks = 0;
-
-    annotations.forEach(annotation => {
-      const content = `${annotation?.title || ''} ${annotation?.description || ''} ${annotation?.feedback || ''}`.toLowerCase();
-      const severity = annotation?.severity?.toLowerCase() || 'enhancement';
-      
-      const isQuickWin = quickWinKeywords.some(keyword => content.includes(keyword)) || 
-                        ['enhancement', 'low'].includes(severity);
-      const isMajorProject = majorProjectKeywords.some(keyword => content.includes(keyword)) || 
-                           ['critical', 'high'].includes(severity);
-
-      if (isQuickWin) {
-        quickWinTasks++;
-      } else if (isMajorProject) {
-        majorTasks++;
-      } else {
-        moderateTasks++;
-      }
-    });
-
-    const quickWinWeeks = Math.ceil(Number(quickWinTasks) * 0.4); // 0.4 weeks per quick win
-    const moderateWeeks = Math.ceil(Number(moderateTasks) * 1.2); // 1.2 weeks per moderate task
-    const majorWeeks = Math.ceil(Number(majorTasks) * 2.5); // 2.5 weeks per major task
-
-    return {
-      quickWins: Math.max(1, quickWinWeeks),
-      majorProjects: Math.max(0, moderateWeeks + majorWeeks),
-      total: Math.max(1, Math.min(20, quickWinWeeks + moderateWeeks + majorWeeks))
-    };
-  }
-
-  private calculateCompetitivePosition(annotations: any[], impactScore: number): BusinessMetrics['competitivePosition'] {
-    const criticalCount = annotations.filter(a => 
-      ['critical', 'high'].includes(a?.severity?.toLowerCase())
-    ).length;
-    
-    // Score based on impact score and critical issues
-    let score = Math.floor(Number(impactScore) / 10); // Convert 100-point scale to 10-point scale
-    if (Number(criticalCount) > 3) score = Math.max(1, score - 2);
-    if (Number(criticalCount) === 0 && Number(impactScore) > 85) score = Math.min(10, score + 1);
-    
-    const strengths = [];
-    const gaps = [];
-
-    // Dynamic strengths based on analysis
-    if (Number(criticalCount) === 0) {
-      strengths.push('No critical usability issues identified');
-    }
-    if (Number(impactScore) > 80) {
-      strengths.push('Strong foundational user experience');
-    }
-    if (annotations.some(a => a?.researchBacking?.length > 0)) {
-      strengths.push('Research-backed recommendations available');
-    }
-    if (annotations.length < 5) {
-      strengths.push('Overall good design foundation');
-    }
-
-    // Dynamic gaps based on issues found
-    if (Number(criticalCount) > 2) {
-      gaps.push(`${criticalCount} critical issues requiring immediate attention`);
-    }
-    if (annotations.filter(a => a?.severity === 'suggested').length > 3) {
-      gaps.push('Multiple improvement opportunities identified');
-    }
-    
-    const issueTypes = this.categorizeIssues(annotations);
-    if (Number(issueTypes.conversion) > 0) {
-      gaps.push('Conversion optimization opportunities available');
-    }
-    if (Number(issueTypes.accessibility) > 1) {
-      gaps.push('Accessibility improvements needed for broader reach');
-    }
-
-    // Fallbacks if no specific issues found
-    if (strengths.length === 0) {
-      strengths.push('Analysis completed with actionable insights');
-    }
-    if (gaps.length === 0) {
-      gaps.push('Minor optimization opportunities available');
-    }
+    const score = Math.round(5 + (accessibilityGap + performanceGap) / 20); // 1-10 scale
 
     return {
       score: Math.max(1, Math.min(10, score)),
-      strengths,
-      gaps
-    };
-  }
-
-  private prioritizeRecommendations(annotations: any[]): BusinessMetrics['prioritizedRecommendations'] {
-    const quickWinKeywords = ['color', 'spacing', 'copy', 'button', 'text', 'font', 'contrast'];
-    
-    const quickWins = annotations
-      .filter(annotation => {
-        const content = `${annotation?.title || ''} ${annotation?.description || ''} ${annotation?.feedback || ''}`.toLowerCase();
-        return quickWinKeywords.some(keyword => content.includes(keyword)) || 
-               ['enhancement', 'low'].includes(annotation?.severity?.toLowerCase());
-      })
-      .slice(0, 4)
-      .map(annotation => ({
-        title: this.extractTitle(annotation),
-        impact: ['critical', 'high'].includes(annotation?.severity?.toLowerCase()) ? 'High' : 'Medium',
-        effort: 'Low',
-        timeline: '1-2 weeks',
-        description: this.extractDescription(annotation)
-      }));
-
-    const majorProjects = annotations
-      .filter(annotation => 
-        ['critical', 'high', 'suggested'].includes(annotation?.severity?.toLowerCase())
-      )
-      .slice(0, 3)
-      .map(annotation => ({
-        title: this.extractTitle(annotation),
-        impact: 'High',
-        effort: ['critical', 'high'].includes(annotation?.severity?.toLowerCase()) ? 'High' : 'Medium',
-        timeline: ['critical', 'high'].includes(annotation?.severity?.toLowerCase()) ? '4-8 weeks' : '2-4 weeks',
-        description: this.extractDescription(annotation),
-        roi: ['critical', 'high'].includes(annotation?.severity?.toLowerCase()) ? 'Very High' : 'High'
-      }));
-
-    return { quickWins, majorProjects };
-  }
-
-  private extractTitle(annotation: any): string {
-    const title = annotation?.title || annotation?.feedback || 'Improvement Opportunity';
-    return title.length > 60 ? title.substring(0, 60) + '...' : title;
-  }
-
-  private extractDescription(annotation: any): string {
-    const description = annotation?.description || annotation?.feedback || 'Implementation details available in visual analysis';
-    return description.length > 100 ? description.substring(0, 100) + '...' : description;
-  }
-
-  private getOptimalMetrics(): BusinessMetrics {
-    return {
-      impactScore: 95,
-      revenueEstimate: {
-        annual: 12000,
-        confidence: 85,
-        assumptions: ['No issues found - excellent foundation for growth']
-      },
-      implementationTimeline: {
-        quickWins: 1,
-        majorProjects: 0,
-        total: 1
-      },
-      competitivePosition: {
-        score: 9,
-        strengths: ['Excellent user experience foundation', 'No critical issues identified'],
-        gaps: ['Minor enhancement opportunities available']
-      },
-      prioritizedRecommendations: {
-        quickWins: [{
-          title: 'Maintain current excellence',
-          impact: 'High',
-          effort: 'Low',
-          timeline: '1 week',
-          description: 'Continue monitoring and maintaining current high standards'
-        }],
-        majorProjects: [{
-          title: 'Strategic growth optimization',
-          impact: 'High',
-          effort: 'Medium',
-          timeline: '2-3 weeks',
-          description: 'Explore advanced optimization opportunities',
-          roi: 'High'
-        }]
-      }
+      strengths: [
+        ...(technicalAudit.accessibility.averageScore > 80 ? ['Strong accessibility foundation'] : []),
+        ...(technicalAudit.performance.averageScore > 85 ? ['Excellent performance metrics'] : []),
+      ],
+      gaps: [
+        ...(technicalAudit.accessibility.criticalIssues > 0 ? ['Critical accessibility barriers'] : []),
+        ...(technicalAudit.performance.averageScore < 70 ? ['Performance bottlenecks'] : []),
+        ...(technicalAudit.technical.htmlIssues > 10 ? ['Technical debt accumulation'] : [])
+      ]
     };
   }
 }
