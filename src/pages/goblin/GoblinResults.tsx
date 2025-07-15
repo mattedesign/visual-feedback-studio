@@ -7,7 +7,6 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Trophy } from 'lucide-react';
 import { useImageLoader } from '@/hooks/goblin/useImageLoader';
-// ✅ REMOVED: parseNestedJson import as per Nuclear Fix
 
 // ✅ Tab components
 import DetailedModeView from '@/components/goblin/DetailedModeView';
@@ -38,6 +37,14 @@ interface PersonaData {
     description: string;
     impact: string;
     suggested_fix: string;
+  }>;
+  annotations?: Array<{
+    x: number;
+    y: number;
+    title: string;
+    description: string;
+    category?: string;
+    severity?: string;
   }>;
   top_fix_summary?: string[];
   // Strategic persona specific fields
@@ -277,7 +284,7 @@ const GoblinResults: React.FC = () => {
     return cleaned.trim();
   };
 
-  // Simplified approach: extract persona data from results.persona_feedback
+  // ✅ FIXED: Enhanced persona data extraction that handles strategic JSON parsing
   const extractPersonaData = (data: any, personaType: string, fallbackSummary: string): PersonaData => {
     console.log('🔍 Extracting persona data for:', personaType, data);
     
@@ -296,12 +303,55 @@ const GoblinResults: React.FC = () => {
       return { analysis: cleanedAnalysis };
     }
 
-    // If it's an object, clean any string fields that might contain markdown
+    // If it's an object, process it properly
     if (typeof personaData === 'object' && personaData !== null) {
       const cleanedData = { ...personaData };
       
+      // ✅ CRITICAL FIX: Handle JSON string in analysis field for strategic persona
+      if (personaType === 'strategic' && cleanedData.analysis && typeof cleanedData.analysis === 'string') {
+        try {
+          // Remove markdown wrapper and parse JSON
+          let analysisContent = cleanedData.analysis;
+          const jsonMatch = analysisContent.match(/```json\s*\n?({[\s\S]*?})\s*\n?```/);
+          
+          if (jsonMatch) {
+            const parsedAnalysis = JSON.parse(jsonMatch[1]);
+            console.log('🎯 Successfully parsed strategic analysis JSON:', parsedAnalysis);
+            
+            // Merge parsed analysis data into cleanedData
+            if (parsedAnalysis.analysis) {
+              cleanedData.analysis = parsedAnalysis.analysis;
+            }
+            if (parsedAnalysis.issues) {
+              cleanedData.issues = parsedAnalysis.issues;
+            }
+            if (parsedAnalysis.annotations) {
+              cleanedData.annotations = parsedAnalysis.annotations;
+            }
+            if (parsedAnalysis.businessImpact) {
+              cleanedData.businessImpact = parsedAnalysis.businessImpact;
+            }
+            if (parsedAnalysis.recommendations) {
+              cleanedData.recommendations = parsedAnalysis.recommendations;
+            }
+            
+            console.log('✅ Strategic persona data enhanced with parsed JSON:', {
+              hasAnalysis: !!cleanedData.analysis,
+              hasIssues: !!cleanedData.issues,
+              hasAnnotations: !!cleanedData.annotations,
+              issueCount: cleanedData.issues?.length || 0,
+              annotationCount: cleanedData.annotations?.length || 0
+            });
+          }
+        } catch (e) {
+          console.error('❌ Failed to parse strategic analysis JSON:', e);
+          // Keep original analysis field if parsing fails
+          cleanedData.analysis = cleanMarkdownJson(cleanedData.analysis);
+        }
+      }
+      
       // Clean common fields that might contain markdown
-      const fieldsToClean = ['analysis', 'biggestGripe', 'goblinWisdom', 'goblinPrediction', 'whatMakesGoblinHappy'];
+      const fieldsToClean = ['biggestGripe', 'goblinWisdom', 'goblinPrediction', 'whatMakesGoblinHappy'];
       
       fieldsToClean.forEach(field => {
         if (typeof cleanedData[field] === 'string') {
@@ -371,107 +421,87 @@ const GoblinResults: React.FC = () => {
     hasGoblinWisdom: !!personaData.goblinWisdom,
     hasGoblinPrediction: !!personaData.goblinPrediction,
     recommendationsCount: Array.isArray(personaData.recommendations) ? personaData.recommendations.length : 0,
-    recommendations: personaData.recommendations
+    recommendations: personaData.recommendations,
+    hasIssues: !!personaData.issues,
+    hasAnnotations: !!personaData.annotations,
+    issueCount: personaData.issues?.length || 0,
+    annotationCount: personaData.annotations?.length || 0
   });
 
-  // ✅ SIMPLE FIX: Add this after your existing persona data extraction
+  // ✅ FIXED: Create annotations from properly parsed persona data
   useEffect(() => {
-    if (results?.persona_feedback && session?.persona_type) {
-      console.log('🔧 Extracting annotations from parsed persona data');
+    if (personaData && session?.persona_type) {
+      console.log('🔧 Creating annotations from parsed persona data');
       
-      try {
-        // Use your existing extraction logic (the one that works)
-        const personaData = extractPersonaData(
-          results.persona_feedback, 
-          session.persona_type, 
-          results?.synthesis_summary || ''
-        );
-        
-        // NEW: Extract annotations from the parsed data
-        const extractedAnnotations = extractAnnotationsFromPersonaData(personaData, session.persona_type);
-        
-        if (extractedAnnotations.length > 0) {
-          console.log('✅ Extracted annotations:', extractedAnnotations.length);
-          
-          // Update results with extracted annotations
-          setResults(prev => ({
-            ...prev,
-            annotations: extractedAnnotations
-          }));
-        }
-      } catch (error) {
-        console.error('🚨 Annotation extraction error:', error);
+      const annotations = [];
+      
+      // Strategy 1: Use parsed annotations if available
+      if (personaData.annotations && Array.isArray(personaData.annotations)) {
+        console.log('✅ Found parsed annotations:', personaData.annotations.length);
+        personaData.annotations.forEach((ann, index) => {
+          annotations.push({
+            id: `${session.persona_type}_ann_${index}`,
+            x: Number(ann.x) || 50,
+            y: Number(ann.y) || 30 + (index * 20),
+            category: ann.category || 'ux',
+            severity: ann.severity || 'suggested',
+            feedback: ann.description || ann.title || 'UX insight',
+            title: ann.title || `Strategic Issue ${index + 1}`,
+            description: ann.description || 'See detailed analysis',
+            implementationEffort: 'medium',
+            businessImpact: 'medium',
+            imageIndex: 0
+          });
+        });
+      }
+      
+      // Strategy 2: Convert issues to annotations if no direct annotations
+      if (annotations.length === 0 && personaData.issues && Array.isArray(personaData.issues)) {
+        console.log('✅ Converting issues to annotations:', personaData.issues.length);
+        personaData.issues.forEach((issue, index) => {
+          annotations.push({
+            id: `${session.persona_type}_issue_${index}`,
+            x: 30 + (index % 3) * 30,
+            y: 25 + Math.floor(index / 3) * 25,
+            category: issue.type || 'ux',
+            severity: 'suggested',
+            feedback: issue.description || 'UX improvement needed',
+            title: issue.description?.split('.')[0] || `Strategic Issue ${index + 1}`,
+            description: issue.suggested_fix || issue.impact || 'Improvement recommended',
+            implementationEffort: 'medium',
+            businessImpact: 'medium',
+            imageIndex: 0
+          });
+        });
+      }
+      
+      // Strategy 3: Create summary annotation if no specific issues/annotations
+      if (annotations.length === 0 && personaData.analysis) {
+        console.log('✅ Creating summary annotation from analysis');
+        annotations.push({
+          id: `${session.persona_type}_summary`,
+          x: 50,
+          y: 30,
+          category: 'ux',
+          severity: 'suggested',
+          feedback: personaData.analysis.substring(0, 100) + '...',
+          title: `${session.persona_type} Analysis Available`,
+          description: 'View detailed analysis in Summary tab',
+          implementationEffort: 'medium',
+          businessImpact: 'medium',
+          imageIndex: 0
+        });
+      }
+      
+      if (annotations.length > 0) {
+        console.log(`🎯 Created ${annotations.length} annotations from persona data`);
+        setResults(prev => ({
+          ...prev,
+          annotations: annotations
+        }));
       }
     }
-  }, [results?.persona_feedback, session?.persona_type]);
-
-  // NEW: Simple annotation extraction function
-  const extractAnnotationsFromPersonaData = (personaData: any, personaType: string) => {
-    const annotations = [];
-    
-    console.log('🔍 Looking for annotations in persona data:', personaData);
-    
-    // Strategy 1: Direct annotations array (if Claude provided it)
-    if (personaData?.annotations && Array.isArray(personaData.annotations)) {
-      console.log('✅ Found direct annotations array');
-      personaData.annotations.forEach((ann, index) => {
-        annotations.push({
-          id: `${personaType}_${index}`,
-          x: Number(ann.x) || 50,
-          y: Number(ann.y) || 30 + (index * 20),
-          category: ann.category || 'ux',
-          severity: ann.severity || 'suggested',
-          feedback: ann.description || ann.title || ann.feedback || 'UX insight available',
-          title: ann.title || `${personaType} Issue ${index + 1}`,
-          description: ann.description || ann.solution || 'See detailed analysis',
-          implementationEffort: 'medium',
-          businessImpact: 'medium',
-          imageIndex: 0
-        });
-      });
-    }
-    
-    // Strategy 2: Issues array (convert to annotations)
-    if (personaData?.issues && Array.isArray(personaData.issues)) {
-      console.log('✅ Found issues array, converting to annotations');
-      personaData.issues.forEach((issue, index) => {
-        annotations.push({
-          id: `${personaType}_issue_${index}`,
-          x: 30 + (index % 3) * 30,
-          y: 25 + Math.floor(index / 3) * 25,
-          category: issue.type || 'ux',
-          severity: issue.priority === 'high' ? 'critical' : 'suggested',
-          feedback: issue.description || 'UX improvement needed',
-          title: issue.description?.split('.')[0] || `${personaType} Issue ${index + 1}`,
-          description: issue.suggested_fix || issue.impact || 'Improvement recommended',
-          implementationEffort: 'medium',
-          businessImpact: 'medium',
-          imageIndex: 0
-        });
-      });
-    }
-    
-    // Strategy 3: Analysis text (create summary annotation)
-    if (annotations.length === 0 && personaData?.analysis) {
-      console.log('✅ Creating annotation from analysis text');
-      annotations.push({
-        id: `${personaType}_analysis`,
-        x: 50,
-        y: 30,
-        category: 'ux',
-        severity: 'suggested',
-        feedback: personaData.analysis.substring(0, 100) + '...',
-        title: `${personaType} Analysis Available`,
-        description: 'Click to view detailed analysis in Summary tab',
-        implementationEffort: 'medium',
-        businessImpact: 'medium',
-        imageIndex: 0
-      });
-    }
-    
-    console.log(`🎯 Extracted ${annotations.length} annotations for ${personaType}`);
-    return annotations;
-  };
+  }, [personaData, session?.persona_type]);
 
   // Extract total images count from analysis data and update navigation context
   useEffect(() => {
