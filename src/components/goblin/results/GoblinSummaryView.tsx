@@ -18,6 +18,7 @@ import {
   Component
 } from "lucide-react";
 import { toast } from "sonner";
+import SummaryChat from "../chat/SummaryChat";
 
 interface PersonaData {
   analysis?: string;
@@ -67,13 +68,15 @@ interface GoblinSummaryViewProps {
   personaType: string;
   sessionId: string;
   technicalAudit?: TechnicalAuditSummary;
+  session?: any; // Added for chat functionality
 }
 
 export const GoblinSummaryView: React.FC<GoblinSummaryViewProps> = ({ 
   personaData, 
   personaType, 
   sessionId,
-  technicalAudit 
+  technicalAudit,
+  session
 }) => {
   const handleExportSummary = () => {
     const summaryText = `
@@ -427,6 +430,17 @@ Session ID: ${sessionId}
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Interactive Chat Section */}
+      {session && (
+        <div className="mt-6">
+          <SummaryChat 
+            session={session}
+            personaData={personaData}
+            personaType={personaType}
+          />
+        </div>
       )}
     </div>
   );

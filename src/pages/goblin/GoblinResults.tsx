@@ -694,6 +694,7 @@ const GoblinResults: React.FC = () => {
               personaType={session?.persona_type || 'strategic'}
               sessionId={sessionId || ''}
               technicalAudit={technicalAuditData}
+              session={session}
             />
           </TabsContent>
 

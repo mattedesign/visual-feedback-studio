@@ -15,7 +15,7 @@ serve(async (req) => {
   }
 
   try {
-    const { sessionId, imageUrls, prompt, persona, chatMode, conversationHistory, originalAnalysis, saveInitialOnly, initialContent } = await req.json();
+    const { sessionId, imageUrls, prompt, persona, chatMode, conversationHistory, originalAnalysis, saveInitialOnly, initialContent, summaryContext } = await req.json();
 
     // Add persona mapping to fix frontend/backend persona name mismatches
     const personaMapping: { [key: string]: string } = {
@@ -241,7 +241,7 @@ serve(async (req) => {
     }
 
     // Build enhanced prompt
-    const enhancedPrompt = buildPrompt(normalizedPersona, prompt, actualChatMode, conversationHistory, originalAnalysis);
+    const enhancedPrompt = buildPrompt(normalizedPersona, prompt, actualChatMode, conversationHistory, originalAnalysis, summaryContext);
     
     console.log("🧙‍♂️ Sending message to Claude with", imageContent.length, "images");
 
@@ -485,7 +485,7 @@ serve(async (req) => {
 });
 
 // FIXED: Stricter JSON prompt (around line 400 in Claude analyzer)
-function buildPrompt(persona: string, userPrompt: string, chatMode: boolean, conversationHistory?: string, originalAnalysis?: any): string {
+function buildPrompt(persona: string, userPrompt: string, chatMode: boolean, conversationHistory?: string, originalAnalysis?: any, summaryContext?: boolean): string {
   const personaInstructions = {
     clarity: `You are "Clarity the Goblin Mentor," a seasoned senior UX strategist. You tell the hard truths about design with wit and directness.`,
     strategic: `You are "Clarity the Goblin Mentor," a seasoned senior UX strategist. Focus on business impact, user goals, and measurable outcomes.`,
@@ -706,7 +706,12 @@ function buildPrompt(persona: string, userPrompt: string, chatMode: boolean, con
   let basePrompt = personaInstructions[persona as keyof typeof personaInstructions] || personaInstructions.clarity;
   
   if (chatMode) {
-    basePrompt += `\n\nYou are in chat mode. Respond conversationally to the user's question while maintaining your ${persona} persona.`;
+    if (summaryContext) {
+      basePrompt += `\n\nYou are chatting from the summary view where users can ask follow-up questions about their analysis. Be helpful and provide actionable insights while maintaining your ${persona} persona.`;
+      basePrompt += `\n\nThe user is looking at their analysis summary and wants to learn more. Focus on being practical and giving specific advice they can implement.`;
+    } else {
+      basePrompt += `\n\nYou are in chat mode. Respond conversationally to the user's question while maintaining your ${persona} persona.`;
+    }
     
     if (conversationHistory) {
       basePrompt += `\n\nConversation history:\n${conversationHistory}`;
@@ -721,6 +726,11 @@ function buildPrompt(persona: string, userPrompt: string, chatMode: boolean, con
     }
     
     basePrompt += `\n\nUser's new question: ${userPrompt}`;
+    
+    if (summaryContext) {
+      basePrompt += `\n\nSince this is from the summary view, provide practical, actionable advice. Keep your response concise but thorough, and always include specific next steps the user can take.`;
+    }
+    
     basePrompt += `\n\nRespond in plain text as ${persona} would, maintaining your personality while being helpful and direct.`;
   } else {
     const jsonTemplate = personaJsonTemplates[persona as keyof typeof personaJsonTemplates] || personaJsonTemplates.clarity;
