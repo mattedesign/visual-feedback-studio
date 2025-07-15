@@ -12,7 +12,7 @@ import { useImageLoader } from '@/hooks/goblin/useImageLoader';
 // ✅ Tab components
 import DetailedModeView from '@/components/goblin/DetailedModeView';
 import ClarityChat from '@/components/goblin/ClarityChat';
-import SummaryView from '@/components/goblin/SummaryView';
+import { GoblinSummaryView } from '@/components/goblin/results/GoblinSummaryView';
 
 import { NavigationProvider } from '@/contexts/NavigationContext';
 
@@ -195,6 +195,36 @@ const GoblinResults: React.FC = () => {
       firstValuePreview: results.persona_feedback[Object.keys(results.persona_feedback)[0]] ? JSON.stringify(results.persona_feedback[Object.keys(results.persona_feedback)[0]]).substring(0, 200) : 'none'
     });
   }
+
+  // Extract technical audit data from results
+  const extractTechnicalAuditData = () => {
+    if (!results?.model_metadata?.forensicIntegration) return null;
+    
+    const forensic = results.model_metadata.forensicIntegration;
+    
+    return {
+      accessibility: {
+        averageScore: Math.round(forensic.accessibilityReport?.averageScore || 0),
+        criticalIssues: forensic.accessibilityReport?.criticalIssues || 0,
+        totalIssues: forensic.accessibilityReport?.totalIssues || 0
+      },
+      performance: {
+        averageScore: Math.round(forensic.lighthouseReport?.averageScore || 0),
+        failingMetrics: forensic.lighthouseReport?.failingMetrics || 0,
+        totalMetrics: forensic.lighthouseReport?.totalMetrics || 0
+      },
+      components: {
+        totalComponents: forensic.componentInventory?.totalComponents || 0,
+        accessibilityIssues: forensic.componentInventory?.accessibilityIssues || 0
+      },
+      technical: {
+        htmlIssues: forensic.technicalIssues?.htmlIssues || 0,
+        seoIssues: forensic.technicalIssues?.seoIssues || 0
+      }
+    };
+  };
+
+  const technicalAuditData = extractTechnicalAuditData();
   
   // Enhanced persona data extraction with comprehensive debugging
   let rawPersonaData = null;
@@ -670,14 +700,11 @@ const GoblinResults: React.FC = () => {
             </TabsList>
 
           <TabsContent value="summary" className="mt-8 w-full">
-            <SummaryView
-              results={results}
-              session={session}
+            <GoblinSummaryView 
               personaData={personaData}
-              onExport={handleExport}
-              onCopyLink={handleCopyLink}
-              copied={copied}
-              chatFeedbackAnchors={chatFeedbackAnchors}
+              personaType={session?.persona_type || 'strategic'}
+              sessionId={sessionId || ''}
+              technicalAudit={technicalAuditData}
             />
           </TabsContent>
 
