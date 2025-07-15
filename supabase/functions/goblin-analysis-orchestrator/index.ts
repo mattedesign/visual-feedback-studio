@@ -191,17 +191,7 @@ async function attemptModelAnalysis(modelConfig: any, requestBody: any, supabase
 }
 
 serve(async (req) => {
-  console.log('🔴 DEBUG_ORCHESTRATOR: Function entry point reached');
-  console.log('🔴 DEBUG_ORCHESTRATOR: Request method:', req.method);
-  console.log('🔴 DEBUG_ORCHESTRATOR: Environment check:', {
-    hasSupabaseUrl: !!Deno.env.get('SUPABASE_URL'),
-    hasServiceKey: !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
-    hasAnthropicKey: !!Deno.env.get('ANTHROPIC_API_KEY'),
-    timestamp: new Date().toISOString()
-  });
-
   if (req.method === 'OPTIONS') {
-    console.log('🔴 DEBUG_ORCHESTRATOR: Returning CORS response');
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -209,7 +199,6 @@ serve(async (req) => {
   let sessionId;
   let supabase;
   const startTime = Date.now();
-  console.log('🔴 DEBUG_ORCHESTRATOR: Starting analysis orchestration');
 
   try {
     // Enhanced request parsing with validation
@@ -525,39 +514,32 @@ serve(async (req) => {
 
     // Step 6: Save final results with transaction-like behavior
     try {
-      const resultData = {
-        session_id: sessionId,
-        persona_feedback: synthesisResult.data.personaFeedback,
-        synthesis_summary: synthesisResult.data.summary,
-        priority_matrix: synthesisResult.data.priorityMatrix,
-        annotations: synthesisResult.data.annotations,
-        model_metadata: {
-          model: modelUsed,
-          persona,
-          confidence,
-          processedAt: new Date().toISOString(),
-          orchestratorVersion: '2.1',
-          processingTimeMs: Date.now() - startTime,
-          fallbackUsed,
-          maturityData: synthesisResult.data.maturityData,
-          circuitBreakerStatus: {
-            claude: isCircuitOpen('goblin-model-claude-analyzer'),
-            gpt: isCircuitOpen('goblin-model-gpt-analyzer'),
-            vision: isCircuitOpen('goblin-vision-screen-detector')
-          }
-        },
-        processing_time_ms: Date.now() - startTime,
-        goblin_gripe_level: persona === 'clarity' ? synthesisResult.data.gripeLevel : null
-      };
-      
-      const dbResult = await supabase
+      await supabase
         .from('goblin_analysis_results')
-        .insert(resultData);
-        
-      if (dbResult.error) {
-        console.error('🔴 DEBUG_GOBLIN: DB save failed', dbResult.error, resultData);
-        throw dbResult.error;
-      }
+        .insert({
+          session_id: sessionId,
+          persona_feedback: synthesisResult.data.personaFeedback,
+          synthesis_summary: synthesisResult.data.summary,
+          priority_matrix: synthesisResult.data.priorityMatrix,
+          annotations: synthesisResult.data.annotations,
+          model_metadata: {
+            model: modelUsed,
+            persona,
+            confidence,
+            processedAt: new Date().toISOString(),
+            orchestratorVersion: '2.1',
+            processingTimeMs: Date.now() - startTime,
+            fallbackUsed,
+            maturityData: synthesisResult.data.maturityData, // ✅ Include maturity data
+            circuitBreakerStatus: {
+              claude: isCircuitOpen('goblin-model-claude-analyzer'),
+              gpt: isCircuitOpen('goblin-model-gpt-analyzer'),
+              vision: isCircuitOpen('goblin-vision-screen-detector')
+            }
+          },
+          processing_time_ms: Date.now() - startTime,
+          goblin_gripe_level: persona === 'clarity' ? synthesisResult.data.gripeLevel : null
+        });
 
       // Update session to completed
       await supabase
@@ -605,7 +587,6 @@ serve(async (req) => {
 
   } catch (error) {
     const totalTime = Date.now() - startTime;
-    console.error('🔴 DEBUG_GOBLIN: Orchestrator failed', error);
     console.error('❌ Goblin orchestration failed:', {
       error: error.message,
       stack: error.stack,

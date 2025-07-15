@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Trophy } from 'lucide-react';
 import { useImageLoader } from '@/hooks/goblin/useImageLoader';
+// ✅ REMOVED: parseNestedJson import as per Nuclear Fix
 
 // ✅ Tab components
 import DetailedModeView from '@/components/goblin/DetailedModeView';
@@ -20,7 +21,7 @@ import { MaturityScoreDashboard } from '@/components/goblin/maturity/MaturitySco
 import { ImprovementRoadmap } from '@/components/goblin/maturity/ImprovementRoadmap';
 import { AchievementShowcase } from '@/components/goblin/maturity/AchievementShowcase';
 
-// Type definition for persona data with enhanced fields
+// Type definition for persona data
 interface PersonaData {
   analysis?: string;
   recommendations?: string[];
@@ -30,23 +31,6 @@ interface PersonaData {
   goblinPrediction?: string;
   wildCard?: string;
   experiments?: string[];
-  // Enhanced fields from bullet-proof prompt
-  issues?: Array<{
-    id: string;
-    type: string;
-    description: string;
-    impact: string;
-    suggested_fix: string;
-  }>;
-  annotations?: Array<{
-    x: number;
-    y: number;
-    title: string;
-    description: string;
-    category?: string;
-    severity?: string;
-  }>;
-  top_fix_summary?: string[];
   // Strategic persona specific fields
   businessImpact?: string;
   implementation?: string;
@@ -284,7 +268,7 @@ const GoblinResults: React.FC = () => {
     return cleaned.trim();
   };
 
-  // ✅ FIXED: Enhanced persona data extraction that handles strategic JSON parsing
+  // Simplified approach: extract persona data from results.persona_feedback
   const extractPersonaData = (data: any, personaType: string, fallbackSummary: string): PersonaData => {
     console.log('🔍 Extracting persona data for:', personaType, data);
     
@@ -303,55 +287,12 @@ const GoblinResults: React.FC = () => {
       return { analysis: cleanedAnalysis };
     }
 
-    // If it's an object, process it properly
+    // If it's an object, clean any string fields that might contain markdown
     if (typeof personaData === 'object' && personaData !== null) {
       const cleanedData = { ...personaData };
       
-      // ✅ CRITICAL FIX: Handle JSON string in analysis field for strategic persona
-      if (personaType === 'strategic' && cleanedData.analysis && typeof cleanedData.analysis === 'string') {
-        try {
-          // Remove markdown wrapper and parse JSON
-          let analysisContent = cleanedData.analysis;
-          const jsonMatch = analysisContent.match(/```json\s*\n?({[\s\S]*?})\s*\n?```/);
-          
-          if (jsonMatch) {
-            const parsedAnalysis = JSON.parse(jsonMatch[1]);
-            console.log('🎯 Successfully parsed strategic analysis JSON:', parsedAnalysis);
-            
-            // Merge parsed analysis data into cleanedData
-            if (parsedAnalysis.analysis) {
-              cleanedData.analysis = parsedAnalysis.analysis;
-            }
-            if (parsedAnalysis.issues) {
-              cleanedData.issues = parsedAnalysis.issues;
-            }
-            if (parsedAnalysis.annotations) {
-              cleanedData.annotations = parsedAnalysis.annotations;
-            }
-            if (parsedAnalysis.businessImpact) {
-              cleanedData.businessImpact = parsedAnalysis.businessImpact;
-            }
-            if (parsedAnalysis.recommendations) {
-              cleanedData.recommendations = parsedAnalysis.recommendations;
-            }
-            
-            console.log('✅ Strategic persona data enhanced with parsed JSON:', {
-              hasAnalysis: !!cleanedData.analysis,
-              hasIssues: !!cleanedData.issues,
-              hasAnnotations: !!cleanedData.annotations,
-              issueCount: cleanedData.issues?.length || 0,
-              annotationCount: cleanedData.annotations?.length || 0
-            });
-          }
-        } catch (e) {
-          console.error('❌ Failed to parse strategic analysis JSON:', e);
-          // Keep original analysis field if parsing fails
-          cleanedData.analysis = cleanMarkdownJson(cleanedData.analysis);
-        }
-      }
-      
       // Clean common fields that might contain markdown
-      const fieldsToClean = ['biggestGripe', 'goblinWisdom', 'goblinPrediction', 'whatMakesGoblinHappy'];
+      const fieldsToClean = ['analysis', 'biggestGripe', 'goblinWisdom', 'goblinPrediction', 'whatMakesGoblinHappy'];
       
       fieldsToClean.forEach(field => {
         if (typeof cleanedData[field] === 'string') {
@@ -421,87 +362,8 @@ const GoblinResults: React.FC = () => {
     hasGoblinWisdom: !!personaData.goblinWisdom,
     hasGoblinPrediction: !!personaData.goblinPrediction,
     recommendationsCount: Array.isArray(personaData.recommendations) ? personaData.recommendations.length : 0,
-    recommendations: personaData.recommendations,
-    hasIssues: !!personaData.issues,
-    hasAnnotations: !!personaData.annotations,
-    issueCount: personaData.issues?.length || 0,
-    annotationCount: personaData.annotations?.length || 0
+    recommendations: personaData.recommendations
   });
-
-  // ✅ FIXED: Create annotations from properly parsed persona data
-  useEffect(() => {
-    if (personaData && session?.persona_type) {
-      console.log('🔧 Creating annotations from parsed persona data');
-      
-      const annotations = [];
-      
-      // Strategy 1: Use parsed annotations if available
-      if (personaData.annotations && Array.isArray(personaData.annotations)) {
-        console.log('✅ Found parsed annotations:', personaData.annotations.length);
-        personaData.annotations.forEach((ann, index) => {
-          annotations.push({
-            id: `${session.persona_type}_ann_${index}`,
-            x: Number(ann.x) || 50,
-            y: Number(ann.y) || 30 + (index * 20),
-            category: ann.category || 'ux',
-            severity: ann.severity || 'suggested',
-            feedback: ann.description || ann.title || 'UX insight',
-            title: ann.title || `Strategic Issue ${index + 1}`,
-            description: ann.description || 'See detailed analysis',
-            implementationEffort: 'medium',
-            businessImpact: 'medium',
-            imageIndex: 0
-          });
-        });
-      }
-      
-      // Strategy 2: Convert issues to annotations if no direct annotations
-      if (annotations.length === 0 && personaData.issues && Array.isArray(personaData.issues)) {
-        console.log('✅ Converting issues to annotations:', personaData.issues.length);
-        personaData.issues.forEach((issue, index) => {
-          annotations.push({
-            id: `${session.persona_type}_issue_${index}`,
-            x: 30 + (index % 3) * 30,
-            y: 25 + Math.floor(index / 3) * 25,
-            category: issue.type || 'ux',
-            severity: 'suggested',
-            feedback: issue.description || 'UX improvement needed',
-            title: issue.description?.split('.')[0] || `Strategic Issue ${index + 1}`,
-            description: issue.suggested_fix || issue.impact || 'Improvement recommended',
-            implementationEffort: 'medium',
-            businessImpact: 'medium',
-            imageIndex: 0
-          });
-        });
-      }
-      
-      // Strategy 3: Create summary annotation if no specific issues/annotations
-      if (annotations.length === 0 && personaData.analysis) {
-        console.log('✅ Creating summary annotation from analysis');
-        annotations.push({
-          id: `${session.persona_type}_summary`,
-          x: 50,
-          y: 30,
-          category: 'ux',
-          severity: 'suggested',
-          feedback: personaData.analysis.substring(0, 100) + '...',
-          title: `${session.persona_type} Analysis Available`,
-          description: 'View detailed analysis in Summary tab',
-          implementationEffort: 'medium',
-          businessImpact: 'medium',
-          imageIndex: 0
-        });
-      }
-      
-      if (annotations.length > 0) {
-        console.log(`🎯 Created ${annotations.length} annotations from persona data`);
-        setResults(prev => ({
-          ...prev,
-          annotations: annotations
-        }));
-      }
-    }
-  }, [personaData, session?.persona_type]);
 
   // Extract total images count from analysis data and update navigation context
   useEffect(() => {

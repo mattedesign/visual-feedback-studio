@@ -30,301 +30,62 @@ const DetailedModeView: React.FC<DetailedModeViewProps> = ({
   const [dialogOpen, setDialogOpen] = useState(false);
   const { setTotalImages, setCurrentImageIndex: setNavigationImageIndex } = useNavigation();
 
-  // Sync with navigation context - optimized to prevent unnecessary re-renders
+  // Sync with navigation context
   useEffect(() => {
-    if (setTotalImages && images.length > 0) {
-      setTotalImages(images.length);
-    }
+    setTotalImages(images.length);
   }, [images.length, setTotalImages]);
 
   useEffect(() => {
-    if (setNavigationImageIndex && currentImageIndex >= 0) {
-      setNavigationImageIndex(currentImageIndex);
-    }
+    setNavigationImageIndex(currentImageIndex);
   }, [currentImageIndex, setNavigationImageIndex]);
   
   const currentImage = images[currentImageIndex];
+  // Filter annotations by current image
+  const allAnnotations = results?.annotations || [];
   
-  // Enhanced annotation extraction: Parse JSON analysis and extract detailed issues
-  const extractAnnotationsFromPersonaData = () => {
-    const personaFeedback = results?.persona_feedback;
-    const personaType = session?.persona_type || 'strategic';
+  // ✅ ENHANCED: Enhanced annotation filtering with comprehensive debug logging
+  const annotations = allAnnotations.filter((annotation: any) => {
+    // Check if annotation has image_index or image_id that matches current image
+    const hasImageIndex = annotation.image_index === currentImageIndex || annotation.imageIndex === currentImageIndex;
+    const hasImageId = annotation.image_id === currentImage?.id;
     
-    console.log('🔍 extractAnnotationsFromPersonaData debug:', {
-      hasPersonaFeedback: !!personaFeedback,
-      personaType,
-      personaFeedbackKeys: personaFeedback ? Object.keys(personaFeedback) : [],
-      personaSpecificData: personaFeedback?.[personaType] ? Object.keys(personaFeedback[personaType]) : []
+    // Debug logging for annotation filtering
+    console.log(`🔍 Annotation filtering debug:`, {
+      annotationId: annotation.id?.substring(0, 8) || 'no-id',
+      annotationImageIndex: annotation.image_index,
+      annotationImageIndexAlt: annotation.imageIndex,
+      annotationImageId: annotation.image_id,
+      currentImageIndex,
+      currentImageId: currentImage?.id,
+      hasImageIndex,
+      hasImageId,
+      willInclude: hasImageIndex || hasImageId
     });
     
-    if (!personaFeedback) {
-      console.log('❌ No persona feedback found');
-      return [];
+    // If annotation is specifically tagged for this image, show it
+    if (hasImageIndex || hasImageId) {
+      return true;
     }
     
-    // Get the persona-specific data
-    const personaData = personaFeedback[personaType] || personaFeedback;
+    // ✅ FALLBACK: If no annotations have image associations, show all on first image
+    const hasAnyImageAssociations = allAnnotations.some((ann: any) => 
+      ann.image_index !== undefined || ann.imageIndex !== undefined || ann.image_id !== undefined
+    );
     
-    console.log('🔍 Persona data structure:', {
-      hasPersonaData: !!personaData,
-      personaDataKeys: personaData ? Object.keys(personaData) : [],
-      hasAnalysis: !!personaData?.analysis,
-      analysisType: personaData?.analysis ? typeof personaData.analysis : 'undefined',
-      analysisPreview: personaData?.analysis ? personaData.analysis.substring(0, 200) : 'N/A',
-      hasIssues: !!personaData?.issues,
-      issuesType: personaData?.issues ? typeof personaData.issues : 'undefined',
-      issuesLength: Array.isArray(personaData?.issues) ? personaData.issues.length : 'not array'
+    console.log(`📊 Annotation association check:`, {
+      totalAnnotations: allAnnotations.length,
+      hasAnyImageAssociations,
+      currentImageIndex,
+      showingOnFirstImage: !hasAnyImageAssociations && currentImageIndex === 0
     });
     
-    // PRIORITY 1: Parse JSON string in analysis field to extract detailed Claude annotations
-    if (personaData?.analysis) {
-      let analysisData;
-      
-      try {
-        // Handle both string and object cases
-        if (typeof personaData.analysis === 'string') {
-          console.log('🔍 Parsing analysis JSON string...');
-          analysisData = JSON.parse(personaData.analysis);
-        } else if (typeof personaData.analysis === 'object') {
-          console.log('🔍 Using analysis object directly...');
-          analysisData = personaData.analysis;
-        }
-        
-        if (analysisData) {
-          console.log('✅ Analysis data found:', {
-            hasIssues: !!analysisData.issues,
-            issuesLength: Array.isArray(analysisData.issues) ? analysisData.issues.length : 'not array',
-            hasRecommendations: !!analysisData.recommendations,
-            recommendationsLength: Array.isArray(analysisData.recommendations) ? analysisData.recommendations.length : 'not array',
-            keys: Object.keys(analysisData)
-          });
-          
-          // Extract all detailed issues/recommendations from Claude's analysis
-          const issuesArray = Array.isArray(analysisData.issues) ? analysisData.issues : [];
-          const recommendationsArray = Array.isArray(analysisData.recommendations) ? analysisData.recommendations : [];
-          const allIssues = [...issuesArray, ...recommendationsArray];
-          
-          if (allIssues.length > 0) {
-            console.log('✅ Using Claude\'s detailed analysis - found:', issuesArray.length, 'issues,', recommendationsArray.length, 'recommendations');
-            
-            const annotations = allIssues.map((issue: any, index: number) => {
-              console.log(`🎯 Processing Claude issue ${index}:`, {
-                id: issue.id,
-                type: issue.type,
-                description: issue.description?.substring(0, 100),
-                suggested_fix: issue.suggested_fix?.substring(0, 100),
-                priority: issue.priority,
-                coordinates: issue.coordinates
-              });
-              
-              // Use Claude's coordinates if available, otherwise use distribution pattern
-              let x, y;
-              if (issue.coordinates && typeof issue.coordinates === 'object') {
-                x = issue.coordinates.x || issue.coordinates.left;
-                y = issue.coordinates.y || issue.coordinates.top;
-              }
-              
-              // Fallback to distribution pattern if no coordinates
-              if (x === undefined || y === undefined) {
-                x = 15 + (index % 4) * 20; // 15%, 35%, 55%, 75%
-                y = 15 + Math.floor(index / 4) * 20; // 15%, 35%, 55%, 75%
-              }
-              
-              // Determine image index from Claude's data or distribute evenly
-              const imageIndex = issue.image_index !== undefined ? issue.image_index : Math.floor(index / 3);
-              
-              return {
-                id: issue.id || `claude-issue-${index}`,
-                title: issue.type?.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || 'UX Issue',
-                description: issue.description || 'Interface issue detected by Claude',
-                feedback: issue.suggested_fix || issue.description || 'Improvement recommended',
-                suggested_fix: issue.suggested_fix,
-                impact: issue.impact || 'Affects user experience',
-                category: issue.type || 'general',
-                priority: issue.priority || 'medium',
-                x: x,
-                y: y,
-                width: 8,
-                height: 4,
-                image_index: imageIndex,
-                imageIndex: imageIndex
-              };
-            });
-            
-            console.log('✅ Generated', annotations.length, 'annotations from Claude\'s detailed analysis');
-            return annotations;
-          }
-        }
-      } catch (error) {
-        console.error('❌ Failed to parse Claude analysis:', error, {
-          analysisType: typeof personaData.analysis,
-          analysisPreview: typeof personaData.analysis === 'string' ? personaData.analysis.substring(0, 200) : 'Not string'
-        });
-        // Continue to other extraction methods
-      }
+    // If no annotations have image associations, show them all on the first image only
+    if (!hasAnyImageAssociations && currentImageIndex === 0) {
+      return true;
     }
     
-    // PRIORITY 2: Check for direct issues array with detailed analysis
-    if (personaData?.issues && Array.isArray(personaData.issues) && personaData.issues.length > 0) {
-      // Check if these are detailed objects rather than simple strings
-      const detailedIssues = personaData.issues.filter((issue: any) => 
-        typeof issue === 'object' && (issue.description || issue.suggested_fix || issue.type)
-      );
-      
-      if (detailedIssues.length > 0) {
-        console.log('✅ Using direct issues array with detailed analysis:', detailedIssues.length, 'issues');
-        const annotations = detailedIssues.map((issue: any, index: number) => {
-          console.log(`🎯 Processing issue ${index}:`, {
-            id: issue.id,
-            type: issue.type,
-            description: issue.description?.substring(0, 100),
-            suggested_fix: issue.suggested_fix?.substring(0, 100),
-            priority: issue.priority
-          });
-          
-          // Fix coordinate system
-          const baseX = 15 + (index % 4) * 20;
-          const baseY = 15 + Math.floor(index / 4) * 20;
-          
-          return {
-            id: issue.id || `claude-issue-${index}`,
-            title: issue.type?.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || 'UX Issue',
-            description: issue.description || 'Interface issue detected',
-            feedback: issue.suggested_fix || issue.description || 'Improvement recommended',
-            suggested_fix: issue.suggested_fix,
-            impact: issue.impact || 'Affects user experience',
-            category: issue.type || 'general',
-            x: baseX,
-            y: baseY,
-            width: 8,
-            height: 4,
-            image_index: Math.floor(index / 3),
-            imageIndex: Math.floor(index / 3)
-          };
-        });
-        
-        console.log('✅ Generated', annotations.length, 'annotations from direct issues');
-        return annotations;
-      }
-    }
-    
-    // PRIORITY 3: Check for recommendations array with detailed data
-    if (personaData?.recommendations && Array.isArray(personaData.recommendations) && personaData.recommendations.length > 0) {
-      console.log('✅ Using persona recommendations array:', personaData.recommendations.length, 'recommendations');
-      
-      // Filter and process recommendations that have detailed structure
-      const detailedRecommendations = personaData.recommendations.filter((rec: any) => 
-        typeof rec === 'object' && (rec.description || rec.suggested_fix || rec.problem)
-      );
-      
-      if (detailedRecommendations.length > 0) {
-        console.log('✅ Found', detailedRecommendations.length, 'detailed recommendations');
-        const annotations = detailedRecommendations.map((rec: any, index: number) => {
-          console.log(`🎯 Processing recommendation ${index}:`, {
-            type: typeof rec,
-            description: rec.description?.substring(0, 100),
-            suggested_fix: rec.suggested_fix?.substring(0, 100),
-            problem: rec.problem?.substring(0, 100)
-          });
-          
-          // Fix coordinate system
-          const baseX = 15 + (index % 4) * 20;
-          const baseY = 15 + Math.floor(index / 4) * 20;
-          
-          return {
-            id: rec.id || `claude-rec-${index}`,
-            title: rec.title || rec.type?.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || 'UX Recommendation',
-            description: rec.description || rec.problem || 'UX improvement needed',
-            feedback: rec.suggested_fix || rec.solution || rec.impact || 'Apply recommended improvements',
-            suggested_fix: rec.suggested_fix,
-            impact: rec.impact || 'Improves user experience',
-            category: rec.category || rec.type || 'general',
-            x: baseX,
-            y: baseY,
-            width: 8,
-            height: 4,
-            image_index: Math.floor(index / 3),
-            imageIndex: Math.floor(index / 3)
-          };
-        });
-        
-        console.log('✅ Generated', annotations.length, 'annotations from detailed recommendations');
-        return annotations;
-      }
-    }
-    
-    // PRIORITY 4: Check for pre-generated annotations in persona data
-    if (personaData?.annotations && Array.isArray(personaData.annotations) && personaData.annotations.length > 0) {
-      console.log('✅ Using pre-generated persona annotations:', personaData.annotations.length);
-      return personaData.annotations.map((ann: any, index: number) => ({
-        ...ann,
-        id: ann.id || `persona-ann-${index}`,
-        image_index: ann.image_index !== undefined ? ann.image_index : Math.floor(index / 3),
-        imageIndex: ann.imageIndex !== undefined ? ann.imageIndex : Math.floor(index / 3)
-      }));
-    }
-    
-    // PRIORITY 5: Check the root annotations data structure
-    if (results?.annotations && Array.isArray(results.annotations) && results.annotations.length > 0) {
-      console.log('⚠️ Using root-level annotations as fallback:', results.annotations.length);
-      return results.annotations.map((ann: any, index: number) => ({
-        ...ann,
-        id: ann.id || `root-ann-${index}`,
-        image_index: ann.image_index !== undefined ? ann.image_index : Math.floor(index / 3),
-        imageIndex: ann.imageIndex !== undefined ? ann.imageIndex : Math.floor(index / 3)
-      }));
-    }
-    
-    console.log('❌ No Claude detailed analysis found in any expected data structure');
-    return [];
-  };
-  
-  // Memoize annotation extraction to prevent re-computation on every render
-  const allAnnotations = React.useMemo(() => {
-    const personaAnnotations = extractAnnotationsFromPersonaData();
-    const legacyAnnotations = results?.annotations || [];
-    
-    // Prioritize persona annotations, but include legacy ones if no persona annotations exist
-    return personaAnnotations.length > 0 ? personaAnnotations : legacyAnnotations;
-  }, [results?.persona_feedback, results?.annotations, session?.persona_type]);
-
-  // Just add this logging to verify annotations are coming through
-  console.log('📊 DetailedModeView annotations:', {
-    annotationCount: allAnnotations.length,
-    sampleAnnotation: allAnnotations[0],
-    annotationTitles: allAnnotations.map(a => a.title || a.feedback?.substring(0, 30))
+    return false;
   });
-  
-  console.log('📊 Annotation extraction summary:', {
-    totalUsed: allAnnotations.length,
-    currentImageIndex
-  });
-  
-  // Memoize filtered annotations to prevent unnecessary filtering
-  const annotations = React.useMemo(() => {
-    return allAnnotations.filter((annotation: any) => {
-      // Check if annotation has image_index or image_id that matches current image
-      const hasImageIndex = annotation.image_index === currentImageIndex || annotation.imageIndex === currentImageIndex;
-      const hasImageId = annotation.image_id === currentImage?.id;
-      
-      // If annotation is specifically tagged for this image, show it
-      if (hasImageIndex || hasImageId) {
-        return true;
-      }
-      
-      // Fallback: If no annotations have image associations, show all on first image
-      const hasAnyImageAssociations = allAnnotations.some((ann: any) => 
-        ann.image_index !== undefined || ann.imageIndex !== undefined || ann.image_id !== undefined
-      );
-      
-      // If no annotations have image associations, show them all on the first image only
-      if (!hasAnyImageAssociations && currentImageIndex === 0) {
-        return true;
-      }
-      
-      return false;
-    });
-  }, [allAnnotations, currentImageIndex, currentImage?.id]);
 
   console.log(`📋 Filtered annotations for image ${currentImageIndex + 1}:`, {
     totalAvailable: allAnnotations.length,

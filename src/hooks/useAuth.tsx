@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { UserProfile } from '@/types/profiles';
@@ -14,9 +14,6 @@ interface AuthState {
 }
 
 export const useAuth = () => {
-  const [isInitializing, setIsInitializing] = useState(false);
-  const initializationRef = useRef(false);
-  
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     session: null,
@@ -41,81 +38,178 @@ export const useAuth = () => {
     }
   };
 
-  const initialize = useCallback(async () => {
-    // Prevent multiple concurrent initializations
-    if (isInitializing || initializationRef.current) {
-      console.log('🔒 Auth initialization already in progress, skipping');
-      return;
-    }
-
-    setIsInitializing(true);
-    initializationRef.current = true;
-    
-    try {
-      console.log('🚀 Initializing auth state...');
-      
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error('❌ Session error:', error);
-        // Clear corrupted session
-        await supabase.auth.signOut();
-        updateAuthState({ user: null, loading: false });
-        return;
-      }
-      
-      if (session?.user) {
-        console.log('✅ Found existing session');
-        updateAuthState({ user: session.user, loading: false });
-      } else {
-        console.log('📭 No existing session');
-        updateAuthState({ user: null, loading: false });
-      }
-    } catch (error) {
-      console.error('🚨 Auth initialization error:', error);
-      updateAuthState({ user: null, loading: false });
-    } finally {
-      setIsInitializing(false);
-      initializationRef.current = false;
-    }
-  }, []);
-
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('🔐 Auth state change:', { event, hasSession: !!session });
-        
-        // Handle different auth events
-        switch (event) {
-          case 'SIGNED_IN':
-            updateAuthState({ user: session?.user ?? null, loading: false });
-            break;
-          case 'SIGNED_OUT':
-            updateAuthState({ user: null, loading: false });
-            break;
-          case 'TOKEN_REFRESHED':
-            updateAuthState({ user: session?.user ?? null });
-            break;
-          case 'PASSWORD_RECOVERY':
-          case 'USER_UPDATED':
-            updateAuthState({ user: session?.user ?? null });
-            break;
-          default:
-            // Don't reinitialize on unknown events
-            break;
-        }
-      }
-    );
+    let mounted = true;
+    let profileFetchAbortController: AbortController | null = null;
+    let debounceTimer: NodeJS.Timeout | null = null;
+    let lastSessionId: string | null = null;
+    let initializationComplete = false;
 
-    // Initialize only once
-    if (!initializationRef.current) {
-      initialize();
-    }
+    // Internal fetch with abort signal for useEffect
+    const fetchProfileWithAbort = async (userId: string): Promise<UserProfile | null> => {
+      if (profileFetchAbortController) {
+        profileFetchAbortController.abort();
+      }
+      
+      profileFetchAbortController = new AbortController();
+      
+      try {
+        const profile = await ProfileService.getProfile(userId);
+        return profileFetchAbortController.signal.aborted ? null : profile;
+      } catch (error) {
+        if (profileFetchAbortController.signal.aborted) {
+          return null;
+        }
+        console.warn('Profile fetch failed:', error);
+        return null;
+      }
+    };
+
+    // Helper function to safely update auth state within useEffect
+    const safeUpdateAuthState = (updates: Partial<AuthState>) => {
+      if (mounted) {
+        setAuthState(prev => ({ ...prev, ...updates }));
+      }
+    };
+
+    // Debounced auth state handler to prevent rapid oscillations
+    const handleAuthStateChange = (event: string, session: any) => {
+      if (!mounted) return;
+      
+      // Check if session actually changed to prevent duplicate updates
+      const newSessionId = session?.user?.id || null;
+      const sessionChanged = newSessionId !== lastSessionId;
+      
+      if (!sessionChanged && initializationComplete) {
+        return; // Skip duplicate session updates
+      }
+      
+      lastSessionId = newSessionId;
+      
+      // Clear previous debounce timer
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+      
+      // Debounce auth state changes to prevent rapid oscillations
+      debounceTimer = setTimeout(() => {
+        if (!mounted) return;
+        
+        console.log('🔐 Auth state change:', { event, hasSession: !!session, hasUser: !!session?.user });
+        
+        if (session?.user) {
+          // Update auth state immediately (synchronously)
+          safeUpdateAuthState({
+            session,
+            user: session.user,
+            loading: false,
+            error: null
+          });
+          
+          // Fetch profile asynchronously without blocking
+          setTimeout(async () => {
+            const profile = await fetchProfileWithAbort(session.user.id);
+            if (mounted && profile) {
+              safeUpdateAuthState({ profile });
+            }
+          }, 0);
+        } else {
+          // Clear auth state immediately
+          safeUpdateAuthState({
+            session: null,
+            user: null,
+            profile: null,
+            loading: false,
+            error: null
+          });
+        }
+      }, 100); // 100ms debounce to prevent rapid state changes
+    };
+
+    // Initialize session check FIRST, then set up listener
+    const initialize = async () => {
+      if (!mounted) return;
+      
+      try {
+        console.log('🚀 Initializing auth state...');
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+        
+        if (error) {
+          console.error('❌ Session check error:', error);
+          safeUpdateAuthState({
+            error: error.message,
+            loading: false
+          });
+        } else if (session?.user) {
+          console.log('✅ Found existing session');
+          lastSessionId = session.user.id;
+          
+          // Set basic auth state first
+          safeUpdateAuthState({
+            session,
+            user: session.user,
+            loading: false,
+            error: null
+          });
+          
+          // Fetch profile separately to avoid blocking
+          const profile = await fetchProfileWithAbort(session.user.id);
+          if (mounted && profile) {
+            safeUpdateAuthState({ profile });
+          }
+        } else {
+          console.log('📭 No existing session');
+          safeUpdateAuthState({
+            session: null,
+            user: null,
+            profile: null,
+            loading: false,
+            error: null
+          });
+        }
+        
+        initializationComplete = true;
+      } catch (err) {
+        console.error('❌ Auth initialization error:', err);
+        if (mounted) {
+          safeUpdateAuthState({
+            error: err instanceof Error ? err.message : 'Session check failed',
+            loading: false
+          });
+        }
+        initializationComplete = true;
+      }
+    };
+
+    // Set up auth state listener AFTER initialization
+    const setupListener = () => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
+      return subscription;
+    };
+
+    // Initialize first, then set up listener
+    let subscription: any;
+    initialize().then(() => {
+      if (mounted) {
+        subscription = setupListener();
+      }
+    });
 
     return () => {
-      subscription.unsubscribe();
+      mounted = false;
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+      if (profileFetchAbortController) {
+        profileFetchAbortController.abort();
+      }
+      if (subscription) {
+        subscription.unsubscribe();
+      }
     };
-  }, [initialize]);
+  }, []);
 
   const signOut = async () => {
     try {

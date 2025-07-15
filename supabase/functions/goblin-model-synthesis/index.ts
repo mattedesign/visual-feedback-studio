@@ -51,10 +51,6 @@ interface Annotation {
   imageIndex: number;
   persona: string;
   priority: string;
-  // Additional fields for Claude's enhanced data
-  suggested_fix?: string;
-  impact?: string;
-  type?: string;
 }
 
 interface PersonaData {
@@ -104,23 +100,12 @@ console.log('🔬 Goblin Model Synthesis - Combining and structuring analysis re
 // ============================================================================
 
 serve(async (req) => {
-  console.log('🔴 DEBUG_SYNTHESIS: Function entry point reached');
-  console.log('🔴 DEBUG_SYNTHESIS: Request method:', req.method);
-  
   if (req.method === 'OPTIONS') {
-    console.log('🔴 DEBUG_SYNTHESIS: Returning CORS response');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log('🔴 DEBUG_SYNTHESIS: Parsing request body...');
     const requestData: SynthesisRequest = await req.json();
-    console.log('🔴 DEBUG_SYNTHESIS: Request received:', {
-      sessionId: requestData?.sessionId?.substring(0, 8),
-      persona: requestData?.persona,
-      hasAnalysisData: !!requestData?.analysisData,
-      timestamp: new Date().toISOString()
-    });
     
     console.log('🧪 Synthesizing results for:', {
       sessionId: requestData.sessionId?.substring(0, 8),
@@ -253,22 +238,12 @@ function extractAnalysisData(analysisData: any) {
   // Try to get structured data from analysisData first
   if (analysisData.analysisData && typeof analysisData.analysisData === 'object') {
     extractedAnalysis = analysisData.analysisData.analysis || '';
-    
-    // CRITICAL FIX: Prioritize detailed 'issues' with suggested_fix over generic 'recommendations'
-    if (analysisData.analysisData.issues && Array.isArray(analysisData.analysisData.issues) && analysisData.analysisData.issues.length > 0) {
-      extractedRecommendations = analysisData.analysisData.issues;
-      console.log('🎯 Using detailed issues with suggested_fix:', extractedRecommendations.map(i => i.suggested_fix?.substring(0, 50)));
-    } else if (analysisData.analysisData.recommendations && Array.isArray(analysisData.analysisData.recommendations)) {
-      extractedRecommendations = analysisData.analysisData.recommendations;
-      console.log('⚠️ Falling back to basic recommendations:', extractedRecommendations);
-    }
-    
+    extractedRecommendations = analysisData.analysisData.recommendations || [];
     extractedRawData = analysisData.analysisData;
     
     console.log('✅ Extracted from analysisData:', {
       hasAnalysis: !!extractedAnalysis,
       recommendationsCount: extractedRecommendations.length,
-      usingDetailedIssues: extractedRecommendations.length > 0 && extractedRecommendations[0]?.suggested_fix,
       recommendations: extractedRecommendations
     });
   }
@@ -291,16 +266,10 @@ function extractAnalysisData(analysisData: any) {
       
       if (jsonContent) {
         const parsed = JSON.parse(jsonContent);
-        
-        // CRITICAL FIX: Prioritize detailed 'issues' with suggested_fix
-        if (parsed.issues && Array.isArray(parsed.issues) && parsed.issues.length > 0) {
-          extractedRecommendations = parsed.issues;
-          console.log('🎯 Extracted detailed issues from rawResponse JSON:', parsed.issues.map(i => i.suggested_fix?.substring(0, 50)));
-        } else if (parsed.recommendations && Array.isArray(parsed.recommendations)) {
+        if (parsed.recommendations && Array.isArray(parsed.recommendations)) {
           extractedRecommendations = parsed.recommendations;
-          console.log('⚠️ Extracted basic recommendations from rawResponse JSON:', extractedRecommendations);
+          console.log('✅ Extracted recommendations from rawResponse JSON:', extractedRecommendations);
         }
-        
         if (parsed.analysis && !extractedAnalysis) {
           extractedAnalysis = parsed.analysis;
         }
@@ -387,33 +356,13 @@ function extractAnalysisData(analysisData: any) {
 }
 
 function buildPersonaFeedback(persona: string, extractedData: any, mappedPersonaData: PersonaData) {
-  console.log('🏗️ Building persona feedback with:', {
-    persona,
-    hasAnalysis: !!extractedData.analysis,
-    recommendationsCount: extractedData.recommendations?.length || 0,
-    recommendationsWithSuggestedFix: extractedData.recommendations?.filter((r: any) => r?.suggested_fix)?.length || 0,
-    mappedPersonaDataKeys: Object.keys(mappedPersonaData)
-  });
-
-  // CRITICAL FIX: Preserve Claude's detailed issues array
-  const personaFeedback = {
+  return {
     [persona]: {
       analysis: extractedData.analysis,
       recommendations: extractedData.recommendations,
-      // Store detailed issues/recommendations in the correct structure for frontend
-      issues: extractedData.recommendations, // This contains Claude's detailed analysis with suggested_fix
       ...mappedPersonaData
     }
   };
-
-  console.log('✅ Persona feedback built:', {
-    persona,
-    hasIssuesArray: !!personaFeedback[persona].issues,
-    issuesCount: personaFeedback[persona].issues?.length || 0,
-    firstIssueHasSuggestedFix: !!personaFeedback[persona].issues?.[0]?.suggested_fix
-  });
-
-  return personaFeedback;
 }
 
 function validatePersonaData(personaData: PersonaData): boolean {
@@ -674,23 +623,9 @@ class SummaryGenerator {
 // ============================================================================
 
 class AnnotationGenerator {
-  generate(recommendations: any[], persona: string, imageCount: number = 1): Annotation[] {
-    console.log('🎯 AnnotationGenerator received:', recommendations.length, 'items');
-    
-    // CRITICAL FIX: Preserve Claude's detailed suggested_fix content
-    if (recommendations.length > 0) {
-      const hasDetailedIssues = recommendations.some((rec: any) => rec?.suggested_fix || rec?.description);
-      
-      if (hasDetailedIssues) {
-        console.log('✅ Claude detailed issues detected - preserving detailed content in annotations');
-        // Generate annotations while preserving Claude's detailed content
-      }
-    }
-    
-    console.log('⚠️ No detailed Claude issues found, generating minimal fallback annotations');
-    
+  generate(recommendations: string[], persona: string, imageCount: number = 1): Annotation[] {
     const targetAnnotationCount = Math.min(
-      Math.max(recommendations.length, 2), // At least 2, but respect actual recommendations count
+      imageCount * SYNTHESIS_CONFIG.annotations.minPerImage, 
       SYNTHESIS_CONFIG.annotations.maxTotal
     );
     
@@ -705,40 +640,28 @@ class AnnotationGenerator {
     );
   }
 
-
-  private expandRecommendations(recommendations: any[], targetCount: number): any[] {
-    // ✅ PRIORITIZE CLAUDE'S DETAILED ISSUES: Use original recommendations without generic variations
-    console.log('🎯 expandRecommendations input:', recommendations.length, 'target:', targetCount);
-    
-    // Log the first recommendation to understand the data structure
-    if (recommendations.length > 0) {
-      console.log('📊 First recommendation structure:', {
-        type: typeof recommendations[0],
-        hasSuggestedFix: !!recommendations[0]?.suggested_fix,
-        hasDescription: !!recommendations[0]?.description,
-        keys: recommendations[0] && typeof recommendations[0] === 'object' ? Object.keys(recommendations[0]) : 'not object'
-      });
-    }
-    
-    // If we have enough unique recommendations with detailed data, use them directly
-    if (recommendations.length >= targetCount) {
-      const selected = recommendations.slice(0, targetCount);
-      console.log('✅ Using', selected.length, 'original detailed recommendations');
-      return selected;
-    }
-    
-    // If we need more annotations, prefer reusing detailed recommendations over creating generic ones
+  private expandRecommendations(recommendations: string[], targetCount: number): string[] {
+    // ✅ FIXED: Generate unique, image-specific annotations instead of repeating the same ones
     const expanded = [];
+    
+    // If we have enough unique recommendations, use them directly
+    if (recommendations.length >= targetCount) {
+      return recommendations.slice(0, targetCount);
+    }
+    
+    // If we need more annotations, create variations instead of exact duplicates
     for (let i = 0; i < targetCount; i++) {
       const baseRecIndex = i % recommendations.length;
       const baseRecommendation = recommendations[baseRecIndex];
       
-      // Always use the original recommendation to preserve Claude's detailed analysis
-      expanded.push(baseRecommendation);
+      // For repeated recommendations, add context to make them unique per image
+      if (i >= recommendations.length) {
+        const imageContext = this.getImageContextVariation(baseRecommendation, Math.floor(i / recommendations.length));
+        expanded.push(imageContext);
+      } else {
+        expanded.push(baseRecommendation);
+      }
     }
-    
-    console.log('✅ expandRecommendations result:', expanded.length, 'annotations, with detailed issues:', 
-      expanded.filter(r => r?.suggested_fix).length);
     return expanded;
   }
 
@@ -753,26 +676,16 @@ class AnnotationGenerator {
     return variations[variationIndex % variations.length];
   }
 
-  private createAnnotation(recommendation: any, index: number, persona: string, imageCount: number): Annotation {
+  private createAnnotation(recommendation: string, index: number, persona: string, imageCount: number): Annotation {
     const imageIndex = index % imageCount;
     const positionInImage = Math.floor(index / imageCount);
     const position = SYNTHESIS_CONFIG.annotations.positions[positionInImage % SYNTHESIS_CONFIG.annotations.positions.length];
 
-    console.log('🎯 Creating annotation #' + index + ' from:', {
-      type: typeof recommendation,
-      hasSuggestedFix: !!recommendation.suggested_fix,
-      suggestedFixPreview: recommendation.suggested_fix?.substring(0, 100),
-      hasDescription: !!recommendation.description,
-      descriptionPreview: recommendation.description?.substring(0, 50)
-    });
-
     // Enhanced recommendation analysis for problem + solution
     const enhancedFeedback = this.enhanceFeedbackWithSolution(recommendation, persona);
 
-    // ✅ FIXED: Intelligent content analysis instead of hardcoded categories  
-    const recommendationText = typeof recommendation === 'string' ? recommendation : 
-                              (recommendation?.description || recommendation?.problemStatement || 'UX improvement needed');
-    const { category, title } = this.analyzeRecommendationContext(recommendationText, persona);
+    // ✅ FIXED: Intelligent content analysis instead of hardcoded categories
+    const { category, title } = this.analyzeRecommendationContext(recommendation, persona);
 
     // ✅ ENHANCED: Make annotations more specific to their image context
     const imageSpecificContext = this.addImageContext(enhancedFeedback, imageIndex, imageCount);
@@ -792,11 +705,7 @@ class AnnotationGenerator {
       persona,
       priority: index < 2 ? 'high' : 'medium',
       problemStatement: imageSpecificContext.problem,
-      solutionStatement: imageSpecificContext.solution,
-      // Preserve detailed content for frontend display
-      suggested_fix: recommendation.suggested_fix || imageSpecificContext.solution,
-      impact: recommendation.impact || `Affects ${persona} user experience`,
-      type: recommendation.type || category
+      solutionStatement: imageSpecificContext.solution
     };
   }
 
@@ -862,70 +771,25 @@ class AnnotationGenerator {
   }
 
   // Enhanced method to analyze problem and generate persona-specific solutions
-  private enhanceFeedbackWithSolution(recommendation: any, persona: string) {
-    console.log('🔍 enhanceFeedbackWithSolution input:', typeof recommendation, Object.keys(recommendation || {}));
-
-    // PRIORITY 1: Use Claude's suggested_fix if available - this is the detailed analysis we want!
-    if (typeof recommendation === 'object' && recommendation.suggested_fix) {
-      console.log('✅ Using Claude suggested_fix from detailed analysis:', recommendation.suggested_fix.substring(0, 100));
-      return {
-        problem: recommendation.description || recommendation.problem || recommendation.problemStatement || 'Interface issue detected',
-        solution: recommendation.suggested_fix // Direct from Claude's detailed analysis - this is the key fix!
-      };
-    }
-
-    // PRIORITY 2: Use Claude's description field as the problem statement  
-    if (typeof recommendation === 'object' && recommendation.description) {
-      console.log('✅ Using Claude description as problem:', recommendation.description.substring(0, 100));
-      
-      // Check if description contains both problem and solution
-      if (recommendation.description.includes(' - ') || recommendation.description.includes(': ')) {
-        const parts = recommendation.description.split(/\s*[-:]\s*/);
-        if (parts.length >= 2) {
-          return {
-            problem: parts[0].trim(),
-            solution: parts.slice(1).join(' - ').trim()
-          };
-        }
-      }
-
-      return {
-        problem: recommendation.description,
-        solution: recommendation.impact || recommendation.solution || `Apply ${persona} persona-specific fix for this issue`
-      };
-    }
-
-    // PRIORITY 3: Use Claude's problem field directly
-    if (typeof recommendation === 'object' && recommendation.problem) {
-      console.log('✅ Using Claude problem field:', recommendation.problem.substring(0, 100));
-      return {
-        problem: recommendation.problem,
-        solution: recommendation.solution || recommendation.impact || `Apply ${persona} persona-specific solution`
-      };
-    }
-
-    // FALLBACK: Convert to string and process
-    const recommendationText = typeof recommendation === 'string' ? recommendation : 
-                              (recommendation?.title || recommendation?.problemStatement || 'UX improvement needed');
-
-    console.log('⚠️ Using fallback text processing for:', recommendationText.substring(0, 100));
-
-    // Try to split if it contains solution indicators
-    if (recommendationText.includes(' - ') || recommendationText.includes(': ')) {
-      const parts = recommendationText.split(/\s*[-:]\s*/);
+  private enhanceFeedbackWithSolution(recommendation: string, persona: string) {
+    // If recommendation already contains solution language, split it
+    if (recommendation.includes(' - ') || recommendation.includes(': ')) {
+      const parts = recommendation.split(/\s*[-:]\s*/);
       if (parts.length >= 2) {
         return {
           problem: parts[0].trim(),
-          solution: parts.slice(1).join(' - ').trim()
+          solution: this.generatePersonaSolution(parts.slice(1).join(' - ').trim(), persona)
         };
       }
     }
 
-    // Last resort: use the text as problem and avoid generic solutions
-    console.log('⚠️ FALLBACK TO GENERIC: No Claude suggested_fix found, using generic solution');
+    // For single problem statements, generate persona-specific solution
+    const problem = recommendation.trim();
+    const solution = this.generatePersonaSolution(problem, persona);
+
     return {
-      problem: recommendationText.trim(),
-      solution: `Apply specific ${persona} persona improvements to address this issue`
+      problem: problem,
+      solution: solution
     };
   }
 
