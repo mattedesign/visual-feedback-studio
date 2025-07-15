@@ -36,7 +36,7 @@ const Auth = () => {
       
       // Small delay to prevent redirect loops during auth state changes
       const redirectTimer = setTimeout(() => {
-        navigate('/', { replace: true });
+        navigate('/goblin', { replace: true });
       }, 100);
       
       return () => clearTimeout(redirectTimer);
@@ -68,7 +68,7 @@ const Auth = () => {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/`,
+            emailRedirectTo: `${window.location.origin}/goblin`,
             data: {
               full_name: fullName,
               role: selectedRole
@@ -119,7 +119,7 @@ const Auth = () => {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/`
+          emailRedirectTo: `${window.location.origin}/goblin`
         }
       });
 
