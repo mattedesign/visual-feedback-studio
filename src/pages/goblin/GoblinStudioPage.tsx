@@ -8,6 +8,7 @@ import { PropertiesPanel } from '@/components/goblin/studio/PropertiesPanel';
 import { createGoblinSession, uploadGoblinImage, startGoblinAnalysis } from '@/services/goblin/index';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 export type GoblinPersonaType = 'strategic' | 'mirror' | 'mad' | 'exec' | 'clarity';
 
@@ -56,6 +57,7 @@ export default function GoblinStudioPage() {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [annotations, setAnnotations] = useState<any[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   
   // Chat state
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -100,32 +102,66 @@ export default function GoblinStudioPage() {
       return;
     }
 
-    const newImage: StudioImage = {
-      id: Date.now().toString(),
-      file_name: file.name,
-      file_path: URL.createObjectURL(file),
-      image_index: images.length,
-      url: URL.createObjectURL(file)
-    };
+    try {
+      const newImage: StudioImage = {
+        id: Date.now().toString(),
+        file_name: file.name,
+        file_path: URL.createObjectURL(file),
+        image_index: images.length,
+        url: URL.createObjectURL(file)
+      };
 
-    setImages(prev => [...prev, newImage]);
-    toast.success('Image uploaded successfully');
+      setImages(prev => [...prev, newImage]);
+      toast.success('Image uploaded successfully');
+
+      // If we have a session, upload the image to storage
+      if (sessionId) {
+        try {
+          await uploadGoblinImage(sessionId, file, images.length);
+          console.log('Image uploaded to Supabase storage');
+        } catch (error) {
+          console.error('Failed to upload to storage:', error);
+          // Continue anyway with local image
+        }
+      }
+    } catch (error) {
+      console.error('Image upload failed:', error);
+      toast.error('Failed to upload image');
+    }
   };
 
   const handleBatchImageUpload = async (files: File[]) => {
     const remainingSlots = 5 - images.length;
     const filesToUpload = files.slice(0, remainingSlots);
     
-    const newImages: StudioImage[] = filesToUpload.map((file, index) => ({
-      id: Date.now().toString() + Math.random(),
-      file_name: file.name,
-      file_path: URL.createObjectURL(file),
-      image_index: images.length + index,
-      url: URL.createObjectURL(file)
-    }));
+    try {
+      const newImages: StudioImage[] = filesToUpload.map((file, index) => ({
+        id: Date.now().toString() + Math.random(),
+        file_name: file.name,
+        file_path: URL.createObjectURL(file),
+        image_index: images.length + index,
+        url: URL.createObjectURL(file)
+      }));
 
-    setImages(prev => [...prev, ...newImages]);
-    toast.success(`${newImages.length} images uploaded successfully`);
+      setImages(prev => [...prev, ...newImages]);
+      toast.success(`${newImages.length} images uploaded successfully`);
+
+      // If we have a session, upload images to storage
+      if (sessionId) {
+        try {
+          for (let i = 0; i < filesToUpload.length; i++) {
+            await uploadGoblinImage(sessionId, filesToUpload[i], images.length + i);
+          }
+          console.log('Batch images uploaded to Supabase storage');
+        } catch (error) {
+          console.error('Failed to batch upload to storage:', error);
+          // Continue anyway with local images
+        }
+      }
+    } catch (error) {
+      console.error('Batch image upload failed:', error);
+      toast.error('Failed to upload images');
+    }
   };
 
   const handleImageSelect = (index: number | null) => {
@@ -152,18 +188,64 @@ export default function GoblinStudioPage() {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    setIsAnalyzing(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      // Create a session if we don't have one
+      let currentSessionId = sessionId;
+      if (!currentSessionId) {
+        const session = await createGoblinSession({
+          title: sessionTitle,
+          persona_type: 'clarity',
+          analysis_mode: 'single',
+          goal_description: 'Interactive chat analysis',
+          confidence_level: 2
+        });
+        currentSessionId = session.id;
+        setSessionId(currentSessionId);
+      }
+
+      // Call the goblin chat analyzer
+      const { data, error } = await supabase.functions.invoke('goblin-chat-analyzer', {
+        body: {
+          message: content,
+          sessionId: currentSessionId,
+          images: images.map(img => ({
+            url: img.file_path,
+            name: img.file_name
+          })),
+          persona: 'clarity',
+          chatMode: true
+        }
+      });
+
+      if (error) {
+        console.error('Chat analysis error:', error);
+        throw error;
+      }
+
       const aiMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: "I understand you'd like me to analyze your design. Please upload some images and I'll provide detailed UX insights and recommendations.",
+        content: data.response || "I'm analyzing your request. Please provide more details or upload some images for me to give you better insights.",
         message_type: 'text',
         created_at: new Date().toISOString()
       };
+      
       setMessages(prev => [...prev, aiMessage]);
-    }, 1000);
+    } catch (error) {
+      console.error('Failed to get chat response:', error);
+      const errorMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: "I'm having trouble processing your request right now. Please try again or upload some images for analysis.",
+        message_type: 'text',
+        created_at: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const handleCanvasStateChange = (state: any) => {
