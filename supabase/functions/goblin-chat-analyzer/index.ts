@@ -220,7 +220,7 @@ Analyze the user's message and respond helpfully. If they're asking about specif
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-haiku-20241022',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 2000,
         messages: [
           {
@@ -271,7 +271,7 @@ Analyze the user's message and respond helpfully. If they're asking about specif
       role: 'user',
       content: message,
       message_order: (conversationHistory?.length || 0) + 1,
-      model_used: 'claude-3-5-haiku-20241022',
+      model_used: 'claude-sonnet-4-20250514',
       processing_time_ms: Date.now(),
       metadata: {
         message_type: 'chat',
@@ -290,7 +290,7 @@ Analyze the user's message and respond helpfully. If they're asking about specif
       role: 'assistant',
       content: parsedResponse.content,
       message_order: (conversationHistory?.length || 0) + 2,
-      model_used: 'claude-3-5-haiku-20241022',
+      model_used: 'claude-sonnet-4-20250514',
       processing_time_ms: Date.now(),
       metadata: {
         message_type: parsedResponse.type,
