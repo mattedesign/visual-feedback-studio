@@ -131,13 +131,13 @@ const GoblinResults: React.FC = () => {
   // Transform raw images to studio format
   const images: AnalysisImage[] = rawImages.map((img, index) => ({
     id: img.id,
-    file_name: img.fileName,
-    file_path: img.filePath,
+    file_name: img.file_name,
+    file_path: img.file_path,
     image_index: index,
-    file_size: img.fileSize,
-    processing_status: img.uploadOrder !== undefined ? 'uploaded' : 'processing',
-    screen_type: img.screenType,
-    signedUrl: img.signedUrl,
+    file_size: img.file_size,
+    processing_status: 'ready', // Images from completed analysis are ready
+    screen_type: img.screen_type,
+    signedUrl: img.url || img.file_path,
     canvas_position: { x: 0, y: 0, zoom: 1.0, rotation: 0 }
   }));
 
