@@ -127,7 +127,13 @@ Analyze the user's message and provide helpful UX feedback. If they're asking ab
             const imageResponse = await fetch(imageUrl);
             if (imageResponse.ok) {
               const imageBuffer = await imageResponse.arrayBuffer();
-              const imageBase64 = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+              // Use Array.from to avoid stack overflow with large images
+              const uint8Array = new Uint8Array(imageBuffer);
+              const chunks = [];
+              for (let i = 0; i < uint8Array.length; i += 8192) {
+                chunks.push(String.fromCharCode.apply(null, uint8Array.subarray(i, i + 8192)));
+              }
+              const imageBase64 = btoa(chunks.join(''));
               
               messageContent.push({
                 type: 'image',
