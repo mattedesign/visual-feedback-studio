@@ -20,6 +20,7 @@ import Help from "./pages/Help";
 import { AdminPanel } from "./pages/AdminPanel";
 import Subscription from "./pages/Subscription";
 import GoblinStudio from "./pages/goblin/GoblinStudio";
+import GoblinStudioPage from "./pages/goblin/GoblinStudioPage";
 import GoblinResults from "./pages/goblin/GoblinResults";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { DatabaseSeeder } from "@/components/admin/DatabaseSeeder";
@@ -71,7 +72,7 @@ const App = () => {
                           <Route path="analysis-results/:id" element={<AnalysisResults />} />
                           <Route path="analyze" element={<Analyze />} />
                           <Route path="analyze-results/:id" element={<AnalyzeResults />} />
-                          <Route path="goblin" element={<GoblinStudio />} />
+                          <Route path="goblin" element={<GoblinStudioPage />} />
                           <Route path="goblin/results/:sessionId" element={<GoblinResults />} />
                           <Route path="history" element={<GoblinHistory />} />
                           <Route path="settings" element={<Settings />} />
