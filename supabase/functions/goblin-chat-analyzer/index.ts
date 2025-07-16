@@ -164,7 +164,7 @@ Analyze the user's message and provide helpful UX feedback. If they're asking ab
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-3-5-haiku-20241022',
         max_tokens: 2000,
         messages: [
           {
@@ -176,7 +176,9 @@ Analyze the user's message and provide helpful UX feedback. If they're asking ab
     });
 
     if (!response.ok) {
-      throw new Error(`Claude API error: ${response.status}`);
+      const errorBody = await response.text();
+      console.error(`Claude API error ${response.status}:`, errorBody);
+      throw new Error(`Claude API error: ${response.status} - ${errorBody}`);
     }
 
     const claudeResult = await response.json();
