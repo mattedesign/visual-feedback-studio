@@ -103,27 +103,33 @@ export default function GoblinStudioPage() {
     }
 
     try {
+      // Create a session if we don't have one
+      let currentSessionId = sessionId;
+      if (!currentSessionId) {
+        const session = await createGoblinSession({
+          title: sessionTitle,
+          persona_type: 'clarity',
+          analysis_mode: 'single',
+          goal_description: 'Interactive chat analysis',
+          confidence_level: 2
+        });
+        currentSessionId = session.id;
+        setSessionId(currentSessionId);
+      }
+
+      // Upload to Supabase storage and get the storage URL
+      const uploadedImage = await uploadGoblinImage(currentSessionId, file, images.length);
+      
       const newImage: StudioImage = {
-        id: Date.now().toString(),
-        file_name: file.name,
-        file_path: URL.createObjectURL(file),
+        id: uploadedImage.id,
+        file_name: uploadedImage.file_name,
+        file_path: uploadedImage.file_path, // This is now the storage URL
         image_index: images.length,
-        url: URL.createObjectURL(file)
+        url: uploadedImage.file_path // Use storage URL
       };
 
       setImages(prev => [...prev, newImage]);
       toast.success('Image uploaded successfully');
-
-      // If we have a session, upload the image to storage
-      if (sessionId) {
-        try {
-          await uploadGoblinImage(sessionId, file, images.length);
-          console.log('Image uploaded to Supabase storage');
-        } catch (error) {
-          console.error('Failed to upload to storage:', error);
-          // Continue anyway with local image
-        }
-      }
     } catch (error) {
       console.error('Image upload failed:', error);
       toast.error('Failed to upload image');
@@ -135,29 +141,35 @@ export default function GoblinStudioPage() {
     const filesToUpload = files.slice(0, remainingSlots);
     
     try {
-      const newImages: StudioImage[] = filesToUpload.map((file, index) => ({
-        id: Date.now().toString() + Math.random(),
-        file_name: file.name,
-        file_path: URL.createObjectURL(file),
-        image_index: images.length + index,
-        url: URL.createObjectURL(file)
-      }));
+      // Create a session if we don't have one
+      let currentSessionId = sessionId;
+      if (!currentSessionId) {
+        const session = await createGoblinSession({
+          title: sessionTitle,
+          persona_type: 'clarity',
+          analysis_mode: 'single',
+          goal_description: 'Interactive chat analysis',
+          confidence_level: 2
+        });
+        currentSessionId = session.id;
+        setSessionId(currentSessionId);
+      }
+
+      // Upload each file to storage and create image objects
+      const newImages: StudioImage[] = [];
+      for (let i = 0; i < filesToUpload.length; i++) {
+        const uploadedImage = await uploadGoblinImage(currentSessionId, filesToUpload[i], images.length + i);
+        newImages.push({
+          id: uploadedImage.id,
+          file_name: uploadedImage.file_name,
+          file_path: uploadedImage.file_path,
+          image_index: images.length + i,
+          url: uploadedImage.file_path
+        });
+      }
 
       setImages(prev => [...prev, ...newImages]);
       toast.success(`${newImages.length} images uploaded successfully`);
-
-      // If we have a session, upload images to storage
-      if (sessionId) {
-        try {
-          for (let i = 0; i < filesToUpload.length; i++) {
-            await uploadGoblinImage(sessionId, filesToUpload[i], images.length + i);
-          }
-          console.log('Batch images uploaded to Supabase storage');
-        } catch (error) {
-          console.error('Failed to batch upload to storage:', error);
-          // Continue anyway with local images
-        }
-      }
     } catch (error) {
       console.error('Batch image upload failed:', error);
       toast.error('Failed to upload images');
