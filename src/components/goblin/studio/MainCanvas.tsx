@@ -55,6 +55,9 @@ export function MainCanvas({
   annotations = []
 }: MainCanvasProps) {
   const [dragOver, setDragOver] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(null);
+  const [currentRect, setCurrentRect] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -93,6 +96,47 @@ export function MainCanvas({
       }
     }
   };
+
+  // Annotation creation handlers
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!annotationMode || selectedImageIndex === null) return;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    
+    setIsDrawing(true);
+    setStartPoint({ x, y });
+    setCurrentRect({ x, y, width: 0, height: 0 });
+  }, [annotationMode, selectedImageIndex]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDrawing || !startPoint || !annotationMode) return;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const currentX = ((e.clientX - rect.left) / rect.width) * 100;
+    const currentY = ((e.clientY - rect.top) / rect.height) * 100;
+    
+    const x = Math.min(startPoint.x, currentX);
+    const y = Math.min(startPoint.y, currentY);
+    const width = Math.abs(currentX - startPoint.x);
+    const height = Math.abs(currentY - startPoint.y);
+    
+    setCurrentRect({ x, y, width, height });
+  }, [isDrawing, startPoint, annotationMode]);
+
+  const handleMouseUp = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDrawing || !currentRect || !annotationMode || selectedImageIndex === null) return;
+    
+    // Only create annotation if it has meaningful size (at least 1% width and height)
+    if (currentRect.width > 1 && currentRect.height > 1) {
+      onAnnotationCreate(selectedImageIndex, currentRect);
+    }
+    
+    setIsDrawing(false);
+    setStartPoint(null);
+    setCurrentRect(null);
+  }, [isDrawing, currentRect, annotationMode, selectedImageIndex, onAnnotationCreate]);
 
   // Empty state when no images
   if (images.length === 0) {
@@ -258,11 +302,17 @@ export function MainCanvas({
       <div className="flex-1 bg-muted/20 relative overflow-hidden">
         {selectedImage ? (
           <div className="w-full h-full flex items-center justify-center p-4">
-            <div className="relative max-w-full max-h-full">
+            <div 
+              className={`relative max-w-full max-h-full ${annotationMode ? 'cursor-crosshair' : 'cursor-default'}`}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              style={{ userSelect: 'none' }}
+            >
               <img
                 src={selectedImage.signedUrl || selectedImage.url || selectedImage.file_path || `/api/placeholder/800/600?text=${encodeURIComponent(selectedImage.file_name)}`}
                 alt={selectedImage.file_name}
-                className="max-w-full max-h-full object-contain shadow-lg rounded-lg"
+                className="max-w-full max-h-full object-contain shadow-lg rounded-lg pointer-events-none"
                 style={{ 
                   maxHeight: 'calc(100vh - 200px)',
                   maxWidth: 'calc(100vw - 700px)' // Account for sidebars
@@ -271,9 +321,23 @@ export function MainCanvas({
                   const target = e.target as HTMLImageElement;
                   target.src = `/api/placeholder/800/600?text=${encodeURIComponent(selectedImage.file_name)}`;
                 }}
+                draggable={false}
               />
               
-              {/* Annotations Overlay */}
+              {/* Current drawing rectangle */}
+              {isDrawing && currentRect && annotationMode && (
+                <div
+                  className="absolute border-2 border-primary bg-primary/20 pointer-events-none"
+                  style={{
+                    left: `${currentRect.x}%`,
+                    top: `${currentRect.y}%`,
+                    width: `${currentRect.width}%`,
+                    height: `${currentRect.height}%`
+                  }}
+                />
+              )}
+              
+              {/* Existing Annotations Overlay */}
               {imageAnnotations.map((annotation) => (
                 <div
                   key={annotation.id}
