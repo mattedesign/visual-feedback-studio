@@ -27,6 +27,7 @@ interface Annotation {
   label?: string;
   feedback_type?: string;
   description?: string;
+  image_id?: string;
 }
 
 interface MainCanvasProps {
