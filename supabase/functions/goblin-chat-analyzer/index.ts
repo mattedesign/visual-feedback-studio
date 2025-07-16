@@ -94,6 +94,61 @@ ${message}
 
 Analyze the user's message and provide helpful UX feedback. If they're asking about a specific area, create an annotation. Always be practical and actionable.`;
 
+    // Prepare content for Claude API
+    const messageContent = [
+      {
+        type: 'text',
+        text: systemPrompt
+      }
+    ];
+
+    // Add images if provided
+    if (images && images.length > 0) {
+      console.log(`📸 Processing ${images.length} images for Claude vision analysis`);
+      
+      for (const image of images) {
+        try {
+          // Get the image URL (could be storage URL or direct URL)
+          let imageUrl = image.url || image.file_path;
+          
+          // If it's a storage path, convert to signed URL
+          if (imageUrl && !imageUrl.startsWith('http')) {
+            const { data: signedUrlData } = await supabase.storage
+              .from('analysis-images')
+              .createSignedUrl(imageUrl, 3600); // 1 hour expiry
+            
+            if (signedUrlData?.signedUrl) {
+              imageUrl = signedUrlData.signedUrl;
+            }
+          }
+
+          if (imageUrl) {
+            // Fetch the image and convert to base64
+            const imageResponse = await fetch(imageUrl);
+            if (imageResponse.ok) {
+              const imageBuffer = await imageResponse.arrayBuffer();
+              const imageBase64 = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+              
+              messageContent.push({
+                type: 'image',
+                source: {
+                  type: 'base64',
+                  media_type: 'image/jpeg', // Claude supports jpeg, png, gif, webp
+                  data: imageBase64
+                }
+              });
+              
+              console.log(`✅ Image ${image.name || 'unnamed'} processed for Claude`);
+            } else {
+              console.warn(`⚠️ Failed to fetch image: ${imageUrl}`);
+            }
+          }
+        } catch (error) {
+          console.error(`❌ Error processing image ${image.name}:`, error);
+        }
+      }
+    }
+
     // Call Claude API
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -108,7 +163,7 @@ Analyze the user's message and provide helpful UX feedback. If they're asking ab
         messages: [
           {
             role: 'user',
-            content: systemPrompt
+            content: messageContent
           }
         ]
       })
