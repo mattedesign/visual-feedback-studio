@@ -11,7 +11,7 @@ import { useImageLoader } from '@/hooks/goblin/useImageLoader';
 
 // ✅ Tab components
 import DetailedModeView from '@/components/goblin/DetailedModeView';
-import ClarityChat from '@/components/goblin/ClarityChat';
+
 import SummaryChat from '@/components/goblin/chat/SummaryChat';
 import { GoblinSummaryView } from '@/components/goblin/results/GoblinSummaryView';
 
@@ -84,7 +84,7 @@ const GoblinResults: React.FC = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [copied, setCopied] = useState(false);
   const [showAnnotations, setShowAnnotations] = useState(true);
-  const [activeTab, setActiveTab] = useState<'summary' | 'detailed' | 'clarity'>('summary');
+  const [activeTab, setActiveTab] = useState<'summary' | 'detailed'>('summary');
   const [chatFeedbackAnchors, setChatFeedbackAnchors] = useState<{[messageId: string]: any[]}>({});
   const [totalImages, setTotalImages] = useState(0);
 
@@ -669,7 +669,7 @@ const GoblinResults: React.FC = () => {
           <div className="grid gap-6 lg:grid-cols-4 w-full">
             {/* Main content panel - 3/4 width */}
             <div className="lg:col-span-3">
-              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'summary' | 'detailed' | 'clarity')}>
+              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'summary' | 'detailed')}>
                 <TabsList className="sticky top-6 z-10 flex w-auto items-center gap-4 rounded-xl border border-gray-200 bg-gray-100 p-1 backdrop-blur-sm tabs-list-mobile" style={{ boxShadow: '0px 1px 1.9px 0px rgba(50, 50, 50, 0.10) inset' }}>
                   <TabsTrigger 
                     value="summary" 
@@ -683,13 +683,6 @@ const GoblinResults: React.FC = () => {
                   >
                     <span className="hidden sm:inline">Detailed</span>
                     <span className="sm:hidden">Details</span> ({annotationCount})
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="clarity" 
-                    className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset] tabs-trigger-mobile"
-                  >
-                    <span className="hidden sm:inline">Clarity Chat</span>
-                    <span className="sm:hidden">Clarity</span>
                   </TabsTrigger>
                 </TabsList>
 
@@ -754,13 +747,6 @@ const GoblinResults: React.FC = () => {
                   />
                 </TabsContent>
 
-                <TabsContent value="clarity" className="mt-8 w-full">
-                  <ClarityChat
-                    session={session}
-                    personaData={personaData}
-                    onFeedbackUpdate={handleChatFeedbackUpdate}
-                  />
-                </TabsContent>
               </Tabs>
             </div>
 

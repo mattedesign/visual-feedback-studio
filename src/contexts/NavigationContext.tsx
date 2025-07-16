@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
 interface NavigationContextType {
-  activeTab: 'summary' | 'detailed' | 'clarity';
+  activeTab: 'summary' | 'detailed';
   currentImageIndex: number;
-  setActiveTab: (tab: 'summary' | 'detailed' | 'clarity') => void;
+  setActiveTab: (tab: 'summary' | 'detailed') => void;
   setCurrentImageIndex: (index: number) => void;
   navigateToImage: (screenNumber: number) => void;
   totalImages: number;
@@ -14,7 +14,7 @@ const NavigationContext = createContext<NavigationContextType | undefined>(undef
 
 interface NavigationProviderProps {
   children: ReactNode;
-  onTabChange?: (tab: 'summary' | 'detailed' | 'clarity') => void;
+  onTabChange?: (tab: 'summary' | 'detailed') => void;
   onImageChange?: (index: number) => void;
   initialTotalImages?: number;
 }
@@ -25,7 +25,7 @@ export function NavigationProvider({
   onImageChange,
   initialTotalImages = 0
 }: NavigationProviderProps) {
-  const [activeTab, setActiveTabState] = useState<'summary' | 'detailed' | 'clarity'>('summary');
+  const [activeTab, setActiveTabState] = useState<'summary' | 'detailed'>('summary');
   const [currentImageIndex, setCurrentImageIndexState] = useState(0);
   const [totalImages, setTotalImages] = useState(initialTotalImages);
 
@@ -36,7 +36,7 @@ export function NavigationProvider({
     }
   }, [initialTotalImages]);
 
-  const setActiveTab = (tab: 'summary' | 'detailed' | 'clarity') => {
+  const setActiveTab = (tab: 'summary' | 'detailed') => {
     setActiveTabState(tab);
     onTabChange?.(tab);
   };
