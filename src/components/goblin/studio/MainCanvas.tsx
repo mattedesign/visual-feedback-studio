@@ -6,10 +6,11 @@ interface AnalysisImage {
   id: string;
   file_name: string;
   file_path: string;
-  image_index: number;
+  image_index?: number;
   file_size?: number;
-  processing_status: string;
+  processing_status?: string;
   signedUrl?: string;
+  url?: string; // Alternative URL field
   canvas_position?: {
     x: number;
     y: number;
@@ -173,9 +174,13 @@ export function MainCanvas({
               onClick={() => onImageSelect(index)}
             >
               <img
-                src={image.signedUrl || `/api/placeholder/300/300?text=${encodeURIComponent(image.file_name)}`}
+                src={image.signedUrl || image.url || image.file_path || `/api/placeholder/300/300?text=${encodeURIComponent(image.file_name)}`}
                 alt={image.file_name}
                 className="w-full h-full object-cover"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = `/api/placeholder/300/300?text=${encodeURIComponent(image.file_name)}`;
+                }}
               />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
@@ -183,14 +188,9 @@ export function MainCanvas({
                   {image.file_name}
                 </p>
                 <p className="text-white/80 text-xs">
-                  {image.processing_status === 'processing' ? 'Processing...' : 'Ready'}
+                  Ready
                 </p>
               </div>
-              {image.processing_status === 'processing' && (
-                <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -260,12 +260,16 @@ export function MainCanvas({
           <div className="w-full h-full flex items-center justify-center p-4">
             <div className="relative max-w-full max-h-full">
               <img
-                src={selectedImage.signedUrl || `/api/placeholder/800/600?text=${encodeURIComponent(selectedImage.file_name)}`}
+                src={selectedImage.signedUrl || selectedImage.url || selectedImage.file_path || `/api/placeholder/800/600?text=${encodeURIComponent(selectedImage.file_name)}`}
                 alt={selectedImage.file_name}
                 className="max-w-full max-h-full object-contain shadow-lg rounded-lg"
                 style={{ 
                   maxHeight: 'calc(100vh - 200px)',
                   maxWidth: 'calc(100vw - 700px)' // Account for sidebars
+                }}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = `/api/placeholder/800/600?text=${encodeURIComponent(selectedImage.file_name)}`;
                 }}
               />
               
