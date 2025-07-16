@@ -7,9 +7,10 @@ import { trackPersonaExtraction, trackChatMessage, dataFlowMonitor } from '../..
 interface UseChatHistoryProps {
   session: any;
   personaData: any;
+  persistent?: boolean;
 }
 
-export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) => {
+export const useChatHistory = ({ session, personaData, persistent = false }: UseChatHistoryProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
   // Persona-specific greetings - BRIEF & HELPFUL
@@ -166,10 +167,12 @@ export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) =>
         const greetingMessage = createGreetingMessage(session?.persona_type || 'clarity');
         setMessages([greetingMessage]);
         
-        // Still save initial analysis for reference (but don't show in chat)
-        const initialMessage = createInitialMessageFromPersonaData();
-        if (initialMessage) {
-          await saveInitialMessageToDatabase(initialMessage.content);
+        // Still save initial analysis for reference (but don't show in chat) if persistent
+        if (persistent) {
+          const initialMessage = createInitialMessageFromPersonaData();
+          if (initialMessage) {
+            await saveInitialMessageToDatabase(initialMessage.content);
+          }
         }
         return;
       }
@@ -209,12 +212,14 @@ export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) =>
           setMessages(chatMessages);
         }
 
-        // Ensure initial analysis is saved to database (for other tabs) if not already there
-        const hasInitialMessage = historyData.some(record => record.conversation_stage === 'initial');
-        if (!hasInitialMessage) {
-          const initialMessage = createInitialMessageFromPersonaData();
-          if (initialMessage) {
-            await saveInitialMessageToDatabase(initialMessage.content);
+        // Ensure initial analysis is saved to database (for other tabs) if not already there and persistent
+        if (persistent) {
+          const hasInitialMessage = historyData.some(record => record.conversation_stage === 'initial');
+          if (!hasInitialMessage) {
+            const initialMessage = createInitialMessageFromPersonaData();
+            if (initialMessage) {
+              await saveInitialMessageToDatabase(initialMessage.content);
+            }
           }
         }
       } else {
@@ -223,10 +228,12 @@ export const useChatHistory = ({ session, personaData }: UseChatHistoryProps) =>
         const greetingMessage = createGreetingMessage(session?.persona_type || 'clarity');
         setMessages([greetingMessage]);
         
-        // Save initial analysis for other tabs
-        const initialMessage = createInitialMessageFromPersonaData();
-        if (initialMessage) {
-          await saveInitialMessageToDatabase(initialMessage.content);
+        // Save initial analysis for other tabs if persistent
+        if (persistent) {
+          const initialMessage = createInitialMessageFromPersonaData();
+          if (initialMessage) {
+            await saveInitialMessageToDatabase(initialMessage.content);
+          }
         }
       }
     } catch (error) {

@@ -6,43 +6,38 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { MessageCircle, Send, Download } from 'lucide-react';
-
-interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-}
+import { useChatHistory } from './hooks/useChatHistory';
+import { ChatMessage } from './types';
 
 interface SummaryChatProps {
   session: any;
   personaData: any;
   personaType: string;
+  persistent?: boolean;
 }
 
 const SummaryChat: React.FC<SummaryChatProps> = ({ 
   session, 
   personaData, 
-  personaType 
+  personaType,
+  persistent = false
 }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const { messages, setMessages } = useChatHistory({ 
+    session, 
+    personaData, 
+    persistent 
+  });
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // Initialize with welcome message
+  // Auto-expand for persistent mode
   useEffect(() => {
-    if (session?.id && personaData && messages.length === 0) {
-      const welcomeMessage: ChatMessage = {
-        id: 'welcome',
-        role: 'assistant',
-        content: `Hi! I'm your ${personaType} assistant. I can help you dive deeper into your analysis results. What would you like to know more about?`,
-        timestamp: new Date()
-      };
-      setMessages([welcomeMessage]);
+    if (persistent) {
+      setIsExpanded(true);
     }
-  }, [session?.id, personaData, personaType, messages.length]);
+  }, [persistent]);
 
   // Auto-scroll to bottom
   const scrollToBottom = () => {
@@ -89,7 +84,7 @@ const SummaryChat: React.FC<SummaryChatProps> = ({
 
       const assistantMessage: ChatMessage = {
         id: Date.now().toString() + '_assistant',
-        role: 'assistant',
+        role: 'clarity',
         content: data.rawResponse || 'I received your message but had trouble generating a response. Please try again.',
         timestamp: new Date()
       };
@@ -101,7 +96,7 @@ const SummaryChat: React.FC<SummaryChatProps> = ({
       
       const errorMessage: ChatMessage = {
         id: Date.now().toString() + '_error',
-        role: 'assistant',
+        role: 'clarity',
         content: 'Sorry, I encountered an error. Please try your question again.',
         timestamp: new Date()
       };
@@ -139,7 +134,8 @@ const SummaryChat: React.FC<SummaryChatProps> = ({
     toast.success('Chat exported! 💾');
   };
 
-  if (!isExpanded) {
+  // For persistent chat, auto-expand and don't show collapsed state
+  if (!isExpanded && !persistent) {
     return (
       <Card className="border-dashed">
         <CardContent className="pt-6">
@@ -159,7 +155,7 @@ const SummaryChat: React.FC<SummaryChatProps> = ({
   }
 
   return (
-    <Card>
+    <Card className={persistent ? "sticky top-6" : ""}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-lg">
           Chat with {personaType.charAt(0).toUpperCase() + personaType.slice(1)} Assistant
@@ -169,13 +165,15 @@ const SummaryChat: React.FC<SummaryChatProps> = ({
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
-          <Button onClick={() => setIsExpanded(false)} variant="ghost" size="sm">
-            Minimize
-          </Button>
+          {!persistent && (
+            <Button onClick={() => setIsExpanded(false)} variant="ghost" size="sm">
+              Minimize
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <ScrollArea className="h-[400px] p-4" ref={scrollAreaRef}>
+        <ScrollArea className={persistent ? "h-[calc(100vh-240px)] p-4" : "h-[400px] p-4"} ref={scrollAreaRef}>
           <div className="space-y-4">
             {messages.map((message) => (
               <div

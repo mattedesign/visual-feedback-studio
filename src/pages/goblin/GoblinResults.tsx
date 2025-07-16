@@ -12,6 +12,7 @@ import { useImageLoader } from '@/hooks/goblin/useImageLoader';
 // ✅ Tab components
 import DetailedModeView from '@/components/goblin/DetailedModeView';
 import ClarityChat from '@/components/goblin/ClarityChat';
+import SummaryChat from '@/components/goblin/chat/SummaryChat';
 import { GoblinSummaryView } from '@/components/goblin/results/GoblinSummaryView';
 
 import { NavigationProvider } from '@/contexts/NavigationContext';
@@ -664,99 +665,115 @@ const GoblinResults: React.FC = () => {
       <div className="min-h-screen bg-white" style={{ minWidth: '100%' }}>
         <div className="flex flex-col items-start flex-1 self-stretch w-full mx-0 px-4 py-6" style={{ minWidth: '100%' }}>
           
-           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'summary' | 'detailed' | 'clarity')}>
-            <TabsList className="sticky top-6 z-10 flex w-auto items-center gap-4 rounded-xl border border-gray-200 bg-gray-100 p-1 backdrop-blur-sm tabs-list-mobile" style={{ boxShadow: '0px 1px 1.9px 0px rgba(50, 50, 50, 0.10) inset' }}>
-              <TabsTrigger 
-                value="summary" 
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset] tabs-trigger-mobile"
-              >
-                Summary
-              </TabsTrigger>
-              <TabsTrigger 
-                value="detailed" 
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset] tabs-trigger-mobile"
-              >
-                <span className="hidden sm:inline">Detailed</span>
-                <span className="sm:hidden">Details</span> ({annotationCount})
-              </TabsTrigger>
-              <TabsTrigger 
-                value="clarity" 
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset] tabs-trigger-mobile"
-              >
-                <span className="hidden sm:inline">Clarity Chat</span>
-                <span className="sm:hidden">Clarity</span>
-              </TabsTrigger>
-            </TabsList>
-
-          <TabsContent value="summary" className="mt-8 w-full">
-            <GoblinSummaryView 
-              personaData={personaData}
-              personaType={session?.persona_type || 'strategic'}
-              sessionId={sessionId || ''}
-              technicalAudit={technicalAuditData}
-              session={session}
-            />
-          </TabsContent>
-
-          <TabsContent value="detailed" className="mt-8 w-full">
-            {isImagesLoading && (
-              <div className="flex items-center justify-center p-8 text-muted-foreground">
-                <div className="animate-spin mr-3 h-5 w-5 border-2 border-primary border-t-transparent rounded-full"></div>
-                Loading images... ({accessibilityReport.total > 0 ? `${accessibilityReport.total} found` : 'searching'})
-              </div>
-            )}
-            
-            {showImageError && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-red-800 font-medium">Failed to load images</p>
-                    <p className="text-red-600 text-sm mt-1">{imageError}</p>
-                    {accessibilityReport.total > 0 && (
-                      <p className="text-red-600 text-xs mt-1">
-                        Found {accessibilityReport.total} images, {accessibilityReport.accessible} accessible
-                      </p>
-                    )}
-                  </div>
-                  <button
-                    onClick={retryImages}
-                    className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-800 rounded text-sm"
+          {/* Two-panel layout: Main content + Persistent chat */}
+          <div className="grid gap-6 lg:grid-cols-4 w-full">
+            {/* Main content panel - 3/4 width */}
+            <div className="lg:col-span-3">
+              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'summary' | 'detailed' | 'clarity')}>
+                <TabsList className="sticky top-6 z-10 flex w-auto items-center gap-4 rounded-xl border border-gray-200 bg-gray-100 p-1 backdrop-blur-sm tabs-list-mobile" style={{ boxShadow: '0px 1px 1.9px 0px rgba(50, 50, 50, 0.10) inset' }}>
+                  <TabsTrigger 
+                    value="summary" 
+                    className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset] tabs-trigger-mobile"
                   >
-                    Retry
-                  </button>
-                </div>
-              </div>
-            )}
-            
-            {!hasAccessibleImages && images.length > 0 && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                <p className="text-yellow-800 font-medium">Image accessibility issues detected</p>
-                <p className="text-yellow-600 text-sm mt-1">
-                  {accessibilityReport.inaccessible} of {accessibilityReport.total} images cannot be displayed properly.
-                </p>
-              </div>
-            )}
-            
-            <DetailedModeView
-              images={images}
-              session={session}
-              results={results}
-              showAnnotations={showAnnotations}
-              currentImageIndex={currentImageIndex}
-              setCurrentImageIndex={setCurrentImageIndex}
-              setShowAnnotations={setShowAnnotations}
-              chatFeedbackAnchors={chatFeedbackAnchors}
-            />
-          </TabsContent>
+                    Summary
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="detailed" 
+                    className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset] tabs-trigger-mobile"
+                  >
+                    <span className="hidden sm:inline">Detailed</span>
+                    <span className="sm:hidden">Details</span> ({annotationCount})
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="clarity" 
+                    className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-[0px_1.25px_3px_0px_rgba(50,50,50,0.10),0px_1.25px_1px_0px_#FFF_inset] tabs-trigger-mobile"
+                  >
+                    <span className="hidden sm:inline">Clarity Chat</span>
+                    <span className="sm:hidden">Clarity</span>
+                  </TabsTrigger>
+                </TabsList>
 
-          <TabsContent value="clarity" className="mt-8 w-full">
-            <ClarityChat
-              session={session}
-              personaData={personaData}
-              onFeedbackUpdate={handleChatFeedbackUpdate}
-            />
-          </TabsContent>
-          </Tabs>
+                <TabsContent value="summary" className="mt-8 w-full">
+                  <GoblinSummaryView 
+                    personaData={personaData}
+                    personaType={session?.persona_type || 'strategic'}
+                    sessionId={sessionId || ''}
+                    technicalAudit={technicalAuditData}
+                    session={session}
+                  />
+                </TabsContent>
+
+                <TabsContent value="detailed" className="mt-8 w-full">
+                  {isImagesLoading && (
+                    <div className="flex items-center justify-center p-8 text-muted-foreground">
+                      <div className="animate-spin mr-3 h-5 w-5 border-2 border-primary border-t-transparent rounded-full"></div>
+                      Loading images... ({accessibilityReport.total > 0 ? `${accessibilityReport.total} found` : 'searching'})
+                    </div>
+                  )}
+                  
+                  {showImageError && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-red-800 font-medium">Failed to load images</p>
+                          <p className="text-red-600 text-sm mt-1">{imageError}</p>
+                          {accessibilityReport.total > 0 && (
+                            <p className="text-red-600 text-xs mt-1">
+                              Found {accessibilityReport.total} images, {accessibilityReport.accessible} accessible
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          onClick={retryImages}
+                          className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-800 rounded text-sm"
+                        >
+                          Retry
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {!hasAccessibleImages && images.length > 0 && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                      <p className="text-yellow-800 font-medium">Image accessibility issues detected</p>
+                      <p className="text-yellow-600 text-sm mt-1">
+                        {accessibilityReport.inaccessible} of {accessibilityReport.total} images cannot be displayed properly.
+                      </p>
+                    </div>
+                  )}
+                  
+                  <DetailedModeView
+                    images={images}
+                    session={session}
+                    results={results}
+                    showAnnotations={showAnnotations}
+                    currentImageIndex={currentImageIndex}
+                    setCurrentImageIndex={setCurrentImageIndex}
+                    setShowAnnotations={setShowAnnotations}
+                    chatFeedbackAnchors={chatFeedbackAnchors}
+                  />
+                </TabsContent>
+
+                <TabsContent value="clarity" className="mt-8 w-full">
+                  <ClarityChat
+                    session={session}
+                    personaData={personaData}
+                    onFeedbackUpdate={handleChatFeedbackUpdate}
+                  />
+                </TabsContent>
+              </Tabs>
+            </div>
+
+            {/* Persistent chat panel - 1/4 width, only visible on larger screens */}
+            <div className="hidden lg:block lg:col-span-1">
+              <SummaryChat 
+                session={session}
+                personaData={personaData}
+                personaType={session?.persona_type || 'strategic'}
+                persistent={true}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </NavigationProvider>
