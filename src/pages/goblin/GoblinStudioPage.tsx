@@ -88,28 +88,46 @@ export default function GoblinStudioPage() {
   };
 
   const handleImageUpload = async (file: File) => {
-    // Ensure we have a session before uploading
-    await getOrCreateSession(sessionTitle);
-    
-    // Use the hook's upload function
-    const uploadedImage = await uploadImage(file);
-    
-    if (uploadedImage && images.length === 1) {
-      // Set the first uploaded image as selected
-      setSelectedImageIndex(0);
+    try {
+      // Ensure we have a session before uploading
+      const currentSession = await getOrCreateSession(sessionTitle);
+      if (!currentSession) {
+        toast.error('Failed to create session');
+        return;
+      }
+      
+      // Use the hook's upload function
+      const uploadedImage = await uploadImage(file);
+      
+      if (uploadedImage && images.length === 1) {
+        // Set the first uploaded image as selected
+        setSelectedImageIndex(0);
+      }
+    } catch (error) {
+      console.error('Image upload failed:', error);
+      toast.error('Failed to upload image');
     }
   };
 
   const handleBatchImageUpload = async (files: File[]) => {
-    // Ensure we have a session before uploading
-    await getOrCreateSession(sessionTitle);
-    
-    // Use the hook's batch upload function
-    const uploadedImages = await uploadMultipleImages(files);
-    
-    if (uploadedImages.length > 0 && selectedImageIndex === null) {
-      // Set the first uploaded image as selected
-      setSelectedImageIndex(0);
+    try {
+      // Ensure we have a session before uploading
+      const currentSession = await getOrCreateSession(sessionTitle);
+      if (!currentSession) {
+        toast.error('Failed to create session');
+        return;
+      }
+      
+      // Use the hook's batch upload function
+      const uploadedImages = await uploadMultipleImages(files);
+      
+      if (uploadedImages.length > 0 && selectedImageIndex === null) {
+        // Set the first uploaded image as selected
+        setSelectedImageIndex(0);
+      }
+    } catch (error) {
+      console.error('Batch image upload failed:', error);
+      toast.error('Failed to upload images');
     }
   };
 

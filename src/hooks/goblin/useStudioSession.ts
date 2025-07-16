@@ -64,7 +64,8 @@ export const useStudioSession = () => {
 
   const uploadImage = useCallback(async (file: File): Promise<StudioImage | null> => {
     if (!session) {
-      toast.error('No active session. Please create a session first.');
+      console.error('❌ No session available for image upload');
+      toast.error('No active session. Please try again.');
       return null;
     }
 
@@ -75,6 +76,7 @@ export const useStudioSession = () => {
 
     try {
       setIsLoading(true);
+      console.log('📸 Uploading image to session:', session.id);
       const uploadedImage = await uploadGoblinImage(session.id, file, images.length);
       
       const newImage: StudioImage = {
@@ -100,7 +102,8 @@ export const useStudioSession = () => {
 
   const uploadMultipleImages = useCallback(async (files: File[]): Promise<StudioImage[]> => {
     if (!session) {
-      toast.error('No active session. Please create a session first.');
+      console.error('❌ No session available for batch image upload');
+      toast.error('No active session. Please try again.');
       return [];
     }
 
@@ -114,6 +117,7 @@ export const useStudioSession = () => {
 
     try {
       setIsLoading(true);
+      console.log('📸 Uploading batch images to session:', session.id);
       const newImages: StudioImage[] = [];
       
       for (let i = 0; i < filesToUpload.length; i++) {
