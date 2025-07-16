@@ -85,10 +85,22 @@ export async function uploadGoblinImage(
     throw uploadError;
   }
 
-  // Get public URL
+  // Get public URL for storage path reference
   const { data: { publicUrl } } = supabase.storage
     .from('analysis-images')
     .getPublicUrl(fileName);
+
+  // Create signed URL for Claude access (expires in 24 hours)
+  const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+    .from('analysis-images')
+    .createSignedUrl(fileName, 86400); // 24 hours
+
+  if (signedUrlError) {
+    console.error('❌ Failed to create signed URL:', signedUrlError);
+    // Continue with public URL as fallback
+  }
+
+  const finalUrl = signedUrlData?.signedUrl || publicUrl;
 
   // Create database record
   const { data: imageRecord, error: dbError } = await supabase
@@ -96,7 +108,7 @@ export async function uploadGoblinImage(
     .insert({
       session_id: sessionId,
       file_name: file.name,
-      file_path: publicUrl,
+      file_path: finalUrl, // Use signed URL for Claude access
       file_size: file.size,
       upload_order: order
     })

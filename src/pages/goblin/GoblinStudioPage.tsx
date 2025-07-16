@@ -5,30 +5,12 @@ import { StudioHeader } from '@/components/goblin/studio/StudioHeader';
 import { ChatInterface } from '@/components/goblin/studio/ChatInterface';
 import { MainCanvas } from '@/components/goblin/studio/MainCanvas';
 import { PropertiesPanel } from '@/components/goblin/studio/PropertiesPanel';
-import { createGoblinSession, uploadGoblinImage, startGoblinAnalysis } from '@/services/goblin/index';
+import { useStudioSession } from '@/hooks/goblin/useStudioSession';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
 export type GoblinPersonaType = 'strategic' | 'mirror' | 'mad' | 'exec' | 'clarity';
-
-// Simplified interface for studio page
-interface StudioImage {
-  id: string;
-  file_name: string;
-  file_path: string;
-  image_index: number;
-  file_size?: number;
-  processing_status?: string;
-  signedUrl?: string;
-  url?: string;
-  canvas_position?: {
-    x: number;
-    y: number;
-    zoom: number;
-    rotation: number;
-  };
-}
 
 interface ChatMessage {
   id: string;
@@ -51,13 +33,22 @@ export default function GoblinStudioPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   
-  // Session state
-  const [sessionTitle, setSessionTitle] = useState('UX Analysis - 7/15/2025');
-  const [images, setImages] = useState<StudioImage[]>([]);
+  // Use the unified studio session hook
+  const {
+    session,
+    images,
+    isLoading: sessionLoading,
+    uploadImage,
+    uploadMultipleImages,
+    getOrCreateSession,
+    resetSession
+  } = useStudioSession();
+  
+  // UI state
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [annotations, setAnnotations] = useState<any[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionTitle, setSessionTitle] = useState('UX Analysis - 7/15/2025');
   
   // Chat state
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -71,7 +62,7 @@ export default function GoblinStudioPage() {
   ]);
 
   const handleNewSession = () => {
-    setImages([]);
+    resetSession();
     setSelectedImageIndex(null);
     setAnnotations([]);
     setMessages([{
@@ -97,82 +88,28 @@ export default function GoblinStudioPage() {
   };
 
   const handleImageUpload = async (file: File) => {
-    if (images.length >= 5) {
-      toast.error('Maximum 5 images allowed');
-      return;
-    }
-
-    try {
-      // Create a session if we don't have one
-      let currentSessionId = sessionId;
-      if (!currentSessionId) {
-        const session = await createGoblinSession({
-          title: sessionTitle,
-          persona_type: 'clarity',
-          analysis_mode: 'single',
-          goal_description: 'Interactive chat analysis',
-          confidence_level: 2
-        });
-        currentSessionId = session.id;
-        setSessionId(currentSessionId);
-      }
-
-      // Upload to Supabase storage and get the storage URL
-      const uploadedImage = await uploadGoblinImage(currentSessionId, file, images.length);
-      
-      const newImage: StudioImage = {
-        id: uploadedImage.id,
-        file_name: uploadedImage.file_name,
-        file_path: uploadedImage.file_path, // This is now the storage URL
-        image_index: images.length,
-        url: uploadedImage.file_path // Use storage URL
-      };
-
-      setImages(prev => [...prev, newImage]);
-      toast.success('Image uploaded successfully');
-    } catch (error) {
-      console.error('Image upload failed:', error);
-      toast.error('Failed to upload image');
+    // Ensure we have a session before uploading
+    await getOrCreateSession(sessionTitle);
+    
+    // Use the hook's upload function
+    const uploadedImage = await uploadImage(file);
+    
+    if (uploadedImage && images.length === 1) {
+      // Set the first uploaded image as selected
+      setSelectedImageIndex(0);
     }
   };
 
   const handleBatchImageUpload = async (files: File[]) => {
-    const remainingSlots = 5 - images.length;
-    const filesToUpload = files.slice(0, remainingSlots);
+    // Ensure we have a session before uploading
+    await getOrCreateSession(sessionTitle);
     
-    try {
-      // Create a session if we don't have one
-      let currentSessionId = sessionId;
-      if (!currentSessionId) {
-        const session = await createGoblinSession({
-          title: sessionTitle,
-          persona_type: 'clarity',
-          analysis_mode: 'single',
-          goal_description: 'Interactive chat analysis',
-          confidence_level: 2
-        });
-        currentSessionId = session.id;
-        setSessionId(currentSessionId);
-      }
-
-      // Upload each file to storage and create image objects
-      const newImages: StudioImage[] = [];
-      for (let i = 0; i < filesToUpload.length; i++) {
-        const uploadedImage = await uploadGoblinImage(currentSessionId, filesToUpload[i], images.length + i);
-        newImages.push({
-          id: uploadedImage.id,
-          file_name: uploadedImage.file_name,
-          file_path: uploadedImage.file_path,
-          image_index: images.length + i,
-          url: uploadedImage.file_path
-        });
-      }
-
-      setImages(prev => [...prev, ...newImages]);
-      toast.success(`${newImages.length} images uploaded successfully`);
-    } catch (error) {
-      console.error('Batch image upload failed:', error);
-      toast.error('Failed to upload images');
+    // Use the hook's batch upload function
+    const uploadedImages = await uploadMultipleImages(files);
+    
+    if (uploadedImages.length > 0 && selectedImageIndex === null) {
+      // Set the first uploaded image as selected
+      setSelectedImageIndex(0);
     }
   };
 
@@ -203,35 +140,30 @@ export default function GoblinStudioPage() {
     setIsAnalyzing(true);
 
     try {
-      // Create a session if we don't have one
-      let currentSessionId = sessionId;
-      if (!currentSessionId) {
-        console.log('🔄 Creating new session...');
-        const session = await createGoblinSession({
-          title: sessionTitle,
-          persona_type: 'clarity',
-          analysis_mode: 'single',
-          goal_description: 'Interactive chat analysis',
-          confidence_level: 2
-        });
-        currentSessionId = session.id;
-        setSessionId(currentSessionId);
-        console.log('✅ Session created:', currentSessionId);
+      // Ensure we have a session
+      const currentSession = await getOrCreateSession(sessionTitle);
+      if (!currentSession) {
+        throw new Error('Failed to create or get session');
       }
+      
+      console.log('✅ Using session:', currentSession.id);
 
       console.log('🚀 Sending message to chat analyzer...', {
-        sessionId: currentSessionId,
+        sessionId: currentSession.id,
         messageLength: content.length,
         imagesCount: images.length
       });
 
-      // Call the goblin chat analyzer with improved payload
-      const { data, error } = await supabase.functions.invoke('goblin-chat-analyzer', {
+      // Use the optimized v2 analyzer for better performance and error handling
+      const analyzerFunction = images.length > 2 ? 'goblin-chat-analyzer-v2' : 'goblin-chat-analyzer';
+      console.log(`📡 Using analyzer: ${analyzerFunction}`);
+      
+      const { data, error } = await supabase.functions.invoke(analyzerFunction, {
         body: {
           message: content,
-          sessionId: currentSessionId,
+          sessionId: currentSession.id,
           images: images.map(img => ({
-            url: img.url || img.file_path,
+            url: img.file_path, // Use file_path as primary URL
             file_path: img.file_path,
             name: img.file_name,
             id: img.id
@@ -242,12 +174,25 @@ export default function GoblinStudioPage() {
 
       if (error) {
         console.error('❌ Chat analysis error:', error);
-        throw new Error(`Chat analysis failed: ${error.message}`);
+        // Check if it's a network error vs application error
+        if (error.message?.includes('fetch')) {
+          throw new Error('Network error: Please check your internet connection and try again.');
+        } else if (error.message?.includes('timeout')) {
+          throw new Error('The analysis is taking longer than expected. Please try again with fewer images.');
+        } else {
+          throw new Error(`Chat analysis failed: ${error.message || 'Unknown error'}`);
+        }
       }
 
-      if (!data || !data.success) {
-        console.error('❌ Unexpected response format:', data);
-        throw new Error(data?.error || 'Unexpected response from chat analyzer');
+      if (!data) {
+        console.error('❌ No response data received');
+        throw new Error('No response received from the analysis service. Please try again.');
+      }
+
+      if (!data.success) {
+        console.error('❌ Analysis returned error:', data);
+        const errorMsg = data?.error || data?.details || 'Analysis failed for unknown reason';
+        throw new Error(`Analysis error: ${errorMsg}`);
       }
 
       console.log('✅ Chat analysis response received:', {
@@ -313,7 +258,7 @@ export default function GoblinStudioPage() {
           onSendMessage={handleSendMessage}
           onImageUpload={handleImageUpload}
           onBatchImageUpload={handleBatchImageUpload}
-          isLoading={isAnalyzing}
+          isLoading={isAnalyzing || sessionLoading}
           sessionTitle={sessionTitle}
           imageCount={images.length}
           annotationCount={annotations.length}

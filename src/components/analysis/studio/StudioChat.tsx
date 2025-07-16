@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { SimplifiedContextInput } from '../workflow/components/SimplifiedContextInput';
+import { toast } from 'sonner';
 
 interface StudioChatProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -13,16 +14,30 @@ export const StudioChat = ({
   sidebarCollapsed
 }: StudioChatProps) => {
   const handleAnalyze = async () => {
-    if (!workflow.analysisContext.trim() || workflow.selectedImages.length === 0) return;
+    if (!workflow.analysisContext.trim()) {
+      toast.error('Please provide analysis context - describe what you want me to analyze');
+      return;
+    }
     
-    console.log('🚀 StudioChat: Starting analysis - transitioning to analyzing step');
+    if (workflow.selectedImages.length === 0) {
+      toast.error('Please select at least one image to analyze');
+      return;
+    }
+    
+    console.log('🚀 StudioChat: Starting optimized analysis');
     console.log('📊 Analysis params:', {
       selectedImages: workflow.selectedImages.length,
       context: workflow.analysisContext.length,
       annotations: workflow.getTotalAnnotationsCount()
     });
     
-    workflow.goToStep('analyzing');
+    try {
+      await workflow.startAnalysis();
+      console.log('✅ Analysis started successfully');
+    } catch (error) {
+      console.error('❌ Analysis failed:', error);
+      toast.error(error instanceof Error ? error.message : 'Analysis failed');
+    }
   };
 
   const canAnalyze = workflow.selectedImages.length > 0 && workflow.analysisContext.trim().length > 0 && !workflow.isAnalyzing;

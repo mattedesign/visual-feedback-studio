@@ -144,23 +144,69 @@ Analyze the user's message and respond helpfully. If they're asking about specif
           // Get the image URL (could be storage URL or direct URL)
           let imageUrl = image.url || image.file_path;
           
+          console.log(`🔍 Processing image URL: ${imageUrl?.substring(0, 100)}...`);
+          
+          // If it's already a signed URL, use it directly
+          if (imageUrl && imageUrl.includes('token=')) {
+            console.log('✅ Using existing signed URL');
+          }
           // If it's a storage path, convert to signed URL
-          if (imageUrl && !imageUrl.startsWith('http')) {
+          else if (imageUrl && !imageUrl.startsWith('http')) {
+            console.log('🔄 Converting storage path to signed URL');
             const { data: signedUrlData } = await supabase.storage
               .from('analysis-images')
               .createSignedUrl(imageUrl, 3600); // 1 hour expiry
             
             if (signedUrlData?.signedUrl) {
               imageUrl = signedUrlData.signedUrl;
+              console.log('✅ Generated signed URL for Claude access');
+            } else {
+              console.warn('⚠️ Failed to generate signed URL, using original');
+            }
+          }
+          // If it's a public URL, try to get signed URL from file path
+          else if (imageUrl && imageUrl.includes('analysis-images')) {
+            try {
+              // Extract file path from public URL
+              const urlParts = imageUrl.split('/');
+              const bucketIndex = urlParts.findIndex(part => part === 'analysis-images');
+              if (bucketIndex !== -1 && bucketIndex + 1 < urlParts.length) {
+                const filePath = urlParts.slice(bucketIndex + 1).join('/');
+                console.log(`🔄 Converting public URL to signed URL for path: ${filePath}`);
+                
+                const { data: signedUrlData } = await supabase.storage
+                  .from('analysis-images')
+                  .createSignedUrl(filePath, 3600);
+                
+                if (signedUrlData?.signedUrl) {
+                  imageUrl = signedUrlData.signedUrl;
+                  console.log('✅ Generated signed URL from public URL');
+                }
+              }
+            } catch (conversionError) {
+              console.warn('⚠️ Failed to convert public URL to signed URL:', conversionError);
             }
           }
 
           if (imageUrl) {
-            // Fetch the image and convert to base64
-            const imageResponse = await fetch(imageUrl);
+            // Fetch the image and convert to base64 with timeout
+            console.log(`📥 Fetching image: ${imageUrl?.substring(0, 100)}...`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+            
+            const imageResponse = await fetch(imageUrl, { 
+              signal: controller.signal,
+              headers: {
+                'User-Agent': 'Goblin-UX-Analyzer/1.0'
+              }
+            });
+            clearTimeout(timeoutId);
+            
             if (imageResponse.ok) {
               const imageBuffer = await imageResponse.arrayBuffer();
               const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+              
+              console.log(`✅ Image fetched successfully: ${contentType}, ${imageBuffer.byteLength} bytes`);
               
               // Determine media type for Claude
               let mediaType = 'image/jpeg';
@@ -201,11 +247,22 @@ Analyze the user's message and respond helpfully. If they're asking about specif
               
               console.log(`✅ Image ${image.name || 'unnamed'} processed for Claude (${mediaType}, ${fileSizeKB.toFixed(1)}KB)`);
             } else {
-              console.warn(`⚠️ Failed to fetch image: ${imageResponse.status} ${imageUrl}`);
+              console.error(`❌ Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText} - ${imageUrl}`);
+              // Add more detailed error logging
+              const errorText = await imageResponse.text().catch(() => 'No error text available');
+              console.error(`Response body: ${errorText}`);
             }
           }
         } catch (error) {
-          console.error(`❌ Error processing image ${image.name}:`, error);
+          console.error(`❌ Error processing image ${image.name || 'unnamed'}:`, error);
+          // Log more details about the error
+          if (error.name === 'AbortError') {
+            console.error('Image fetch timed out');
+          } else if (error.message?.includes('fetch')) {
+            console.error('Network error fetching image');
+          } else {
+            console.error('Unexpected error:', error.message);
+          }
           // Continue with other images if one fails
         }
       }
