@@ -51,6 +51,8 @@ interface Annotation {
   description?: string;
   created_at: string;
   image_id: string;
+  category?: 'usability' | 'visual_design' | 'accessibility' | 'content';
+  confidence?: number;
 }
 
 interface Insight {
@@ -117,6 +119,8 @@ const GoblinResults: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [annotationMode, setAnnotationMode] = useState(false);
   const [zoom, setZoom] = useState(1.0);
+  const [selectedAnnotation, setSelectedAnnotation] = useState<Annotation | null>(null);
+  const [activePanel, setActivePanel] = useState<'chat' | 'annotations' | 'insights'>('chat');
   
   // Use the robust image loader hook
   const { 
@@ -297,13 +301,17 @@ const GoblinResults: React.FC = () => {
         id: crypto.randomUUID(),
         ...area,
         label: annotationData?.label || `Area ${annotations.filter(a => a.image_id === selectedImage.id).length + 1}`,
-        feedback_type: annotationData?.feedback_type || '',
+        feedback_type: annotationData?.feedback_type || 'general',
         description: annotationData?.description || '',
-        created_at: new Date().toISOString(),
-        image_id: selectedImage.id
+        image_id: selectedImage.id,
+        category: 'usability',
+        created_at: new Date().toISOString()
       };
-      
+
       setAnnotations(prev => [...prev, newAnnotation]);
+      
+      // Switch to annotations panel to show the new annotation
+      setActivePanel('annotations');
     }
   };
 
