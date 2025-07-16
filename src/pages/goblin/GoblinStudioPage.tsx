@@ -206,6 +206,7 @@ export default function GoblinStudioPage() {
       // Create a session if we don't have one
       let currentSessionId = sessionId;
       if (!currentSessionId) {
+        console.log('🔄 Creating new session...');
         const session = await createGoblinSession({
           title: sessionTitle,
           persona_type: 'clarity',
@@ -215,42 +216,73 @@ export default function GoblinStudioPage() {
         });
         currentSessionId = session.id;
         setSessionId(currentSessionId);
+        console.log('✅ Session created:', currentSessionId);
       }
 
-      // Call the goblin chat analyzer
+      console.log('🚀 Sending message to chat analyzer...', {
+        sessionId: currentSessionId,
+        messageLength: content.length,
+        imagesCount: images.length
+      });
+
+      // Call the goblin chat analyzer with improved payload
       const { data, error } = await supabase.functions.invoke('goblin-chat-analyzer', {
         body: {
           message: content,
           sessionId: currentSessionId,
           images: images.map(img => ({
-            url: img.file_path,
-            name: img.file_name
+            url: img.url || img.file_path,
+            file_path: img.file_path,
+            name: img.file_name,
+            id: img.id
           })),
-          persona: 'clarity',
-          chatMode: true
+          persona: 'clarity'
         }
       });
 
       if (error) {
-        console.error('Chat analysis error:', error);
-        throw error;
+        console.error('❌ Chat analysis error:', error);
+        throw new Error(`Chat analysis failed: ${error.message}`);
       }
+
+      if (!data || !data.success) {
+        console.error('❌ Unexpected response format:', data);
+        throw new Error(data?.error || 'Unexpected response from chat analyzer');
+      }
+
+      console.log('✅ Chat analysis response received:', {
+        responseType: data.response?.type,
+        contentLength: data.response?.content?.length,
+        hasAnnotation: !!data.response?.annotation,
+        processingTime: data.processing_time_ms
+      });
 
       const aiMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data.response?.content || data.response || "I'm analyzing your request. Please provide more details or upload some images for me to give you better insights.",
+        content: data.response?.content || "I've analyzed your request but couldn't generate a proper response. Please try again.",
         message_type: data.response?.type || 'text',
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        annotation_data: data.response?.annotation
       };
       
       setMessages(prev => [...prev, aiMessage]);
+
+      // Handle annotation if present
+      if (data.response?.annotation && selectedImageIndex !== null) {
+        handleAnnotationCreate(selectedImageIndex, data.response.annotation, {
+          label: data.response.annotation.label,
+          feedback_type: data.response.annotation.feedback_type,
+          description: data.response.annotation.description
+        });
+      }
+
     } catch (error) {
-      console.error('Failed to get chat response:', error);
+      console.error('💥 Failed to get chat response:', error);
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: "I'm having trouble processing your request right now. Please try again or upload some images for analysis.",
+        content: `I encountered an error while processing your request: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again or check your internet connection.`,
         message_type: 'text',
         created_at: new Date().toISOString()
       };

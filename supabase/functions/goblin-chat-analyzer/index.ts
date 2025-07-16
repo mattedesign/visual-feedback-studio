@@ -17,30 +17,56 @@ serve(async (req) => {
   }
 
   try {
-    const { message, sessionId, images, conversationHistory } = await req.json();
+    const { message, sessionId, images, persona } = await req.json();
 
-    console.log(`🎯 Goblin Chat Analyzer: Processing message for session ${sessionId}`);
+    console.log(`🎯 Goblin Chat Analyzer: Processing message for session ${sessionId}`, {
+      messageLength: message?.length,
+      imagesCount: images?.length,
+      persona
+    });
+
+    if (!sessionId) {
+      throw new Error('Session ID is required');
+    }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get session and analysis data
-    const { data: sessionData } = await supabase
+    // Get session data
+    const { data: sessionData, error: sessionError } = await supabase
       .from('goblin_analysis_sessions')
       .select('*')
       .eq('id', sessionId)
       .single();
 
+    if (sessionError || !sessionData) {
+      throw new Error(`Session not found: ${sessionError?.message}`);
+    }
+
+    // Get conversation history from refinement history
+    const { data: conversationHistory } = await supabase
+      .from('goblin_refinement_history')
+      .select('role, content, created_at, metadata')
+      .eq('session_id', sessionId)
+      .order('created_at', { ascending: true })
+      .limit(20); // Last 20 messages for context
+
+    // Get latest analysis data for context
     const { data: analysisData } = await supabase
       .from('goblin_analysis_results')
       .select('*')
       .eq('session_id', sessionId)
       .order('created_at', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     // Build context from existing analysis
     const analysisContext = analysisData?.persona_feedback || {};
     const personaType = sessionData?.persona_type || 'strategic';
+
+    // Format conversation history for better context
+    const conversationContext = conversationHistory?.length > 0 
+      ? conversationHistory.map((msg: any) => `${msg.role}: ${msg.content}`).join('\n\n')
+      : 'This is the start of our conversation.';
 
     // Create enhanced prompt for chat analysis
     const systemPrompt = `You are Figmant's UX Analysis AI, specialized in ${personaType} analysis. You're helping analyze UI/UX designs through interactive conversation.
@@ -49,50 +75,57 @@ serve(async (req) => {
 - Session: ${sessionData?.title || 'UX Analysis'}
 - Persona: ${personaType}
 - Images: ${images?.length || 0} uploaded
-- Existing insights: ${JSON.stringify(analysisContext, null, 2)}
+- Previous Analysis: ${analysisContext ? 'Available' : 'None yet'}
 
 ## Your Capabilities:
-1. **Create Annotations**: When users ask about specific areas, create precise annotations with coordinates
-2. **UX Analysis**: Provide detailed usability, accessibility, and design feedback
+1. **UX Analysis**: Provide detailed usability, accessibility, and design feedback
+2. **Create Annotations**: When users ask about specific areas, create precise annotations with coordinates (0-100 scale)
 3. **Business Impact**: Connect design issues to business metrics and ROI
 4. **Actionable Insights**: Give specific, implementable recommendations
 
-## Response Format:
-Always respond with a JSON object containing:
+## Response Guidelines:
+- Be conversational and helpful
+- Provide specific, actionable feedback
+- Reference the uploaded images when relevant
+- Create annotations for specific UI elements when asked
+- Connect UX issues to business impact
+
+## JSON Response Format:
+Always respond with ONLY a valid JSON object:
 {
-  "content": "Your response text",
-  "type": "text|annotation|insight",
+  "content": "Your conversational response text",
+  "type": "text",
   "annotation": {
-    "x": number (0-100),
-    "y": number (0-100), 
-    "width": number (0-100),
-    "height": number (0-100),
-    "label": "string",
-    "feedback_type": "usability|accessibility|visual|content",
-    "description": "string",
-    "confidence": number (0-1)
+    "x": 25,
+    "y": 15,
+    "width": 30,
+    "height": 20,
+    "label": "Navigation Issue",
+    "feedback_type": "usability",
+    "description": "Detailed description of the issue",
+    "confidence": 0.85
   },
   "insights": [
     {
-      "category": "usability|visual_design|accessibility|content",
-      "title": "string",
-      "description": "string",
-      "priority": "high|medium|low",
-      "confidence_score": number (0-1),
-      "recommendation": "string",
-      "impact": "string",
-      "effort": "low|medium|high"
+      "category": "usability",
+      "title": "Clear insight title",
+      "description": "Detailed description",
+      "priority": "high",
+      "confidence_score": 0.9,
+      "recommendation": "Specific action to take",
+      "impact": "Expected business impact",
+      "effort": "low"
     }
   ]
 }
 
-## Conversation History:
-${conversationHistory?.map((msg: any) => `${msg.role}: ${msg.content}`).join('\n') || 'None'}
+## Previous Conversation:
+${conversationContext}
 
-## User Message:
-${message}
+## User's Current Message:
+"${message}"
 
-Analyze the user's message and provide helpful UX feedback. If they're asking about a specific area, create an annotation. Always be practical and actionable.`;
+Analyze the user's message and respond helpfully. If they're asking about specific UI elements or areas, consider creating an annotation. Focus on being practical and actionable.`;
 
     // Prepare content for Claude API
     const messageContent = [
@@ -127,30 +160,53 @@ Analyze the user's message and provide helpful UX feedback. If they're asking ab
             const imageResponse = await fetch(imageUrl);
             if (imageResponse.ok) {
               const imageBuffer = await imageResponse.arrayBuffer();
-              // Use Array.from to avoid stack overflow with large images
-              const uint8Array = new Uint8Array(imageBuffer);
-              const chunks = [];
-              for (let i = 0; i < uint8Array.length; i += 8192) {
-                chunks.push(String.fromCharCode.apply(null, uint8Array.subarray(i, i + 8192)));
+              const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+              
+              // Determine media type for Claude
+              let mediaType = 'image/jpeg';
+              if (contentType.includes('png')) mediaType = 'image/png';
+              else if (contentType.includes('gif')) mediaType = 'image/gif';
+              else if (contentType.includes('webp')) mediaType = 'image/webp';
+              
+              // Check file size (Claude has a 20MB limit per image)
+              const fileSizeKB = imageBuffer.byteLength / 1024;
+              console.log(`📏 Image size: ${fileSizeKB.toFixed(1)}KB`);
+              
+              if (fileSizeKB > 20000) { // 20MB limit
+                console.warn(`⚠️ Image too large (${fileSizeKB.toFixed(1)}KB), skipping`);
+                continue;
               }
-              const imageBase64 = btoa(chunks.join(''));
+              
+              // Convert to base64 efficiently for large images
+              const uint8Array = new Uint8Array(imageBuffer);
+              let imageBase64 = '';
+              
+              // Process in chunks to avoid stack overflow
+              const chunkSize = 32768; // 32KB chunks
+              for (let i = 0; i < uint8Array.length; i += chunkSize) {
+                const chunk = uint8Array.subarray(i, i + chunkSize);
+                imageBase64 += String.fromCharCode.apply(null, Array.from(chunk));
+              }
+              
+              const base64Data = btoa(imageBase64);
               
               messageContent.push({
                 type: 'image',
                 source: {
                   type: 'base64',
-                  media_type: 'image/jpeg', // Claude supports jpeg, png, gif, webp
-                  data: imageBase64
+                  media_type: mediaType,
+                  data: base64Data
                 }
               });
               
-              console.log(`✅ Image ${image.name || 'unnamed'} processed for Claude`);
+              console.log(`✅ Image ${image.name || 'unnamed'} processed for Claude (${mediaType}, ${fileSizeKB.toFixed(1)}KB)`);
             } else {
-              console.warn(`⚠️ Failed to fetch image: ${imageUrl}`);
+              console.warn(`⚠️ Failed to fetch image: ${imageResponse.status} ${imageUrl}`);
             }
           }
         } catch (error) {
           console.error(`❌ Error processing image ${image.name}:`, error);
+          // Continue with other images if one fails
         }
       }
     }
@@ -215,7 +271,7 @@ Analyze the user's message and provide helpful UX feedback. If they're asking ab
       role: 'user',
       content: message,
       message_order: (conversationHistory?.length || 0) + 1,
-      model_used: 'claude-3-5-sonnet-chat',
+      model_used: 'claude-3-5-haiku-20241022',
       processing_time_ms: Date.now(),
       metadata: {
         message_type: 'chat',
@@ -234,7 +290,7 @@ Analyze the user's message and provide helpful UX feedback. If they're asking ab
       role: 'assistant',
       content: parsedResponse.content,
       message_order: (conversationHistory?.length || 0) + 2,
-      model_used: 'claude-3-5-sonnet-chat',
+      model_used: 'claude-3-5-haiku-20241022',
       processing_time_ms: Date.now(),
       metadata: {
         message_type: parsedResponse.type,
