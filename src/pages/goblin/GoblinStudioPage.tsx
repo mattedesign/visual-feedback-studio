@@ -239,10 +239,8 @@ export default function GoblinStudioPage() {
       const aiMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: typeof data.response === 'string' 
-          ? data.response 
-          : data.response?.content || JSON.stringify(data.response) || "I'm analyzing your request. Please provide more details or upload some images for me to give you better insights.",
-        message_type: 'text',
+        content: data.response?.content || data.response || "I'm analyzing your request. Please provide more details or upload some images for me to give you better insights.",
+        message_type: data.response?.type || 'text',
         created_at: new Date().toISOString()
       };
       
