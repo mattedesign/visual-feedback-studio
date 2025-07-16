@@ -35,6 +35,7 @@ interface ChatInterfaceProps {
   messages: ChatMessage[];
   onSendMessage: (content: string) => Promise<void>;
   onImageUpload: (file: File) => void;
+  onBatchImageUpload?: (files: File[]) => void;
   isLoading: boolean;
   sessionTitle: string;
   imageCount: number;
@@ -45,6 +46,7 @@ export function ChatInterface({
   messages,
   onSendMessage,
   onImageUpload,
+  onBatchImageUpload,
   isLoading,
   sessionTitle,
   imageCount,
@@ -84,10 +86,17 @@ export function ChatInterface({
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
       setIsUploading(true);
-      onImageUpload(file);
+      if (files.length === 1) {
+        onImageUpload(files[0]);
+      } else if (onBatchImageUpload) {
+        onBatchImageUpload(files);
+      } else {
+        // Fallback: upload files one by one if batch upload not supported
+        files.forEach(file => onImageUpload(file));
+      }
       // Reset after a delay (assuming upload completes)
       setTimeout(() => setIsUploading(false), 2000);
     }
@@ -207,6 +216,7 @@ export function ChatInterface({
             ref={fileInputRef}
             type="file"
             accept="image/*"
+            multiple
             onChange={handleFileUpload}
             className="hidden"
           />

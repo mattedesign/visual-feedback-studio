@@ -280,6 +280,7 @@ export default function GoblinStudioPage() {
           messages={messages}
           onSendMessage={handleSendMessage}
           onImageUpload={handleImageUpload}
+          onBatchImageUpload={handleBatchImageUpload}
           isLoading={isAnalyzing}
           sessionTitle={sessionTitle}
           imageCount={images.length}
