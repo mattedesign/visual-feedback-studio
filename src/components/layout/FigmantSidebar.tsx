@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { Button } from '@/components/ui/button';
-import { ClaudeMessages } from './ClaudeMessages';
+import { ChatInterface } from './ChatInterface';
 
 const navigationItems = [
   {
@@ -204,9 +204,7 @@ export const FigmantSidebar = () => {
           </div>
         </div>
       ) : (
-        <div className="flex-1">
-          <ClaudeMessages />
-        </div>
+        <ChatInterface />
       )}
 
       {/* Bottom Section - Subscription Status */}
