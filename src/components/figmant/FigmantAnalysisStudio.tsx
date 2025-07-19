@@ -1,345 +1,285 @@
-import React, { useState } from 'react';
+
+import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Upload, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Upload, Image as ImageIcon, Loader2, X, Eye, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useDropzone } from 'react-dropzone';
+import { 
+  createFigmantSession, 
+  uploadFigmantImage, 
+  startFigmantAnalysis,
+  type FigmantSession,
+  type FigmantImage 
+} from '@/services/figmantAnalysisService';
 
-interface FigmantAnalysisStudioProps {
-  onAnalysisComplete?: (analysisId: string) => void;
-}
-
-export function FigmantAnalysisStudio({ onAnalysisComplete }: FigmantAnalysisStudioProps) {
+export function FigmantAnalysisStudio() {
   const { subscription, refreshSubscription } = useSubscription();
   const navigate = useNavigate();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [sessionId] = useState(() => crypto.randomUUID());
-  const [uploadedImages, setUploadedImages] = useState<any[]>([]);
-  const [analysisResults, setAnalysisResults] = useState<any>(null);
+  const [session, setSession] = useState<FigmantSession | null>(null);
+  const [uploadedImages, setUploadedImages] = useState<FigmantImage[]>([]);
 
-  const handleFileUpload = async (files: FileList) => {
+  // Initialize session on first image upload
+  const initializeSession = async () => {
+    if (session) return session;
+    
+    try {
+      const newSession = await createFigmantSession({
+        title: 'Design Analysis Session'
+      });
+      setSession(newSession);
+      return newSession;
+    } catch (error) {
+      console.error('Failed to create session:', error);
+      toast.error('Failed to initialize analysis session');
+      throw error;
+    }
+  };
+
+  const handleImageUpload = async (files: File[]) => {
+    try {
+      const currentSession = await initializeSession();
+      
+      for (const file of files) {
+        if (file.type.startsWith('image/')) {
+          const uploadedImage = await uploadFigmantImage(
+            currentSession.id, 
+            file, 
+            uploadedImages.length + 1
+          );
+          setUploadedImages(prev => [...prev, uploadedImage]);
+        }
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload images');
+    }
+  };
+
+  const removeImage = async (imageId: string) => {
+    try {
+      const { error } = await supabase
+        .from('figmant_session_images')
+        .delete()
+        .eq('id', imageId);
+
+      if (error) throw error;
+
+      setUploadedImages(prev => prev.filter(img => img.id !== imageId));
+      toast.success('Image removed');
+    } catch (error) {
+      console.error('Error removing image:', error);
+      toast.error('Failed to remove image');
+    }
+  };
+
+  const getImageUrl = (filePath: string) => {
+    const { data } = supabase.storage
+      .from('analysis-images')
+      .getPublicUrl(filePath);
+    return data.publicUrl;
+  };
+
+  const handleAnalyze = async () => {
+    if (!session || uploadedImages.length === 0) {
+      toast.error('Please upload at least one image to analyze');
+      return;
+    }
+
     if (!subscription?.canAnalyze) {
-      toast.error('Analysis limit reached. Please upgrade your plan.');
-      return;
-    }
-
-    if (files.length === 0) return;
-
-    const file = files[0];
-    const maxSize = 10 * 1024 * 1024; // 10MB
-
-    if (file.size > maxSize) {
-      toast.error('File size must be less than 10MB');
-      return;
-    }
-
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please upload an image file');
+      toast.error('Analysis limit reached. Please upgrade your subscription.');
       return;
     }
 
     try {
       setIsAnalyzing(true);
-      console.log('📸 Starting image upload and analysis...');
-
-      // Create session first
-      const { data: sessionData, error: sessionError } = await supabase.functions.invoke('figmant-create-session', {
-        body: {
-          sessionId,
-          title: `UX Analysis - ${new Date().toLocaleDateString()}`,
-          industry: 'Technology',
-          designType: 'UI/UX Design',
-          businessGoals: ['Improve User Experience', 'Increase Conversions']
-        }
-      });
-
-      if (sessionError || !sessionData?.success) {
-        throw new Error(sessionData?.error || 'Failed to create session');
-      }
-
-      // Convert file to base64
-      const reader = new FileReader();
-      reader.onload = async () => {
-        try {
-          const base64 = reader.result as string;
-
-          // Upload image
-          const { data: uploadData, error: uploadError } = await supabase.functions.invoke('figmant-upload-image', {
-            body: {
-              sessionId,
-              imageFile: base64,
-              fileName: file.name,
-              fileSize: file.size
-            }
-          });
-
-          if (uploadError || !uploadData?.success) {
-            throw new Error(uploadData?.error || 'Failed to upload image');
-          }
-
-          setUploadedImages([uploadData.image]);
-          console.log('✅ Image uploaded successfully');
-
-          // Start analysis
-          console.log('🧠 Starting AI analysis...');
-          const { data: analysisData, error: analysisError } = await supabase.functions.invoke('figmant-analyze-design', {
-            body: { sessionId }
-          });
-
-          if (analysisError || !analysisData?.success) {
-            throw new Error(analysisData?.error || 'Analysis failed');
-          }
-
-          setAnalysisResults(analysisData.analysis);
-          toast.success('Analysis completed successfully!');
-          console.log('✅ Analysis completed:', analysisData.analysis);
-
-          // Refresh subscription data
-          await refreshSubscription();
-
-          if (onAnalysisComplete) {
-            onAnalysisComplete(sessionId);
-          }
-          
-          // Redirect to results page
-          navigate(`/analysis-results/${sessionId}`);
-
-        } catch (error) {
-          console.error('Analysis error:', error);
-          toast.error(error instanceof Error ? error.message : 'Analysis failed');
-        } finally {
-          setIsAnalyzing(false);
-        }
-      };
-
-      reader.readAsDataURL(file);
-
+      
+      // Start the analysis
+      await startFigmantAnalysis(session.id);
+      
+      // Refresh subscription to update usage
+      await refreshSubscription();
+      
+      // Navigate to results page immediately
+      navigate(`/analysis/${session.id}`);
+      
     } catch (error) {
-      console.error('Upload error:', error);
-      toast.error(error instanceof Error ? error.message : 'Upload failed');
+      console.error('Analysis error:', error);
+      toast.error(error instanceof Error ? error.message : 'Analysis failed');
       setIsAnalyzing(false);
     }
   };
 
-  const renderAnalysisResults = () => {
-    if (!analysisResults) return null;
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    handleImageUpload(acceptedFiles);
+  }, []);
 
-    return (
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <span className="text-2xl">🎯</span>
-              Executive Summary
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-4">
-              <div className="flex items-center gap-4 mb-3">
-                <div className="text-3xl font-bold text-primary">
-                  {analysisResults.overallScore || 75}/100
-                </div>
-                <div className="text-sm text-muted-foreground">Overall UX Score</div>
-              </div>
-              <p className="text-foreground leading-relaxed">
-                {analysisResults.executiveSummary || "Analysis completed successfully. See detailed findings below."}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {analysisResults.criticalIssues?.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <span className="text-2xl">⚠️</span>
-                Critical Issues
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {analysisResults.criticalIssues.slice(0, 3).map((issue: any, index: number) => (
-                  <div key={index} className="border rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        issue.severity === 'critical' ? 'bg-red-100 text-red-700' :
-                        issue.severity === 'high' ? 'bg-orange-100 text-orange-700' :
-                        issue.severity === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-blue-100 text-blue-700'
-                      }`}>
-                        {issue.severity?.toUpperCase()}
-                      </span>
-                      <span className="text-sm text-muted-foreground">{issue.category}</span>
-                    </div>
-                    <h4 className="font-semibold mb-2">{issue.issue}</h4>
-                    <p className="text-sm text-muted-foreground mb-3">{issue.impact}</p>
-                    <div className="bg-teal-50 border border-teal-200 rounded p-3">
-                      <p className="text-sm font-medium text-teal-900 mb-1">Recommended Solution:</p>
-                      <p className="text-sm text-teal-700">{issue.solution}</p>
-                    </div>
-                    {issue.implementationTime && (
-                      <div className="mt-2 text-xs text-muted-foreground">
-                        ⏱ Implementation time: {issue.implementationTime}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {analysisResults.recommendations?.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <span className="text-2xl">💡</span>
-                Key Recommendations
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {analysisResults.recommendations.slice(0, 3).map((rec: any, index: number) => (
-                  <div key={index} className="border rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        rec.category === 'Quick Wins' ? 'bg-green-100 text-green-700' :
-                        rec.category === 'Strategic' ? 'bg-blue-100 text-blue-700' :
-                        'bg-purple-100 text-purple-700'
-                      }`}>
-                        {rec.category}
-                      </span>
-                      <span className="text-sm text-muted-foreground">{rec.effort} effort</span>
-                    </div>
-                    <h4 className="font-semibold mb-2">{rec.title}</h4>
-                    <p className="text-sm text-muted-foreground mb-3">{rec.description}</p>
-                    <div className="text-xs text-muted-foreground">
-                      📈 Expected impact: {rec.expectedImpact} | ⏱ Timeline: {rec.timeline}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-    );
-  };
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp']
+    },
+    maxFiles: 10,
+    disabled: isAnalyzing
+  });
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Figmant AI UX Analysis</h1>
-        <p className="text-muted-foreground">
-          Get expert-level UX analysis powered by Claude Sonnet 4 and Google Vision
-        </p>
+      <div className="p-6 border-b border-[#E2E2E2]">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-[#121212]">Design Analysis</h1>
+            <p className="text-[#7B7B7B] mt-1">
+              Upload your designs to get AI-powered UX insights and recommendations
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="text-sm text-[#7B7B7B]">Analyses Remaining</div>
+            <div className="text-lg font-semibold text-[#22757C]">
+              {subscription?.analysesRemaining || 0}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Subscription Status */}
-      {subscription && (
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-sm font-medium">
-                  Plan: {subscription.tier.charAt(0).toUpperCase() + subscription.tier.slice(1)}
-                </span>
-                <span className="text-sm text-muted-foreground ml-4">
-                  {subscription.analysesUsed}/{subscription.analysesLimit} analyses used
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-24 bg-muted rounded-full h-2">
-                  <div 
-                    className="bg-primary h-2 rounded-full" 
-                    style={{ width: `${(subscription.analysesUsed / subscription.analysesLimit) * 100}%` }}
-                  />
-                </div>
-                {!subscription.canAnalyze && (
-                  <Button size="sm" variant="outline">
-                    Upgrade
-                  </Button>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Upload Area */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="w-5 h-5" />
-            Upload Design for Analysis
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div 
-            className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
-            onClick={() => document.getElementById('file-upload')?.click()}
-          >
-            <ImageIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-lg font-medium mb-2">
-              {isAnalyzing ? 'Analyzing your design...' : 'Drop your design here or click to upload'}
-            </p>
-            <p className="text-sm text-muted-foreground mb-4">
-              Supports PNG, JPG, WebP up to 10MB
-            </p>
-            
-            {isAnalyzing ? (
-              <div className="flex items-center justify-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm">Processing with AI...</span>
-              </div>
-            ) : (
-              <Button disabled={!subscription?.canAnalyze}>
-                {subscription?.canAnalyze ? 'Select File' : 'Upgrade to Analyze'}
-              </Button>
-            )}
-            
-            <input
-              id="file-upload"
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
-              disabled={isAnalyzing || !subscription?.canAnalyze}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Uploaded Images */}
-      {uploadedImages.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Uploaded Images</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {uploadedImages.map((image, index) => (
-                <div key={index} className="border rounded-lg p-3">
-                  <div className="aspect-video bg-muted rounded mb-2 flex items-center justify-center">
-                    <ImageIcon className="w-8 h-8 text-muted-foreground" />
+      <div className="flex-1 p-6">
+        {uploadedImages.length === 0 ? (
+          // Upload State
+          <div className="h-full flex items-center justify-center">
+            <Card className="w-full max-w-2xl">
+              <CardContent className="p-8">
+                <div
+                  {...getRootProps()}
+                  className={`
+                    border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-colors
+                    ${isDragActive 
+                      ? 'border-[#22757C] bg-[#22757C]/10' 
+                      : 'border-[#E2E2E2] hover:border-[#22757C]/50'
+                    }
+                  `}
+                >
+                  <input {...getInputProps()} />
+                  <div className="w-16 h-16 bg-[#22757C]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Upload className="w-8 h-8 text-[#22757C]" />
                   </div>
-                  <p className="text-sm font-medium truncate">{image.file_name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {(image.file_size / 1024).toFixed(1)}KB • 
-                    {image.google_vision_processed ? ' AI Processed' : ' Processing...'}
+                  <h3 className="text-xl font-semibold text-[#121212] mb-2">
+                    Upload Your Designs
+                  </h3>
+                  <p className="text-[#7B7B7B] mb-6">
+                    Drag and drop your design files here, or click to browse
+                  </p>
+                  <Button className="bg-[#22757C] hover:bg-[#1d6359] text-white">
+                    Choose Files
+                  </Button>
+                  <p className="text-xs text-[#7B7B7B] mt-4">
+                    Supports PNG, JPG, JPEG, GIF, WebP • Max 10 files
                   </p>
                 </div>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          // Images Uploaded State
+          <div className="space-y-6">
+            {/* Image Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {uploadedImages.map((image) => (
+                <Card key={image.id} className="group relative">
+                  <CardContent className="p-2">
+                    <div className="aspect-square rounded-lg overflow-hidden bg-[#F8F9FA] relative">
+                      <img 
+                        src={getImageUrl(image.file_path)}
+                        alt={image.file_name}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="secondary" className="h-8 w-8 p-0">
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="destructive" 
+                            className="h-8 w-8 p-0"
+                            onClick={() => removeImage(image.id)}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-2">
+                      <p className="text-xs font-medium text-[#121212] truncate">
+                        {image.file_name}
+                      </p>
+                      <p className="text-xs text-[#7B7B7B]">
+                        {new Date(image.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
-      {/* Analysis Results */}
-      {renderAnalysisResults()}
+              {/* Add More Button */}
+              {uploadedImages.length < 10 && (
+                <Card className="group cursor-pointer" {...getRootProps()}>
+                  <input {...getInputProps()} />
+                  <CardContent className="p-2 h-full">
+                    <div className="aspect-square rounded-lg border-2 border-dashed border-[#E2E2E2] group-hover:border-[#22757C]/50 transition-colors flex items-center justify-center">
+                      <div className="text-center">
+                        <Upload className="w-6 h-6 text-[#7B7B7B] mx-auto mb-2" />
+                        <p className="text-xs text-[#7B7B7B]">Add More</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Analysis Button */}
+            <div className="flex justify-center pt-6">
+              <Button
+                onClick={handleAnalyze}
+                disabled={isAnalyzing || uploadedImages.length === 0 || !subscription?.canAnalyze}
+                size="lg"
+                className="bg-[#22757C] hover:bg-[#1d6359] text-white px-8 py-3"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Analyzing Design...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-5 h-5 mr-2" />
+                    Analyze Design ({uploadedImages.length} image{uploadedImages.length !== 1 ? 's' : ''})
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {!subscription?.canAnalyze && (
+              <div className="text-center">
+                <p className="text-sm text-[#7B7B7B] mb-2">
+                  You've reached your analysis limit
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/subscription')}
+                >
+                  Upgrade Plan
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

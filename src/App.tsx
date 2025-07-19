@@ -1,43 +1,25 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { Suspense, lazy } from "react";
-import GoblinDashboard from "./pages/GoblinDashboard";
-import EnhancedDashboardPage from "./pages/EnhancedDashboardPage";
-import AnalysisStudioPage from "./pages/AnalysisStudioPage";
 import { SubscriptionProvider } from "./contexts/SubscriptionContext";
-import Archive from "./pages/Archive";
-import Analysis from "./pages/Analysis";
-import AnalysisResults from "./pages/AnalysisResults";
-import Analyze from "./pages/Analyze";
-import AnalyzeResults from "./pages/AnalyzeResults";
-import Auth from "./pages/Auth";
-import UpgradeSuccess from "./pages/UpgradeSuccess";
-import VectorTest from "./pages/VectorTest";
-import HybridEngineTest from "./pages/HybridEngineTest";
-import GoblinHistory from "./pages/GoblinHistory";
-import Settings from "./pages/Settings";
-import Help from "./pages/Help";
-import { AdminPanel } from "./pages/AdminPanel";
-import Subscription from "./pages/Subscription";
-import Mentor from "./pages/Mentor";
-import AnalysisDashboard from "./pages/AnalysisDashboard";
-import GoblinStudio from "./pages/goblin/GoblinStudio";
-import GoblinStudioPage from "./pages/goblin/GoblinStudioPage";
-import GoblinResults from "./pages/goblin/GoblinResults";
-import { LoadingSpinner } from "@/components/common/LoadingSpinner";
-import { DatabaseSeeder } from "@/components/admin/DatabaseSeeder";
-import { PublicAchievement } from "@/pages/public/Achievement";
 import { useAuth } from "@/hooks/useAuth";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { FigmantLayout } from "@/components/layout/FigmantLayout";
+import { FigmantDashboard } from "@/pages/FigmantDashboard";
+import { FigmantAnalysisPage } from "@/pages/FigmantAnalysisPage";
+import { FigmantResultsPage } from "@/pages/FigmantResultsPage";
+import Auth from "./pages/Auth";
+import Settings from "./pages/Settings";
+import Subscription from "./pages/Subscription";
+import { PublicAchievement } from "@/pages/public/Achievement";
 
 const queryClient = new QueryClient();
 
 const App = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   
   return (
     <QueryClientProvider client={queryClient}>
@@ -50,7 +32,7 @@ const App = () => {
             <Route path="/auth" element={<Auth />} />
             <Route path="/achievement/:shareToken" element={<PublicAchievement />} />
             
-            {/* Protected routes with exact SVG container styling */}
+            {/* Protected routes with Figmant container styling */}
             <Route path="/*" element={
               <AuthGuard>
                 <SubscriptionProvider>
@@ -84,32 +66,24 @@ const App = () => {
                       >
                         <FigmantLayout>
                           <Routes>
-                            <Route path="/" element={<EnhancedDashboardPage />} />
-                            <Route path="/dashboard" element={<EnhancedDashboardPage />} />
-                            <Route path="/analysis-studio" element={<AnalysisStudioPage />} />
-                            <Route path="archive" element={<Archive />} />
-                            <Route path="analysis" element={<Analysis />} />
-                            <Route path="analysis/:id" element={<AnalysisResults />} />
-                            <Route path="analysis-results" element={<AnalysisResults />} />
-                            <Route path="analysis-results/:id" element={<AnalysisResults />} />
-                            <Route path="analyze" element={<Analyze />} />
-                            <Route path="analyze-results/:id" element={<AnalyzeResults />} />
-                            <Route path="goblin" element={<GoblinStudioPage />} />
-                            <Route path="goblin/results/:sessionId" element={<GoblinResults />} />
-                            <Route path="history" element={<GoblinHistory />} />
-                            <Route path="mentor" element={<Mentor />} />
-                            <Route path="create-new" element={<AnalysisDashboard />} />
-                            <Route path="settings" element={<Settings />} />
-                            <Route path="subscription" element={<Subscription />} />
-                            <Route path="help" element={<Help />} />
-                            <Route path="admin" element={<AdminPanel />} />
-                            <Route path="upgrade-success" element={<UpgradeSuccess />} />
-                            <Route path="vector-test" element={<VectorTest />} />
-                            <Route path="hybrid-engine-test" element={<HybridEngineTest />} />
-                            <Route path="database-seeder" element={<DatabaseSeeder />} />
-                            <Route path="reports" element={<div className="p-8 text-center"><h1 className="text-2xl font-bold">Reports Coming Soon</h1><p className="text-muted-foreground">Advanced reporting features will be available soon.</p></div>} />
-                            <Route path="insights" element={<div className="p-8 text-center"><h1 className="text-2xl font-bold">Design Insights Coming Soon</h1><p className="text-muted-foreground">AI-powered design insights will be available soon.</p></div>} />
-                            <Route path="trends" element={<div className="p-8 text-center"><h1 className="text-2xl font-bold">Trends Coming Soon</h1><p className="text-muted-foreground">UX trend analysis will be available soon.</p></div>} />
+                            {/* Core Figmant Routes */}
+                            <Route path="/" element={<FigmantDashboard />} />
+                            <Route path="/dashboard" element={<FigmantDashboard />} />
+                            <Route path="/analyze" element={<FigmantAnalysisPage />} />
+                            <Route path="/analysis/:sessionId" element={<FigmantResultsPage />} />
+                            <Route path="/analysis-results/:sessionId" element={<FigmantResultsPage />} />
+                            
+                            {/* Settings & Account */}
+                            <Route path="/settings" element={<Settings />} />
+                            <Route path="/subscription" element={<Subscription />} />
+                            
+                            {/* Redirect old routes to new ones */}
+                            <Route path="/create-new" element={<Navigate to="/analyze" replace />} />
+                            <Route path="/analysis-studio" element={<Navigate to="/analyze" replace />} />
+                            <Route path="/mentor" element={<Navigate to="/dashboard" replace />} />
+                            <Route path="/history" element={<Navigate to="/dashboard" replace />} />
+                            
+                            {/* Catch all */}
                             <Route path="*" element={<Navigate to="/" replace />} />
                           </Routes>
                         </FigmantLayout>

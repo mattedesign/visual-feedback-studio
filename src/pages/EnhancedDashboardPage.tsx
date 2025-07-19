@@ -1,8 +1,10 @@
+
 import React from 'react';
-import { FigmantDashboard } from './FigmantDashboard';
+import { Navigate } from 'react-router-dom';
 
 const EnhancedDashboardPage = () => {
-  return <FigmantDashboard />;
+  // Redirect to the main dashboard
+  return <Navigate to="/dashboard" replace />;
 };
 
 export default EnhancedDashboardPage;
