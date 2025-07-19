@@ -207,8 +207,8 @@ export const FigmantSidebar = () => {
         <ChatInterface />
       )}
 
-      {/* Bottom Section - Subscription Status */}
-      {subscription && (
+      {/* Bottom Section - Subscription Status - Only show in Menu tab */}
+      {subscription && activeTab === 'menu' && (
         <div className="p-4 border-t border-[#E2E2E2]">
           <div 
             className="border rounded-lg p-3"

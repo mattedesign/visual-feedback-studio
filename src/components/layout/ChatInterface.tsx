@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ClaudeMessages } from './ClaudeMessages';
 import { UserMessage } from './UserMessage';
-import { Send } from 'lucide-react';
+import { Plus, Mic, ArrowUp } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -55,35 +55,70 @@ export const ChatInterface = () => {
         </div>
       </div>
 
-      {/* Message Input */}
-      <div className="p-4 border-t border-[#E2E2E2]">
-        <div className="flex items-center gap-2">
-          <div className="flex-1 relative">
-            <textarea
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Ask about UX improvements..."
-              className="w-full px-3 py-2 text-sm border border-[#E2E2E2] rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#22757C]/20 focus:border-[#22757C]"
-              style={{
-                minHeight: '36px',
-                maxHeight: '100px',
-                color: '#121212'
-              }}
-              rows={1}
-            />
-          </div>
-          <button
-            onClick={handleSendMessage}
-            disabled={!inputValue.trim()}
-            className="p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{
-              background: inputValue.trim() ? '#22757C' : '#F1F1F1',
-              color: inputValue.trim() ? '#FCFCFC' : '#7B7B7B'
-            }}
+      {/* Chat Input Container */}
+      <div 
+        className="relative"
+        style={{
+          height: '128px',
+          width: '280px',
+          margin: '0 4px'
+        }}
+      >
+        {/* Input Area */}
+        <div 
+          className="absolute top-0 left-0 right-0 bg-[#FCFCFC] rounded-t-[20px] border-l border-r border-t border-[#E2E2E2] px-4 py-4"
+          style={{ height: '68px' }}
+        >
+          <textarea
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="What would you like to analyze?"
+            className="w-full h-full text-sm text-[#222222] text-opacity-50 bg-transparent resize-none focus:outline-none placeholder:text-[#222222] placeholder:text-opacity-50"
+            style={{ fontFamily: 'inherit' }}
+          />
+        </div>
+
+        {/* Divider */}
+        <div 
+          className="absolute border-t border-[#E2E2E2]"
+          style={{ 
+            top: '68px',
+            left: 0,
+            right: 0
+          }}
+        />
+
+        {/* Bottom Controls */}
+        <div 
+          className="absolute bottom-0 left-0 right-0 bg-[#F1F1F1] rounded-b-[20px] border-l border-r border-b border-[#E2E2E2] px-4 py-4 flex items-center justify-between"
+          style={{ height: '60px' }}
+        >
+          {/* Plus Icon */}
+          <div 
+            className="w-10 h-10 bg-[#FCFCFC] border border-[#E2E2E2] rounded-lg flex items-center justify-center"
           >
-            <Send className="w-4 h-4" />
-          </button>
+            <Plus className="w-5 h-5 text-[#323232]" />
+          </div>
+
+          {/* Mic Icon */}
+          <div className="flex items-center justify-center">
+            <Mic className="w-5 h-5 text-[#7B7B7B]" strokeWidth={1.5} />
+          </div>
+
+          {/* Send Button */}
+          <div 
+            className="w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer"
+            style={{
+              background: 'linear-gradient(180deg, #E5E5E5 0%, #E2E2E2 100%)',
+              border: '1px solid #D4D4D4',
+              filter: 'drop-shadow(0px 0px 0px #D4D4D4) drop-shadow(0px 3px 4px rgba(0, 0, 0, 0.15))',
+              boxShadow: 'inset 0px 1px 0px rgba(255, 255, 255, 0.33)'
+            }}
+            onClick={handleSendMessage}
+          >
+            <ArrowUp className="w-4 h-4 text-[#121212]" strokeWidth={1.5} />
+          </div>
         </div>
       </div>
     </div>
