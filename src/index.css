@@ -1,80 +1,80 @@
-
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import "./components/ui/animations.css";
 
 @layer base {
   :root {
-    /* V128 Theme - Warm Professional Palette */
-    --background: 22 100% 96%;
-    --foreground: 25 15% 15%;
-    --card: 35 30% 98%;
-    --card-foreground: 25 15% 15%;
-    --popover: 35 30% 98%;
-    --popover-foreground: 25 15% 15%;
-    --primary: 266 24% 37%;
-    --primary-foreground: 35 25% 96%;
-    --secondary: 35 20% 92%;
-    --secondary-foreground: 25 15% 15%;
-    --muted: 35 15% 90%;
-    --muted-foreground: 25 8% 45%;
-    --accent: 35 20% 88%;
-    --accent-foreground: 25 15% 15%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 35 25% 96%;
-    --border: 35 12% 85%;
-    --input: 35 12% 85%;
-    --input-background: 0 0% 100%;
-    --ring: 266 24% 37%;
+    /* Exact color scheme from reference design */
+    --background: 0 0% 98%;
+    --foreground: 0 0% 10%;
     
-    /* V128 Brand Colors */
-    --warm-cream: 266 24% 95%;
-    --warm-beige: 266 24% 90%;
-    --warm-tan: 266 24% 85%;
-    --professional-brown: 266 24% 37%;
-    --soft-gray: 25 8% 45%;
-    --accent-warm: 266 24% 80%;
+    /* Sidebar - teal/dark green */
+    --sidebar: 178 39% 26%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-hover: 175 45% 30%;
+    --sidebar-accent: 175 60% 35%;
     
-    /* Typography Enhancement */
-    --heading-weight: 600;
-    --body-weight: 400;
-    --label-weight: 500;
+    /* Primary teal colors */
+    --primary: 175 75% 35%;
+    --primary-foreground: 0 0% 98%;
+    --primary-muted: 175 60% 45%;
     
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
+    /* Secondary - bright blue accents */
+    --secondary: 210 100% 65%;
+    --secondary-foreground: 0 0% 98%;
+    
+    /* Accent - bright teal/cyan */
+    --accent: 175 85% 55%;
+    --accent-foreground: 0 0% 10%;
+    
+    /* Card and surface colors */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
+    --muted: 210 40% 98%;
+    --muted-foreground: 215 16% 47%;
+    
+    /* Border and inputs */
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 175 75% 35%;
+    
+    /* Status colors */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 98%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 98%;
+    
+    /* Chart colors matching the design */
+    --chart-1: 175 85% 55%;
+    --chart-2: 210 100% 65%;
+    --chart-3: 142 76% 36%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 283 85% 55%;
+    
+    --radius: 8px;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --input-background: 0 0% 100%;
-    --ring: 224.3 76.3% 94.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
+    --card: 224 71% 4%;
+    --card-foreground: 213 31% 91%;
+    --sidebar: 224 71% 4%;
+    --sidebar-foreground: 213 31% 91%;
+    --primary: 175 75% 45%;
+    --primary-foreground: 0 0% 10%;
+    --secondary: 210 100% 75%;
+    --secondary-foreground: 0 0% 10%;
+    --muted: 223 47% 11%;
+    --muted-foreground: 215 16% 57%;
+    --accent: 175 85% 65%;
+    --accent-foreground: 0 0% 10%;
+    --border: 216 34% 17%;
+    --input: 216 34% 17%;
+    --ring: 175 75% 45%;
   }
 }
 
@@ -82,246 +82,74 @@
   * {
     @apply border-border;
   }
+  
   body {
-    @apply text-foreground;
-    border-radius: 32px !important;
-    background: linear-gradient(0deg, #FFEBE4 0%, #FFEBE4 100%), linear-gradient(56deg, #FFEEE5 2.46%, #FFF0E3 30%, #FFEDE8 61.59%, #FCD7FD 98.19%) !important;
-  }
-}
-
-/* Mobile viewport optimizations for screens 768px and below */
-@media (max-width: 768px) {
-  /* Page container improvements */
-  .min-h-screen {
-    min-height: 100vh;
-    padding: 0 !important;
-  }
-
-  /* Header and navigation improvements */
-  .goblin-header {
-    padding: 0.75rem 1rem !important;
-    min-height: 3.5rem;
-  }
-
-  /* Tab navigation mobile optimizations */
-  .tabs-list-mobile {
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    scrollbar-width: none !important;
-    -ms-overflow-style: none !important;
+    @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
   
-  .tabs-list-mobile::-webkit-scrollbar {
-    display: none !important;
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold;
+  }
+}
+
+@layer components {
+  /* Figmant specific layout classes */
+  .figmant-layout {
+    @apply min-h-screen flex bg-background;
   }
   
-  .tabs-trigger-mobile {
-    white-space: nowrap !important;
-    min-width: fit-content !important;
-    padding: 0.5rem 0.75rem !important;
-    font-size: 0.875rem !important;
-    flex-shrink: 0 !important;
-  }
-
-  /* Content card improvements */
-  .mobile-content-card {
-    margin: 0 !important;
-    padding: 1rem !important;
-    border-radius: 0.5rem !important;
-    width: 100% !important;
-  }
-
-  /* Button improvements for mobile */
-  .mobile-button-group {
-    flex-direction: column !important;
-    gap: 0.5rem !important;
-    width: 100% !important;
+  .figmant-sidebar {
+    @apply w-[280px] bg-[hsl(var(--sidebar))] text-[hsl(var(--sidebar-foreground))] flex-shrink-0;
   }
   
-  .mobile-button-group button {
-    width: 100% !important;
-    padding: 0.75rem 1rem !important;
-    justify-content: center !important;
-  }
-
-  /* Text content improvements */
-  .mobile-text-content {
-    font-size: 0.9rem !important;
-    line-height: 1.5 !important;
-    word-break: break-word !important;
-    overflow-wrap: break-word !important;
-  }
-
-  /* Insights card mobile optimizations */
-  .insights-card-mobile {
-    padding: 1rem !important;
-    margin-bottom: 1rem !important;
+  .figmant-main {
+    @apply flex-1 bg-muted/30 overflow-auto;
   }
   
-  .insights-card-mobile .card-header {
-    padding-bottom: 0.75rem !important;
+  .figmant-header {
+    @apply h-16 bg-card/80 backdrop-blur-sm border-b border-border/20 flex items-center justify-between px-6;
   }
   
-  .insights-card-mobile .card-content {
-    padding-top: 0 !important;
-  }
-
-  /* Badge and pill mobile improvements */
-  .mobile-badge {
-    font-size: 0.75rem !important;
-    padding: 0.25rem 0.5rem !important;
-    white-space: nowrap !important;
-  }
-
-  /* Container spacing adjustments */
-  .space-y-6 > * + * {
-    margin-top: 1rem !important;
+  .figmant-content {
+    @apply p-6 space-y-6;
   }
   
-  .space-y-4 > * + * {
-    margin-top: 0.75rem !important;
-  }
-
-  /* Force full width everywhere */
-  .container, .max-w-7xl, .max-w-6xl, .max-w-4xl, .max-w-none {
-    max-width: 100% !important;
-    width: 100% !important;
-    padding-left: 1rem !important;
-    padding-right: 1rem !important;
-  }
-
-  /* Text sizing improvements */
-  .text-xl {
-    font-size: 1.125rem !important;
+  .figmant-card {
+    @apply bg-card border border-border/20 rounded-lg shadow-sm p-6;
   }
   
-  .text-lg {
-    font-size: 1rem !important;
+  .figmant-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6;
   }
-}
-
-/* Force consistent font rendering for annotation markers */
-.annotation-marker-number {
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif !important;
-  font-feature-settings: "tnum" 1 !important;
-  -webkit-font-feature-settings: "tnum" 1 !important;
-  font-variant-numeric: tabular-nums !important;
-  text-rendering: geometricPrecision !important;
-  -webkit-text-rendering: geometricPrecision !important;
-}
-
-/* Ensure numbers display correctly in all annotation contexts */
-[data-annotation-number] {
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif !important;
-  font-feature-settings: "tnum" 1 !important;
-  font-variant-numeric: tabular-nums !important;
-  letter-spacing: 0 !important;
-}
-
-/* Jitter animation for loading text */
-.animate-jitter {
-  @apply transition-transform duration-300;
-  animation: jitter 1s ease-in-out infinite alternate;
-}
-
-@keyframes jitter {
-  0% { transform: translateY(0px); }
-  100% { transform: translateY(-2px); }
-}
-
-/* Primary Button Styles */
-.enhanced-button-primary {
-  background: linear-gradient(180deg, #323232 0%, #222 100%);
-  box-shadow: 0px 0.5px 1px 0px rgba(255, 255, 255, 0.15) inset, 
-              0px 2px 4px -1px rgba(13, 13, 13, 0.50), 
-              0px -1px 1.2px 0.35px #121212 inset, 
-              0px 0px 0px 1px #333;
-  font-family: "Instrument Sans", system-ui, -apple-system, sans-serif;
-  color: #FCFCFC !important;
-}
-
-.enhanced-button-primary:hover {
-  background: linear-gradient(180deg, #383838 0%, #282828 100%);
-  transform: translateY(-1px);
-  box-shadow: 0px 0.5px 1px 0px rgba(255, 255, 255, 0.15) inset, 
-              0px 3px 6px -1px rgba(13, 13, 13, 0.60), 
-              0px -1px 1.2px 0.35px #121212 inset, 
-              0px 0px 0px 1px #333;
-}
-
-/* Secondary Auth Button Styles */
-.enhanced-button-secondary-auth {
-  background: linear-gradient(180deg, #E5E5E5 0%, #E2E2E2 100%);
-  box-shadow: 0px 3px 4px -1px rgba(0, 0, 0, 0.15), 
-              0px 1px 0px 0px rgba(255, 255, 255, 0.33) inset, 
-              0px 0px 0px 1px #D4D4D4;
-  font-family: "Instrument Sans", system-ui, -apple-system, sans-serif;
-  color: #121212 !important;
-}
-
-.enhanced-button-secondary-auth:hover {
-  background: linear-gradient(180deg, #E0E0E0 0%, #DDDDDD 100%);
-  transform: translateY(-1px);
-}
-
-/* Secondary Goblin Button Styles */
-.enhanced-button-secondary-goblin {
-  background: linear-gradient(180deg, #E5E5E5 0%, #E2E2E2 100%);
-  box-shadow: 0px 3px 4px -1px rgba(0, 0, 0, 0.15), 
-              0px 1px 0px 0px rgba(255, 255, 255, 0.33) inset, 
-              0px 0px 0px 1px #D4D4D4;
-  font-family: "Instrument Sans", system-ui, -apple-system, sans-serif;
-  color: #121212 !important;
-}
-
-.enhanced-button-secondary-goblin:hover {
-  background: linear-gradient(180deg, #E0E0E0 0%, #DDDDDD 100%);
-  transform: translateY(-1px);
-}
-
-/* Main Page Action Button - Top Right */
-.main-page-action-button {
-  display: flex;
-  padding: 10px 16px;
-  justify-content: center;
-  align-items: center;
-  gap: 0px;
-  border-radius: 9999px;
-  background: #EEF2FF !important;
-  color: #5C3C90 !important;
-  border: none !important;
-  font-weight: 500;
-}
-
-.main-page-action-button:hover {
-  background: #EEF2FF !important;
-  color: #5C3C90 !important;
-}
-
-.main-page-action-button:focus {
-  background: #EEF2FF !important;
-  color: #5C3C90 !important;
-}
-
-.main-page-action-button svg {
-  color: #5C3C90 !important;
-}
-
-/* Outline Button with new styling */
-.btn-outline-styled {
-  background: #EEF2FF !important;
-  color: #5C3C90 !important;
-  border: 1px solid #EEF2FF !important;
-}
-
-.btn-outline-styled:hover {
-  background: #EEF2FF !important;
-  color: #5C3C90 !important;
-  border: 1px solid #EEF2FF !important;
-}
-
-.btn-outline-styled:focus {
-  background: #EEF2FF !important;
-  color: #5C3C90 !important;
-  border: 1px solid #EEF2FF !important;
+  
+  /* Status indicators */
+  .status-badge-success {
+    @apply bg-success/10 text-success border border-success/20 px-2 py-1 rounded-md text-xs font-medium;
+  }
+  
+  .status-badge-warning {
+    @apply bg-warning/10 text-warning border border-warning/20 px-2 py-1 rounded-md text-xs font-medium;
+  }
+  
+  .status-badge-info {
+    @apply bg-secondary/10 text-secondary border border-secondary/20 px-2 py-1 rounded-md text-xs font-medium;
+  }
+  
+  /* Progress bars */
+  .progress-bar {
+    @apply w-full h-2 bg-muted rounded-full overflow-hidden;
+  }
+  
+  .progress-fill {
+    @apply h-full bg-primary rounded-full transition-all duration-300;
+  }
+  
+  /* Chart colors */
+  .chart-color-1 { @apply text-[hsl(var(--chart-1))]; }
+  .chart-color-2 { @apply text-[hsl(var(--chart-2))]; }
+  .chart-color-3 { @apply text-[hsl(var(--chart-3))]; }
+  .chart-color-4 { @apply text-[hsl(var(--chart-4))]; }
+  .chart-color-5 { @apply text-[hsl(var(--chart-5))]; }
 }
