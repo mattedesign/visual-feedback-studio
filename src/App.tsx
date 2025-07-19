@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Suspense, lazy, useState } from "react";
 import GoblinDashboard from "./pages/GoblinDashboard";
+import DashboardPage from "./pages/DashboardPage";
+import AnalysisStudioPage from "./pages/AnalysisStudioPage";
 import Archive from "./pages/Archive";
 import Analysis from "./pages/Analysis";
 import AnalysisResults from "./pages/AnalysisResults";
@@ -64,7 +66,9 @@ const App = () => {
                         background: '#FFF'
                       }}>
                         <Routes>
-                          <Route path="/" element={<GoblinDashboard />} />
+                          <Route path="/" element={<DashboardPage />} />
+                          <Route path="/dashboard" element={<DashboardPage />} />
+                          <Route path="/analysis-studio" element={<AnalysisStudioPage />} />
                           <Route path="archive" element={<Archive />} />
                           <Route path="analysis" element={<Analysis />} />
                           <Route path="analysis/:id" element={<AnalysisResults />} />
