@@ -56,12 +56,13 @@ export const FigmantSidebar = () => {
     <div 
       className="border border-[#E2E2E2]"
       style={{
-        width: '288px',
-        height: '856px',
-        borderRadius: '20px',
-        background: '#FCFCFC',
         display: 'flex',
-        flexDirection: 'column'
+        width: '288px',
+        flexDirection: 'column',
+        alignItems: 'center',
+        alignSelf: 'stretch',
+        borderRadius: '20px',
+        background: '#FCFCFC'
       }}
     >
       {/* Header */}
