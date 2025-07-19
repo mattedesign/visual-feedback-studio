@@ -50,28 +50,64 @@ export const FigmantSidebar = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <div className="figmant-sidebar border-r">
+    <div 
+      className="border border-[#E2E2E2]"
+      style={{
+        width: '288px',
+        height: '856px',
+        borderRadius: '20px',
+        background: '#FCFCFC',
+        display: 'flex',
+        flexDirection: 'column'
+      }}
+    >
       {/* Header */}
-      <div className="p-4 border-b border-border/20">
+      <div className="p-4 border-b border-[#E2E2E2]">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold">
-            F
+          {/* Circular icon with exact gradient */}
+          <div 
+            className="w-9 h-9 rounded-full flex items-center justify-center"
+            style={{
+              background: 'linear-gradient(180deg, #22757C 0%, #18686F 100%)'
+            }}
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path 
+                d="M8 16.261C10.7088 13.8016 13.3876 11.1988 16.226 8.9934C16.8164 8.5347 17.3568 8.189 18.0255 8.0428C18.6699 7.9019 19.2116 8.0756 19.1122 9.0701C18.9078 11.1149 17.5847 13.0901 16.6233 14.6051C15.6317 16.168 14.4719 17.604 13.5619 19.2509"
+                stroke="#63F8F1" 
+                strokeWidth="2" 
+                strokeLinecap="round"
+              />
+            </svg>
           </div>
           <div>
-            <h2 className="font-semibold text-sm">Dashboard Analysis</h2>
-            <p className="text-xs text-muted-foreground">Session in progress</p>
+            <h2 className="font-semibold text-sm" style={{ color: '#121212' }}>
+              Dashboard Analysis
+            </h2>
+            <p className="text-xs" style={{ color: '#7B7B7B' }}>
+              Session in progress
+            </p>
           </div>
-          <ChevronDown className="w-4 h-4 ml-auto" />
+          <ChevronDown className="w-4 h-4 ml-auto" style={{ color: '#121212' }} />
         </div>
       </div>
 
       {/* Navigation Toggle */}
-      <div className="p-4 border-b border-border/20">
-        <div className="flex bg-muted rounded-lg p-1">
-          <button className="flex-1 py-1.5 px-3 text-xs font-medium rounded-md bg-card shadow-sm">
+      <div className="p-4 border-b border-[#E2E2E2]">
+        <div className="flex rounded-lg p-1" style={{ background: '#F1F1F1' }}>
+          <button 
+            className="flex-1 py-1.5 px-3 text-xs font-medium rounded-md shadow-sm"
+            style={{ 
+              background: '#FCFCFC',
+              color: '#121212'
+            }}
+          >
             Menu
           </button>
-          <button className="flex-1 py-1.5 px-3 text-xs font-medium text-muted-foreground">
+          <button 
+            className="flex-1 py-1.5 px-3 text-xs font-medium"
+            style={{ color: '#7B7B7B' }}
+          >
             Chat
           </button>
         </div>
@@ -82,10 +118,24 @@ export const FigmantSidebar = () => {
         {navigationItems.map((section, index) => (
           <div key={index}>
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-2 h-2 rounded-full bg-primary/60" />
-              <span className="text-sm font-medium">{section.title}</span>
+              <div 
+                className="w-2 h-2 rounded-full"
+                style={{ background: '#22757C' }}
+              />
+              <span 
+                className="text-sm font-medium"
+                style={{ color: '#121212' }}
+              >
+                {section.title}
+              </span>
               {section.badge && (
-                <span className="ml-auto text-xs bg-muted px-2 py-0.5 rounded-full">
+                <span 
+                  className="ml-auto text-xs px-2 py-0.5 rounded-full"
+                  style={{ 
+                    background: '#F1F1F1',
+                    color: '#7B7B7B'
+                  }}
+                >
                   {section.badge}
                 </span>
               )}
@@ -98,9 +148,12 @@ export const FigmantSidebar = () => {
                     to={item.href}
                     className={`flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors ${
                       isActive(item.href)
-                        ? 'bg-sidebar-hover text-sidebar-foreground'
-                        : 'text-sidebar-foreground/70 hover:bg-sidebar-hover/50 hover:text-sidebar-foreground'
+                        ? 'bg-[#22757C]/10'
+                        : 'hover:bg-[#F1F1F1]'
                     }`}
+                    style={{
+                      color: isActive(item.href) ? '#22757C' : '#121212'
+                    }}
                   >
                     <item.icon className="w-4 h-4" />
                     {item.name}
@@ -114,7 +167,12 @@ export const FigmantSidebar = () => {
         {/* Projects Section */}
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-sm font-medium text-muted-foreground">Projects</span>
+            <span 
+              className="text-sm font-medium"
+              style={{ color: '#7B7B7B' }}
+            >
+              Projects
+            </span>
           </div>
           <div className="space-y-1">
             {projectItems.map((item) => (
@@ -123,9 +181,12 @@ export const FigmantSidebar = () => {
                 to={item.href}
                 className={`flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors ${
                   isActive(item.href)
-                    ? 'bg-sidebar-hover text-sidebar-foreground'
-                    : 'text-sidebar-foreground/70 hover:bg-sidebar-hover/50 hover:text-sidebar-foreground'
+                    ? 'bg-[#22757C]/10'
+                    : 'hover:bg-[#F1F1F1]'
                 }`}
+                style={{
+                  color: isActive(item.href) ? '#22757C' : '#121212'
+                }}
               >
                 <item.icon className="w-4 h-4" />
                 {item.name}
@@ -137,15 +198,30 @@ export const FigmantSidebar = () => {
 
       {/* Bottom Section - Subscription Status */}
       {subscription && (
-        <div className="p-4 border-t border-border/20">
-          <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
+        <div className="p-4 border-t border-[#E2E2E2]">
+          <div 
+            className="border rounded-lg p-3"
+            style={{
+              background: 'linear-gradient(135deg, #22757C1A 0%, #22757C0A 100%)',
+              borderColor: '#22757C3D'
+            }}
+          >
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs font-medium">🚀 3 Analyses Left!</span>
+              <span className="text-xs font-medium" style={{ color: '#121212' }}>
+                🚀 3 Analyses Left!
+              </span>
             </div>
-            <div className="text-xs text-muted-foreground mb-2">
+            <div className="text-xs mb-2" style={{ color: '#7B7B7B' }}>
               Upgrade and get 20% off to get more analyses.
             </div>
-            <Button size="sm" className="w-full text-xs">
+            <Button 
+              size="sm" 
+              className="w-full text-xs"
+              style={{
+                background: '#22757C',
+                color: '#FCFCFC'
+              }}
+            >
               Upgrade
             </Button>
           </div>
