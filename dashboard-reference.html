@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Analysis</title>
+    <style>
+        :root {
+            --font-size: 14px;
+            --background: #ffffff;
+            --foreground: oklch(0.145 0 0);
+            --card: #ffffff;
+            --card-foreground: oklch(0.145 0 0);
+            --popover: oklch(1 0 0);
+            --popover-foreground: oklch(0.145 0 0);
+            --primary: #030213;
+            --primary-foreground: oklch(1 0 0);
+            --secondary: oklch(0.95 0.0058 264.53);
+            --secondary-foreground: #030213;
+            --muted: #ececf0;
+            --muted-foreground: #717182;
+            --accent: #e9ebef;
+            --accent-foreground: #030213;
+            --destructive: #d4183d;
+            --destructive-foreground: #ffffff;
+            --border: rgba(0, 0, 0, 0.1);
+            --input: transparent;
+            --input-background: #f3f3f5;
+            --switch-background: #cbced4;
+            --font-weight-medium: 500;
+            --font-weight-normal: 400;
+            --ring: oklch(0.708 0 0);
+            --chart-1: oklch(0.646 0.222 41.116);
+            --chart-2: oklch(0.6 0.118 184.704);
+            --chart-3: oklch(0.398 0.07 227.392);
+            --chart-4: oklch(0.828 0.189 84.429);
+            --chart-5: oklch(0.769 0.188 70.08);
+            --radius: 0.625rem;
+            --sidebar: oklch(0.985 0 0);
+            --sidebar-foreground: oklch(0.145 0 0);
+            --sidebar-primary: #030213;
+            --sidebar-primary-foreground: oklch(0.985 0 0);
+            --sidebar-accent: oklch(0.97 0 0);
+            --sidebar-accent-foreground: oklch(0.205 0 0);
+            --sidebar-border: oklch(0.922 0 0);
+            --sidebar-ring: oklch(0.708 0 0);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: var(--font-size);
+            background-color: var(--background);
+            color: var(--foreground);
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .adjustLetterSpacing {
+            letter-spacing: inherit;
+        }
+
+        /* Base layout styles */
+        .dashboard-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            position: relative;
+        }
+
+        /* Sidebar styles */
+        .sidebar {
+            width: 286px;
+            height: 100%;
+            background-color: #fcfcfc;
+            border-right: 1px solid #ececec;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .project-header {
+            width: 100%;
+            flex-shrink: 0;
+        }
+
+        .project-title {
+            width: 100%;
+            flex-shrink: 0;
+        }
+
+        .project-title-inner {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        .project-title-content {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 6px;
+            width: 100%;
+        }
+
+        .header {
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
+            flex-grow: 1;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 1px;
+            min-width: 1px;
+            padding: 0;
+            flex-shrink: 0;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .logo {
+            width: 36px;
+            height: 36px;
+            flex-shrink: 0;
+            transform: rotate(180deg) scaleY(-1);
+        }
+
+        .minimize-ui {
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 6px;
+            border-radius: 6px;
+            flex-shrink: 0;
+        }
+
+        .icon-20 {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .project-details {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: flex-start;
+            padding: 0;
+            flex-shrink: 0;
+            width: 100%;
+        }
+
+        .project-name {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-start;
+            overflow: hidden;
+            padding: 0;
+            border-radius: 6px;
+            flex-shrink: 0;
+            width: 100%;
+        }
+
+        .project-name-text {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-start;
+            overflow: hidden;
+            padding: 6px 0;
+            flex-shrink: 0;
+        }
+
+        .project-name-text p {
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            line-height: 0;
+            max-width: 174px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex-shrink: 0;
+            color: #121212;
+            font-size: 15px;
+            text-align: left;
+            white-space: nowrap;
+            letter-spacing: -0.3px;
+            line-height: 24px;
+            white-space: pre;
+        }
+
+        .project-name-icon {
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            flex-shrink: 0;
+        }
+
+        .icon-16 {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        .project-description {
+            border-radius: 6px;
+            flex-shrink: 0;
+            width: 100%;
+        }
+
+        .project-description-inner {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
+
+        .project-description-content {
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 2px 6px;
+            width: 100%;
+        }
+
+        .project-description-text {
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            line-height: 0;
+            max-width: 208px;
+            opacity: 0.8;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex-shrink: 0;
+            color: #7b7b7b;
+            font-size: 12px;
+            text-align: left;
+            white-space: nowrap;
+            letter-spacing: -0.12px;
+            line-height: 16px;
+            white-space: pre;
+        }
+
+        .project-header-content {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-start;
+            justify-content: flex-start;
+            padding: 24px 14px 12px;
+            width: 100%;
+        }
+
+        /* Tabs styles */
+        .project-tabs {
+            width: 100%;
+            flex-shrink: 0;
+        }
+
+        .project-tabs-inner {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
+
+        .project-tabs-content {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 12px;
+            width: 100%;
+        }
+
+        .toggle {
+            background-color: #f1f1f1;
+            flex-grow: 1;
+            min-height: 1px;
+            min-width: 1px;
+            border-radius: 12px;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .toggle-inner {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
+
+        .toggle-content {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 4px;
+            width: 100%;
+        }
+
+        .toggle-item {
+            flex-grow: 1;
+            background-color: #fcfcfc;
+            min-height: 1px;
+            min-width: 1px;
+            border-radius: 8px;
+            box-shadow: 0px 1.25px 3px 0px rgba(50,50,50,0.1);
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .toggle-item-inner {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
+
+        .toggle-item-content {
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 8px;
+            width: 100%;
+        }
+
+        .toggle-item-text {
+            font-family: 'Instrument Sans', sans-serif;
+            font-weight: 600;
+            line-height: 0;
+            flex-shrink: 0;
+            color: #121212;
+            font-size: 13px;
+            text-align: left;
+            white-space: nowrap;
+            letter-spacing: -0.13px;
+            line-height: 16px;
+            white-space: pre;
+        }
+
+        .toggle-item-inactive {
+            flex-grow: 1;
+            min-height: 1px;
+            min-width: 1px;
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+
+        .toggle-item-inactive-text {
+            font-family: 'Instrument Sans', sans-serif;
+            font-weight: 600;
+            line-height: 0;
+            flex-shrink: 0;
+            color: #7b7b7b;
+            font-size: 13px;
+            text-align: left;
+            white-space: nowrap;
+            letter-spacing: -0.13px;
+            line-height: 16px;
+            white-space: pre;
+        }
+
+        .toggle::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            box-shadow: 0px 1px 1.9px 0px inset rgba(50,50,50,0.1);
+            border-radius: 12px;
+        }
+
+        .toggle::before {
+            content: '';
+            position: absolute;
+            border: 1px solid #e2e2e2;
+            inset: 0;
+            pointer-events: none;
+            border-radius: 12px;
+        }
+
+        .toggle-item::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            box-shadow: 0px 1.25px 1px 0px inset #ffffff;
+        }
+
+        .project-tabs::after {
+            content: '';
+            position: absolute;
+            border-top: 1px solid #ececec;
+            border-bottom: 1px solid #ececec;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        /* Menu items */
+        .menu-items {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            align-items: flex-start;
+            justify-content: flex-start;
+            padding: 0;
+            flex-shrink: 0;
+            width: 100%;
+        }
+
+        .sidebar-item {
+            height: 40px;
+            border-radius: 12px;
+            flex-shrink: 0;
+            width: 100%;
+        }
+
+        .sidebar-item-inner {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        .sidebar-item-content {
+            display: flex;
+            flex-direction: row;
+            gap: 12px;
+            height: 40px;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 4px 12px 4px 4px;
+            width: 100%;
+        }
+
+        .menu-item-content {
+            display: flex;
+            flex-direction: row;
+            gap: 12px;
+            flex-grow: 1;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 1px;
+            min-width: 1px;
+            padding: 0;
+            flex-shrink: 0;
+        }
+
+        .menu-icon {
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            padding: 6px;
+            flex-shrink: 0;
+        }
+
+        .menu-icon-highlighted {
+            background-color: #fcfcfc;
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 6px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 4px 0px rgba(18,18,18,0.1);
+            flex-shrink: 0;
+        }
+
+        .menu-text {
+            flex-grow: 1;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            line-height: 0;
+            min-height: 1px;
+            min-width: 1px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex-shrink: 0;
+            color: #121212;
+            font-size: 12px;
+            text-align: left;
+            white-space: nowrap;
+            letter-spacing: -0.12px;
+            line-height: 16px;
+        }
+
+        .menu-text-secondary {
+            flex-grow: 1;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            line-height: 0;
+            min-height: 1px;
+            min-width: 1px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex-shrink: 0;
+            color: #121212;
+            font-size: 12px;
+            text-align: left;
+            white-space: nowrap;
+            letter-spacing: -0.12px;
+            line-height: 16px;
+        }
+
+        .menu-text-muted {
+            flex-grow: 1;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            line-height: 0;
+            min-height: 1px;
+            min-width: 1px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex-shrink: 0;
+            color: #7b7b7b;
+            font-size: 12px;
+            text-align: left;
+            white-space: nowrap;
+            letter-spacing: -0.12px;
+            line-height: 16px;
+        }
+
+        .menu-text-muted-secondary {
+            flex-grow: 1;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            line-height: 0;
+            min-height: 1px;
+            min-width: 1px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex-shrink: 0;
+            color: #7b7b7b;
+            font-size: 12px;
+            text-align: left;
+            white-space: nowrap;
+            letter-spacing: -0.12px;
+            line-height: 16px;
+        }
+
+        /* Sub menu styles */
+        .sub-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            align-items: flex-start;
+            justify-content: flex-start;
+            padding: 0;
+            flex-shrink: 0;
+            width: 100%;
+        }
+
+        .sub-menu-icon {
+            width: 32px;
+            height: 32px;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .sub-menu-icon > div {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: -2.344%;
+            top: -111.719%;
+        }
+
+        /* Shortcut styles */
+        .shortcut {
+            background-color: #f1f1f1;
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 2px 6px;
+            border-radius: 6px;
+            box-shadow: 0px 0px 0px 1px rgba(0,0,0,0.11), 0px 1px 4.2px -1px rgba(0,0,0,0.25);
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .shortcut-text {
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            line-height: 0;
+            flex-shrink: 0;
+            color: #7b7b7b;
+            font-size: 11px;
+            text-align: left;
+            white-space: nowrap;
+            letter-spacing: -0.11px;
+            line-height: 16px;
+            white-space: pre;
+        }
+
+        .shortcut::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            box-shadow: 0px 2px 0.8px 0px inset rgba(255,255,255,0.27), 0px -1px 0.6px 0px inset rgba(0,0,0,0.2);
+        }
+
+        /* Highlighted sidebar item */
+        .sidebar-item-highlighted {
+            background-color: #f1f1f1;
+            height: 40px;
+            border-radius: 12px;
+            flex-shrink: 0;
+            width: 100%;
+            position: relative;
+        }
+
+        .sidebar-item-highlighted::before {
+            content: '';
+            position: absolute;
+            border: 1px solid #ececec;
+            inset: 0;
+            pointer-events: none;
+            border-radius: 12px;
+        }
+
+        /* Section headers */
+        .section-header {
+            width: 100%;
+            flex-shrink: 0;
+        }
+
+        .section-header-inner {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        .section-header-content {
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 10px;
+            width: 100%;
+        }
+
+        .section-header-text {
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            height: 16px;
+            line-height: 0;
+            opacity: 0.7;
+            flex-shrink: 0;
+            color: #7b7b7b;
+            font-size: 12px;
+            text-align: left;
+            letter-spacing: -0.12px;
+            width: 67px;
+            line-height: 16px;
+        }
+
+        /* Main content area */
+        .main-content {
+            flex: 1;
+            height: 100%;
+            background-color: #fcfcfc;
+            overflow: auto;
+        }
+
+        /* Content container styles would continue here for the main dashboard area */
+        .content-wrapper {
+            padding: 24px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* Status cards row */
+        .status-cards {
+            display: flex;
+            gap: 16px;
+            width: 100%;
+        }
+
+        .status-card {
+            flex: 1;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+        }
+
+        .status-card h3 {
+            font-size: 14px;
+            font-weight: 500;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+
+        .status-card .value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+
+        .status-card .change {
+            font-size: 12px;
+            color: #10b981;
+        }
+
+        /* Charts area */
+        .charts-area {
+            display: flex;
+            gap: 24px;
+            flex: 1;
+        }
+
+        .chart-container {
+            flex: 1;
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+        }
+
+        .chart-header {
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+
+        .chart-subtitle {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        /* Credit usage styles */
+        .credit-usage {
+            width: 300px;
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+        }
+
+        .credit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .credit-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .credit-badge {
+            background: #fef3c7;
+            color: #d97706;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .credit-stats {
+            margin-bottom: 16px;
+        }
+
+        .credit-used {
+            font-size: 24px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+
+        .credit-total {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #f3f4f6;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+            width: 75%;
+        }
+
+        .upgrade-section {
+            text-align: center;
+        }
+
+        .upgrade-text {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 12px;
+        }
+
+        .upgrade-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .upgrade-button:hover {
+            background: #2563eb;
+        }
+
+        /* Chart placeholder styles */
+        .chart-placeholder {
+            height: 200px;
+            background: #f9fafb;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #9ca3af;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Project Header -->
+            <div class="project-header">
+                <div class="project-header-content">
+                    <!-- Project Title -->
+                    <div class="project-title">
+                        <div class="project-title-inner">
+                            <div class="project-title-content">
+                                <!-- Header with Logo -->
+                                <div class="header">
+                                    <div class="logo-container">
+                                        <div class="logo">
+                                            <svg class="logo" fill="none" preserveAspectRatio="none" viewBox="0 0 36 36">
+                                                <g>
+                                                    <rect fill="url(#paint0_linear_1_1258)" height="36" rx="18" width="36"/>
+                                                    <path d="M28 16.261C25.2912 13.8016 22.6124 11.1988 19.774 8.99342C19.1836 8.53471 18.6432 8.18905 17.9745 8.0428C17.3301 7.90187 16.7884 8.07558 16.8878 9.07008C17.0922 11.1149 18.4153 13.0901 19.3767 14.6051C20.3683 16.168 21.5281 17.604 22.4381 19.2509C22.6769 19.6831 22.6331 19.9214 22.2102 19.8182C20.7273 19.4561 19.3399 18.2309 18.0446 17.2883C15.8726 15.7077 13.7516 13.9505 11.4661 12.6579C10.4866 12.1039 12.1813 14.7562 12.2958 14.9424C14.6654 18.7994 17.427 22.1499 19.6688 26.1505C20.0062 26.7527 20.3533 27.3115 20.7438 27.8524C20.8896 28.0543 20.6271 27.9904 20.5276 27.9904C20.1782 27.9904 19.8697 27.9677 19.5344 27.8064C17.5379 26.8458 15.724 25.0425 13.8966 23.6513C12.1292 22.3058 10.3898 20.9068 8.6326 19.5422C8.57325 19.4961 7.87674 18.972 8.01916 19.1589" stroke="#53EFD1" stroke-linecap="round" stroke-width="2"/>
+                                                </g>
+                                                <defs>
+                                                    <linearGradient gradientUnits="userSpaceOnUse" id="paint0_linear_1_1258" x1="18" x2="18" y1="0" y2="36">
+                                                        <stop stop-color="#22757C"/>
+                                                        <stop offset="1" stop-color="#18686F"/>
+                                                    </linearGradient>
+                                                </defs>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Minimize UI -->
+                                <div class="minimize-ui">
+                                    <div class="icon-20">
+                                        <svg fill="none" preserveAspectRatio="none" viewBox="0 0 20 20">
+                                            <path d="M4.49002 16.6025L4.83052 15.9343L4.83052 15.9343L4.49002 16.6025ZM3.39748 15.51L2.72923 15.8505L2.72923 15.8505L3.39748 15.51ZM16.6025 15.51L15.9343 15.1695L15.9343 15.1695L16.6025 15.51ZM15.51 16.6025L15.1695 15.9343L15.1695 15.9343L15.51 16.6025ZM16.6025 4.49002L15.9343 4.83052L15.9343 4.83052L16.6025 4.49002ZM15.51 3.39748L15.8505 2.72923L15.8505 2.72923L15.51 3.39748ZM3.39748 4.49002L4.06574 4.83052L4.06574 4.83052L3.39748 4.49002ZM4.49002 3.39748L4.83052 4.06574L4.83052 4.06574L4.49002 3.39748ZM11.125 16.875V17.625H12.625V16.875H11.125ZM12.625 3.125V2.375H11.125V3.125H12.625ZM16.875 7.125H16.125V12.875H16.875H17.625V7.125H16.875ZM12.875 16.875V16.125H7.125V16.875V17.625H12.875V16.875ZM3.125 12.875H3.875V7.125H3.125H2.375V12.875H3.125ZM7.125 3.125V3.875H12.875V3.125V2.375H7.125V3.125ZM7.125 16.875V16.125C6.41256 16.125 5.92333 16.1244 5.54408 16.0934C5.17358 16.0632 4.97456 16.0076 4.83052 15.9343L4.49002 16.6025L4.14953 17.2708C4.54027 17.4699 4.95867 17.5506 5.42193 17.5884C5.87644 17.6256 6.43731 17.625 7.125 17.625V16.875ZM3.125 12.875H2.375C2.375 13.5627 2.37442 14.1236 2.41155 14.5781C2.4494 15.0413 2.53014 15.4597 2.72923 15.8505L3.39748 15.51L4.06574 15.1695C3.99235 15.0254 3.93684 14.8264 3.90657 14.4559C3.87558 14.0767 3.875 13.5874 3.875 12.875H3.125ZM4.49002 16.6025L4.83052 15.9343C4.50123 15.7665 4.23352 15.4988 4.06574 15.1695L3.39748 15.51L2.72923 15.8505C3.04082 16.462 3.538 16.9592 4.14953 17.2708L4.49002 16.6025ZM16.875 12.875H16.125C16.125 13.5874 16.1244 14.0767 16.0934 14.4559C16.0632 14.8264 16.0077 15.0254 15.9343 15.1695L16.6025 15.51L17.2708 15.8505C17.4699 15.4597 17.5506 15.0413 17.5884 14.5781C17.6256 14.1236 17.625 13.5627 17.625 12.875H16.875ZM12.875 16.875V17.625C13.5627 17.625 14.1236 17.6256 14.5781 17.5884C15.0413 17.5506 15.4597 17.4699 15.8505 17.2708L15.51 16.6025L15.1695 15.9343C15.0254 16.0076 14.8264 16.0632 14.4559 16.0934C14.0767 16.1244 13.5874 16.125 12.875 16.125V16.875ZM16.6025 15.51L15.9343 15.1695C15.7665 15.4988 15.4988 15.7665 15.1695 15.9343L15.51 16.6025L15.8505 17.2708C16.462 16.9592 16.9592 16.462 17.2708 15.8505L16.6025 15.51ZM16.875 7.125H17.625C17.625 6.43731 17.6256 5.87644 17.5884 5.42193C17.5506 4.95867 17.4699 4.54027 17.2708 4.14953L16.6025 4.49002L15.9343 4.83052C16.0077 4.97456 16.0632 5.17358 16.0934 5.54408C16.1244 5.92333 16.125 6.41256 16.125 7.125H16.875ZM12.875 3.125V3.875C13.5874 3.875 14.0767 3.87558 14.4559 3.90657C14.8264 3.93684 15.0254 3.99235 15.1695 4.06574L15.51 3.39748L15.8505 2.72923C15.4597 2.53014 15.0413 2.4494 14.5781 2.41155C14.1236 2.37442 13.5627 2.375 12.875 2.375V3.125ZM16.6025 4.49002L17.2708 4.14953C16.9592 3.538 16.462 3.04082 15.8505 2.72923L15.51 3.39748L15.1695 4.06574C15.4988 4.23352 15.7665 4.50123 15.9343 4.83052L16.6025 4.49002ZM3.125 7.125H3.875C3.875 6.41256 3.87558 5.92333 3.90657 5.54408C3.93684 5.17358 3.99235 4.97456 4.06574 4.83052L3.39748 4.49002L2.72923 4.14953C2.53014 4.54027 2.4494 4.95867 2.41155 5.42193C2.37442 5.87644 2.375 6.43731 2.375 7.125H3.125ZM7.125 3.125V2.375C6.43731 2.375 5.87644 2.37442 5.42193 2.41155C4.95867 2.4494 4.54027 2.53014 4.14953 2.72923L4.49002 3.39748L4.83052 4.06574C4.97456 3.99235 5.17358 3.93684 5.54408 3.90657C5.92333 3.87558 6.41256 3.875 7.125 3.875V3.125ZM3.39748 4.49002L4.06574 4.83052C4.23352 4.50123 4.50123 4.23352 4.83052 4.06574L4.49002 3.39748L4.14953 2.72923C3.538 3.04082 3.04082 3.538 2.72923 4.14953L3.39748 4.49002ZM11.875 16.875H12.625V3.125H11.875H11.125V16.875H11.875Z" fill="#7B7B7B"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Project Details -->
+                    <div class="project-details">
+                        <!-- Project Name -->
+                        <div class="project-name">
+                            <div class="project-name-text">
+                                <p class="adjustLetterSpacing">Dashboard Analysis</p>
+                            </div>
+                            <div class="project-name-icon">
+                                <div class="icon-16">
+                                    <svg fill="none" preserveAspectRatio="none" viewBox="0 0 16 16">
+                                        <path d="M5.33333 6.66667L7.5286 8.86193C7.78895 9.12228 8.21106 9.12228 8.4714 8.86193L10.6667 6.66667" stroke="#121212" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Project Description -->
+                        <div class="project-description">
+                            <div class="project-description-inner">
+                                <div class="project-description-content">
+                                    <div class="project-description-text adjustLetterSpacing">Session in progress</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project Tabs -->
+            <div class="project-tabs">
+                <div class="project-tabs-inner">
+                    <div class="project-tabs-content">
+                        <div class="toggle">
+                            <div class="toggle-inner">
+                                <div class="toggle-content">
+                                    <div class="toggle-item">
+                                        <div class="toggle-item-inner">
+                                            <div class="toggle-item-content">
+                                                <div class="toggle-item-text adjustLetterSpacing">Menu</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="toggle-item-inactive">
+                                        <div class="toggle-item-inner">
+                                            <div class="toggle-item-content">
+                                                <div class="toggle-item-inactive-text adjustLetterSpacing">Chat</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Menu Items -->
+            <div style="padding: 0 14px; flex: 1; display: flex; flex-direction: column; gap: 16px;">
+                <div class="menu-items">
+                    <!-- Analysis Item -->
+                    <div class="sidebar-item">
+                        <div class="sidebar-item-inner">
+                            <div class="sidebar-item-content">
+                                <div class="menu-item-content">
+                                    <div class="menu-icon">
+                                        <div class="icon-20">
+                                            <svg fill="none" preserveAspectRatio="none" viewBox="0 0 20 20">
+                                                <path d="M8.54167 3.125H9.29167C9.29167 2.71079 8.95588 2.375 8.54167 2.375V3.125ZM8.54167 8.54167V9.29167C8.95588 9.29167 9.29167 8.95588 9.29167 8.54167H8.54167ZM3.125 8.54167H2.375C2.375 8.95588 2.71079 9.29167 3.125 9.29167V8.54167ZM4.03502 3.30666L4.37551 3.97491L4.03502 3.30666ZM3.30666 4.03502L3.97491 4.37551L3.30666 4.03502ZM11.4583 3.125V2.375C11.0441 2.375 10.7083 2.71079 10.7083 3.125H11.4583ZM16.875 8.54167V9.29167C17.2892 9.29167 17.625 8.95588 17.625 8.54167H16.875ZM11.4583 8.54167H10.7083C10.7083 8.95588 11.0441 9.29167 11.4583 9.29167V8.54167ZM15.965 3.30666L15.6245 3.97491L15.965 3.30666ZM16.6933 4.03502L16.0251 4.37551L16.6933 4.03502ZM3.125 11.4583V10.7083C2.71079 10.7083 2.375 11.0441 2.375 11.4583H3.125ZM8.54167 11.4583H9.29167C9.29167 11.0441 8.95588 10.7083 8.54167 10.7083V11.4583ZM8.54167 16.875V17.625C8.95588 17.625 9.29167 17.2892 9.29167 16.875H8.54167ZM4.03502 16.6933L4.37551 16.0251L4.03502 16.6933ZM3.30666 15.965L3.97491 15.6245L3.30666 15.965ZM17.0769 18.1376C17.3698 18.4305 17.8447 18.4305 18.1376 18.1376C18.4305 17.8447 18.4305 17.3698 18.1376 17.0769L17.0769 18.1376ZM16.085 16.085L15.5538 15.5556L16.085 16.085ZM5.79167 3.125V3.875H8.54167V3.125V2.375H5.79167V3.125ZM8.54167 3.125H7.79167V8.54167H8.54167H9.29167V3.125H8.54167ZM8.54167 8.54167V7.79167H3.125V8.54167V9.29167H8.54167V8.54167ZM3.125 8.54167H3.875V5.79167H3.125H2.375V8.54167H3.125ZM5.79167 3.125V2.375C5.33733 2.375 4.95147 2.37442 4.63593 2.4002C4.31163 2.42669 3.99613 2.48472 3.69452 2.6384L4.03502 3.30666L4.37551 3.97491C4.43042 3.94693 4.52654 3.91413 4.75808 3.89522C4.99837 3.87558 5.31258 3.875 5.79167 3.875V3.125ZM3.125 5.79167H3.875C3.875 5.31258 3.87558 4.99837 3.89522 4.75808C3.91413 4.52654 3.94693 4.43042 3.97491 4.37551L3.30666 4.03502L2.6384 3.69452C2.48472 3.99613 2.42669 4.31163 2.4002 4.63593C2.37442 4.95147 2.375 5.33733 2.375 5.79167H3.125ZM4.03502 3.30666L3.69452 2.6384C3.2398 2.87009 2.87009 3.2398 2.6384 3.69452L3.30666 4.03502L3.97491 4.37551C4.06279 4.20303 4.20303 4.06279 4.37551 3.97491L4.03502 3.30666ZM11.4583 3.125V3.875H14.2083V3.125V2.375H11.4583V3.125ZM16.875 5.79167H16.125V8.54167H16.875H17.625V5.79167H16.875ZM16.875 8.54167V7.79167H11.4583V8.54167V9.29167H16.875V8.54167ZM11.4583 8.54167H12.2083V3.125H11.4583H10.7083V8.54167H11.4583ZM14.2083 3.125V3.875C14.6874 3.875 15.0016 3.87558 15.2419 3.89522C15.4735 3.91413 15.5696 3.94693 15.6245 3.97491L15.965 3.30666L16.3055 2.6384C16.0039 2.48472 15.6884 2.42669 15.3641 2.4002C15.0485 2.37442 14.6627 2.375 14.2083 2.375V3.125ZM16.875 5.79167H17.625C17.625 5.33733 17.6256 4.95147 17.5998 4.63593C17.5733 4.31163 17.5153 3.99613 17.3616 3.69452L16.6933 4.03502L16.0251 4.37551C16.0531 4.43042 16.0859 4.52654 16.1048 4.75808C16.1244 4.99837 16.125 5.31258 16.125 5.79167H16.875ZM15.965 3.30666L15.6245 3.97491C15.797 4.06279 15.9372 4.20303 16.0251 4.37551L16.6933 4.03502L17.3616 3.69452C17.1299 3.2398 16.7602 2.87009 16.3055 2.6384L15.965 3.30666ZM3.125 11.4583V12.2083H8.54167V11.4583V10.7083H3.125V11.4583ZM8.54167 11.4583H7.79167V16.875H8.54167H9.29167V11.4583H8.54167ZM8.54167 16.875V16.125H5.79167V16.875V17.625H8.54167V16.875ZM3.125 14.2083H3.875V11.4583H3.125H2.375V14.2083H3.125ZM5.79167 16.875V16.125C5.31258 16.125 4.99837 16.1244 4.75808 16.1048C4.52654 16.0859 4.43042 16.0531 4.37551 16.0251L4.03502 16.6933L3.69452 17.3616C3.99613 17.5153 4.31163 17.5733 4.63593 17.5998C4.95147 17.6256 5.33733 17.625 5.79167 17.625V16.875ZM3.125 14.2083H2.375C2.375 14.6627 2.37442 15.0485 2.4002 15.3641C2.42669 15.6884 2.48472 16.0039 2.6384 16.3055L3.30666 15.965L3.97491 15.6245C3.94693 15.5696 3.91413 15.4735 3.89522 15.2419C3.87558 15.0016 3.875 14.6874 3.875 14.2083H3.125ZM4.03502 16.6933L4.37551 16.0251C4.20303 15.9372 4.06279 15.797 3.97491 15.6245L3.30666 15.965L2.6384 16.3055C2.87009 16.7602 3.2398 17.1299 3.69452 17.3616L4.03502 16.6933ZM14.1667 16.8815V16.1315C13.0851 16.1315 12.2083 15.2547 12.2083 14.1732H11.4583H10.7083C10.7083 16.0832 12.2567 17.6315 14.1667 17.6315V16.8815ZM11.4583 14.1732H12.2083C12.2083 13.0916 13.0851 12.2148 14.1667 12.2148V11.4648V10.7148C12.2567 10.7148 10.7083 12.2632 10.7083 14.1732H11.4583ZM14.1667 11.4648V12.2148C15.2482 12.2148 16.125 13.0916 16.125 14.1732H16.875H17.625C17.625 12.2632 16.0767 10.7148 14.1667 10.7148V11.4648ZM16.085 16.085L15.5547 16.6153L17.0769 18.1376L17.6072 17.6072L18.1376 17.0769L16.6153 15.5547L16.085 16.085ZM16.875 14.1732H16.125C16.125 14.713 15.9076 15.2006 15.5538 15.5556L16.085 16.085L16.6162 16.6144C17.2388 15.9897 17.625 15.1258 17.625 14.1732H16.875ZM16.085 16.085L15.5538 15.5556C15.1984 15.9122 14.7088 16.1315 14.1667 16.1315V16.8815V17.6315C15.1236 17.6315 15.9909 17.2419 16.6162 16.6144L16.085 16.085Z" fill="#7B7B7B"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="menu-text">Analysis</div>
+                                </div>
+                                <div class="icon-16">
+                                    <svg fill="none" preserveAspectRatio="none" viewBox="0 0 16 16">
+                                        <path d="M5.33333 9.33333L7.5286 7.13807C7.78895 6.87772 8.21106 6.87772 8.4714 7.13807L10.6667 9.33333" stroke="#7B7B7B" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sub Menu -->
+                    <div class="sub-menu">
+                        <!-- Create New -->
+                        <div class="sidebar-item">
+                            <div class="sidebar-item-inner">
+                                <div class="sidebar-item-content">
+                                    <div class="sub-menu-icon">
+                                        <div>
+                                            <svg fill="none" preserveAspectRatio="none" viewBox="0 0 33 68">
+                                                <path d="M16 1L16 44C16 48.4183 19.5817 52 24 52L32 52" stroke="#ECECEC" stroke-linecap="round" stroke-width="1.5"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="menu-text-muted">Create New</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- History -->
+                        <div class="sidebar-item">
+                            <div class="sidebar-item-inner">
+                                <div class="sidebar-item-content">
+                                    <div class="sub-menu-icon">
+                                        <div>
+                                            <svg fill="none" preserveAspectRatio="none" viewBox="0 0 33 68">
+                                                <path d="M16 1L16 44C16 48.4183 19.5817 52 24 52L32 52" stroke="#ECECEC" stroke-linecap="round" stroke-width="1.5"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="menu-text-muted">History</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mentor Item (Highlighted) -->
+                    <div class="sidebar-item-highlighted">
+                        <div class="sidebar-item-inner">
+                            <div class="sidebar-item-content">
+                                <div class="menu-item-content">
+                                    <div class="menu-icon-highlighted">
+                                        <div class="icon-20">
+                                            <svg fill="none" preserveAspectRatio="none" viewBox="0 0 20 20">
+                                                <g>
+                                                    <path d="M7.91667 2.29167C4.79685 2.29167 2.29167 4.76141 2.29167 7.7788C2.29167 9.59081 2.97976 11.1878 4.80593 12.7083H7.92147C8.26665 12.7083 8.54647 12.9882 8.54647 13.3333C8.54647 13.6785 8.26665 13.9583 7.92147 13.9583H5.20833V14.5833C5.20833 14.9285 5.48816 15.2083 5.83333 15.2083H7.60565C7.95083 15.2083 8.23065 15.4882 8.23065 15.8333C8.23065 16.1785 7.95083 16.4583 7.60565 16.4583H6.14836C6.40576 17.1866 7.10028 17.7083 7.91667 17.7083C8.15845 17.7083 8.38812 17.6629 8.59865 17.5806C8.92016 17.455 9.28263 17.6138 9.40824 17.9353C9.53385 18.2568 9.37505 18.6193 9.05354 18.7449C8.70037 18.8829 8.31658 18.9583 7.91667 18.9583C6.2988 18.9583 4.96809 17.7289 4.80785 16.1533C4.29629 15.8185 3.95833 15.2404 3.95833 14.5833V13.6289C1.91192 11.9062 1.04167 9.98389 1.04167 7.7788C1.04167 4.04491 4.13292 1.04167 7.91667 1.04167C11.7004 1.04167 14.7917 4.04491 14.7917 7.7788C14.7917 8.29398 14.7442 8.79911 14.6421 9.29428C14.5724 9.63235 14.2418 9.8499 13.9038 9.78019C13.5657 9.71049 13.3482 9.37993 13.4179 9.04186C13.5014 8.63692 13.5417 8.21685 13.5417 7.7788C13.5417 4.76141 11.0365 2.29167 7.91667 2.29167Z" fill="#7B7B7B"/>
+                                                    <path clip-rule="evenodd" d="M14.1667 13.2292C13.1877 13.2292 12.3958 14.021 12.3958 15C12.3958 15.979 13.1877 16.7708 14.1667 16.7708C15.1457 16.7708 15.9375 15.979 15.9375 15C15.9375 14.021 15.1457 13.2292 14.1667 13.2292ZM13.4375 15C13.4375 14.5963 13.763 14.2708 14.1667 14.2708C14.5704 14.2708 14.8958 14.5963 14.8958 15C14.8958 15.4037 14.5704 15.7292 14.1667 15.7292C13.763 15.7292 13.4375 15.4037 13.4375 15Z" fill="#7B7B7B" fill-rule="evenodd"/>
+                                                    <path clip-rule="evenodd" d="M14.1667 11.0417C16.0955 11.0417 17.9782 12.2208 18.8584 14.4689C18.9916 14.8092 18.9916 15.1908 18.8584 15.5311C17.9782 17.7792 16.0955 18.9583 14.1667 18.9583C12.2379 18.9583 10.3551 17.7792 9.47491 15.5311C9.3417 15.1908 9.3417 14.8092 9.47491 14.4689C10.3551 12.2208 12.2379 11.0417 14.1667 11.0417ZM14.1667 12.2917C12.7766 12.2917 11.3405 13.1326 10.6389 14.9247C10.6204 14.9719 10.6204 15.0281 10.6389 15.0753C11.3405 16.8674 12.7766 17.7083 14.1667 17.7083C15.5567 17.7083 16.9928 16.8674 17.6945 15.0753C17.713 15.0281 17.713 14.9719 17.6945 14.9247C16.9928 13.1326 15.5567 12.2917 14.1667 12.2917Z" fill="#7B7B7B" fill-rule="evenodd"/>
+                                                </g>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="menu-text-secondary">Mentor</div>
+                                </div>
+                                <div class="shortcut">
+                                    <div class="shortcut-text adjustLetterSpacing">112</div>
+                                </div>
+                                <div class="icon-16">
+                                    <svg fill="none" preserveAspectRatio="none" viewBox="0 0 16 16">
+                                        <path d="M5.33333 6.66667L7.5286 8.86193C7.78895 9.12228 8.21106 9.12228 8.4714 8.86193L10.6667 6.66667" stroke="#7B7B7B" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Subscription Item -->
+                    <div class="sidebar-item">
+                        <div class="sidebar-item-inner">
+                            <div class="sidebar-item-content">
+                                <div class="menu-item-content">
+                                    <div class="menu-icon">
+                                        <div class="icon-20">
+                                            <svg fill="none" preserveAspectRatio="none" viewBox="0 0 20 20">
+                                                <g>
+                                                    <path clip-rule="evenodd" d="M8.33333 1.04167C5.91709 1.04167 3.95833 3.00042 3.95833 5.41667C3.95833 7.83291 5.91709 9.79167 8.33333 9.79167C10.7496 9.79167 12.7083 7.83291 12.7083 5.41667C12.7083 3.00042 10.7496 1.04167 8.33333 1.04167ZM5.20833 5.41667C5.20833 3.69078 6.60744 2.29167 8.33333 2.29167C10.0592 2.29167 11.4583 3.69078 11.4583 5.41667C11.4583 7.14256 10.0592 8.54167 8.33333 8.54167C6.60744 8.54167 5.20833 7.14256 5.20833 5.41667Z" fill="#7B7B7B" fill-rule="evenodd"/>
+                                                    <path d="M2.32948 16.2205C3.03672 13.6652 5.64958 12.2917 8.3324 12.2917C8.95605 12.2917 9.54747 12.3565 10.0989 12.4797C10.4358 12.555 10.7699 12.3429 10.8452 12.006C10.9204 11.6691 10.7084 11.335 10.3715 11.2598C9.72557 11.1155 9.04248 11.0417 8.3324 11.0417C5.31171 11.0417 2.03427 12.601 1.12478 15.8871C1.02888 16.2335 1.03033 16.5943 1.05815 16.885C1.16265 17.9775 2.02679 18.8431 3.11933 18.9479C3.22902 18.9584 3.35148 18.9584 3.5103 18.9583L10.1899 18.9583C10.5351 18.9583 10.8149 18.6785 10.8149 18.3333C10.8149 17.9882 10.5351 17.7083 10.1899 17.7083H3.5401C3.33768 17.7083 3.28057 17.7076 3.23863 17.7036C2.74311 17.6561 2.35002 17.2632 2.30247 16.766C2.28214 16.5535 2.29025 16.3623 2.32948 16.2205Z" fill="#7B7B7B"/>
+                                                    <path clip-rule="evenodd" d="M12.1778 12.1178C12.5032 11.2385 13.7468 11.2385 14.0722 12.1178L14.3208 12.7898C14.5304 13.3563 14.9771 13.8029 15.5435 14.0125L16.2156 14.2612C17.0948 14.5865 17.0948 15.8301 16.2156 16.1555L15.5435 16.4042C14.9771 16.6138 14.5304 17.0604 14.3208 17.6269L14.0722 18.2989C13.7468 19.1781 12.5032 19.1782 12.1778 18.2989L11.9292 17.6269C11.7196 17.0604 11.2729 16.6138 10.7065 16.4042L10.0344 16.1555C9.15519 15.8301 9.15518 14.5865 10.0344 14.2612L10.7065 14.0125C11.2729 13.8029 11.7196 13.3563 11.9292 12.7898L12.1778 12.1178ZM13.125 13.16L13.1015 13.2236C12.7653 14.1322 12.0489 14.8486 11.1403 15.1848L11.0767 15.2083L11.1403 15.2319C12.0489 15.5681 12.7653 16.2845 13.1015 17.1931L13.125 17.2566L13.1485 17.1931C13.4847 16.2845 14.2011 15.5681 15.1097 15.2319L15.1733 15.2083L15.1097 15.1848C14.2011 14.8486 13.4847 14.1322 13.1485 13.2236L13.125 13.16Z" fill="#7B7B7B" fill-rule="evenodd"/>
+                                                    <path d="M16.7724 10.0736C16.7361 9.97546 16.5973 9.97547 16.5609 10.0736L16.3991 10.5111C16.2468 10.9225 15.9225 11.2468 15.5111 11.3991L15.0736 11.5609C14.9755 11.5973 14.9755 11.7361 15.0736 11.7724L15.5111 11.9343C15.9225 12.0865 16.2468 12.4109 16.3991 12.8223L16.5609 13.2597C16.5973 13.3579 16.7361 13.3579 16.7724 13.2597L16.9343 12.8223C17.0865 12.4109 17.4109 12.0865 17.8223 11.9343L18.2597 11.7724C18.3579 11.7361 18.3579 11.5973 18.2597 11.5609L17.8223 11.3991C17.4109 11.2468 17.0865 10.9225 16.9343 10.5111L16.7724 10.0736Z" fill="#7B7B7B"/>
+                                                </g>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="menu-text-secondary">Subscription</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Projects Section -->
+                <div class="section-header">
+                    <div class="section-header-inner">
+                        <div class="section-header-content">
+                            <div class="section-header-text adjustLetterSpacing">Projects</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="menu-items">
+                    <!-- Dashboard Analysis Item -->
+                    <div class="sidebar-item">
+                        <div class="sidebar-item-inner">
+                            <div class="sidebar-item-content">
+                                <div class="menu-item-content">
+                                    <div class="menu-icon">
+                                        <div class="icon-20">
+                                            <svg fill="none" preserveAspectRatio="none" viewBox="0 0 20 20">
+                                                <path d="M10.0001 10V17.7344M10.0001 10L16.875 6.13283M10.0001 10L3.125 6.13283M9.1829 2.72524L3.97457 5.65493C3.44977 5.95013 3.125 6.50544 3.125 7.10756V12.8924C3.125 13.4946 3.44977 14.0499 3.97456 14.3451L9.1829 17.2748C9.69025 17.5601 10.3097 17.5601 10.8171 17.2748L16.0254 14.3451C16.5502 14.0499 16.875 13.4946 16.875 12.8924V7.10756C16.875 6.50544 16.5502 5.95013 16.0254 5.65493L10.8171 2.72525C10.3097 2.43986 9.69025 2.43986 9.1829 2.72524Z" stroke="#7B7B7B" stroke-linejoin="round" stroke-width="1.5"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="menu-text-muted-secondary">Dashboard Analysis</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Document Management Item -->
+                    <div class="sidebar-item">
+                        <div class="sidebar-item-inner">
+                            <div class="sidebar-item-content">
+                                <div class="menu-item-content">
+                                    <div class="menu-icon">
+                                        <div class="icon-20">
+                                            <svg fill="none" preserveAspectRatio="none" viewBox="0 0 20 20">
+                                                <path d="M8.95833 16.0417H16.0417C16.9621 16.0417 17.7083 15.2955 17.7083 14.375V7.29167C17.7083 6.37119 16.9621 5.625 16.0417 5.625H10.892C10.3347 5.625 9.81433 5.3465 9.50522 4.88283L8.82811 3.86717C8.519 3.4035 7.99862 3.125 7.44136 3.125H3.95833C3.03786 3.125 2.29167 3.87119 2.29167 4.79167V9.375M3.95833 11.875V14.375M3.95833 14.375V16.875M3.95833 14.375H1.45833M3.95833 14.375H6.45833" stroke="#7B7B7B" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="menu-text-muted-secondary">Document Management</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Brand Guidelines Item -->
+                    <div class="sidebar-item">
+                        <div class="sidebar-item-inner">
+                            <div class="sidebar-item-content">
+                                <div class="menu-item-content">
+                                    <div class="menu-icon">
+                                        <div class="icon-20">
+                                            <svg fill="none" preserveAspectRatio="none" viewBox="0 0 20 20">
+                                                <g>
+                                                    <rect fill="#E36323" height="6" opacity="0.2" width="16" x="2" y="10"/>
+                                                    <path d="M2.29167 4.79167V14.375C2.29167 15.2955 3.03786 16.0417 3.95833 16.0417H16.0417C16.9621 16.0417 17.7083 15.2955 17.7083 14.375V7.29167C17.7083 6.37119 16.9621 5.625 16.0417 5.625H10.892C10.3347 5.625 9.81433 5.3465 9.50522 4.88283L8.82811 3.86717C8.519 3.4035 7.99862 3.125 7.44136 3.125H3.95833C3.03786 3.125 2.29167 3.87119 2.29167 4.79167Z" stroke="#E36323" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/>
+                                                </g>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="menu-text-muted-secondary">Brand Guidelines</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="content-wrapper">
+                <!-- Status Cards Row -->
+                <div class="status-cards">
+                    <div class="status-card">
+                        <h3>Trends</h3>
+                        <div class="value">2,142</div>
+                        <div class="change">+12.5% from last month</div>
+                    </div>
+                    <div class="status-card">
+                        <h3>Benchmark</h3>
+                        <div class="value">1,628</div>
+                        <div class="change">+8.2% from last month</div>
+                    </div>
+                    <div class="status-card">
+                        <h3>Analyses</h3>
+                        <div class="value">934</div>
+                        <div class="change">+15.3% from last month</div>
+                    </div>
+                </div>
+
+                <!-- Charts Area -->
+                <div class="charts-area">
+                    <!-- Active Days Chart -->
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <div class="chart-title">Active Days</div>
+                            <div class="chart-subtitle">Weekly activity overview</div>
+                        </div>
+                        <div class="chart-placeholder">Chart visualization would go here</div>
+                    </div>
+
+                    <!-- Design Patterns Chart -->
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <div class="chart-title">Design Patterns</div>
+                            <div class="chart-subtitle">Pattern usage breakdown</div>
+                        </div>
+                        <div class="chart-placeholder">Chart visualization would go here</div>
+                    </div>
+
+                    <!-- Credit Usage -->
+                    <div class="credit-usage">
+                        <div class="credit-header">
+                            <div class="credit-title">Credit Usage</div>
+                            <div class="credit-badge">Pro</div>
+                        </div>
+                        <div class="credit-stats">
+                            <div class="credit-used">750</div>
+                            <div class="credit-total">of 1,000 credits used</div>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill"></div>
+                        </div>
+                        <div class="upgrade-section">
+                            <div class="upgrade-text">Upgrade to unlock unlimited credits</div>
+                            <button class="upgrade-button">Upgrade Now</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
