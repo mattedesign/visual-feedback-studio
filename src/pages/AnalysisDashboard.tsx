@@ -5,23 +5,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, X, Eye, Download, Send, Mic } from 'lucide-react';
-
-interface UploadedImage {
-  id: string;
-  file_name: string;
-  file_path: string;
-  upload_order: number;
-  created_at: string;
-  google_vision_data?: any;
-}
-
-interface AnalysisSession {
-  id: string;
-  title: string;
-  status: string;
-  created_at: string;
-  business_goals?: string[];
-}
+import { 
+  createFigmantSession, 
+  uploadFigmantImage, 
+  startFigmantAnalysis,
+  getFigmantResults,
+  type FigmantSession,
+  type FigmantImage 
+} from '@/services/figmantAnalysisService';
 
 interface AnalysisResult {
   id: string;
@@ -37,8 +28,8 @@ const AnalysisDashboard = () => {
   
   const [activeAnalysisTab, setActiveAnalysisTab] = useState('Summary');
   const [activeMainTab, setActiveMainTab] = useState('Chat'); // Default to Chat
-  const [session, setSession] = useState<AnalysisSession | null>(null);
-  const [images, setImages] = useState<UploadedImage[]>([]);
+  const [session, setSession] = useState<FigmantSession | null>(null);
+  const [images, setImages] = useState<FigmantImage[]>([]);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
@@ -53,18 +44,10 @@ const AnalysisDashboard = () => {
     if (!user) return;
 
     try {
-      // Create new analysis session
-      const { data: sessionData, error: sessionError } = await supabase
-        .from('figmant_analysis_sessions')
-        .insert({
-          user_id: user.id,
-          title: 'New Analysis Session',
-          status: 'draft'
-        })
-        .select()
-        .single();
-
-      if (sessionError) throw sessionError;
+      // Create new figmant analysis session
+      const sessionData = await createFigmantSession({
+        title: 'New Analysis Session'
+      });
 
       setSession(sessionData);
       loadImages(sessionData.id);
@@ -93,36 +76,11 @@ const AnalysisDashboard = () => {
     }
   };
 
-  const uploadImage = async (file: File): Promise<UploadedImage | null> => {
-    if (!session || !user) return null;
+  const uploadImage = async (file: File): Promise<FigmantImage | null> => {
+    if (!session) return null;
 
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `${user.id}/${session.id}/${fileName}`;
-
-      // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from('analysis-images')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      // Save to database
-      const { data: imageData, error: dbError } = await supabase
-        .from('figmant_session_images')
-        .insert({
-          session_id: session.id,
-          file_name: file.name,
-          file_path: filePath,
-          file_size: file.size,
-          upload_order: images.length + 1
-        })
-        .select()
-        .single();
-
-      if (dbError) throw dbError;
-
+      const imageData = await uploadFigmantImage(session.id, file, images.length + 1);
       return imageData;
     } catch (error) {
       console.error('Error uploading image:', error);
@@ -179,37 +137,44 @@ const AnalysisDashboard = () => {
     setIsAnalyzing(true);
     
     try {
-      // Simplified analysis for now - just simulate processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Start real figmant analysis
+      const result = await startFigmantAnalysis(session.id);
       
-      // Create mock analysis result
-      const mockResult = {
-        id: `result-${Date.now()}`,
-        claude_analysis: {
-          summary: "Analysis complete! Your design shows good visual hierarchy with room for improvement in accessibility.",
-          issues_found: 5,
-          severity_breakdown: { critical: 1, high: 2, medium: 2, low: 0 }
-        },
-        processing_time_ms: 2000,
-        created_at: new Date().toISOString()
+      // Poll for results
+      let attempts = 0;
+      const maxAttempts = 60; // 5 minutes max
+      
+      const pollForResults = async () => {
+        try {
+          const analysisResult = await getFigmantResults(session.id);
+          setAnalysisResult(analysisResult);
+          setSession(prev => prev ? { ...prev, status: 'completed' } : null);
+          
+          toast({
+            title: "Analysis Complete",
+            description: "Your design analysis is ready!",
+          });
+        } catch (error) {
+          attempts++;
+          if (attempts < maxAttempts) {
+            // Wait 5 seconds before trying again
+            setTimeout(pollForResults, 5000);
+          } else {
+            throw new Error('Analysis timed out');
+          }
+        }
       };
-
-      setAnalysisResult(mockResult);
-      setSession(prev => prev ? { ...prev, status: 'completed' } : null);
-
-      toast({
-        title: "Analysis Complete",
-        description: "Your design analysis is ready!",
-      });
+      
+      // Start polling after a short delay
+      setTimeout(pollForResults, 3000);
 
     } catch (error) {
       console.error('Error starting analysis:', error);
       toast({
         title: "Analysis Error",
-        description: "Failed to analyze designs. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to analyze designs. Please try again.",
         variant: "destructive"
       });
-    } finally {
       setIsAnalyzing(false);
     }
   };
