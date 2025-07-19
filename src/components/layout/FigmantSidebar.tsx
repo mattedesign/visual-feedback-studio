@@ -48,7 +48,17 @@ const projectItems = [
 export const FigmantSidebar = () => {
   const location = useLocation();
   const { subscription } = useSubscription();
-  const [activeTab, setActiveTab] = React.useState<'menu' | 'chat'>('menu');
+  
+  // Default to chat tab when on create-new page, otherwise default to menu
+  const defaultTab = location.pathname === '/create-new' ? 'chat' : 'menu';
+  const [activeTab, setActiveTab] = React.useState<'menu' | 'chat'>(defaultTab);
+
+  // Update tab when route changes
+  React.useEffect(() => {
+    if (location.pathname === '/create-new') {
+      setActiveTab('chat');
+    }
+  }, [location.pathname]);
 
   const isActive = (path: string) => location.pathname === path;
 
