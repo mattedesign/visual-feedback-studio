@@ -92,3 +92,9 @@ verify_jwt = true
 
 [functions.figmant-upload-image]
 verify_jwt = true
+
+[functions.api-key-management]
+verify_jwt = true
+
+[functions.api-analysis-data]
+verify_jwt = false
