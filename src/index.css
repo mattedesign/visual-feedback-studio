@@ -101,7 +101,7 @@
 @layer components {
   /* Figmant specific layout classes */
   .figmant-layout {
-    @apply min-h-screen flex bg-background;
+    @apply h-full flex bg-background;
   }
   
   .figmant-sidebar {
@@ -109,7 +109,7 @@
   }
   
   .figmant-main {
-    @apply flex-1 bg-muted/30 overflow-auto;
+    @apply flex-1 bg-muted/30 overflow-hidden;
   }
   
   .figmant-header {
@@ -117,7 +117,7 @@
   }
   
   .figmant-content {
-    @apply p-6 space-y-6;
+    @apply p-6 space-y-6 h-full overflow-auto;
   }
   
   .figmant-card {

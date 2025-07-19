@@ -36,34 +36,9 @@ const App = () => {
             <Route path="/*" element={
               <AuthGuard>
                 <SubscriptionProvider>
-                  <div 
-                    className="min-h-screen"
-                    style={{ 
-                      background: '#1C6D73',
-                      padding: '2px'
-                    }}
-                  >
-                    <div 
-                      style={{
-                        width: '1436px',
-                        height: '896px',
-                        maxWidth: '100vw',
-                        maxHeight: '100vh',
-                        borderRadius: '30px',
-                        background: '#1C6D73',
-                        border: '4px solid #1C6D73',
-                        margin: '0 auto'
-                      }}
-                    >
-                      <div 
-                        style={{
-                          width: '1408px',
-                          height: '868px',
-                          borderRadius: '20px',
-                          background: '#F1F1F1',
-                          margin: '16px'
-                        }}
-                      >
+                  <div className="min-h-screen w-full overflow-hidden bg-[#1C6D73] p-1">
+                    <div className="h-[calc(100vh-8px)] w-full max-w-full rounded-[30px] bg-[#1C6D73] border-4 border-[#1C6D73] overflow-hidden">
+                      <div className="h-full w-full rounded-[20px] bg-[#F1F1F1] m-4 overflow-hidden" style={{ height: 'calc(100% - 32px)', width: 'calc(100% - 32px)' }}>
                         <FigmantLayout>
                           <Routes>
                             {/* Core Figmant Routes */}
