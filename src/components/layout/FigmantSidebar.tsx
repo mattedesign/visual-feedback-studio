@@ -124,7 +124,19 @@ export const FigmantSidebar = () => {
 
       {/* Content */}
       {activeTab === 'menu' ? (
-        <div className="flex-1 p-4 space-y-6">
+        <div 
+          className="flex-1 space-y-6"
+          style={{
+            display: 'flex',
+            padding: '16px',
+            alignItems: 'flex-start',
+            gap: '16px',
+            borderRadius: '32px',
+            border: '4px solid #FFF',
+            background: '#1C6D73',
+            flexDirection: 'column'
+          }}
+        >
           {navigationItems.map((section, index) => (
             <div key={index}>
               {section.href ? (
