@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { Button } from '@/components/ui/button';
+import { ClaudeMessages } from './ClaudeMessages';
 
 const navigationItems = [
   {
@@ -46,6 +47,7 @@ const projectItems = [
 export const FigmantSidebar = () => {
   const location = useLocation();
   const { subscription } = useSubscription();
+  const [activeTab, setActiveTab] = React.useState<'menu' | 'chat'>('menu');
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -94,107 +96,118 @@ export const FigmantSidebar = () => {
 
       {/* Navigation Toggle */}
       <div className="p-4 border-b border-[#E2E2E2]">
-        <div className="flex rounded-lg p-1" style={{ background: '#F1F1F1' }}>
+        <div className="flex rounded-[12px] p-1 border border-[#E2E2E2] bg-[#F1F1F1] shadow-[0px_1px_1.9px_0px_rgba(50,50,50,0.10)_inset]">
           <button 
-            className="flex-1 py-1.5 px-3 text-xs font-medium rounded-md shadow-sm"
-            style={{ 
-              background: '#FCFCFC',
-              color: '#121212'
-            }}
+            onClick={() => setActiveTab('menu')}
+            className={`flex-1 py-2 px-6 text-[14px] font-medium leading-5 tracking-[-0.28px] transition-all ${
+              activeTab === 'menu'
+                ? 'rounded-[12px] bg-white text-[#121212] font-semibold shadow-[0px_2px_8px_0px_rgba(0,0,0,0.25)] border border-[#E2E2E2]'
+                : 'text-[#7B7B7B]'
+            }`}
           >
             Menu
           </button>
           <button 
-            className="flex-1 py-1.5 px-3 text-xs font-medium"
-            style={{ color: '#7B7B7B' }}
+            onClick={() => setActiveTab('chat')}
+            className={`flex-1 py-2 px-6 text-[14px] font-medium leading-5 tracking-[-0.28px] transition-all ${
+              activeTab === 'chat'
+                ? 'rounded-[12px] bg-white text-[#121212] font-semibold shadow-[0px_2px_8px_0px_rgba(0,0,0,0.25)] border border-[#E2E2E2]'
+                : 'text-[#7B7B7B]'
+            }`}
           >
             Chat
           </button>
         </div>
       </div>
 
-      {/* Navigation */}
-      <div className="flex-1 p-4 space-y-6">
-        {navigationItems.map((section, index) => (
-          <div key={index}>
-            <div className="flex items-center gap-2 mb-3">
-              <div 
-                className="w-2 h-2 rounded-full"
-                style={{ background: '#22757C' }}
-              />
-              <span 
-                className="text-sm font-medium"
-                style={{ color: '#121212' }}
-              >
-                {section.title}
-              </span>
-              {section.badge && (
+      {/* Content */}
+      {activeTab === 'menu' ? (
+        <div className="flex-1 p-4 space-y-6">
+          {navigationItems.map((section, index) => (
+            <div key={index}>
+              <div className="flex items-center gap-2 mb-3">
+                <div 
+                  className="w-2 h-2 rounded-full"
+                  style={{ background: '#22757C' }}
+                />
                 <span 
-                  className="ml-auto text-xs px-2 py-0.5 rounded-full"
-                  style={{ 
-                    background: '#F1F1F1',
-                    color: '#7B7B7B'
-                  }}
+                  className="text-sm font-medium"
+                  style={{ color: '#121212' }}
                 >
-                  {section.badge}
+                  {section.title}
                 </span>
-              )}
-            </div>
-            {section.items.length > 0 && (
-              <div className="ml-3 space-y-1">
-                {section.items.map((item) => (
-                  <NavLink
-                    key={item.href}
-                    to={item.href}
-                    className={`flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors ${
-                      isActive(item.href)
-                        ? 'bg-[#22757C]/10'
-                        : 'hover:bg-[#F1F1F1]'
-                    }`}
-                    style={{
-                      color: isActive(item.href) ? '#22757C' : '#121212'
+                {section.badge && (
+                  <span 
+                    className="ml-auto text-xs px-2 py-0.5 rounded-full"
+                    style={{ 
+                      background: '#F1F1F1',
+                      color: '#7B7B7B'
                     }}
                   >
-                    <item.icon className="w-4 h-4" />
-                    {item.name}
-                  </NavLink>
-                ))}
+                    {section.badge}
+                  </span>
+                )}
               </div>
-            )}
-          </div>
-        ))}
+              {section.items.length > 0 && (
+                <div className="ml-3 space-y-1">
+                  {section.items.map((item) => (
+                    <NavLink
+                      key={item.href}
+                      to={item.href}
+                      className={`flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors ${
+                        isActive(item.href)
+                          ? 'bg-[#22757C]/10'
+                          : 'hover:bg-[#F1F1F1]'
+                      }`}
+                      style={{
+                        color: isActive(item.href) ? '#22757C' : '#121212'
+                      }}
+                    >
+                      <item.icon className="w-4 h-4" />
+                      {item.name}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
 
-        {/* Projects Section */}
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <span 
-              className="text-sm font-medium"
-              style={{ color: '#7B7B7B' }}
-            >
-              Projects
-            </span>
-          </div>
-          <div className="space-y-1">
-            {projectItems.map((item) => (
-              <NavLink
-                key={item.href}
-                to={item.href}
-                className={`flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors ${
-                  isActive(item.href)
-                    ? 'bg-[#22757C]/10'
-                    : 'hover:bg-[#F1F1F1]'
-                }`}
-                style={{
-                  color: isActive(item.href) ? '#22757C' : '#121212'
-                }}
+          {/* Projects Section */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <span 
+                className="text-sm font-medium"
+                style={{ color: '#7B7B7B' }}
               >
-                <item.icon className="w-4 h-4" />
-                {item.name}
-              </NavLink>
-            ))}
+                Projects
+              </span>
+            </div>
+            <div className="space-y-1">
+              {projectItems.map((item) => (
+                <NavLink
+                  key={item.href}
+                  to={item.href}
+                  className={`flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors ${
+                    isActive(item.href)
+                      ? 'bg-[#22757C]/10'
+                      : 'hover:bg-[#F1F1F1]'
+                  }`}
+                  style={{
+                    color: isActive(item.href) ? '#22757C' : '#121212'
+                  }}
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.name}
+                </NavLink>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex-1">
+          <ClaudeMessages />
+        </div>
+      )}
 
       {/* Bottom Section - Subscription Status */}
       {subscription && (
