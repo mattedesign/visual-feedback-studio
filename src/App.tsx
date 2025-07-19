@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -5,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Suspense, lazy, useState } from "react";
 import GoblinDashboard from "./pages/GoblinDashboard";
-import DashboardPage from "./pages/DashboardPage";
+import EnhancedDashboardPage from "./pages/EnhancedDashboardPage";
 import AnalysisStudioPage from "./pages/AnalysisStudioPage";
 import { SubscriptionProvider } from "./contexts/SubscriptionContext";
 import Archive from "./pages/Archive";
@@ -31,14 +32,15 @@ import { PublicAchievement } from "@/pages/public/Achievement";
 import { useAuth } from "@/hooks/useAuth";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/layout/AppSidebar";
+import { EnhancedAppSidebar } from "@/components/layout/EnhancedAppSidebar";
+
 const queryClient = new QueryClient();
+
 const App = () => {
-  const {
-    user,
-    signOut
-  } = useAuth();
-  return <QueryClientProvider client={queryClient}>
+  const { user, signOut } = useAuth();
+  
+  return (
+    <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -48,15 +50,15 @@ const App = () => {
             <Route path="/auth" element={<Auth />} />
             <Route path="/achievement/:shareToken" element={<PublicAchievement />} />
             
-            {/* Protected routes with sidebar layout */}
+            {/* Protected routes with enhanced sidebar layout */}
             <Route path="/*" element={
               <AuthGuard>
                 <SidebarProvider defaultOpen={true}>
-                  <div className="min-h-screen flex w-full bg-transparent">
-                    <AppSidebar />
+                  <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-muted/20">
+                    <EnhancedAppSidebar />
                     <SidebarInset className="bg-transparent">
-                      {/* Main content area with mobile spacing */}
-                      <div className="flex flex-col items-start flex-1 self-stretch rounded-[20px] border-4 md:border-8 overflow-auto mx-1 my-2 md:m-4 mt-20 md:mt-2 bg-white" style={{
+                      {/* Main content area with enhanced styling */}
+                      <div className="flex flex-col items-start flex-1 self-stretch rounded-[20px] border-4 md:border-8 overflow-auto mx-1 my-2 md:m-4 mt-20 md:mt-2 bg-white shadow-xl" style={{
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'flex-start',
@@ -64,12 +66,12 @@ const App = () => {
                         alignSelf: 'stretch',
                         borderRadius: '20px',
                         borderColor: '#5C3C90',
-                        background: '#FFF'
+                        background: 'linear-gradient(135deg, #FFF 0%, #FAFAFA 100%)'
                       }}>
                         <SubscriptionProvider>
                           <Routes>
-                            <Route path="/" element={<DashboardPage />} />
-                            <Route path="/dashboard" element={<DashboardPage />} />
+                            <Route path="/" element={<EnhancedDashboardPage />} />
+                            <Route path="/dashboard" element={<EnhancedDashboardPage />} />
                             <Route path="/analysis-studio" element={<AnalysisStudioPage />} />
                             <Route path="archive" element={<Archive />} />
                             <Route path="analysis" element={<Analysis />} />
@@ -89,6 +91,10 @@ const App = () => {
                             <Route path="vector-test" element={<VectorTest />} />
                             <Route path="hybrid-engine-test" element={<HybridEngineTest />} />
                             <Route path="database-seeder" element={<DatabaseSeeder />} />
+                            {/* Placeholder routes for new features */}
+                            <Route path="reports" element={<div className="p-8 text-center"><h1 className="text-2xl font-bold">Reports Coming Soon</h1><p className="text-muted-foreground">Advanced reporting features will be available soon.</p></div>} />
+                            <Route path="insights" element={<div className="p-8 text-center"><h1 className="text-2xl font-bold">Design Insights Coming Soon</h1><p className="text-muted-foreground">AI-powered design insights will be available soon.</p></div>} />
+                            <Route path="trends" element={<div className="p-8 text-center"><h1 className="text-2xl font-bold">Trends Coming Soon</h1><p className="text-muted-foreground">UX trend analysis will be available soon.</p></div>} />
                             <Route path="*" element={<Navigate to="/" replace />} />
                           </Routes>
                         </SubscriptionProvider>
@@ -101,6 +107,8 @@ const App = () => {
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
-    </QueryClientProvider>;
+    </QueryClientProvider>
+  );
 };
+
 export default App;
