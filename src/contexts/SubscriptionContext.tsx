@@ -20,11 +20,17 @@ interface SubscriptionContextType {
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
 
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const refreshSubscription = async () => {
+    // Don't attempt to fetch subscription if auth is still loading
+    if (authLoading) {
+      setIsLoading(true);
+      return;
+    }
+    
     if (!user) {
       setSubscription(null);
       setIsLoading(false);
@@ -66,7 +72,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     refreshSubscription();
-  }, [user]);
+  }, [user, authLoading]);
 
   return (
     <SubscriptionContext.Provider value={{ subscription, isLoading, refreshSubscription }}>
