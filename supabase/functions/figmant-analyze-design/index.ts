@@ -8,15 +8,23 @@ const corsHeaders = {
 };
 
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+const GOOGLE_VISION_API_KEY = Deno.env.get("GOOGLE_VISION_API_KEY");
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let requestBody: any;
+  let sessionId: string;
+
   try {
     const startTime = Date.now();
     
+    if (!ANTHROPIC_API_KEY) {
+      throw new Error("ANTHROPIC_API_KEY is not configured");
+    }
+
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -30,16 +38,27 @@ serve(async (req) => {
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError || !userData.user) throw new Error("Authentication failed");
 
-    const { sessionId } = await req.json();
+    // Read request body once
+    requestBody = await req.json();
+    sessionId = requestBody.sessionId;
 
-    console.log("🧠 Starting Claude analysis for session:", sessionId);
+    console.log("🧠 Starting comprehensive analysis for session:", sessionId);
+
+    if (!sessionId) {
+      throw new Error("Session ID is required");
+    }
 
     // Check analysis limit
-    const canAnalyze = await supabaseClient.rpc('check_analysis_limit', { 
+    const { data: canAnalyze, error: limitError } = await supabaseClient.rpc('check_analysis_limit', { 
       p_user_id: userData.user.id 
     });
 
-    if (!canAnalyze.data) {
+    if (limitError) {
+      console.error("Error checking analysis limit:", limitError);
+      throw new Error("Failed to check analysis limit");
+    }
+
+    if (!canAnalyze) {
       throw new Error("Analysis limit reached. Please upgrade your plan.");
     }
 
@@ -67,6 +86,57 @@ serve(async (req) => {
       .from("figmant_analysis_sessions")
       .update({ status: 'processing' })
       .eq("id", sessionId);
+
+    console.log(`📊 Processing ${session.figmant_session_images.length} images...`);
+
+    // Process images with Google Vision if not already processed
+    for (const image of session.figmant_session_images) {
+      if (!image.google_vision_data && GOOGLE_VISION_API_KEY) {
+        console.log(`🔍 Analyzing image: ${image.file_name}`);
+        
+        try {
+          const imageUrl = `${Deno.env.get("SUPABASE_URL")}/storage/v1/object/public/analysis-images/${image.file_path}`;
+          
+          const visionResponse = await fetch(
+            `https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_VISION_API_KEY}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                requests: [{
+                  image: { source: { imageUri: imageUrl } },
+                  features: [
+                    { type: 'TEXT_DETECTION', maxResults: 50 },
+                    { type: 'LABEL_DETECTION', maxResults: 20 },
+                    { type: 'IMAGE_PROPERTIES' },
+                    { type: 'OBJECT_LOCALIZATION', maxResults: 20 },
+                    { type: 'WEB_DETECTION', maxResults: 10 }
+                  ]
+                }]
+              })
+            }
+          );
+
+          if (visionResponse.ok) {
+            const visionData = await visionResponse.json();
+            
+            // Update image with Google Vision data
+            await supabaseClient
+              .from("figmant_session_images")
+              .update({ google_vision_data: visionData })
+              .eq("id", image.id);
+            
+            // Add to our working copy
+            image.google_vision_data = visionData;
+            console.log(`✅ Vision analysis completed for ${image.file_name}`);
+          } else {
+            console.warn(`⚠️ Vision analysis failed for ${image.file_name}: ${visionResponse.status}`);
+          }
+        } catch (visionError) {
+          console.error(`❌ Vision processing error for ${image.file_name}:`, visionError);
+        }
+      }
+    }
 
     // Prepare analysis context
     const analysisContext = {
@@ -260,20 +330,21 @@ Be direct, specific, and solution-focused. Every recommendation should be immedi
   } catch (error) {
     console.error("❌ Analysis error:", error);
     
-    // Update session status to failed
-    try {
-      const { sessionId } = await req.json();
-      const supabaseClient = createClient(
-        Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-      );
-      
-      await supabaseClient
-        .from("figmant_analysis_sessions")
-        .update({ status: 'failed' })
-        .eq("id", sessionId);
-    } catch (updateError) {
-      console.error("Failed to update session status:", updateError);
+    // Update session status to failed if we have sessionId
+    if (sessionId) {
+      try {
+        const supabaseClient = createClient(
+          Deno.env.get("SUPABASE_URL") ?? "",
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+        );
+        
+        await supabaseClient
+          .from("figmant_analysis_sessions")
+          .update({ status: 'failed' })
+          .eq("id", sessionId);
+      } catch (updateError) {
+        console.error("Failed to update session status:", updateError);
+      }
     }
 
     return new Response(JSON.stringify({ 
