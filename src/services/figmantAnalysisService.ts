@@ -148,7 +148,7 @@ export async function startFigmantAnalysis(sessionId: string): Promise<any> {
 
     // Call the figmant analysis edge function
     const { data, error } = await supabase.functions.invoke('figmant-analyze-design', {
-      body: { session_id: sessionId }
+      body: { sessionId: sessionId }
     });
 
     if (error) {
