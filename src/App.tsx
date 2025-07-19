@@ -48,40 +48,70 @@ const App = () => {
             <Route path="/auth" element={<Auth />} />
             <Route path="/achievement/:shareToken" element={<PublicAchievement />} />
             
-            {/* Protected routes with Figmant layout */}
+            {/* Protected routes with exact SVG container styling */}
             <Route path="/*" element={
               <AuthGuard>
                 <SubscriptionProvider>
-                  <FigmantLayout>
-                    <Routes>
-                      <Route path="/" element={<EnhancedDashboardPage />} />
-                      <Route path="/dashboard" element={<EnhancedDashboardPage />} />
-                      <Route path="/analysis-studio" element={<AnalysisStudioPage />} />
-                      <Route path="archive" element={<Archive />} />
-                      <Route path="analysis" element={<Analysis />} />
-                      <Route path="analysis/:id" element={<AnalysisResults />} />
-                      <Route path="analysis-results" element={<AnalysisResults />} />
-                      <Route path="analysis-results/:id" element={<AnalysisResults />} />
-                      <Route path="analyze" element={<Analyze />} />
-                      <Route path="analyze-results/:id" element={<AnalyzeResults />} />
-                      <Route path="goblin" element={<GoblinStudioPage />} />
-                      <Route path="goblin/results/:sessionId" element={<GoblinResults />} />
-                      <Route path="history" element={<GoblinHistory />} />
-                      <Route path="settings" element={<Settings />} />
-                      <Route path="subscription" element={<Subscription />} />
-                      <Route path="help" element={<Help />} />
-                      <Route path="admin" element={<AdminPanel />} />
-                      <Route path="upgrade-success" element={<UpgradeSuccess />} />
-                      <Route path="vector-test" element={<VectorTest />} />
-                      <Route path="hybrid-engine-test" element={<HybridEngineTest />} />
-                      <Route path="database-seeder" element={<DatabaseSeeder />} />
-                      {/* Placeholder routes for new features */}
-                      <Route path="reports" element={<div className="p-8 text-center"><h1 className="text-2xl font-bold">Reports Coming Soon</h1><p className="text-muted-foreground">Advanced reporting features will be available soon.</p></div>} />
-                      <Route path="insights" element={<div className="p-8 text-center"><h1 className="text-2xl font-bold">Design Insights Coming Soon</h1><p className="text-muted-foreground">AI-powered design insights will be available soon.</p></div>} />
-                      <Route path="trends" element={<div className="p-8 text-center"><h1 className="text-2xl font-bold">Trends Coming Soon</h1><p className="text-muted-foreground">UX trend analysis will be available soon.</p></div>} />
-                      <Route path="*" element={<Navigate to="/" replace />} />
-                    </Routes>
-                  </FigmantLayout>
+                  <div 
+                    className="min-h-screen"
+                    style={{ 
+                      background: '#1C6D73',
+                      padding: '2px'
+                    }}
+                  >
+                    <div 
+                      style={{
+                        width: '1436px',
+                        height: '896px',
+                        maxWidth: '100vw',
+                        maxHeight: '100vh',
+                        borderRadius: '30px',
+                        background: '#1C6D73',
+                        border: '4px solid #1C6D73',
+                        margin: '0 auto'
+                      }}
+                    >
+                      <div 
+                        style={{
+                          width: '1408px',
+                          height: '868px',
+                          borderRadius: '20px',
+                          background: '#F1F1F1',
+                          margin: '16px'
+                        }}
+                      >
+                        <FigmantLayout>
+                          <Routes>
+                            <Route path="/" element={<EnhancedDashboardPage />} />
+                            <Route path="/dashboard" element={<EnhancedDashboardPage />} />
+                            <Route path="/analysis-studio" element={<AnalysisStudioPage />} />
+                            <Route path="archive" element={<Archive />} />
+                            <Route path="analysis" element={<Analysis />} />
+                            <Route path="analysis/:id" element={<AnalysisResults />} />
+                            <Route path="analysis-results" element={<AnalysisResults />} />
+                            <Route path="analysis-results/:id" element={<AnalysisResults />} />
+                            <Route path="analyze" element={<Analyze />} />
+                            <Route path="analyze-results/:id" element={<AnalyzeResults />} />
+                            <Route path="goblin" element={<GoblinStudioPage />} />
+                            <Route path="goblin/results/:sessionId" element={<GoblinResults />} />
+                            <Route path="history" element={<GoblinHistory />} />
+                            <Route path="settings" element={<Settings />} />
+                            <Route path="subscription" element={<Subscription />} />
+                            <Route path="help" element={<Help />} />
+                            <Route path="admin" element={<AdminPanel />} />
+                            <Route path="upgrade-success" element={<UpgradeSuccess />} />
+                            <Route path="vector-test" element={<VectorTest />} />
+                            <Route path="hybrid-engine-test" element={<HybridEngineTest />} />
+                            <Route path="database-seeder" element={<DatabaseSeeder />} />
+                            <Route path="reports" element={<div className="p-8 text-center"><h1 className="text-2xl font-bold">Reports Coming Soon</h1><p className="text-muted-foreground">Advanced reporting features will be available soon.</p></div>} />
+                            <Route path="insights" element={<div className="p-8 text-center"><h1 className="text-2xl font-bold">Design Insights Coming Soon</h1><p className="text-muted-foreground">AI-powered design insights will be available soon.</p></div>} />
+                            <Route path="trends" element={<div className="p-8 text-center"><h1 className="text-2xl font-bold">Trends Coming Soon</h1><p className="text-muted-foreground">UX trend analysis will be available soon.</p></div>} />
+                            <Route path="*" element={<Navigate to="/" replace />} />
+                          </Routes>
+                        </FigmantLayout>
+                      </div>
+                    </div>
+                  </div>
                 </SubscriptionProvider>
               </AuthGuard>
             } />

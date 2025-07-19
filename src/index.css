@@ -5,6 +5,10 @@
 
 @layer base {
   :root {
+    /* Exact colors from SVG */
+    --container-border: #1C6D73;
+    --content-background: #F1F1F1;
+    
     /* Exact color scheme from reference design */
     --background: 0 0% 98%;
     --foreground: 0 0% 10%;
