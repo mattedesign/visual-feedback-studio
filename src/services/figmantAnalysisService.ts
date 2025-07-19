@@ -36,6 +36,10 @@ export interface FigmantAnalysisResult {
   claude_analysis: any;
   google_vision_summary?: any;
   processing_time_ms?: number;
+  ai_model_used?: string;
+  severity_breakdown?: any;
+  implementation_timeline?: any;
+  user_id?: string;
   created_at: string;
 }
 

@@ -7,6 +7,7 @@ import { claude20YearStrategistEngine, StrategistOutput } from '@/services/ai/cl
 import { StrategistResultsDisplay } from '@/components/analysis/results/StrategistResultsDisplay';
 import { FigmaInspiredAnalysisLayout } from '@/components/analysis/figma/FigmaInspiredAnalysisLayout';
 import { getAnalysisResults } from '@/services/analysisResultsService';
+import { getFigmantResults } from '@/services/figmantAnalysisService';
 import { toast } from 'sonner';
 
 // 🔧 FIX: Utility function to clear persistent state and navigate to clean analysis
@@ -46,44 +47,65 @@ const AnalysisResults = () => {
     if (!id) return;
 
     try {
-      console.log('🎨 Loading analysis data for enhanced UI:', id);
+      console.log('🎨 Loading Figmant analysis data for enhanced UI:', id);
       
-      // Fetch real analysis results from Supabase
-      const analysisResult = await getAnalysisResults(id);
+      // Fetch real analysis results from Figmant tables
+      const figmantResult = await getFigmantResults(id);
       
-      if (!analysisResult) {
-        console.warn('❌ No analysis results found for ID:', id);
+      if (!figmantResult) {
+        console.warn('❌ No Figmant analysis results found for ID:', id);
         toast.error('Analysis results not found');
         return;
       }
 
-      // Transform the Supabase data to match the enhanced UI format
+      console.log('📊 Raw Figmant result:', figmantResult);
+
+      // Transform the Figmant data to match the enhanced UI format
+      const claudeAnalysis = figmantResult.claude_analysis as any;
+      
+      // Extract annotations from Claude analysis
+      let annotations: any[] = [];
+      
+      if (claudeAnalysis?.criticalIssues) {
+        annotations.push(...claudeAnalysis.criticalIssues.map((issue: any, index: number) => ({
+          id: `critical-${index}`,
+          title: issue.title || issue.issue || 'Critical Issue',
+          feedback: issue.description || issue.impact || 'Critical issue identified',
+          severity: 'critical',
+          category: issue.category || 'Critical'
+        })));
+      }
+      
+      if (claudeAnalysis?.recommendations) {
+        annotations.push(...claudeAnalysis.recommendations.map((rec: any, index: number) => ({
+          id: `recommendation-${index}`,
+          title: rec.title || 'Recommendation',
+          feedback: rec.description || 'Improvement recommendation',
+          severity: rec.effort === 'Low' ? 'low' : rec.effort === 'High' ? 'high' : 'medium',
+          category: rec.category || 'Improvement'
+        })));
+      }
+
       const transformedData = {
-        annotations: Array.isArray(analysisResult.annotations) 
-          ? analysisResult.annotations.map((annotation: any, index: number) => ({
-              id: annotation.id || `annotation-${index}`,
-              title: annotation.title || annotation.feedback?.substring(0, 50) || 'Analysis Issue',
-              feedback: annotation.feedback || annotation.description || 'No description available',
-              severity: annotation.severity || annotation.priority || 'medium',
-              category: annotation.category || annotation.type || 'General'
-            }))
-          : [],
-        images: analysisResult.images || [],
-        totalAnnotations: analysisResult.total_annotations || 0,
-        processingTime: analysisResult.processing_time_ms,
-        knowledgeSourcesUsed: analysisResult.knowledge_sources_used,
-        aiModel: analysisResult.ai_model_used,
-        createdAt: analysisResult.created_at
+        annotations,
+        images: [], // Figmant doesn't store images in results yet
+        totalAnnotations: annotations.length,
+        processingTime: figmantResult.processing_time_ms,
+        aiModel: figmantResult.ai_model_used || 'claude-sonnet-4',
+        createdAt: figmantResult.created_at,
+        executiveSummary: claudeAnalysis?.executiveSummary,
+        overallScore: claudeAnalysis?.overallScore
       };
 
       setAnalysisData(transformedData);
-      console.log('✅ Real analysis data loaded for enhanced UI:', {
+      console.log('✅ Figmant analysis data loaded for enhanced UI:', {
         annotationCount: transformedData.annotations.length,
-        totalAnnotations: transformedData.totalAnnotations
+        totalAnnotations: transformedData.totalAnnotations,
+        overallScore: transformedData.overallScore
       });
       
     } catch (error) {
-      console.error('❌ Failed to load analysis data:', error);
+      console.error('❌ Failed to load Figmant analysis data:', error);
       toast.error('Failed to load analysis data');
     }
   };
