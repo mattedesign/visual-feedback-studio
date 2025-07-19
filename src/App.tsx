@@ -7,6 +7,7 @@ import { Suspense, lazy, useState } from "react";
 import GoblinDashboard from "./pages/GoblinDashboard";
 import DashboardPage from "./pages/DashboardPage";
 import AnalysisStudioPage from "./pages/AnalysisStudioPage";
+import { SubscriptionProvider } from "./contexts/SubscriptionContext";
 import Archive from "./pages/Archive";
 import Analysis from "./pages/Analysis";
 import AnalysisResults from "./pages/AnalysisResults";
@@ -65,30 +66,32 @@ const App = () => {
                         borderColor: '#5C3C90',
                         background: '#FFF'
                       }}>
-                        <Routes>
-                          <Route path="/" element={<DashboardPage />} />
-                          <Route path="/dashboard" element={<DashboardPage />} />
-                          <Route path="/analysis-studio" element={<AnalysisStudioPage />} />
-                          <Route path="archive" element={<Archive />} />
-                          <Route path="analysis" element={<Analysis />} />
-                          <Route path="analysis/:id" element={<AnalysisResults />} />
-                          <Route path="analysis-results" element={<AnalysisResults />} />
-                          <Route path="analysis-results/:id" element={<AnalysisResults />} />
-                          <Route path="analyze" element={<Analyze />} />
-                          <Route path="analyze-results/:id" element={<AnalyzeResults />} />
-                          <Route path="goblin" element={<GoblinStudioPage />} />
-                          <Route path="goblin/results/:sessionId" element={<GoblinResults />} />
-                          <Route path="history" element={<GoblinHistory />} />
-                          <Route path="settings" element={<Settings />} />
-                          <Route path="subscription" element={<Subscription />} />
-                          <Route path="help" element={<Help />} />
-                          <Route path="admin" element={<AdminPanel />} />
-                          <Route path="upgrade-success" element={<UpgradeSuccess />} />
-                          <Route path="vector-test" element={<VectorTest />} />
-                          <Route path="hybrid-engine-test" element={<HybridEngineTest />} />
-                          <Route path="database-seeder" element={<DatabaseSeeder />} />
-                          <Route path="*" element={<Navigate to="/" replace />} />
-                        </Routes>
+                        <SubscriptionProvider>
+                          <Routes>
+                            <Route path="/" element={<DashboardPage />} />
+                            <Route path="/dashboard" element={<DashboardPage />} />
+                            <Route path="/analysis-studio" element={<AnalysisStudioPage />} />
+                            <Route path="archive" element={<Archive />} />
+                            <Route path="analysis" element={<Analysis />} />
+                            <Route path="analysis/:id" element={<AnalysisResults />} />
+                            <Route path="analysis-results" element={<AnalysisResults />} />
+                            <Route path="analysis-results/:id" element={<AnalysisResults />} />
+                            <Route path="analyze" element={<Analyze />} />
+                            <Route path="analyze-results/:id" element={<AnalyzeResults />} />
+                            <Route path="goblin" element={<GoblinStudioPage />} />
+                            <Route path="goblin/results/:sessionId" element={<GoblinResults />} />
+                            <Route path="history" element={<GoblinHistory />} />
+                            <Route path="settings" element={<Settings />} />
+                            <Route path="subscription" element={<Subscription />} />
+                            <Route path="help" element={<Help />} />
+                            <Route path="admin" element={<AdminPanel />} />
+                            <Route path="upgrade-success" element={<UpgradeSuccess />} />
+                            <Route path="vector-test" element={<VectorTest />} />
+                            <Route path="hybrid-engine-test" element={<HybridEngineTest />} />
+                            <Route path="database-seeder" element={<DatabaseSeeder />} />
+                            <Route path="*" element={<Navigate to="/" replace />} />
+                          </Routes>
+                        </SubscriptionProvider>
                       </div>
                     </SidebarInset>
                   </div>

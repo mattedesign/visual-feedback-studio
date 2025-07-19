@@ -428,6 +428,41 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_usage: {
+        Row: {
+          created_at: string
+          credits_consumed: number
+          id: string
+          operation_type: string
+          session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          credits_consumed: number
+          id?: string
+          operation_type: string
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          credits_consumed?: number
+          id?: string
+          operation_type?: string
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_usage_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "figmant_analysis_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       emergency_metrics: {
         Row: {
           created_at: string
@@ -451,6 +486,130 @@ export type Database = {
           metric_value?: number
         }
         Relationships: []
+      }
+      figmant_analysis_results: {
+        Row: {
+          ai_model_used: string | null
+          claude_analysis: Json
+          created_at: string
+          google_vision_summary: Json | null
+          id: string
+          implementation_timeline: Json | null
+          processing_time_ms: number | null
+          session_id: string | null
+          severity_breakdown: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          ai_model_used?: string | null
+          claude_analysis: Json
+          created_at?: string
+          google_vision_summary?: Json | null
+          id?: string
+          implementation_timeline?: Json | null
+          processing_time_ms?: number | null
+          session_id?: string | null
+          severity_breakdown?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          ai_model_used?: string | null
+          claude_analysis?: Json
+          created_at?: string
+          google_vision_summary?: Json | null
+          id?: string
+          implementation_timeline?: Json | null
+          processing_time_ms?: number | null
+          session_id?: string | null
+          severity_breakdown?: Json | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "figmant_analysis_results_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "figmant_analysis_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      figmant_analysis_sessions: {
+        Row: {
+          business_goals: string[] | null
+          created_at: string
+          design_type: string | null
+          id: string
+          industry: string | null
+          status: string | null
+          title: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          business_goals?: string[] | null
+          created_at?: string
+          design_type?: string | null
+          id?: string
+          industry?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          business_goals?: string[] | null
+          created_at?: string
+          design_type?: string | null
+          id?: string
+          industry?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      figmant_session_images: {
+        Row: {
+          created_at: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          google_vision_data: Json | null
+          id: string
+          session_id: string | null
+          upload_order: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          google_vision_data?: Json | null
+          id?: string
+          session_id?: string | null
+          upload_order?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          google_vision_data?: Json | null
+          id?: string
+          session_id?: string | null
+          upload_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "figmant_session_images_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "figmant_analysis_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       goblin_achievements: {
         Row: {
@@ -1185,6 +1344,48 @@ export type Database = {
           requests_count?: number
           user_id?: string | null
           window_start?: string
+        }
+        Relationships: []
+      }
+      subscribers: {
+        Row: {
+          analyses_limit: number | null
+          analyses_used: number | null
+          created_at: string
+          email: string
+          id: string
+          stripe_customer_id: string | null
+          subscribed: boolean
+          subscription_end: string | null
+          subscription_tier: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          analyses_limit?: number | null
+          analyses_used?: number | null
+          created_at?: string
+          email: string
+          id?: string
+          stripe_customer_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          analyses_limit?: number | null
+          analyses_used?: number | null
+          created_at?: string
+          email?: string
+          id?: string
+          stripe_customer_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
