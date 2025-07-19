@@ -6,7 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, Download, Share2, Sparkles, AlertTriangle, CheckCircle, Info } from 'lucide-react';
-import { getFigmantResults } from '@/services/figmantAnalysisService';
+import { getFigmantResults, getFigmantSession } from '@/services/figmantAnalysisService';
+import { FigmantImageGrid } from '@/components/analysis/figmant/FigmantImageGrid';
+import { FigmantImageDetail } from '@/components/analysis/figmant/FigmantImageDetail';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
@@ -19,11 +21,21 @@ interface AnalysisIssue {
   impact?: string;
 }
 
+interface FigmantImage {
+  id: string;
+  url: string;
+  original_name: string;
+  order_number: number;
+}
+
 const FigmantResultsPage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const [analysisData, setAnalysisData] = useState<any>(null);
+  const [sessionData, setSessionData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [currentView, setCurrentView] = useState<'grid' | 'detail'>('grid');
+  const [selectedImage, setSelectedImage] = useState<FigmantImage | null>(null);
 
   useEffect(() => {
     if (sessionId) {
@@ -36,8 +48,12 @@ const FigmantResultsPage = () => {
 
     try {
       setLoading(true);
-      const results = await getFigmantResults(sessionId);
+      const [results, session] = await Promise.all([
+        getFigmantResults(sessionId),
+        getFigmantSession(sessionId)
+      ]);
       setAnalysisData(results);
+      setSessionData(session);
     } catch (error) {
       console.error('Failed to load analysis results:', error);
       toast.error('Failed to load analysis results');
@@ -88,7 +104,7 @@ const FigmantResultsPage = () => {
     );
   }
 
-  if (!analysisData) {
+  if (!analysisData || !sessionData) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
@@ -99,6 +115,40 @@ const FigmantResultsPage = () => {
             Start New Analysis
           </Button>
         </div>
+      </div>
+    );
+  }
+
+  const handleImageSelect = (image: FigmantImage) => {
+    setSelectedImage(image);
+    setCurrentView('detail');
+  };
+
+  const handleBackToGrid = () => {
+    setCurrentView('grid');
+    setSelectedImage(null);
+  };
+
+  // Show grid or detail view based on current state
+  if (currentView === 'detail' && selectedImage) {
+    return (
+      <FigmantImageDetail 
+        image={selectedImage}
+        analysisData={analysisData}
+        onBack={handleBackToGrid}
+      />
+    );
+  }
+
+  // Show grid view
+  if (sessionData?.images?.length > 0) {
+    return (
+      <div className="h-full">
+        <FigmantImageGrid 
+          images={sessionData.images}
+          onImageSelect={handleImageSelect}
+          analysisData={analysisData}
+        />
       </div>
     );
   }
