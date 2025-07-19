@@ -77,3 +77,18 @@ verify_jwt = true
 
 [functions.goblin-maturity-monitor]
 verify_jwt = false
+
+[functions.figmant-analyze-design]
+verify_jwt = true
+
+[functions.analyze-figmant-design]
+verify_jwt = true
+
+[functions.figmant-check-subscription]
+verify_jwt = true
+
+[functions.figmant-create-session]
+verify_jwt = true
+
+[functions.figmant-upload-image]
+verify_jwt = true
