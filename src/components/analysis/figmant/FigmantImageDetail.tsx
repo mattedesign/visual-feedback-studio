@@ -8,9 +8,9 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface FigmantImage {
   id: string;
-  url: string;
-  original_name: string;
-  order_number: number;
+  file_path: string;
+  file_name: string;
+  upload_order: number;
 }
 
 interface Annotation {
@@ -32,9 +32,10 @@ interface ImageDetailProps {
 export function FigmantImageDetail({ image, analysisData, onBack }: ImageDetailProps) {
   const [selectedAnnotation, setSelectedAnnotation] = useState<Annotation | null>(null);
 
-  const getImageUrl = (imageUrl: string) => {
-    if (imageUrl.startsWith('http')) return imageUrl;
-    return supabase.storage.from('analysis-images').getPublicUrl(imageUrl).data.publicUrl;
+  const getImageUrl = (filePath: string) => {
+    if (!filePath) return '';
+    if (filePath.startsWith('http')) return filePath;
+    return supabase.storage.from('analysis-images').getPublicUrl(filePath).data.publicUrl;
   };
 
   const getSeverityIcon = (severity: string) => {
@@ -68,7 +69,7 @@ export function FigmantImageDetail({ image, analysisData, onBack }: ImageDetailP
   };
 
   // Mock annotations for demo - in reality these would come from analysis data
-  const mockAnnotations: Annotation[] = image.order_number === 1 ? [
+  const mockAnnotations: Annotation[] = image.upload_order === 1 ? [
     {
       id: '1',
       x: 25,
@@ -124,7 +125,7 @@ export function FigmantImageDetail({ image, analysisData, onBack }: ImageDetailP
       'Futuristic Humanoid Robot',
       'Cloud Solution Dashboard'
     ];
-    return mockTitles[image.order_number - 1] || image.original_name;
+    return mockTitles[image.upload_order - 1] || image.file_name;
   };
 
   const overallScore = analysisData?.claude_analysis?.overallScore || 72;
@@ -157,9 +158,9 @@ export function FigmantImageDetail({ image, analysisData, onBack }: ImageDetailP
       <div className="flex-1 flex">
         {/* Main Image Area */}
         <div className="flex-1 flex items-center justify-center bg-gray-50 relative">
-          <div className="relative max-w-4xl max-h-full">
+        <div className="relative max-w-4xl max-h-full">
             <img 
-              src={getImageUrl(image.url)}
+              src={getImageUrl(image.file_path)}
               alt={getImageTitle(image)}
               className="max-w-full max-h-full object-contain shadow-lg rounded-lg"
             />

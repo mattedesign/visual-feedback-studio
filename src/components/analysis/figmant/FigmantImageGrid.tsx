@@ -5,9 +5,9 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface FigmantImage {
   id: string;
-  url: string;
-  original_name: string;
-  order_number: number;
+  file_path: string;
+  file_name: string;
+  upload_order: number;
 }
 
 interface ImageGridProps {
@@ -17,16 +17,17 @@ interface ImageGridProps {
 }
 
 export function FigmantImageGrid({ images, onImageSelect, analysisData }: ImageGridProps) {
-  const getImageUrl = (imageUrl: string) => {
-    if (imageUrl.startsWith('http')) return imageUrl;
-    return supabase.storage.from('analysis-images').getPublicUrl(imageUrl).data.publicUrl;
+  const getImageUrl = (filePath: string) => {
+    if (!filePath) return '';
+    if (filePath.startsWith('http')) return filePath;
+    return supabase.storage.from('analysis-images').getPublicUrl(filePath).data.publicUrl;
   };
 
   const getAnnotationCount = (image: FigmantImage) => {
     // Extract annotation count from analysis data
-    // For now, using mock data based on image order
+    // For now, using mock data based on upload order
     const mockCounts = [4, 0, 0, 0];
-    return mockCounts[image.order_number - 1] || 0;
+    return mockCounts[image.upload_order - 1] || 0;
   };
 
   const getImageTitle = (image: FigmantImage) => {
@@ -37,7 +38,7 @@ export function FigmantImageGrid({ images, onImageSelect, analysisData }: ImageG
       'Futuristic Humanoid Robot',
       'Cloud Solution Dashboard'
     ];
-    return mockTitles[image.order_number - 1] || image.original_name;
+    return mockTitles[image.upload_order - 1] || image.file_name;
   };
 
   return (
@@ -61,7 +62,7 @@ export function FigmantImageGrid({ images, onImageSelect, analysisData }: ImageG
               <div className="p-4">
                 <div className="aspect-video bg-gradient-to-br from-orange-100 to-blue-100 rounded-lg mb-4 overflow-hidden">
                   <img 
-                    src={getImageUrl(image.url)}
+                    src={getImageUrl(image.file_path)}
                     alt={title}
                     className="w-full h-full object-cover"
                     onError={(e) => {

@@ -23,9 +23,9 @@ interface AnalysisIssue {
 
 interface FigmantImage {
   id: string;
-  url: string;
-  original_name: string;
-  order_number: number;
+  file_path: string;
+  file_name: string;
+  upload_order: number;
 }
 
 const FigmantResultsPage = () => {
