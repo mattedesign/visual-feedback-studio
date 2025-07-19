@@ -178,12 +178,52 @@ async function handleAnalyzeSelection(msg: AnalysisMessage) {
 
     const result = await response.json();
 
-    figma.ui.postMessage({
-      type: 'analysis-complete',
-      sessionId: result.session_id,
-      imagesProcessed: result.images_processed,
-      totalImages: result.total_images
+    figma.ui.postMessage({ 
+      type: 'analysis-progress', 
+      message: 'Starting UX analysis...',
+      progress: 90
     });
+
+    // Trigger the analysis using the main analysis function (now supports API keys)
+    try {
+      const analysisResponse = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/functions/v1/figmant-analyze-design', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': msg.apiKey
+        },
+        body: JSON.stringify({
+          sessionId: result.session_id
+        })
+      });
+
+      if (!analysisResponse.ok) {
+        const errorData = await analysisResponse.json().catch(() => ({ error: 'Analysis failed' }));
+        throw new Error(errorData.error || `Analysis failed: ${analysisResponse.status}`);
+      }
+
+      const analysisResult = await analysisResponse.json();
+
+      figma.ui.postMessage({
+        type: 'analysis-complete',
+        sessionId: result.session_id,
+        analysisResult: analysisResult,
+        imagesProcessed: result.images_processed,
+        totalImages: result.total_images
+      });
+
+    } catch (analysisError) {
+      console.error('Analysis error:', analysisError);
+      // Still report upload success but note analysis failed
+      figma.ui.postMessage({
+        type: 'analysis-partial',
+        sessionId: result.session_id,
+        imagesProcessed: result.images_processed,
+        totalImages: result.total_images,
+        analysisError: analysisError.message,
+        message: 'Images uploaded successfully, but analysis failed. You can retry the analysis from the web app.'
+      });
+    }
 
   } catch (error) {
     console.error('Analysis error:', error);

@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-api-key",
 };
 
 console.log('🎨 Figmant Analysis Pipeline - Comprehensive UX Analysis v3.1');
@@ -108,17 +108,43 @@ serve(async (req) => {
       throw new Error(`Database connection failed: ${connectionTest.message}`);
     }
 
-    // Get session with authentication check
+    // Get session with authentication check (support both JWT and API key)
     console.log('📋 Fetching session details...');
+    let userId: string;
+    
+    // Check for API key authentication first
+    const apiKey = req.headers.get('x-api-key');
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      throw new Error("No authorization header provided");
-    }
+    
+    if (apiKey) {
+      // API key authentication
+      console.log('🔑 Using API key authentication');
+      const keyHash = await hashAPIKey(apiKey);
+      
+      const { data: keyData, error: keyError } = await supabase.rpc('validate_api_key', {
+        p_key_hash: keyHash
+      });
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabase.auth.getUser(token);
-    if (userError || !userData.user) {
-      throw new Error("Authentication failed");
+      if (keyError || !keyData || keyData.length === 0 || !keyData[0].is_valid) {
+        throw new Error("Invalid API key");
+      }
+      
+      if (!keyData[0].permissions.write) {
+        throw new Error("Insufficient API key permissions");
+      }
+      
+      userId = keyData[0].user_id;
+    } else if (authHeader) {
+      // JWT authentication
+      console.log('🎫 Using JWT authentication');
+      const token = authHeader.replace("Bearer ", "");
+      const { data: userData, error: userError } = await supabase.auth.getUser(token);
+      if (userError || !userData.user) {
+        throw new Error("Authentication failed");
+      }
+      userId = userData.user.id;
+    } else {
+      throw new Error("No authentication provided");
     }
 
     const { data: session, error: sessionError } = await supabase
@@ -128,7 +154,7 @@ serve(async (req) => {
         figmant_session_images (*)
       `)
       .eq("id", sessionId)
-      .eq("user_id", userData.user.id)
+      .eq("user_id", userId)
       .single();
 
     if (sessionError || !session) {
@@ -143,7 +169,7 @@ serve(async (req) => {
 
     // Check analysis limit
     const { data: canAnalyze, error: limitError } = await supabase.rpc('check_analysis_limit', {
-      p_user_id: userData.user.id
+      p_user_id: userId
     });
 
     if (limitError) {
@@ -362,7 +388,7 @@ Focus on actionable insights with specific implementation steps and business imp
       .from("figmant_analysis_results")
       .insert({
         session_id: sessionId,
-        user_id: userData.user.id,
+        user_id: userId,
         claude_analysis: claudeAnalysis,
         google_vision_summary: {
           totalImages: analysisContext.imageCount,
@@ -388,13 +414,13 @@ Focus on actionable insights with specific implementation steps and business imp
         .eq("id", sessionId),
 
       supabase.rpc('increment_analysis_usage', {
-        p_user_id: userData.user.id
+        p_user_id: userId
       }),
 
       supabase
         .from("credit_usage")
         .insert({
-          user_id: userData.user.id,
+          user_id: userId,
           session_id: sessionId,
           credits_consumed: 1,
           operation_type: 'ux_analysis'
@@ -444,3 +470,11 @@ Focus on actionable insights with specific implementation steps and business imp
     });
   }
 });
+
+async function hashAPIKey(apiKey: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(apiKey);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
