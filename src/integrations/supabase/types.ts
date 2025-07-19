@@ -341,6 +341,101 @@ export type Database = {
           },
         ]
       }
+      api_keys: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          key_hash: string
+          key_prefix: string
+          last_used_at: string | null
+          name: string
+          permissions: Json
+          rate_limit_per_hour: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          key_hash: string
+          key_prefix: string
+          last_used_at?: string | null
+          name: string
+          permissions?: Json
+          rate_limit_per_hour?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          key_hash?: string
+          key_prefix?: string
+          last_used_at?: string | null
+          name?: string
+          permissions?: Json
+          rate_limit_per_hour?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      api_usage: {
+        Row: {
+          api_key_id: string
+          created_at: string
+          endpoint: string
+          id: string
+          ip_address: unknown | null
+          method: string
+          request_size_bytes: number | null
+          response_size_bytes: number | null
+          response_time_ms: number | null
+          status_code: number
+          user_agent: string | null
+        }
+        Insert: {
+          api_key_id: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          ip_address?: unknown | null
+          method: string
+          request_size_bytes?: number | null
+          response_size_bytes?: number | null
+          response_time_ms?: number | null
+          status_code: number
+          user_agent?: string | null
+        }
+        Update: {
+          api_key_id?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          ip_address?: unknown | null
+          method?: string
+          request_size_bytes?: number | null
+          response_size_bytes?: number | null
+          response_time_ms?: number | null
+          status_code?: number
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_usage_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       competitor_patterns: {
         Row: {
           created_at: string
@@ -1555,6 +1650,59 @@ export type Database = {
           },
         ]
       }
+      webhook_configs: {
+        Row: {
+          api_key_id: string
+          created_at: string
+          events: string[]
+          id: string
+          is_active: boolean
+          last_triggered_at: string | null
+          retry_count: number
+          secret: string
+          timeout_seconds: number
+          updated_at: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          api_key_id: string
+          created_at?: string
+          events?: string[]
+          id?: string
+          is_active?: boolean
+          last_triggered_at?: string | null
+          retry_count?: number
+          secret: string
+          timeout_seconds?: number
+          updated_at?: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          api_key_id?: string
+          created_at?: string
+          events?: string[]
+          id?: string
+          is_active?: boolean
+          last_triggered_at?: string | null
+          retry_count?: number
+          secret?: string
+          timeout_seconds?: number
+          updated_at?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_configs_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       analysis_health: {
@@ -1579,6 +1727,10 @@ export type Database = {
       }
       check_analysis_limit: {
         Args: { p_user_id: string }
+        Returns: boolean
+      }
+      check_api_rate_limit: {
+        Args: { p_api_key_id: string; p_rate_limit: number }
         Returns: boolean
       }
       check_rate_limit: {
@@ -1657,6 +1809,20 @@ export type Database = {
         Args: { "": string } | { "": unknown } | { "": unknown }
         Returns: unknown
       }
+      log_api_usage: {
+        Args: {
+          p_api_key_id: string
+          p_endpoint: string
+          p_method: string
+          p_status_code: number
+          p_response_time_ms?: number
+          p_request_size_bytes?: number
+          p_response_size_bytes?: number
+          p_ip_address?: unknown
+          p_user_agent?: string
+        }
+        Returns: undefined
+      }
       match_knowledge: {
         Args: {
           query_embedding: string
@@ -1710,6 +1876,16 @@ export type Database = {
       sparsevec_typmod_in: {
         Args: { "": unknown[] }
         Returns: number
+      }
+      validate_api_key: {
+        Args: { p_key_hash: string }
+        Returns: {
+          api_key_id: string
+          user_id: string
+          permissions: Json
+          rate_limit_per_hour: number
+          is_valid: boolean
+        }[]
       }
       vector_avg: {
         Args: { "": number[] }
