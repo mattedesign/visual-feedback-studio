@@ -240,6 +240,17 @@ serve(async (req) => {
 
     console.log('🤖 Calling Claude Sonnet 4 for comprehensive analysis...');
 
+    // Prepare summarized vision data to avoid token limits
+    const visionSummary = visionResults.map(result => ({
+      fileName: result.fileName,
+      detectedText: result.visionData?.textAnnotations?.slice(0, 5)?.map(t => t.description?.substring(0, 100)) || [],
+      labels: result.visionData?.labelAnnotations?.slice(0, 10)?.map(l => l.description) || [],
+      colors: result.visionData?.imagePropertiesAnnotation?.dominantColors?.colors?.slice(0, 3) || [],
+      objects: result.visionData?.localizedObjectAnnotations?.slice(0, 5)?.map(o => o.name) || [],
+      webEntities: result.visionData?.webDetection?.webEntities?.slice(0, 3)?.map(e => e.description) || [],
+      error: result.error
+    }));
+
     // Generate expert-level analysis prompt
     const analysisPrompt = `You are a Senior Principal UX Designer with 15+ years of experience at top tech companies (Google, Apple, Microsoft, Airbnb). You're analyzing UI/UX designs with the following context:
 
@@ -249,8 +260,8 @@ ANALYSIS CONTEXT:
 - Business Goals: ${analysisContext.businessGoals.join(', ') || 'Not specified'}
 - Number of Images: ${analysisContext.imageCount}
 
-TECHNICAL VISION DATA:
-${JSON.stringify(analysisContext.visionData, null, 2)}
+SUMMARIZED VISION DATA:
+${JSON.stringify(visionSummary, null, 2)}
 
 Provide a comprehensive UX analysis in JSON format with this structure:
 
