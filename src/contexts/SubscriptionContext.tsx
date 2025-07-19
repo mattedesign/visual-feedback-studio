@@ -15,6 +15,7 @@ interface SubscriptionData {
 interface SubscriptionContextType {
   subscription: SubscriptionData | null;
   loading: boolean;
+  isLoading: boolean;
   refreshSubscription: () => Promise<void>;
 }
 
@@ -123,6 +124,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
   const value: SubscriptionContextType = {
     subscription,
     loading,
+    isLoading: loading,
     refreshSubscription,
   };
 

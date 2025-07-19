@@ -123,7 +123,7 @@ const FigmantResultsPage = () => {
     issues.push(...claudeAnalysis.recommendations.map((rec: any) => ({
       title: rec.title || 'Recommendation',
       description: rec.description || 'Improvement recommendation',
-      severity: (rec.effort === 'Low' ? 'low' : rec.effort === 'High' ? 'high' : 'medium') as const,
+      severity: (rec.effort === 'Low' ? 'low' : rec.effort === 'High' ? 'high' : 'medium') as 'critical' | 'high' | 'medium' | 'low',
       category: rec.category || 'Improvement',
       solution: rec.solution,
       impact: rec.impact

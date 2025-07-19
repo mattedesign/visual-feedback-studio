@@ -42,12 +42,7 @@ export default function DashboardPage() {
             >
               ← Back to Dashboard
             </Button>
-            <FigmantAnalysisStudio 
-              onAnalysisComplete={() => {
-                // Could navigate to results page
-                console.log('Analysis completed');
-              }}
-            />
+            <FigmantAnalysisStudio />
           </div>
         </div>
       </DashboardLayout>
