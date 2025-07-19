@@ -1,0 +1,595 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Figmant UX Analyzer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 12px;
+      background: #fff;
+      color: #333;
+      overflow-x: hidden;
+    }
+
+    .container {
+      padding: 16px;
+      max-width: 100%;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+
+    .logo {
+      font-size: 18px;
+      font-weight: 600;
+      color: #0d9488;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      font-size: 11px;
+      color: #666;
+    }
+
+    .section {
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #333;
+    }
+
+    .input-group {
+      margin-bottom: 12px;
+    }
+
+    .label {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      margin-bottom: 4px;
+      color: #555;
+    }
+
+    .input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 12px;
+      transition: border-color 0.2s;
+    }
+
+    .input:focus {
+      outline: none;
+      border-color: #0d9488;
+      box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.1);
+    }
+
+    .textarea {
+      min-height: 60px;
+      resize: vertical;
+      font-family: inherit;
+    }
+
+    .button {
+      width: 100%;
+      padding: 10px 16px;
+      background: #0d9488;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .button:hover:not(:disabled) {
+      background: #0f766e;
+    }
+
+    .button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .button-secondary {
+      background: #f3f4f6;
+      color: #374151;
+      border: 1px solid #d1d5db;
+    }
+
+    .button-secondary:hover:not(:disabled) {
+      background: #e5e7eb;
+    }
+
+    .selection-info {
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+
+    .selection-status {
+      font-size: 11px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .selection-status.ready {
+      color: #059669;
+    }
+
+    .selection-status.empty {
+      color: #dc2626;
+    }
+
+    .selection-detail {
+      font-size: 10px;
+      color: #666;
+    }
+
+    .progress-container {
+      margin: 16px 0;
+      display: none;
+    }
+
+    .progress-container.show {
+      display: block;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #e5e7eb;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #0d9488;
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+
+    .progress-text {
+      font-size: 11px;
+      color: #666;
+      text-align: center;
+    }
+
+    .error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 11px;
+      margin-bottom: 12px;
+      display: none;
+    }
+
+    .error.show {
+      display: block;
+    }
+
+    .success {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #059669;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 11px;
+      margin-bottom: 12px;
+      display: none;
+    }
+
+    .success.show {
+      display: block;
+    }
+
+    .api-key-section {
+      background: #fefce8;
+      border: 1px solid #fef08a;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+
+    .api-key-section.configured {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+    }
+
+    .api-status {
+      font-size: 11px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .api-status.warning {
+      color: #d97706;
+    }
+
+    .api-status.success {
+      color: #059669;
+    }
+
+    .help-text {
+      font-size: 10px;
+      color: #666;
+      margin-top: 4px;
+      line-height: 1.3;
+    }
+
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid #ffffff40;
+      border-top: 2px solid #ffffff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .icon {
+      width: 14px;
+      height: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">Figmant</div>
+      <div class="subtitle">AI-Powered UX Analysis</div>
+    </div>
+
+    <!-- API Key Section -->
+    <div id="apiKeySection" class="api-key-section">
+      <div id="apiStatus" class="api-status warning">⚠️ API Key Required</div>
+      <div class="input-group">
+        <label class="label" for="apiKeyInput">API Key</label>
+        <input 
+          type="password" 
+          id="apiKeyInput" 
+          class="input" 
+          placeholder="Enter your Figmant API key"
+        >
+        <div class="help-text">
+          Get your API key from your Figmant dashboard settings
+        </div>
+      </div>
+      <button id="saveApiKey" class="button button-secondary">
+        Save API Key
+      </button>
+    </div>
+
+    <!-- Selection Info -->
+    <div class="selection-info">
+      <div id="selectionStatus" class="selection-status empty">
+        No frames selected
+      </div>
+      <div id="selectionDetail" class="selection-detail">
+        Select frames, components, or groups to analyze
+      </div>
+    </div>
+
+    <!-- Analysis Form -->
+    <div class="section">
+      <div class="section-title">Analysis Settings</div>
+      
+      <div class="input-group">
+        <label class="label" for="sessionTitle">Session Title (Optional)</label>
+        <input 
+          type="text" 
+          id="sessionTitle" 
+          class="input" 
+          placeholder="e.g., Dashboard Redesign Review"
+        >
+      </div>
+
+      <div class="input-group">
+        <label class="label" for="analysisContext">Analysis Context (Optional)</label>
+        <textarea 
+          id="analysisContext" 
+          class="input textarea" 
+          placeholder="What would you like to focus on? e.g., conversion optimization, accessibility, mobile responsiveness..."
+        ></textarea>
+        <div class="help-text">
+          Provide context to get more targeted analysis results
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div id="progressContainer" class="progress-container">
+      <div class="progress-bar">
+        <div id="progressFill" class="progress-fill"></div>
+      </div>
+      <div id="progressText" class="progress-text">Starting analysis...</div>
+    </div>
+
+    <!-- Messages -->
+    <div id="errorMessage" class="error"></div>
+    <div id="successMessage" class="success"></div>
+
+    <!-- Action Button -->
+    <button id="analyzeButton" class="button" disabled>
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+      </svg>
+      Analyze Selection
+    </button>
+  </div>
+
+  <script>
+    // State management
+    let state = {
+      apiKey: '',
+      hasApiKey: false,
+      selection: {
+        count: 0,
+        hasFrames: false,
+        frameCount: 0
+      },
+      isAnalyzing: false
+    };
+
+    // DOM elements
+    const elements = {
+      apiKeySection: document.getElementById('apiKeySection'),
+      apiStatus: document.getElementById('apiStatus'),
+      apiKeyInput: document.getElementById('apiKeyInput'),
+      saveApiKey: document.getElementById('saveApiKey'),
+      selectionStatus: document.getElementById('selectionStatus'),
+      selectionDetail: document.getElementById('selectionDetail'),
+      sessionTitle: document.getElementById('sessionTitle'),
+      analysisContext: document.getElementById('analysisContext'),
+      progressContainer: document.getElementById('progressContainer'),
+      progressFill: document.getElementById('progressFill'),
+      progressText: document.getElementById('progressText'),
+      errorMessage: document.getElementById('errorMessage'),
+      successMessage: document.getElementById('successMessage'),
+      analyzeButton: document.getElementById('analyzeButton')
+    };
+
+    // Initialize
+    function init() {
+      setupEventListeners();
+      requestConfig();
+      requestSelection();
+    }
+
+    function setupEventListeners() {
+      elements.saveApiKey.addEventListener('click', saveApiKey);
+      elements.analyzeButton.addEventListener('click', startAnalysis);
+      
+      elements.apiKeyInput.addEventListener('input', (e) => {
+        updateUI();
+      });
+    }
+
+    function requestConfig() {
+      parent.postMessage({ pluginMessage: { type: 'get-config' } }, '*');
+    }
+
+    function requestSelection() {
+      parent.postMessage({ pluginMessage: { type: 'get-selection' } }, '*');
+    }
+
+    function saveApiKey() {
+      const apiKey = elements.apiKeyInput.value.trim();
+      if (!apiKey) {
+        showError('Please enter an API key');
+        return;
+      }
+
+      parent.postMessage({ 
+        pluginMessage: { 
+          type: 'save-api-key', 
+          apiKey: apiKey 
+        } 
+      }, '*');
+    }
+
+    function startAnalysis() {
+      if (!canAnalyze()) return;
+
+      clearMessages();
+      state.isAnalyzing = true;
+      updateUI();
+
+      parent.postMessage({
+        pluginMessage: {
+          type: 'analyze-selection',
+          apiKey: state.apiKey || elements.apiKeyInput.value.trim(),
+          sessionTitle: elements.sessionTitle.value.trim(),
+          context: elements.analysisContext.value.trim()
+        }
+      }, '*');
+    }
+
+    function canAnalyze() {
+      const hasApiKey = state.hasApiKey || elements.apiKeyInput.value.trim();
+      const hasFrames = state.selection.hasFrames;
+      return hasApiKey && hasFrames && !state.isAnalyzing;
+    }
+
+    function updateUI() {
+      // API Key section
+      const currentApiKey = state.apiKey || elements.apiKeyInput.value.trim();
+      const hasCurrentApiKey = !!currentApiKey;
+
+      if (state.hasApiKey) {
+        elements.apiKeySection.className = 'api-key-section configured';
+        elements.apiStatus.className = 'api-status success';
+        elements.apiStatus.textContent = '✅ API Key Configured';
+      } else if (hasCurrentApiKey) {
+        elements.apiKeySection.className = 'api-key-section';
+        elements.apiStatus.className = 'api-status warning';
+        elements.apiStatus.textContent = '💾 Click Save to store API key';
+      } else {
+        elements.apiKeySection.className = 'api-key-section';
+        elements.apiStatus.className = 'api-status warning';
+        elements.apiStatus.textContent = '⚠️ API Key Required';
+      }
+
+      // Selection status
+      if (state.selection.frameCount > 0) {
+        elements.selectionStatus.className = 'selection-status ready';
+        elements.selectionStatus.textContent = `${state.selection.frameCount} frame${state.selection.frameCount !== 1 ? 's' : ''} selected`;
+        elements.selectionDetail.textContent = 'Ready for analysis';
+      } else if (state.selection.count > 0) {
+        elements.selectionStatus.className = 'selection-status empty';
+        elements.selectionStatus.textContent = `${state.selection.count} item${state.selection.count !== 1 ? 's' : ''} selected`;
+        elements.selectionDetail.textContent = 'Please select frames, components, or groups';
+      } else {
+        elements.selectionStatus.className = 'selection-status empty';
+        elements.selectionStatus.textContent = 'No items selected';
+        elements.selectionDetail.textContent = 'Select frames, components, or groups to analyze';
+      }
+
+      // Analyze button
+      elements.analyzeButton.disabled = !canAnalyze();
+      
+      if (state.isAnalyzing) {
+        elements.analyzeButton.innerHTML = `
+          <div class="spinner"></div>
+          Analyzing...
+        `;
+      } else {
+        elements.analyzeButton.innerHTML = `
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+          </svg>
+          Analyze Selection
+        `;
+      }
+    }
+
+    function showError(message) {
+      elements.errorMessage.textContent = message;
+      elements.errorMessage.className = 'error show';
+      elements.successMessage.className = 'success';
+    }
+
+    function showSuccess(message) {
+      elements.successMessage.textContent = message;
+      elements.successMessage.className = 'success show';
+      elements.errorMessage.className = 'error';
+    }
+
+    function clearMessages() {
+      elements.errorMessage.className = 'error';
+      elements.successMessage.className = 'success';
+    }
+
+    function showProgress(progress, message) {
+      elements.progressContainer.className = 'progress-container show';
+      elements.progressFill.style.width = `${progress}%`;
+      elements.progressText.textContent = message;
+    }
+
+    function hideProgress() {
+      elements.progressContainer.className = 'progress-container';
+    }
+
+    // Message handling
+    window.onmessage = (event) => {
+      const msg = event.data.pluginMessage;
+      if (!msg) return;
+
+      switch (msg.type) {
+        case 'config-response':
+          state.apiKey = msg.apiKey || '';
+          state.hasApiKey = !!msg.apiKey;
+          if (state.hasApiKey) {
+            elements.apiKeyInput.value = '••••••••';
+          }
+          updateUI();
+          break;
+
+        case 'api-key-saved':
+          state.apiKey = elements.apiKeyInput.value.trim();
+          state.hasApiKey = true;
+          elements.apiKeyInput.value = '••••••••';
+          showSuccess('API key saved successfully');
+          updateUI();
+          break;
+
+        case 'selection-update':
+          state.selection = {
+            count: msg.count,
+            hasFrames: msg.hasFrames,
+            frameCount: msg.frameCount || 0
+          };
+          updateUI();
+          break;
+
+        case 'analysis-start':
+          state.isAnalyzing = true;
+          clearMessages();
+          showProgress(0, 'Starting analysis...');
+          updateUI();
+          break;
+
+        case 'analysis-progress':
+          showProgress(msg.progress, msg.message);
+          break;
+
+        case 'analysis-complete':
+          state.isAnalyzing = false;
+          hideProgress();
+          showSuccess(`Analysis complete! Processed ${msg.imagesProcessed} of ${msg.totalImages} images. Check your Figmant dashboard for results.`);
+          updateUI();
+          break;
+
+        case 'analysis-error':
+          state.isAnalyzing = false;
+          hideProgress();
+          showError(msg.message);
+          updateUI();
+          break;
+
+        case 'error':
+          showError(msg.message);
+          break;
+
+        default:
+          console.log('Unknown message:', msg);
+      }
+    };
+
+    // Start the app
+    init();
+  </script>
+</body>
+</html>

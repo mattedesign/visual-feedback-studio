@@ -1,0 +1,25 @@
+
+{
+  "name": "figmant-figma-plugin",
+  "version": "1.0.0",
+  "description": "Figma plugin for Figmant UX analysis platform",
+  "main": "code.js",
+  "scripts": {
+    "build": "tsc --noEmit && echo 'TypeScript compilation successful'",
+    "watch": "tsc --watch --noEmit"
+  },
+  "keywords": [
+    "figma",
+    "plugin",
+    "ux",
+    "analysis",
+    "design",
+    "ai"
+  ],
+  "author": "Figmant",
+  "license": "MIT",
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.90.0",
+    "typescript": "^5.0.0"
+  }
+}
