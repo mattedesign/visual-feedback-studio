@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Upload, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -12,6 +13,7 @@ interface FigmantAnalysisStudioProps {
 
 export function FigmantAnalysisStudio({ onAnalysisComplete }: FigmantAnalysisStudioProps) {
   const { subscription, refreshSubscription } = useSubscription();
+  const navigate = useNavigate();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [sessionId] = useState(() => crypto.randomUUID());
   const [uploadedImages, setUploadedImages] = useState<any[]>([]);
@@ -100,6 +102,9 @@ export function FigmantAnalysisStudio({ onAnalysisComplete }: FigmantAnalysisStu
           if (onAnalysisComplete) {
             onAnalysisComplete(sessionId);
           }
+          
+          // Redirect to results page
+          navigate(`/analysis-results/${sessionId}`);
 
         } catch (error) {
           console.error('Analysis error:', error);

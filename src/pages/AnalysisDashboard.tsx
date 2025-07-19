@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 import { Upload, X, Eye, Download } from 'lucide-react';
 import { 
   createFigmantSession, 
@@ -23,6 +24,7 @@ interface AnalysisResult {
 const AnalysisDashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   const [session, setSession] = useState<FigmantSession | null>(null);
   const [images, setImages] = useState<FigmantImage[]>([]);
@@ -146,6 +148,9 @@ const AnalysisDashboard = () => {
             title: "Analysis Complete",
             description: "Your design analysis is ready!",
           });
+          
+          // Redirect to results page
+          navigate(`/analysis-results/${session.id}`);
         } catch (error) {
           attempts++;
           if (attempts < maxAttempts) {
