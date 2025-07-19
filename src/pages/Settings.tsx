@@ -1,10 +1,11 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Bell, Shield, Activity } from 'lucide-react';
+import { User, Bell, Shield, Activity, Key } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { ProfileSettings } from '@/components/settings/ProfileSettings';
 import { NotificationSettings } from '@/components/settings/NotificationSettings';
 import { PrivacySettings } from '@/components/settings/PrivacySettings';
+import { ApiKeyManagement } from '@/components/settings/ApiKeyManagement';
 import { AdminHealthDashboard } from '@/components/settings/AdminHealthDashboard';
 const Settings = () => {
   const {
@@ -28,6 +29,10 @@ const Settings = () => {
     value: 'privacy',
     label: 'Privacy',
     icon: Shield
+  }, {
+    value: 'api-keys',
+    label: 'API Keys',
+    icon: Key
   }];
   const adminTabs = [...userTabs, {
     value: 'health',
@@ -53,7 +58,7 @@ const Settings = () => {
       </div>
 
       <Tabs defaultValue={defaultTab} className="w-full space-y-6">
-        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'}`}>
+        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-5' : 'grid-cols-4'}`}>
           {availableTabs.map(tab => <TabsTrigger key={tab.value} value={tab.value} className="flex items-center gap-2">
               <tab.icon className="h-4 w-4" />
               {tab.label}
@@ -70,6 +75,10 @@ const Settings = () => {
 
         <TabsContent value="privacy" className="w-full">
           <PrivacySettings />
+        </TabsContent>
+
+        <TabsContent value="api-keys" className="w-full">
+          <ApiKeyManagement />
         </TabsContent>
 
         {isAdmin && <TabsContent value="health" className="w-full">
