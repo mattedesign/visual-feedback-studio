@@ -26,6 +26,7 @@ const navigationItems = [
   },
   {
     title: "Mentor",
+    href: "/mentor",
     badge: "112",
     items: []
   },
@@ -125,29 +126,62 @@ export const FigmantSidebar = () => {
         <div className="flex-1 p-4 space-y-6">
           {navigationItems.map((section, index) => (
             <div key={index}>
-              <div className="flex items-center gap-2 mb-3">
-                <div 
-                  className="w-2 h-2 rounded-full"
-                  style={{ background: '#22757C' }}
-                />
-                <span 
-                  className="text-sm font-medium"
-                  style={{ color: '#121212' }}
+              {section.href ? (
+                <NavLink
+                  to={section.href}
+                  className={`flex items-center gap-2 mb-3 p-2 rounded-md transition-colors ${
+                    isActive(section.href)
+                      ? 'bg-[#22757C]/10'
+                      : 'hover:bg-[#F1F1F1]'
+                  }`}
                 >
-                  {section.title}
-                </span>
-                {section.badge && (
+                  <div 
+                    className="w-2 h-2 rounded-full"
+                    style={{ background: '#22757C' }}
+                  />
                   <span 
-                    className="ml-auto text-xs px-2 py-0.5 rounded-full"
-                    style={{ 
-                      background: '#F1F1F1',
-                      color: '#7B7B7B'
-                    }}
+                    className="text-sm font-medium"
+                    style={{ color: isActive(section.href) ? '#22757C' : '#121212' }}
                   >
-                    {section.badge}
+                    {section.title}
                   </span>
-                )}
-              </div>
+                  {section.badge && (
+                    <span 
+                      className="ml-auto text-xs px-2 py-0.5 rounded-full"
+                      style={{ 
+                        background: '#F1F1F1',
+                        color: '#7B7B7B'
+                      }}
+                    >
+                      {section.badge}
+                    </span>
+                  )}
+                </NavLink>
+              ) : (
+                <div className="flex items-center gap-2 mb-3">
+                  <div 
+                    className="w-2 h-2 rounded-full"
+                    style={{ background: '#22757C' }}
+                  />
+                  <span 
+                    className="text-sm font-medium"
+                    style={{ color: '#121212' }}
+                  >
+                    {section.title}
+                  </span>
+                  {section.badge && (
+                    <span 
+                      className="ml-auto text-xs px-2 py-0.5 rounded-full"
+                      style={{ 
+                        background: '#F1F1F1',
+                        color: '#7B7B7B'
+                      }}
+                    >
+                      {section.badge}
+                    </span>
+                  )}
+                </div>
+              )}
               {section.items.length > 0 && (
                 <div className="ml-3 space-y-1">
                   {section.items.map((item) => (

@@ -22,6 +22,7 @@ import Settings from "./pages/Settings";
 import Help from "./pages/Help";
 import { AdminPanel } from "./pages/AdminPanel";
 import Subscription from "./pages/Subscription";
+import Mentor from "./pages/Mentor";
 import GoblinStudio from "./pages/goblin/GoblinStudio";
 import GoblinStudioPage from "./pages/goblin/GoblinStudioPage";
 import GoblinResults from "./pages/goblin/GoblinResults";
@@ -95,6 +96,7 @@ const App = () => {
                             <Route path="goblin" element={<GoblinStudioPage />} />
                             <Route path="goblin/results/:sessionId" element={<GoblinResults />} />
                             <Route path="history" element={<GoblinHistory />} />
+                            <Route path="mentor" element={<Mentor />} />
                             <Route path="settings" element={<Settings />} />
                             <Route path="subscription" element={<Subscription />} />
                             <Route path="help" element={<Help />} />
