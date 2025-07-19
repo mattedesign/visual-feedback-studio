@@ -165,7 +165,7 @@ Be direct, specific, and solution-focused. Every recommendation should be immedi
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-3-5-sonnet-20241022", // Updated to working model
+        model: "claude-sonnet-4-20250514", // Updated to Claude Sonnet 4
         max_tokens: 4000,
         messages: [{
           role: "user",
@@ -214,7 +214,7 @@ Be direct, specific, and solution-focused. Every recommendation should be immedi
           processedImages: analysisContext.visionData.length
         },
         processing_time_ms: processingTime,
-        ai_model_used: 'claude-3-5-sonnet-20241022'
+        ai_model_used: 'claude-sonnet-4-20250514'
       })
       .select()
       .single();

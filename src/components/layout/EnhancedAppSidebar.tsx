@@ -252,7 +252,7 @@ export function EnhancedAppSidebar() {
               <div className="flex items-center gap-2 mb-2">
                 <Crown className="w-4 h-4 text-primary" />
                 <span className="font-semibold text-sm">
-                  {subscription.plan_type === 'trial' ? 'Trial' : 'Pro'} Plan
+                  {subscription.tier === 'trial' ? 'Trial' : 'Pro'} Plan
                 </span>
               </div>
               <div className="text-xs text-muted-foreground mb-2">
