@@ -62,15 +62,27 @@ export const ApiKeyManagement = () => {
 
   const loadApiKeys = async () => {
     try {
+      console.log('🔑 Loading API keys...');
       const { data, error } = await supabase.functions.invoke('api-key-management', {
         method: 'GET'
       });
 
-      if (error) throw error;
-      setApiKeys(data || []);
+      console.log('🔑 API response:', { data, error });
+
+      if (error) {
+        console.error('🔑 Supabase function error:', error);
+        throw error;
+      }
+
+      // Ensure data is always an array
+      const keys = Array.isArray(data) ? data : [];
+      console.log('🔑 Setting API keys:', keys);
+      setApiKeys(keys);
     } catch (error) {
-      console.error('Error loading API keys:', error);
-      toast.error('Failed to load API keys');
+      console.error('🔑 Error loading API keys:', error);
+      toast.error('Failed to load API keys. The API key management service may not be available yet.');
+      // Always ensure apiKeys remains an array even on error
+      setApiKeys([]);
     } finally {
       setLoading(false);
     }
@@ -84,6 +96,7 @@ export const ApiKeyManagement = () => {
 
     setCreating(true);
     try {
+      console.log('🔑 Creating API key...');
       const { data, error } = await supabase.functions.invoke('api-key-management', {
         method: 'POST',
         body: JSON.stringify({
@@ -94,9 +107,12 @@ export const ApiKeyManagement = () => {
         })
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('🔑 Create API key error:', error);
+        throw error;
+      }
 
-      setNewApiKey(data.key);
+      setNewApiKey(data?.key || 'Error generating key');
       setNewKeyData({
         name: '',
         permissions: { read: true, write: false, webhook: false },
@@ -106,8 +122,8 @@ export const ApiKeyManagement = () => {
       await loadApiKeys();
       toast.success('API key created successfully');
     } catch (error) {
-      console.error('Error creating API key:', error);
-      toast.error('Failed to create API key');
+      console.error('🔑 Error creating API key:', error);
+      toast.error('Failed to create API key. The API key management service may not be available yet.');
     } finally {
       setCreating(false);
     }
@@ -331,7 +347,7 @@ export const ApiKeyManagement = () => {
         )}
 
         {/* API Keys List */}
-        {apiKeys.length === 0 ? (
+        {!Array.isArray(apiKeys) || apiKeys.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <Key className="w-12 h-12 mx-auto mb-4 opacity-50" />
             <h3 className="text-lg font-medium mb-2">No API Keys</h3>
