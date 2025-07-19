@@ -24,21 +24,25 @@ export function FigmantImageGrid({ images, onImageSelect, analysisData }: ImageG
   };
 
   const getAnnotationCount = (image: FigmantImage) => {
-    // Extract annotation count from analysis data
-    // For now, using mock data based on upload order
-    const mockCounts = [4, 0, 0, 0];
-    return mockCounts[image.upload_order - 1] || 0;
+    if (!analysisData?.claude_analysis) return 0;
+    
+    const claudeAnalysis = analysisData.claude_analysis;
+    const criticalIssues = claudeAnalysis.criticalIssues || [];
+    const recommendations = claudeAnalysis.recommendations || [];
+    
+    // For the first image (main interface), show all issues
+    // For other images, distribute issues or show 0 for now
+    if (image.upload_order === 1) {
+      return criticalIssues.length + Math.min(recommendations.length, 2);
+    }
+    return 0;
   };
 
   const getImageTitle = (image: FigmantImage) => {
-    // Extract meaningful titles from analysis or use filename
-    const mockTitles = [
-      'SaaS Website Landing Page',
-      'Cute Shop Storefront Icon', 
-      'Futuristic Humanoid Robot',
-      'Cloud Solution Dashboard'
-    ];
-    return mockTitles[image.upload_order - 1] || image.file_name;
+    // Use filename without extension as title, cleaned up
+    const nameWithoutExt = image.file_name.replace(/\.(jpg|jpeg|png|gif|webp)$/i, '');
+    const cleanName = nameWithoutExt.replace(/[_-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return cleanName || `Image ${image.upload_order}`;
   };
 
   return (

@@ -68,64 +68,84 @@ export function FigmantImageDetail({ image, analysisData, onBack }: ImageDetailP
     }
   };
 
-  // Mock annotations for demo - in reality these would come from analysis data
-  const mockAnnotations: Annotation[] = image.upload_order === 1 ? [
-    {
-      id: '1',
-      x: 25,
-      y: 35,
-      title: 'Color Contrast Issue',
-      content: 'Insufficient color contrast ratios throughout the interface, particularly with light gray text on white backgrounds. This violates WCAG AA standards.',
-      severity: 'critical',
-      category: 'Accessibility'
-    },
-    {
-      id: '2', 
-      x: 60,
-      y: 70,
-      title: 'Call-to-Action Visibility',
-      content: 'The primary CTA button lacks visual prominence. Consider using a higher contrast color and increasing the size.',
-      severity: 'high',
-      category: 'Conversion'
-    },
-    {
-      id: '3',
-      x: 80,
-      y: 20,
-      title: 'Navigation Clarity', 
-      content: 'Navigation items could benefit from better visual hierarchy and clearer labeling.',
-      severity: 'medium',
-      category: 'Usability'
-    },
-    {
-      id: '4',
-      x: 45,
-      y: 55,
-      title: 'Typography Enhancement',
-      content: 'Consider increasing font size for better readability on mobile devices.',
-      severity: 'low',
-      category: 'Typography'
-    }
-  ] : [];
+  // Extract real annotations from analysis data
+  const getRealAnnotations = (): Annotation[] => {
+    if (!analysisData?.claude_analysis || image.upload_order !== 1) return [];
+    
+    const claudeAnalysis = analysisData.claude_analysis;
+    const criticalIssues = claudeAnalysis.criticalIssues || [];
+    const recommendations = claudeAnalysis.recommendations || [];
+    const accessibilityIssues = claudeAnalysis.accessibilityAudit?.issues || [];
+    
+    const annotations: Annotation[] = [];
+    let annotationId = 1;
+    
+    // Add critical issues as annotations
+    criticalIssues.forEach((issue: any, index: number) => {
+      // Distribute positions across the image
+      const positions = [
+        { x: 25, y: 35 }, { x: 70, y: 25 }, { x: 80, y: 60 }, { x: 40, y: 75 }
+      ];
+      const pos = positions[index % positions.length];
+      
+      annotations.push({
+        id: annotationId.toString(),
+        x: pos.x,
+        y: pos.y,
+        title: issue.issue || issue.title || 'Critical Issue',
+        content: issue.solution || issue.impact || issue.description || 'Critical issue identified',
+        severity: 'critical',
+        category: issue.category || 'Critical'
+      });
+      annotationId++;
+    });
+    
+    // Add top recommendations as annotations
+    recommendations.slice(0, 2).forEach((rec: any, index: number) => {
+      const positions = [
+        { x: 60, y: 45 }, { x: 30, y: 65 }
+      ];
+      const pos = positions[index];
+      
+      const severity = rec.effort === 'Low' ? 'low' : rec.effort === 'High' ? 'high' : 'medium';
+      
+      annotations.push({
+        id: annotationId.toString(),
+        x: pos.x,
+        y: pos.y,
+        title: rec.title || 'Recommendation',
+        content: rec.description || 'Improvement recommendation',
+        severity: severity as 'critical' | 'high' | 'medium' | 'low',
+        category: rec.category || 'Improvement'
+      });
+      annotationId++;
+    });
+    
+    return annotations;
+  };
 
-  const mockComments = [
-    {
+  const realAnnotations = getRealAnnotations();
+
+  // Generate AI-powered insights as comments
+  const getAIComments = () => {
+    if (!analysisData?.claude_analysis?.executiveSummary) return [];
+    
+    return [{
       id: '1',
-      author: 'Luna Starfield',
-      avatar: 'LS',
-      content: 'I love this design, it looks great. Could you make it What do you recommend I do to fix it? 🤔',
-      timestamp: '2s'
-    }
-  ];
+      author: 'Claude AI',
+      avatar: 'AI',
+      content: analysisData.claude_analysis.executiveSummary.slice(0, 120) + '...',
+      timestamp: 'Analysis'
+    }];
+  };
+
+  const aiComments = getAIComments();
 
   const getImageTitle = (image: FigmantImage) => {
-    const mockTitles = [
-      'SaaS Website Landing Page',
-      'Cute Shop Storefront Icon', 
-      'Futuristic Humanoid Robot',
-      'Cloud Solution Dashboard'
-    ];
-    return mockTitles[image.upload_order - 1] || image.file_name;
+    // Use filename without extension as title, cleaned up
+    const nameWithoutExt = image.file_name.replace(/\.(jpg|jpeg|png|gif|webp)$/i, '');
+    const cleanName = nameWithoutExt.replace(/[_-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return cleanName || `Image ${image.upload_order}`;
   };
 
   const overallScore = analysisData?.claude_analysis?.overallScore || 72;
@@ -149,7 +169,7 @@ export function FigmantImageDetail({ image, analysisData, onBack }: ImageDetailP
           <div>
             <h1 className="text-xl font-semibold text-[#121212]">{getImageTitle(image)}</h1>
             <p className="text-sm text-[#7B7B7B]">
-              {mockAnnotations.length} Annotations • Overall Score: {overallScore}/100
+              {realAnnotations.length} Annotations • Overall Score: {overallScore}/100
             </p>
           </div>
         </div>
@@ -166,7 +186,7 @@ export function FigmantImageDetail({ image, analysisData, onBack }: ImageDetailP
             />
             
             {/* Annotation Markers */}
-            {mockAnnotations.map((annotation) => (
+            {realAnnotations.map((annotation) => (
               <button
                 key={annotation.id}
                 className="absolute w-8 h-8 bg-[#22757C] text-white rounded-full flex items-center justify-center text-sm font-semibold shadow-lg hover:scale-110 transition-transform"
@@ -181,8 +201,8 @@ export function FigmantImageDetail({ image, analysisData, onBack }: ImageDetailP
               </button>
             ))}
 
-            {/* Comments Overlay */}
-            {mockComments.map((comment, index) => (
+            {/* AI Analysis Comments Overlay */}
+            {aiComments.map((comment, index) => (
               <div
                 key={comment.id}
                 className="absolute bg-white rounded-lg shadow-lg p-3 max-w-xs"
@@ -233,11 +253,21 @@ export function FigmantImageDetail({ image, analysisData, onBack }: ImageDetailP
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Critical Issues</span>
-                    <span className="font-semibold text-red-600">{issues.length}</span>
+                    <span className="font-semibold text-red-600">
+                      {analysisData?.claude_analysis?.criticalIssues?.length || 0}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Recommendations</span>
-                    <span className="font-semibold text-blue-600">{recommendations.length}</span>
+                    <span className="font-semibold text-blue-600">
+                      {analysisData?.claude_analysis?.recommendations?.length || 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Accessibility Issues</span>
+                    <span className="font-semibold text-orange-600">
+                      {analysisData?.claude_analysis?.accessibilityAudit?.issues?.length || 0}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -261,9 +291,9 @@ export function FigmantImageDetail({ image, analysisData, onBack }: ImageDetailP
 
               {/* All Annotations List */}
               <div>
-                <h3 className="font-semibold mb-2">All Annotations ({mockAnnotations.length})</h3>
+                <h3 className="font-semibold mb-2">All Annotations ({realAnnotations.length})</h3>
                 <div className="space-y-2">
-                  {mockAnnotations.map((annotation) => (
+                  {realAnnotations.map((annotation) => (
                     <div 
                       key={annotation.id}
                       className="p-2 border rounded cursor-pointer hover:bg-gray-50"
@@ -295,16 +325,22 @@ export function FigmantImageDetail({ image, analysisData, onBack }: ImageDetailP
                   </p>
                 </div>
 
-                {recommendations.length > 0 && (
+                {analysisData?.claude_analysis?.recommendations?.length > 0 && (
                   <div className="space-y-3">
-                    {recommendations.slice(0, 3).map((rec: any, index: number) => (
+                    {analysisData.claude_analysis.recommendations.slice(0, 3).map((rec: any, index: number) => (
                       <Card key={index} className="p-3">
                         <h4 className="font-medium text-sm mb-1">{rec.title}</h4>
                         <p className="text-xs text-gray-600 mb-2">{rec.description}</p>
                         <div className="flex gap-1">
                           <Badge variant="outline" className="text-xs">{rec.category}</Badge>
                           <Badge variant="secondary" className="text-xs">{rec.effort} effort</Badge>
+                          {rec.timeline && (
+                            <Badge variant="outline" className="text-xs">{rec.timeline}</Badge>
+                          )}
                         </div>
+                        {rec.expectedImpact && (
+                          <p className="text-xs text-green-600 mt-1">💡 {rec.expectedImpact}</p>
+                        )}
                       </Card>
                     ))}
                   </div>
