@@ -20,7 +20,7 @@ const navigationItems = [
   {
     title: "Analysis",
     items: [
-      { name: "Create New", href: "/", icon: LayoutDashboard },
+      { name: "Create New", href: "/create-new", icon: LayoutDashboard },
       { name: "History", href: "/history", icon: History },
     ]
   },
