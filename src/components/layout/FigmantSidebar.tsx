@@ -68,16 +68,6 @@ export const FigmantSidebar = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 md:gap-3 sm:gap-2 xs:gap-2">
             <FigmantLogo size={40} className="md:w-10 md:h-10 sm:w-8 sm:h-8 xs:w-6 xs:h-6" />
-            {!isCollapsed && (
-              <div className="flex-1">
-                <h2 className="font-semibold text-base md:text-base sm:text-sm xs:text-xs text-card-foreground">
-                  Figmant AI
-                </h2>
-                <p className="text-sm md:text-sm sm:text-xs xs:text-xs text-muted-foreground">
-                  Design Analysis Platform
-                </p>
-              </div>
-            )}
           </div>
           <Button 
             variant="ghost" 
