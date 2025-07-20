@@ -129,10 +129,10 @@ export function FigmantAnalysisStudio() {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-6 flex flex-col">
         {uploadedImages.length === 0 ? (
           // Upload State
-          <div className="h-full flex items-center justify-center">
+          <div className="flex-1 flex items-start justify-center pt-20">
             <Card className="w-full max-w-2xl">
               <CardContent className="p-8">
                 <div
