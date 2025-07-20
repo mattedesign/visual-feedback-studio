@@ -92,10 +92,14 @@ async function initializePlugin() {
 initializePlugin();
 
 // Listen for selection changes
-figma.on('selectionchange', () => {
+figma.on('selectionchange', async () => {
+  const sessionToken = await figma.clientStorage.getAsync('figmant_session_token');
   figma.ui.postMessage({
     type: 'selection-change',
-    data: { frames: getSelectedFrames() }
+    data: { 
+      frames: getSelectedFrames(),
+      isAuthenticated: !!sessionToken
+    }
   } as PluginMessage);
 });
 
