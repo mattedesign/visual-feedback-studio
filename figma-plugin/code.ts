@@ -168,7 +168,7 @@ figma.ui.onmessage = async (msg: UIMessage) => {
 
         // Trigger the analysis using the main analysis function
         try {
-          const analysisResponse = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/functions/v1/figmant-analyze-design', {
+          const analysisResponse = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/functions/v1/analyze-figmant-design', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
