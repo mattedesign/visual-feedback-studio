@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Sparkles, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import { ArrowLeft, Sparkles, AlertTriangle, CheckCircle, Info, Image as ImageIcon, ZoomIn } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AnalysisIssue {
   title: string;
@@ -16,6 +17,13 @@ interface AnalysisIssue {
   impact?: string;
 }
 
+interface SessionImage {
+  id: string;
+  file_name: string;
+  file_path: string;
+  upload_order: number;
+}
+
 interface ResultsContentProps {
   analysisData: any;
   sessionData: any;
@@ -24,6 +32,35 @@ interface ResultsContentProps {
 export const ResultsContent = ({ analysisData, sessionData }: ResultsContentProps) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'summary' | 'ideas'>('summary');
+  const [images, setImages] = useState<SessionImage[]>([]);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  // Fetch session images
+  useEffect(() => {
+    const fetchImages = async () => {
+      if (!sessionData?.id) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('figmant_session_images')
+          .select('id, file_name, file_path, upload_order')
+          .eq('session_id', sessionData.id)
+          .order('upload_order', { ascending: true });
+
+        if (error) {
+          console.error('Error fetching images:', error);
+          return;
+        }
+
+        console.log('📸 Loaded session images:', data);
+        setImages(data || []);
+      } catch (error) {
+        console.error('Error fetching images:', error);
+      }
+    };
+
+    fetchImages();
+  }, [sessionData?.id]);
 
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
@@ -272,6 +309,58 @@ export const ResultsContent = ({ analysisData, sessionData }: ResultsContentProp
               </Card>
             )}
 
+            {/* Analyzed Images */}
+            {images.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base font-medium text-[#121212] flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4" />
+                    Analyzed Images ({images.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {images.map((image, index) => {
+                      const imageUrl = supabase.storage
+                        .from('analysis-images')
+                        .getPublicUrl(image.file_path).data.publicUrl;
+                      
+                      return (
+                        <div key={image.id} className="group relative">
+                          <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden border border-[#E2E2E2]">
+                            <img
+                              src={imageUrl}
+                              alt={image.file_name}
+                              className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                              onError={(e) => {
+                                console.error('Failed to load image:', imageUrl);
+                                e.currentTarget.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23f3f4f6"/><text x="50" y="50" text-anchor="middle" dy="0.3em" font-family="sans-serif" font-size="12" fill="%23666">Image not found</text></svg>';
+                              }}
+                            />
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                onClick={() => setSelectedImage(imageUrl)}
+                              >
+                                <ZoomIn className="w-4 h-4 mr-2" />
+                                View
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="mt-2">
+                            <p className="text-sm font-medium text-[#121212] truncate">{image.file_name}</p>
+                            <p className="text-xs text-[#7B7B7B]">Image {index + 1}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Analysis Overview */}
             <Card>
               <CardHeader>
@@ -380,6 +469,31 @@ export const ResultsContent = ({ analysisData, sessionData }: ResultsContentProp
           </div>
         )}
       </div>
+
+      {/* Image Modal */}
+      {selectedImage && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className="relative max-w-4xl max-h-full">
+            <img
+              src={selectedImage}
+              alt="Full size view"
+              className="max-w-full max-h-full object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <Button
+              variant="secondary"
+              size="sm"
+              className="absolute top-4 right-4"
+              onClick={() => setSelectedImage(null)}
+            >
+              ✕
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
