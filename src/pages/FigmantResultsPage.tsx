@@ -208,31 +208,13 @@ const FigmantResultsPage = () => {
     setSelectedImage(null);
   };
 
-  // Enhanced Figmant sidebar layout for results view
+  // Results view - just render the main content, let FigmantLayout handle the sidebar
   if (currentView === 'results') {
     return (
-      <div className="figmant-layout h-full">
-        {/* Figmant Sidebar with Tabs */}
-        <FigmantSidebar 
-          showTabs={true}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          chatContent={
-            <ResultsChat 
-              analysisData={analysisData}
-              sessionId={sessionData?.id || sessionId!}
-            />
-          }
-        />
-        
-        {/* Main Content */}
-        <div className="figmant-main">
-          <ResultsContent 
-            analysisData={analysisData}
-            sessionData={sessionData}
-          />
-        </div>
-      </div>
+      <ResultsContent 
+        analysisData={analysisData}
+        sessionData={sessionData}
+      />
     );
   }
 
@@ -260,31 +242,13 @@ const FigmantResultsPage = () => {
     );
   }
 
-  // Fallback: Show results even without images using the enhanced sidebar layout
+  // Fallback: Show results even without images
   if (analysisData) {
     return (
-      <div className="figmant-layout h-full">
-        {/* Figmant Sidebar with Tabs */}
-        <FigmantSidebar 
-          showTabs={true}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          chatContent={
-            <ResultsChat 
-              analysisData={analysisData}
-              sessionId={sessionData?.id || sessionId!}
-            />
-          }
-        />
-        
-        {/* Main Content */}
-        <div className="figmant-main">
-          <ResultsContent 
-            analysisData={analysisData}
-            sessionData={sessionData}
-          />
-        </div>
-      </div>
+      <ResultsContent 
+        analysisData={analysisData}
+        sessionData={sessionData}
+      />
     );
   }
 

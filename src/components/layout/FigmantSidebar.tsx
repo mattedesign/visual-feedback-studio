@@ -4,25 +4,19 @@ import { LayoutDashboard, Sparkles, Settings, Crown, ChevronDown, ChevronRight, 
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { FigmantLogo } from '@/components/ui/figmant-logo';
 import { Button } from '@/components/ui/button';
+import { ResultsChat } from '@/components/analysis/results/ResultsChat';
 
-interface FigmantSidebarProps {
-  showTabs?: boolean;
-  activeTab?: 'menu' | 'chat';
-  onTabChange?: (tab: 'menu' | 'chat') => void;
-  chatContent?: React.ReactNode;
-}
-export const FigmantSidebar = ({ 
-  showTabs = false, 
-  activeTab = 'menu', 
-  onTabChange, 
-  chatContent 
-}: FigmantSidebarProps = {}) => {
+export const FigmantSidebar = () => {
   const location = useLocation();
-  const {
-    subscription
-  } = useSubscription();
+  const { subscription } = useSubscription();
   const [isAnalysisExpanded, setIsAnalysisExpanded] = useState(true);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [activeTab, setActiveTab] = useState<'menu' | 'chat'>('chat');
+  
+  // Check if we're on an analysis results page
+  const isOnAnalysisResults = location.pathname.startsWith('/analysis');
+  const showTabs = isOnAnalysisResults;
+  
   const isActive = (path: string) => location.pathname === path;
   const pagesItems = [{
     icon: LayoutDashboard,
@@ -52,6 +46,7 @@ export const FigmantSidebar = ({
     href: '/subscription',
     isActive: isActive('/subscription')
   }];
+  
   const recentAnalysisItems = [{
     icon: Box,
     label: 'Dashboard Analysis',
@@ -73,6 +68,7 @@ export const FigmantSidebar = ({
     isActive: false,
     color: 'text-gray-600'
   }];
+
   return (
     <div className={`figmant-sidebar transition-all duration-300 ${isCollapsed ? 'w-16' : ''}`}>
       <div className="h-full flex flex-col rounded-lg">
@@ -92,7 +88,7 @@ export const FigmantSidebar = ({
             </Button>
           </div>
           
-          {/* Tab Navigation - only show if showTabs is true */}
+          {/* Tab Navigation - only show if we're on analysis results */}
           {showTabs && (
             <div className="mt-4">
               <div className="flex bg-muted rounded-lg p-1">
@@ -100,7 +96,7 @@ export const FigmantSidebar = ({
                   variant={activeTab === 'menu' ? 'secondary' : 'ghost'} 
                   size="sm" 
                   className="flex-1"
-                  onClick={() => onTabChange?.('menu')}
+                  onClick={() => setActiveTab('menu')}
                 >
                   Menu
                 </Button>
@@ -108,7 +104,7 @@ export const FigmantSidebar = ({
                   variant={activeTab === 'chat' ? 'secondary' : 'ghost'} 
                   size="sm" 
                   className="flex-1"
-                  onClick={() => onTabChange?.('chat')}
+                  onClick={() => setActiveTab('chat')}
                 >
                   Chat
                 </Button>
@@ -117,10 +113,13 @@ export const FigmantSidebar = ({
           )}
         </div>
 
-        {/* Content - show chat if chat tab is active and showTabs is true, otherwise show menu */}
-        {showTabs && activeTab === 'chat' && chatContent ? (
+        {/* Content - show chat if chat tab is active and we're on analysis results, otherwise show menu */}
+        {showTabs && activeTab === 'chat' ? (
           <div className="flex-1 overflow-hidden">
-            {chatContent}
+            <ResultsChat 
+              analysisData={null} // Will be passed proper data when integrated
+              sessionId={location.pathname.split('/').pop() || ''}
+            />
           </div>
         ) : (
           <>
