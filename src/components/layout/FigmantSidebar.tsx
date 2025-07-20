@@ -114,7 +114,7 @@ export const FigmantSidebar = () => {
 
 
       {/* Credit Alert */}
-      <div className="p-6 mt-auto md:p-6 sm:p-4 xs:p-3 px-[8px] py-[8px]">
+      <div className="mt-auto p-3">
         <div className="flex flex-col items-start gap-1.5 self-stretch rounded-2xl p-[14px]" style={{background: '#E7EEEF'}}>
           <div className="flex items-center gap-2 mb-2">
             <span className="text-lg md:text-lg sm:text-base xs:text-sm">🚀</span>
