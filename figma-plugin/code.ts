@@ -43,6 +43,10 @@ interface PluginExportSettings {
   sessionToken: string;
 }
 
+// Supabase configuration
+const SUPABASE_URL = 'https://mxxtvtwcoplfajvazpav.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14eHR2dHdjb3BsZmFqdmF6cGF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2MDU2NjgsImV4cCI6MjA2NjE4MTY2OH0.b9sNxeDALujnw2tQD-qnbs3YkZvvTkja8jG6clgpibA';
+
 // Show UI
 figma.showUI(__html__, {
   width: 420,
@@ -110,11 +114,11 @@ figma.ui.onmessage = async (msg: UIMessage) => {
       console.log('🔐 Attempting login...');
       
       // Login user with Supabase
-      const response = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/auth/v1/token?grant_type=password', {
+      const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14eHR2dHdjb3BsZmFqdmF6cGF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2MDU2NjgsImV4cCI6MjA2NjE4MTY2OH0.b9sNxeDALujnw2tQD-qnbs3YkZvvTkja8jG6clgpibA'
+          'apikey': SUPABASE_ANON_KEY
         },
         body: JSON.stringify({
           email: msg.email,
@@ -171,11 +175,12 @@ figma.ui.onmessage = async (msg: UIMessage) => {
       
       if (sessionToken) {
         // Verify token is still valid by checking subscription
-        const response = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/functions/v1/figmant-check-subscription', {
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/figmant-check-subscription`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${sessionToken}`
+            'Authorization': `Bearer ${sessionToken}`,
+            'apikey': SUPABASE_ANON_KEY  // ✅ ADDED
           }
         });
 
@@ -345,11 +350,12 @@ figma.ui.onmessage = async (msg: UIMessage) => {
         console.log('🔑 Using session token for upload:', settings.sessionToken ? 'Token exists' : 'No token');
         console.log('🔑 Token preview:', settings.sessionToken ? settings.sessionToken.substring(0, 20) + '...' : 'undefined');
         
-        const uploadResponse = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/functions/v1/figmant-plugin-api', {
+        const uploadResponse = await fetch(`${SUPABASE_URL}/functions/v1/figmant-plugin-api`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${settings.sessionToken}`
+            'Authorization': `Bearer ${settings.sessionToken}`,
+            'apikey': SUPABASE_ANON_KEY  // ✅ ADDED
           },
           body: JSON.stringify({
             images,
@@ -388,14 +394,15 @@ figma.ui.onmessage = async (msg: UIMessage) => {
         try {
           console.log('🧠 Starting analysis for session:', sessionId);
           
-          const analysisResponse = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/functions/v1/figmant-analyze-design', {
+          const analysisResponse = await fetch(`${SUPABASE_URL}/functions/v1/figmant-analyze-design`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${settings.sessionToken}`
+              'Authorization': `Bearer ${settings.sessionToken}`,
+              'apikey': SUPABASE_ANON_KEY  // ✅ THIS IS THE KEY FIX - ADDED APIKEY HEADER
             },
             body: JSON.stringify({
-              sessionId: sessionId  // FIXED: Changed from session_id to sessionId
+              sessionId: sessionId  // Already fixed from session_id
             })
           });
 
