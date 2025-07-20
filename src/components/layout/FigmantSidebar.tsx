@@ -82,7 +82,7 @@ export const FigmantSidebar = () => {
 
       {/* Pages Section */}
       <div className="px-4 pb-4 md:px-4 sm:px-3 xs:px-2">
-        <h3 className="text-sm font-medium text-muted-foreground mb-4 md:text-sm sm:text-xs xs:text-xs hidden sm:block">Pages</h3>
+        <h3 className="sidebar-section-header mb-4 hidden sm:block">Pages</h3>
         <div className="space-y-1">
           {pagesItems.map((item, index) => (
             <div key={index}>

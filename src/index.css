@@ -205,4 +205,15 @@
   .chart-color-3 { @apply text-[hsl(var(--chart-3))]; }
   .chart-color-4 { @apply text-[hsl(var(--chart-4))]; }
   .chart-color-5 { @apply text-[hsl(var(--chart-5))]; }
+  
+  /* Sidebar section headers */
+  .sidebar-section-header {
+    color: var(--Text-Secondary, #7B7B7B);
+    font-family: Inter;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 16px; /* 133.333% */
+    letter-spacing: -0.12px;
+  }
 }
