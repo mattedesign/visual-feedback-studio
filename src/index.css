@@ -43,6 +43,10 @@
     --input: 214 32% 91%;
     --ring: 175 75% 35%;
     
+    /* Gray scale tokens for proper text hierarchy */
+    --gray-500: 220 9% 46%;
+    --gray-600: 220 9% 36%;
+    
     /* Status colors */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
@@ -132,7 +136,6 @@
     border-radius: 20px;
     border: 1px solid var(--Stroke-02, #E2E2E2);
     background: var(--Surface-01, #FCFCFC);
-    color: #6B7280; /* text-gray-500 */
     clip-path: inset(0 round 20px);
   }
   
