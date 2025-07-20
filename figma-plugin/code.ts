@@ -344,8 +344,12 @@ figma.ui.onmessage = async (msg: UIMessage) => {
       if (!isValidToken) {
         console.log('🔄 Session token invalid, requesting refresh...');
         figma.ui.postMessage({
-          type: 'token-refresh-needed'
-        });
+          type: 'export-error',
+          data: { 
+            error: 'Your session has expired. Please close the plugin and log in again in the web app before trying again.',
+            sessionExpired: true
+          }
+        } as PluginMessage);
         return;
       }
 
