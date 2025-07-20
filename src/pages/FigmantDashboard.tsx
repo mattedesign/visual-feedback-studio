@@ -97,21 +97,31 @@ export const FigmantDashboard = () => {
             </Button>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center w-full">
-              <Badge className="bg-sidebar text-sidebar-foreground flex-1">Accessibility</Badge>
-              <span className="text-sm font-medium ml-2">15%</span>
-            </div>
-            <div className="flex items-center w-full">
-              <Badge className="bg-secondary text-secondary-foreground flex-1">Conversion Metrics</Badge>
-              <span className="text-sm font-medium ml-2">54%</span>
-            </div>
-            <div className="flex items-center w-full">
-              <Badge className="bg-chart-1 text-white flex-1">PPT</Badge>
-              <span className="text-sm font-medium ml-2">50%</span>
-            </div>
-            <div className="flex items-center w-full">
-              <Badge className="bg-foreground text-background flex-1">Others</Badge>
-              <span className="text-sm font-medium ml-2">12%</span>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Badge className="bg-sidebar text-sidebar-foreground w-full justify-between">
+                  <span>Accessibility</span>
+                  <span className="text-sm font-medium">15%</span>
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <Badge className="bg-secondary text-secondary-foreground w-full justify-between">
+                  <span>Conversion Metrics</span>
+                  <span className="text-sm font-medium">54%</span>
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <Badge className="bg-chart-1 text-white w-full justify-between">
+                  <span>PPT</span>
+                  <span className="text-sm font-medium">50%</span>
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <Badge className="bg-foreground text-background w-full justify-between">
+                  <span>Others</span>
+                  <span className="text-sm font-medium">12%</span>
+                </Badge>
+              </div>
             </div>
           </CardContent>
         </Card>
