@@ -246,7 +246,7 @@ function generateAPIKey(): string {
   // Generate a cryptographically secure API key
   const array = new Uint8Array(32)
   crypto.getRandomValues(array)
-  return 'sk-' + Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
+  return 'fgm_' + Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
 }
 
 async function hashAPIKey(apiKey: string): Promise<string> {
