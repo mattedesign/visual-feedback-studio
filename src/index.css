@@ -149,6 +149,11 @@
   .figmant-main {
     @apply w-full flex-1 overflow-hidden flex flex-col;
     background-color: transparent;
+    width: 100%;
+  }
+  
+  .figmant-main * {
+    width: 100%;
   }
   
   .figmant-header {
