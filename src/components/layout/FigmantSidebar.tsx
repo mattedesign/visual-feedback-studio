@@ -63,7 +63,7 @@ export const FigmantSidebar = () => {
   return <div className="figmant-sidebar">
       <div className="h-full flex flex-col rounded-lg">
       {/* Header */}
-      <div className="p-6 md:p-6 sm:p-4 xs:p-3 px-[12px] py-[16px]">
+      <div className="p-4">
         <div className="flex items-center gap-3 md:gap-3 sm:gap-2 xs:gap-2">
           <FigmantLogo size={40} className="md:w-10 md:h-10 sm:w-8 sm:h-8 xs:w-6 xs:h-6" />
           <div className="flex-1 hidden sm:block">
