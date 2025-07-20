@@ -81,6 +81,8 @@ figma.on('selectionchange', () => {
     data: { frames: getSelectedFrames() }
   } as PluginMessage);
 });
+console.log('🔍 DEBUG: API key received:', settings.apiKey ? `${settings.apiKey.substring(0, 8)}...` : 'MISSING');
+console.log('🔍 DEBUG: Message type:', msg.type);
 
 // Handle messages from UI
 figma.ui.onmessage = async (msg: UIMessage) => {
