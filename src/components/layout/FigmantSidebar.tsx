@@ -90,7 +90,9 @@ export const FigmantSidebar = () => {
                   <div className="text-gray-600 hidden sm:block">
                     {item.isExpanded ? <ChevronDown className="w-4 h-4 md:w-4 md:h-4 sm:w-3 sm:h-3" /> : <ChevronRight className="w-4 h-4 md:w-4 md:h-4 sm:w-3 sm:h-3" />}
                   </div>
-                </button> : <NavLink to={item.href} className={({ isActive }) => `flex items-center justify-between px-3 py-3 md:px-3 md:py-3 sm:px-2 sm:py-2 xs:px-1 xs:py-1 rounded-lg transition-colors text-gray-600 ${isActive ? 'bg-muted' : 'hover:bg-muted/50'}`}>
+                </button> : <NavLink to={item.href} className={({
+              isActive
+            }) => `flex items-center justify-between px-3 py-3 md:px-3 md:py-3 sm:px-2 sm:py-2 xs:px-1 xs:py-1 rounded-lg transition-colors text-gray-600 ${isActive ? 'bg-muted' : 'hover:bg-muted/50'}`}>
                   <div className="flex items-center gap-3 md:gap-3 sm:gap-2 xs:gap-1">
                     <item.icon className="w-5 h-5 md:w-5 md:h-5 sm:w-4 sm:h-4 xs:w-4 xs:h-4 text-gray-600" />
                     <span className="font-medium text-sm md:text-sm sm:text-xs xs:hidden text-gray-600">{item.label}</span>
@@ -112,7 +114,7 @@ export const FigmantSidebar = () => {
 
 
       {/* Credit Alert */}
-      <div className="p-6 mt-auto md:p-6 sm:p-4 xs:p-3">
+      <div className="p-6 mt-auto md:p-6 sm:p-4 xs:p-3 px-[12px] py-[12px]">
         <div className="border border-border rounded-lg p-4 md:p-4 sm:p-3 xs:p-2 bg-card">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-lg md:text-lg sm:text-base xs:text-sm">🚀</span>
