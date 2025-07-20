@@ -31,10 +31,13 @@ serve(async (req) => {
     };
     console.log('🔴 DEBUG_FIGMANT: Environment check:', envCheck);
 
-    // Initialize Supabase client
+    // Initialize Supabase clients - dual client approach for proper JWT validation
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    
+    // Create service client for database operations
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // Validate API key if provided
     const apiKey = req.headers.get('x-api-key');
