@@ -47,14 +47,13 @@ export const ResultsChat = ({ analysisData, sessionId }: ResultsChatProps) => {
     setIsLoading(true);
 
     try {
-      console.log('🤖 Sending message to Claude via goblin-chat-analyzer-v2');
+      console.log('🤖 Sending message to Claude via figmant-chat-analyzer');
       
-      const { data, error } = await supabase.functions.invoke('goblin-chat-analyzer-v2', {
+      const { data, error } = await supabase.functions.invoke('figmant-chat-analyzer', {
         body: {
           message: message,
           sessionId: sessionId,
-          persona: 'clarity',
-          images: [] // No images in results chat for now
+          includeImages: true // Include images for context
         }
       });
 
@@ -73,7 +72,7 @@ export const ResultsChat = ({ analysisData, sessionId }: ResultsChatProps) => {
       const aiResponse: Message = {
         id: messages.length + 2,
         role: 'assistant',
-        content: data.response?.content || "I apologize, but I didn't receive a proper response. Could you try asking again?",
+        content: data.content || "I apologize, but I didn't receive a proper response. Could you try asking again?",
         timestamp: new Date()
       };
 
