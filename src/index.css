@@ -126,6 +126,10 @@
     color: #6B7280; /* text-gray-500 */
   }
   
+  .figmant-sidebar .text-sm {
+    font-size: 13px;
+  }
+  
   .figmant-main {
     @apply w-full flex-1 overflow-hidden flex flex-col;
     background-color: transparent;
