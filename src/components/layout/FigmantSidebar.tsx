@@ -89,7 +89,7 @@ export const FigmantSidebar = () => {
       </div>
 
       {/* Pages Section */}
-      <div className="px-6 pb-4">
+      <div className="px-4 pb-4">
         <h3 className="text-sm font-medium text-gray-400 mb-4">Pages</h3>
         <div className="space-y-1">
           {pagesItems.map((item, index) => (
@@ -176,7 +176,9 @@ export const FigmantSidebar = () => {
         <div className="border border-gray-200 rounded-lg p-4 bg-white">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-lg">🚀</span>
-            <span className="font-semibold text-gray-900">3 Analyses Left!</span>
+            <span className="font-semibold text-gray-900">
+              {subscription?.analysesRemaining || 0} Analyses Left!
+            </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
             <div className="bg-teal-500 h-2 rounded-full" style={{ width: '30%' }}></div>
