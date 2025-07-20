@@ -32,44 +32,58 @@ serve(async (req) => {
   }
 
   try {
-    // Initialize Supabase clients - dual client approach for proper JWT validation
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-
-    // Authenticate user from session token
+    // Get the authorization header
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Authorization header required' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'Authorization header required' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     const token = authHeader.replace("Bearer ", "");
-    
-    // Create auth client with anon key for JWT validation
-    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-      auth: { persistSession: false }
-    });
-    
+
+    // Create anon client for authentication
+    const supabaseAuth = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false
+        },
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      }
+    );
+
+    // Verify the user
     const { data: userData, error: userError } = await supabaseAuth.auth.getUser();
+    
     if (userError || !userData.user) {
       console.error('Authentication failed:', userError);
-      return new Response(
-        JSON.stringify({ error: 'Authentication failed' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'Authentication failed' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
-
-    // Create service client for database operations
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { persistSession: false }
-    });
 
     const userId = userData.user.id;
     console.log('🔍 Plugin API request from user:', userId);
+
+    // Create service role client for database operations
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      {
+        auth: {
+          persistSession: false
+        }
+      }
+    );
 
     // Check subscription and usage limits
     let { data: subscriber, error: subscriberError } = await supabase
@@ -84,7 +98,7 @@ serve(async (req) => {
         .from("subscribers")
         .insert({
           user_id: userId,
-          email: userData.user.email!,
+          email: userData.user.email,
           subscription_tier: 'trial',
           subscribed: false,
           analyses_used: 0,
