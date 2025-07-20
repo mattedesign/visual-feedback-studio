@@ -1,480 +1,373 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
+
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-api-key",
-};
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
+}
 
-console.log('🎨 Figmant Analysis Pipeline - Comprehensive UX Analysis v3.1');
+console.log('🎨 Figmant Analysis Pipeline - Comprehensive UX Analysis v3.2');
 
 serve(async (req) => {
   console.log('🔴 DEBUG_FIGMANT: Function entry point reached');
   console.log('🔴 DEBUG_FIGMANT: Request method:', req.method);
 
-  if (req.method === "OPTIONS") {
+  if (req.method === 'OPTIONS') {
     console.log('🔴 DEBUG_FIGMANT: Returning CORS response');
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders })
   }
-
-  let requestBody: any;
-  let sessionId: string;
-  const startTime = Date.now();
 
   try {
     console.log('🔴 DEBUG_FIGMANT: Starting analysis pipeline');
-
-    // Environment validation
-    const requiredEnvVars = {
-      SUPABASE_URL: Deno.env.get('SUPABASE_URL'),
-      SUPABASE_SERVICE_ROLE_KEY: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
-      ANTHROPIC_API_KEY: Deno.env.get('ANTHROPIC_API_KEY'),
-      GOOGLE_VISION_API_KEY: Deno.env.get('GOOGLE_VISION_API_KEY')
-    };
-
-    console.log('🔴 DEBUG_FIGMANT: Environment check:', {
-      hasSupabaseUrl: !!requiredEnvVars.SUPABASE_URL,
-      hasServiceKey: !!requiredEnvVars.SUPABASE_SERVICE_ROLE_KEY,
-      hasAnthropicKey: !!requiredEnvVars.ANTHROPIC_API_KEY,
-      hasGoogleVisionKey: !!requiredEnvVars.GOOGLE_VISION_API_KEY,
+    
+    // Environment check
+    const envCheck = {
+      hasSupabaseUrl: !!Deno.env.get('SUPABASE_URL'),
+      hasServiceKey: !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
+      hasAnthropicKey: !!Deno.env.get('ANTHROPIC_API_KEY'),
+      hasGoogleVisionKey: !!Deno.env.get('GOOGLE_VISION_API_KEY'),
       timestamp: new Date().toISOString()
-    });
+    };
+    console.log('🔴 DEBUG_FIGMANT: Environment check:', envCheck);
 
-    for (const [key, value] of Object.entries(requiredEnvVars)) {
-      if (!value) {
-        throw new Error(`Missing required environment variable: ${key}`);
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    // Validate API key if provided
+    const apiKey = req.headers.get('x-api-key');
+    if (apiKey) {
+      console.log('🔴 DEBUG_FIGMANT: API key provided, validating...');
+      // Hash the provided API key
+      const encoder = new TextEncoder();
+      const data = encoder.encode(apiKey);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const keyHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      
+      // Validate API key
+      const { data: keyData, error: keyError } = await supabase.rpc('validate_api_key', { p_key_hash: keyHash });
+      
+      if (keyError || !keyData || keyData.length === 0 || !keyData[0].is_valid) {
+        console.log('🔴 DEBUG_FIGMANT: Invalid API key');
+        return new Response(
+          JSON.stringify({ error: 'Invalid API key' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
+      console.log('🔴 DEBUG_FIGMANT: API key validated successfully');
     }
 
     // Parse request body
+    let requestBody;
     try {
-      requestBody = await req.json();
-      sessionId = requestBody.sessionId;
-      console.log('📥 Received request:', {
-        sessionId: sessionId?.substring(0, 8),
-        timestamp: new Date().toISOString()
-      });
+      const bodyText = await req.text();
+      console.log('📥 Raw request body:', bodyText);
+      
+      if (!bodyText) {
+        throw new Error('Request body is empty');
+      }
+      
+      requestBody = JSON.parse(bodyText);
+      console.log('📥 Parsed request body:', requestBody);
     } catch (parseError) {
       console.error('❌ Failed to parse request body:', parseError);
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Invalid request body - must be valid JSON',
-          details: parseError.message,
-          stage: 'request_parsing'
+        JSON.stringify({ 
+          error: 'Invalid JSON in request body',
+          details: parseError.message 
         }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Extract sessionId with multiple possible field names
+    const sessionId = requestBody.session_id || requestBody.sessionId;
+    
+    const requestInfo = {
+      sessionId: sessionId,
+      timestamp: new Date().toISOString()
+    };
+    console.log('📥 Received request:', requestInfo);
 
     if (!sessionId) {
       console.error('❌ Missing sessionId in request');
       return new Response(
-        JSON.stringify({
-          success: false,
+        JSON.stringify({ 
           error: 'sessionId is required',
-          stage: 'validation'
+          received: requestBody,
+          expectedFields: ['session_id', 'sessionId']
         }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
     }
 
-    // Initialize Supabase client
-    const supabase = createClient(
-      requiredEnvVars.SUPABASE_URL!,
-      requiredEnvVars.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        db: { schema: 'public' },
-        global: {
-          headers: { 'x-client-info': 'figmant-analyzer@3.1' }
-        }
-      }
-    );
+    console.log('🔴 DEBUG_FIGMANT: Starting analysis for session:', sessionId);
 
-    console.log('🔗 Testing database connection...');
-    const { error: connectionTest } = await supabase
-      .from('figmant_analysis_sessions')
-      .select('id')
-      .limit(1);
+    console.log('Starting analysis for session:', sessionId)
 
-    if (connectionTest) {
-      throw new Error(`Database connection failed: ${connectionTest.message}`);
-    }
-
-    // Get session with authentication check (support both JWT and API key)
-    console.log('📋 Fetching session details...');
-    let userId: string;
-    
-    // Check for API key authentication first
-    const apiKey = req.headers.get('x-api-key');
-    const authHeader = req.headers.get("Authorization");
-    
-    if (apiKey) {
-      // API key authentication
-      console.log('🔑 Using API key authentication');
-      const keyHash = await hashAPIKey(apiKey);
-      
-      const { data: keyData, error: keyError } = await supabase.rpc('validate_api_key', {
-        p_key_hash: keyHash
-      });
-
-      if (keyError || !keyData || keyData.length === 0 || !keyData[0].is_valid) {
-        throw new Error("Invalid API key");
-      }
-      
-      if (!keyData[0].permissions.write) {
-        throw new Error("Insufficient API key permissions");
-      }
-      
-      userId = keyData[0].user_id;
-    } else if (authHeader) {
-      // JWT authentication
-      console.log('🎫 Using JWT authentication');
-      const token = authHeader.replace("Bearer ", "");
-      const { data: userData, error: userError } = await supabase.auth.getUser(token);
-      if (userError || !userData.user) {
-        throw new Error("Authentication failed");
-      }
-      userId = userData.user.id;
-    } else {
-      throw new Error("No authentication provided");
-    }
-
+    // Get session and images
     const { data: session, error: sessionError } = await supabase
-      .from("figmant_analysis_sessions")
-      .select(`
-        *,
-        figmant_session_images (*)
-      `)
-      .eq("id", sessionId)
-      .eq("user_id", userId)
-      .single();
+      .from('figmant_analysis_sessions')
+      .select('*')
+      .eq('id', sessionId)
+      .single()
 
-    if (sessionError || !session) {
-      throw new Error("Session not found or access denied");
+    if (sessionError) {
+      console.error('❌ Session lookup error:', sessionError);
+      throw new Error(`Session not found: ${sessionError.message}`);
     }
 
-    if (!session.figmant_session_images?.length) {
-      throw new Error("No images found for analysis");
+    if (!session) {
+      throw new Error('Session not found');
     }
 
-    console.log(`✅ Found session with ${session.figmant_session_images.length} images`);
+    console.log('✅ Found session:', session.id);
 
-    // Check analysis limit
-    const { data: canAnalyze, error: limitError } = await supabase.rpc('check_analysis_limit', {
-      p_user_id: userId
-    });
+    const { data: images, error: imagesError } = await supabase
+      .from('figmant_session_images')
+      .select('*')
+      .eq('session_id', sessionId)
+      .order('upload_order', { ascending: true })
 
-    if (limitError) {
-      console.error("Error checking analysis limit:", limitError);
-      throw new Error("Failed to check analysis limit");
+    if (imagesError) {
+      console.error('❌ Images lookup error:', imagesError);
+      throw new Error(`Failed to get images: ${imagesError.message}`);
     }
 
-    if (!canAnalyze) {
-      throw new Error("Analysis limit reached. Please upgrade your plan.");
+    if (!images || images.length === 0) {
+      throw new Error('No images found for analysis')
     }
+
+    console.log(`✅ Found ${images.length} images to analyze`)
 
     // Update session status to processing
     await supabase
-      .from("figmant_analysis_sessions")
+      .from('figmant_analysis_sessions')
       .update({ status: 'processing' })
-      .eq("id", sessionId);
+      .eq('id', sessionId);
 
-    console.log(`📊 Processing ${session.figmant_session_images.length} images with Google Vision...`);
+    // Get Google Vision API key
+    const googleVisionApiKey = Deno.env.get('GOOGLE_VISION_API_KEY')
+    if (!googleVisionApiKey) {
+      throw new Error('Google Vision API key not configured')
+    }
 
-    // Process images with Google Vision API
-    const visionResults = [];
-    for (const image of session.figmant_session_images) {
-      console.log(`🔍 Analyzing image: ${image.file_name}`);
-
+    // Process each image with Google Vision
+    const visionResults = []
+    for (const image of images) {
       try {
-        // Get public URL for the image
+        console.log(`🔍 Processing vision for: ${image.file_name}`);
+        
+        // Get image URL
         const { data: urlData } = supabase.storage
           .from('analysis-images')
-          .getPublicUrl(image.file_path);
+          .getPublicUrl(image.file_path)
 
         // Call Google Vision API
-        const visionResponse = await fetch(
-          `https://vision.googleapis.com/v1/images:annotate?key=${requiredEnvVars.GOOGLE_VISION_API_KEY}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              requests: [{
-                image: { source: { imageUri: urlData.publicUrl } },
-                features: [
-                  { type: 'TEXT_DETECTION', maxResults: 50 },
-                  { type: 'LABEL_DETECTION', maxResults: 20 },
-                  { type: 'IMAGE_PROPERTIES' },
-                  { type: 'OBJECT_LOCALIZATION', maxResults: 20 },
-                  { type: 'WEB_DETECTION', maxResults: 10 }
-                ]
-              }]
-            })
-          }
-        );
+        const visionResponse = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${googleVisionApiKey}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            requests: [{
+              image: {
+                source: {
+                  imageUri: urlData.publicUrl
+                }
+              },
+              features: [
+                { type: 'TEXT_DETECTION', maxResults: 50 },
+                { type: 'LABEL_DETECTION', maxResults: 20 },
+                { type: 'IMAGE_PROPERTIES' },
+                { type: 'OBJECT_LOCALIZATION', maxResults: 20 }
+              ]
+            }]
+          })
+        })
 
-        if (visionResponse.ok) {
-          const visionData = await visionResponse.json();
-          const analysisData = visionData.responses?.[0] || {};
-
-          // Update image with Google Vision data
-          await supabase
-            .from("figmant_session_images")
-            .update({ google_vision_data: analysisData })
-            .eq("id", image.id);
-
-          visionResults.push({
-            fileName: image.file_name,
-            visionData: analysisData
-          });
-
-          console.log(`✅ Vision analysis completed for ${image.file_name}`);
-        } else {
-          console.warn(`⚠️ Vision analysis failed for ${image.file_name}: ${visionResponse.status}`);
-          visionResults.push({
-            fileName: image.file_name,
-            visionData: {},
-            error: `Vision API error: ${visionResponse.status}`
-          });
-        }
-      } catch (visionError) {
-        console.error(`❌ Vision processing error for ${image.file_name}:`, visionError);
+        const visionData = await visionResponse.json()
         visionResults.push({
-          fileName: image.file_name,
-          visionData: {},
-          error: visionError.message
-        });
+          image_id: image.id,
+          file_name: image.file_name,
+          vision_data: visionData.responses?.[0] || {}
+        })
+
+        // Update image with vision data
+        await supabase
+          .from('figmant_session_images')
+          .update({ google_vision_data: visionData.responses?.[0] || {} })
+          .eq('id', image.id)
+
+      } catch (error) {
+        console.error(`Error processing image ${image.file_name}:`, error)
+        visionResults.push({
+          image_id: image.id,
+          file_name: image.file_name,
+          vision_data: {},
+          error: error.message
+        })
       }
     }
 
-    // Prepare comprehensive analysis context
-    const analysisContext = {
-      industry: session.industry || "Not specified",
-      designType: session.design_type || "UI/UX Design",
-      businessGoals: session.business_goals || [],
-      imageCount: session.figmant_session_images.length,
-      visionData: visionResults
-    };
+    console.log('✅ Vision processing complete');
 
-    console.log('🤖 Calling Claude Sonnet 4 for comprehensive analysis...');
-
-    // Prepare summarized vision data to avoid token limits
-    const visionSummary = visionResults.map(result => ({
-      fileName: result.fileName,
-      detectedText: result.visionData?.textAnnotations?.slice(0, 5)?.map(t => t.description?.substring(0, 100)) || [],
-      labels: result.visionData?.labelAnnotations?.slice(0, 10)?.map(l => l.description) || [],
-      colors: result.visionData?.imagePropertiesAnnotation?.dominantColors?.colors?.slice(0, 3) || [],
-      objects: result.visionData?.localizedObjectAnnotations?.slice(0, 5)?.map(o => o.name) || [],
-      webEntities: result.visionData?.webDetection?.webEntities?.slice(0, 3)?.map(e => e.description) || [],
-      error: result.error
-    }));
-
-    // Generate expert-level analysis prompt
-    const analysisPrompt = `You are a Senior Principal UX Designer with 15+ years of experience at top tech companies (Google, Apple, Microsoft, Airbnb). You're analyzing UI/UX designs with the following context:
-
-ANALYSIS CONTEXT:
-- Industry: ${analysisContext.industry}
-- Design Type: ${analysisContext.designType}
-- Business Goals: ${analysisContext.businessGoals.join(', ') || 'Not specified'}
-- Number of Images: ${analysisContext.imageCount}
-
-SUMMARIZED VISION DATA:
-${JSON.stringify(visionSummary, null, 2)}
-
-Provide a comprehensive UX analysis in JSON format with this structure:
-
-{
-  "executiveSummary": "2-3 sentence overview of the design quality and key insights",
-  "overallScore": 85,
-  "criticalIssues": [
-    {
-      "severity": "critical|high|medium|low",
-      "category": "Accessibility|Visual Hierarchy|Conversion|Performance|Usability",
-      "issue": "Specific problem description",
-      "impact": "How this affects users and business metrics",
-      "solution": "Exact implementation steps to fix",
-      "implementationTime": "2 hours|1 day|3 days|1 week",
-      "priority": 1
+    // Get Claude API key
+    const claudeApiKey = Deno.env.get('ANTHROPIC_API_KEY')
+    if (!claudeApiKey) {
+      throw new Error('Claude API key not configured')
     }
-  ],
-  "recommendations": [
-    {
-      "category": "Quick Wins|Strategic|Long-term",
-      "title": "Clear, actionable recommendation title",
-      "description": "Detailed implementation guidance",
-      "expectedImpact": "Measurable business/UX improvement",
-      "effort": "Low|Medium|High",
-      "timeline": "1 week|2 weeks|1 month"
-    }
-  ],
-  "accessibilityAudit": {
-    "score": 75,
-    "wcagCompliance": "AA|AAA|Non-compliant",
-    "issues": ["List of specific WCAG violations"],
-    "improvements": ["Specific accessibility enhancements"]
-  }
-}
 
-Focus on actionable insights with specific implementation steps and business impact.`;
+    // Prepare Claude analysis prompt
+    const analysisPrompt = `You are a Senior UX Designer analyzing design images. 
 
-    // Call Claude Sonnet 4 API
-    const claudeResponse = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
+Session Details:
+- Title: ${session.title}
+- Design Type: ${session.design_type || 'Web/Mobile Interface'}
+- Business Goals: ${session.business_goals?.join(', ') || 'Not specified'}
+
+Images Analyzed: ${images.length}
+
+Google Vision Data Summary:
+${visionResults.map(result => `
+Image: ${result.file_name}
+- Text detected: ${result.vision_data.textAnnotations?.length || 0} text elements
+- Objects detected: ${result.vision_data.localizedObjectAnnotations?.length || 0} objects  
+- Labels detected: ${result.vision_data.labelAnnotations?.length || 0} labels
+`).join('\n')}
+
+Please provide a comprehensive UX analysis focusing on:
+
+1. **First Impressions**: What stands out immediately
+2. **Visual Hierarchy**: How well does the design guide the user's eye
+3. **Usability Issues**: Specific problems that could affect user experience
+4. **Accessibility Concerns**: WCAG compliance and inclusive design issues
+5. **Conversion Optimization**: Opportunities to improve business goals
+6. **Mobile Responsiveness**: Considerations for different screen sizes
+7. **Design Consistency**: Patterns, spacing, typography consistency
+
+For each issue identified, provide:
+- Severity level (Critical/High/Medium/Low)
+- Specific location/element affected
+- User impact description
+- Actionable recommendation
+- Implementation difficulty (Easy/Medium/Hard)
+
+Format your response as structured JSON with clear categories and actionable insights.`
+
+    console.log('🧠 Calling Claude API...');
+
+    // Call Claude API
+    const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
-        "x-api-key": requiredEnvVars.ANTHROPIC_API_KEY!,
-        "anthropic-version": "2023-06-01",
+        'Content-Type': 'application/json',
+        'x-api-key': claudeApiKey,
+        'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: 'claude-3-sonnet-20240229',
         max_tokens: 4000,
         messages: [{
-          role: "user",
+          role: 'user',
           content: analysisPrompt
-        }],
-        temperature: 0.3
-      }),
-    });
+        }]
+      })
+    })
 
     if (!claudeResponse.ok) {
-      const errorText = await claudeResponse.text();
-      console.error("Claude API error:", errorText);
-      throw new Error(`Claude API failed: ${claudeResponse.status} ${errorText}`);
+      const claudeErrorText = await claudeResponse.text();
+      console.error('❌ Claude API error:', claudeErrorText);
+      throw new Error(`Claude API error: ${claudeResponse.status} - ${claudeErrorText}`)
     }
 
-    const claudeResult = await claudeResponse.json();
-    const analysisContent = claudeResult.content[0].text;
+    const claudeData = await claudeResponse.json()
+    const analysisText = claudeData.content?.[0]?.text
 
-    // Parse Claude's JSON response
-    let claudeAnalysis;
+    if (!analysisText) {
+      throw new Error('No analysis content received from Claude')
+    }
+
+    console.log('✅ Claude analysis received');
+
+    // Parse Claude response (try to extract JSON, fallback to text)
+    let claudeAnalysis
     try {
-      const jsonMatch = analysisContent.match(/\{[\s\S]*\}/);
+      // Try to find JSON in the response
+      const jsonMatch = analysisText.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
-        claudeAnalysis = JSON.parse(jsonMatch[0]);
+        claudeAnalysis = JSON.parse(jsonMatch[0])
       } else {
-        claudeAnalysis = {
-          executiveSummary: "Analysis completed - see detailed findings below",
-          overallScore: 75,
-          criticalIssues: [],
-          recommendations: [],
-          rawAnalysis: analysisContent
-        };
+        claudeAnalysis = { raw_analysis: analysisText }
       }
-    } catch (parseError) {
-      console.error("Failed to parse Claude response as JSON:", parseError);
-      claudeAnalysis = {
-        executiveSummary: "Analysis completed - see detailed findings below",
-        overallScore: 75,
-        criticalIssues: [],
-        recommendations: [],
-        rawAnalysis: analysisContent
-      };
+    } catch (error) {
+      claudeAnalysis = { raw_analysis: analysisText }
     }
-
-    const processingTime = Date.now() - startTime;
-
-    console.log('💾 Saving analysis results...');
 
     // Save analysis results
-    const { data: analysisResult, error: resultError } = await supabase
-      .from("figmant_analysis_results")
+    const { data: resultData, error: resultError } = await supabase
+      .from('figmant_analysis_results')
       .insert({
         session_id: sessionId,
-        user_id: userId,
+        user_id: session.user_id,
         claude_analysis: claudeAnalysis,
         google_vision_summary: {
-          totalImages: analysisContext.imageCount,
-          processedImages: visionResults.length,
-          visionResults: visionResults
+          total_images: images.length,
+          vision_results: visionResults
         },
-        processing_time_ms: processingTime,
-        ai_model_used: 'claude-sonnet-4-20250514'
+        processing_time_ms: Date.now() - new Date(session.created_at).getTime()
       })
       .select()
-      .single();
+      .single()
 
     if (resultError) {
-      console.error("Failed to save analysis results:", resultError);
+      console.error('❌ Result save error:', resultError);
       throw new Error(`Failed to save results: ${resultError.message}`);
     }
 
-    // Update session status and increment usage
-    await Promise.all([
-      supabase
-        .from("figmant_analysis_sessions")
-        .update({ status: 'completed' })
-        .eq("id", sessionId),
+    // Update session status
+    await supabase
+      .from('figmant_analysis_sessions')
+      .update({ status: 'completed' })
+      .eq('id', sessionId)
 
-      supabase.rpc('increment_analysis_usage', {
-        p_user_id: userId
+    console.log('✅ Analysis completed successfully')
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        result_id: resultData.id,
+        session_id: sessionId,
+        message: 'Analysis completed successfully'
       }),
-
-      supabase
-        .from("credit_usage")
-        .insert({
-          user_id: userId,
-          session_id: sessionId,
-          credits_consumed: 1,
-          operation_type: 'ux_analysis'
-        })
-    ]);
-
-    console.log(`✅ Analysis completed successfully in ${processingTime}ms`);
-
-    return new Response(JSON.stringify({
-      success: true,
-      analysis: claudeAnalysis,
-      processingTime,
-      sessionId,
-      resultId: analysisResult.id
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
+      }
+    )
 
   } catch (error) {
-    console.error("❌ Analysis error:", error);
-
-    // Update session status to failed if we have sessionId
-    if (sessionId) {
-      try {
-        const supabase = createClient(
-          Deno.env.get("SUPABASE_URL") ?? "",
-          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-        );
-
-        await supabase
-          .from("figmant_analysis_sessions")
-          .update({ status: 'failed' })
-          .eq("id", sessionId);
-      } catch (updateError) {
-        console.error("Failed to update session status:", updateError);
+    console.error('❌ Analysis error:', error)
+    return new Response(
+      JSON.stringify({ 
+        error: error.message,
+        details: 'Analysis failed'
+      }),
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        }, 
+        status: 500 
       }
-    }
-
-    return new Response(JSON.stringify({
-      success: false,
-      error: error.message,
-      stage: 'analysis_pipeline'
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    )
   }
-});
-
-async function hashAPIKey(apiKey: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(apiKey);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
+})

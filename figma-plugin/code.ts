@@ -1,3 +1,4 @@
+
 /// <reference types="@figma/plugin-typings" />
 
 // This file runs in the main Figma environment
@@ -103,6 +104,8 @@ figma.on('selectionchange', () => {
 figma.ui.onmessage = async (msg: UIMessage) => {
   if (msg.type === 'login') {
     try {
+      console.log('🔐 Attempting login...');
+      
       // Login user with Supabase
       const response = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/auth/v1/token?grant_type=password', {
         method: 'POST',
@@ -127,6 +130,7 @@ figma.ui.onmessage = async (msg: UIMessage) => {
       await figma.clientStorage.setAsync('figmant_session_token', authData.access_token);
       await figma.clientStorage.setAsync('figmant_user_email', authData.user.email);
 
+      console.log('✅ Login successful');
       figma.ui.postMessage({
         type: 'auth-status',
         isAuthenticated: true,
@@ -134,6 +138,7 @@ figma.ui.onmessage = async (msg: UIMessage) => {
       } as PluginMessage);
 
     } catch (error: any) {
+      console.error('❌ Login error:', error);
       figma.ui.postMessage({
         type: 'auth-status',
         isAuthenticated: false,
@@ -206,6 +211,8 @@ figma.ui.onmessage = async (msg: UIMessage) => {
   }
 
   if (msg.type === 'export' || msg.type === 'analyze-selection') {
+    console.log('🚀 Starting export/analysis process...');
+    
     // For analyze-selection, build the settings from message data
     let settings: PluginExportSettings;
     
@@ -214,6 +221,7 @@ figma.ui.onmessage = async (msg: UIMessage) => {
       const sessionToken = await figma.clientStorage.getAsync('figmant_session_token');
       
       if (!sessionToken) {
+        console.error('❌ No session token found');
         figma.ui.postMessage({
           type: 'export-error',
           data: { error: 'Authentication required. Please log in first.' }
@@ -221,8 +229,19 @@ figma.ui.onmessage = async (msg: UIMessage) => {
         return;
       }
       
+      const selectedFrames = getSelectedFrames();
+      console.log('📋 Selected frames:', selectedFrames.length);
+      
+      if (selectedFrames.length === 0) {
+        figma.ui.postMessage({
+          type: 'export-error',
+          data: { error: 'Please select at least one frame to analyze.' }
+        } as PluginMessage);
+        return;
+      }
+      
       settings = {
-        frames: getSelectedFrames(),
+        frames: selectedFrames,
         context: msg.context || '',
         scale: 2,
         format: 'PNG',
@@ -233,9 +252,19 @@ figma.ui.onmessage = async (msg: UIMessage) => {
     }
     
     try {
+      console.log('📸 Exporting frames...', settings.frames.length);
+      figma.ui.postMessage({ 
+        type: 'analysis-progress', 
+        message: 'Exporting frames...',
+        progress: 10
+      });
+
       const images = [];
       
-      for (const frame of settings.frames) {
+      for (let i = 0; i < settings.frames.length; i++) {
+        const frame = settings.frames[i];
+        console.log(`📸 Exporting frame ${i + 1}/${settings.frames.length}: ${frame.name}`);
+        
         const node = figma.getNodeById(frame.id) as SceneNode;
         
         if (node && 'exportAsync' in node) {
@@ -265,10 +294,25 @@ figma.ui.onmessage = async (msg: UIMessage) => {
             format: settings.format,
             image: `data:${mimeType};base64,${base64}`
           });
+          
+          // Update progress
+          const exportProgress = Math.floor(10 + (i + 1) / settings.frames.length * 40);
+          figma.ui.postMessage({ 
+            type: 'analysis-progress', 
+            message: `Exported ${i + 1}/${settings.frames.length} frames`,
+            progress: exportProgress
+          });
         }
       }
       
-      // First, send the images to the upload API
+      console.log('✅ Frame export complete, uploading to server...');
+      figma.ui.postMessage({ 
+        type: 'analysis-progress', 
+        message: 'Uploading images...',
+        progress: 60
+      });
+
+      // Upload images to the plugin API
       try {
         const uploadResponse = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/functions/v1/figmant-plugin-api', {
           method: 'POST',
@@ -283,21 +327,36 @@ figma.ui.onmessage = async (msg: UIMessage) => {
           })
         });
 
+        console.log('📤 Upload response status:', uploadResponse.status);
+
         if (!uploadResponse.ok) {
-          const errorData = await uploadResponse.json().catch(() => ({ error: 'Upload failed' }));
-          throw new Error(errorData.error || `Upload failed: ${uploadResponse.status}`);
+          const errorText = await uploadResponse.text();
+          console.error('❌ Upload failed:', errorText);
+          throw new Error(`Upload failed: ${uploadResponse.status} - ${errorText}`);
         }
 
-        const result = await uploadResponse.json();
+        const uploadResult = await uploadResponse.json();
+        console.log('✅ Upload result:', uploadResult);
+
+        // Validate the response structure
+        if (!uploadResult.success || !uploadResult.session_id) {
+          console.error('❌ Invalid upload response structure:', uploadResult);
+          throw new Error('Invalid response from upload API - missing session_id');
+        }
+
+        const sessionId = uploadResult.session_id;
+        console.log('🔑 Session ID for analysis:', sessionId);
 
         figma.ui.postMessage({ 
           type: 'analysis-progress', 
           message: 'Starting UX analysis...',
-          progress: 90
+          progress: 80
         });
 
-        // Trigger the analysis using the main analysis function
+        // Trigger the analysis using the session ID from upload
         try {
+          console.log('🧠 Starting analysis for session:', sessionId);
+          
           const analysisResponse = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/functions/v1/figmant-analyze-design', {
             method: 'POST',
             headers: {
@@ -305,38 +364,44 @@ figma.ui.onmessage = async (msg: UIMessage) => {
               'Authorization': `Bearer ${settings.sessionToken}`
             },
             body: JSON.stringify({
-              sessionId: result.session_id
+              session_id: sessionId
             })
           });
 
+          console.log('🧠 Analysis response status:', analysisResponse.status);
+
           if (!analysisResponse.ok) {
-            const errorData = await analysisResponse.json().catch(() => ({ error: 'Analysis failed' }));
-            throw new Error(errorData.error || `Analysis failed: ${analysisResponse.status}`);
+            const errorText = await analysisResponse.text();
+            console.error('❌ Analysis failed:', errorText);
+            throw new Error(`Analysis failed: ${analysisResponse.status} - ${errorText}`);
           }
 
           const analysisResult = await analysisResponse.json();
+          console.log('✅ Analysis completed:', analysisResult);
 
           figma.ui.postMessage({
             type: 'analysis-complete',
-            sessionId: result.session_id,
+            sessionId: sessionId,
             analysisResult: analysisResult,
-            imagesProcessed: result.images_processed,
-            totalImages: result.total_images
+            imagesProcessed: uploadResult.images_processed,
+            totalImages: uploadResult.total_images,
+            message: 'Analysis completed successfully!'
           });
 
         } catch (analysisError: any) {
-          console.error('Analysis error:', analysisError);
+          console.error('❌ Analysis error:', analysisError);
           // Still report upload success but note analysis failed
           figma.ui.postMessage({
             type: 'analysis-partial',
-            sessionId: result.session_id,
-            imagesProcessed: result.images_processed,
-            totalImages: result.total_images,
+            sessionId: sessionId,
+            imagesProcessed: uploadResult.images_processed,
+            totalImages: uploadResult.total_images,
             analysisError: analysisError.message,
             message: 'Images uploaded successfully, but analysis failed. You can retry the analysis from the web app.'
           });
         }
       } catch (uploadError: any) {
+        console.error('❌ Upload error:', uploadError);
         figma.ui.postMessage({
           type: 'export-error',
           data: { error: uploadError.message || 'Upload failed' }
@@ -344,6 +409,7 @@ figma.ui.onmessage = async (msg: UIMessage) => {
       }
       
     } catch (error: any) {
+      console.error('❌ Export error:', error);
       figma.ui.postMessage({
         type: 'export-error',
         data: { error: error.message || 'Export failed' }
