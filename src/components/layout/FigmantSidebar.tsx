@@ -130,7 +130,7 @@ export const FigmantSidebar = () => {
           <p className="text-sm md:text-sm sm:text-xs xs:text-xs text-muted-foreground mb-3 hidden sm:block">
             Upgrade and get 20% off to get more analyses.
           </p>
-          <Button className="w-full bg-muted hover:bg-muted/80 text-gray-600 md:text-sm sm:text-xs xs:text-xs">
+          <Button className="flex px-4 py-1.5 justify-center items-center gap-2 self-stretch rounded-[10px] text-gray-600 md:text-sm sm:text-xs xs:text-xs" style={{background: 'linear-gradient(180deg, #FAF5F5 0%, #FFF 100%)', boxShadow: '0px 1px 0px 0px rgba(255, 255, 255, 0.33) inset, 0px 0px 0px 1px #D4D4D4'}}>
             <span className="hidden sm:inline">Upgrade</span>
             <span className="sm:hidden">+</span>
           </Button>
