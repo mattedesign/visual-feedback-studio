@@ -36,34 +36,37 @@ const App = () => {
             <Route path="/*" element={
               <AuthGuard>
                 <SubscriptionProvider>
-                  <div className="min-h-screen w-full overflow-hidden bg-[#1C6D73] p-1">
-                    <div className="h-[calc(100vh-8px)] w-full max-w-full rounded-[30px] bg-[#1C6D73] border-4 border-[#1C6D73] overflow-hidden">
-                      <div className="h-full w-full rounded-[20px] bg-[#F1F1F1] m-4 overflow-hidden" style={{ height: 'calc(100%)', width: 'calc(100%)' }}>
-                        <FigmantLayout>
-                          <Routes>
-                            {/* Core Figmant Routes */}
-                            <Route path="/" element={<FigmantDashboard />} />
-                            <Route path="/dashboard" element={<FigmantDashboard />} />
-                            <Route path="/analyze" element={<FigmantAnalysisPage />} />
-                            <Route path="/analysis/:sessionId" element={<FigmantResultsPage />} />
-                            <Route path="/analysis-results/:sessionId" element={<FigmantResultsPage />} />
-                            
-                            {/* Settings & Account */}
-                            <Route path="/settings" element={<Settings />} />
-                            <Route path="/subscription" element={<Subscription />} />
-                            
-                            {/* Redirect old routes to new ones */}
-                            <Route path="/create-new" element={<Navigate to="/analyze" replace />} />
-                            <Route path="/analysis-studio" element={<Navigate to="/analyze" replace />} />
-                            <Route path="/mentor" element={<Navigate to="/dashboard" replace />} />
-                            <Route path="/history" element={<Navigate to="/dashboard" replace />} />
-                            
-                            {/* Catch all */}
-                            <Route path="*" element={<Navigate to="/" replace />} />
-                          </Routes>
-                        </FigmantLayout>
-                      </div>
-                    </div>
+                  <div style={{ 
+                    display: 'flex', 
+                    padding: '8px', 
+                    flex: '1 0 0', 
+                    alignSelf: 'stretch', 
+                    borderRadius: '20px', 
+                    background: 'var(--Surface-03, #F1F1F1)' 
+                  }}>
+                    <FigmantLayout>
+                      <Routes>
+                        {/* Core Figmant Routes */}
+                        <Route path="/" element={<FigmantDashboard />} />
+                        <Route path="/dashboard" element={<FigmantDashboard />} />
+                        <Route path="/analyze" element={<FigmantAnalysisPage />} />
+                        <Route path="/analysis/:sessionId" element={<FigmantResultsPage />} />
+                        <Route path="/analysis-results/:sessionId" element={<FigmantResultsPage />} />
+                        
+                        {/* Settings & Account */}
+                        <Route path="/settings" element={<Settings />} />
+                        <Route path="/subscription" element={<Subscription />} />
+                        
+                        {/* Redirect old routes to new ones */}
+                        <Route path="/create-new" element={<Navigate to="/analyze" replace />} />
+                        <Route path="/analysis-studio" element={<Navigate to="/analyze" replace />} />
+                        <Route path="/mentor" element={<Navigate to="/dashboard" replace />} />
+                        <Route path="/history" element={<Navigate to="/dashboard" replace />} />
+                        
+                        {/* Catch all */}
+                        <Route path="*" element={<Navigate to="/" replace />} />
+                      </Routes>
+                    </FigmantLayout>
                   </div>
                 </SubscriptionProvider>
               </AuthGuard>
