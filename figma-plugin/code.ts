@@ -50,12 +50,12 @@ async function validateSessionToken(token: string): Promise<boolean> {
     console.log('🔍 Validating session token...');
     console.log('🔍 Token preview:', token ? `${token.substring(0, 20)}...` : 'No token');
     
-    // Try a simple request to Supabase auth to validate the token
-    const response = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/auth/v1/user', {
-      method: 'GET',
+    // Test the actual endpoint we'll be using - the plugin API
+    const response = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/functions/v1/figmant-check-subscription', {
+      method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14eHR2dHdjb3BsZmFqdmF6cGF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2MDU2NjgsImV4cCI6MjA2NjE4MTY2OH0.b9sNxeDALujnw2tQD-qnbs3YkZvvTkja8jG6clgpibA'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       }
     });
     
@@ -349,9 +349,16 @@ figma.ui.onmessage = async (msg: UIMessage) => {
       const isValidToken = await validateSessionToken(settings.sessionToken);
       console.log('🔍 Token validation completed, result:', isValidToken);
       
-      // For now, let's continue even if validation fails to see what the real issue is
       if (!isValidToken) {
-        console.log('⚠️ Token validation failed, but continuing anyway to debug...');
+        console.log('🔄 Session token invalid, requesting refresh...');
+        figma.ui.postMessage({
+          type: 'export-error',
+          data: { 
+            error: 'Your session has expired. Please close the plugin and log in again in the web app before trying again.',
+            sessionExpired: true
+          }
+        } as PluginMessage);
+        return;
       }
 
       // Upload images to the plugin API
