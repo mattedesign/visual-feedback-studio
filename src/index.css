@@ -229,24 +229,24 @@
   
   /* Upgrade button specific styling */
   .upgrade-button {
-    display: flex;
-    padding: 8px 16px;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
-    align-self: stretch;
-    border-radius: 10px;
-    background: linear-gradient(180deg, #E5E5E5 0%, #E2E2E2 100%);
-    box-shadow: 0px 3px 4px -1px rgba(0, 0, 0, 0.15), 0px 1px 0px 0px rgba(255, 255, 255, 0.33) inset, 0px 0px 0px 1px #D4D4D4;
-    color: var(--Text-Primary, #121212);
-    text-align: center;
-    font-size: 14px;
-    font-style: normal;
-    font-weight: 600;
-    line-height: 20px;
-    letter-spacing: -0.28px;
-    border: none;
-    width: 100%;
+    display: flex !important;
+    padding: 8px 16px !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 8px !important;
+    align-self: stretch !important;
+    border-radius: 10px !important;
+    background: linear-gradient(180deg, #E5E5E5 0%, #E2E2E2 100%) !important;
+    box-shadow: 0px 3px 4px -1px rgba(0, 0, 0, 0.15), 0px 1px 0px 0px rgba(255, 255, 255, 0.33) inset, 0px 0px 0px 1px #D4D4D4 !important;
+    color: var(--Text-Primary, #121212) !important;
+    text-align: center !important;
+    font-size: 14px !important;
+    font-style: normal !important;
+    font-weight: 600 !important;
+    line-height: 20px !important;
+    letter-spacing: -0.28px !important;
+    border: none !important;
+    width: 100% !important;
   }
   
   .upgrade-button:hover {
