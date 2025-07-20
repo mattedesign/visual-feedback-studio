@@ -66,7 +66,8 @@ export const FigmantSidebar = () => {
     <div 
       className="border border-[#E2E2E2] flex flex-col bg-white"
       style={{
-        width: '320px',
+        width: '288px',
+        maxWidth: '288px',
         height: '100%',
         borderRadius: '20px',
         flexShrink: 0
