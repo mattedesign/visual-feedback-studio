@@ -130,6 +130,7 @@
     border: 1px solid var(--Stroke-02, #E2E2E2);
     background: var(--Surface-01, #FCFCFC);
     color: #6B7280; /* text-gray-500 */
+    clip-path: inset(0 round 20px);
   }
   
   .figmant-sidebar .text-sm {
