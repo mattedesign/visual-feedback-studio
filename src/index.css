@@ -126,7 +126,8 @@
   }
   
   .figmant-main {
-    @apply w-full flex-1 bg-muted/30 overflow-hidden flex flex-col;
+    @apply w-full flex-1 overflow-hidden flex flex-col;
+    background-color: transparent;
   }
   
   .figmant-header {
