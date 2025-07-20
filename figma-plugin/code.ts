@@ -173,7 +173,7 @@ figma.ui.onmessage = async (msg: UIMessage) => {
               'x-api-key': settings.apiKey
             },
             body: JSON.stringify({
-              session_id: result.session_id
+              sessionId: result.session_id
             })
           });
 
