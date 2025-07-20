@@ -79,7 +79,7 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.figmant-analyze-design]
-verify_jwt = true
+verify_jwt = false
 
 [functions.analyze-figmant-design]
 verify_jwt = false
