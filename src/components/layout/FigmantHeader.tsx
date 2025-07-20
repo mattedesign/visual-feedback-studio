@@ -11,6 +11,19 @@ export const FigmantHeader = () => {
   const isMobile = useIsMobile();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
+  // Hide header on dashboard and analyze pages
+  if (location.pathname === '/dashboard' || location.pathname === '/analyze') {
+    return (
+      <>
+        {/* Full-screen mobile menu */}
+        <MobileMenu 
+          isOpen={isMobileMenuOpen} 
+          onClose={() => setIsMobileMenuOpen(false)} 
+        />
+      </>
+    );
+  }
+  
   const getPageTitle = () => {
     switch (location.pathname) {
       case '/':
