@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -211,7 +210,7 @@
       display: block;
     }
 
-    .api-key-section {
+    .auth-section {
       background: #fefce8;
       border: 1px solid #fef08a;
       border-radius: 6px;
@@ -219,23 +218,37 @@
       margin-bottom: 16px;
     }
 
-    .api-key-section.configured {
+    .auth-section.authenticated {
       background: #f0fdf4;
       border-color: #bbf7d0;
     }
 
-    .api-status {
+    .auth-status {
       font-size: 11px;
       font-weight: 500;
       margin-bottom: 8px;
     }
 
-    .api-status.warning {
+    .auth-status.warning {
       color: #d97706;
     }
 
-    .api-status.success {
+    .auth-status.success {
       color: #059669;
+    }
+
+    .user-info {
+      font-size: 10px;
+      color: #666;
+      margin-bottom: 8px;
+    }
+
+    .subscription-info {
+      font-size: 10px;
+      background: #f8f9fa;
+      padding: 6px 8px;
+      border-radius: 4px;
+      margin-bottom: 8px;
     }
 
     .help-text {
@@ -272,24 +285,45 @@
       <div class="subtitle">AI-Powered UX Analysis</div>
     </div>
 
-    <!-- API Key Section -->
-    <div id="apiKeySection" class="api-key-section">
-      <div id="apiStatus" class="api-status warning">⚠️ API Key Required</div>
-      <div class="input-group">
-        <label class="label" for="apiKeyInput">API Key</label>
-        <input 
-          type="password" 
-          id="apiKeyInput" 
-          class="input" 
-          placeholder="Enter your Figmant API key"
-        >
-        <div class="help-text">
-          Get your API key from your Figmant dashboard settings
+    <!-- Auth Section -->
+    <div id="authSection" class="auth-section">
+      <div id="authStatus" class="auth-status warning">🔑 Login Required</div>
+      
+      <div id="loginForm">
+        <div class="input-group">
+          <label class="label" for="emailInput">Email</label>
+          <input 
+            type="email" 
+            id="emailInput" 
+            class="input" 
+            placeholder="your@email.com"
+          >
         </div>
+        <div class="input-group">
+          <label class="label" for="passwordInput">Password</label>
+          <input 
+            type="password" 
+            id="passwordInput" 
+            class="input" 
+            placeholder="Your password"
+          >
+        </div>
+        <button id="loginButton" class="button button-secondary" disabled>
+          Login to Figmant
+        </button>
       </div>
-      <button id="saveApiKey" class="button button-secondary">
-        Save API Key
-      </button>
+
+      <div id="userInfo" style="display: none;">
+        <div class="user-info">
+          <span id="userEmail"></span>
+        </div>
+        <div id="subscriptionInfo" class="subscription-info">
+          <span id="subscriptionDetails"></span>
+        </div>
+        <button id="logoutButton" class="button button-secondary">
+          Logout
+        </button>
+      </div>
     </div>
 
     <!-- Selection Info -->
@@ -353,8 +387,9 @@
   <script>
     // State management
     let state = {
-      apiKey: '',
-      hasApiKey: false,
+      isAuthenticated: false,
+      userEmail: '',
+      subscription: null,
       selection: {
         count: 0,
         hasFrames: false,
@@ -365,10 +400,17 @@
 
     // DOM elements
     const elements = {
-      apiKeySection: document.getElementById('apiKeySection'),
-      apiStatus: document.getElementById('apiStatus'),
-      apiKeyInput: document.getElementById('apiKeyInput'),
-      saveApiKey: document.getElementById('saveApiKey'),
+      authSection: document.getElementById('authSection'),
+      authStatus: document.getElementById('authStatus'),
+      loginForm: document.getElementById('loginForm'),
+      emailInput: document.getElementById('emailInput'),
+      passwordInput: document.getElementById('passwordInput'),
+      loginButton: document.getElementById('loginButton'),
+      userInfo: document.getElementById('userInfo'),
+      userEmail: document.getElementById('userEmail'),
+      subscriptionInfo: document.getElementById('subscriptionInfo'),
+      subscriptionDetails: document.getElementById('subscriptionDetails'),
+      logoutButton: document.getElementById('logoutButton'),
       selectionStatus: document.getElementById('selectionStatus'),
       selectionDetail: document.getElementById('selectionDetail'),
       sessionTitle: document.getElementById('sessionTitle'),
@@ -384,39 +426,54 @@
     // Initialize
     function init() {
       setupEventListeners();
-      requestConfig();
-      requestSelection();
+      checkAuth();
     }
 
     function setupEventListeners() {
-      elements.saveApiKey.addEventListener('click', saveApiKey);
+      elements.loginButton.addEventListener('click', login);
+      elements.logoutButton.addEventListener('click', logout);
       elements.analyzeButton.addEventListener('click', startAnalysis);
       
-      elements.apiKeyInput.addEventListener('input', (e) => {
-        updateUI();
+      elements.emailInput.addEventListener('input', updateUI);
+      elements.passwordInput.addEventListener('input', updateUI);
+      
+      elements.passwordInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') login();
       });
     }
 
-    function requestConfig() {
-      parent.postMessage({ pluginMessage: { type: 'get-config' } }, '*');
+    function checkAuth() {
+      parent.postMessage({ pluginMessage: { type: 'check-auth' } }, '*');
     }
 
-    function requestSelection() {
-      parent.postMessage({ pluginMessage: { type: 'get-selection' } }, '*');
-    }
-
-    function saveApiKey() {
-      const apiKey = elements.apiKeyInput.value.trim();
-      if (!apiKey) {
-        showError('Please enter an API key');
+    function login() {
+      const email = elements.emailInput.value.trim();
+      const password = elements.passwordInput.value.trim();
+      
+      if (!email || !password) {
+        showError('Please enter both email and password');
         return;
       }
 
+      clearMessages();
+      elements.loginButton.disabled = true;
+      elements.loginButton.innerHTML = `
+        <div class="spinner"></div>
+        Logging in...
+      `;
+
       parent.postMessage({ 
         pluginMessage: { 
-          type: 'save-api-key', 
-          apiKey: apiKey 
+          type: 'login', 
+          email: email,
+          password: password
         } 
+      }, '*');
+    }
+
+    function logout() {
+      parent.postMessage({ 
+        pluginMessage: { type: 'logout' } 
       }, '*');
     }
 
@@ -430,7 +487,6 @@
       parent.postMessage({
         pluginMessage: {
           type: 'analyze-selection',
-          apiKey: state.apiKey || elements.apiKeyInput.value.trim(),
           sessionTitle: elements.sessionTitle.value.trim(),
           context: elements.analysisContext.value.trim()
         }
@@ -438,28 +494,39 @@
     }
 
     function canAnalyze() {
-      const hasApiKey = state.hasApiKey || elements.apiKeyInput.value.trim();
-      const hasFrames = state.selection.hasFrames;
-      return hasApiKey && hasFrames && !state.isAnalyzing;
+      return state.isAuthenticated && state.selection.hasFrames && !state.isAnalyzing;
     }
 
     function updateUI() {
-      // API Key section
-      const currentApiKey = state.apiKey || elements.apiKeyInput.value.trim();
-      const hasCurrentApiKey = !!currentApiKey;
-
-      if (state.hasApiKey) {
-        elements.apiKeySection.className = 'api-key-section configured';
-        elements.apiStatus.className = 'api-status success';
-        elements.apiStatus.textContent = '✅ API Key Configured';
-      } else if (hasCurrentApiKey) {
-        elements.apiKeySection.className = 'api-key-section';
-        elements.apiStatus.className = 'api-status warning';
-        elements.apiStatus.textContent = '💾 Click Save to store API key';
+      // Auth section
+      if (state.isAuthenticated) {
+        elements.authSection.className = 'auth-section authenticated';
+        elements.authStatus.className = 'auth-status success';
+        elements.authStatus.textContent = '✅ Logged In';
+        elements.loginForm.style.display = 'none';
+        elements.userInfo.style.display = 'block';
+        elements.userEmail.textContent = state.userEmail;
+        
+        if (state.subscription) {
+          const sub = state.subscription;
+          elements.subscriptionDetails.textContent = 
+            `${sub.tier} - ${sub.analysesUsed}/${sub.analysesLimit} analyses used`;
+        }
       } else {
-        elements.apiKeySection.className = 'api-key-section';
-        elements.apiStatus.className = 'api-status warning';
-        elements.apiStatus.textContent = '⚠️ API Key Required';
+        elements.authSection.className = 'auth-section';
+        elements.authStatus.className = 'auth-status warning';
+        elements.authStatus.textContent = '🔑 Login Required';
+        elements.loginForm.style.display = 'block';
+        elements.userInfo.style.display = 'none';
+        
+        // Enable login button if form is filled
+        const hasEmail = elements.emailInput.value.trim();
+        const hasPassword = elements.passwordInput.value.trim();
+        elements.loginButton.disabled = !hasEmail || !hasPassword;
+        
+        if (!elements.loginButton.disabled) {
+          elements.loginButton.innerHTML = 'Login to Figmant';
+        }
       }
 
       // Selection status
@@ -528,41 +595,41 @@
       if (!msg) return;
 
       switch (msg.type) {
-        case 'config-response':
-          state.apiKey = msg.apiKey || '';
-          state.hasApiKey = !!msg.apiKey;
-          if (state.hasApiKey) {
-            elements.apiKeyInput.value = '••••••••';
+        case 'auth-status':
+          state.isAuthenticated = msg.isAuthenticated;
+          state.userEmail = msg.userEmail || '';
+          state.subscription = msg.subscription || null;
+          
+          if (msg.authError) {
+            showError(msg.authError);
+          }
+          
+          // Reset login form
+          if (state.isAuthenticated) {
+            elements.emailInput.value = '';
+            elements.passwordInput.value = '';
+            showSuccess('Logged in successfully!');
+          } else {
+            elements.loginButton.disabled = false;
+            elements.loginButton.innerHTML = 'Login to Figmant';
+          }
+          
+          updateUI();
+          break;
+
+        case 'selection-change':
+          if (msg.data) {
+            state.selection = {
+              count: msg.data.frames ? msg.data.frames.length : 0,
+              hasFrames: msg.data.frames && msg.data.frames.length > 0,
+              frameCount: msg.data.frames ? msg.data.frames.length : 0
+            };
           }
           updateUI();
           break;
 
-        case 'api-key-saved':
-          state.apiKey = elements.apiKeyInput.value.trim();
-          state.hasApiKey = true;
-          elements.apiKeyInput.value = '••••••••';
-          showSuccess('API key saved successfully');
-          updateUI();
-          break;
-
-        case 'selection-update':
-          state.selection = {
-            count: msg.count,
-            hasFrames: msg.hasFrames,
-            frameCount: msg.frameCount || 0
-          };
-          updateUI();
-          break;
-
-        case 'analysis-start':
-          state.isAnalyzing = true;
-          clearMessages();
-          showProgress(0, 'Starting analysis...');
-          updateUI();
-          break;
-
         case 'analysis-progress':
-          showProgress(msg.progress, msg.message);
+          showProgress(msg.progress || 0, msg.message || 'Analyzing...');
           break;
 
         case 'analysis-complete':
@@ -572,15 +639,18 @@
           updateUI();
           break;
 
-        case 'analysis-error':
+        case 'analysis-partial':
           state.isAnalyzing = false;
           hideProgress();
-          showError(msg.message);
+          showSuccess(msg.message || 'Analysis partially completed. Check your dashboard.');
           updateUI();
           break;
 
-        case 'error':
-          showError(msg.message);
+        case 'export-error':
+          state.isAnalyzing = false;
+          hideProgress();
+          showError(msg.data?.error || 'Analysis failed');
+          updateUI();
           break;
 
         default:

@@ -1,89 +1,111 @@
-
 # Figmant UX Analyzer - Figma Plugin
 
-This Figma plugin integrates with the Figmant backend API to provide AI-powered UX analysis directly from your Figma designs.
+This Figma plugin integrates with the Figmant backend to provide AI-powered UX analysis directly from your Figma designs.
 
 ## Features
 
-- **Frame Selection**: Select any frames, components, or groups in Figma
-- **Batch Analysis**: Analyze up to 5 selections at once
-- **High Quality Export**: Exports at 2x resolution for detailed analysis
-- **API Integration**: Secure connection to Figmant backend
-- **Progress Tracking**: Real-time feedback during analysis
-- **Session Management**: Automatic session creation and management
+- **Direct Authentication**: Login with your Figmant credentials directly in the plugin
+- **Real-time Analysis**: Analyze selected frames, components, or groups with one click
+- **Subscription Integration**: Automatically checks your analysis usage and limits
+- **Seamless Upload**: Exports and uploads your designs automatically
+- **Progress Tracking**: Real-time feedback during analysis processing
+- **Context-Aware**: Add custom context to get targeted analysis results
 
-## Installation
+## Quick Setup
+
+### Prerequisites
+- Figma desktop app or web browser
+- Active Figmant account with available analyses
+
+### Installation
 
 1. Copy all plugin files to your local plugin directory
 2. In Figma, go to `Plugins` > `Development` > `Import plugin from manifest...`
 3. Select the `manifest.json` file from this directory
 4. The plugin will be available in your Plugins menu
 
-## Setup
+## How to Use
 
-1. **Get API Key**: 
-   - Log into your Figmant dashboard
-   - Go to Settings > API Keys
-   - Create a new API key with read/write permissions
+### Authentication
+1. Open the plugin in Figma
+2. Enter your Figmant email and password
+3. Click "Login to Figmant"
+4. Your subscription status will be displayed
 
-2. **Configure Plugin**:
-   - Open the plugin in Figma
-   - Enter your API key in the configuration section
-   - Click "Save API Key" to store it locally
-
-## Usage
-
-1. **Select Designs**: Select the frames, components, or groups you want to analyze
-2. **Add Context** (Optional): Provide analysis context for more targeted results
-3. **Run Analysis**: Click "Analyze Selection" to start the process
-4. **View Results**: Check your Figmant dashboard for detailed analysis results
+### Running Analysis
+1. Select one or more frames, components, or groups in Figma
+2. (Optional) Add a session title and analysis context
+3. Click "Analyze Selection"
+4. Monitor progress in the plugin
+5. Check your Figmant dashboard for detailed results
 
 ## Technical Details
 
-### Supported Selection Types
-- Frames
-- Components
-- Component Instances
-- Groups
-
-### Export Format
-- PNG format at 2x resolution
-- Maximum 5 selections per analysis
-- Base64 encoded for API transmission
+### Authentication
+- Uses standard Supabase authentication
+- Session tokens stored securely in Figma's client storage
+- Automatic token validation and refresh
+- Subscription status checking
 
 ### API Integration
 - Uses Figmant plugin API endpoint: `/figmant-plugin-api`
 - Automatic session creation and management
 - Real-time progress updates
-- Error handling and user feedback
+- Comprehensive error handling
 
 ### Security
-- API keys stored securely in Figma's client storage
-- HTTPS communication with backend
-- No design data stored locally
+- No sensitive data stored permanently
+- Session-based authentication
+- Secure token transmission
+- Automatic logout on token expiry
+
+### Data Flow
+1. **Authentication**: User logs in with Figmant credentials
+2. **Selection**: User selects frames/components in Figma
+3. **Export**: Plugin exports selected items as images
+4. **Upload**: Images uploaded to Figmant backend
+5. **Analysis**: AI processes the uploaded designs
+6. **Results**: Analysis results available in web dashboard
+
+### Supported Elements
+- Frames
+- Components and Component Sets
+- Component Instances
+- Groups
+- Any exportable Figma element
+
+### Export Formats
+- **PNG**: High-quality raster images (default)
+- **JPG**: Compressed raster images
+- **SVG**: Vector graphics (where applicable)
 
 ## Troubleshooting
 
 ### Common Issues
 
-**"Please select at least one frame"**
+**"Login Required"**
+- Enter your Figmant email and password
+- Ensure you have an active Figmant account
+
+**"Authentication Failed"**
+- Check your email and password
+- Verify your internet connection
+- Ensure your account is active
+
+**"Analysis Limit Reached"**
+- Check your subscription plan
+- Upgrade your plan for more analyses
+- Wait for your limit to reset
+
+**"No frames selected"**
 - Make sure you have frames, components, or groups selected
 - Text layers and shapes cannot be analyzed directly
-
-**"API Key Required"**
-- Enter your API key in the plugin settings
-- Verify the key is correct in your Figmant dashboard
-
-**"Analysis failed"**
-- Check your internet connection
-- Verify your API key has the correct permissions
-- Ensure selected frames aren't too complex
 
 ### Getting Help
 
 If you encounter issues:
 1. Check the browser console for error messages
-2. Verify your API key permissions in Figmant dashboard
+2. Verify your account status in Figmant web dashboard
 3. Contact Figmant support with error details
 
 ## Development

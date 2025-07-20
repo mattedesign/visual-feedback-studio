@@ -4,7 +4,7 @@
 
 // Define types directly in this file since imports can be problematic in Figma
 interface PluginMessage {
-  type: 'selection-change' | 'export-frames' | 'export-complete' | 'export-error' | 'close' | 'analysis-progress' | 'analysis-complete' | 'analysis-partial';
+  type: 'selection-change' | 'export-frames' | 'export-complete' | 'export-error' | 'close' | 'analysis-progress' | 'analysis-complete' | 'analysis-partial' | 'auth-status';
   data?: any;
   message?: string;
   progress?: number;
@@ -13,12 +13,17 @@ interface PluginMessage {
   imagesProcessed?: number;
   totalImages?: number;
   analysisError?: string;
+  authError?: string;
+  isAuthenticated?: boolean;
+  userEmail?: string;
+  subscription?: any;
 }
 
 interface UIMessage {
-  type: 'export' | 'cancel' | 'resize' | 'analyze-selection' | 'save-api-key' | 'get-api-key';
+  type: 'export' | 'cancel' | 'resize' | 'analyze-selection' | 'login' | 'logout' | 'check-auth';
   data?: any;
-  apiKey?: string;
+  email?: string;
+  password?: string;
   sessionTitle?: string;
   context?: string;
 }
@@ -35,7 +40,7 @@ interface PluginExportSettings {
   context: string;
   scale: number;
   format: 'PNG' | 'JPG' | 'SVG';
-  apiKey: string;
+  sessionToken: string;
 }
 
 // Show UI
@@ -68,16 +73,16 @@ function getSelectedFrames(): FrameData[] {
   return frames;
 }
 
-// Initialize plugin with API key check
+// Initialize plugin with authentication check
 async function initializePlugin() {
-  const apiKey = await figma.clientStorage.getAsync('figmant_api_key');
+  const sessionToken = await figma.clientStorage.getAsync('figmant_session_token');
   const selectedFrames = getSelectedFrames();
   
   figma.ui.postMessage({
     type: 'selection-change',
     data: { 
       frames: selectedFrames,
-      hasApiKey: !!apiKey,
+      isAuthenticated: !!sessionToken,
       isInitialized: true
     }
   } as PluginMessage);
@@ -96,21 +101,122 @@ figma.on('selectionchange', () => {
 
 // Handle messages from UI
 figma.ui.onmessage = async (msg: UIMessage) => {
+  if (msg.type === 'login') {
+    try {
+      // Login user with Supabase
+      const response = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/auth/v1/token?grant_type=password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14eHR2dHdjb3BsZmFqdmF6cGF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2MDU2NjgsImV4cCI6MjA2NjE4MTY2OH0.b9sNxeDALujnw2tQD-qnbs3YkZvvTkja8jG6clgpibA'
+        },
+        body: JSON.stringify({
+          email: msg.email,
+          password: msg.password
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error_description || 'Login failed');
+      }
+
+      const authData = await response.json();
+      
+      // Store session token
+      await figma.clientStorage.setAsync('figmant_session_token', authData.access_token);
+      await figma.clientStorage.setAsync('figmant_user_email', authData.user.email);
+
+      figma.ui.postMessage({
+        type: 'auth-status',
+        isAuthenticated: true,
+        userEmail: authData.user.email
+      } as PluginMessage);
+
+    } catch (error: any) {
+      figma.ui.postMessage({
+        type: 'auth-status',
+        isAuthenticated: false,
+        authError: error.message
+      } as PluginMessage);
+    }
+  }
+
+  if (msg.type === 'logout') {
+    try {
+      await figma.clientStorage.deleteAsync('figmant_session_token');
+      await figma.clientStorage.deleteAsync('figmant_user_email');
+      
+      figma.ui.postMessage({
+        type: 'auth-status',
+        isAuthenticated: false
+      } as PluginMessage);
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  }
+
+  if (msg.type === 'check-auth') {
+    try {
+      const sessionToken = await figma.clientStorage.getAsync('figmant_session_token');
+      const userEmail = await figma.clientStorage.getAsync('figmant_user_email');
+      
+      if (sessionToken) {
+        // Verify token is still valid by checking subscription
+        const response = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/functions/v1/figmant-check-subscription', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionToken}`
+          }
+        });
+
+        if (response.ok) {
+          const subData = await response.json();
+          figma.ui.postMessage({
+            type: 'auth-status',
+            isAuthenticated: true,
+            userEmail: userEmail,
+            subscription: subData.subscription
+          } as PluginMessage);
+        } else {
+          // Token expired, clear storage
+          await figma.clientStorage.deleteAsync('figmant_session_token');
+          await figma.clientStorage.deleteAsync('figmant_user_email');
+          
+          figma.ui.postMessage({
+            type: 'auth-status',
+            isAuthenticated: false,
+            authError: 'Session expired'
+          } as PluginMessage);
+        }
+      } else {
+        figma.ui.postMessage({
+          type: 'auth-status',
+          isAuthenticated: false
+        } as PluginMessage);
+      }
+    } catch (error: any) {
+      figma.ui.postMessage({
+        type: 'auth-status',
+        isAuthenticated: false,
+        authError: error.message
+      } as PluginMessage);
+    }
+  }
+
   if (msg.type === 'export' || msg.type === 'analyze-selection') {
     // For analyze-selection, build the settings from message data
     let settings: PluginExportSettings;
     
     if (msg.type === 'analyze-selection') {
-      // Get API key from storage if not provided
-      let apiKey = msg.apiKey;
-      if (!apiKey) {
-        apiKey = await figma.clientStorage.getAsync('figmant_api_key');
-      }
+      // Get session token from storage
+      const sessionToken = await figma.clientStorage.getAsync('figmant_session_token');
       
-      if (!apiKey) {
+      if (!sessionToken) {
         figma.ui.postMessage({
           type: 'export-error',
-          data: { error: 'API key is required. Please enter your API key first.' }
+          data: { error: 'Authentication required. Please log in first.' }
         } as PluginMessage);
         return;
       }
@@ -120,7 +226,7 @@ figma.ui.onmessage = async (msg: UIMessage) => {
         context: msg.context || '',
         scale: 2,
         format: 'PNG',
-        apiKey: apiKey
+        sessionToken: sessionToken
       };
     } else {
       settings = msg.data as PluginExportSettings;
@@ -168,7 +274,7 @@ figma.ui.onmessage = async (msg: UIMessage) => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': settings.apiKey
+            'Authorization': `Bearer ${settings.sessionToken}`
           },
           body: JSON.stringify({
             images,
@@ -196,7 +302,7 @@ figma.ui.onmessage = async (msg: UIMessage) => {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'x-api-key': settings.apiKey
+              'Authorization': `Bearer ${settings.sessionToken}`
             },
             body: JSON.stringify({
               sessionId: result.session_id
@@ -241,44 +347,6 @@ figma.ui.onmessage = async (msg: UIMessage) => {
       figma.ui.postMessage({
         type: 'export-error',
         data: { error: error.message || 'Export failed' }
-      } as PluginMessage);
-    }
-  }
-  
-  if (msg.type === 'save-api-key') {
-    try {
-      await figma.clientStorage.setAsync('figmant_api_key', msg.apiKey);
-      figma.ui.postMessage({
-        type: 'selection-change',
-        data: { 
-          frames: getSelectedFrames(),
-          hasApiKey: true,
-          apiKeySaved: true
-        }
-      } as PluginMessage);
-    } catch (error) {
-      figma.ui.postMessage({
-        type: 'export-error',
-        data: { error: 'Failed to save API key' }
-      } as PluginMessage);
-    }
-  }
-  
-  if (msg.type === 'get-api-key') {
-    try {
-      const apiKey = await figma.clientStorage.getAsync('figmant_api_key');
-      figma.ui.postMessage({
-        type: 'selection-change',
-        data: { 
-          frames: getSelectedFrames(),
-          hasApiKey: !!apiKey,
-          storedApiKey: apiKey || null
-        }
-      } as PluginMessage);
-    } catch (error) {
-      figma.ui.postMessage({
-        type: 'export-error',
-        data: { error: 'Failed to retrieve API key' }
       } as PluginMessage);
     }
   }
