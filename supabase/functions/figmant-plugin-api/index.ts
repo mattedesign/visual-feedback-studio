@@ -43,38 +43,7 @@ serve(async (req) => {
 
     const token = authHeader.replace("Bearer ", "");
 
-    // Create anon client for authentication
-    const supabaseAuth = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false
-        },
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      }
-    );
-
-    // Verify the user
-    const { data: userData, error: userError } = await supabaseAuth.auth.getUser();
-    
-    if (userError || !userData.user) {
-      console.error('Authentication failed:', userError);
-      return new Response(JSON.stringify({ error: 'Authentication failed' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    const userId = userData.user.id;
-    console.log('🔍 Plugin API request from user:', userId);
-
-    // Create service role client for database operations
+    // Create service role client for authentication and database operations
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -84,6 +53,23 @@ serve(async (req) => {
         }
       }
     );
+
+    // Verify the user using the same pattern as figmant-check-subscription
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
+    
+    if (userError || !userData.user) {
+      console.error('🔐 Authentication failed:', userError);
+      return new Response(JSON.stringify({ 
+        code: 401,
+        message: 'Invalid JWT'
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const userId = userData.user.id;
+    console.log('🔍 Plugin API request from user:', userId);
 
     // Check subscription and usage limits
     let { data: subscriber, error: subscriberError } = await supabase

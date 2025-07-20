@@ -313,6 +313,9 @@ figma.ui.onmessage = async (msg: UIMessage) => {
 
       // Upload images to the plugin API
       try {
+        console.log('🔑 Using session token for upload:', settings.sessionToken ? 'Token exists' : 'No token');
+        console.log('🔑 Token preview:', settings.sessionToken ? settings.sessionToken.substring(0, 20) + '...' : 'undefined');
+        
         const uploadResponse = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/functions/v1/figmant-plugin-api', {
           method: 'POST',
           headers: {
