@@ -47,17 +47,24 @@ interface PluginExportSettings {
 // Function to validate session token
 async function validateSessionToken(token: string): Promise<boolean> {
   try {
-    const response = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/functions/v1/figmant-check-subscription', {
-      method: 'POST',
+    console.log('🔍 Validating session token...');
+    
+    // Try a simple request to Supabase auth to validate the token
+    const response = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/auth/v1/user', {
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14eHR2dHdjb3BsZmFqdmF6cGF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2MDU2NjgsImV4cCI6MjA2NjE4MTY2OH0.b9sNxeDALujnw2tQD-qnbs3YkZvvTkja8jG6clgpibA'
       }
     });
     
-    return response.ok;
+    console.log('🔍 Token validation response status:', response.status);
+    const isValid = response.ok;
+    console.log('🔍 Token validation result:', isValid);
+    
+    return isValid;
   } catch (error) {
-    console.error('Token validation error:', error);
+    console.error('❌ Token validation error:', error);
     return false;
   }
 }
@@ -330,8 +337,10 @@ figma.ui.onmessage = async (msg: UIMessage) => {
         progress: 60
       });
       
+      console.log('🔍 About to validate session token before upload...');
       // Validate and refresh session token if needed
       const isValidToken = await validateSessionToken(settings.sessionToken);
+      console.log('🔍 Token validation completed, result:', isValidToken);
       if (!isValidToken) {
         console.log('🔄 Session token invalid, requesting refresh...');
         figma.ui.postMessage({
