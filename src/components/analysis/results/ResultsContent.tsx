@@ -59,11 +59,22 @@ export const ResultsContent = ({ analysisData, sessionData }: ResultsContentProp
   const issues: AnalysisIssue[] = [];
 
   // Extract issues from different parts of the analysis
+  if (claudeAnalysis.critical_recommendations) {
+    issues.push(...claudeAnalysis.critical_recommendations.map((issue: any) => ({
+      title: issue.issue || issue.title || 'Critical Issue',
+      description: issue.recommendation || issue.description || issue.impact || 'Critical issue identified',
+      severity: 'critical' as const,
+      category: issue.category || 'Critical',
+      solution: issue.solution || issue.recommendation,
+      impact: issue.impact
+    })));
+  }
+
   if (claudeAnalysis.criticalIssues) {
     issues.push(...claudeAnalysis.criticalIssues.map((issue: any) => ({
       title: issue.title || issue.issue || 'Critical Issue',
       description: issue.description || issue.impact || 'Critical issue identified',
-      severity: 'critical' as const,
+      severity: issue.severity?.toLowerCase() || 'critical' as const,
       category: issue.category || 'Critical',
       solution: issue.solution,
       impact: issue.impact
