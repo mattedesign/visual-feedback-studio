@@ -131,13 +131,30 @@ export const ResultsContent = ({ analysisData, sessionData }: ResultsContentProp
       overallScore = analysisContent.score;
     }
 
-    // Extract executive summary from analysisContent
-    if (analysisContent.executiveSummary) {
+    // Extract executive summary from analysisContent - handle both string and object formats
+    if (typeof analysisContent.executiveSummary === 'string') {
       executiveSummary = analysisContent.executiveSummary;
-    } else if (analysisContent.executive_summary) {
+    } else if (typeof analysisContent.executive_summary === 'string') {
       executiveSummary = analysisContent.executive_summary;
-    } else if (analysisContent.summary) {
+    } else if (typeof analysisContent.summary === 'string') {
       executiveSummary = analysisContent.summary;
+    } else if (analysisContent.summary && typeof analysisContent.summary === 'object') {
+      // Handle summary object structure with strengths, next_steps, critical_issues
+      const summaryParts = [];
+      
+      if (analysisContent.summary.strengths && Array.isArray(analysisContent.summary.strengths)) {
+        summaryParts.push(`Strengths: ${analysisContent.summary.strengths.join(', ')}`);
+      }
+      
+      if (analysisContent.summary.critical_issues && Array.isArray(analysisContent.summary.critical_issues)) {
+        summaryParts.push(`Critical Issues: ${analysisContent.summary.critical_issues.join(', ')}`);
+      }
+      
+      if (analysisContent.summary.next_steps && Array.isArray(analysisContent.summary.next_steps)) {
+        summaryParts.push(`Next Steps: ${analysisContent.summary.next_steps.join(', ')}`);
+      }
+      
+      executiveSummary = summaryParts.join(' | ');
     }
 
     // NEW: Extract issues from ux_analysis structure - handle category-based groupings first
@@ -149,13 +166,33 @@ export const ResultsContent = ({ analysisData, sessionData }: ResultsContentProp
     for (const categoryType of categoryTypes) {
       if (analysisContent[categoryType] && Array.isArray(analysisContent[categoryType])) {
         analysisContent[categoryType].forEach((item: any) => {
+          // Ensure we're only adding strings/text content, not objects
+          const title = typeof item.element === 'string' ? item.element : 
+                       typeof item.title === 'string' ? item.title : 
+                       typeof item.issue === 'string' ? item.issue : 
+                       `${categoryType.replace('_', ' ')} Issue`;
+          
+          const description = typeof item.recommendation === 'string' ? item.recommendation :
+                             typeof item.description === 'string' ? item.description :
+                             typeof item.user_impact === 'string' ? item.user_impact :
+                             typeof item.impact === 'string' ? item.impact :
+                             'No description available';
+          
+          const solution = typeof item.recommendation === 'string' ? item.recommendation :
+                          typeof item.solution === 'string' ? item.solution :
+                          undefined;
+          
+          const impact = typeof item.user_impact === 'string' ? item.user_impact :
+                        typeof item.impact === 'string' ? item.impact :
+                        undefined;
+
           issues.push({
-            title: item.element || item.title || item.issue || `${categoryType.replace('_', ' ')} Issue`,
-            description: item.recommendation || item.description || item.user_impact || 'No description available',
+            title,
+            description,
             severity: (item.severity || 'medium').toLowerCase() as 'critical' | 'high' | 'medium' | 'low',
             category: categoryType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-            solution: item.recommendation || item.solution,
-            impact: item.user_impact || item.impact
+            solution,
+            impact
           });
         });
       }
