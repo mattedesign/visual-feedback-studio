@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Sparkles, Settings, Crown, ChevronDown, ChevronRight, User, BarChart3, History, Box, FileText, Folder, FolderOpen, ChevronLeft } from 'lucide-react';
+import { LayoutDashboard, Sparkles, Settings, Crown, ChevronDown, ChevronRight, User, BarChart3, History, Box, FileText, Folder, FolderOpen, PanelLeft } from 'lucide-react';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { FigmantLogo } from '@/components/ui/figmant-logo';
 import { Button } from '@/components/ui/button';
@@ -85,7 +85,7 @@ export const FigmantSidebar = () => {
             onClick={() => setIsCollapsed(!isCollapsed)}
             className="p-1 hover:bg-muted/50"
           >
-            <ChevronLeft className={`w-4 h-4 text-gray-600 transition-transform ${isCollapsed ? 'rotate-180' : ''}`} />
+            <PanelLeft className={`w-4 h-4 text-gray-600 transition-transform ${isCollapsed ? 'rotate-180' : ''}`} />
           </Button>
         </div>
       </div>
