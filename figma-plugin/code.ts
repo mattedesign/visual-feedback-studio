@@ -1,11 +1,10 @@
-
 /// <reference types="@figma/plugin-typings" />
 
 // This file runs in the main Figma environment
 
 // Define types directly in this file since imports can be problematic in Figma
 interface PluginMessage {
-  type: 'selection-change' | 'export-frames' | 'export-complete' | 'export-error' | 'close' | 'analysis-progress' | 'analysis-complete' | 'analysis-partial' | 'auth-status' | 'token-refresh-needed';
+  type: 'selection-change' | 'export-frames' | 'export-complete' | 'export-error' | 'close' | 'analysis-progress' | 'analysis-complete' | 'analysis-partial' | 'auth-status';
   data?: any;
   message?: string;
   progress?: number;
@@ -42,38 +41,6 @@ interface PluginExportSettings {
   scale: number;
   format: 'PNG' | 'JPG' | 'SVG';
   sessionToken: string;
-}
-
-// Function to validate session token
-async function validateSessionToken(token: string): Promise<boolean> {
-  try {
-    console.log('🔍 Validating session token...');
-    console.log('🔍 Token preview:', token ? `${token.substring(0, 20)}...` : 'No token');
-    
-    // Test the actual endpoint we'll be using - the plugin API
-    const response = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/functions/v1/figmant-check-subscription', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    
-    console.log('🔍 Token validation response status:', response.status);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.log('🔍 Token validation error response:', errorText);
-    }
-    
-    const isValid = response.ok;
-    console.log('🔍 Token validation result:', isValid);
-    
-    return isValid;
-  } catch (error) {
-    console.error('❌ Token validation error:', error);
-    return false;
-  }
 }
 
 // Show UI
@@ -138,8 +105,6 @@ figma.ui.onmessage = async (msg: UIMessage) => {
     try {
       console.log('🔐 Attempting login...');
       
-      console.log('🚀 Starting login process...');
-      
       // Login user with Supabase
       const response = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/auth/v1/token?grant_type=password', {
         method: 'POST',
@@ -153,39 +118,30 @@ figma.ui.onmessage = async (msg: UIMessage) => {
         })
       });
 
-      console.log('🔍 Login response status:', response.status);
-
       if (!response.ok) {
         const error = await response.json();
-        console.error('❌ Login failed with error:', error);
         throw new Error(error.error_description || 'Login failed');
       }
 
       const authData = await response.json();
-      console.log('✅ Login response received, storing token...');
       
       // Store session token
       await figma.clientStorage.setAsync('figmant_session_token', authData.access_token);
       await figma.clientStorage.setAsync('figmant_user_email', authData.user.email);
 
-      console.log('✅ Login successful, token stored');
+      console.log('✅ Login successful');
       figma.ui.postMessage({
         type: 'auth-status',
-        data: {
-          authenticated: true,
-          token: authData.access_token,
-          userEmail: authData.user.email
-        }
+        isAuthenticated: true,
+        userEmail: authData.user.email
       } as PluginMessage);
 
     } catch (error: any) {
       console.error('❌ Login error:', error);
       figma.ui.postMessage({
         type: 'auth-status',
-        data: {
-          authenticated: false,
-          authError: error.message
-        }
+        isAuthenticated: false,
+        authError: error.message
       } as PluginMessage);
     }
   }
@@ -197,9 +153,7 @@ figma.ui.onmessage = async (msg: UIMessage) => {
       
       figma.ui.postMessage({
         type: 'auth-status',
-        data: {
-          authenticated: false
-        }
+        isAuthenticated: false
       } as PluginMessage);
     } catch (error) {
       console.error('Logout error:', error);
@@ -225,12 +179,9 @@ figma.ui.onmessage = async (msg: UIMessage) => {
           const subData = await response.json();
           figma.ui.postMessage({
             type: 'auth-status',
-            data: {
-              authenticated: true,
-              token: sessionToken,
-              userEmail: userEmail,
-              subscription: subData.subscription
-            }
+            isAuthenticated: true,
+            userEmail: userEmail,
+            subscription: subData.subscription
           } as PluginMessage);
         } else {
           // Token expired, clear storage
@@ -239,27 +190,21 @@ figma.ui.onmessage = async (msg: UIMessage) => {
           
           figma.ui.postMessage({
             type: 'auth-status',
-            data: {
-              authenticated: false,
-              authError: 'Session expired'
-            }
+            isAuthenticated: false,
+            authError: 'Session expired'
           } as PluginMessage);
         }
       } else {
         figma.ui.postMessage({
           type: 'auth-status',
-          data: {
-            authenticated: false
-          }
+          isAuthenticated: false
         } as PluginMessage);
       }
     } catch (error: any) {
       figma.ui.postMessage({
         type: 'auth-status',
-        data: {
-          authenticated: false,
-          authError: error.message
-        }
+        isAuthenticated: false,
+        authError: error.message
       } as PluginMessage);
     }
   }
@@ -365,23 +310,6 @@ figma.ui.onmessage = async (msg: UIMessage) => {
         message: 'Uploading images...',
         progress: 60
       });
-      
-      console.log('🔍 About to validate session token before upload...');
-      // Validate and refresh session token if needed
-      const isValidToken = await validateSessionToken(settings.sessionToken);
-      console.log('🔍 Token validation completed, result:', isValidToken);
-      
-      if (!isValidToken) {
-        console.log('🔄 Session token invalid, requesting refresh...');
-        figma.ui.postMessage({
-          type: 'export-error',
-          data: { 
-            error: 'Your session has expired. Please close the plugin and log in again in the web app before trying again.',
-            sessionExpired: true
-          }
-        } as PluginMessage);
-        return;
-      }
 
       // Upload images to the plugin API
       try {
@@ -435,7 +363,7 @@ figma.ui.onmessage = async (msg: UIMessage) => {
               'Authorization': `Bearer ${settings.sessionToken}`
             },
             body: JSON.stringify({
-              sessionId: sessionId
+              sessionId: sessionId  // FIXED: Changed from session_id to sessionId
             })
           });
 
