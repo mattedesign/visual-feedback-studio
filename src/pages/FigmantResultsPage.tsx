@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Sparkles, AlertTriangle } from 'lucide-react';
+import { Sparkles, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getFigmantResults, getFigmantSession } from '@/services/figmantAnalysisService';
+import { FigmantSessionService } from '@/services/figmantSessionService';
 import { FigmantImageGrid } from '@/components/analysis/figmant/FigmantImageGrid';
 import { FigmantImageDetail } from '@/components/analysis/figmant/FigmantImageDetail';
 import { ResultsContent } from '@/components/analysis/results/ResultsContent';
@@ -26,6 +27,7 @@ const FigmantResultsPage = () => {
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<'grid' | 'detail' | 'results'>('grid');
   const [selectedImage, setSelectedImage] = useState<FigmantImage | null>(null);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   useEffect(() => {
     if (sessionId) {
@@ -38,21 +40,60 @@ const FigmantResultsPage = () => {
 
     try {
       setLoading(true);
+      console.log('🔄 Loading analysis results for session:', sessionId);
+
+      // Use the new session service to find the session
+      const { session: foundSession, debugInfo: sessionDebugInfo } = await FigmantSessionService.findSession(sessionId);
+      
+      setDebugInfo(sessionDebugInfo);
+
+      if (!foundSession) {
+        console.error('❌ No session found for ID:', sessionId);
+        return;
+      }
+
+      const actualSessionId = foundSession.id;
+      console.log('✅ Using session ID:', actualSessionId);
+
+      // If we found a different session ID, update the URL
+      if (actualSessionId !== sessionId && sessionDebugInfo.matchType === 'approximate') {
+        console.log('🔄 Redirecting to correct session ID');
+        toast.info('Redirecting to the correct analysis session...');
+        navigate(`/figmant/results/${actualSessionId}`, { replace: true });
+        return;
+      }
+
+      // Load results and session data
       const [results, session] = await Promise.all([
-        getFigmantResults(sessionId),
-        getFigmantSession(sessionId)
+        getFigmantResults(actualSessionId),
+        getFigmantSession(actualSessionId)
       ]);
+
+      console.log('📊 Loaded results:', { 
+        hasResults: !!results, 
+        hasSession: !!session,
+        resultKeys: results ? Object.keys(results) : [],
+        sessionImageCount: session?.images?.length || 0
+      });
+
       setAnalysisData(results);
-      setSessionData(session);
+      setSessionData(session || foundSession);
       
       // If we have analysis data, show results view by default
-      if (results && session?.images?.length > 0) {
+      if (results && (session?.images?.length > 0 || foundSession)) {
         setCurrentView('results');
-        setSelectedImage(session.images[0]); // Select first image
+        if (session?.images?.length > 0) {
+          setSelectedImage(session.images[0]);
+        }
       }
     } catch (error) {
       console.error('Failed to load analysis results:', error);
       toast.error('Failed to load analysis results');
+      setDebugInfo(prev => ({
+        ...prev,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      }));
     } finally {
       setLoading(false);
     }
@@ -65,21 +106,89 @@ const FigmantResultsPage = () => {
           <Sparkles className="w-8 h-8 animate-spin mx-auto mb-4 text-[#22757C]" />
           <h2 className="text-lg font-semibold mb-2">Loading Analysis Results</h2>
           <p className="text-muted-foreground">Please wait while we load your design analysis...</p>
+          {sessionId && (
+            <p className="text-xs text-gray-500 mt-2">Session: {sessionId}</p>
+          )}
         </div>
       </div>
     );
   }
 
-  if (!analysisData || !sessionData) {
+  // Enhanced error handling with debug information
+  if (debugInfo && !sessionData) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-center">
-          <AlertTriangle className="w-8 h-8 mx-auto mb-4 text-red-500" />
-          <h2 className="text-lg font-semibold mb-2">Analysis Not Found</h2>
-          <p className="text-muted-foreground mb-4">The requested analysis could not be found.</p>
-          <Button onClick={() => navigate('/analyze')}>
-            Start New Analysis
-          </Button>
+      <div className="h-full flex items-center justify-center p-8">
+        <div className="text-center max-w-4xl">
+          <AlertTriangle className="w-12 h-12 mx-auto mb-6 text-red-500" />
+          <h2 className="text-2xl font-semibold mb-4">Analysis Session Not Found</h2>
+          <p className="text-muted-foreground mb-6">
+            We couldn't find an analysis session with the provided ID. This might be due to a URL mismatch or the session may not exist.
+          </p>
+          
+          {/* Debug Information */}
+          <div className="bg-gray-50 p-6 rounded-lg text-left mb-6 max-w-2xl mx-auto">
+            <h3 className="font-semibold mb-4 text-gray-900">Debug Information:</h3>
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Requested Session ID:</span>
+                <span className="font-mono text-xs break-all">{debugInfo.requestedSessionId}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Match Type:</span>
+                <span className={`font-medium ${
+                  debugInfo.matchType === 'exact' ? 'text-green-600' :
+                  debugInfo.matchType === 'approximate' ? 'text-yellow-600' : 'text-red-600'
+                }`}>
+                  {debugInfo.matchType}
+                </span>
+              </div>
+              {debugInfo.foundSessionId && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Found Session ID:</span>
+                  <span className="font-mono text-xs break-all">{debugInfo.foundSessionId}</span>
+                </div>
+              )}
+              {debugInfo.error && (
+                <div className="text-red-600 text-xs mt-2">
+                  <strong>Error:</strong> {debugInfo.error}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Available Sessions */}
+          {debugInfo.availableSessions && debugInfo.availableSessions.length > 0 && (
+            <div className="bg-blue-50 p-6 rounded-lg text-left mb-6 max-w-2xl mx-auto">
+              <h3 className="font-semibold mb-4 text-blue-900">Recent Analysis Sessions:</h3>
+              <div className="space-y-2">
+                {debugInfo.availableSessions.slice(0, 5).map((session: any) => (
+                  <div key={session.id} className="flex justify-between items-center p-2 bg-white rounded border">
+                    <div>
+                      <div className="font-medium text-sm text-gray-900">{session.title}</div>
+                      <div className="text-xs text-gray-500">{new Date(session.created_at).toLocaleString()}</div>
+                    </div>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => navigate(`/figmant/results/${session.id}`)}
+                    >
+                      View
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          <div className="flex gap-4 justify-center">
+            <Button onClick={() => navigate('/figmant')}>
+              Start New Analysis
+            </Button>
+            <Button variant="outline" onClick={() => window.location.reload()} className="flex items-center gap-2">
+              <RefreshCw className="w-4 h-4" />
+              Retry Loading
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -96,7 +205,7 @@ const FigmantResultsPage = () => {
   };
 
   // Three-panel layout for results view
-  if (currentView === 'results' && selectedImage) {
+  if (currentView === 'results') {
     return (
       <div className="h-full flex bg-[#F1F1F1]">
         {/* Left Panel - Main Content */}
@@ -111,7 +220,7 @@ const FigmantResultsPage = () => {
         <div className="w-80 border-l border-[#E2E2E2] overflow-hidden">
           <ResultsChat 
             analysisData={analysisData}
-            sessionId={sessionId!}
+            sessionId={sessionData?.id || sessionId!}
           />
         </div>
       </div>
@@ -142,13 +251,33 @@ const FigmantResultsPage = () => {
     );
   }
 
+  // Fallback: Show results even without images
+  if (analysisData) {
+    return (
+      <div className="h-full flex bg-[#F1F1F1]">
+        <div className="flex-1 overflow-hidden">
+          <ResultsContent 
+            analysisData={analysisData}
+            sessionData={sessionData}
+          />
+        </div>
+        <div className="w-80 border-l border-[#E2E2E2] overflow-hidden">
+          <ResultsChat 
+            analysisData={analysisData}
+            sessionId={sessionData?.id || sessionId!}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full flex items-center justify-center">
       <div className="text-center">
         <AlertTriangle className="w-8 h-8 mx-auto mb-4 text-red-500" />
-        <h2 className="text-lg font-semibold mb-2">No Images Found</h2>
-        <p className="text-muted-foreground mb-4">No images were found for this analysis session.</p>
-        <Button onClick={() => navigate('/analyze')}>
+        <h2 className="text-lg font-semibold mb-2">No Analysis Data</h2>
+        <p className="text-muted-foreground mb-4">No analysis data was found for this session.</p>
+        <Button onClick={() => navigate('/figmant')}>
           Start New Analysis
         </Button>
       </div>

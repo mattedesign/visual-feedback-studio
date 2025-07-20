@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -54,43 +55,99 @@ export const ResultsContent = ({ analysisData, sessionData }: ResultsContentProp
     }
   };
 
-  // Parse Claude analysis data
-  const claudeAnalysis = analysisData?.claude_analysis || {};
-  const issues: AnalysisIssue[] = [];
+  // Enhanced Claude analysis parsing
+  const parseClaudeAnalysis = (claudeAnalysis: any) => {
+    console.log('🔍 Parsing Claude analysis:', claudeAnalysis);
+    
+    if (!claudeAnalysis) {
+      return { issues: [], overallScore: 0, executiveSummary: '' };
+    }
 
-  // Extract issues from different parts of the analysis
-  if (claudeAnalysis.critical_recommendations) {
-    issues.push(...claudeAnalysis.critical_recommendations.map((issue: any) => ({
-      title: issue.issue || issue.title || 'Critical Issue',
-      description: issue.recommendation || issue.description || issue.impact || 'Critical issue identified',
-      severity: 'critical' as const,
-      category: issue.category || 'Critical',
-      solution: issue.solution || issue.recommendation,
-      impact: issue.impact
-    })));
-  }
+    const issues: AnalysisIssue[] = [];
+    let overallScore = 0;
+    let executiveSummary = '';
 
-  if (claudeAnalysis.criticalIssues) {
-    issues.push(...claudeAnalysis.criticalIssues.map((issue: any) => ({
-      title: issue.title || issue.issue || 'Critical Issue',
-      description: issue.description || issue.impact || 'Critical issue identified',
-      severity: issue.severity?.toLowerCase() || 'critical' as const,
-      category: issue.category || 'Critical',
-      solution: issue.solution,
-      impact: issue.impact
-    })));
-  }
+    // Handle different possible structures
+    if (typeof claudeAnalysis === 'string') {
+      try {
+        const parsed = JSON.parse(claudeAnalysis);
+        return parseClaudeAnalysis(parsed);
+      } catch (e) {
+        console.warn('Failed to parse Claude analysis string:', e);
+        return { issues: [], overallScore: 0, executiveSummary: claudeAnalysis };
+      }
+    }
 
-  if (claudeAnalysis.recommendations) {
-    issues.push(...claudeAnalysis.recommendations.map((rec: any) => ({
-      title: rec.title || 'Recommendation',
-      description: rec.description || 'Improvement recommendation',
-      severity: (rec.effort === 'Low' ? 'low' : rec.effort === 'High' ? 'high' : 'medium') as 'critical' | 'high' | 'medium' | 'low',
-      category: rec.category || 'Improvement',
-      solution: rec.solution,
-      impact: rec.impact
-    })));
-  }
+    // Extract overall score
+    if (claudeAnalysis.overallScore) {
+      overallScore = claudeAnalysis.overallScore;
+    } else if (claudeAnalysis.overall_score) {
+      overallScore = claudeAnalysis.overall_score;
+    } else if (claudeAnalysis.score) {
+      overallScore = claudeAnalysis.score;
+    }
+
+    // Extract executive summary
+    if (claudeAnalysis.executiveSummary) {
+      executiveSummary = claudeAnalysis.executiveSummary;
+    } else if (claudeAnalysis.executive_summary) {
+      executiveSummary = claudeAnalysis.executive_summary;
+    } else if (claudeAnalysis.summary) {
+      executiveSummary = claudeAnalysis.summary;
+    }
+
+    // Extract issues from various possible structures
+    const issuesSources = [
+      claudeAnalysis.critical_recommendations,
+      claudeAnalysis.criticalIssues,
+      claudeAnalysis.critical_issues,
+      claudeAnalysis.recommendations,
+      claudeAnalysis.issues,
+      claudeAnalysis.findings,
+      claudeAnalysis.annotations
+    ];
+
+    for (const source of issuesSources) {
+      if (Array.isArray(source)) {
+        source.forEach((item: any) => {
+          issues.push({
+            title: item.title || item.issue || item.name || 'Issue',
+            description: item.description || item.recommendation || item.impact || item.feedback || 'No description available',
+            severity: (item.severity || item.priority || 'medium').toLowerCase() as 'critical' | 'high' | 'medium' | 'low',
+            category: item.category || item.type || 'General',
+            solution: item.solution || item.fix || item.recommendation,
+            impact: item.impact || item.effect
+          });
+        });
+      }
+    }
+
+    // If we still don't have issues, try to extract from other structures
+    if (issues.length === 0) {
+      // Check if there are category-based groupings
+      const possibleCategories = ['usability', 'accessibility', 'performance', 'design', 'content'];
+      
+      for (const category of possibleCategories) {
+        if (claudeAnalysis[category] && Array.isArray(claudeAnalysis[category])) {
+          claudeAnalysis[category].forEach((item: any) => {
+            issues.push({
+              title: item.title || item.issue || `${category} Issue`,
+              description: item.description || item.recommendation || 'No description available',
+              severity: (item.severity || 'medium').toLowerCase() as 'critical' | 'high' | 'medium' | 'low',
+              category: category,
+              solution: item.solution,
+              impact: item.impact
+            });
+          });
+        }
+      }
+    }
+
+    return { issues, overallScore, executiveSummary };
+  };
+
+  // Parse the analysis data
+  const { issues, overallScore, executiveSummary } = parseClaudeAnalysis(analysisData?.claude_analysis);
 
   // Calculate severity breakdown
   const severityBreakdown = issues.reduce((acc, issue) => {
@@ -99,25 +156,39 @@ export const ResultsContent = ({ analysisData, sessionData }: ResultsContentProp
   }, {} as Record<string, number>);
 
   const totalIssues = issues.length;
-  const overallScore = claudeAnalysis.overallScore || Math.max(0, 100 - (severityBreakdown.critical * 20 + severityBreakdown.high * 10 + severityBreakdown.medium * 5 + severityBreakdown.low * 2));
+  const finalScore = overallScore || Math.max(0, 100 - (
+    (severityBreakdown.critical || 0) * 20 + 
+    (severityBreakdown.high || 0) * 10 + 
+    (severityBreakdown.medium || 0) * 5 + 
+    (severityBreakdown.low || 0) * 2
+  ));
+
+  // Debug logging
+  console.log('📊 Results Content Debug:', {
+    analysisData,
+    claudeAnalysis: analysisData?.claude_analysis,
+    parsedIssues: issues.length,
+    overallScore: finalScore,
+    severityBreakdown
+  });
 
   return (
     <div className="h-full flex flex-col bg-white">
       {/* Header */}
       <div className="p-6 border-b border-[#E2E2E2]">
         <div className="flex items-center gap-3 mb-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard')}>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/figmant')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Grid
+            Back to Dashboard
           </Button>
         </div>
         
         <div className="mb-4">
           <h1 className="text-xl font-semibold text-[#121212] mb-1">
-            Form Type Of Project (Selecting) (Hover)
+            {sessionData?.title || 'Design Analysis Results'}
           </h1>
           <p className="text-sm text-[#7B7B7B]">
-            {totalIssues} Annotations • Overall Score: {overallScore}/100
+            {totalIssues} Annotations • Overall Score: {Math.round(finalScore)}/100
           </p>
         </div>
 
@@ -152,6 +223,18 @@ export const ResultsContent = ({ analysisData, sessionData }: ResultsContentProp
       <div className="flex-1 overflow-y-auto p-6">
         {activeTab === 'summary' ? (
           <div className="space-y-6">
+            {/* Executive Summary */}
+            {executiveSummary && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base font-medium text-[#121212]">Executive Summary</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-[#7B7B7B]">{executiveSummary}</p>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Analysis Overview */}
             <Card>
               <CardHeader>
@@ -160,19 +243,27 @@ export const ResultsContent = ({ analysisData, sessionData }: ResultsContentProp
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-[#7B7B7B]">Overall Score</span>
-                  <span className="font-semibold text-[#121212]">{overallScore}/100</span>
+                  <span className="font-semibold text-[#121212]">{Math.round(finalScore)}/100</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-[#7B7B7B]">Critical Issues</span>
-                  <span className="font-semibold text-red-600">{severityBreakdown.critical || 0}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-[#7B7B7B]">Recommendations</span>
-                  <span className="font-semibold text-blue-600">{severityBreakdown.medium + severityBreakdown.low || 0}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-[#7B7B7B]">Accessibility Issues</span>
-                  <span className="font-semibold text-orange-600">{severityBreakdown.high || 0}</span>
+                <Progress value={finalScore} className="w-full" />
+                
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-[#7B7B7B]">Critical Issues</span>
+                    <span className="font-semibold text-red-600">{severityBreakdown.critical || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-[#7B7B7B]">High Priority</span>
+                    <span className="font-semibold text-orange-600">{severityBreakdown.high || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-[#7B7B7B]">Medium Priority</span>
+                    <span className="font-semibold text-yellow-600">{severityBreakdown.medium || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-[#7B7B7B]">Low Priority</span>
+                    <span className="font-semibold text-blue-600">{severityBreakdown.low || 0}</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -203,10 +294,19 @@ export const ResultsContent = ({ analysisData, sessionData }: ResultsContentProp
                             <h4 className="font-medium text-[#121212] text-sm">{issue.title}</h4>
                             <div className="flex items-center gap-1">
                               {getSeverityIcon(issue.severity)}
+                              <Badge variant="outline" className={`text-xs ${getSeverityColor(issue.severity)}`}>
+                                {issue.severity.toUpperCase()}
+                              </Badge>
                             </div>
                           </div>
                           <p className="text-sm text-[#7B7B7B] mb-2">{issue.category}</p>
-                          <p className="text-xs text-[#7B7B7B]">{issue.description}</p>
+                          <p className="text-xs text-[#7B7B7B] mb-2">{issue.description}</p>
+                          {issue.solution && (
+                            <div className="bg-blue-50 rounded p-2 mt-2">
+                              <p className="text-xs font-medium text-blue-900 mb-1">Recommended Solution:</p>
+                              <p className="text-xs text-blue-700">{issue.solution}</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -223,9 +323,21 @@ export const ResultsContent = ({ analysisData, sessionData }: ResultsContentProp
                 <CardTitle className="text-base font-medium text-[#121212]">Improvement Ideas</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-[#7B7B7B]">
-                  Here you can explore creative solutions and innovative approaches to improve your design.
+                <p className="text-sm text-[#7B7B7B] mb-4">
+                  Here are some creative solutions and innovative approaches to improve your design based on the analysis.
                 </p>
+                
+                {issues.filter(issue => issue.solution).map((issue, index) => (
+                  <div key={index} className="border border-[#E2E2E2] rounded-lg p-4 mb-4">
+                    <h4 className="font-medium text-[#121212] text-sm mb-2">{issue.title}</h4>
+                    <p className="text-xs text-[#7B7B7B] mb-2">{issue.solution}</p>
+                    {issue.impact && (
+                      <Badge variant="outline" className="text-xs">
+                        Impact: {issue.impact}
+                      </Badge>
+                    )}
+                  </div>
+                ))}
               </CardContent>
             </Card>
           </div>
