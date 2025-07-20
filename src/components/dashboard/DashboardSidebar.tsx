@@ -88,8 +88,8 @@ export function DashboardSidebar() {
                 }}
               >
                 <div className="flex items-center gap-3">
-                  <item.icon className="w-4 h-4" />
-                  <span>{item.label}</span>
+                  <item.icon className="w-4 h-4 text-gray-600" />
+                  <span className="text-gray-600">{item.label}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   {item.count && (
@@ -117,7 +117,7 @@ export function DashboardSidebar() {
                       key={subIndex}
                       variant="ghost"
                       size="sm"
-                      className="w-full justify-start text-sm text-muted-foreground hover:text-foreground"
+                      className="w-full justify-start text-sm text-gray-600 hover:text-gray-600"
                     >
                       {subItem.label}
                     </Button>
@@ -145,8 +145,8 @@ export function DashboardSidebar() {
                 item.isActive && "bg-muted"
               )}
             >
-              <item.icon className={cn("w-4 h-4", item.color)} />
-              <span className={item.isActive ? "font-medium" : ""}>{item.label}</span>
+              <item.icon className="w-4 h-4 text-gray-600" />
+              <span className={item.isActive ? "font-medium text-gray-600" : "text-gray-600"}>{item.label}</span>
             </Button>
           ))}
         </div>

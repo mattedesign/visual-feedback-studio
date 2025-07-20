@@ -91,8 +91,8 @@ export function AppSidebar({}: AppSidebarProps) {
       : "flex py-4 px-3 items-center gap-2 self-stretch rounded-xl min-h-[40px]";
     
     const colorClasses = active 
-      ? "bg-white text-foreground font-medium hover:!bg-white hover:!text-[#5C3C90] focus:!bg-white focus:!text-[#5C3C90]"
-      : "text-muted-foreground hover:!bg-[#5C3C90] hover:!text-[#ffffff] focus:!bg-[#5C3C90] focus:!text-[#ffffff] transition-colors";
+      ? "bg-white text-gray-600 font-medium hover:!bg-white hover:!text-gray-600 focus:!bg-white focus:!text-gray-600"
+      : "text-gray-600 hover:!bg-[#5C3C90] hover:!text-gray-600 focus:!bg-[#5C3C90] focus:!text-gray-600 transition-colors";
     
     return `${baseClasses} ${colorClasses}`;
   };
@@ -172,7 +172,7 @@ export function AppSidebar({}: AppSidebarProps) {
                 {!collapsed && isProfileOpen && <SidebarMenuSub>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton asChild>
-                        <NavLink to="/settings?tab=profile" className={`w-full flex py-2 px-3 items-center gap-2 self-stretch rounded-xl transition-colors min-h-[36px] ${currentPath === '/settings' ? 'bg-white/80 text-[#5C3C90]' : 'text-muted-foreground hover:bg-[#EEE3FF] hover:text-[#5C3C90] focus:bg-[#EEE3FF] focus:text-[#5C3C90]'}`} onClick={handleNavClick}>
+                        <NavLink to="/settings?tab=profile" className={`w-full flex py-2 px-3 items-center gap-2 self-stretch rounded-xl transition-colors min-h-[36px] ${currentPath === '/settings' ? 'bg-white/80 text-gray-600' : 'text-gray-600 hover:bg-[#EEE3FF] hover:text-gray-600 focus:bg-[#EEE3FF] focus:text-gray-600'}`} onClick={handleNavClick}>
                           <User className="h-4 w-4" />
                           <span>View Profile</span>
                         </NavLink>
@@ -180,7 +180,7 @@ export function AppSidebar({}: AppSidebarProps) {
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton asChild>
-                        <button className="w-full flex py-2 px-3 items-center gap-2 self-stretch rounded-xl text-muted-foreground hover:bg-[#EEE3FF] hover:text-[#5C3C90] focus:bg-[#EEE3FF] focus:text-[#5C3C90] transition-colors min-h-[36px]" onClick={handleLogout}>
+                        <button className="w-full flex py-2 px-3 items-center gap-2 self-stretch rounded-xl text-gray-600 hover:bg-[#EEE3FF] hover:text-gray-600 focus:bg-[#EEE3FF] focus:text-gray-600 transition-colors min-h-[36px]" onClick={handleLogout}>
                           <LogOut className="h-4 w-4" />
                           <span>Logout</span>
                         </button>
