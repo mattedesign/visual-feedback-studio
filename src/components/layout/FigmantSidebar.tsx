@@ -51,10 +51,12 @@ export const FigmantSidebar = () => {
       style={{
         display: 'flex',
         width: '288px',
+        height: '100%',
         flexDirection: 'column',
         alignItems: 'stretch',
         borderRadius: '20px',
-        background: '#FCFCFC'
+        background: '#FCFCFC',
+        flexShrink: 0
       }}
     >
       {/* Header */}

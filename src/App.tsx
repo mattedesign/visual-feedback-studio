@@ -42,7 +42,9 @@ const App = () => {
                     flex: '1 0 0', 
                     alignSelf: 'stretch', 
                     borderRadius: '20px', 
-                    background: 'var(--Surface-03, #F1F1F1)' 
+                    background: 'var(--Surface-03, #F1F1F1)',
+                    height: '100%',
+                    overflow: 'hidden'
                   }}>
                     <FigmantLayout>
                       <Routes>
