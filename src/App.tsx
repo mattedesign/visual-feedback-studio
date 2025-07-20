@@ -37,14 +37,13 @@ const App = () => {
               <AuthGuard>
                 <SubscriptionProvider>
                   <div style={{ 
-                    display: 'flex', 
-                    padding: '8px', 
-                    flex: '1 0 0', 
-                    alignSelf: 'stretch', 
-                    borderRadius: '20px', 
-                    background: 'var(--Surface-03, #F1F1F1)',
-                    height: '100%',
-                    overflow: 'hidden'
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flex: '1 0 0',
+                    alignSelf: 'stretch',
+                    borderRadius: '30px',
+                    background: 'var(--Surface-03, #F1F1F1)'
                   }}>
                     <FigmantLayout>
                       <Routes>
