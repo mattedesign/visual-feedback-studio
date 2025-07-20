@@ -9,6 +9,8 @@ import { FigmantImageGrid } from '@/components/analysis/figmant/FigmantImageGrid
 import { FigmantImageDetail } from '@/components/analysis/figmant/FigmantImageDetail';
 import { ResultsContent } from '@/components/analysis/results/ResultsContent';
 import { ResultsChat } from '@/components/analysis/results/ResultsChat';
+import { FigmantSidebar } from '@/components/layout/FigmantSidebar';
+import { FigmantLogo } from '@/components/ui/figmant-logo';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
@@ -28,6 +30,7 @@ const FigmantResultsPage = () => {
   const [currentView, setCurrentView] = useState<'grid' | 'detail' | 'results'>('grid');
   const [selectedImage, setSelectedImage] = useState<FigmantImage | null>(null);
   const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<'menu' | 'chat'>('menu');
 
   useEffect(() => {
     if (sessionId) {
@@ -79,9 +82,10 @@ const FigmantResultsPage = () => {
       setAnalysisData(results);
       setSessionData(session || foundSession);
       
-      // If we have analysis data, show results view by default
+      // If we have analysis data, show results view by default and activate chat tab
       if (results && (session?.images?.length > 0 || foundSession)) {
         setCurrentView('results');
+        setActiveTab('chat'); // Default to chat tab when analysis results are available
         if (session?.images?.length > 0) {
           setSelectedImage(session.images[0]);
         }
@@ -204,23 +208,65 @@ const FigmantResultsPage = () => {
     setSelectedImage(null);
   };
 
-  // Three-panel layout for results view
+  // Enhanced Figmant sidebar layout for results view
   if (currentView === 'results') {
     return (
-      <div className="h-full flex bg-[#F1F1F1]">
-        {/* Left Panel - Main Content */}
-        <div className="flex-1 overflow-hidden">
+      <div className="figmant-layout h-full">
+        {/* Enhanced Figmant Sidebar with Tabs */}
+        <div className="figmant-sidebar transition-all duration-300">
+          <div className="h-full flex flex-col rounded-lg">
+            {/* Header */}
+            <div className="p-4" style={{borderBottom: '1px solid var(--Stroke-01, #ECECEC)'}}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <FigmantLogo size={40} />
+                </div>
+              </div>
+              
+              {/* Tab Navigation */}
+              <div className="flex bg-muted rounded-lg p-1 mt-4">
+                <Button 
+                  variant={activeTab === 'menu' ? 'secondary' : 'ghost'} 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => setActiveTab('menu')}
+                >
+                  Menu
+                </Button>
+                <Button 
+                  variant={activeTab === 'chat' ? 'secondary' : 'ghost'} 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => setActiveTab('chat')}
+                >
+                  Chat
+                </Button>
+              </div>
+            </div>
+            
+            {/* Tab Content */}
+            <div className="flex-1 overflow-hidden">
+              {activeTab === 'menu' ? (
+                <div className="h-full">
+                  <FigmantSidebar />
+                </div>
+              ) : (
+                <div className="h-full">
+                  <ResultsChat 
+                    analysisData={analysisData}
+                    sessionId={sessionData?.id || sessionId!}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {/* Main Content */}
+        <div className="figmant-main">
           <ResultsContent 
             analysisData={analysisData}
             sessionData={sessionData}
-          />
-        </div>
-        
-        {/* Right Panel - Chat */}
-        <div className="w-80 border-l border-[#E2E2E2] overflow-hidden">
-          <ResultsChat 
-            analysisData={analysisData}
-            sessionId={sessionData?.id || sessionId!}
           />
         </div>
       </div>
@@ -251,20 +297,65 @@ const FigmantResultsPage = () => {
     );
   }
 
-  // Fallback: Show results even without images
+  // Fallback: Show results even without images using the enhanced sidebar layout
   if (analysisData) {
     return (
-      <div className="h-full flex bg-[#F1F1F1]">
-        <div className="flex-1 overflow-hidden">
+      <div className="figmant-layout h-full">
+        {/* Enhanced Figmant Sidebar with Tabs */}
+        <div className="figmant-sidebar transition-all duration-300">
+          <div className="h-full flex flex-col rounded-lg">
+            {/* Header */}
+            <div className="p-4" style={{borderBottom: '1px solid var(--Stroke-01, #ECECEC)'}}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <FigmantLogo size={40} />
+                </div>
+              </div>
+              
+              {/* Tab Navigation */}
+              <div className="flex bg-muted rounded-lg p-1 mt-4">
+                <Button 
+                  variant={activeTab === 'menu' ? 'secondary' : 'ghost'} 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => setActiveTab('menu')}
+                >
+                  Menu
+                </Button>
+                <Button 
+                  variant={activeTab === 'chat' ? 'secondary' : 'ghost'} 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => setActiveTab('chat')}
+                >
+                  Chat
+                </Button>
+              </div>
+            </div>
+            
+            {/* Tab Content */}
+            <div className="flex-1 overflow-hidden">
+              {activeTab === 'menu' ? (
+                <div className="h-full">
+                  <FigmantSidebar />
+                </div>
+              ) : (
+                <div className="h-full">
+                  <ResultsChat 
+                    analysisData={analysisData}
+                    sessionId={sessionData?.id || sessionId!}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {/* Main Content */}
+        <div className="figmant-main">
           <ResultsContent 
             analysisData={analysisData}
             sessionData={sessionData}
-          />
-        </div>
-        <div className="w-80 border-l border-[#E2E2E2] overflow-hidden">
-          <ResultsChat 
-            analysisData={analysisData}
-            sessionId={sessionData?.id || sessionId!}
           />
         </div>
       </div>
