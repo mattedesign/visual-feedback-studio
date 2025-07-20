@@ -36,12 +36,45 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     
+    // Check for JWT authentication first
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader) {
+      console.log('🔴 DEBUG_FIGMANT: JWT authentication provided');
+      const token = authHeader.replace('Bearer ', '');
+      
+      // Create auth client for JWT validation
+      const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false
+        },
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      });
+      
+      // Verify the user
+      const { data: userData, error: userError } = await supabaseAuth.auth.getUser();
+      
+      if (userError || !userData.user) {
+        console.error('🔴 DEBUG_FIGMANT: JWT authentication failed:', userError);
+        return new Response(JSON.stringify({ error: 'Authentication failed' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
+      console.log('🔴 DEBUG_FIGMANT: JWT authentication successful for user:', userData.user.id);
+    }
+    
     // Create service client for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Validate API key if provided
+    // Validate API key if provided (alternative auth method)
     const apiKey = req.headers.get('x-api-key');
-    if (apiKey) {
+    if (apiKey && !authHeader) {
       console.log('🔴 DEBUG_FIGMANT: API key provided, validating...');
       // Hash the provided API key
       const encoder = new TextEncoder();
@@ -61,6 +94,14 @@ serve(async (req) => {
         );
       }
       console.log('🔴 DEBUG_FIGMANT: API key validated successfully');
+    }
+    
+    // Require either JWT or API key authentication
+    if (!authHeader && !apiKey) {
+      return new Response(
+        JSON.stringify({ error: 'Authentication required - provide either Authorization header or x-api-key' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Parse request body
