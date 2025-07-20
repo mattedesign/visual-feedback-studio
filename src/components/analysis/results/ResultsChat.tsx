@@ -3,7 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Send, X } from 'lucide-react';
+import { Send, X, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface Message {
   id: number;
@@ -19,6 +21,7 @@ interface ResultsChatProps {
 
 export const ResultsChat = ({ analysisData, sessionId }: ResultsChatProps) => {
   const [message, setMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
@@ -28,8 +31,8 @@ export const ResultsChat = ({ analysisData, sessionId }: ResultsChatProps) => {
     }
   ]);
 
-  const handleSendMessage = () => {
-    if (!message.trim()) return;
+  const handleSendMessage = async () => {
+    if (!message.trim() || isLoading) return;
 
     const userMessage: Message = {
       id: messages.length + 1,
@@ -38,15 +41,59 @@ export const ResultsChat = ({ analysisData, sessionId }: ResultsChatProps) => {
       timestamp: new Date()
     };
 
-    const aiResponse: Message = {
-      id: messages.length + 2,
-      role: 'assistant',
-      content: "I'm here to help you understand your analysis results. Feel free to ask about any specific issues or recommendations.",
-      timestamp: new Date()
-    };
-
-    setMessages([...messages, userMessage, aiResponse]);
+    // Add user message immediately
+    setMessages(prev => [...prev, userMessage]);
     setMessage('');
+    setIsLoading(true);
+
+    try {
+      console.log('🤖 Sending message to Claude via goblin-chat-analyzer-v2');
+      
+      const { data, error } = await supabase.functions.invoke('goblin-chat-analyzer-v2', {
+        body: {
+          message: message,
+          sessionId: sessionId,
+          persona: 'clarity',
+          images: [] // No images in results chat for now
+        }
+      });
+
+      if (error) {
+        console.error('❌ Supabase function error:', error);
+        throw error;
+      }
+
+      if (!data?.success) {
+        console.error('❌ Analysis failed:', data?.error);
+        throw new Error(data?.error || 'Analysis failed');
+      }
+
+      console.log('✅ Claude response received:', data);
+
+      const aiResponse: Message = {
+        id: messages.length + 2,
+        role: 'assistant',
+        content: data.response?.content || "I apologize, but I didn't receive a proper response. Could you try asking again?",
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, aiResponse]);
+
+    } catch (error) {
+      console.error('❌ Chat error:', error);
+      
+      const errorMessage: Message = {
+        id: messages.length + 2,
+        role: 'assistant',
+        content: "I'm sorry, I encountered an error while processing your message. Please try again.",
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+      toast.error('Failed to send message. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -118,9 +165,13 @@ export const ResultsChat = ({ analysisData, sessionId }: ResultsChatProps) => {
             onClick={handleSendMessage}
             size="sm"
             className="bg-[#22757C] hover:bg-[#22757C]/90 text-white px-3"
-            disabled={!message.trim()}
+            disabled={!message.trim() || isLoading}
           >
-            <Send className="w-4 h-4" />
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
           </Button>
         </div>
       </div>
