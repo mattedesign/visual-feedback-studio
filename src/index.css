@@ -104,7 +104,8 @@
   
   
   #root {
-    @apply bg-[hsl(185,61%,28%)] rounded-[32px] p-3 w-full;
+    @apply bg-[hsl(185,61%,28%)] rounded-[32px] p-3;
+    width: calc(100vw - 8px); /* Subtract 8px for body's 4px padding left and right */
     height: calc(100vh - 8px); /* Subtract 8px for body's 4px padding top and bottom */
     clip-path: inset(0 round 32px);
   }
