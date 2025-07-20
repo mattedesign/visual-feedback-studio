@@ -94,7 +94,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.figmant-plugin-api]
-verify_jwt = false
+verify_jwt = true
 
 [functions.api-key-management]
 verify_jwt = true

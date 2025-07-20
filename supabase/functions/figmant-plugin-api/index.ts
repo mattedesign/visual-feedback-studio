@@ -1,9 +1,9 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 interface ImageData {
@@ -32,43 +32,85 @@ serve(async (req) => {
   }
 
   try {
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Initialize Supabase client with service role for database operations
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
 
-    // Validate API key
-    const apiKey = req.headers.get('x-api-key');
-    if (!apiKey) {
+    // Authenticate user from session token
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
       return new Response(
-        JSON.stringify({ error: 'API key required' }),
+        JSON.stringify({ error: 'Authorization header required' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Hash the API key for validation
-    const keyHash = await hashAPIKey(apiKey);
-    
-    // Validate API key and get user info
-    const { data: keyData, error: keyError } = await supabase.rpc('validate_api_key', {
-      p_key_hash: keyHash
-    });
-
-    if (keyError || !keyData || keyData.length === 0 || !keyData[0].is_valid) {
-      console.error('API key validation failed:', keyError);
+    const token = authHeader.replace("Bearer ", "");
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !userData.user) {
+      console.error('Authentication failed:', userError);
       return new Response(
-        JSON.stringify({ error: 'Invalid API key' }),
+        JSON.stringify({ error: 'Authentication failed' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const userId = keyData[0].user_id;
-    const permissions = keyData[0].permissions;
+    const userId = userData.user.id;
+    console.log('🔍 Plugin API request from user:', userId);
 
-    // Check if user has write permissions
-    if (!permissions.write) {
+    // Check subscription and usage limits
+    let { data: subscriber, error: subscriberError } = await supabase
+      .from("subscribers")
+      .select("*")
+      .eq("user_id", userId)
+      .single();
+
+    if (subscriberError && subscriberError.code === 'PGRST116') {
+      // Create new trial subscriber record
+      const { data: newSubscriber, error: createError } = await supabase
+        .from("subscribers")
+        .insert({
+          user_id: userId,
+          email: userData.user.email!,
+          subscription_tier: 'trial',
+          subscribed: false,
+          analyses_used: 0,
+          analyses_limit: 3
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        console.error("Failed to create subscriber:", createError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to create subscriber record' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      subscriber = newSubscriber;
+    }
+
+    if (!subscriber) {
       return new Response(
-        JSON.stringify({ error: 'Insufficient permissions' }),
+        JSON.stringify({ error: 'Failed to retrieve subscription data' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check if user can perform analysis
+    if (subscriber.analyses_used >= subscriber.analyses_limit) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Analysis limit reached',
+          subscription: {
+            tier: subscriber.subscription_tier,
+            used: subscriber.analyses_used,
+            limit: subscriber.analyses_limit
+          }
+        }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -226,8 +268,19 @@ serve(async (req) => {
       .update({ status: 'pending' })
       .eq('id', sessionId);
 
-    // Log API usage
-    await logAPIUsage(supabase, keyData[0].api_key_id, req, 200);
+    // Increment analysis usage counter
+    await supabase
+      .from('subscribers')
+      .update({ 
+        analyses_used: subscriber.analyses_used + 1,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId);
+
+    // Log plugin usage for analytics
+    await logPluginUsage(supabase, userId, sessionId, processedImages.filter(img => !img.error).length);
+
+    console.log('✅ Plugin analysis session created:', sessionId);
 
     return new Response(
       JSON.stringify({
@@ -311,25 +364,18 @@ async function processWithGoogleVision(imageData: string): Promise<any> {
   return result.responses[0];
 }
 
-async function hashAPIKey(apiKey: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(apiKey);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-async function logAPIUsage(supabase: any, apiKeyId: string, req: Request, statusCode: number) {
+// Helper function to log plugin usage for analytics
+async function logPluginUsage(supabase: any, userId: string, sessionId: string, imageCount: number) {
   try {
-    await supabase.rpc('log_api_usage', {
-      p_api_key_id: apiKeyId,
-      p_endpoint: '/figmant-plugin-api',
-      p_method: req.method,
-      p_status_code: statusCode,
-      p_ip_address: req.headers.get('x-forwarded-for') || 'unknown',
-      p_user_agent: req.headers.get('user-agent') || 'unknown'
-    });
+    await supabase
+      .from('credit_usage')
+      .insert({
+        user_id: userId,
+        session_id: sessionId,
+        operation_type: 'figma_plugin_upload',
+        credits_consumed: imageCount
+      });
   } catch (error) {
-    console.error('Failed to log API usage:', error);
+    console.error('Failed to log plugin usage:', error);
   }
 }
