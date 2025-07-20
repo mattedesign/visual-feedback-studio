@@ -1,18 +1,18 @@
-
 {
-  "name": "Figmant UX Analyzer",
-  "id": "figmant-ux-analyzer",
+  "name": "Figmant Analysis",
+  "id": "figmant-analysis-plugin",
   "api": "1.0.0",
-  "main": "code.js",
-  "ui": "ui.html",
-  "capabilities": [],
-  "enableProposedApi": false,
-  "editorType": [
-    "figma"
-  ],
+  "main": "dist/code.js",
+  "ui": "dist/ui.html",
+  "editorType": ["figma"],
+  "permissions": [],
   "networkAccess": {
     "allowedDomains": [
-      "https://mxxtvtwcoplfajvazpav.supabase.co"
+      "https://app.figmant.ai",
+      "https://preview--figmant-ai.lovable.app",
+      "https://*.lovable.app",
+      "https://mxxtvtwcoplfajvazpav.supabase.co",
+      "https://*.supabase.co"
     ]
   }
 }
