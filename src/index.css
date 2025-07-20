@@ -121,8 +121,9 @@
   }
   
   .figmant-sidebar {
-    @apply w-[280px] bg-[hsl(var(--sidebar))] text-[hsl(var(--sidebar-foreground))] flex-shrink-0
+    @apply w-[280px] bg-[hsl(var(--sidebar))] flex-shrink-0
            md:w-[280px] sm:w-[240px] xs:w-[60px];
+    color: #6B7280; /* text-gray-500 */
   }
   
   .figmant-main {

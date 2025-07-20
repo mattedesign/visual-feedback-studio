@@ -56,10 +56,10 @@ export const FigmantSidebar = () => {
   ];
 
   const recentAnalysisItems = [
-    { icon: Box, label: 'Dashboard Analysis', isActive: false, color: 'text-gray-500' },
-    { icon: FileText, label: 'Checkout Analysis', isActive: false, color: 'text-gray-500' },
-    { icon: Folder, label: 'Figma Analysis', isActive: true, color: 'text-orange-500' },
-    { icon: FolderOpen, label: 'Top Secret Project', isActive: false, color: 'text-green-500' }
+    { icon: Box, label: 'Dashboard Analysis', isActive: false, color: 'text-gray-600' },
+    { icon: FileText, label: 'Checkout Analysis', isActive: false, color: 'text-gray-600' },
+    { icon: Folder, label: 'Figma Analysis', isActive: true, color: 'text-gray-600' },
+    { icon: FolderOpen, label: 'Top Secret Project', isActive: false, color: 'text-gray-600' }
   ];
 
   return (
@@ -94,8 +94,8 @@ export const FigmantSidebar = () => {
                   onClick={() => setIsAnalysisExpanded(!isAnalysisExpanded)}
                 >
                   <div className="flex items-center gap-3 md:gap-3 sm:gap-2 xs:gap-1">
-                    <item.icon className="w-5 h-5 md:w-5 md:h-5 sm:w-4 sm:h-4 xs:w-4 xs:h-4 text-muted-foreground" />
-                    <span className="font-medium text-sm md:text-sm sm:text-xs xs:hidden text-card-foreground">{item.label}</span>
+                    <item.icon className="w-5 h-5 md:w-5 md:h-5 sm:w-4 sm:h-4 xs:w-4 xs:h-4 text-gray-600" />
+                    <span className="font-medium text-sm md:text-sm sm:text-xs xs:hidden text-gray-600">{item.label}</span>
                   </div>
                   <div className="text-muted-foreground hidden sm:block">
                     {item.isExpanded ? (
@@ -113,8 +113,8 @@ export const FigmantSidebar = () => {
                   }`}
                 >
                   <div className="flex items-center gap-3 md:gap-3 sm:gap-2 xs:gap-1">
-                    <item.icon className="w-5 h-5 md:w-5 md:h-5 sm:w-4 sm:h-4 xs:w-4 xs:h-4 text-muted-foreground" />
-                    <span className="font-medium text-sm md:text-sm sm:text-xs xs:hidden text-card-foreground">{item.label}</span>
+                    <item.icon className="w-5 h-5 md:w-5 md:h-5 sm:w-4 sm:h-4 xs:w-4 xs:h-4 text-gray-600" />
+                    <span className="font-medium text-sm md:text-sm sm:text-xs xs:hidden text-gray-600">{item.label}</span>
                   </div>
                   {item.count && (
                     <span className="text-xs bg-muted text-muted-foreground px-2 py-1 md:px-2 md:py-1 sm:px-1 sm:py-0.5 xs:hidden rounded-full">
@@ -131,7 +131,7 @@ export const FigmantSidebar = () => {
                     <NavLink
                       key={subIndex}
                       to={subItem.href}
-                      className="block px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+                      className="block px-3 py-2 text-sm text-gray-600 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
                     >
                       {subItem.label}
                     </NavLink>
@@ -155,7 +155,7 @@ export const FigmantSidebar = () => {
               }`}
             >
               <item.icon className={`w-5 h-5 md:w-5 md:h-5 sm:w-4 sm:h-4 ${item.color}`} />
-              <span className={`text-sm md:text-sm sm:text-xs ${item.isActive ? 'font-medium text-card-foreground' : 'text-muted-foreground'}`}>
+              <span className={`text-sm md:text-sm sm:text-xs ${item.isActive ? 'font-medium text-gray-600' : 'text-gray-600'}`}>
                 {item.label}
               </span>
             </div>
