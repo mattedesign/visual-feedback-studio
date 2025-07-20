@@ -121,8 +121,14 @@
   }
   
   .figmant-sidebar {
-    @apply w-[280px] bg-[hsl(var(--sidebar))] flex-shrink-0
-           md:w-[280px] sm:w-[240px] xs:w-[60px];
+    display: flex;
+    max-width: 288px;
+    flex-direction: column;
+    justify-content: space-between;
+    align-self: stretch;
+    border-radius: 20px;
+    border: 1px solid var(--Stroke-02, #E2E2E2);
+    background: var(--Surface-01, #FCFCFC);
     color: #6B7280; /* text-gray-500 */
   }
   
