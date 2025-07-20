@@ -122,7 +122,7 @@ figma.ui.onmessage = async (msg: UIMessage) => {
       
       // First, send the images to the upload API
       try {
-        const uploadResponse = await fetch('https://app.figmant.ai/figmant-plugin-api', {
+        const uploadResponse = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/functions/v1/figmant-plugin-api', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
