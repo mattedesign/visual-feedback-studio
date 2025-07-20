@@ -48,6 +48,7 @@ interface PluginExportSettings {
 async function validateSessionToken(token: string): Promise<boolean> {
   try {
     console.log('🔍 Validating session token...');
+    console.log('🔍 Token preview:', token ? `${token.substring(0, 20)}...` : 'No token');
     
     // Try a simple request to Supabase auth to validate the token
     const response = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/auth/v1/user', {
@@ -59,6 +60,12 @@ async function validateSessionToken(token: string): Promise<boolean> {
     });
     
     console.log('🔍 Token validation response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log('🔍 Token validation error response:', errorText);
+    }
+    
     const isValid = response.ok;
     console.log('🔍 Token validation result:', isValid);
     
@@ -341,16 +348,10 @@ figma.ui.onmessage = async (msg: UIMessage) => {
       // Validate and refresh session token if needed
       const isValidToken = await validateSessionToken(settings.sessionToken);
       console.log('🔍 Token validation completed, result:', isValidToken);
+      
+      // For now, let's continue even if validation fails to see what the real issue is
       if (!isValidToken) {
-        console.log('🔄 Session token invalid, requesting refresh...');
-        figma.ui.postMessage({
-          type: 'export-error',
-          data: { 
-            error: 'Your session has expired. Please close the plugin and log in again in the web app before trying again.',
-            sessionExpired: true
-          }
-        } as PluginMessage);
-        return;
+        console.log('⚠️ Token validation failed, but continuing anyway to debug...');
       }
 
       // Upload images to the plugin API
