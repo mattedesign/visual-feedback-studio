@@ -101,25 +101,25 @@ export const FigmantDashboard = () => {
               <div className="flex items-center justify-between">
                 <Badge className="bg-sidebar text-sidebar-foreground w-full justify-between">
                   <span>Accessibility</span>
-                  <span className="text-sm font-medium">15%</span>
+                  <span className="text-sm font-medium text-right">15%</span>
                 </Badge>
               </div>
               <div className="flex items-center justify-between">
                 <Badge className="bg-secondary text-secondary-foreground w-full justify-between">
                   <span>Conversion Metrics</span>
-                  <span className="text-sm font-medium">54%</span>
+                  <span className="text-sm font-medium text-right">54%</span>
                 </Badge>
               </div>
               <div className="flex items-center justify-between">
                 <Badge className="bg-chart-1 text-white w-full justify-between">
                   <span>PPT</span>
-                  <span className="text-sm font-medium">50%</span>
+                  <span className="text-sm font-medium text-right">50%</span>
                 </Badge>
               </div>
               <div className="flex items-center justify-between">
                 <Badge className="bg-foreground text-background w-full justify-between">
                   <span>Others</span>
-                  <span className="text-sm font-medium">12%</span>
+                  <span className="text-sm font-medium text-right">12%</span>
                 </Badge>
               </div>
             </div>
