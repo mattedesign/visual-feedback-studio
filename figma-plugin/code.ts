@@ -5,7 +5,7 @@
 
 // Define types directly in this file since imports can be problematic in Figma
 interface PluginMessage {
-  type: 'selection-change' | 'export-frames' | 'export-complete' | 'export-error' | 'close' | 'analysis-progress' | 'analysis-complete' | 'analysis-partial' | 'auth-status';
+  type: 'selection-change' | 'export-frames' | 'export-complete' | 'export-error' | 'close' | 'analysis-progress' | 'analysis-complete' | 'analysis-partial' | 'auth-status' | 'token-refresh-needed';
   data?: any;
   message?: string;
   progress?: number;
@@ -42,6 +42,24 @@ interface PluginExportSettings {
   scale: number;
   format: 'PNG' | 'JPG' | 'SVG';
   sessionToken: string;
+}
+
+// Function to validate session token
+async function validateSessionToken(token: string): Promise<boolean> {
+  try {
+    const response = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/functions/v1/figmant-check-subscription', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    return response.ok;
+  } catch (error) {
+    console.error('Token validation error:', error);
+    return false;
+  }
 }
 
 // Show UI
@@ -311,6 +329,16 @@ figma.ui.onmessage = async (msg: UIMessage) => {
         message: 'Uploading images...',
         progress: 60
       });
+      
+      // Validate and refresh session token if needed
+      const isValidToken = await validateSessionToken(settings.sessionToken);
+      if (!isValidToken) {
+        console.log('🔄 Session token invalid, requesting refresh...');
+        figma.ui.postMessage({
+          type: 'token-refresh-needed'
+        });
+        return;
+      }
 
       // Upload images to the plugin API
       try {
