@@ -63,25 +63,17 @@ export const FigmantSidebar = () => {
   ];
 
   return (
-    <div 
-      className="border border-[#E2E2E2] flex flex-col bg-white"
-      style={{
-        width: '288px',
-        maxWidth: '288px',
-        height: '100%',
-        borderRadius: '20px',
-        flexShrink: 0
-      }}
-    >
+    <div className="figmant-sidebar">
+      <div className="h-full flex flex-col border border-border rounded-lg bg-card">
       {/* Header */}
-      <div className="p-6">
-        <div className="flex items-center gap-3">
-          <FigmantLogo size={40} />
-          <div className="flex-1">
-            <h2 className="font-semibold text-base text-[#121212]">
+      <div className="p-6 md:p-6 sm:p-4 xs:p-3">
+        <div className="flex items-center gap-3 md:gap-3 sm:gap-2 xs:gap-2">
+          <FigmantLogo size={40} className="md:w-10 md:h-10 sm:w-8 sm:h-8 xs:w-6 xs:h-6" />
+          <div className="flex-1 hidden sm:block">
+            <h2 className="font-semibold text-base md:text-base sm:text-sm xs:text-xs text-card-foreground">
               Figmant AI
             </h2>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm md:text-sm sm:text-xs xs:text-xs text-muted-foreground">
               Design Analysis Platform
             </p>
           </div>
@@ -89,43 +81,43 @@ export const FigmantSidebar = () => {
       </div>
 
       {/* Pages Section */}
-      <div className="px-4 pb-4">
-        <h3 className="text-sm font-medium text-gray-400 mb-4">Pages</h3>
+      <div className="px-4 pb-4 md:px-4 sm:px-3 xs:px-2">
+        <h3 className="text-sm font-medium text-muted-foreground mb-4 md:text-sm sm:text-xs xs:text-xs hidden sm:block">Pages</h3>
         <div className="space-y-1">
           {pagesItems.map((item, index) => (
             <div key={index}>
               {item.isExpandable ? (
                 <button
-                  className={`w-full flex items-center justify-between px-3 py-3 rounded-lg transition-colors ${
-                    item.isActive ? 'bg-gray-100' : 'hover:bg-gray-50'
+                  className={`w-full flex items-center justify-between px-3 py-3 md:px-3 md:py-3 sm:px-2 sm:py-2 xs:px-1 xs:py-1 rounded-lg transition-colors ${
+                    item.isActive ? 'bg-muted' : 'hover:bg-muted/50'
                   }`}
                   onClick={() => setIsAnalysisExpanded(!isAnalysisExpanded)}
                 >
-                  <div className="flex items-center gap-3">
-                    <item.icon className="w-5 h-5 text-gray-600" />
-                    <span className="font-medium text-sm text-gray-900">{item.label}</span>
+                  <div className="flex items-center gap-3 md:gap-3 sm:gap-2 xs:gap-1">
+                    <item.icon className="w-5 h-5 md:w-5 md:h-5 sm:w-4 sm:h-4 xs:w-4 xs:h-4 text-muted-foreground" />
+                    <span className="font-medium text-sm md:text-sm sm:text-xs xs:hidden text-card-foreground">{item.label}</span>
                   </div>
-                  <div className="text-gray-400">
+                  <div className="text-muted-foreground hidden sm:block">
                     {item.isExpanded ? (
-                      <ChevronDown className="w-4 h-4" />
+                      <ChevronDown className="w-4 h-4 md:w-4 md:h-4 sm:w-3 sm:h-3" />
                     ) : (
-                      <ChevronRight className="w-4 h-4" />
+                      <ChevronRight className="w-4 h-4 md:w-4 md:h-4 sm:w-3 sm:h-3" />
                     )}
                   </div>
                 </button>
               ) : (
                 <NavLink
                   to={item.href}
-                  className={`flex items-center justify-between px-3 py-3 rounded-lg transition-colors ${
-                    item.isActive ? 'bg-gray-100' : 'hover:bg-gray-50'
+                  className={`flex items-center justify-between px-3 py-3 md:px-3 md:py-3 sm:px-2 sm:py-2 xs:px-1 xs:py-1 rounded-lg transition-colors ${
+                    item.isActive ? 'bg-muted' : 'hover:bg-muted/50'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <item.icon className="w-5 h-5 text-gray-600" />
-                    <span className="font-medium text-sm text-gray-900">{item.label}</span>
+                  <div className="flex items-center gap-3 md:gap-3 sm:gap-2 xs:gap-1">
+                    <item.icon className="w-5 h-5 md:w-5 md:h-5 sm:w-4 sm:h-4 xs:w-4 xs:h-4 text-muted-foreground" />
+                    <span className="font-medium text-sm md:text-sm sm:text-xs xs:hidden text-card-foreground">{item.label}</span>
                   </div>
                   {item.count && (
-                    <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">
+                    <span className="text-xs bg-muted text-muted-foreground px-2 py-1 md:px-2 md:py-1 sm:px-1 sm:py-0.5 xs:hidden rounded-full">
                       {item.count}
                     </span>
                   )}
@@ -152,18 +144,18 @@ export const FigmantSidebar = () => {
       </div>
 
       {/* Recent Analysis Section */}
-      <div className="flex-1 px-6 py-4">
-        <h3 className="text-sm font-medium text-gray-400 mb-4">Recent Analysis</h3>
+      <div className="flex-1 px-6 py-4 md:px-6 md:py-4 sm:px-4 sm:py-3 xs:px-2 xs:py-2 hidden md:block">
+        <h3 className="text-sm font-medium text-muted-foreground mb-4 md:text-sm sm:text-xs">Recent Analysis</h3>
         <div className="space-y-1">
           {recentAnalysisItems.map((item, index) => (
             <div
               key={index}
-              className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-colors ${
-                item.isActive ? 'bg-gray-100' : 'hover:bg-gray-50'
+              className={`flex items-center gap-3 md:gap-3 sm:gap-2 px-3 py-3 md:px-3 md:py-3 sm:px-2 sm:py-2 rounded-lg transition-colors ${
+                item.isActive ? 'bg-muted' : 'hover:bg-muted/50'
               }`}
             >
-              <item.icon className={`w-5 h-5 ${item.color}`} />
-              <span className={`text-sm ${item.isActive ? 'font-medium text-gray-900' : 'text-gray-600'}`}>
+              <item.icon className={`w-5 h-5 md:w-5 md:h-5 sm:w-4 sm:h-4 ${item.color}`} />
+              <span className={`text-sm md:text-sm sm:text-xs ${item.isActive ? 'font-medium text-card-foreground' : 'text-muted-foreground'}`}>
                 {item.label}
               </span>
             </div>
@@ -172,24 +164,26 @@ export const FigmantSidebar = () => {
       </div>
 
       {/* Credit Alert */}
-      <div className="p-6 mt-auto">
-        <div className="border border-gray-200 rounded-lg p-4 bg-white">
+      <div className="p-6 mt-auto md:p-6 sm:p-4 xs:p-3">
+        <div className="border border-border rounded-lg p-4 md:p-4 sm:p-3 xs:p-2 bg-card">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-lg">🚀</span>
-            <span className="font-semibold text-gray-900">
-              {subscription?.analysesRemaining || 0} Analyses Left!
+            <span className="text-lg md:text-lg sm:text-base xs:text-sm">🚀</span>
+            <span className="font-semibold text-card-foreground md:text-base sm:text-sm xs:text-xs">
+              {subscription?.analysesRemaining || 0} <span className="hidden sm:inline">Analyses Left!</span>
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
-            <div className="bg-teal-500 h-2 rounded-full" style={{ width: '30%' }}></div>
+          <div className="w-full bg-muted rounded-full h-2 mb-3">
+            <div className="bg-primary h-2 rounded-full" style={{ width: '30%' }}></div>
           </div>
-          <p className="text-sm text-gray-600 mb-3">
+          <p className="text-sm md:text-sm sm:text-xs xs:text-xs text-muted-foreground mb-3 hidden sm:block">
             Upgrade and get 20% off to get more analyses.
           </p>
-          <Button className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700">
-            Upgrade
+          <Button className="w-full bg-muted hover:bg-muted/80 text-muted-foreground md:text-sm sm:text-xs xs:text-xs">
+            <span className="hidden sm:inline">Upgrade</span>
+            <span className="sm:hidden">+</span>
           </Button>
         </div>
+      </div>
       </div>
     </div>
   );

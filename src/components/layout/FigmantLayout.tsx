@@ -8,27 +8,11 @@ interface FigmantLayoutProps {
 
 export const FigmantLayout = ({ children }: FigmantLayoutProps) => {
   return (
-    <div style={{ 
-      height: '100%', 
-      width: '100%', 
-      display: 'flex', 
-      gap: '16px',
-      overflow: 'hidden' 
-    }}>
+    <div className="figmant-layout">
       <FigmantSidebar />
-      <div style={{ 
-        flex: '1', 
-        display: 'flex', 
-        flexDirection: 'column', 
-        overflow: 'hidden',
-        minWidth: 0 
-      }}>
+      <div className="figmant-main">
         <FigmantHeader />
-        <div style={{ 
-          flex: '1', 
-          overflow: 'auto',
-          padding: '24px'
-        }}>
+        <div className="figmant-content">
           {children}
         </div>
       </div>
