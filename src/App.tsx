@@ -38,7 +38,7 @@ const App = () => {
                 <SubscriptionProvider>
                   <div className="min-h-screen w-full overflow-hidden bg-[#1C6D73] p-1">
                     <div className="h-[calc(100vh-8px)] w-full max-w-full rounded-[30px] bg-[#1C6D73] border-4 border-[#1C6D73] overflow-hidden">
-                      <div className="h-full w-full rounded-[20px] bg-[#F1F1F1] m-4 overflow-hidden" style={{ height: 'calc(100% - 32px)', width: 'calc(100% - 32px)' }}>
+                      <div className="h-full w-full rounded-[20px] bg-[#F1F1F1] m-4 overflow-hidden" style={{ height: 'calc(100%)', width: 'calc(100%)' }}>
                         <FigmantLayout>
                           <Routes>
                             {/* Core Figmant Routes */}
