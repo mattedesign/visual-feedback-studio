@@ -364,7 +364,7 @@ figma.ui.onmessage = async (msg: UIMessage) => {
               'Authorization': `Bearer ${settings.sessionToken}`
             },
             body: JSON.stringify({
-              session_id: sessionId
+              sessionId: sessionId
             })
           });
 
