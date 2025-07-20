@@ -1,12 +1,11 @@
-
 {
   "name": "figmant-figma-plugin",
   "version": "1.0.0",
   "description": "Figma plugin for Figmant UX analysis platform",
   "main": "code.js",
   "scripts": {
-    "build": "tsc --noEmit && echo 'TypeScript compilation successful'",
-    "watch": "tsc --watch --noEmit"
+    "build": "webpack --mode=production",
+    "watch": "webpack --mode=development --watch"
   },
   "keywords": [
     "figma",
@@ -20,6 +19,18 @@
   "license": "MIT",
   "devDependencies": {
     "@figma/plugin-typings": "^1.90.0",
-    "typescript": "^5.0.0"
+    "@types/react": "^18.3.23",
+    "@types/react-dom": "^18.3.7",
+    "css-loader": "^6.8.1",
+    "html-inline-script-webpack-plugin": "^3.2.1",
+    "html-webpack-plugin": "^5.5.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "style-loader": "^3.3.3",
+    "ts-loader": "^9.4.4",
+    "typescript": "^5.0.0",
+    "url-loader": "^4.1.1",
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4"
   }
 }
