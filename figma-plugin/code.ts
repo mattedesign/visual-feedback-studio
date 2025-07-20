@@ -17,6 +17,7 @@ interface PluginMessage {
   isAuthenticated?: boolean;
   userEmail?: string;
   subscription?: any;
+  viewUrl?: string; // ✅ Added viewUrl for Quick Link
 }
 
 interface UIMessage {
@@ -46,6 +47,9 @@ interface PluginExportSettings {
 // Supabase configuration
 const SUPABASE_URL = 'https://mxxtvtwcoplfajvazpav.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14eHR2dHdjb3BsZmFqdmF6cGF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2MDU2NjgsImV4cCI6MjA2NjE4MTY2OH0.b9sNxeDALujnw2tQD-qnbs3YkZvvTkja8jG6clgpibA';
+
+// Figmant Web App URL - Update this to your actual domain
+const FIGMANT_WEB_URL = 'https://app.figmant.com'; // Replace with your actual domain
 
 // Show UI
 figma.showUI(__html__, {
@@ -394,13 +398,24 @@ figma.ui.onmessage = async (msg: UIMessage) => {
         try {
           console.log('🧠 Starting analysis for session:', sessionId);
           
+          // Debug: Log the exact headers being sent
+          const analysisHeaders = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${settings.sessionToken}`,
+            'apikey': SUPABASE_ANON_KEY
+          };
+          
+          console.log('🔍 Analysis request headers:', {
+            hasContentType: !!analysisHeaders['Content-Type'],
+            hasAuthorization: !!analysisHeaders['Authorization'],
+            hasApiKey: !!analysisHeaders['apikey'],
+            apiKeyLength: analysisHeaders['apikey']?.length,
+            tokenPreview: settings.sessionToken?.substring(0, 20) + '...'
+          });
+          
           const analysisResponse = await fetch(`${SUPABASE_URL}/functions/v1/figmant-analyze-design`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${settings.sessionToken}`,
-              'apikey': SUPABASE_ANON_KEY  // ✅ THIS IS THE KEY FIX - ADDED APIKEY HEADER
-            },
+            headers: analysisHeaders,
             body: JSON.stringify({
               sessionId: sessionId  // Already fixed from session_id
             })
@@ -423,7 +438,8 @@ figma.ui.onmessage = async (msg: UIMessage) => {
             analysisResult: analysisResult,
             imagesProcessed: uploadResult.images_processed,
             totalImages: uploadResult.total_images,
-            message: 'Analysis completed successfully!'
+            message: 'Analysis completed successfully!',
+            viewUrl: `${FIGMANT_WEB_URL}/analysis/${sessionId}` // ✅ Added view URL
           });
 
         } catch (analysisError: any) {
@@ -435,7 +451,8 @@ figma.ui.onmessage = async (msg: UIMessage) => {
             imagesProcessed: uploadResult.images_processed,
             totalImages: uploadResult.total_images,
             analysisError: analysisError.message,
-            message: 'Images uploaded successfully, but analysis failed. You can retry the analysis from the web app.'
+            message: 'Images uploaded successfully, but analysis failed. You can retry the analysis from the web app.',
+            viewUrl: `${FIGMANT_WEB_URL}/analysis/${sessionId}` // ✅ Added view URL for partial success too
           });
         }
       } catch (uploadError: any) {
