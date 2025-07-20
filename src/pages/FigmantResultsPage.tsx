@@ -212,55 +212,18 @@ const FigmantResultsPage = () => {
   if (currentView === 'results') {
     return (
       <div className="figmant-layout h-full">
-        {/* Enhanced Figmant Sidebar with Tabs */}
-        <div className="figmant-sidebar transition-all duration-300">
-          <div className="h-full flex flex-col rounded-lg">
-            {/* Header */}
-            <div className="p-4" style={{borderBottom: '1px solid var(--Stroke-01, #ECECEC)'}}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <FigmantLogo size={40} />
-                </div>
-              </div>
-              
-              {/* Tab Navigation */}
-              <div className="flex bg-muted rounded-lg p-1 mt-4">
-                <Button 
-                  variant={activeTab === 'menu' ? 'secondary' : 'ghost'} 
-                  size="sm" 
-                  className="flex-1"
-                  onClick={() => setActiveTab('menu')}
-                >
-                  Menu
-                </Button>
-                <Button 
-                  variant={activeTab === 'chat' ? 'secondary' : 'ghost'} 
-                  size="sm" 
-                  className="flex-1"
-                  onClick={() => setActiveTab('chat')}
-                >
-                  Chat
-                </Button>
-              </div>
-            </div>
-            
-            {/* Tab Content */}
-            <div className="flex-1 overflow-hidden">
-              {activeTab === 'menu' ? (
-                <div className="h-full">
-                  <FigmantSidebar />
-                </div>
-              ) : (
-                <div className="h-full">
-                  <ResultsChat 
-                    analysisData={analysisData}
-                    sessionId={sessionData?.id || sessionId!}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        {/* Figmant Sidebar with Tabs */}
+        <FigmantSidebar 
+          showTabs={true}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          chatContent={
+            <ResultsChat 
+              analysisData={analysisData}
+              sessionId={sessionData?.id || sessionId!}
+            />
+          }
+        />
         
         {/* Main Content */}
         <div className="figmant-main">
@@ -301,55 +264,18 @@ const FigmantResultsPage = () => {
   if (analysisData) {
     return (
       <div className="figmant-layout h-full">
-        {/* Enhanced Figmant Sidebar with Tabs */}
-        <div className="figmant-sidebar transition-all duration-300">
-          <div className="h-full flex flex-col rounded-lg">
-            {/* Header */}
-            <div className="p-4" style={{borderBottom: '1px solid var(--Stroke-01, #ECECEC)'}}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <FigmantLogo size={40} />
-                </div>
-              </div>
-              
-              {/* Tab Navigation */}
-              <div className="flex bg-muted rounded-lg p-1 mt-4">
-                <Button 
-                  variant={activeTab === 'menu' ? 'secondary' : 'ghost'} 
-                  size="sm" 
-                  className="flex-1"
-                  onClick={() => setActiveTab('menu')}
-                >
-                  Menu
-                </Button>
-                <Button 
-                  variant={activeTab === 'chat' ? 'secondary' : 'ghost'} 
-                  size="sm" 
-                  className="flex-1"
-                  onClick={() => setActiveTab('chat')}
-                >
-                  Chat
-                </Button>
-              </div>
-            </div>
-            
-            {/* Tab Content */}
-            <div className="flex-1 overflow-hidden">
-              {activeTab === 'menu' ? (
-                <div className="h-full">
-                  <FigmantSidebar />
-                </div>
-              ) : (
-                <div className="h-full">
-                  <ResultsChat 
-                    analysisData={analysisData}
-                    sessionId={sessionData?.id || sessionId!}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        {/* Figmant Sidebar with Tabs */}
+        <FigmantSidebar 
+          showTabs={true}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          chatContent={
+            <ResultsChat 
+              analysisData={analysisData}
+              sessionId={sessionData?.id || sessionId!}
+            />
+          }
+        />
         
         {/* Main Content */}
         <div className="figmant-main">
