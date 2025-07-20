@@ -223,8 +223,29 @@ figma.ui.onmessage = async (msg: UIMessage) => {
       // Get session token from storage
       const sessionToken = await figma.clientStorage.getAsync('figmant_session_token');
       
+      console.log('🔍 Debug - checking session token:');
+      console.log('🔍 Token exists:', !!sessionToken);
+      console.log('🔍 Token type:', typeof sessionToken);
+      console.log('🔍 Token length:', sessionToken ? sessionToken.length : 'undefined');
+      
       if (!sessionToken) {
         console.error('❌ No session token found');
+        console.log('🔍 Checking all stored keys...');
+        
+        // Let's see what keys are actually stored
+        try {
+          const allKeys = await figma.clientStorage.keysAsync();
+          console.log('🔍 All stored keys:', allKeys);
+          
+          // Check if token exists under a different key
+          for (const key of allKeys) {
+            const value = await figma.clientStorage.getAsync(key);
+            console.log(`🔍 Key "${key}":`, typeof value, value ? value.substring(0, 20) + '...' : 'null/undefined');
+          }
+        } catch (e) {
+          console.error('🔍 Error checking keys:', e);
+        }
+        
         figma.ui.postMessage({
           type: 'export-error',
           data: { error: 'Authentication required. Please log in first.' }
