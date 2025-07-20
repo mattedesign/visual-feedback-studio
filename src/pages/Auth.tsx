@@ -142,14 +142,13 @@ const Auth = () => {
   // The useEffect will handle the redirect
   if (user && session) {
     return (
-      <div className="min-h-screen flex w-full bg-transparent">
-        <div className="flex flex-col items-center justify-center flex-1 self-stretch rounded-[20px] border-8 overflow-auto m-2 md:m-4 bg-white" style={{
-          borderColor: '#5C3C90',
-          background: '#FFF'
-        }}>
-          <div className="text-center">
-            <LoadingSpinner />
-            <p className="text-muted-foreground mt-4">Redirecting to dashboard...</p>
+      <div className="figmant-layout">
+        <div className="figmant-main">
+          <div className="figmant-content">
+            <div className="text-center">
+              <LoadingSpinner />
+              <p className="text-muted-foreground mt-4">Redirecting to dashboard...</p>
+            </div>
           </div>
         </div>
       </div>
@@ -158,172 +157,173 @@ const Auth = () => {
 
   // Only show auth form for non-authenticated users
   return (
-    <div className="min-h-screen flex w-full bg-transparent">
-      <div className="flex flex-col items-center justify-center flex-1 self-stretch rounded-[20px] border-8 overflow-auto m-2 md:m-4 bg-white" style={{
-        borderColor: '#5C3C90',
-        background: '#FFF'
-      }}>
-        <Card className="w-full max-w-md bg-transparent border-0 shadow-none">
-          <CardHeader className="text-center space-y-2">
-            <div className="flex items-center justify-center gap-2 text-primary mb-2">
-              <Sparkles className="w-5 h-5" />
-              <span className="font-semibold">Figmant</span>
-            </div>
-            <CardTitle className="text-2xl text-foreground">
-              {isSignUp ? 'Join Our Community' : 'Welcome Back'}
-            </CardTitle>
-            <CardDescription className="text-muted-foreground">
-              {isSignUp 
-                ? 'Get personalized UX insights tailored to your role' 
-                : 'Sign in to continue your UX analysis journey'
-              }
-            </CardDescription>
-            {isSignUp && (
-              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground bg-muted p-2 rounded-lg mt-3">
-                <Users className="w-4 h-4" />
-                <span>We'll customize your experience based on your role</span>
-              </div>
-            )}
-          </CardHeader>
-        <CardContent>
-          {authError && (
-            <Alert className="mb-4" variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                {authError}
-              </AlertDescription>
-            </Alert>
-          )}
+    <div className="figmant-layout">
+      <div className="figmant-main">
+        <div className="figmant-content">
+          <div className="flex items-center justify-center min-h-full">
+            <Card className="w-full max-w-md bg-card border border-border shadow-sm">
+              <CardHeader className="text-center space-y-2">
+                <div className="flex items-center justify-center gap-2 text-primary mb-2">
+                  <Sparkles className="w-5 h-5" />
+                  <span className="font-semibold">Figmant</span>
+                </div>
+                <CardTitle className="text-2xl text-foreground">
+                  {isSignUp ? 'Join Our Community' : 'Welcome Back'}
+                </CardTitle>
+                <CardDescription className="text-muted-foreground">
+                  {isSignUp 
+                    ? 'Get personalized UX insights tailored to your role' 
+                    : 'Sign in to continue your UX analysis journey'
+                  }
+                </CardDescription>
+                {isSignUp && (
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground bg-muted p-2 rounded-lg mt-3">
+                    <Users className="w-4 h-4" />
+                    <span>We'll customize your experience based on your role</span>
+                  </div>
+                )}
+              </CardHeader>
+              <CardContent>
+                {authError && (
+                  <Alert className="mb-4" variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      {authError}
+                    </AlertDescription>
+                  </Alert>
+                )}
 
-          <form onSubmit={handleAuth} className="space-y-4">
-            {isSignUp && (
-              <div>
-                <Label htmlFor="fullName" className="text-sm font-medium text-foreground">
-                  Full Name
-                </Label>
-                <Input
-                  id="fullName"
-                  type="text"
-                  placeholder="Enter your full name"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required
-                  className="mt-1"
-                />
-              </div>
-            )}
-            
-            <div>
-              <Input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            
-            <div>
-              <Input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-              />
-            </div>
+                <form onSubmit={handleAuth} className="space-y-4">
+                  {isSignUp && (
+                    <div>
+                      <Label htmlFor="fullName" className="text-sm font-medium text-foreground">
+                        Full Name
+                      </Label>
+                      <Input
+                        id="fullName"
+                        type="text"
+                        placeholder="Enter your full name"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        required
+                        className="mt-1"
+                      />
+                    </div>
+                  )}
+                  
+                  <div>
+                    <Input
+                      type="email"
+                      placeholder="Email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Input
+                      type="password"
+                      placeholder="Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      minLength={6}
+                    />
+                  </div>
 
-            {isSignUp && (
-              <div>
-                <Label htmlFor="role" className="text-sm font-medium text-foreground">
-                  What's your role?
-                </Label>
-                <Select value={selectedRole} onValueChange={(value: UserRole) => setSelectedRole(value)}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select your primary role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ROLE_OPTIONS.map((role) => (
-                      <SelectItem key={role.value} value={role.value}>
-                        <div className="flex flex-col">
-                          <span className="font-medium">{role.label}</span>
-                          <span className="text-xs text-muted-foreground">{role.description}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground mt-1">
-                  This helps us personalize your UX analysis experience
-                </p>
-              </div>
-            )}
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full"
-            >
-              {loading ? 'Loading...' : (isSignUp ? 'Create Account' : 'Sign In')}
-            </Button>
-          </form>
+                  {isSignUp && (
+                    <div>
+                      <Label htmlFor="role" className="text-sm font-medium text-foreground">
+                        What's your role?
+                      </Label>
+                      <Select value={selectedRole} onValueChange={(value: UserRole) => setSelectedRole(value)}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Select your primary role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ROLE_OPTIONS.map((role) => (
+                            <SelectItem key={role.value} value={role.value}>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{role.label}</span>
+                                <span className="text-xs text-muted-foreground">{role.description}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        This helps us personalize your UX analysis experience
+                      </p>
+                    </div>
+                  )}
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full"
+                  >
+                    {loading ? 'Loading...' : (isSignUp ? 'Create Account' : 'Sign In')}
+                  </Button>
+                </form>
 
-          <div className="mt-4">
-            <Button
-              onClick={handleMagicLink}
-              disabled={loading}
-              variant="secondary-auth"
-              className="w-full"
-            >
-              {loading ? 'Sending...' : 'Send Magic Link'}
-            </Button>
+                <div className="mt-4">
+                  <Button
+                    onClick={handleMagicLink}
+                    disabled={loading}
+                    variant="secondary"
+                    className="w-full"
+                  >
+                    {loading ? 'Sending...' : 'Send Magic Link'}
+                  </Button>
+                </div>
+
+                {/* Desktop toggle - simple text button */}
+                <div className="mt-4 text-center hidden md:block">
+                  <button
+                    onClick={() => {
+                      setIsSignUp(!isSignUp);
+                      setAuthError('');
+                      setFullName('');
+                      setSelectedRole('');
+                    }}
+                    className="text-primary hover:text-primary/80 text-sm font-medium transition-colors"
+                  >
+                    {isSignUp 
+                      ? 'Already have an account? Sign in' 
+                      : "Don't have an account? Sign up"
+                    }
+                  </button>
+                </div>
+
+                {/* Mobile toggle - prominent button */}
+                <div className="mt-6 md:hidden">
+                  <Button
+                    onClick={() => {
+                      setIsSignUp(!isSignUp);
+                      setAuthError('');
+                      setFullName('');
+                      setSelectedRole('');
+                    }}
+                    variant="outline"
+                    className="w-full h-12 text-base font-medium flex items-center justify-center gap-2"
+                  >
+                    {isSignUp ? (
+                      <>
+                        <LogIn className="w-5 h-5" />
+                        Sign In Instead
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="w-5 h-5" />
+                        Create Account
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-
-          {/* Desktop toggle - simple text button */}
-          <div className="mt-4 text-center hidden md:block">
-            <button
-              onClick={() => {
-                setIsSignUp(!isSignUp);
-                setAuthError('');
-                setFullName('');
-                setSelectedRole('');
-              }}
-              className="text-primary hover:text-primary/80 text-sm font-medium transition-colors"
-            >
-              {isSignUp 
-                ? 'Already have an account? Sign in' 
-                : "Don't have an account? Sign up"
-              }
-            </button>
-          </div>
-
-          {/* Mobile toggle - prominent button */}
-          <div className="mt-6 md:hidden">
-            <Button
-              onClick={() => {
-                setIsSignUp(!isSignUp);
-                setAuthError('');
-                setFullName('');
-                setSelectedRole('');
-              }}
-              variant="outline"
-              className="w-full h-12 text-base font-medium flex items-center justify-center gap-2"
-            >
-              {isSignUp ? (
-                <>
-                  <LogIn className="w-5 h-5" />
-                  Sign In Instead
-                </>
-              ) : (
-                <>
-                  <UserPlus className="w-5 h-5" />
-                  Create Account
-                </>
-              )}
-            </Button>
-          </div>
-        </CardContent>
-        </Card>
+        </div>
       </div>
     </div>
   );
