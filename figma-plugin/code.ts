@@ -16,8 +16,11 @@ interface PluginMessage {
 }
 
 interface UIMessage {
-  type: 'export' | 'cancel' | 'resize';
+  type: 'export' | 'cancel' | 'resize' | 'analyze-selection';
   data?: any;
+  apiKey?: string;
+  sessionTitle?: string;
+  context?: string;
 }
 
 interface FrameData {
@@ -81,8 +84,21 @@ figma.on('selectionchange', () => {
 
 // Handle messages from UI
 figma.ui.onmessage = async (msg: UIMessage) => {
-  if (msg.type === 'export') {
-    const settings = msg.data as PluginExportSettings;
+  if (msg.type === 'export' || msg.type === 'analyze-selection') {
+    // For analyze-selection, build the settings from message data
+    let settings: PluginExportSettings;
+    
+    if (msg.type === 'analyze-selection') {
+      settings = {
+        frames: getSelectedFrames(),
+        context: msg.context || '',
+        scale: 2,
+        format: 'PNG',
+        apiKey: msg.apiKey || ''
+      };
+    } else {
+      settings = msg.data as PluginExportSettings;
+    }
     
     try {
       const images = [];
