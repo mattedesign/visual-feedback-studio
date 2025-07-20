@@ -130,7 +130,7 @@ export const FigmantSidebar = () => {
           <p className="text-sm md:text-sm sm:text-xs xs:text-xs text-muted-foreground mb-3 hidden sm:block">
             Upgrade and get 20% off to get more analyses.
           </p>
-          <Button className="upgrade-button">
+          <Button variant="upgrade" className="upgrade-button">
             <span className="hidden sm:inline">Upgrade</span>
             <span className="sm:hidden">+</span>
           </Button>
