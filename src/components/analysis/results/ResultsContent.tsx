@@ -122,13 +122,33 @@ export const ResultsContent = ({ analysisData, sessionData }: ResultsContentProp
       analysisContent = claudeAnalysis.ux_analysis;
     }
 
-    // Extract overall score from analysisContent
-    if (analysisContent.overallScore) {
+    // Extract overall score from analysisContent - handle multiple formats
+    if (typeof analysisContent.overallScore === 'number') {
       overallScore = analysisContent.overallScore;
-    } else if (analysisContent.overall_score) {
+    } else if (typeof analysisContent.overall_score === 'number') {
       overallScore = analysisContent.overall_score;
-    } else if (analysisContent.score) {
+    } else if (typeof analysisContent.score === 'number') {
       overallScore = analysisContent.score;
+    } else if (analysisContent.overall_score && typeof analysisContent.overall_score === 'object') {
+      // Handle fractional score format like "5/10", "7/10"
+      const scoreObj = analysisContent.overall_score;
+      const scoreValues: number[] = [];
+      
+      for (const key in scoreObj) {
+        const scoreValue = scoreObj[key];
+        if (typeof scoreValue === 'string' && scoreValue.includes('/')) {
+          const [numerator, denominator] = scoreValue.split('/').map(Number);
+          if (!isNaN(numerator) && !isNaN(denominator) && denominator > 0) {
+            // Convert to 0-100 scale
+            scoreValues.push((numerator / denominator) * 100);
+          }
+        }
+      }
+      
+      if (scoreValues.length > 0) {
+        // Calculate average of all scores
+        overallScore = Math.round(scoreValues.reduce((sum, score) => sum + score, 0) / scoreValues.length);
+      }
     }
 
     // Extract executive summary from analysisContent - handle both string and object formats
@@ -155,6 +175,17 @@ export const ResultsContent = ({ analysisData, sessionData }: ResultsContentProp
       }
       
       executiveSummary = summaryParts.join(' | ');
+    } else if (analysisContent.overall_score && typeof analysisContent.overall_score === 'object') {
+      // Create executive summary from individual score breakdown when no summary exists
+      const scoreBreakdown = [];
+      for (const [category, score] of Object.entries(analysisContent.overall_score)) {
+        if (typeof score === 'string' && score.includes('/')) {
+          scoreBreakdown.push(`${category.replace('_', ' ')}: ${score}`);
+        }
+      }
+      if (scoreBreakdown.length > 0) {
+        executiveSummary = `Score Breakdown: ${scoreBreakdown.join(', ')}`;
+      }
     }
 
     // NEW: Extract issues from ux_analysis structure - handle category-based groupings first
