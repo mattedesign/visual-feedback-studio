@@ -264,6 +264,8 @@ figma.ui.onmessage = async (msg: UIMessage) => {
         return;
       }
       
+      console.log('🔍 Creating settings object with token:', sessionToken ? sessionToken.substring(0, 20) + '...' : 'undefined');
+      
       settings = {
         frames: selectedFrames,
         context: msg.context || '',
@@ -271,6 +273,8 @@ figma.ui.onmessage = async (msg: UIMessage) => {
         format: 'PNG',
         sessionToken: sessionToken
       };
+      
+      console.log('🔍 Settings object created. Token in settings:', settings.sessionToken ? settings.sessionToken.substring(0, 20) + '...' : 'undefined');
     } else {
       settings = msg.data as PluginExportSettings;
     }
