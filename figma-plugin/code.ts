@@ -171,16 +171,21 @@ figma.ui.onmessage = async (msg: UIMessage) => {
       console.log('✅ Login successful, token stored');
       figma.ui.postMessage({
         type: 'auth-status',
-        isAuthenticated: true,
-        userEmail: authData.user.email
+        data: {
+          authenticated: true,
+          token: authData.access_token,
+          userEmail: authData.user.email
+        }
       } as PluginMessage);
 
     } catch (error: any) {
       console.error('❌ Login error:', error);
       figma.ui.postMessage({
         type: 'auth-status',
-        isAuthenticated: false,
-        authError: error.message
+        data: {
+          authenticated: false,
+          authError: error.message
+        }
       } as PluginMessage);
     }
   }
@@ -192,7 +197,9 @@ figma.ui.onmessage = async (msg: UIMessage) => {
       
       figma.ui.postMessage({
         type: 'auth-status',
-        isAuthenticated: false
+        data: {
+          authenticated: false
+        }
       } as PluginMessage);
     } catch (error) {
       console.error('Logout error:', error);
@@ -218,9 +225,12 @@ figma.ui.onmessage = async (msg: UIMessage) => {
           const subData = await response.json();
           figma.ui.postMessage({
             type: 'auth-status',
-            isAuthenticated: true,
-            userEmail: userEmail,
-            subscription: subData.subscription
+            data: {
+              authenticated: true,
+              token: sessionToken,
+              userEmail: userEmail,
+              subscription: subData.subscription
+            }
           } as PluginMessage);
         } else {
           // Token expired, clear storage
@@ -229,21 +239,27 @@ figma.ui.onmessage = async (msg: UIMessage) => {
           
           figma.ui.postMessage({
             type: 'auth-status',
-            isAuthenticated: false,
-            authError: 'Session expired'
+            data: {
+              authenticated: false,
+              authError: 'Session expired'
+            }
           } as PluginMessage);
         }
       } else {
         figma.ui.postMessage({
           type: 'auth-status',
-          isAuthenticated: false
+          data: {
+            authenticated: false
+          }
         } as PluginMessage);
       }
     } catch (error: any) {
       figma.ui.postMessage({
         type: 'auth-status',
-        isAuthenticated: false,
-        authError: error.message
+        data: {
+          authenticated: false,
+          authError: error.message
+        }
       } as PluginMessage);
     }
   }
