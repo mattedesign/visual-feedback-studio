@@ -169,8 +169,7 @@
   }
   
   .figmant-card {
-    @apply p-6 md:p-6 sm:p-4 xs:p-3;
-    border-radius: 16px;
+    @apply p-6 md:p-6 sm:p-4 xs:p-3 rounded-2xl;
     border: 1px solid rgba(123, 123, 123, 0.30);
     background: #FFF;
   }
