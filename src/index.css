@@ -43,9 +43,9 @@
     --input: 214 32% 91%;
     --ring: 175 75% 35%;
     
-    /* Gray scale tokens for proper text hierarchy - FIXED FORMAT */
-    --gray-500: 220, 9%, 46%;
-    --gray-600: 220, 9%, 36%;
+    /* Gray scale tokens for proper text hierarchy - CORRECTED FORMAT */
+    --gray-500: 220 9% 46%;
+    --gray-600: 220 9% 36%;
     
     /* Status colors */
     --destructive: 0 84% 60%;
