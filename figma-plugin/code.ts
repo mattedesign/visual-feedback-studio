@@ -1,251 +1,219 @@
+/// <reference types="@figma/plugin-typings" />
 
-// Main plugin code that runs in the Figma environment
-figma.showUI(__html__, { 
-  width: 400, 
-  height: 600,
-  themeColors: true 
+// This file runs in the main Figma environment
+
+// Define types directly in this file since imports can be problematic in Figma
+interface PluginMessage {
+  type: 'selection-change' | 'export-frames' | 'export-complete' | 'export-error' | 'close' | 'analysis-progress' | 'analysis-complete' | 'analysis-partial';
+  data?: any;
+  message?: string;
+  progress?: number;
+  sessionId?: string;
+  analysisResult?: any;
+  imagesProcessed?: number;
+  totalImages?: number;
+  analysisError?: string;
+}
+
+interface UIMessage {
+  type: 'export' | 'cancel' | 'resize';
+  data?: any;
+}
+
+interface FrameData {
+  id: string;
+  name: string;
+  width: number;
+  height: number;
+}
+
+interface PluginExportSettings {
+  frames: FrameData[];
+  context: string;
+  scale: number;
+  format: 'PNG' | 'JPG' | 'SVG';
+  apiKey: string;
+}
+
+// Show UI
+figma.showUI(__html__, {
+  width: 400,
+  height: 500,
+  title: 'Figmant Analysis'
 });
 
-interface AnalysisMessage {
-  type: 'analyze-selection';
-  apiKey: string;
-  sessionTitle?: string;
-  context?: string;
-}
-
-interface SelectionUpdateMessage {
-  type: 'selection-update';
-  count: number;
-  hasFrames: boolean;
-}
-
-interface ConfigMessage {
-  type: 'get-config';
-}
-
-interface ConfigResponse {
-  type: 'config-response';
-  apiKey?: string;
-}
-
-// Handle messages from the UI
-figma.ui.onmessage = async (msg) => {
-  try {
-    switch (msg.type) {
-      case 'get-config':
-        // Get stored API key
-        const apiKey = await figma.clientStorage.getAsync('figmant-api-key');
-        figma.ui.postMessage({
-          type: 'config-response',
-          apiKey: apiKey || ''
-        });
-        break;
-
-      case 'save-api-key':
-        // Save API key to client storage
-        await figma.clientStorage.setAsync('figmant-api-key', msg.apiKey);
-        figma.ui.postMessage({
-          type: 'api-key-saved'
-        });
-        break;
-
-      case 'analyze-selection':
-        await handleAnalyzeSelection(msg as AnalysisMessage);
-        break;
-
-      case 'get-selection':
-        updateSelectionInfo();
-        break;
-
-      default:
-        console.warn('Unknown message type:', msg.type);
+// Function to get selected frames
+function getSelectedFrames(): FrameData[] {
+  const frames: FrameData[] = [];
+  
+  for (const node of figma.currentPage.selection) {
+    // Check if the node is a frame, component, or group
+    if (node.type === 'FRAME' || 
+        node.type === 'COMPONENT' || 
+        node.type === 'COMPONENT_SET' ||
+        node.type === 'GROUP' ||
+        node.type === 'INSTANCE') {
+      frames.push({
+        id: node.id,
+        name: node.name,
+        width: node.width,
+        height: node.height
+      });
     }
-  } catch (error) {
-    console.error('Error handling message:', error);
-    figma.ui.postMessage({
-      type: 'error',
-      message: error instanceof Error ? error.message : 'Unknown error occurred'
-    });
+  }
+  
+  return frames;
+}
+
+// Send initial selection to UI
+figma.ui.postMessage({
+  type: 'selection-change',
+  data: { frames: getSelectedFrames() }
+} as PluginMessage);
+
+// Listen for selection changes
+figma.on('selectionchange', () => {
+  figma.ui.postMessage({
+    type: 'selection-change',
+    data: { frames: getSelectedFrames() }
+  } as PluginMessage);
+});
+
+// Handle messages from UI
+figma.ui.onmessage = async (msg: UIMessage) => {
+  if (msg.type === 'export') {
+    const settings = msg.data as PluginExportSettings;
+    
+    try {
+      const images = [];
+      
+      for (const frame of settings.frames) {
+        const node = figma.getNodeById(frame.id) as SceneNode;
+        
+        if (node && 'exportAsync' in node) {
+          // Export the frame with proper settings based on format
+          let imageData: Uint8Array;
+          
+          if (settings.format === 'SVG') {
+            imageData = await node.exportAsync({
+              format: 'SVG'
+            });
+          } else {
+            // For PNG and JPG, we can use scale
+            imageData = await node.exportAsync({
+              format: settings.format as 'PNG' | 'JPG',
+              constraint: { type: 'SCALE', value: settings.scale }
+            });
+          }
+          
+          // Convert to base64
+          const base64 = figma.base64Encode(imageData);
+          const mimeType = settings.format === 'PNG' ? 'image/png' : 
+                          settings.format === 'JPG' ? 'image/jpeg' : 
+                          'image/svg+xml';
+          
+          images.push({
+            name: node.name,
+            format: settings.format,
+            image: `data:${mimeType};base64,${base64}`
+          });
+        }
+      }
+      
+      // First, send the images to the upload API
+      try {
+        const uploadResponse = await fetch('https://app.figmant.ai/figmant-plugin-api', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': settings.apiKey
+          },
+          body: JSON.stringify({
+            images,
+            context: settings.context,
+            sessionTitle: `Figma Analysis - ${new Date().toLocaleString()}`
+          })
+        });
+
+        if (!uploadResponse.ok) {
+          const errorData = await uploadResponse.json().catch(() => ({ error: 'Upload failed' }));
+          throw new Error(errorData.error || `Upload failed: ${uploadResponse.status}`);
+        }
+
+        const result = await uploadResponse.json();
+
+        figma.ui.postMessage({ 
+          type: 'analysis-progress', 
+          message: 'Starting UX analysis...',
+          progress: 90
+        });
+
+        // Trigger the analysis using the main analysis function
+        try {
+          const analysisResponse = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/functions/v1/figmant-analyze-design', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': settings.apiKey
+            },
+            body: JSON.stringify({
+              sessionId: result.session_id
+            })
+          });
+
+          if (!analysisResponse.ok) {
+            const errorData = await analysisResponse.json().catch(() => ({ error: 'Analysis failed' }));
+            throw new Error(errorData.error || `Analysis failed: ${analysisResponse.status}`);
+          }
+
+          const analysisResult = await analysisResponse.json();
+
+          figma.ui.postMessage({
+            type: 'analysis-complete',
+            sessionId: result.session_id,
+            analysisResult: analysisResult,
+            imagesProcessed: result.images_processed,
+            totalImages: result.total_images
+          });
+
+        } catch (analysisError: any) {
+          console.error('Analysis error:', analysisError);
+          // Still report upload success but note analysis failed
+          figma.ui.postMessage({
+            type: 'analysis-partial',
+            sessionId: result.session_id,
+            imagesProcessed: result.images_processed,
+            totalImages: result.total_images,
+            analysisError: analysisError.message,
+            message: 'Images uploaded successfully, but analysis failed. You can retry the analysis from the web app.'
+          });
+        }
+      } catch (uploadError: any) {
+        figma.ui.postMessage({
+          type: 'export-error',
+          data: { error: uploadError.message || 'Upload failed' }
+        } as PluginMessage);
+      }
+      
+    } catch (error: any) {
+      figma.ui.postMessage({
+        type: 'export-error',
+        data: { error: error.message || 'Export failed' }
+      } as PluginMessage);
+    }
+  }
+  
+  if (msg.type === 'cancel') {
+    figma.closePlugin();
+  }
+  
+  if (msg.type === 'resize') {
+    const { width, height } = msg.data;
+    figma.ui.resize(width, height);
   }
 };
 
-// Update selection info when selection changes
-figma.on('selectionchange', () => {
-  updateSelectionInfo();
+// Clean up
+figma.on('close', () => {
+  figma.closePlugin();
 });
-
-function updateSelectionInfo() {
-  const selection = figma.currentPage.selection;
-  const frames = selection.filter(node => 
-    node.type === 'FRAME' || 
-    node.type === 'COMPONENT' || 
-    node.type === 'INSTANCE' ||
-    node.type === 'GROUP'
-  );
-
-  figma.ui.postMessage({
-    type: 'selection-update',
-    count: selection.length,
-    hasFrames: frames.length > 0,
-    frameCount: frames.length
-  } as SelectionUpdateMessage);
-}
-
-async function handleAnalyzeSelection(msg: AnalysisMessage) {
-  try {
-    figma.ui.postMessage({ type: 'analysis-start' });
-
-    const selection = figma.currentPage.selection;
-    const exportableNodes = selection.filter(node => 
-      node.type === 'FRAME' || 
-      node.type === 'COMPONENT' || 
-      node.type === 'INSTANCE' ||
-      node.type === 'GROUP'
-    );
-
-    if (exportableNodes.length === 0) {
-      throw new Error('Please select at least one frame, component, or group to analyze');
-    }
-
-    if (exportableNodes.length > 5) {
-      throw new Error('Maximum 5 selections allowed per analysis');
-    }
-
-    figma.ui.postMessage({ 
-      type: 'analysis-progress', 
-      message: 'Exporting images...',
-      progress: 0
-    });
-
-    // Export each selected node as PNG
-    const images = [];
-    for (let i = 0; i < exportableNodes.length; i++) {
-      const node = exportableNodes[i];
-      
-      figma.ui.postMessage({ 
-        type: 'analysis-progress', 
-        message: `Exporting ${node.name}...`,
-        progress: (i / exportableNodes.length) * 50
-      });
-
-      try {
-        const bytes = await node.exportAsync({
-          format: 'PNG',
-          constraint: {
-            type: 'SCALE',
-            value: 2 // 2x resolution for better quality
-          }
-        });
-
-        // Convert Uint8Array to base64
-        const base64 = await arrayBufferToBase64(bytes);
-        
-        images.push({
-          name: node.name || `Frame ${i + 1}`,
-          format: 'PNG' as const,
-          image: `data:image/png;base64,${base64}`
-        });
-      } catch (exportError) {
-        console.error(`Failed to export ${node.name}:`, exportError);
-        throw new Error(`Failed to export "${node.name}". Try selecting a different frame.`);
-      }
-    }
-
-    figma.ui.postMessage({ 
-      type: 'analysis-progress', 
-      message: 'Sending to Figmant API...',
-      progress: 75
-    });
-
-    // Send to Figmant API
-    const response = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/functions/v1/figmant-plugin-api', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': msg.apiKey
-      },
-      body: JSON.stringify({
-        images: images,
-        sessionTitle: msg.sessionTitle || `Figma Analysis - ${new Date().toLocaleString()}`,
-        context: msg.context || 'Figma plugin analysis'
-      })
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-      throw new Error(errorData.error || `API request failed: ${response.status}`);
-    }
-
-    const result = await response.json();
-
-    figma.ui.postMessage({ 
-      type: 'analysis-progress', 
-      message: 'Starting UX analysis...',
-      progress: 90
-    });
-
-    // Trigger the analysis using the main analysis function (now supports API keys)
-    try {
-      const analysisResponse = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/functions/v1/figmant-analyze-design', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': msg.apiKey
-        },
-        body: JSON.stringify({
-          sessionId: result.session_id
-        })
-      });
-
-      if (!analysisResponse.ok) {
-        const errorData = await analysisResponse.json().catch(() => ({ error: 'Analysis failed' }));
-        throw new Error(errorData.error || `Analysis failed: ${analysisResponse.status}`);
-      }
-
-      const analysisResult = await analysisResponse.json();
-
-      figma.ui.postMessage({
-        type: 'analysis-complete',
-        sessionId: result.session_id,
-        analysisResult: analysisResult,
-        imagesProcessed: result.images_processed,
-        totalImages: result.total_images
-      });
-
-    } catch (analysisError) {
-      console.error('Analysis error:', analysisError);
-      // Still report upload success but note analysis failed
-      figma.ui.postMessage({
-        type: 'analysis-partial',
-        sessionId: result.session_id,
-        imagesProcessed: result.images_processed,
-        totalImages: result.total_images,
-        analysisError: analysisError.message,
-        message: 'Images uploaded successfully, but analysis failed. You can retry the analysis from the web app.'
-      });
-    }
-
-  } catch (error) {
-    console.error('Analysis error:', error);
-    figma.ui.postMessage({
-      type: 'analysis-error',
-      message: error instanceof Error ? error.message : 'Analysis failed'
-    });
-  }
-}
-
-// Helper function to convert ArrayBuffer to base64
-async function arrayBufferToBase64(buffer: Uint8Array): Promise<string> {
-  // Convert Uint8Array to regular array for processing
-  const bytes = Array.from(buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  
-  // Use btoa to encode to base64
-  return btoa(binary);
-}
-
-// Initialize
-updateSelectionInfo();
