@@ -19,9 +19,11 @@ export function EnhancedDashboardLayout({ children }: EnhancedDashboardLayoutPro
           <DashboardHeader />
           
           {/* Scrollable Content */}
-          <main className="flex-1 overflow-y-auto">
-            <div className="container mx-auto p-6 space-y-8">
-              {children}
+          <main className="flex-1 overflow-y-auto flex flex-col">
+            <div className="container mx-auto p-6 space-y-8 flex-1 flex flex-col">
+              <div className="flex-1 flex flex-col">
+                {children}
+              </div>
             </div>
           </main>
         </div>

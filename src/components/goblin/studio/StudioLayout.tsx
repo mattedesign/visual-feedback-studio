@@ -23,8 +23,10 @@ export function StudioLayout({ header, chatPanel, mainCanvas, propertiesPanel }:
         </div>
         
         {/* Center Panel - Main Canvas */}
-        <div className="flex-1 bg-muted/20 relative">
-          {mainCanvas}
+        <div className="flex-1 bg-muted/20 relative flex flex-col">
+          <div className="flex-1 flex flex-col">
+            {mainCanvas}
+          </div>
         </div>
         
         {/* Right Panel - Properties */}

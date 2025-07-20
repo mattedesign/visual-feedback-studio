@@ -16,8 +16,10 @@ export const FigmantLayout = ({ children }: FigmantLayoutProps) => {
       {!isMobile && <FigmantSidebar />}
       <div className="figmant-main">
         <FigmantHeader />
-        <div className="figmant-content">
-          {children}
+        <div className="figmant-content flex flex-col flex-1">
+          <div className="flex-1 flex flex-col">
+            {children}
+          </div>
         </div>
       </div>
     </div>
