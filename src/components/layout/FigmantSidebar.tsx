@@ -1,72 +1,69 @@
-
 import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Sparkles, 
-  Settings,
-  Crown,
-  ChevronDown,
-  ChevronRight,
-  User,
-  BarChart3,
-  History,
-  Box,
-  FileText,
-  Folder,
-  FolderOpen
-} from 'lucide-react';
+import { LayoutDashboard, Sparkles, Settings, Crown, ChevronDown, ChevronRight, User, BarChart3, History, Box, FileText, Folder, FolderOpen } from 'lucide-react';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { FigmantLogo } from '@/components/ui/figmant-logo';
 import { Button } from '@/components/ui/button';
-
 export const FigmantSidebar = () => {
   const location = useLocation();
-  const { subscription } = useSubscription();
+  const {
+    subscription
+  } = useSubscription();
   const [isAnalysisExpanded, setIsAnalysisExpanded] = useState(true);
-  
   const isActive = (path: string) => location.pathname === path;
-
-  const pagesItems = [
-    { 
-      icon: LayoutDashboard, 
-      label: 'Dashboard', 
-      href: '/dashboard',
-      isActive: isActive('/dashboard'),
-      count: 112
-    },
-    { 
-      icon: BarChart3, 
-      label: 'Analysis', 
+  const pagesItems = [{
+    icon: LayoutDashboard,
+    label: 'Dashboard',
+    href: '/dashboard',
+    isActive: isActive('/dashboard'),
+    count: 112
+  }, {
+    icon: BarChart3,
+    label: 'Analysis',
+    href: '/analyze',
+    isActive: isActive('/analyze'),
+    isExpandable: true,
+    isExpanded: isAnalysisExpanded,
+    subItems: [{
+      label: 'Start New Analysis',
       href: '/analyze',
-      isActive: isActive('/analyze'),
-      isExpandable: true,
-      isExpanded: isAnalysisExpanded,
-      subItems: [
-        { label: 'Start New Analysis', href: '/analyze', isActive: false },
-        { label: 'History', href: '/dashboard', isActive: false }
-      ]
-    },
-    { 
-      icon: User, 
-      label: 'Subscription', 
-      href: '/subscription',
-      isActive: isActive('/subscription')
-    }
-  ];
-
-  const recentAnalysisItems = [
-    { icon: Box, label: 'Dashboard Analysis', isActive: false, color: 'text-gray-600' },
-    { icon: FileText, label: 'Checkout Analysis', isActive: false, color: 'text-gray-600' },
-    { icon: Folder, label: 'Figma Analysis', isActive: true, color: 'text-gray-600' },
-    { icon: FolderOpen, label: 'Top Secret Project', isActive: false, color: 'text-gray-600' }
-  ];
-
-  return (
-    <div className="figmant-sidebar">
+      isActive: false
+    }, {
+      label: 'History',
+      href: '/dashboard',
+      isActive: false
+    }]
+  }, {
+    icon: User,
+    label: 'Subscription',
+    href: '/subscription',
+    isActive: isActive('/subscription')
+  }];
+  const recentAnalysisItems = [{
+    icon: Box,
+    label: 'Dashboard Analysis',
+    isActive: false,
+    color: 'text-gray-600'
+  }, {
+    icon: FileText,
+    label: 'Checkout Analysis',
+    isActive: false,
+    color: 'text-gray-600'
+  }, {
+    icon: Folder,
+    label: 'Figma Analysis',
+    isActive: true,
+    color: 'text-gray-600'
+  }, {
+    icon: FolderOpen,
+    label: 'Top Secret Project',
+    isActive: false,
+    color: 'text-gray-600'
+  }];
+  return <div className="figmant-sidebar">
       <div className="h-full flex flex-col rounded-lg">
       {/* Header */}
-      <div className="p-6 md:p-6 sm:p-4 xs:p-3">
+      <div className="p-6 md:p-6 sm:p-4 xs:p-3 px-[12px] py-[16px]">
         <div className="flex items-center gap-3 md:gap-3 sm:gap-2 xs:gap-2">
           <FigmantLogo size={40} className="md:w-10 md:h-10 sm:w-8 sm:h-8 xs:w-6 xs:h-6" />
           <div className="flex-1 hidden sm:block">
@@ -84,62 +81,32 @@ export const FigmantSidebar = () => {
       <div className="px-4 pb-4 md:px-4 sm:px-3 xs:px-2">
         <h3 className="sidebar-section-header mb-4 hidden sm:block">Pages</h3>
         <div className="space-y-1">
-          {pagesItems.map((item, index) => (
-            <div key={index}>
-              {item.isExpandable ? (
-                <button
-                  className={`w-full flex items-center justify-between px-3 py-3 md:px-3 md:py-3 sm:px-2 sm:py-2 xs:px-1 xs:py-1 rounded-lg transition-colors ${
-                    item.isActive ? 'bg-muted' : 'hover:bg-muted/50'
-                  }`}
-                  onClick={() => setIsAnalysisExpanded(!isAnalysisExpanded)}
-                >
+          {pagesItems.map((item, index) => <div key={index}>
+              {item.isExpandable ? <button className={`w-full flex items-center justify-between px-3 py-3 md:px-3 md:py-3 sm:px-2 sm:py-2 xs:px-1 xs:py-1 rounded-lg transition-colors ${item.isActive ? 'bg-muted' : 'hover:bg-muted/50'}`} onClick={() => setIsAnalysisExpanded(!isAnalysisExpanded)}>
                   <div className="flex items-center gap-3 md:gap-3 sm:gap-2 xs:gap-1">
                     <item.icon className="w-5 h-5 md:w-5 md:h-5 sm:w-4 sm:h-4 xs:w-4 xs:h-4 text-gray-600" />
                     <span className="font-medium text-sm md:text-sm sm:text-xs xs:hidden text-gray-600">{item.label}</span>
                   </div>
                   <div className="text-muted-foreground hidden sm:block">
-                    {item.isExpanded ? (
-                      <ChevronDown className="w-4 h-4 md:w-4 md:h-4 sm:w-3 sm:h-3" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4 md:w-4 md:h-4 sm:w-3 sm:h-3" />
-                    )}
+                    {item.isExpanded ? <ChevronDown className="w-4 h-4 md:w-4 md:h-4 sm:w-3 sm:h-3" /> : <ChevronRight className="w-4 h-4 md:w-4 md:h-4 sm:w-3 sm:h-3" />}
                   </div>
-                </button>
-              ) : (
-                <NavLink
-                  to={item.href}
-                  className={`flex items-center justify-between px-3 py-3 md:px-3 md:py-3 sm:px-2 sm:py-2 xs:px-1 xs:py-1 rounded-lg transition-colors text-gray-600 ${
-                    item.isActive ? 'bg-muted' : 'hover:bg-muted/50'
-                  }`}
-                >
+                </button> : <NavLink to={item.href} className={`flex items-center justify-between px-3 py-3 md:px-3 md:py-3 sm:px-2 sm:py-2 xs:px-1 xs:py-1 rounded-lg transition-colors text-gray-600 ${item.isActive ? 'bg-muted' : 'hover:bg-muted/50'}`}>
                   <div className="flex items-center gap-3 md:gap-3 sm:gap-2 xs:gap-1">
                     <item.icon className="w-5 h-5 md:w-5 md:h-5 sm:w-4 sm:h-4 xs:w-4 xs:h-4 text-gray-600" />
                     <span className="font-medium text-sm md:text-sm sm:text-xs xs:hidden text-gray-600">{item.label}</span>
                   </div>
-                  {item.count && (
-                    <span className="text-xs bg-muted text-muted-foreground px-2 py-1 md:px-2 md:py-1 sm:px-1 sm:py-0.5 xs:hidden rounded-full">
+                  {item.count && <span className="text-xs bg-muted text-muted-foreground px-2 py-1 md:px-2 md:py-1 sm:px-1 sm:py-0.5 xs:hidden rounded-full">
                       {item.count}
-                    </span>
-                  )}
-                </NavLink>
-              )}
+                    </span>}
+                </NavLink>}
               
               {/* Sub-items for Analysis */}
-              {item.isExpandable && item.isExpanded && item.subItems && (
-                <div className="ml-8 mt-2 space-y-1">
-                  {item.subItems.map((subItem, subIndex) => (
-                    <NavLink
-                      key={subIndex}
-                      to={subItem.href}
-                      className="block px-3 py-2 text-sm text-gray-600 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
-                    >
+              {item.isExpandable && item.isExpanded && item.subItems && <div className="ml-8 mt-2 space-y-1">
+                  {item.subItems.map((subItem, subIndex) => <NavLink key={subIndex} to={subItem.href} className="block px-3 py-2 text-sm text-gray-600 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
                       {subItem.label}
-                    </NavLink>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+                    </NavLink>)}
+                </div>}
+            </div>)}
         </div>
       </div>
 
@@ -147,19 +114,12 @@ export const FigmantSidebar = () => {
       <div className="flex-1 px-6 py-4 md:px-6 md:py-4 sm:px-4 sm:py-3 xs:px-2 xs:py-2 hidden md:block">
         <h3 className="sidebar-section-header mb-4">Recent Analysis</h3>
         <div className="space-y-1">
-          {recentAnalysisItems.map((item, index) => (
-            <div
-              key={index}
-              className={`flex items-center gap-3 md:gap-3 sm:gap-2 px-3 py-3 md:px-3 md:py-3 sm:px-2 sm:py-2 rounded-lg transition-colors ${
-                item.isActive ? 'bg-muted' : 'hover:bg-muted/50'
-              }`}
-            >
+          {recentAnalysisItems.map((item, index) => <div key={index} className={`flex items-center gap-3 md:gap-3 sm:gap-2 px-3 py-3 md:px-3 md:py-3 sm:px-2 sm:py-2 rounded-lg transition-colors ${item.isActive ? 'bg-muted' : 'hover:bg-muted/50'}`}>
               <item.icon className={`w-5 h-5 md:w-5 md:h-5 sm:w-4 sm:h-4 ${item.color}`} />
               <span className={`text-sm md:text-sm sm:text-xs ${item.isActive ? 'font-medium text-gray-600' : 'text-gray-600'}`}>
                 {item.label}
               </span>
-            </div>
-          ))}
+            </div>)}
         </div>
       </div>
 
@@ -173,7 +133,9 @@ export const FigmantSidebar = () => {
             </span>
           </div>
           <div className="w-full bg-muted rounded-full h-2 mb-3">
-            <div className="bg-primary h-2 rounded-full" style={{ width: '30%' }}></div>
+            <div className="bg-primary h-2 rounded-full" style={{
+              width: '30%'
+            }}></div>
           </div>
           <p className="text-sm md:text-sm sm:text-xs xs:text-xs text-muted-foreground mb-3 hidden sm:block">
             Upgrade and get 20% off to get more analyses.
@@ -185,6 +147,5 @@ export const FigmantSidebar = () => {
         </div>
       </div>
       </div>
-    </div>
-  );
+    </div>;
 };
