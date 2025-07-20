@@ -138,6 +138,8 @@ figma.ui.onmessage = async (msg: UIMessage) => {
     try {
       console.log('🔐 Attempting login...');
       
+      console.log('🚀 Starting login process...');
+      
       // Login user with Supabase
       const response = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/auth/v1/token?grant_type=password', {
         method: 'POST',
@@ -151,18 +153,22 @@ figma.ui.onmessage = async (msg: UIMessage) => {
         })
       });
 
+      console.log('🔍 Login response status:', response.status);
+
       if (!response.ok) {
         const error = await response.json();
+        console.error('❌ Login failed with error:', error);
         throw new Error(error.error_description || 'Login failed');
       }
 
       const authData = await response.json();
+      console.log('✅ Login response received, storing token...');
       
       // Store session token
       await figma.clientStorage.setAsync('figmant_session_token', authData.access_token);
       await figma.clientStorage.setAsync('figmant_user_email', authData.user.email);
 
-      console.log('✅ Login successful');
+      console.log('✅ Login successful, token stored');
       figma.ui.postMessage({
         type: 'auth-status',
         isAuthenticated: true,
