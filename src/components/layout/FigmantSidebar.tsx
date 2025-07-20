@@ -145,7 +145,7 @@ export const FigmantSidebar = () => {
 
       {/* Recent Analysis Section */}
       <div className="flex-1 px-6 py-4 md:px-6 md:py-4 sm:px-4 sm:py-3 xs:px-2 xs:py-2 hidden md:block">
-        <h3 className="text-sm font-medium text-muted-foreground mb-4 md:text-sm sm:text-xs">Recent Analysis</h3>
+        <h3 className="sidebar-section-header mb-4">Recent Analysis</h3>
         <div className="space-y-1">
           {recentAnalysisItems.map((item, index) => (
             <div
