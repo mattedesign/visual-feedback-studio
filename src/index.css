@@ -169,10 +169,10 @@
   }
   
   .figmant-card {
-    @apply p-6 md:p-6 sm:p-4 xs:p-3;
     border-radius: 16px !important;
-    border: 1px solid var(--Shade-6-30, rgba(123, 123, 123, 0.30)) !important;
+    border: 1px solid var(--Stroke-02, #E2E2E2) !important;
     background: #FCFCFC !important;
+    padding: 12px !important;
   }
   
   .figmant-grid {
