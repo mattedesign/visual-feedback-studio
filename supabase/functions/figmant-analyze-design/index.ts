@@ -277,7 +277,35 @@ serve(async (req) => {
       throw new Error('Claude API key not configured')
     }
 
-    // Prepare Claude analysis prompt
+    // Prepare Claude analysis prompt with images
+    const imageContent = []
+    
+    // Add each image as base64 content for Claude
+    for (const image of images) {
+      try {
+        // Get image URL
+        const { data: urlData } = supabase.storage
+          .from('analysis-images')
+          .getPublicUrl(image.file_path)
+        
+        // Fetch and convert image to base64
+        const imageResponse = await fetch(urlData.publicUrl)
+        const imageBuffer = await imageResponse.arrayBuffer()
+        const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)))
+        
+        imageContent.push({
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: "image/png",
+            data: base64Image
+          }
+        })
+      } catch (error) {
+        console.error(`Error loading image ${image.file_name} for Claude:`, error)
+      }
+    }
+
     const analysisPrompt = `You are a Senior UX Designer analyzing design images. 
 
 Session Details:
@@ -316,6 +344,12 @@ Format your response as structured JSON with clear categories and actionable ins
 
     console.log('🧠 Calling Claude API...');
 
+    // Prepare the message content with both text and images
+    const messageContent = [
+      { type: "text", text: analysisPrompt },
+      ...imageContent
+    ]
+
     // Call Claude API
     const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -329,7 +363,7 @@ Format your response as structured JSON with clear categories and actionable ins
         max_tokens: 4000,
         messages: [{
           role: 'user',
-          content: analysisPrompt
+          content: messageContent
         }]
       })
     })
