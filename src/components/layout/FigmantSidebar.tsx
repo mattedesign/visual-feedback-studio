@@ -110,18 +110,6 @@ export const FigmantSidebar = () => {
         </div>
       </div>
 
-      {/* Recent Analysis Section */}
-      <div className="flex-1 px-6 py-4 md:px-6 md:py-4 sm:px-4 sm:py-3 xs:px-2 xs:py-2 hidden md:block">
-        <h3 className="sidebar-section-header mb-4">Recent Analysis</h3>
-        <div className="space-y-1">
-          {recentAnalysisItems.map((item, index) => <div key={index} className={`flex items-center gap-3 md:gap-3 sm:gap-2 px-3 py-3 md:px-3 md:py-3 sm:px-2 sm:py-2 rounded-lg transition-colors ${item.isActive ? 'bg-muted' : 'hover:bg-muted/50'}`}>
-              <item.icon className={`w-5 h-5 md:w-5 md:h-5 sm:w-4 sm:h-4 ${item.color}`} />
-              <span className={`text-sm md:text-sm sm:text-xs ${item.isActive ? 'font-medium text-gray-600' : 'text-gray-600'}`}>
-                {item.label}
-              </span>
-            </div>)}
-        </div>
-      </div>
 
       {/* Credit Alert */}
       <div className="p-6 mt-auto md:p-6 sm:p-4 xs:p-3">
