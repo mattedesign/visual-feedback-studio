@@ -12,12 +12,9 @@ export const FigmantDashboard = () => {
       <div className="figmant-grid">
         <Card className="figmant-card">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center mb-4">
               <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center">
                 <TrendingUp className="w-6 h-6 text-secondary" />
-              </div>
-              <div className="w-8 h-8 rounded-full bg-foreground flex items-center justify-center">
-                <ArrowUp className="w-4 h-4 text-background" />
               </div>
             </div>
             <h3 className="font-semibold text-lg mb-1">Trends</h3>
@@ -27,12 +24,9 @@ export const FigmantDashboard = () => {
 
         <Card className="figmant-card">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center mb-4">
               <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
                 <Code2 className="w-6 h-6 text-accent" />
-              </div>
-              <div className="w-8 h-8 rounded-full bg-foreground flex items-center justify-center">
-                <Code2 className="w-4 h-4 text-background" />
               </div>
             </div>
             <h3 className="font-semibold text-lg mb-1">Benchmark</h3>
@@ -42,12 +36,9 @@ export const FigmantDashboard = () => {
 
         <Card className="figmant-card">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center mb-4">
               <div className="w-12 h-12 rounded-full bg-chart-1/10 flex items-center justify-center">
                 <CheckCircle className="w-6 h-6 text-chart-1" />
-              </div>
-              <div className="w-8 h-8 rounded-full bg-foreground flex items-center justify-center">
-                <CheckCircle className="w-4 h-4 text-background" />
               </div>
             </div>
             <h3 className="font-semibold text-lg mb-1">Analyses Complete</h3>
