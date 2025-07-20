@@ -78,33 +78,61 @@ export const ResultsContent = ({ analysisData, sessionData }: ResultsContentProp
       }
     }
 
-    // Extract overall score
-    if (claudeAnalysis.overallScore) {
-      overallScore = claudeAnalysis.overallScore;
-    } else if (claudeAnalysis.overall_score) {
-      overallScore = claudeAnalysis.overall_score;
-    } else if (claudeAnalysis.score) {
-      overallScore = claudeAnalysis.score;
+    // NEW: Handle ux_analysis wrapper structure
+    let analysisContent = claudeAnalysis;
+    if (claudeAnalysis.ux_analysis) {
+      console.log('🔍 Found ux_analysis wrapper, extracting content');
+      analysisContent = claudeAnalysis.ux_analysis;
     }
 
-    // Extract executive summary
-    if (claudeAnalysis.executiveSummary) {
-      executiveSummary = claudeAnalysis.executiveSummary;
-    } else if (claudeAnalysis.executive_summary) {
-      executiveSummary = claudeAnalysis.executive_summary;
-    } else if (claudeAnalysis.summary) {
-      executiveSummary = claudeAnalysis.summary;
+    // Extract overall score from analysisContent
+    if (analysisContent.overallScore) {
+      overallScore = analysisContent.overallScore;
+    } else if (analysisContent.overall_score) {
+      overallScore = analysisContent.overall_score;
+    } else if (analysisContent.score) {
+      overallScore = analysisContent.score;
     }
 
-    // Extract issues from various possible structures
+    // Extract executive summary from analysisContent
+    if (analysisContent.executiveSummary) {
+      executiveSummary = analysisContent.executiveSummary;
+    } else if (analysisContent.executive_summary) {
+      executiveSummary = analysisContent.executive_summary;
+    } else if (analysisContent.summary) {
+      executiveSummary = analysisContent.summary;
+    }
+
+    // NEW: Extract issues from ux_analysis structure - handle category-based groupings first
+    const categoryTypes = [
+      'accessibility_concerns', 'usability_issues', 'conversion_optimization',
+      'design_consistency', 'mobile_responsiveness', 'visual_hierarchy'
+    ];
+
+    for (const categoryType of categoryTypes) {
+      if (analysisContent[categoryType] && Array.isArray(analysisContent[categoryType])) {
+        analysisContent[categoryType].forEach((item: any) => {
+          issues.push({
+            title: item.element || item.title || item.issue || `${categoryType.replace('_', ' ')} Issue`,
+            description: item.recommendation || item.description || item.user_impact || 'No description available',
+            severity: (item.severity || 'medium').toLowerCase() as 'critical' | 'high' | 'medium' | 'low',
+            category: categoryType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            solution: item.recommendation || item.solution,
+            impact: item.user_impact || item.impact
+          });
+        });
+      }
+    }
+
+    // Extract issues from traditional sources as fallback
     const issuesSources = [
-      claudeAnalysis.critical_recommendations,
-      claudeAnalysis.criticalIssues,
-      claudeAnalysis.critical_issues,
-      claudeAnalysis.recommendations,
-      claudeAnalysis.issues,
-      claudeAnalysis.findings,
-      claudeAnalysis.annotations
+      analysisContent.critical_recommendations,
+      analysisContent.criticalIssues,
+      analysisContent.critical_issues,
+      analysisContent.recommendations,
+      analysisContent.issues,
+      analysisContent.findings,
+      analysisContent.annotations
     ];
 
     for (const source of issuesSources) {
@@ -128,8 +156,8 @@ export const ResultsContent = ({ analysisData, sessionData }: ResultsContentProp
       const possibleCategories = ['usability', 'accessibility', 'performance', 'design', 'content'];
       
       for (const category of possibleCategories) {
-        if (claudeAnalysis[category] && Array.isArray(claudeAnalysis[category])) {
-          claudeAnalysis[category].forEach((item: any) => {
+        if (analysisContent[category] && Array.isArray(analysisContent[category])) {
+          analysisContent[category].forEach((item: any) => {
             issues.push({
               title: item.title || item.issue || `${category} Issue`,
               description: item.description || item.recommendation || 'No description available',
@@ -142,6 +170,15 @@ export const ResultsContent = ({ analysisData, sessionData }: ResultsContentProp
         }
       }
     }
+
+    console.log('🔍 Extracted issues:', {
+      total: issues.length,
+      categories: [...new Set(issues.map(i => i.category))],
+      severities: issues.reduce((acc, i) => {
+        acc[i.severity] = (acc[i.severity] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>)
+    });
 
     return { issues, overallScore, executiveSummary };
   };
