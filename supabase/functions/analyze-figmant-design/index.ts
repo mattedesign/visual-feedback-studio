@@ -3,25 +3,55 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
 }
 
 serve(async (req) => {
+  console.log('🔴 DEBUG_FIGMANT: Function entry point reached');
+  console.log('🔴 DEBUG_FIGMANT: Request method:', req.method);
+
   if (req.method === 'OPTIONS') {
+    console.log('🔴 DEBUG_FIGMANT: Returning CORS response');
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    // Validate API key if provided
+    const apiKey = req.headers.get('x-api-key');
+    if (apiKey) {
+      console.log('🔴 DEBUG_FIGMANT: API key provided, validating...');
+      // Hash the provided API key
+      const encoder = new TextEncoder();
+      const data = encoder.encode(apiKey);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const keyHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      
+      // Validate API key
+      const { data: keyData, error: keyError } = await supabase.rpc('validate_api_key', { p_key_hash: keyHash });
+      
+      if (keyError || !keyData || keyData.length === 0 || !keyData[0].is_valid) {
+        console.log('🔴 DEBUG_FIGMANT: Invalid API key');
+        return new Response(
+          JSON.stringify({ error: 'Invalid API key' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      console.log('🔴 DEBUG_FIGMANT: API key validated successfully');
+    }
+
     const { session_id } = await req.json()
 
     if (!session_id) {
       throw new Error('Session ID is required')
     }
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    console.log('🔴 DEBUG_FIGMANT: Starting analysis for session:', session_id);
 
     console.log('Starting analysis for session:', session_id)
 
