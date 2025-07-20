@@ -108,7 +108,7 @@ export const FigmantSidebar = () => {
               ) : (
                 <NavLink
                   to={item.href}
-                  className={`flex items-center justify-between px-3 py-3 md:px-3 md:py-3 sm:px-2 sm:py-2 xs:px-1 xs:py-1 rounded-lg transition-colors ${
+                  className={`flex items-center justify-between px-3 py-3 md:px-3 md:py-3 sm:px-2 sm:py-2 xs:px-1 xs:py-1 rounded-lg transition-colors text-gray-600 ${
                     item.isActive ? 'bg-muted' : 'hover:bg-muted/50'
                   }`}
                 >
