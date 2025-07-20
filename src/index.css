@@ -115,8 +115,9 @@
 @layer components {
   /* Figmant specific layout classes with responsive design */
   .figmant-layout {
-    @apply h-full flex bg-background
+    @apply h-full flex
            md:gap-4 sm:gap-2 xs:gap-1;
+    background-color: #F1F1F1;
   }
   
   .figmant-sidebar {
