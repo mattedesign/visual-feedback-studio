@@ -129,24 +129,6 @@ export function FigmantAnalysisStudio() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="p-6 border-b border-[#E2E2E2]">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-[#121212]">Design Analysis</h1>
-            <p className="text-[#7B7B7B] mt-1">
-              Upload your designs to get AI-powered UX insights and recommendations
-            </p>
-          </div>
-          <div className="text-right">
-            <div className="text-sm text-[#7B7B7B]">Analyses Remaining</div>
-            <div className="text-lg font-semibold text-[#22757C]">
-              {subscription?.analysesRemaining || 0}
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="flex-1 p-6">
         {uploadedImages.length === 0 ? (
           // Upload State
