@@ -249,6 +249,29 @@ export const useAnalysisWorkflow = () => {
         results: []
       }
     }));
+    
+    // ✅ NEW: Phase 4.2 - Listen for automated analysis events
+    const handleAutomatedAnalysis = (event: CustomEvent) => {
+      const { sessionId, parameters } = event.detail;
+      console.log('🤖 Received automated analysis event:', { sessionId, parameters });
+      
+      if (parameters.analysisType === 'comprehensive') {
+        // Set context for automated analysis
+        if (!analysisContext.trim()) {
+          setAnalysisContext('Automated comprehensive analysis triggered by design changes');
+        }
+        // Start analysis after a short delay
+        setTimeout(() => {
+          startAnalysis();
+        }, 1000);
+      }
+    };
+
+    window.addEventListener('figmant:automated-analysis', handleAutomatedAnalysis as EventListener);
+    
+    return () => {
+      window.removeEventListener('figmant:automated-analysis', handleAutomatedAnalysis as EventListener);
+    };
   }, []); // Only run on mount
 
   const enhancedAnalysis = useEnhancedAnalysis({ currentAnalysis });
@@ -358,6 +381,12 @@ export const useAnalysisWorkflow = () => {
         newCount: newImages.length,
         addedImage: imageUrl
       });
+      
+      // ✅ NEW: Phase 4.2 - Trigger auto-analysis when image is added
+      setTimeout(() => {
+        triggerAutoAnalysisIfEnabled(newImages.length, 'image_addition');
+      }, 100); // Small delay to ensure state is updated
+      
       return newImages;
     });
     
@@ -366,8 +395,8 @@ export const useAnalysisWorkflow = () => {
     }
   }, [images, getOrCreateAnalysisSession]);
 
-  // ✅ NEW: Phase 4.2 - Auto-analysis trigger logic
-  const triggerAutoAnalysisIfEnabled = useCallback((imageCount: number, trigger: string) => {
+  // ✅ NEW: Phase 4.2 - Enhanced auto-analysis with automation service integration
+  const triggerAutoAnalysisIfEnabled = useCallback(async (imageCount: number, trigger: string) => {
     if (!autoAnalysisEnabled || isAnalyzing || imageCount < smartTriggerThreshold) {
       return;
     }
@@ -378,6 +407,27 @@ export const useAnalysisWorkflow = () => {
     }
 
     console.log('🤖 Auto-analysis triggered:', { trigger, imageCount, delay: autoAnalysisDelay });
+    
+    // Integrate with automation service
+    try {
+      const { figmantAutomationService } = await import('@/services/figmant/automationService');
+      const sessionId = currentAnalysis?.id || 'temp-session';
+      
+      await figmantAutomationService.evaluateTriggersForSession(sessionId, {
+        imageCount,
+        lastChange: Date.now(),
+        designChanges: [{
+          timestamp: Date.now(),
+          sessionId,
+          changeType: 'addition',
+          affectedImages: images.slice(-1), // Latest image
+          severity: 'medium',
+          metadata: { trigger, autoTriggered: true }
+        }]
+      });
+    } catch (error) {
+      console.warn('⚠️ Automation service integration failed:', error);
+    }
     
     const timeout = setTimeout(() => {
       if (!isAnalyzing && images.length >= smartTriggerThreshold) {
@@ -401,7 +451,7 @@ export const useAnalysisWorkflow = () => {
     }, autoAnalysisDelay);
 
     setPendingAutoAnalysis(timeout);
-  }, [autoAnalysisEnabled, isAnalyzing, smartTriggerThreshold, pendingAutoAnalysis, autoAnalysisDelay, images.length, analysisContext, autoAnalysisContext]);
+  }, [autoAnalysisEnabled, isAnalyzing, smartTriggerThreshold, pendingAutoAnalysis, autoAnalysisDelay, images.length, analysisContext, autoAnalysisContext, currentAnalysis]);
 
   // ✅ NEW: Phase 4.2 - Toggle auto-analysis
   const toggleAutoAnalysis = useCallback((enabled: boolean) => {

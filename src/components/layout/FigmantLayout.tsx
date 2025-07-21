@@ -2,6 +2,7 @@ import React, { memo, useMemo } from 'react';
 import { FigmantSidebar } from './FigmantSidebar';
 import { FigmantHeader } from './FigmantHeader';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { FigmantAutomationPanel } from '@/components/analysis/figma/FigmantAutomationPanel';
 
 interface FigmantLayoutProps {
   children: React.ReactNode;
@@ -28,6 +29,12 @@ const FigmantLayoutComponent = ({ children }: FigmantLayoutProps) => {
           <div className={layoutClasses.childrenContainer}>
             {children}
           </div>
+          {/* ✅ NEW: Phase 4.2 - Automation Panel for desktop only */}
+          {!isMobile && (
+            <div className="fixed bottom-4 right-4 w-80 z-50">
+              <FigmantAutomationPanel />
+            </div>
+          )}
         </div>
       </div>
     </div>
