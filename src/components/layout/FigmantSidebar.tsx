@@ -131,16 +131,79 @@ export const FigmantSidebar = () => {
                   <div key={index}>
                     {item.isExpandable ? (
                       <button 
-                        className={`w-full flex items-center justify-between px-3 py-3 md:px-3 md:py-3 sm:px-2 sm:py-2 xs:px-1 xs:py-1 rounded-lg transition-colors ${item.isActive ? 'bg-muted' : 'hover:bg-muted/50'}`} 
+                        style={item.isActive ? {
+                          display: 'flex',
+                          padding: '4px 12px 4px 4px',
+                          alignItems: 'center',
+                          gap: '10px',
+                          alignSelf: 'stretch',
+                          borderRadius: '10px',
+                          border: '1px solid #22757C',
+                          background: 'linear-gradient(180deg, #22757C 0%, #18686F 100%)',
+                          overflow: 'hidden',
+                          color: '#FCFCFC',
+                          textOverflow: 'ellipsis',
+                          fontFamily: 'Inter',
+                          fontSize: '13px',
+                          fontStyle: 'normal',
+                          fontWeight: '600',
+                          lineHeight: '16px',
+                          letterSpacing: '-0.12px',
+                          width: '100%',
+                          justifyContent: 'space-between'
+                        } : {
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '12px',
+                          borderRadius: '8px',
+                          transition: 'background-color 0.2s ease',
+                          backgroundColor: 'transparent',
+                          border: 'none'
+                        }}
                         onClick={() => setIsAnalysisExpanded(!isAnalysisExpanded)}
+                        onMouseEnter={(e) => {
+                          if (!item.isActive) {
+                            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!item.isActive) {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }
+                        }}
                       >
-                        <div className="flex items-center gap-3 md:gap-3 sm:gap-2 xs:gap-1">
-                          <item.icon className="w-5 h-5 md:w-5 md:h-5 sm:w-4 sm:h-4 xs:w-4 xs:h-4 text-gray-600" />
-                          {!isCollapsed && <span className="font-medium text-sm md:text-sm sm:text-xs text-gray-600">{item.label}</span>}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: item.isActive ? '10px' : '12px' }}>
+                          <item.icon style={item.isActive ? { 
+                            width: '16px', 
+                            height: '16px', 
+                            color: '#FCFCFC' 
+                          } : { 
+                            width: '20px', 
+                            height: '20px', 
+                            color: '#7B7B7B' 
+                          }} />
+                          {!isCollapsed && (
+                            <span style={item.isActive ? {
+                              fontFamily: 'Inter',
+                              fontSize: '13px',
+                              fontWeight: '600',
+                              lineHeight: '16px',
+                              letterSpacing: '-0.12px',
+                              color: '#FCFCFC'
+                            } : {
+                              fontSize: '14px',
+                              fontWeight: '500',
+                              color: '#7B7B7B'
+                            }}>
+                              {item.label}
+                            </span>
+                          )}
                         </div>
                         {!isCollapsed && (
-                          <div className="text-gray-600 hidden sm:block">
-                            {item.isExpanded ? <ChevronDown className="w-4 h-4 md:w-4 md:h-4 sm:w-3 sm:h-3" /> : <ChevronRight className="w-4 h-4 md:w-4 md:h-4 sm:w-3 sm:h-3" />}
+                          <div style={{ color: item.isActive ? '#FCFCFC' : '#7B7B7B' }}>
+                            {item.isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                           </div>
                         )}
                       </button>
