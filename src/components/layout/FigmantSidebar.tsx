@@ -147,8 +147,20 @@ export const FigmantSidebar = () => {
                     ) : (
                       <NavLink 
                         to={item.href} 
-                        style={({ isActive }) => 
-                          isActive 
+                        className={({ isActive }) => {
+                          // Special case for Dashboard: consider both "/" and "/dashboard" as active
+                          const isCurrentlyActive = item.href === '/dashboard' 
+                            ? (location.pathname === '/' || location.pathname === '/dashboard')
+                            : isActive;
+                          return '';
+                        }}
+                        style={({ isActive }) => {
+                          // Special case for Dashboard: consider both "/" and "/dashboard" as active
+                          const isCurrentlyActive = item.href === '/dashboard' 
+                            ? (location.pathname === '/' || location.pathname === '/dashboard')
+                            : isActive;
+                          
+                          return isCurrentlyActive 
                             ? {
                                 display: 'flex',
                                 height: '40px',
@@ -179,8 +191,8 @@ export const FigmantSidebar = () => {
                                 transition: 'background-color 0.2s ease',
                                 color: '#7B7B7B',
                                 textDecoration: 'none'
-                              }
-                        }
+                              };
+                        }}
                         onMouseEnter={(e) => {
                           if (!e.currentTarget.getAttribute('aria-current')) {
                             e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)';
@@ -192,66 +204,73 @@ export const FigmantSidebar = () => {
                           }
                         }}
                       >
-                        {({ isActive }) => (
-                          <>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                              <div style={
-                                isActive 
-                                  ? {
-                                      display: 'flex',
-                                      padding: '6px',
-                                      justifyContent: 'center',
-                                      alignItems: 'center',
-                                      gap: '8px',
-                                      borderRadius: '8px',
-                                      background: '#FCFCFC',
-                                      boxShadow: '0px 0px 4px 0px rgba(18, 18, 18, 0.10)',
-                                      color: '#7B7B7B'
-                                    }
-                                  : {}
-                              }>
-                                <item.icon 
-                                  style={
-                                    isActive 
-                                      ? { width: '16px', height: '16px', color: '#7B7B7B' }
-                                      : { width: '20px', height: '20px', color: '#7B7B7B' }
-                                  }
-                                />
-                              </div>
-                              {!isCollapsed && (
-                                <span style={
-                                  isActive 
+                        {({ isActive }) => {
+                          // Special case for Dashboard: consider both "/" and "/dashboard" as active
+                          const isCurrentlyActive = item.href === '/dashboard' 
+                            ? (location.pathname === '/' || location.pathname === '/dashboard')
+                            : isActive;
+                          
+                          return (
+                            <>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={
+                                  isCurrentlyActive 
                                     ? {
-                                        fontFamily: 'Inter',
-                                        fontSize: '12px',
-                                        fontWeight: '500',
-                                        lineHeight: '16px',
-                                        letterSpacing: '-0.12px',
-                                        color: '#121212'
-                                      }
-                                    : {
-                                        fontSize: '14px',
-                                        fontWeight: '500',
+                                        display: 'flex',
+                                        padding: '6px',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        borderRadius: '8px',
+                                        background: '#FCFCFC',
+                                        boxShadow: '0px 0px 4px 0px rgba(18, 18, 18, 0.10)',
                                         color: '#7B7B7B'
                                       }
+                                    : {}
                                 }>
-                                  {item.label}
+                                  <item.icon 
+                                    style={
+                                      isCurrentlyActive 
+                                        ? { width: '16px', height: '16px', color: '#7B7B7B' }
+                                        : { width: '20px', height: '20px', color: '#7B7B7B' }
+                                    }
+                                  />
+                                </div>
+                                {!isCollapsed && (
+                                  <span style={
+                                    isCurrentlyActive 
+                                      ? {
+                                          fontFamily: 'Inter',
+                                          fontSize: '12px',
+                                          fontWeight: '500',
+                                          lineHeight: '16px',
+                                          letterSpacing: '-0.12px',
+                                          color: '#121212'
+                                        }
+                                      : {
+                                          fontSize: '14px',
+                                          fontWeight: '500',
+                                          color: '#7B7B7B'
+                                        }
+                                  }>
+                                    {item.label}
+                                  </span>
+                                )}
+                              </div>
+                              {item.count && !isCollapsed && !isCurrentlyActive && (
+                                <span style={{
+                                  fontSize: '12px',
+                                  background: '#f1f1f1',
+                                  color: '#7B7B7B',
+                                  padding: '4px 8px',
+                                  borderRadius: '9999px'
+                                }}>
+                                  {item.count}
                                 </span>
                               )}
-                            </div>
-                            {item.count && !isCollapsed && !isActive && (
-                              <span style={{
-                                fontSize: '12px',
-                                background: '#f1f1f1',
-                                color: '#7B7B7B',
-                                padding: '4px 8px',
-                                borderRadius: '9999px'
-                              }}>
-                                {item.count}
-                              </span>
-                            )}
-                          </>
-                        )}
+                            </>
+                          );
+                        }}
                       </NavLink>
                     )}
                     
