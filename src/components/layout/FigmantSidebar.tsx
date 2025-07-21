@@ -126,7 +126,7 @@ export const FigmantSidebar = () => {
             {/* Pages Section */}
             <div className="px-4 pb-4 md:px-4 sm:px-3 xs:px-2 pt-5">
               {!isCollapsed && <h3 className="sidebar-section-header mb-4 hidden sm:block">Pages</h3>}
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {pagesItems.map((item, index) => (
                   <div key={index}>
                     {item.isExpandable ? (
