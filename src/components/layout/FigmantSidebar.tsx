@@ -281,9 +281,71 @@ export const FigmantSidebar = () => {
                           <NavLink 
                             key={subIndex} 
                             to={subItem.href} 
-                            className="block px-3 py-2 text-sm text-gray-600 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                            style={({ isActive }) => 
+                              isActive 
+                                ? {
+                                    display: 'flex',
+                                    height: '40px',
+                                    padding: '4px 12px 4px 4px',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    alignSelf: 'stretch',
+                                    borderRadius: '12px',
+                                    border: '1px solid #ECECEC',
+                                    background: '#F1F1F1',
+                                    overflow: 'hidden',
+                                    color: '#121212',
+                                    textOverflow: 'ellipsis',
+                                    fontFamily: 'Inter',
+                                    fontSize: '12px',
+                                    fontStyle: 'normal',
+                                    fontWeight: '500',
+                                    lineHeight: '16px',
+                                    letterSpacing: '-0.12px',
+                                    textDecoration: 'none'
+                                  }
+                                : {
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    padding: '12px',
+                                    borderRadius: '8px',
+                                    transition: 'background-color 0.2s ease',
+                                    color: '#7B7B7B',
+                                    textDecoration: 'none'
+                                  }
+                            }
+                            onMouseEnter={(e) => {
+                              if (!e.currentTarget.getAttribute('aria-current')) {
+                                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!e.currentTarget.getAttribute('aria-current')) {
+                                e.currentTarget.style.background = 'transparent';
+                              }
+                            }}
                           >
-                            {subItem.label}
+                            {({ isActive }) => (
+                              <span style={
+                                isActive 
+                                  ? {
+                                      fontFamily: 'Inter',
+                                      fontSize: '12px',
+                                      fontWeight: '500',
+                                      lineHeight: '16px',
+                                      letterSpacing: '-0.12px',
+                                      color: '#121212'
+                                    }
+                                  : {
+                                      fontSize: '14px',
+                                      fontWeight: '500',
+                                      color: '#7B7B7B'
+                                    }
+                              }>
+                                {subItem.label}
+                              </span>
+                            )}
                           </NavLink>
                         ))}
                       </div>
