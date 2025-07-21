@@ -23,17 +23,21 @@ export type Database = {
           business_impact_score: number | null
           cancelled_at: string | null
           competitive_position_score: number | null
+          confidence_threshold: number | null
           created_at: string
           description: string | null
           design_type: string | null
+          enhanced_metadata: Json | null
           failure_reason: string | null
           id: string
           implementation_timeline_weeks: number | null
           knowledge_sources_used: number | null
           last_retry_at: string | null
+          pattern_tracking_enabled: boolean | null
           retry_count: number | null
           revenue_confidence_level: number | null
           revenue_potential_annual: number | null
+          screen_detection_metadata: Json | null
           status: string
           target_audience: string | null
           timeout_at: string | null
@@ -49,17 +53,21 @@ export type Database = {
           business_impact_score?: number | null
           cancelled_at?: string | null
           competitive_position_score?: number | null
+          confidence_threshold?: number | null
           created_at?: string
           description?: string | null
           design_type?: string | null
+          enhanced_metadata?: Json | null
           failure_reason?: string | null
           id?: string
           implementation_timeline_weeks?: number | null
           knowledge_sources_used?: number | null
           last_retry_at?: string | null
+          pattern_tracking_enabled?: boolean | null
           retry_count?: number | null
           revenue_confidence_level?: number | null
           revenue_potential_annual?: number | null
+          screen_detection_metadata?: Json | null
           status?: string
           target_audience?: string | null
           timeout_at?: string | null
@@ -75,17 +83,21 @@ export type Database = {
           business_impact_score?: number | null
           cancelled_at?: string | null
           competitive_position_score?: number | null
+          confidence_threshold?: number | null
           created_at?: string
           description?: string | null
           design_type?: string | null
+          enhanced_metadata?: Json | null
           failure_reason?: string | null
           id?: string
           implementation_timeline_weeks?: number | null
           knowledge_sources_used?: number | null
           last_retry_at?: string | null
+          pattern_tracking_enabled?: boolean | null
           retry_count?: number | null
           revenue_confidence_level?: number | null
           revenue_potential_annual?: number | null
+          screen_detection_metadata?: Json | null
           status?: string
           target_audience?: string | null
           timeout_at?: string | null
@@ -102,8 +114,11 @@ export type Database = {
           analysis_id: string
           annotations: Json
           cancelled_by_user: boolean | null
+          confidence_metadata: Json | null
           confidence_weights: Json | null
           created_at: string
+          design_tokens_extracted: Json | null
+          enhanced_business_metrics: Json | null
           enhanced_context: Json | null
           enhanced_prompt_data: Json | null
           error_details: Json | null
@@ -111,6 +126,7 @@ export type Database = {
           id: string
           images: string[]
           knowledge_sources_used: number | null
+          pattern_violations: Json | null
           perplexity_competitive_data: Json | null
           perplexity_enhanced: boolean | null
           perplexity_research_data: Json | null
@@ -120,13 +136,17 @@ export type Database = {
           processing_time_ms: number | null
           quality_scores: Json | null
           research_citations: string[] | null
+          responsive_analysis: Json | null
+          screen_type_detected: string | null
           stage_timing: Json | null
           synthesis_metadata: Json | null
           timeout_occurred: boolean | null
           total_annotations: number | null
+          triage_classification: Json | null
           updated_at: string
           user_id: string
           validation_status: string | null
+          vision_enrichment_data: Json | null
           visual_intelligence: Json | null
           well_done_data: Json | null
         }
@@ -136,8 +156,11 @@ export type Database = {
           analysis_id: string
           annotations?: Json
           cancelled_by_user?: boolean | null
+          confidence_metadata?: Json | null
           confidence_weights?: Json | null
           created_at?: string
+          design_tokens_extracted?: Json | null
+          enhanced_business_metrics?: Json | null
           enhanced_context?: Json | null
           enhanced_prompt_data?: Json | null
           error_details?: Json | null
@@ -145,6 +168,7 @@ export type Database = {
           id?: string
           images?: string[]
           knowledge_sources_used?: number | null
+          pattern_violations?: Json | null
           perplexity_competitive_data?: Json | null
           perplexity_enhanced?: boolean | null
           perplexity_research_data?: Json | null
@@ -154,13 +178,17 @@ export type Database = {
           processing_time_ms?: number | null
           quality_scores?: Json | null
           research_citations?: string[] | null
+          responsive_analysis?: Json | null
+          screen_type_detected?: string | null
           stage_timing?: Json | null
           synthesis_metadata?: Json | null
           timeout_occurred?: boolean | null
           total_annotations?: number | null
+          triage_classification?: Json | null
           updated_at?: string
           user_id: string
           validation_status?: string | null
+          vision_enrichment_data?: Json | null
           visual_intelligence?: Json | null
           well_done_data?: Json | null
         }
@@ -170,8 +198,11 @@ export type Database = {
           analysis_id?: string
           annotations?: Json
           cancelled_by_user?: boolean | null
+          confidence_metadata?: Json | null
           confidence_weights?: Json | null
           created_at?: string
+          design_tokens_extracted?: Json | null
+          enhanced_business_metrics?: Json | null
           enhanced_context?: Json | null
           enhanced_prompt_data?: Json | null
           error_details?: Json | null
@@ -179,6 +210,7 @@ export type Database = {
           id?: string
           images?: string[]
           knowledge_sources_used?: number | null
+          pattern_violations?: Json | null
           perplexity_competitive_data?: Json | null
           perplexity_enhanced?: boolean | null
           perplexity_research_data?: Json | null
@@ -188,13 +220,17 @@ export type Database = {
           processing_time_ms?: number | null
           quality_scores?: Json | null
           research_citations?: string[] | null
+          responsive_analysis?: Json | null
+          screen_type_detected?: string | null
           stage_timing?: Json | null
           synthesis_metadata?: Json | null
           timeout_occurred?: boolean | null
           total_annotations?: number | null
+          triage_classification?: Json | null
           updated_at?: string
           user_id?: string
           validation_status?: string | null
+          vision_enrichment_data?: Json | null
           visual_intelligence?: Json | null
           well_done_data?: Json | null
         }
@@ -585,11 +621,15 @@ export type Database = {
       figmant_analysis_results: {
         Row: {
           ai_model_used: string | null
+          business_impact_enhanced: Json | null
           claude_analysis: Json
+          confidence_scores: Json | null
           created_at: string
+          enhanced_metadata_tracking: Json | null
           google_vision_summary: Json | null
           id: string
           implementation_timeline: Json | null
+          pattern_analysis_data: Json | null
           processing_time_ms: number | null
           session_id: string | null
           severity_breakdown: Json | null
@@ -597,11 +637,15 @@ export type Database = {
         }
         Insert: {
           ai_model_used?: string | null
+          business_impact_enhanced?: Json | null
           claude_analysis: Json
+          confidence_scores?: Json | null
           created_at?: string
+          enhanced_metadata_tracking?: Json | null
           google_vision_summary?: Json | null
           id?: string
           implementation_timeline?: Json | null
+          pattern_analysis_data?: Json | null
           processing_time_ms?: number | null
           session_id?: string | null
           severity_breakdown?: Json | null
@@ -609,11 +653,15 @@ export type Database = {
         }
         Update: {
           ai_model_used?: string | null
+          business_impact_enhanced?: Json | null
           claude_analysis?: Json
+          confidence_scores?: Json | null
           created_at?: string
+          enhanced_metadata_tracking?: Json | null
           google_vision_summary?: Json | null
           id?: string
           implementation_timeline?: Json | null
+          pattern_analysis_data?: Json | null
           processing_time_ms?: number | null
           session_id?: string | null
           severity_breakdown?: Json | null
