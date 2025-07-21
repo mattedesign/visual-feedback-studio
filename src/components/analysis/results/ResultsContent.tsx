@@ -188,44 +188,74 @@ export const ResultsContent = ({ analysisData, sessionData }: ResultsContentProp
       }
     }
 
-    // NEW: Extract issues from ux_analysis structure - handle category-based groupings first
+    // NEW: Extract issues from ux_analysis structure - handle nested category structures
     const categoryTypes = [
       'accessibility_concerns', 'usability_issues', 'conversion_optimization',
       'design_consistency', 'mobile_responsiveness', 'visual_hierarchy'
     ];
 
     for (const categoryType of categoryTypes) {
-      if (analysisContent[categoryType] && Array.isArray(analysisContent[categoryType])) {
-        analysisContent[categoryType].forEach((item: any) => {
-          // Ensure we're only adding strings/text content, not objects
-          const title = typeof item.element === 'string' ? item.element : 
-                       typeof item.title === 'string' ? item.title : 
-                       typeof item.issue === 'string' ? item.issue : 
-                       `${categoryType.replace('_', ' ')} Issue`;
-          
-          const description = typeof item.recommendation === 'string' ? item.recommendation :
-                             typeof item.description === 'string' ? item.description :
-                             typeof item.user_impact === 'string' ? item.user_impact :
-                             typeof item.impact === 'string' ? item.impact :
-                             'No description available';
-          
-          const solution = typeof item.recommendation === 'string' ? item.recommendation :
-                          typeof item.solution === 'string' ? item.solution :
-                          undefined;
-          
-          const impact = typeof item.user_impact === 'string' ? item.user_impact :
-                        typeof item.impact === 'string' ? item.impact :
-                        undefined;
+      const categoryData = analysisContent[categoryType];
+      if (categoryData && typeof categoryData === 'object') {
+        // Handle nested structure like accessibility_concerns.critical_issues
+        const severityLevels = ['critical_issues', 'high_issues', 'medium_issues', 'low_issues'];
+        
+        for (const severityLevel of severityLevels) {
+          const severityArray = categoryData[severityLevel];
+          if (Array.isArray(severityArray)) {
+            const severity = severityLevel.replace('_issues', '') as 'critical' | 'high' | 'medium' | 'low';
+            
+            severityArray.forEach((item: any) => {
+              const title = typeof item.issue === 'string' ? item.issue : 
+                           typeof item.title === 'string' ? item.title : 
+                           `${categoryType.replace('_', ' ')} Issue`;
+              
+              const description = typeof item.recommendation === 'string' ? item.recommendation :
+                                 typeof item.description === 'string' ? item.description :
+                                 typeof item.user_impact === 'string' ? item.user_impact :
+                                 'No description available';
+              
+              const solution = typeof item.recommendation === 'string' ? item.recommendation :
+                              typeof item.solution === 'string' ? item.solution :
+                              undefined;
+              
+              const impact = typeof item.user_impact === 'string' ? item.user_impact :
+                            typeof item.impact === 'string' ? item.impact :
+                            undefined;
 
-          issues.push({
-            title,
-            description,
-            severity: (item.severity || 'medium').toLowerCase() as 'critical' | 'high' | 'medium' | 'low',
-            category: categoryType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-            solution,
-            impact
+              issues.push({
+                title,
+                description,
+                severity,
+                category: categoryType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                solution,
+                impact
+              });
+            });
+          }
+        }
+        
+        // Also handle direct arrays (fallback for flat structure)
+        if (Array.isArray(categoryData)) {
+          categoryData.forEach((item: any) => {
+            const title = typeof item.issue === 'string' ? item.issue : 
+                         typeof item.title === 'string' ? item.title : 
+                         `${categoryType.replace('_', ' ')} Issue`;
+            
+            const description = typeof item.recommendation === 'string' ? item.recommendation :
+                               typeof item.description === 'string' ? item.description :
+                               'No description available';
+
+            issues.push({
+              title,
+              description,
+              severity: (item.severity || 'medium').toLowerCase() as 'critical' | 'high' | 'medium' | 'low',
+              category: categoryType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+              solution: item.solution || item.recommendation,
+              impact: item.impact || item.user_impact
+            });
           });
-        });
+        }
       }
     }
 
@@ -298,19 +328,41 @@ export const ResultsContent = ({ analysisData, sessionData }: ResultsContentProp
   }, {} as Record<string, number>);
 
   const totalIssues = issues.length;
-  const finalScore = overallScore || Math.max(0, 100 - (
-    (severityBreakdown.critical || 0) * 20 + 
-    (severityBreakdown.high || 0) * 10 + 
-    (severityBreakdown.medium || 0) * 5 + 
-    (severityBreakdown.low || 0) * 2
-  ));
+  
+  // CRITICAL FIX: Prevent false perfect scores when analysis fails
+  let finalScore: number;
+  let analysisStatus: 'completed' | 'failed' | 'partial' = 'completed';
+  
+  if (overallScore > 0) {
+    // Analysis completed successfully and generated a score
+    finalScore = overallScore;
+  } else if (issues.length > 0) {
+    // Analysis found issues but no overall score - calculate from issues
+    finalScore = Math.max(0, 100 - (
+      (severityBreakdown.critical || 0) * 20 + 
+      (severityBreakdown.high || 0) * 10 + 
+      (severityBreakdown.medium || 0) * 5 + 
+      (severityBreakdown.low || 0) * 2
+    ));
+    analysisStatus = 'partial';
+  } else if (analysisData?.claude_analysis && Object.keys(analysisData.claude_analysis).length > 0) {
+    // Analysis data exists but no issues extracted - likely a parsing problem
+    finalScore = 0; // Don't show a false perfect score
+    analysisStatus = 'failed';
+  } else {
+    // No analysis data at all
+    finalScore = 0;
+    analysisStatus = 'failed';
+  }
 
   // Debug logging
   console.log('📊 Results Content Debug:', {
     analysisData,
     claudeAnalysis: analysisData?.claude_analysis,
     parsedIssues: issues.length,
-    overallScore: finalScore,
+    overallScore,
+    finalScore,
+    analysisStatus,
     severityBreakdown
   });
 
@@ -435,6 +487,31 @@ export const ResultsContent = ({ analysisData, sessionData }: ResultsContentProp
                 <CardTitle className="text-base font-medium text-[#121212]">Analysis Overview</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Analysis Status Warning */}
+                {analysisStatus === 'failed' && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertTriangle className="w-4 h-4 text-red-500" />
+                      <span className="font-medium text-red-900">Analysis Failed</span>
+                    </div>
+                    <p className="text-sm text-red-700">
+                      The analysis could not be completed successfully. Please try uploading your design again or contact support if the issue persists.
+                    </p>
+                  </div>
+                )}
+                
+                {analysisStatus === 'partial' && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Info className="w-4 h-4 text-yellow-500" />
+                      <span className="font-medium text-yellow-900">Partial Analysis</span>
+                    </div>
+                    <p className="text-sm text-yellow-700">
+                      Some recommendations were generated, but the overall scoring may be incomplete.
+                    </p>
+                  </div>
+                )}
+                
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-[#7B7B7B]">Overall Score</span>
                   <span className="font-semibold text-[#121212]">{Math.round(finalScore)}/100</span>
