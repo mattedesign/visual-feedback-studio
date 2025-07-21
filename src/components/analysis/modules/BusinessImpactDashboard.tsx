@@ -177,26 +177,33 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="min-h-screen bg-background p-3 sm:p-4 lg:p-6">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6 lg:space-y-8">
+        {/* Enhanced Header with Mobile Optimization */}
+        <div className="bg-card rounded-lg shadow-sm border p-4 sm:p-6">
+          <div className="flex flex-col gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              <h1 className="text-2xl sm:text-3xl font-bold text-card-foreground">
                 {siteName}
               </h1>
-              <p className="text-lg text-gray-600 dark:text-gray-300 mt-1">
+              <p className="text-base sm:text-lg text-muted-foreground mt-1">
                 Business Impact Analysis
               </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                Analysis backed by {enhancedContext?.knowledgeSourcesUsed || 23} research sources
-              </p>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-3 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <BarChart3 className="w-4 h-4 flex-shrink-0" />
+                  {enhancedContext?.knowledgeSourcesUsed || 23} research sources
+                </span>
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-4 h-4 flex-shrink-0" />
+                  Enhanced with business intelligence
+                </span>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <Button 
                 variant="outline" 
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 w-full sm:w-auto"
                 onClick={handleGenerateExecutiveReport}
               >
                 <Copy className="w-4 h-4" />
@@ -204,14 +211,14 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
               </Button>
               <Button 
                 variant="outline" 
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 w-full sm:w-auto"
                 onClick={handleShareWithTeam}
               >
                 <Share2 className="w-4 h-4" />
                 Share Link
               </Button>
               <Button 
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 w-full sm:w-auto"
                 onClick={handleViewDetails}
               >
                 <Eye className="w-4 h-4" />
@@ -221,33 +228,34 @@ export const BusinessImpactDashboard: React.FC<BusinessImpactDashboardProps> = (
           </div>
         </div>
 
-        {/* Key Metrics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Business Impact Score */}
-          <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
+        {/* Enhanced Key Metrics Grid with Mobile-First Design */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          {/* Business Impact Score with Enhanced Visual */}
+          <Card className="bg-card border">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 Business Impact Score
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-center mb-4">
-                <div className="relative w-20 h-20">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className={`text-2xl sm:text-3xl font-bold ${getScoreColor(impactScore)}`}>
+                    {impactScore}
+                  </div>
+                  <Badge variant={impactScore >= 70 ? 'default' : impactScore >= 40 ? 'secondary' : 'destructive'} className="mt-2">
+                    {getScoreStatus(impactScore)}
+                  </Badge>
+                </div>
+                <div className="relative w-16 h-16 sm:w-20 sm:h-20">
                   <Progress 
                     value={impactScore} 
                     className="w-full h-full rounded-full"
                   />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className={`text-2xl font-bold ${getScoreColor(impactScore)}`}>
-                      {impactScore}
-                    </span>
+                    <BarChart3 className={`w-6 h-6 sm:w-8 sm:h-8 ${getScoreColor(impactScore)}`} />
                   </div>
                 </div>
-              </div>
-              <div className="text-center">
-                <Badge className={`${getScoreColor(impactScore)} bg-opacity-10`}>
-                  {getScoreStatus(impactScore)}
-                </Badge>
               </div>
             </CardContent>
           </Card>

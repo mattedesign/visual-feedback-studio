@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { InteractiveCanvas } from './InteractiveCanvas';
+import { FigmantAnnotationOverlay } from './FigmantAnnotationOverlay';
+import { FigmantAnalysisProgress } from './FigmantAnalysisProgress';
 import { 
   Menu, 
   ZoomIn, 
@@ -158,12 +160,25 @@ export const CenterCanvasArea: React.FC<CenterCanvasAreaProps> = ({
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
         {activeModule === 'ux-insights' && viewMode === 'canvas' ? (
-          <InteractiveCanvas
-            analysisData={analysisData}
-            selectedAnnotation={selectedAnnotation}
-            onAnnotationSelect={onAnnotationSelect}
-            activeModule={activeModule}
-          />
+          <div className="h-full p-4 sm:p-6 overflow-auto">
+            {analysisData?.images && analysisData.images.length > 0 ? (
+              <FigmantAnnotationOverlay
+                imageUrl={analysisData.images[0]}
+                annotations={annotations}
+                selectedAnnotation={selectedAnnotation}
+                onAnnotationSelect={(id) => onAnnotationSelect(id)}
+                showAnnotations={true}
+                viewMode="canvas"
+              />
+            ) : (
+              <InteractiveCanvas
+                analysisData={analysisData}
+                selectedAnnotation={selectedAnnotation}
+                onAnnotationSelect={onAnnotationSelect}
+                activeModule={activeModule}
+              />
+            )}
+          </div>
         ) : (
           <ScrollArea className="h-full">
             <div className="p-6" style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top left' }}>

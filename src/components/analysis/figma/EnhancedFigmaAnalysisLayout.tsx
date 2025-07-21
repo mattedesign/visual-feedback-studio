@@ -84,11 +84,11 @@ export const EnhancedFigmaAnalysisLayout: React.FC<EnhancedFigmaAnalysisLayoutPr
   return (
     <div className="h-full bg-background">
       <ResizablePanelGroup direction="horizontal" className="h-full">
-        {/* Left Panel - Navigation & Analysis Info */}
+        {/* Left Panel - Navigation & Analysis Info - Mobile Responsive */}
         <ResizablePanel defaultSize={25} minSize={20} maxSize={35}>
           <div className="h-full border-r border-border flex flex-col">
             {/* Header */}
-            <div className="p-4 border-b border-border">
+            <div className="p-3 sm:p-4 border-b border-border">
               {onBack && (
                 <Button
                   variant="ghost"
@@ -97,26 +97,27 @@ export const EnhancedFigmaAnalysisLayout: React.FC<EnhancedFigmaAnalysisLayoutPr
                   className="mb-3 w-full justify-start"
                 >
                   <ChevronLeft className="w-4 h-4 mr-2" />
-                  Back to Dashboard
+                  <span className="hidden sm:inline">Back to Dashboard</span>
+                  <span className="sm:hidden">Back</span>
                 </Button>
               )}
               
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Brain className="w-5 h-5 text-primary" />
-                  <h2 className="font-semibold">UX Analysis</h2>
+                  <Brain className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                  <h2 className="font-semibold text-sm sm:text-base">UX Analysis</h2>
                 </div>
                 {userChallenge && (
-                  <p className="text-sm text-muted-foreground">{userChallenge}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{userChallenge}</p>
                 )}
               </div>
             </div>
 
-            {/* Analysis Overview */}
-            <div className="p-4 space-y-4 flex-1 overflow-auto">
+            {/* Analysis Overview - Mobile Optimized */}
+            <div className="p-3 sm:p-4 space-y-3 sm:space-y-4 flex-1 overflow-auto">
               <div>
-                <h3 className="font-medium mb-3">Overview</h3>
-                <div className="space-y-2 text-sm">
+                <h3 className="font-medium mb-2 sm:mb-3 text-sm sm:text-base">Overview</h3>
+                <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Total Insights</span>
                     <span className="font-medium">{analysisData.totalAnnotations || analysisData.annotations.length}</span>
@@ -146,9 +147,9 @@ export const EnhancedFigmaAnalysisLayout: React.FC<EnhancedFigmaAnalysisLayoutPr
                 </div>
               </div>
 
-              {/* Category Filters */}
+              {/* Category Filters - Mobile Responsive */}
               <div>
-                <h3 className="font-medium mb-3">Categories</h3>
+                <h3 className="font-medium mb-2 sm:mb-3 text-sm sm:text-base">Categories</h3>
                 <div className="space-y-1">
                   {categories.map((category) => {
                     const count = category === 'all' 
@@ -161,9 +162,9 @@ export const EnhancedFigmaAnalysisLayout: React.FC<EnhancedFigmaAnalysisLayoutPr
                         variant={activeFilter === category ? 'default' : 'ghost'}
                         size="sm"
                         onClick={() => setActiveFilter(category)}
-                        className="w-full justify-between text-left"
+                        className="w-full justify-between text-left text-xs sm:text-sm"
                       >
-                        <span className="capitalize">{category}</span>
+                        <span className="capitalize truncate">{category}</span>
                         <span className="text-xs">{count}</span>
                       </Button>
                     );
@@ -171,17 +172,19 @@ export const EnhancedFigmaAnalysisLayout: React.FC<EnhancedFigmaAnalysisLayoutPr
                 </div>
               </div>
 
-              {/* Actions */}
+              {/* Actions - Mobile Responsive */}
               <div className="space-y-2">
-                <h3 className="font-medium">Actions</h3>
+                <h3 className="font-medium text-sm sm:text-base">Actions</h3>
                 <div className="space-y-1">
-                  <Button variant="outline" size="sm" className="w-full justify-start">
-                    <Download className="w-4 h-4 mr-2" />
-                    Export Report
+                  <Button variant="outline" size="sm" className="w-full justify-start text-xs sm:text-sm">
+                    <Download className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+                    <span className="hidden sm:inline">Export Report</span>
+                    <span className="sm:hidden">Export</span>
                   </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-start">
-                    <Share2 className="w-4 h-4 mr-2" />
-                    Share Analysis
+                  <Button variant="outline" size="sm" className="w-full justify-start text-xs sm:text-sm">
+                    <Share2 className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+                    <span className="hidden sm:inline">Share Analysis</span>
+                    <span className="sm:hidden">Share</span>
                   </Button>
                 </div>
               </div>
@@ -194,12 +197,12 @@ export const EnhancedFigmaAnalysisLayout: React.FC<EnhancedFigmaAnalysisLayoutPr
         {/* Center Panel - Main Analysis View - Full Width */}
         <ResizablePanel defaultSize={75} minSize={60}>
           <div className="h-full flex flex-col">
-            {/* Header */}
-            <div className="border-b border-border p-4">
-              <div className="flex items-center justify-between mb-4">
+            {/* Header - Mobile Responsive */}
+            <div className="border-b border-border p-3 sm:p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 gap-3 sm:gap-0">
                 <div>
-                  <h1 className="text-xl font-semibold">Analysis Results</h1>
-                  <p className="text-sm text-muted-foreground">
+                  <h1 className="text-lg sm:text-xl font-semibold">Analysis Results</h1>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     {filteredAnnotations.length} insights found
                   </p>
                 </div>
@@ -235,10 +238,10 @@ export const EnhancedFigmaAnalysisLayout: React.FC<EnhancedFigmaAnalysisLayoutPr
               )}
             </div>
 
-            {/* Content Area - Top Aligned */}
-            <div className="flex-1 overflow-auto p-4">
+            {/* Content Area - Mobile Optimized */}
+            <div className="flex-1 overflow-auto p-3 sm:p-4">
               {viewMode === 'grid' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
                   {filteredAnnotations.map((annotation) => (
                     <Card
                       key={annotation.id}
@@ -247,22 +250,22 @@ export const EnhancedFigmaAnalysisLayout: React.FC<EnhancedFigmaAnalysisLayoutPr
                       }`}
                       onClick={() => setSelectedAnnotation(annotation.id)}
                     >
-                      <CardHeader className="pb-3">
-                        <div className="flex items-start justify-between">
-                          <CardTitle className="text-sm font-medium leading-5">
+                      <CardHeader className="pb-2 sm:pb-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <CardTitle className="text-xs sm:text-sm font-medium leading-4 sm:leading-5 line-clamp-2">
                             {annotation.title}
                           </CardTitle>
                           <Badge
                             variant="outline"
-                            className={`text-xs ${getSeverityColor(annotation.severity)}`}
+                            className={`text-xs shrink-0 ${getSeverityColor(annotation.severity)}`}
                           >
                             {annotation.severity}
                           </Badge>
                         </div>
                       </CardHeader>
-                      <CardContent>
-                        <p className="text-xs text-muted-foreground mb-2">
-                          {annotation.feedback.substring(0, 100)}...
+                      <CardContent className="pt-0">
+                        <p className="text-xs text-muted-foreground mb-2 line-clamp-2 sm:line-clamp-3">
+                          {annotation.feedback.substring(0, 80)}...
                         </p>
                         <Badge variant="secondary" className="text-xs">
                           {annotation.category}
@@ -272,7 +275,7 @@ export const EnhancedFigmaAnalysisLayout: React.FC<EnhancedFigmaAnalysisLayoutPr
                   ))}
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-2 sm:space-y-3">
                   {filteredAnnotations.map((annotation) => (
                     <Card
                       key={annotation.id}
@@ -281,14 +284,14 @@ export const EnhancedFigmaAnalysisLayout: React.FC<EnhancedFigmaAnalysisLayoutPr
                       }`}
                       onClick={() => setSelectedAnnotation(annotation.id)}
                     >
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <h3 className="font-medium text-sm mb-1">{annotation.title}</h3>
-                            <p className="text-xs text-muted-foreground mb-2">
-                              {annotation.feedback.substring(0, 150)}...
+                      <CardContent className="p-3 sm:p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium text-xs sm:text-sm mb-1 line-clamp-2">{annotation.title}</h3>
+                            <p className="text-xs text-muted-foreground mb-2 line-clamp-2 sm:line-clamp-3">
+                              {annotation.feedback.substring(0, 120)}...
                             </p>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-1 sm:gap-2">
                               <Badge variant="secondary" className="text-xs">
                                 {annotation.category}
                               </Badge>
