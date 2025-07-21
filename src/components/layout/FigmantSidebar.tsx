@@ -134,7 +134,7 @@ export const FigmantSidebar = () => {
                         style={item.isActive ? {
                           display: 'flex',
                           height: '36px',
-                          padding: '4px 12px 4px 4px',
+                          padding: '12px',
                           alignItems: 'center',
                           gap: '10px',
                           alignSelf: 'stretch',
