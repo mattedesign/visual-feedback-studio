@@ -133,7 +133,7 @@ export const FigmantSidebar = () => {
                       <button 
                         style={item.isActive ? {
                           display: 'flex',
-                          height: '32px',
+                          height: '36px',
                           padding: '4px 12px 4px 4px',
                           alignItems: 'center',
                           gap: '10px',
@@ -154,7 +154,7 @@ export const FigmantSidebar = () => {
                           justifyContent: 'space-between'
                         } : {
                           width: '100%',
-                          height: '32px',
+                          height: '36px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
@@ -220,7 +220,7 @@ export const FigmantSidebar = () => {
                           
                           return {
                             width: '100%',
-                            height: '32px',
+                            height: '36px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
@@ -291,7 +291,7 @@ export const FigmantSidebar = () => {
                               isActive 
                                 ? {
                                     display: 'flex',
-                                    height: '32px',
+                                    height: '36px',
                                     padding: '4px 12px 4px 4px',
                                     alignItems: 'center',
                                     gap: '12px',
@@ -313,7 +313,7 @@ export const FigmantSidebar = () => {
                                   }
                                 : {
                                     display: 'flex',
-                                    height: '32px',
+                                    height: '36px',
                                     alignItems: 'center',
                                     justifyContent: 'space-between',
                                     padding: '8px 12px',
