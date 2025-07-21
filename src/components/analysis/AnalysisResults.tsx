@@ -65,19 +65,29 @@ interface EnhancedAnalysisIssue {
 }
 
 interface AnalysisResultsProps {
-  imageUrl: string;
+  images: Array<{ url: string; fileName: string; id: string }>;
   issues: EnhancedAnalysisIssue[];
+  suggestions?: Array<{
+    id: string;
+    title: string;
+    description: string;
+    impact: string;
+    effort: string;
+    category: string;
+  }>;
   analysisMetadata?: {
     processingTime?: number;
     confidence?: number;
     totalIssues?: number;
+    screenType?: string;
   };
   onBack?: () => void;
 }
 
 export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
-  imageUrl,
+  images,
   issues,
+  suggestions = [],
   analysisMetadata,
   onBack
 }) => {
@@ -86,6 +96,7 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
   const [activeFilter, setActiveFilter] = useState<'all' | 'critical' | 'warning' | 'improvement'>('all');
   const [expandedIssues, setExpandedIssues] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<'severity' | 'confidence' | 'effort'>('severity');
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   // Filter and sort issues
   const filteredAndSortedIssues = useMemo(() => {
@@ -251,18 +262,73 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
             </Card>
           </div>
 
+          {/* Image Selection Tabs */}
+          {images.length > 1 && (
+            <Tabs value={selectedImageIndex.toString()} onValueChange={(value) => setSelectedImageIndex(parseInt(value))}>
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                {images.map((image, index) => (
+                  <TabsTrigger key={image.id} value={index.toString()} className="text-sm">
+                    {image.fileName || `Image ${index + 1}`}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+          )}
+
           {/* Main Image with Annotations */}
           <Card className="mb-6">
             <CardContent className="p-6">
-              <AnnotationOverlay
-                imageUrl={imageUrl}
-                issues={filteredAndSortedIssues}
-                selectedIssue={selectedIssue}
-                onSelectIssue={setSelectedIssue}
-                showAnnotations={showAnnotations}
-              />
+              {images[selectedImageIndex] && (
+                <AnnotationOverlay
+                  imageUrl={images[selectedImageIndex].url}
+                  issues={filteredAndSortedIssues}
+                  selectedIssue={selectedIssue}
+                  onSelectIssue={setSelectedIssue}
+                  showAnnotations={showAnnotations}
+                />
+              )}
             </CardContent>
           </Card>
+
+          {/* Suggestions Section */}
+          {suggestions.length > 0 && (
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Lightbulb className="w-5 h-5 text-primary" />
+                  Molecular Suggestions
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4">
+                  {suggestions.map((suggestion, index) => (
+                    <div key={suggestion.id} className="p-4 border border-border rounded-lg bg-muted/20">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold">
+                            {index + 1}
+                          </div>
+                          <h4 className="font-medium">{suggestion.title}</h4>
+                        </div>
+                        <Badge variant="outline" className="text-xs">{suggestion.category}</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-3">{suggestion.description}</p>
+                      <div className="flex items-center gap-4 text-xs">
+                        <div className="flex items-center gap-1">
+                          <TrendingUp className="w-3 h-3 text-green-600" />
+                          <span>Impact: {suggestion.impact}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-blue-600" />
+                          <span>Effort: {suggestion.effort}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 

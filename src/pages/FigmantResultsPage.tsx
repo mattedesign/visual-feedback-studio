@@ -44,6 +44,7 @@ const FigmantResultsPage = () => {
 
     const claudeAnalysis = analysisData.claude_analysis;
     const issues: any[] = [];
+    const suggestions: any[] = [];
     let overallScore = 45; // Default from your session data
 
     // Extract overall score
@@ -84,10 +85,32 @@ const FigmantResultsPage = () => {
       });
     }
 
+    // Transform suggestions if present
+    if (claudeAnalysis.suggestions && Array.isArray(claudeAnalysis.suggestions)) {
+      claudeAnalysis.suggestions.forEach((suggestion: any, index: number) => {
+        suggestions.push({
+          id: suggestion.id || `suggestion-${index}`,
+          title: suggestion.title || suggestion.recommendation || 'Design Suggestion',
+          description: suggestion.description || suggestion.details || 'Improvement suggestion',
+          impact: suggestion.impact || 'High',
+          effort: suggestion.effort || 'Medium',
+          category: suggestion.category || 'enhancement'
+        });
+      });
+    }
+
+    // Create image URLs from session data
+    const images = (sessionData?.images || []).map((img: any) => ({
+      id: img.id || img.file_name,
+      url: `https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/${img.file_path}`,
+      fileName: img.file_name || `Image ${img.upload_order || 1}`
+    }));
+
     const transformedData = {
       sessionId: sessionData?.id || '',
-      images: sessionData?.images || [],
+      images,
       issues,
+      suggestions,
       overallScore,
       analysisMetadata: {
         completedAt: analysisData.created_at,
@@ -336,13 +359,12 @@ const FigmantResultsPage = () => {
       const enhancedData = transformToEnhancedFormat(analysisData, sessionData);
       if (enhancedData) {
         console.log('🎨 Using Enhanced Analysis Results component');
-        const firstImage = enhancedData.images && enhancedData.images[0];
-        const imageUrl = firstImage ? `https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/${firstImage.file_path}` : '';
         
         return (
           <EnhancedAnalysisResults 
-            imageUrl={imageUrl}
+            images={enhancedData.images}
             issues={enhancedData.issues}
+            suggestions={enhancedData.suggestions}
             analysisMetadata={enhancedData.analysisMetadata}
             onBack={() => navigate('/analyze')}
           />
@@ -393,8 +415,9 @@ const FigmantResultsPage = () => {
         console.log('🎨 Using Enhanced Analysis Results component (fallback)');
         return (
           <EnhancedAnalysisResults 
-            imageUrl=""
+            images={enhancedData.images}
             issues={enhancedData.issues}
+            suggestions={enhancedData.suggestions}
             analysisMetadata={enhancedData.analysisMetadata}
             onBack={() => navigate('/analyze')}
           />

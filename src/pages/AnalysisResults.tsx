@@ -400,10 +400,19 @@ const AnalysisResults = () => {
   // 🔧 FIX: ENHANCED UI - Rich Analysis Results (PRIMARY PATH)
   if (shouldUseEnhancedUI) {
     console.log('✅ UI DECISION: Using Enhanced Analysis Results UI');
+    
+    // Transform data to match new interface
+    const images = analysisData.images || [{ 
+      id: 'default', 
+      url: analysisData.imageUrl || '/placeholder-design.png',
+      fileName: 'Analysis Image'
+    }];
+    
     return (
       <EnhancedAnalysisResults
-        imageUrl={analysisData.imageUrl || '/placeholder-design.png'}
+        images={images}
         issues={analysisData.issues}
+        suggestions={analysisData.suggestions || []}
         analysisMetadata={analysisData.analysisMetadata}
         onBack={() => window.history.back()}
       />
