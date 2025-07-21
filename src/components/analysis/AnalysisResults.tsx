@@ -229,7 +229,7 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
             
             <div className="flex items-center gap-2">
               <Button
-                variant={showAnnotations ? 'default' : 'outline'}
+                variant={showAnnotations ? 'secondary' : 'outline'}
                 size="sm"
                 onClick={() => setShowAnnotations(!showAnnotations)}
               >
@@ -479,7 +479,7 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
                           </div>
                           
                           <CollapsibleTrigger asChild>
-                            <Button variant="ghost" size="sm" className="flex-shrink-0">
+                            <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0 hover:bg-muted/50">
                               {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                             </Button>
                           </CollapsibleTrigger>
