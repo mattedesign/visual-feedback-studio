@@ -37,7 +37,7 @@ export const FigmantSidebar = () => {
       isActive: false
     }, {
       label: 'History',
-      href: '/dashboard',
+      href: '/history',
       isActive: false
     }]
   }, {
