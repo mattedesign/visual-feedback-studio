@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,11 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AnnotationOverlay } from '@/components/goblin/ImageAnnotationOverlay';
+// Add to existing imports
+import { VisualPrototypeOverlay } from '@/components/prototypes/VisualPrototypeOverlay';
+import { ComprehensivePrototypeViewer } from '@/components/prototypes/ComprehensivePrototypeViewer';
+import { PrototypeStorageService } from '@/services/prototypes/prototypeStorageService';
+import type { VisualPrototype } from '@/types/analysis';
 
 // Enhanced interfaces for rich analysis results
 interface EnhancedAnalysisIssue {
@@ -108,6 +113,13 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
   const [expandedIssues, setExpandedIssues] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<'severity' | 'confidence' | 'effort'>('severity');
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
+  // Add to your existing state
+  const [prototypes, setPrototypes] = useState<VisualPrototype[]>([]);
+  const [selectedPrototype, setSelectedPrototype] = useState<VisualPrototype | null>(null);
+  const [showPrototypeViewer, setShowPrototypeViewer] = useState(false);
+  const [prototypeViewMode, setPrototypeViewMode] = useState<'list' | 'overlay'>('list');
+  const [prototypesLoaded, setPrototypesLoaded] = useState(false);
 
   // Filter and sort issues
   const filteredAndSortedIssues = useMemo(() => {
@@ -206,6 +218,40 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
       newExpanded.add(issueId);
     }
     setExpandedIssues(newExpanded);
+  };
+
+  // Add this useEffect to load prototypes when analysis is available
+  useEffect(() => {
+    const loadPrototypes = async () => {
+      if (images[0]?.id && !prototypesLoaded) {
+        try {
+          console.log('🎨 Loading prototypes for analysis:', images[0].id);
+          const loadedPrototypes = await PrototypeStorageService.getPrototypesByAnalysisId(images[0].id);
+          setPrototypes(loadedPrototypes);
+          setPrototypesLoaded(true);
+          console.log(`✅ Loaded ${loadedPrototypes.length} prototypes`);
+        } catch (error) {
+          console.error('❌ Failed to load prototypes:', error);
+        }
+      }
+    };
+    
+    loadPrototypes();
+  }, [images, prototypesLoaded]);
+
+  // Add these handler functions
+  const handlePrototypeSelect = (prototype: VisualPrototype) => {
+    setSelectedPrototype(prototype);
+    setShowPrototypeViewer(true);
+  };
+
+  const closePrototypeViewer = () => {
+    setShowPrototypeViewer(false);
+    setSelectedPrototype(null);
+  };
+
+  const togglePrototypeView = () => {
+    setPrototypeViewMode(current => current === 'list' ? 'overlay' : 'list');
   };
 
   return (
@@ -398,8 +444,104 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
               </CardContent>
             </Card>
           )}
+
+          {/* Visual Prototypes Section */}
+          {prototypes.length > 0 && (
+            <div className="mt-8">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">Visual Prototypes</h3>
+                  <p className="text-gray-600 mt-1">
+                    Interactive improvements you can implement directly
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={togglePrototypeView}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      prototypeViewMode === 'overlay'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {prototypeViewMode === 'overlay' ? 'List View' : 'Overlay View'}
+                  </button>
+                </div>
+              </div>
+              
+              {prototypeViewMode === 'overlay' ? (
+                // Overlay View
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <VisualPrototypeOverlay
+                    originalImageUrl={images[selectedImageIndex]?.url || ''}
+                    prototypes={prototypes}
+                    onPrototypeSelect={handlePrototypeSelect}
+                  />
+                </div>
+              ) : (
+                // List View
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {prototypes.map((prototype) => (
+                    <div
+                      key={prototype.id}
+                      className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer border border-gray-200"
+                      onClick={() => handlePrototypeSelect(prototype)}
+                    >
+                      <div className="p-5">
+                        <div className="flex items-start justify-between mb-3">
+                          <h4 className="font-semibold text-lg text-gray-900 leading-tight">
+                            {prototype.title}
+                          </h4>
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium uppercase tracking-wide">
+                            {prototype.category}
+                          </span>
+                        </div>
+                        
+                        <p className="text-gray-600 text-sm mb-4 leading-relaxed">
+                          {prototype.explanation.summary}
+                        </p>
+                        
+                        <div className="space-y-2 mb-4">
+                          <h5 className="font-medium text-sm text-gray-900">Key Changes:</h5>
+                          <ul className="space-y-1">
+                            {prototype.explanation.keyChanges.slice(0, 2).map((change, idx) => (
+                              <li key={idx} className="text-sm text-gray-600 flex items-start gap-2">
+                                <span className="text-green-500 mt-1 flex-shrink-0">•</span>
+                                <span>{change}</span>
+                              </li>
+                            ))}
+                            {prototype.explanation.keyChanges.length > 2 && (
+                              <li className="text-sm text-gray-500 italic">
+                                +{prototype.explanation.keyChanges.length - 2} more improvements
+                              </li>
+                            )}
+                          </ul>
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs text-gray-500">
+                            {new Date(prototype.createdAt).toLocaleDateString()}
+                          </div>
+                          <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">
+                            View Prototype
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Prototype Viewer Modal */}
+      <ComprehensivePrototypeViewer
+        prototype={selectedPrototype}
+        isOpen={showPrototypeViewer}
+        onClose={closePrototypeViewer}
+      />
 
       {/* Right Panel - Issue Details */}
       <div className="w-96 border-l border-border bg-card overflow-auto">
