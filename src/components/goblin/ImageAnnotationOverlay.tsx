@@ -61,7 +61,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = ({
                   width: `${location.widthPercent}%`,
                   height: `${location.heightPercent}%`,
                 }}
-                onClick={() => onSelectIssue(issue.id)}
+                onClick={() => onSelectIssue(isSelected ? null : issue.id)}
               >
                 {/* Issue Marker */}
                 <div
