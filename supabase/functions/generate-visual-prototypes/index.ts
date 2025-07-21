@@ -36,18 +36,22 @@ serve(async (req) => {
     console.log(`📊 Fetching analysis data for ID: ${analysisId}`);
     const { data: analysisData, error: analysisError } = await supabase
       .from('figmant_analysis_results')
-      .select(`
-        *,
-        figmant_session_images!inner(
-          google_vision_data,
-          image_url
-        )
-      `)
+      .select('*')
       .eq('id', analysisId)
       .single();
-    
+
     if (analysisError || !analysisData) {
       throw new Error(`Analysis not found: ${analysisError?.message}`);
+    }
+
+    // Get session images separately using the session_id
+    const { data: sessionImages, error: imagesError } = await supabase
+      .from('figmant_session_images')
+      .select('google_vision_data, file_path')
+      .eq('session_id', analysisData.session_id);
+    
+    if (imagesError) {
+      console.warn('Failed to fetch session images:', imagesError);
     }
     
     // Check if prototypes already exist
@@ -118,8 +122,8 @@ serve(async (req) => {
       throw new Error('Anthropic API key not configured');
     }
     
-    const visionData = analysisData.figmant_session_images[0]?.google_vision_data || {};
-    const imageUrl = analysisData.figmant_session_images[0]?.image_url || '';
+    const visionData = sessionImages?.[0]?.google_vision_data || {};
+    const imageUrl = sessionImages?.[0]?.file_path || '';
     
     // Generate prototypes for each candidate
     const prototypes = [];
