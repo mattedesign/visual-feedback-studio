@@ -152,56 +152,7 @@ export const FigmantSidebar = () => {
                           const isCurrentlyActive = item.href === '/dashboard' 
                             ? (location.pathname === '/' || location.pathname === '/dashboard')
                             : isActive;
-                          return '';
-                        }}
-                        style={({ isActive }) => {
-                          // Special case for Dashboard: consider both "/" and "/dashboard" as active
-                          const isCurrentlyActive = item.href === '/dashboard' 
-                            ? (location.pathname === '/' || location.pathname === '/dashboard')
-                            : isActive;
-                          
-                          return isCurrentlyActive 
-                            ? {
-                                display: 'flex',
-                                height: '40px',
-                                padding: '4px 12px 4px 4px',
-                                alignItems: 'center',
-                                gap: '12px',
-                                alignSelf: 'stretch',
-                                borderRadius: '12px',
-                                border: '1px solid #ECECEC',
-                                background: '#F1F1F1',
-                                overflow: 'hidden',
-                                color: '#121212',
-                                textOverflow: 'ellipsis',
-                                fontFamily: 'Inter',
-                                fontSize: '12px',
-                                fontStyle: 'normal',
-                                fontWeight: '500',
-                                lineHeight: '16px',
-                                letterSpacing: '-0.12px',
-                                textDecoration: 'none'
-                              }
-                            : {
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                padding: '12px',
-                                borderRadius: '8px',
-                                transition: 'background-color 0.2s ease',
-                                color: '#7B7B7B',
-                                textDecoration: 'none'
-                              };
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!e.currentTarget.getAttribute('aria-current')) {
-                            e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!e.currentTarget.getAttribute('aria-current')) {
-                            e.currentTarget.style.background = 'transparent';
-                          }
+                          return `w-full flex items-center justify-between px-3 py-3 md:px-3 md:py-3 sm:px-2 sm:py-2 xs:px-1 xs:py-1 rounded-lg transition-colors ${isCurrentlyActive ? 'bg-muted' : 'hover:bg-muted/50'}`;
                         }}
                       >
                         {({ isActive }) => {
@@ -212,59 +163,12 @@ export const FigmantSidebar = () => {
                           
                           return (
                             <>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <div style={
-                                  isCurrentlyActive 
-                                    ? {
-                                        display: 'flex',
-                                        padding: '6px',
-                                        justifyContent: 'center',
-                                        alignItems: 'center',
-                                        gap: '8px',
-                                        borderRadius: '8px',
-                                        background: '#FCFCFC',
-                                        boxShadow: '0px 0px 4px 0px rgba(18, 18, 18, 0.10)',
-                                        color: '#7B7B7B'
-                                      }
-                                    : {}
-                                }>
-                                  <item.icon 
-                                    style={
-                                      isCurrentlyActive 
-                                        ? { width: '16px', height: '16px', color: '#7B7B7B' }
-                                        : { width: '20px', height: '20px', color: '#7B7B7B' }
-                                    }
-                                  />
-                                </div>
-                                {!isCollapsed && (
-                                  <span style={
-                                    isCurrentlyActive 
-                                      ? {
-                                          fontFamily: 'Inter',
-                                          fontSize: '12px',
-                                          fontWeight: '500',
-                                          lineHeight: '16px',
-                                          letterSpacing: '-0.12px',
-                                          color: '#121212'
-                                        }
-                                      : {
-                                          fontSize: '14px',
-                                          fontWeight: '500',
-                                          color: '#7B7B7B'
-                                        }
-                                  }>
-                                    {item.label}
-                                  </span>
-                                )}
+                              <div className="flex items-center gap-3 md:gap-3 sm:gap-2 xs:gap-1">
+                                <item.icon className="w-5 h-5 md:w-5 md:h-5 sm:w-4 sm:h-4 xs:w-4 xs:h-4 text-gray-600" />
+                                {!isCollapsed && <span className="font-medium text-sm md:text-sm sm:text-xs text-gray-600">{item.label}</span>}
                               </div>
                               {item.count && !isCollapsed && !isCurrentlyActive && (
-                                <span style={{
-                                  fontSize: '12px',
-                                  background: '#f1f1f1',
-                                  color: '#7B7B7B',
-                                  padding: '4px 8px',
-                                  borderRadius: '9999px'
-                                }}>
+                                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
                                   {item.count}
                                 </span>
                               )}
