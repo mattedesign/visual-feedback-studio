@@ -1,11 +1,13 @@
-import React, { useState, useCallback, useMemo, memo } from 'react';
+import React, { useState, useCallback, useMemo, memo, lazy, Suspense } from 'react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
-import { EnhancedCanvasViewer } from './EnhancedCanvasViewer';
-import { AnnotationSystem } from './AnnotationSystem';
-import { EnhancedFileThumbnails } from './EnhancedFileThumbnails';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, Sparkles, Settings, Share2 } from 'lucide-react';
+
+// Lazy load heavy components for better performance
+const EnhancedCanvasViewer = lazy(() => import('./EnhancedCanvasViewer').then(m => ({ default: m.EnhancedCanvasViewer })));
+const AnnotationSystem = lazy(() => import('./AnnotationSystem').then(m => ({ default: m.AnnotationSystem })));
+const EnhancedFileThumbnails = lazy(() => import('./EnhancedFileThumbnails').then(m => ({ default: m.EnhancedFileThumbnails })));
 
 interface EnhancedFigmaInterfaceProps {
   workflow: ReturnType<typeof useAnalysisWorkflow>;
@@ -126,17 +128,26 @@ const EnhancedFigmaInterfaceComponent: React.FC<EnhancedFigmaInterfaceProps> = (
     [statusInfo.hasDesigns]
   );
 
+  // Loading fallback component
+  const ComponentLoader = () => (
+    <div className="flex items-center justify-center h-32">
+      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+    </div>
+  );
+
   return (
     <div className="h-full flex bg-background">
       {/* Left Panel - File Thumbnails */}
-      <EnhancedFileThumbnails
-        files={workflow.selectedImages}
-        currentFileIndex={currentImageIndex}
-        onFileSelect={handleImageSelect}
-        onFileRemove={handleFileRemove}
-        onFilesAdd={handleFilesAdd}
-        maxFiles={5}
-      />
+      <Suspense fallback={<ComponentLoader />}>
+        <EnhancedFileThumbnails
+          files={workflow.selectedImages}
+          currentFileIndex={currentImageIndex}
+          onFileSelect={handleImageSelect}
+          onFileRemove={handleFileRemove}
+          onFilesAdd={handleFilesAdd}
+          maxFiles={5}
+        />
+      </Suspense>
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col">
@@ -163,25 +174,29 @@ const EnhancedFigmaInterfaceComponent: React.FC<EnhancedFigmaInterfaceProps> = (
 
         {/* Canvas Area */}
         <div className="flex-1 flex">
-          <EnhancedCanvasViewer
-            images={workflow.selectedImages}
-            currentImageIndex={currentImageIndex}
-            onImageChange={setCurrentImageIndex}
-            annotations={annotations}
-            onAnnotationClick={handleAnnotationClick}
-            onCanvasClick={handleCanvasClick}
-          />
+          <Suspense fallback={<ComponentLoader />}>
+            <EnhancedCanvasViewer
+              images={workflow.selectedImages}
+              currentImageIndex={currentImageIndex}
+              onImageChange={setCurrentImageIndex}
+              annotations={annotations}
+              onAnnotationClick={handleAnnotationClick}
+              onCanvasClick={handleCanvasClick}
+            />
+          </Suspense>
 
           {/* Right Panel - Annotations */}
-          <AnnotationSystem
-            annotations={annotations}
-            selectedAnnotation={selectedAnnotation}
-            onAnnotationSelect={setSelectedAnnotation}
-            onAnnotationCreate={handleAnnotationCreate}
-            onAnnotationUpdate={handleAnnotationUpdate}
-            pendingPosition={pendingPosition}
-            onCancelPending={() => setPendingPosition(null)}
-          />
+          <Suspense fallback={<ComponentLoader />}>
+            <AnnotationSystem
+              annotations={annotations}
+              selectedAnnotation={selectedAnnotation}
+              onAnnotationSelect={setSelectedAnnotation}
+              onAnnotationCreate={handleAnnotationCreate}
+              onAnnotationUpdate={handleAnnotationUpdate}
+              pendingPosition={pendingPosition}
+              onCancelPending={() => setPendingPosition(null)}
+            />
+          </Suspense>
         </div>
 
         {/* Bottom Analysis Bar */}

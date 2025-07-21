@@ -1,22 +1,24 @@
-import { ReviewStep } from './workflow/ReviewStep';
-import { AnnotateStep } from './workflow/AnnotateStep';
-import { MultiImageAnnotateStep } from './workflow/MultiImageAnnotateStep';
-import { AnalyzingStep } from './workflow/AnalyzingStep';
-import { ResultsStep } from './workflow/ResultsStep';
+import { lazy, Suspense } from 'react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { useAuth } from '@/hooks/useAuth';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
-import { AnalysisStudioLayout } from './studio/AnalysisStudioLayout';
-import { FigmaUploadLayout } from './figma/FigmaUploadLayout';
-import { SimplifiedContextInput } from './workflow/components/SimplifiedContextInput';
-import { TabBasedResultsLayout } from './workflow/components/TabBasedResultsLayout';
-import { FigmaInspiredUploadInterface } from './workflow/components/FigmaInspiredUploadInterface';
 import { CenteredAnalysisInterface } from './figma/CenteredAnalysisInterface';
-
 import { DiagnosticDebugMode } from './DiagnosticDebugMode';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { analysisSessionService } from '@/services/analysisSessionService';
+
+// Lazy load heavy workflow components
+const ReviewStep = lazy(() => import('./workflow/ReviewStep').then(m => ({ default: m.ReviewStep })));
+const AnnotateStep = lazy(() => import('./workflow/AnnotateStep').then(m => ({ default: m.AnnotateStep })));
+const MultiImageAnnotateStep = lazy(() => import('./workflow/MultiImageAnnotateStep').then(m => ({ default: m.MultiImageAnnotateStep })));
+const AnalyzingStep = lazy(() => import('./workflow/AnalyzingStep').then(m => ({ default: m.AnalyzingStep })));
+const ResultsStep = lazy(() => import('./workflow/ResultsStep').then(m => ({ default: m.ResultsStep })));
+const AnalysisStudioLayout = lazy(() => import('./studio/AnalysisStudioLayout').then(m => ({ default: m.AnalysisStudioLayout })));
+const FigmaUploadLayout = lazy(() => import('./figma/FigmaUploadLayout').then(m => ({ default: m.FigmaUploadLayout })));
+const SimplifiedContextInput = lazy(() => import('./workflow/components/SimplifiedContextInput').then(m => ({ default: m.SimplifiedContextInput })));
+const TabBasedResultsLayout = lazy(() => import('./workflow/components/TabBasedResultsLayout').then(m => ({ default: m.TabBasedResultsLayout })));
+const FigmaInspiredUploadInterface = lazy(() => import('./workflow/components/FigmaInspiredUploadInterface').then(m => ({ default: m.FigmaInspiredUploadInterface })));
 
 export const AnalysisWorkflow = () => {
   // ✅ STREAMLINED: All hooks moved to top
@@ -70,11 +72,25 @@ export const AnalysisWorkflow = () => {
   }
 
   const renderCurrentStep = () => {
+    const LoadingFallback = () => (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+
     switch (workflow.currentStep) {
       case 'review':
-        return <ReviewStep workflow={workflow} />;
+        return (
+          <Suspense fallback={<LoadingFallback />}>
+            <ReviewStep workflow={workflow} />
+          </Suspense>
+        );
       case 'analyzing':
-        return <AnalyzingStep workflow={workflow} />;
+        return (
+          <Suspense fallback={<LoadingFallback />}>
+            <AnalyzingStep workflow={workflow} />
+          </Suspense>
+        );
       case 'results':
         // ✅ STREAMLINED: Always use enhanced results layout when on results route
         const isOnResultsRoute = window.location.pathname.includes('/analysis/') && 
@@ -83,11 +99,13 @@ export const AnalysisWorkflow = () => {
         // ✅ STREAMLINED: Always use tab-based layout for results when on results route
         if (workflow.analysisResults && isOnResultsRoute) {
           return (
-            <TabBasedResultsLayout
-              analysisData={workflow.analysisResults}
-              strategistAnalysis={null}
-              userChallenge={workflow.analysisContext}
-            />
+            <Suspense fallback={<LoadingFallback />}>
+              <TabBasedResultsLayout
+                analysisData={workflow.analysisResults}
+                strategistAnalysis={null}
+                userChallenge={workflow.analysisContext}
+              />
+            </Suspense>
           );
         }
         
@@ -98,17 +116,23 @@ export const AnalysisWorkflow = () => {
           return null; // Let it re-render with clean state
         }
         
-        return <ResultsStep workflow={workflow} />;
+        return (
+          <Suspense fallback={<LoadingFallback />}>
+            <ResultsStep workflow={workflow} />
+          </Suspense>
+        );
       default:
         // ✅ STREAMLINED: Fallback to studio layout for any unhandled cases
         return (
-          <AnalysisStudioLayout 
-            workflow={workflow}
-            sidebarCollapsed={sidebarCollapsed}
-            setSidebarCollapsed={setSidebarCollapsed}
-            rightPanelCollapsed={rightPanelCollapsed}
-            setRightPanelCollapsed={setRightPanelCollapsed}
-          />
+          <Suspense fallback={<LoadingFallback />}>
+            <AnalysisStudioLayout 
+              workflow={workflow}
+              sidebarCollapsed={sidebarCollapsed}
+              setSidebarCollapsed={setSidebarCollapsed}
+              rightPanelCollapsed={rightPanelCollapsed}
+              setRightPanelCollapsed={setRightPanelCollapsed}
+            />
+          </Suspense>
         );
     }
   };
