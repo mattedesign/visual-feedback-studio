@@ -33,7 +33,7 @@ export const FigmantSidebar = () => {
     isExpanded: isAnalysisExpanded,
     subItems: [{
       label: 'Start New Analysis',
-      href: '/dashboard',
+      href: '/analyze',
       isActive: false
     }, {
       label: 'History',
