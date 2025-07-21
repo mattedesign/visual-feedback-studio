@@ -278,98 +278,87 @@ serve(async (req) => {
         }
       }
 
-      // Call Claude with enhanced analysis
-      const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': claudeApiKey,
-          'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify({
-          model: 'claude-opus-4-20250514', // Latest Claude 4 for best analysis
-          max_tokens: 4000,
-          temperature: 0.2,
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'text', text: enhancedPrompt },
-              ...imageContent
-            ]
-          }]
-        })
+      // Step 4.1: Multi-Model Analysis with Fallback Strategy (Phase 2.1)
+      const analysisResult = await executeMultiModelAnalysis({
+        enhancedPrompt,
+        imageContent,
+        claudeApiKey,
+        sessionMetadata: {
+          screenType,
+          visionResults,
+          metadata: metadata || {}
+        }
       });
+      
+      const analysisText = analysisResult.content;
 
-      if (!claudeResponse.ok) {
-        const claudeErrorText = await claudeResponse.text();
-        throw new Error(`Claude API error: ${claudeResponse.status} - ${claudeErrorText}`);
-      }
-
-      const claudeData = await claudeResponse.json();
-      const analysisText = claudeData.content?.[0]?.text;
-
-      if (!analysisText) {
-        throw new Error('No analysis content received from Claude');
+      if (!analysisResult.content) {
+        throw new Error('No analysis content received from multi-model pipeline');
       }
 
       // Step 5: Parse and validate enhanced analysis
       await updateProgress('insights', 'Processing insights and calculating business impact...', 90);
       
-      let analysisResult;
+      let parsedAnalysis;
       try {
         // Enhanced JSON parsing with validation
-        const jsonMatch = analysisText.match(/\{[\s\S]*\}/);
+        const jsonMatch = analysisResult.content.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-          analysisResult = JSON.parse(jsonMatch[0]);
+          parsedAnalysis = JSON.parse(jsonMatch[0]);
           
           // Validate analysis response structure
-          if (!validateAnalysisResponse(analysisResult)) {
+          if (!validateAnalysisResponse(parsedAnalysis)) {
             throw new Error('Invalid analysis response format');
           }
         } else {
-          throw new Error('No valid JSON found in Claude response');
+          throw new Error('No valid JSON found in analysis response');
         }
       } catch (error) {
-        console.error('Failed to parse Claude JSON, using fallback:', error);
-        analysisResult = {
+        console.error('Failed to parse analysis JSON, using fallback:', error);
+        parsedAnalysis = {
           screen_id: `screen-${Date.now()}`,
           screen_name: session.title,
           overall_score: 75,
           issues: [],
           strengths: ['Analysis completed with basic processing'],
           top_recommendations: ['Detailed analysis requires valid JSON response'],
-          raw_analysis: analysisText
+          raw_analysis: analysisResult.content,
+          model_used: analysisResult.modelUsed,
+          model_confidence: analysisResult.confidenceScore
         };
       }
 
-      // Step 6: Save enhanced results with pattern tracking
+      // Step 6: Save enhanced results with Phase 2.1 multi-model tracking
       const { data: resultData, error: resultError } = await supabase
         .from('figmant_analysis_results')
         .insert({
           session_id: sessionId,
           user_id: session.user_id,
-          claude_analysis: analysisResult,
+          claude_analysis: parsedAnalysis,
           google_vision_summary: {
             total_images: images.length,
             vision_results: visionResults,
             screen_type_detected: screenType
           },
           processing_time_ms: Date.now() - new Date(session.created_at).getTime(),
-          // Enhanced Phase 1.4 fields
-          pattern_violations: analysisResult.pattern_coverage?.violated || [],
+          // Enhanced Phase 1.4 + 2.1 fields
+          pattern_violations: parsedAnalysis.pattern_coverage?.violated || [],
           confidence_metadata: {
-            avg_confidence: calculateAverageConfidence(analysisResult.issues || []),
-            high_confidence_count: (analysisResult.issues || []).filter((i: any) => i.confidence >= 0.8).length
+            avg_confidence: calculateAverageConfidence(parsedAnalysis.issues || []),
+            high_confidence_count: (parsedAnalysis.issues || []).filter((i: any) => i.confidence >= 0.8).length,
+            model_confidence: analysisResult.confidenceScore,
+            model_used: analysisResult.modelUsed
           },
           screen_type_detected: screenType,
           enhanced_business_metrics: {
-            quick_wins: (analysisResult.issues || []).filter((i: any) => 
+            quick_wins: (parsedAnalysis.issues || []).filter((i: any) => 
               i.implementation?.effort === 'minutes' && i.severity !== 'improvement'
             ).length,
-            conversion_critical: (analysisResult.issues || []).filter((i: any) => 
+            conversion_critical: (parsedAnalysis.issues || []).filter((i: any) => 
               i.impact_scope === 'conversion' || i.impact_scope === 'task-completion'
             ).length
-          }
+          },
+          ai_model_used: analysisResult.modelUsed
         })
         .select()
         .single();
@@ -405,15 +394,17 @@ serve(async (req) => {
           result_id: resultData.id,
           session_id: sessionId,
           summary: {
-            total_issues: analysisResult.issues?.length || 0,
-            critical_issues: (analysisResult.issues || []).filter((i: any) => i.severity === 'critical').length,
-            high_confidence_issues: (analysisResult.issues || []).filter((i: any) => i.confidence >= 0.8).length,
-            quick_wins: (analysisResult.issues || []).filter((i: any) => i.implementation?.effort === 'minutes').length,
-            overall_score: analysisResult.overall_score || 0,
+            total_issues: parsedAnalysis.issues?.length || 0,
+            critical_issues: (parsedAnalysis.issues || []).filter((i: any) => i.severity === 'critical').length,
+            high_confidence_issues: (parsedAnalysis.issues || []).filter((i: any) => i.confidence >= 0.8).length,
+            quick_wins: (parsedAnalysis.issues || []).filter((i: any) => i.implementation?.effort === 'minutes').length,
+            overall_score: parsedAnalysis.overall_score || 0,
             screen_type: screenType,
-            pattern_violations: analysisResult.pattern_coverage?.violated?.length || 0
+            pattern_violations: parsedAnalysis.pattern_coverage?.violated?.length || 0,
+            model_used: analysisResult.modelUsed,
+            model_confidence: analysisResult.confidenceScore
           },
-          message: 'Enhanced analysis completed with Phase 1.4 features'
+          message: 'Enhanced analysis completed with Phase 2.1 multi-model integration'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -611,4 +602,99 @@ function getDefaultDesignTokens(): any {
     },
     spacing: { unit: 8, scale: [0, 4, 8, 12, 16, 20, 24, 32] }
   };
+}
+
+// Phase 2.1: Multi-Model Analysis Integration
+async function executeMultiModelAnalysis(params: {
+  enhancedPrompt: string;
+  imageContent: any[];
+  claudeApiKey: string;
+  sessionMetadata: any;
+}): Promise<{ content: string; modelUsed: string; confidenceScore: number }> {
+  const { enhancedPrompt, imageContent, claudeApiKey, sessionMetadata } = params;
+  
+  // Model priority list with fallback strategy
+  const modelFallbackChain = [
+    { model: 'claude-opus-4-20250514', maxTokens: 4000, temperature: 0.2 },
+    { model: 'claude-sonnet-4-20250514', maxTokens: 3500, temperature: 0.3 },
+    { model: 'claude-3-5-sonnet-20241022', maxTokens: 3000, temperature: 0.3 }
+  ];
+
+  for (const modelConfig of modelFallbackChain) {
+    try {
+      console.log(`🤖 Attempting analysis with ${modelConfig.model}...`);
+      
+      const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': claudeApiKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: modelConfig.model,
+          max_tokens: modelConfig.maxTokens,
+          temperature: modelConfig.temperature,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'text', text: enhancedPrompt },
+              ...imageContent
+            ]
+          }]
+        })
+      });
+
+      if (!claudeResponse.ok) {
+        console.warn(`❌ ${modelConfig.model} failed with status ${claudeResponse.status}, trying next model...`);
+        continue;
+      }
+
+      const claudeData = await claudeResponse.json();
+      const analysisText = claudeData.content?.[0]?.text;
+
+      if (!analysisText) {
+        console.warn(`❌ ${modelConfig.model} returned empty content, trying next model...`);
+        continue;
+      }
+
+      // Calculate confidence score based on model and response quality
+      const confidenceScore = calculateModelConfidence(modelConfig.model, analysisText, sessionMetadata);
+      
+      console.log(`✅ Analysis successful with ${modelConfig.model} (confidence: ${confidenceScore})`);
+      
+      return {
+        content: analysisText,
+        modelUsed: modelConfig.model,
+        confidenceScore
+      };
+
+    } catch (error) {
+      console.warn(`❌ ${modelConfig.model} error:`, error.message);
+      continue;
+    }
+  }
+
+  throw new Error('All models failed - unable to complete analysis');
+}
+
+function calculateModelConfidence(model: string, content: string, metadata: any): number {
+  let baseConfidence = 0.7;
+  
+  // Model-specific confidence adjustments
+  if (model.includes('opus-4')) baseConfidence = 0.9;
+  else if (model.includes('sonnet-4')) baseConfidence = 0.85;
+  else if (model.includes('sonnet-3-5')) baseConfidence = 0.8;
+  
+  // Content quality adjustments
+  if (content.length > 2000) baseConfidence += 0.05;
+  if (content.includes('confidence')) baseConfidence += 0.03;
+  if (content.includes('"issues"') && content.includes('"recommendations"')) baseConfidence += 0.05;
+  
+  // Screen type match adjustments
+  if (metadata.screenType && content.toLowerCase().includes(metadata.screenType)) {
+    baseConfidence += 0.02;
+  }
+  
+  return Math.min(baseConfidence, 0.95);
 }

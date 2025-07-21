@@ -82,12 +82,14 @@ export interface EnhancedAnalysisIssueWithBusiness {
   };
 }
 
+// Phase 2.2: Enhanced Business Impact Analysis for Figmant
 class BusinessImpactAnalyzer {
   private industryBenchmarks: Record<string, any>;
   private conversionData: Record<string, number>;
+  private figmantMetrics: Record<string, any>;
   
   constructor() {
-    // Industry benchmarks for different sectors
+    // Enhanced industry benchmarks for Figmant Phase 2.2
     this.industryBenchmarks = {
       'e-commerce': {
         averageConversionRate: 2.5,
@@ -375,7 +377,7 @@ class BusinessImpactAnalyzer {
     };
   }
 
-  private assessCompetitiveAdvantage(issue: any, industry: string) {
+  private assessCompetitiveAdvantage(issue: any, industry: string): any {
     let benchmarkPosition = 'Industry average';
     let differentiationValue = 'Standard improvement';
     let marketImpact = 'Maintains competitive position';
@@ -432,6 +434,353 @@ class BusinessImpactAnalyzer {
       highestImpact: issues.sort((a, b) => b.business_impact.roi_score - a.business_impact.roi_score)[0]?.description || 'No high impact items'
     };
   }
+
+  // Phase 2.2: Enhanced Figmant-specific business impact calculations
+  calculateFigmantBusinessMetrics(analysisData: {
+    issues: FigmantIssueWithBusinessImpact[];
+    screenType: string;
+    industry?: string;
+    userVolume?: number;
+    conversionBaseline?: number;
+  }): FigmantBusinessMetrics {
+    const { issues, screenType, industry = 'technology', userVolume = 10000, conversionBaseline = 2.5 } = analysisData;
+    
+    // Calculate screen-specific multipliers
+    const screenMultipliers = this.getScreenTypeMultipliers(screenType);
+    
+    // Calculate ROI projections based on issue severity and confidence
+    const roiProjections = this.calculateFigmantROI(issues, screenMultipliers, userVolume, conversionBaseline);
+    
+    // Generate implementation roadmap with priorities
+    const implementationRoadmap = this.generateFigmantRoadmap(issues, screenType);
+    
+    // Create priority matrix
+    const priorityMatrix = this.createPriorityMatrix(issues);
+    
+    // Generate A/B test hypotheses
+    const abTestHypotheses = this.generateABTestHypotheses(issues, screenType);
+    
+    return {
+      roiProjections,
+      implementationRoadmap,
+      priorityMatrix,
+      abTestHypotheses,
+      businessImpactScore: this.calculateOverallBusinessImpact(issues),
+      conversionOptimization: this.analyzeConversionOptimization(issues, screenType),
+      competitiveAdvantage: this.assessFigmantCompetitiveAdvantage(issues, industry)
+    };
+  }
+
+  private getScreenTypeMultipliers(screenType: string): Record<string, number> {
+    const multipliers = {
+      'checkout': { conversion: 1.8, revenue: 1.5, retention: 1.2 },
+      'landing': { conversion: 1.6, revenue: 1.3, retention: 1.1 },
+      'dashboard': { retention: 1.7, engagement: 1.4, satisfaction: 1.3 },
+      'form': { completion: 1.5, conversion: 1.4, acquisition: 1.2 },
+      'feed': { engagement: 1.6, retention: 1.3, satisfaction: 1.2 },
+      'profile': { retention: 1.4, satisfaction: 1.3, engagement: 1.1 },
+      'generic': { conversion: 1.0, revenue: 1.0, retention: 1.0 }
+    };
+    
+    return multipliers[screenType] || multipliers['generic'];
+  }
+
+  private calculateFigmantROI(
+    issues: FigmantIssueWithBusinessImpact[], 
+    multipliers: Record<string, number>,
+    userVolume: number,
+    conversionBaseline: number
+  ): FigmantROIProjections {
+    let totalAnnualValue = 0;
+    let implementationCost = 0;
+    
+    issues.forEach(issue => {
+      const impactValue = this.calculateIssueBusinessValue(issue, multipliers, userVolume, conversionBaseline);
+      totalAnnualValue += impactValue.annualValue;
+      implementationCost += impactValue.implementationCost;
+    });
+
+    const roi = ((totalAnnualValue - implementationCost) / implementationCost) * 100;
+    
+    return {
+      annualValue: Math.round(totalAnnualValue),
+      implementationCost: Math.round(implementationCost),
+      roiPercentage: Math.round(roi),
+      paybackMonths: Math.round((implementationCost / totalAnnualValue) * 12),
+      confidenceLevel: this.calculateROIConfidence(issues),
+      breakdown: {
+        highImpact: Math.round(totalAnnualValue * 0.4),
+        mediumImpact: Math.round(totalAnnualValue * 0.35),
+        lowImpact: Math.round(totalAnnualValue * 0.25)
+      }
+    };
+  }
+
+  private calculateIssueBusinessValue(
+    issue: FigmantIssueWithBusinessImpact,
+    multipliers: Record<string, number>,
+    userVolume: number,
+    conversionBaseline: number
+  ): { annualValue: number; implementationCost: number } {
+    // Base impact calculation
+    let baseImpact = 0;
+    
+    switch (issue.severity) {
+      case 'critical':
+        baseImpact = userVolume * 0.15 * (conversionBaseline / 100); // 15% of users affected
+        break;
+      case 'warning':
+        baseImpact = userVolume * 0.08 * (conversionBaseline / 100); // 8% of users affected
+        break;
+      case 'improvement':
+        baseImpact = userVolume * 0.03 * (conversionBaseline / 100); // 3% of users affected
+        break;
+    }
+
+    // Apply confidence multiplier
+    const confidenceMultiplier = issue.confidence || 0.7;
+    baseImpact *= confidenceMultiplier;
+
+    // Apply screen-type multipliers
+    const relevantMultiplier = multipliers[issue.impact_scope] || 1.0;
+    baseImpact *= relevantMultiplier;
+
+    // Calculate annual value (assuming $50 average value per conversion)
+    const annualValue = baseImpact * 50 * 12;
+
+    // Calculate implementation cost based on effort
+    const implementationCost = this.getImplementationCost(issue.implementation?.effort || 'hours');
+
+    return { annualValue, implementationCost };
+  }
+
+  private getImplementationCost(effort: string): number {
+    const costs = {
+      'minutes': 100,   // $100 for quick fixes
+      'hours': 800,     // $800 for medium fixes (1 day)
+      'days': 4000      // $4000 for complex fixes (5 days)
+    };
+    return costs[effort] || costs['hours'];
+  }
+
+  private generateFigmantRoadmap(issues: FigmantIssueWithBusinessImpact[], screenType: string): FigmantImplementationRoadmap {
+    const sortedIssues = [...issues].sort((a, b) => {
+      const scoreA = (a.business_impact?.roi_score || 0) * (a.confidence || 0.5);
+      const scoreB = (b.business_impact?.roi_score || 0) * (b.confidence || 0.5);
+      return scoreB - scoreA;
+    });
+
+    return {
+      quickWins: sortedIssues
+        .filter(i => i.implementation?.effort === 'minutes')
+        .slice(0, 3)
+        .map(i => ({
+          title: i.description,
+          effort: '< 30 minutes',
+          impact: i.impact_scope,
+          priority: 'High'
+        })),
+      weekOne: sortedIssues
+        .filter(i => i.implementation?.effort === 'hours')
+        .slice(0, 2)
+        .map(i => ({
+          title: i.description,
+          effort: '1-2 days',
+          impact: i.impact_scope,
+          priority: 'Medium'
+        })),
+      strategic: sortedIssues
+        .filter(i => i.implementation?.effort === 'days')
+        .slice(0, 2)
+        .map(i => ({
+          title: i.description,
+          effort: '1-2 weeks',
+          impact: i.impact_scope,
+          priority: 'Strategic'
+        })),
+      estimatedTimeline: `${this.calculateTotalTimeline(sortedIssues)} weeks`
+    };
+  }
+
+  private createPriorityMatrix(issues: FigmantIssueWithBusinessImpact[]): FigmantPriorityMatrix {
+    const matrix = {
+      highImpactLowEffort: [] as string[],
+      highImpactHighEffort: [] as string[],
+      lowImpactLowEffort: [] as string[],
+      lowImpactHighEffort: [] as string[]
+    };
+
+    issues.forEach(issue => {
+      const isHighImpact = issue.severity === 'critical' || (issue.confidence || 0) > 0.8;
+      const isLowEffort = issue.implementation?.effort === 'minutes' || issue.implementation?.effort === 'hours';
+
+      if (isHighImpact && isLowEffort) {
+        matrix.highImpactLowEffort.push(issue.description);
+      } else if (isHighImpact && !isLowEffort) {
+        matrix.highImpactHighEffort.push(issue.description);
+      } else if (!isHighImpact && isLowEffort) {
+        matrix.lowImpactLowEffort.push(issue.description);
+      } else {
+        matrix.lowImpactHighEffort.push(issue.description);
+      }
+    });
+
+    return matrix;
+  }
+
+  private generateABTestHypotheses(issues: FigmantIssueWithBusinessImpact[], screenType: string): FigmantABTestHypothesis[] {
+    return issues
+      .filter(i => i.confidence && i.confidence >= 0.7)
+      .slice(0, 3)
+      .map(issue => ({
+        hypothesis: `Fixing "${issue.description}" will improve ${issue.impact_scope} by 15-25%`,
+        testDuration: this.getTestDuration(issue.severity),
+        successMetric: this.getSuccessMetric(issue.impact_scope),
+        expectedLift: this.getExpectedLift(issue.severity),
+        testComplexity: this.getTestComplexity(issue.implementation?.effort || 'hours')
+      }));
+  }
+
+  private calculateOverallBusinessImpact(issues: FigmantIssueWithBusinessImpact[]): number {
+    const weights = { critical: 0.5, warning: 0.3, improvement: 0.2 };
+    let totalScore = 0;
+    let totalWeight = 0;
+
+    issues.forEach(issue => {
+      const weight = weights[issue.severity];
+      const confidence = issue.confidence || 0.5;
+      totalScore += weight * confidence * 100;
+      totalWeight += weight;
+    });
+
+    return totalWeight > 0 ? Math.round(totalScore / totalWeight) : 0;
+  }
+
+  private analyzeConversionOptimization(issues: FigmantIssueWithBusinessImpact[], screenType: string): any {
+    const conversionIssues = issues.filter(i => 
+      i.impact_scope === 'conversion' || i.impact_scope === 'task-completion'
+    );
+
+    return {
+      potentialLift: conversionIssues.length * 0.05, // 5% per issue
+      criticalBarriers: conversionIssues.filter(i => i.severity === 'critical').length,
+      screenOptimization: this.getScreenOptimization(screenType),
+      recommendations: conversionIssues.slice(0, 3).map(i => i.suggested_fix)
+    };
+  }
+
+  private assessFigmantCompetitiveAdvantage(issues: FigmantIssueWithBusinessImpact[], industry: string): any {
+    return {
+      industryPosition: 'Above Average', // Placeholder
+      differentiators: issues.filter(i => i.severity === 'improvement').length,
+      marketOpportunity: 'Medium',
+      benchmarkScore: 75 // Placeholder
+    };
+  }
+
+  // Helper methods
+  private calculateROIConfidence(issues: FigmantIssueWithBusinessImpact[]): number {
+    const avgConfidence = issues.reduce((sum, i) => sum + (i.confidence || 0.5), 0) / issues.length;
+    return Math.round(avgConfidence * 100);
+  }
+
+  private calculateTotalTimeline(issues: FigmantIssueWithBusinessImpact[]): number {
+    const effortDays = { minutes: 0.1, hours: 1, days: 5 };
+    const totalDays = issues.reduce((sum, i) => 
+      sum + (effortDays[i.implementation?.effort || 'hours'] || 1), 0
+    );
+    return Math.ceil(totalDays / 7); // Convert to weeks
+  }
+
+  private getTestDuration(severity: string): string {
+    return severity === 'critical' ? '2-3 weeks' : '3-4 weeks';
+  }
+
+  private getSuccessMetric(impact: string): string {
+    const metrics = {
+      'conversion': 'Conversion Rate',
+      'task-completion': 'Task Completion Rate',
+      'user-trust': 'User Satisfaction Score',
+      'readability': 'Time on Page',
+      'performance': 'Page Load Speed'
+    };
+    return metrics[impact] || 'Engagement Rate';
+  }
+
+  private getExpectedLift(severity: string): string {
+    const lifts = { critical: '20-30%', warning: '10-20%', improvement: '5-15%' };
+    return lifts[severity] || '10-20%';
+  }
+
+  private getTestComplexity(effort: string): string {
+    const complexity = { minutes: 'Low', hours: 'Medium', days: 'High' };
+    return complexity[effort] || 'Medium';
+  }
+
+  private getScreenOptimization(screenType: string): string {
+    const optimizations = {
+      'checkout': 'Streamline payment flow and reduce form friction',
+      'landing': 'Optimize CTA placement and value proposition clarity',
+      'dashboard': 'Improve data visualization and action accessibility',
+      'form': 'Reduce cognitive load and provide clear validation',
+      'feed': 'Enhance content discovery and engagement triggers'
+    };
+    return optimizations[screenType] || 'General UX improvements';
+  }
+}
+
+// Enhanced type definitions for Phase 2.2
+interface IssueWithBusinessImpact extends EnhancedAnalysisIssueWithBusiness {
+  // Base interface for business impact analysis
+}
+
+interface FigmantIssueWithBusinessImpact extends EnhancedAnalysisIssueWithBusiness {
+  impact_scope: 'user-trust' | 'task-completion' | 'conversion' | 'readability' | 'performance' | 'aesthetic';
+}
+
+interface FigmantBusinessMetrics {
+  roiProjections: FigmantROIProjections;
+  implementationRoadmap: FigmantImplementationRoadmap;
+  priorityMatrix: FigmantPriorityMatrix;
+  abTestHypotheses: FigmantABTestHypothesis[];
+  businessImpactScore: number;
+  conversionOptimization: any;
+  competitiveAdvantage: any;
+}
+
+interface FigmantROIProjections {
+  annualValue: number;
+  implementationCost: number;
+  roiPercentage: number;
+  paybackMonths: number;
+  confidenceLevel: number;
+  breakdown: {
+    highImpact: number;
+    mediumImpact: number;
+    lowImpact: number;
+  };
+}
+
+interface FigmantImplementationRoadmap {
+  quickWins: Array<{ title: string; effort: string; impact: string; priority: string }>;
+  weekOne: Array<{ title: string; effort: string; impact: string; priority: string }>;
+  strategic: Array<{ title: string; effort: string; impact: string; priority: string }>;
+  estimatedTimeline: string;
+}
+
+interface FigmantPriorityMatrix {
+  highImpactLowEffort: string[];
+  highImpactHighEffort: string[];
+  lowImpactLowEffort: string[];
+  lowImpactHighEffort: string[];
+}
+
+interface FigmantABTestHypothesis {
+  hypothesis: string;
+  testDuration: string;
+  successMetric: string;
+  expectedLift: string;
+  testComplexity: string;
 }
 
 export { BusinessImpactAnalyzer };
