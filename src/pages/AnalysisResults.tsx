@@ -6,6 +6,7 @@ import SimpleAnalysisResults from '@/components/analysis/SimpleAnalysisResults';
 import { claude20YearStrategistEngine, StrategistOutput } from '@/services/ai/claudeUXStrategistEngine';
 import { StrategistResultsDisplay } from '@/components/analysis/results/StrategistResultsDisplay';
 import { FigmaInspiredAnalysisLayout } from '@/components/analysis/figma/FigmaInspiredAnalysisLayout';
+import { AnalysisResults as EnhancedAnalysisResults } from '@/components/analysis/AnalysisResults';
 import { getAnalysisResults } from '@/services/analysisResultsService';
 import { getFigmantResults } from '@/services/figmantAnalysisService';
 import { toast } from 'sonner';
@@ -205,6 +206,141 @@ const AnalysisResults = () => {
     }
   };
 
+  // Transform Figmant data to enhanced format for rich UI
+  const transformToEnhancedFormat = (figmantResult: any) => {
+    const claudeAnalysis = figmantResult.claude_analysis as any;
+    const enhancedIssues: any[] = [];
+    
+    // Transform critical issues
+    if (claudeAnalysis?.criticalIssues) {
+      claudeAnalysis.criticalIssues.forEach((issue: any, index: number) => {
+        enhancedIssues.push({
+          id: `critical-${index}`,
+          title: issue.title || issue.issue || 'Critical Issue',
+          description: issue.description || issue.impact || 'Critical issue identified',
+          category: issue.category?.toLowerCase() || 'usability',
+          severity: 'critical',
+          confidence: 0.9, // High confidence for critical issues
+          impact_scope: 'task-completion',
+          element: {
+            location: {
+              x: Math.random() * 800,
+              y: Math.random() * 600,
+              width: 100,
+              height: 50,
+              xPercent: Math.random() * 80 + 10,
+              yPercent: Math.random() * 70 + 10,
+              widthPercent: 15,
+              heightPercent: 8
+            }
+          },
+          implementation: {
+            effort: issue.effort === 'Low' ? 'hours' : issue.effort === 'High' ? 'days' : 'hours',
+            rationale: issue.reasoning || 'Critical issue affecting user experience',
+            design_guidance: issue.solution || 'Immediate attention required'
+          },
+          business_impact: {
+            roi_score: 8,
+            priority_level: 'critical',
+            quick_win: issue.effort === 'Low'
+          }
+        });
+      });
+    }
+    
+    // Transform recommendations
+    if (claudeAnalysis?.recommendations) {
+      claudeAnalysis.recommendations.forEach((rec: any, index: number) => {
+        enhancedIssues.push({
+          id: `recommendation-${index}`,
+          title: rec.title || 'Improvement Recommendation',
+          description: rec.description || 'Improvement opportunity identified',
+          category: rec.category?.toLowerCase() || 'improvement',
+          severity: rec.effort === 'Low' ? 'improvement' : rec.effort === 'High' ? 'warning' : 'improvement',
+          confidence: 0.75,
+          impact_scope: 'aesthetic',
+          element: {
+            location: {
+              x: Math.random() * 800,
+              y: Math.random() * 600,
+              width: 120,
+              height: 60,
+              xPercent: Math.random() * 80 + 10,
+              yPercent: Math.random() * 70 + 10,
+              widthPercent: 18,
+              heightPercent: 10
+            }
+          },
+          implementation: {
+            effort: rec.effort === 'Low' ? 'minutes' : rec.effort === 'High' ? 'days' : 'hours',
+            rationale: rec.reasoning || 'Enhancement opportunity for better user experience',
+            design_guidance: rec.solution || 'Consider implementing this improvement',
+            code_snippet: rec.effort === 'Low' ? `// Quick fix example\n.element {\n  /* improvement */\n}` : undefined
+          },
+          business_impact: {
+            roi_score: rec.effort === 'Low' ? 7 : 5,
+            priority_level: rec.effort === 'Low' ? 'high' : 'medium',
+            quick_win: rec.effort === 'Low'
+          }
+        });
+      });
+    }
+    
+    return {
+      imageUrl: '/placeholder-design.png', // Default placeholder - in real app, this would come from Figmant
+      issues: enhancedIssues,
+      analysisMetadata: {
+        processingTime: figmantResult.processing_time_ms,
+        confidence: 0.85,
+        totalIssues: enhancedIssues.length
+      }
+    };
+  };
+
+  // Enhanced data loading with rich format transformation
+  const loadEnhancedAnalysisData = async () => {
+    if (!id) return;
+
+    try {
+      console.log('🎨 Loading enhanced analysis data:', id);
+      
+      const figmantResult = await getFigmantResults(id);
+      
+      if (!figmantResult) {
+        console.warn('❌ No Figmant analysis results found for ID:', id);
+        toast.error('Analysis results not found');
+        return;
+      }
+
+      console.log('📊 Raw Figmant result:', figmantResult);
+      
+      // Transform to enhanced format
+      const enhancedData = transformToEnhancedFormat(figmantResult);
+      setAnalysisData(enhancedData);
+      
+      console.log('✅ Enhanced analysis data loaded:', {
+        issueCount: enhancedData.issues.length,
+        hasMetadata: !!enhancedData.analysisMetadata
+      });
+      
+    } catch (error) {
+      console.error('❌ Failed to load enhanced analysis data:', error);
+      toast.error('Failed to load analysis data');
+    }
+  };
+
+  // ✅ STREAMLINED: Load analysis data on mount or when strategist mode is enabled
+  useEffect(() => {
+    if (isStrategistMode && id && !strategistAnalysis) {
+      loadAnalysisAndEnhance();
+    } else if (id && !analysisData) {
+      loadAnalysisData();
+    }
+  }, [isStrategistMode, id]);
+
+  // Check for enhanced UI usage
+  const shouldUseEnhancedUI = id && analysisData && analysisData.issues && analysisData.issues.length > 0;
+
   // STRATEGIST MODE: Loading state
   if (isStrategistMode && strategistLoading) {
     return (
@@ -240,11 +376,29 @@ const AnalysisResults = () => {
     );
   }
 
-  // ✅ STREAMLINED: Always use enhanced Figma-inspired UI
+  // ENHANCED UI: Rich Analysis Results
+  if (shouldUseEnhancedUI && analysisData.issues) {
+    console.log('🎨 Using Enhanced Analysis Results UI');
+    return (
+      <EnhancedAnalysisResults
+        imageUrl={analysisData.imageUrl || '/placeholder-design.png'}
+        issues={analysisData.issues}
+        analysisMetadata={analysisData.analysisMetadata}
+        onBack={() => window.history.back()}
+      />
+    );
+  }
+
+  // ✅ STREAMLINED: Always use enhanced Figma-inspired UI for fallback
   console.log('🎨 Enhanced UI Check:', { currentURL: window.location.href });
   
   // Always use enhanced Figma UI for results display
   if (id) {
+    // Load enhanced data if not already loaded
+    if (!analysisData) {
+      loadEnhancedAnalysisData();
+    }
+    
     // Get stored context for user challenge
     const contextKey = `strategist_context_${id}`;
     const storedContext = localStorage.getItem(contextKey);

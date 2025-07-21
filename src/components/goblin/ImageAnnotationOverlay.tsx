@@ -1,5 +1,42 @@
+
 import React, { useState, useEffect } from 'react';
-import { EnhancedAnalysisIssue } from '@/types/analysis';
+
+// Enhanced interface to match the new AnalysisResults component
+interface EnhancedAnalysisIssue {
+  id: string;
+  title: string;
+  description: string;
+  category: 'accessibility' | 'usability' | 'visual' | 'content' | 'performance' | 'conversion';
+  severity: 'critical' | 'warning' | 'improvement';
+  confidence: number;
+  impact_scope: 'user-trust' | 'task-completion' | 'conversion' | 'readability' | 'performance' | 'aesthetic';
+  
+  element: {
+    location: {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      xPercent: number;
+      yPercent: number;
+      widthPercent: number;
+      heightPercent: number;
+    };
+  };
+  
+  implementation?: {
+    effort: 'minutes' | 'hours' | 'days';
+    code_snippet?: string;
+    design_guidance?: string;
+    rationale?: string;
+  };
+  
+  business_impact?: {
+    roi_score: number;
+    priority_level: 'critical' | 'high' | 'medium' | 'low';
+    quick_win: boolean;
+  };
+}
 
 interface AnnotationOverlayProps {
   imageUrl: string;
@@ -56,16 +93,19 @@ export function AnnotationOverlay({
             key={issue.id}
             className={`absolute border-2 rounded-lg cursor-pointer transition-all duration-200 ${
               isSelected ? 'z-20' : 'z-10'
-            } hover:border-4 active:scale-95 touch-manipulation`}
+            } hover:border-4 active:scale-95 touch-manipulation ${
+              isSelected ? '' : 'animate-pulse'
+            }`}
             style={{
               left: `${location.xPercent}%`,
               top: `${location.yPercent}%`,
               width: `${location.widthPercent}%`,
               height: `${location.heightPercent}%`,
-              minWidth: '44px', // Minimum touch target size
-              minHeight: '44px', // Minimum touch target size
+              minWidth: '44px',
+              minHeight: '44px',
               borderColor: getSeverityColor(issue.severity),
               backgroundColor: isSelected ? `${getSeverityColor(issue.severity)}10` : 'transparent',
+              boxShadow: isSelected ? `0 0 0 4px ${getSeverityColor(issue.severity)}20` : undefined
             }}
             onClick={() => onSelectIssue(issue.id)}
           >
@@ -75,6 +115,11 @@ export function AnnotationOverlay({
             >
               {index + 1}
             </div>
+            
+            {/* Quick win indicator */}
+            {issue.business_impact?.quick_win && (
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-bounce" />
+            )}
           </div>
         );
       })}
