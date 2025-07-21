@@ -108,6 +108,15 @@ export const useAnalysisWorkflow = () => {
   const [visionConfidenceScore, setVisionConfidenceScore] = useState<number | undefined>(undefined);
   const [visionElementsDetected, setVisionElementsDetected] = useState<number>(0);
   
+  // ✅ NEW: Phase 4.2 - Automated Analysis Triggers
+  const [autoAnalysisEnabled, setAutoAnalysisEnabled] = useState<boolean>(false);
+  const [autoAnalysisDelay, setAutoAnalysisDelay] = useState<number>(3000); // 3 second delay
+  const [lastChangeTimestamp, setLastChangeTimestamp] = useState<number>(0);
+  const [pendingAutoAnalysis, setPendingAutoAnalysis] = useState<NodeJS.Timeout | null>(null);
+  const [autoAnalysisHistory, setAutoAnalysisHistory] = useState<Array<{timestamp: number, trigger: string, imageCount: number}>>([]);
+  const [smartTriggerThreshold, setSmartTriggerThreshold] = useState<number>(2); // Minimum images needed for auto-analysis
+  const [autoAnalysisContext, setAutoAnalysisContext] = useState<string>('Auto-analysis based on design changes');
+  
   // 🔧 FIX: Reset workflow state when component mounts (user navigates to analysis page)
   useEffect(() => {
     console.log('🔄 WORKFLOW INITIALIZATION: Ensuring clean state for new analysis');
@@ -244,7 +253,57 @@ export const useAnalysisWorkflow = () => {
     if (images.length === 0) {
       setActiveImageUrl(imageUrl);
     }
-  }, [images, getOrCreateAnalysisSession]);
+    
+    // ✅ NEW: Phase 4.2 - Auto-analysis trigger on image change
+    triggerAutoAnalysisIfEnabled(newImages.length, 'image_added');
+  }, [images, getOrCreateAnalysisSession, autoAnalysisEnabled, autoAnalysisDelay, smartTriggerThreshold]);
+
+  // ✅ NEW: Phase 4.2 - Auto-analysis trigger logic
+  const triggerAutoAnalysisIfEnabled = useCallback((imageCount: number, trigger: string) => {
+    if (!autoAnalysisEnabled || isAnalyzing || imageCount < smartTriggerThreshold) {
+      return;
+    }
+
+    // Clear any pending auto-analysis
+    if (pendingAutoAnalysis) {
+      clearTimeout(pendingAutoAnalysis);
+    }
+
+    console.log('🤖 Auto-analysis triggered:', { trigger, imageCount, delay: autoAnalysisDelay });
+    
+    const timeout = setTimeout(async () => {
+      if (!isAnalyzing && images.length >= smartTriggerThreshold) {
+        console.log('🚀 Starting automated analysis');
+        
+        // Set auto-generated context if none provided
+        if (!analysisContext.trim()) {
+          setAnalysisContext(autoAnalysisContext);
+        }
+        
+        // Track auto-analysis
+        setAutoAnalysisHistory(prev => [...prev, {
+          timestamp: Date.now(),
+          trigger,
+          imageCount
+        }].slice(-10)); // Keep last 10 auto-analyses
+        
+        // Start analysis
+        await startAnalysis();
+      }
+    }, autoAnalysisDelay);
+
+    setPendingAutoAnalysis(timeout);
+  }, [autoAnalysisEnabled, isAnalyzing, smartTriggerThreshold, pendingAutoAnalysis, autoAnalysisDelay, images.length, analysisContext, autoAnalysisContext, startAnalysis]);
+
+  // ✅ NEW: Phase 4.2 - Toggle auto-analysis
+  const toggleAutoAnalysis = useCallback((enabled: boolean) => {
+    setAutoAnalysisEnabled(enabled);
+    if (!enabled && pendingAutoAnalysis) {
+      clearTimeout(pendingAutoAnalysis);
+      setPendingAutoAnalysis(null);
+    }
+    toast.success(`Auto-analysis ${enabled ? 'enabled' : 'disabled'}`);
+  }, [pendingAutoAnalysis]);
 
   const selectImages = useCallback((imageUrls: string[]) => {
     console.log('🖼️ SELECT IMAGES:', {
@@ -641,6 +700,13 @@ export const useAnalysisWorkflow = () => {
     proceedFromReview,
     getTotalAnnotationsCount,
     setIsAnalyzing,
-    getOrCreateAnalysisSession // ✅ FIX: Expose session creation function
+    getOrCreateAnalysisSession, // ✅ FIX: Expose session creation function
+    
+    // ✅ NEW: Phase 4.2 - Auto-analysis controls
+    autoAnalysisEnabled,
+    autoAnalysisHistory,
+    toggleAutoAnalysis,
+    setSmartTriggerThreshold,
+    setAutoAnalysisDelay
   };
 };
