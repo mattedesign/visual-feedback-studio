@@ -307,11 +307,14 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
           </Card>
 
           {/* ENHANCED Suggestions Section with Debug Info */}
-          {console.log('🔍 SUGGESTIONS RENDER CHECK:', {
-            hasSuggestions: suggestions.length > 0,
-            suggestionCount: suggestions.length,
-            suggestions: suggestions
-          })}
+          {(() => {
+            console.log('🔍 SUGGESTIONS RENDER CHECK:', {
+              hasSuggestions: suggestions.length > 0,
+              suggestionCount: suggestions.length,
+              suggestions: suggestions
+            });
+            return null;
+          })()}
           
           {suggestions.length > 0 && (
             <Card className="mb-6">
