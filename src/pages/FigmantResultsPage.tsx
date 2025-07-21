@@ -9,6 +9,19 @@ import { FigmantImageDetail } from '@/components/analysis/figmant/FigmantImageDe
 import { ResultsContent } from '@/components/analysis/results/ResultsContent';
 import { ResultsChat } from '@/components/analysis/results/ResultsChat';
 import { AnalysisResults as EnhancedAnalysisResults } from '@/components/analysis/AnalysisResults';
+
+// 🔍 DEBUG: Component analysis logging
+console.log('🔍 [DEBUG] EnhancedAnalysisResults component:', EnhancedAnalysisResults);
+console.log('🔍 [DEBUG] Component name:', EnhancedAnalysisResults.name);
+console.log('🔍 [DEBUG] Component toString:', EnhancedAnalysisResults.toString().substring(0, 500));
+console.log('🔍 [DEBUG] Component props expected:', {
+  hasDefaultProps: !!EnhancedAnalysisResults.defaultProps,
+  hasContextTypes: !!EnhancedAnalysisResults.contextTypes,
+  componentLength: EnhancedAnalysisResults.toString().length,
+  hasPrototypeFeatures: EnhancedAnalysisResults.toString().includes('VisualPrototype'),
+  hasGenerateButton: EnhancedAnalysisResults.toString().includes('Generate Visual Prototypes'),
+  hasUsePrototypeGeneration: EnhancedAnalysisResults.toString().includes('usePrototypeGeneration')
+});
 import { FigmantSidebar } from '@/components/layout/FigmantSidebar';
 import { FigmantLogo } from '@/components/ui/figmant-logo';
 import { toast } from 'sonner';
