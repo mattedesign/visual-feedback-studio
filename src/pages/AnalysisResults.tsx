@@ -164,6 +164,11 @@ const AnalysisResults = () => {
     
     const transformedData = {
       imageUrl: '/placeholder-design.png',
+      images: [{ 
+        id: 'default', 
+        url: '/placeholder-design.png',
+        fileName: 'Analysis Image'
+      }],
       issues: enhancedIssues,
       suggestions: enhancedSuggestions,
       analysisMetadata: {
@@ -294,10 +299,38 @@ const AnalysisResults = () => {
     if (isStrategistMode && id && !strategistAnalysis) {
       loadAnalysisAndEnhance();
     } else if (id && !analysisData) {
-      // 🔧 FIX: Always try enhanced format first
-      loadEnhancedAnalysisData();
+      // 🔧 FIX: Load figmant data directly and let routing logic decide UI
+      loadFigmantAnalysisData();
     }
   }, [isStrategistMode, id]);
+
+  // 🔧 NEW: Direct figmant data loading that preserves original structure
+  const loadFigmantAnalysisData = async () => {
+    if (!id) return;
+
+    try {
+      console.log('🎨 FIGMANT: Loading figmant analysis data for ID:', id);
+      
+      const figmantResult = await getFigmantResults(id);
+      
+      if (!figmantResult) {
+        console.warn('❌ No Figmant analysis results found for ID:', id);
+        toast.error('Analysis results not found');
+        return;
+      }
+
+      console.log('📊 FIGMANT: Raw Figmant result loaded:', figmantResult);
+      
+      // Set the raw figmant data - routing logic will determine which UI to use
+      setAnalysisData(figmantResult);
+      
+      console.log('✅ FIGMANT: Figmant analysis data loaded successfully');
+      
+    } catch (error) {
+      console.error('❌ FIGMANT: Failed to load figmant analysis data:', error);
+      toast.error('Failed to load analysis data');
+    }
+  };
 
   const loadAnalysisAndEnhance = async () => {
     if (!id) return;
@@ -385,8 +418,9 @@ const AnalysisResults = () => {
     }
   };
 
-  // 🔧 FIX: Updated condition to properly detect enhanced UI usage
-  const shouldUseEnhancedUI = analysisData && analysisData.issues && Array.isArray(analysisData.issues) && analysisData.issues.length > 0;
+  // 🔧 FIX: Updated condition to properly detect enhanced UI usage for both traditional and figmant analysis
+  const shouldUseEnhancedUI = (analysisData && analysisData.issues && Array.isArray(analysisData.issues) && analysisData.issues.length > 0) ||
+    (analysisData && analysisData.claude_analysis && analysisData.claude_analysis.issues && Array.isArray(analysisData.claude_analysis.issues) && analysisData.claude_analysis.issues.length > 0);
 
   console.log('🎨 UI DECISION (AnalysisResults.tsx): Enhanced UI check:', {
     hasAnalysisData: !!analysisData,
@@ -433,28 +467,57 @@ const AnalysisResults = () => {
     );
   }
 
-  // 🔧 FIX: ENHANCED UI - Rich Analysis Results (PRIMARY PATH)
+  // 🔧 FIX: ENHANCED UI - Rich Analysis Results (PRIMARY PATH) - Handle both transformed and raw figmant data
   if (shouldUseEnhancedUI) {
     console.log('✅ UI DECISION (AnalysisResults.tsx): Using Enhanced Analysis Results UI');
     
-    // Transform data to match new interface
+    // Check if this is raw figmant data that needs transformation
+    if (analysisData.claude_analysis && !analysisData.issues) {
+      console.log('🔄 Transforming raw figmant data for enhanced UI');
+      const transformedData = transformToEnhancedFormat(analysisData);
+      
+      if (transformedData) {
+        const images = transformedData.images || [{ 
+          id: 'default', 
+          url: transformedData.imageUrl || '/placeholder-design.png',
+          fileName: 'Analysis Image'
+        }];
+        
+        console.log('🎨 PASSING TRANSFORMED FIGMANT DATA TO ENHANCED COMPONENT:', {
+          imageCount: images.length,
+          issueCount: transformedData.issues.length,
+          suggestionCount: transformedData.suggestions?.length || 0
+        });
+        
+        return (
+          <EnhancedAnalysisResults
+            images={images}
+            issues={transformedData.issues}
+            suggestions={transformedData.suggestions || []}
+            analysisMetadata={transformedData.analysisMetadata}
+            onBack={() => window.history.back()}
+          />
+        );
+      }
+    }
+    
+    // Handle already transformed data
     const images = analysisData.images || [{ 
       id: 'default', 
       url: analysisData.imageUrl || '/placeholder-design.png',
       fileName: 'Analysis Image'
     }];
     
-    console.log('🎨 PASSING TO ENHANCED COMPONENT:', {
+    console.log('🎨 PASSING PRE-TRANSFORMED DATA TO ENHANCED COMPONENT:', {
       imageCount: images.length,
-      issueCount: analysisData.issues.length,
-      suggestionCount: analysisData.suggestions?.length || 0,
-      suggestions: analysisData.suggestions
+      issueCount: analysisData.issues?.length || 0,
+      suggestionCount: analysisData.suggestions?.length || 0
     });
     
     return (
       <EnhancedAnalysisResults
         images={images}
-        issues={analysisData.issues}
+        issues={analysisData.issues || []}
         suggestions={analysisData.suggestions || []}
         analysisMetadata={analysisData.analysisMetadata}
         onBack={() => window.history.back()}
