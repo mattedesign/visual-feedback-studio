@@ -124,7 +124,12 @@ export function DashboardSidebar() {
                       variant="ghost"
                       size="sm"
                       className="w-full justify-start text-sm text-gray-600 hover:text-gray-600"
-                      onClick={() => subItem.href && navigate(subItem.href)}
+                      onClick={() => {
+                        console.log('Clicking sub-item:', subItem.label, 'href:', subItem.href);
+                        if (subItem.href) {
+                          navigate(subItem.href);
+                        }
+                      }}
                     >
                       {subItem.label}
                     </Button>
