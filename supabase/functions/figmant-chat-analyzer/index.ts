@@ -214,9 +214,17 @@ Respond conversationally and helpfully, drawing from the analysis context to pro
             if (contentType.includes('png')) mediaType = 'image/png';
             else if (contentType.includes('webp')) mediaType = 'image/webp';
 
-            // Convert to base64
+            // Convert to base64 safely
             const uint8Array = new Uint8Array(imageBuffer);
-            const base64Data = btoa(String.fromCharCode.apply(null, Array.from(uint8Array)));
+            
+            // Convert in chunks to avoid stack overflow
+            let binaryString = '';
+            const chunkSize = 8192;
+            for (let i = 0; i < uint8Array.length; i += chunkSize) {
+              const chunk = uint8Array.slice(i, i + chunkSize);
+              binaryString += String.fromCharCode.apply(null, Array.from(chunk));
+            }
+            const base64Data = btoa(binaryString);
             
             messageContent.push({
               type: 'image',
