@@ -22,8 +22,10 @@ import {
   Brain
 } from 'lucide-react';
 import { StrategistOutput } from '@/services/ai/claudeUXStrategistEngine';
+import { usePrototypeGeneration } from '@/hooks/usePrototypeGeneration';
 
 interface AnalysisData {
+  id?: string;
   annotations: Array<{
     id: string;
     title: string;
@@ -55,6 +57,19 @@ export const EnhancedFigmaAnalysisLayout: React.FC<EnhancedFigmaAnalysisLayoutPr
   const [selectedAnnotation, setSelectedAnnotation] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [activeFilter, setActiveFilter] = useState<string>('all');
+  const [prototypesLoaded, setPrototypesLoaded] = useState(false);
+  
+  // Add the hook to your component
+  const { 
+    isGenerating, 
+    progress, 
+    error, 
+    generatePrototypes, 
+    resetState 
+  } = usePrototypeGeneration();
+  
+  // Mock prototypes array for the condition check
+  const prototypes: any[] = [];
 
   const categories = ['all', ...Array.from(new Set(analysisData.annotations.map(a => a.category)))];
   
@@ -79,6 +94,22 @@ export const EnhancedFigmaAnalysisLayout: React.FC<EnhancedFigmaAnalysisLayoutPr
       day: 'numeric',
       year: 'numeric'
     });
+  };
+
+  // Add this handler function
+  const handleGeneratePrototypes = async () => {
+    if (!analysisData?.id) {
+      console.error('No analysis ID available');
+      return;
+    }
+    
+    try {
+      await generatePrototypes(analysisData.id);
+      // Reload prototypes from database
+      setPrototypesLoaded(false); // This will trigger the useEffect to reload
+    } catch (error) {
+      console.error('Failed to generate prototypes:', error);
+    }
   };
 
   return (
@@ -234,6 +265,120 @@ export const EnhancedFigmaAnalysisLayout: React.FC<EnhancedFigmaAnalysisLayoutPr
                   <p className="text-xs text-muted-foreground">
                     Enhanced analysis with business impact and strategic recommendations
                   </p>
+                </div>
+              )}
+
+              {/* Generate Prototypes Section */}
+              {analysisData && prototypes.length === 0 && !isGenerating && (
+                <div className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                        Generate Visual Prototypes
+                      </h3>
+                      <p className="text-gray-600 max-w-2xl">
+                        Transform your top recommendations into interactive visual prototypes with working code. 
+                        We'll select 2-3 high-impact improvements and create comprehensive implementation examples.
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleGeneratePrototypes}
+                      className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      Generate Prototypes
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Generation Progress */}
+              {isGenerating && (
+                <div className="mt-8 p-6 bg-white rounded-xl shadow-lg border-l-4 border-blue-500">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">Generating Visual Prototypes</h3>
+                      <p className="text-gray-600 text-sm">{progress.message}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Progress Steps */}
+                  <div className="space-y-2">
+                    {[
+                      { key: 'selecting', label: 'Selecting high-impact issues' },
+                      { key: 'generating', label: 'Creating comprehensive prototypes' },
+                      { key: 'storing', label: 'Saving prototypes and code' }
+                    ].map(step => (
+                      <div key={step.key} className="flex items-center gap-3">
+                        {progress.step === step.key ? (
+                          <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                        ) : progress.step === 'complete' ? (
+                          <div className="w-4 h-4 bg-green-500 text-white rounded-full flex items-center justify-center">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        ) : (
+                          <div className="w-4 h-4 bg-gray-300 rounded-full"></div>
+                        )}
+                        <span className={`text-sm ${
+                          progress.step === step.key ? 'text-blue-600 font-medium' : 
+                          progress.step === 'complete' ? 'text-green-600' : 'text-gray-500'
+                        }`}>
+                          {step.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {progress.currentPrototype && progress.totalPrototypes && (
+                    <div className="mt-4 bg-blue-50 rounded-lg p-3">
+                      <div className="flex justify-between text-sm">
+                        <span>Prototype Progress</span>
+                        <span>{progress.currentPrototype} of {progress.totalPrototypes}</span>
+                      </div>
+                      <div className="mt-2 bg-blue-200 rounded-full h-2">
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${(progress.currentPrototype / progress.totalPrototypes) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Generation Error */}
+              {error && (
+                <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <div className="w-5 h-5 text-red-500 mt-0.5">
+                      <svg fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-medium text-red-800">Prototype Generation Failed</h4>
+                      <p className="text-red-700 text-sm mt-1">{error}</p>
+                      <div className="mt-3 flex gap-2">
+                        <button
+                          onClick={handleGeneratePrototypes}
+                          className="px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+                        >
+                          Try Again
+                        </button>
+                        <button
+                          onClick={resetState}
+                          className="px-3 py-1.5 border border-red-300 text-red-700 text-sm rounded hover:bg-red-50 transition-colors"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
