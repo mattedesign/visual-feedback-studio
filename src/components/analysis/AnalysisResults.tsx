@@ -29,6 +29,7 @@ import { VisualPrototypeOverlay } from '@/components/prototypes/VisualPrototypeO
 import { ComprehensivePrototypeViewer } from '@/components/prototypes/ComprehensivePrototypeViewer';
 import { PrototypeStorageService } from '@/services/prototypes/prototypeStorageService';
 import type { VisualPrototype } from '@/types/analysis';
+import { usePrototypeGeneration } from '@/hooks/usePrototypeGeneration';
 
 // Enhanced interfaces for rich analysis results
 interface EnhancedAnalysisIssue {
@@ -120,6 +121,15 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
   const [showPrototypeViewer, setShowPrototypeViewer] = useState(false);
   const [prototypeViewMode, setPrototypeViewMode] = useState<'list' | 'overlay'>('list');
   const [prototypesLoaded, setPrototypesLoaded] = useState(false);
+
+  // Add prototype generation hook
+  const { 
+    isGenerating, 
+    progress, 
+    error: prototypeError, 
+    generatePrototypes, 
+    resetState 
+  } = usePrototypeGeneration();
 
   // Filter and sort issues
   const filteredAndSortedIssues = useMemo(() => {
@@ -252,6 +262,23 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
 
   const togglePrototypeView = () => {
     setPrototypeViewMode(current => current === 'list' ? 'overlay' : 'list');
+  };
+
+  // Handle prototype generation
+  const handleGeneratePrototypes = async () => {
+    if (!images[0]?.id) {
+      console.error('No analysis ID available for prototype generation');
+      return;
+    }
+    
+    try {
+      await generatePrototypes(images[0].id);
+      // Reload prototypes after generation
+      const loadedPrototypes = await PrototypeStorageService.getPrototypesByAnalysisId(images[0].id);
+      setPrototypes(loadedPrototypes);
+    } catch (error) {
+      console.error('❌ Failed to generate prototypes:', error);
+    }
   };
 
   return (
@@ -441,6 +468,78 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
                     analysisMetadata 
                   }, null, 2)}
                 </pre>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Generate Prototypes Section */}
+          {images[0]?.id && prototypes.length === 0 && !isGenerating && (
+            <Card className="mb-6 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">
+                      Generate Visual Prototypes
+                    </h3>
+                    <p className="text-muted-foreground max-w-2xl">
+                      Transform your top recommendations into interactive visual prototypes with working code. 
+                      We'll select 2-3 high-impact improvements and create comprehensive implementation examples.
+                    </p>
+                  </div>
+                  <Button
+                    onClick={handleGeneratePrototypes}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold shadow-lg hover:shadow-xl"
+                    size="lg"
+                  >
+                    Generate Prototypes
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Prototype Generation Progress */}
+          {isGenerating && (
+            <Card className="mb-6">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent"></div>
+                  <div>
+                    <h3 className="font-semibold text-foreground">Generating Visual Prototypes</h3>
+                    <p className="text-sm text-muted-foreground">{progress.message}</p>
+                    {progress.currentPrototype && progress.totalPrototypes && (
+                      <div className="mt-2">
+                        <Progress 
+                          value={(progress.currentPrototype / progress.totalPrototypes) * 100} 
+                          className="w-64"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Prototype Generation Error */}
+          {prototypeError && (
+            <Card className="mb-6 border-destructive bg-destructive/5">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3">
+                  <XCircle className="w-5 h-5 text-destructive" />
+                  <div>
+                    <h3 className="font-semibold text-destructive">Prototype Generation Failed</h3>
+                    <p className="text-sm text-muted-foreground mt-1">{prototypeError}</p>
+                    <Button 
+                      onClick={resetState} 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-2"
+                    >
+                      Try Again
+                    </Button>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           )}
