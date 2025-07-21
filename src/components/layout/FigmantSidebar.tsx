@@ -276,7 +276,16 @@ export const FigmantSidebar = () => {
                     
                     {/* Sub-items for Analysis */}
                     {item.isExpandable && item.isExpanded && item.subItems && !isCollapsed && (
-                      <div className="ml-8 mt-2 space-y-1">
+                      <div className="ml-8 mt-2 space-y-1" style={{ position: 'relative' }}>
+                        {/* Left border indicator */}
+                        <div style={{
+                          position: 'absolute',
+                          left: '-16px',
+                          top: '0',
+                          bottom: '0',
+                          width: '1px',
+                          background: '#ECECEC'
+                        }}></div>
                         {item.subItems.map((subItem, subIndex) => (
                           <NavLink 
                             key={subIndex} 
@@ -302,7 +311,8 @@ export const FigmantSidebar = () => {
                                     fontWeight: '500',
                                     lineHeight: '16px',
                                     letterSpacing: '-0.12px',
-                                    textDecoration: 'none'
+                                    textDecoration: 'none',
+                                    position: 'relative'
                                   }
                                 : {
                                     display: 'flex',
@@ -312,7 +322,8 @@ export const FigmantSidebar = () => {
                                     borderRadius: '8px',
                                     transition: 'background-color 0.2s ease',
                                     color: '#7B7B7B',
-                                    textDecoration: 'none'
+                                    textDecoration: 'none',
+                                    position: 'relative'
                                   }
                             }
                             onMouseEnter={(e) => {
@@ -327,24 +338,36 @@ export const FigmantSidebar = () => {
                             }}
                           >
                             {({ isActive }) => (
-                              <span style={
-                                isActive 
-                                  ? {
-                                      fontFamily: 'Inter',
-                                      fontSize: '12px',
-                                      fontWeight: '500',
-                                      lineHeight: '16px',
-                                      letterSpacing: '-0.12px',
-                                      color: '#121212'
-                                    }
-                                  : {
-                                      fontSize: '14px',
-                                      fontWeight: '500',
-                                      color: '#7B7B7B'
-                                    }
-                              }>
-                                {subItem.label}
-                              </span>
+                              <>
+                                {/* Left connecting line for each sub-item */}
+                                <div style={{
+                                  position: 'absolute',
+                                  left: '-16px',
+                                  top: '50%',
+                                  width: '12px',
+                                  height: '1px',
+                                  background: '#ECECEC',
+                                  transform: 'translateY(-50%)'
+                                }}></div>
+                                <span style={
+                                  isActive 
+                                    ? {
+                                        fontFamily: 'Inter',
+                                        fontSize: '12px',
+                                        fontWeight: '500',
+                                        lineHeight: '16px',
+                                        letterSpacing: '-0.12px',
+                                        color: '#121212'
+                                      }
+                                    : {
+                                        fontSize: '14px',
+                                        fontWeight: '500',
+                                        color: '#7B7B7B'
+                                      }
+                                }>
+                                  {subItem.label}
+                                </span>
+                              </>
                             )}
                           </NavLink>
                         ))}
