@@ -253,10 +253,7 @@ export const useAnalysisWorkflow = () => {
     if (images.length === 0) {
       setActiveImageUrl(imageUrl);
     }
-    
-    // ✅ NEW: Phase 4.2 - Auto-analysis trigger on image change
-    triggerAutoAnalysisIfEnabled(newImages.length, 'image_added');
-  }, [images, getOrCreateAnalysisSession, autoAnalysisEnabled, autoAnalysisDelay, smartTriggerThreshold]);
+  }, [images, getOrCreateAnalysisSession]);
 
   // ✅ NEW: Phase 4.2 - Auto-analysis trigger logic
   const triggerAutoAnalysisIfEnabled = useCallback((imageCount: number, trigger: string) => {
@@ -271,7 +268,7 @@ export const useAnalysisWorkflow = () => {
 
     console.log('🤖 Auto-analysis triggered:', { trigger, imageCount, delay: autoAnalysisDelay });
     
-    const timeout = setTimeout(async () => {
+    const timeout = setTimeout(() => {
       if (!isAnalyzing && images.length >= smartTriggerThreshold) {
         console.log('🚀 Starting automated analysis');
         
@@ -287,13 +284,13 @@ export const useAnalysisWorkflow = () => {
           imageCount
         }].slice(-10)); // Keep last 10 auto-analyses
         
-        // Start analysis
-        await startAnalysis();
+        // Trigger analysis by setting the step
+        setCurrentStep('analyzing');
       }
     }, autoAnalysisDelay);
 
     setPendingAutoAnalysis(timeout);
-  }, [autoAnalysisEnabled, isAnalyzing, smartTriggerThreshold, pendingAutoAnalysis, autoAnalysisDelay, images.length, analysisContext, autoAnalysisContext, startAnalysis]);
+  }, [autoAnalysisEnabled, isAnalyzing, smartTriggerThreshold, pendingAutoAnalysis, autoAnalysisDelay, images.length, analysisContext, autoAnalysisContext]);
 
   // ✅ NEW: Phase 4.2 - Toggle auto-analysis
   const toggleAutoAnalysis = useCallback((enabled: boolean) => {
