@@ -1,15 +1,28 @@
-# Figmant UX Analyzer - Figma Plugin
+# Figmant UX Analyzer - Enhanced Figma Plugin
 
-This Figma plugin integrates with the Figmant backend to provide AI-powered UX analysis directly from your Figma designs.
+This advanced Figma plugin integrates with the Figmant backend to provide AI-powered UX analysis directly from your Figma designs with intelligent context detection and smart focus capabilities.
 
-## Features
+## 🚀 Enhanced Features
 
+### **Smart Analysis Modes**
+- **Quick Analysis**: Fast analysis with automatic context detection
+- **Smart Focus**: AI-guided analysis with intelligent recommendations  
+- **Custom Analysis**: Traditional manual context specification
+
+### **Advanced Intelligence**
+- **Design Metadata Extraction**: Automatically analyzes design system consistency, typography, color usage, and component structure
+- **Context-Aware Analysis**: Detects project type (web app, mobile app, desktop) and complexity level
+- **Smart Recommendations**: Suggests focus areas based on design patterns and potential issues
+- **Auto-Analysis Triggers**: Optional automatic analysis when selection changes
+
+### **Core Features**
 - **Direct Authentication**: Login with your Figmant credentials directly in the plugin
 - **Real-time Analysis**: Analyze selected frames, components, or groups with one click
+- **Progressive Analysis Depth**: Choose between quick, detailed, or comprehensive analysis
 - **Subscription Integration**: Automatically checks your analysis usage and limits
 - **Seamless Upload**: Exports and uploads your designs automatically
 - **Progress Tracking**: Real-time feedback during analysis processing
-- **Context-Aware**: Add custom context to get targeted analysis results
+- **Enhanced Context-Awareness**: Add custom context or let AI auto-detect focus areas
 
 ## Quick Setup
 

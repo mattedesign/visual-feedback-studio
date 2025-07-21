@@ -4,7 +4,7 @@
 
 // Define types directly in this file since imports can be problematic in Figma
 interface PluginMessage {
-  type: 'selection-change' | 'export-frames' | 'export-complete' | 'export-error' | 'close' | 'analysis-progress' | 'analysis-complete' | 'analysis-partial' | 'auth-status';
+  type: 'selection-change' | 'export-frames' | 'export-complete' | 'export-error' | 'close' | 'analysis-progress' | 'analysis-complete' | 'analysis-partial' | 'auth-status' | 'metadata-extracted' | 'design-context-analysis' | 'auto-analysis-trigger';
   data?: any;
   message?: string;
   progress?: number;
@@ -17,16 +17,65 @@ interface PluginMessage {
   isAuthenticated?: boolean;
   userEmail?: string;
   subscription?: any;
-  viewUrl?: string; // ✅ Added viewUrl for Quick Link
+  viewUrl?: string;
+  designMetadata?: DesignMetadata;
+  contextAnalysis?: ContextAnalysis;
+  autoTriggerEnabled?: boolean;
+  triggerReason?: string;
+}
+
+interface DesignMetadata {
+  totalFrames: number;
+  componentCount: number;
+  layerDepth: number;
+  colorPalette: string[];
+  typography: TypographyInfo[];
+  screenSizes: ScreenSizeInfo[];
+  designSystem: DesignSystemInfo;
+  lastModified: string;
+  collaborators: string[];
+}
+
+interface TypographyInfo {
+  fontFamily: string;
+  fontSize: number;
+  fontWeight: string;
+  usage: number;
+}
+
+interface ScreenSizeInfo {
+  width: number;
+  height: number;
+  name: string;
+  count: number;
+}
+
+interface DesignSystemInfo {
+  hasComponents: boolean;
+  componentCount: number;
+  hasStyles: boolean;
+  styleCount: number;
+  consistencyScore: number;
+}
+
+interface ContextAnalysis {
+  projectType: string;
+  complexity: 'low' | 'medium' | 'high';
+  suggestedFocus: string[];
+  potentialIssues: string[];
+  recommendedAnalysisDepth: 'quick' | 'detailed' | 'comprehensive';
 }
 
 interface UIMessage {
-  type: 'export' | 'cancel' | 'resize' | 'analyze-selection' | 'login' | 'logout' | 'check-auth';
+  type: 'export' | 'cancel' | 'resize' | 'analyze-selection' | 'login' | 'logout' | 'check-auth' | 'extract-metadata' | 'analyze-context' | 'toggle-auto-analysis' | 'smart-focus-analysis';
   data?: any;
   email?: string;
   password?: string;
   sessionTitle?: string;
   context?: string;
+  autoAnalysisEnabled?: boolean;
+  focusArea?: string;
+  analysisDepth?: 'quick' | 'detailed' | 'comprehensive';
 }
 
 interface FrameData {
@@ -79,6 +128,190 @@ function getSelectedFrames(): FrameData[] {
   }
   
   return frames;
+}
+
+// Advanced metadata extraction function
+async function extractDesignMetadata(): Promise<DesignMetadata> {
+  const allFrames = figma.currentPage.findAll(node => 
+    node.type === 'FRAME' || node.type === 'COMPONENT' || node.type === 'COMPONENT_SET'
+  );
+  
+  const components = figma.currentPage.findAll(node => 
+    node.type === 'COMPONENT' || node.type === 'INSTANCE'
+  );
+  
+  // Extract color palette
+  const colorSet = new Set<string>();
+  const typographyMap = new Map<string, TypographyInfo>();
+  const screenSizeMap = new Map<string, ScreenSizeInfo>();
+  
+  let maxDepth = 0;
+  
+  function analyzeNode(node: SceneNode, depth: number = 0) {
+    maxDepth = Math.max(maxDepth, depth);
+    
+    // Extract colors
+    if ('fills' in node && node.fills) {
+      const fills = Array.isArray(node.fills) ? node.fills : [node.fills];
+      fills.forEach(fill => {
+        if (fill.type === 'SOLID') {
+          const { r, g, b } = fill.color;
+          const hex = `#${Math.round(r * 255).toString(16).padStart(2, '0')}${Math.round(g * 255).toString(16).padStart(2, '0')}${Math.round(b * 255).toString(16).padStart(2, '0')}`;
+          colorSet.add(hex);
+        }
+      });
+    }
+    
+    // Extract typography
+    if (node.type === 'TEXT') {
+      const fontFamily = node.fontName.family;
+      const fontSize = node.fontSize as number;
+      const fontWeight = node.fontName.style;
+      
+      const key = `${fontFamily}-${fontSize}-${fontWeight}`;
+      const existing = typographyMap.get(key);
+      
+      if (existing) {
+        existing.usage++;
+      } else {
+        typographyMap.set(key, {
+          fontFamily,
+          fontSize,
+          fontWeight,
+          usage: 1
+        });
+      }
+    }
+    
+    // Recursively analyze children
+    if ('children' in node) {
+      node.children.forEach(child => analyzeNode(child, depth + 1));
+    }
+  }
+  
+  // Analyze all frames
+  allFrames.forEach(frame => {
+    // Track screen sizes
+    const sizeKey = `${frame.width}x${frame.height}`;
+    const existing = screenSizeMap.get(sizeKey);
+    
+    if (existing) {
+      existing.count++;
+    } else {
+      screenSizeMap.set(sizeKey, {
+        width: frame.width,
+        height: frame.height,
+        name: frame.name,
+        count: 1
+      });
+    }
+    
+    analyzeNode(frame);
+  });
+  
+  // Get design system info
+  const localComponents = await figma.getLocalComponentsAsync();
+  const localStyles = await figma.getLocalPaintStylesAsync();
+  const localTextStyles = await figma.getLocalTextStylesAsync();
+  
+  const designSystem: DesignSystemInfo = {
+    hasComponents: localComponents.length > 0,
+    componentCount: localComponents.length,
+    hasStyles: (localStyles.length + localTextStyles.length) > 0,
+    styleCount: localStyles.length + localTextStyles.length,
+    consistencyScore: calculateConsistencyScore(typographyMap, colorSet, localStyles.length + localTextStyles.length)
+  };
+  
+  return {
+    totalFrames: allFrames.length,
+    componentCount: components.length,
+    layerDepth: maxDepth,
+    colorPalette: Array.from(colorSet).slice(0, 20), // Limit to top 20 colors
+    typography: Array.from(typographyMap.values()).sort((a, b) => b.usage - a.usage),
+    screenSizes: Array.from(screenSizeMap.values()).sort((a, b) => b.count - a.count),
+    designSystem,
+    lastModified: new Date().toISOString(),
+    collaborators: [] // Figma API doesn't expose this easily
+  };
+}
+
+// Calculate design system consistency score
+function calculateConsistencyScore(typography: Map<string, TypographyInfo>, colors: Set<string>, stylesCount: number): number {
+  const uniqueFonts = new Set(Array.from(typography.keys()).map(key => key.split('-')[0]));
+  const fontConsistency = Math.max(0, 100 - (uniqueFonts.size - 3) * 10); // Penalty for too many fonts
+  const colorConsistency = Math.max(0, 100 - (colors.size - 8) * 5); // Penalty for too many colors
+  const styleUsage = Math.min(100, stylesCount * 10); // Bonus for using styles
+  
+  return Math.round((fontConsistency + colorConsistency + styleUsage) / 3);
+}
+
+// Analyze design context for smart recommendations
+async function analyzeDesignContext(metadata: DesignMetadata): Promise<ContextAnalysis> {
+  const { totalFrames, screenSizes, designSystem, typography, colorPalette } = metadata;
+  
+  // Determine project type based on screen sizes
+  let projectType = 'web-app';
+  const mobileSizes = screenSizes.filter(size => size.width <= 480).length;
+  const desktopSizes = screenSizes.filter(size => size.width >= 1200).length;
+  
+  if (mobileSizes > desktopSizes) {
+    projectType = 'mobile-app';
+  } else if (screenSizes.some(size => size.width > 1920)) {
+    projectType = 'desktop-app';
+  }
+  
+  // Determine complexity
+  let complexity: 'low' | 'medium' | 'high' = 'low';
+  if (totalFrames > 20 || typography.length > 8 || colorPalette.length > 12) {
+    complexity = 'high';
+  } else if (totalFrames > 10 || typography.length > 4 || colorPalette.length > 6) {
+    complexity = 'medium';
+  }
+  
+  // Generate suggested focus areas
+  const suggestedFocus: string[] = [];
+  const potentialIssues: string[] = [];
+  
+  if (designSystem.consistencyScore < 60) {
+    suggestedFocus.push('Design System Consistency');
+    potentialIssues.push('Inconsistent typography and color usage detected');
+  }
+  
+  if (screenSizes.length < 3 && projectType === 'web-app') {
+    suggestedFocus.push('Responsive Design');
+    potentialIssues.push('Limited responsive breakpoints found');
+  }
+  
+  if (typography.length > 6) {
+    suggestedFocus.push('Typography Optimization');
+    potentialIssues.push('Too many font variations may impact readability');
+  }
+  
+  if (colorPalette.length > 15) {
+    suggestedFocus.push('Color Palette Simplification');
+    potentialIssues.push('Large color palette may reduce visual coherence');
+  }
+  
+  // Default focus areas if none detected
+  if (suggestedFocus.length === 0) {
+    suggestedFocus.push('Usability & Navigation', 'Visual Hierarchy');
+  }
+  
+  // Determine recommended analysis depth
+  let recommendedAnalysisDepth: 'quick' | 'detailed' | 'comprehensive' = 'detailed';
+  if (complexity === 'low' && totalFrames < 5) {
+    recommendedAnalysisDepth = 'quick';
+  } else if (complexity === 'high' || totalFrames > 15) {
+    recommendedAnalysisDepth = 'comprehensive';
+  }
+  
+  return {
+    projectType,
+    complexity,
+    suggestedFocus,
+    potentialIssues,
+    recommendedAnalysisDepth
+  };
 }
 
 // Initialize plugin with authentication check
@@ -472,6 +705,220 @@ figma.ui.onmessage = async (msg: UIMessage) => {
     }
   }
   
+  if (msg.type === 'extract-metadata') {
+    try {
+      console.log('📊 Extracting design metadata...');
+      figma.ui.postMessage({
+        type: 'analysis-progress',
+        message: 'Analyzing design structure...',
+        progress: 20
+      });
+
+      const metadata = await extractDesignMetadata();
+      
+      figma.ui.postMessage({
+        type: 'metadata-extracted',
+        designMetadata: metadata,
+        message: 'Design metadata extracted successfully'
+      });
+    } catch (error: any) {
+      console.error('❌ Metadata extraction error:', error);
+      figma.ui.postMessage({
+        type: 'export-error',
+        data: { error: 'Failed to extract design metadata: ' + error.message }
+      } as PluginMessage);
+    }
+  }
+
+  if (msg.type === 'analyze-context') {
+    try {
+      console.log('🎯 Analyzing design context...');
+      const metadata = await extractDesignMetadata();
+      const contextAnalysis = await analyzeDesignContext(metadata);
+      
+      figma.ui.postMessage({
+        type: 'design-context-analysis',
+        designMetadata: metadata,
+        contextAnalysis: contextAnalysis,
+        message: 'Context analysis completed'
+      });
+    } catch (error: any) {
+      console.error('❌ Context analysis error:', error);
+      figma.ui.postMessage({
+        type: 'export-error',
+        data: { error: 'Failed to analyze design context: ' + error.message }
+      } as PluginMessage);
+    }
+  }
+
+  if (msg.type === 'smart-focus-analysis') {
+    try {
+      console.log('🎯 Starting smart focus analysis...');
+      const sessionToken = await figma.clientStorage.getAsync('figmant_session_token');
+      
+      if (!sessionToken) {
+        figma.ui.postMessage({
+          type: 'export-error',
+          data: { error: 'Authentication required. Please log in first.' }
+        } as PluginMessage);
+        return;
+      }
+
+      const selectedFrames = getSelectedFrames();
+      if (selectedFrames.length === 0) {
+        figma.ui.postMessage({
+          type: 'export-error',
+          data: { error: 'Please select at least one frame to analyze.' }
+        } as PluginMessage);
+        return;
+      }
+
+      // Extract metadata and analyze context first
+      const metadata = await extractDesignMetadata();
+      const contextAnalysis = await analyzeDesignContext(metadata);
+
+      // Build enhanced context based on focus area and analysis depth
+      let enhancedContext = msg.context || '';
+      if (msg.focusArea) {
+        enhancedContext += `\n\nFocus Area: ${msg.focusArea}`;
+      }
+      if (msg.analysisDepth) {
+        enhancedContext += `\nAnalysis Depth: ${msg.analysisDepth}`;
+      }
+      enhancedContext += `\n\nDesign Context: ${contextAnalysis.projectType} (${contextAnalysis.complexity} complexity)`;
+      enhancedContext += `\nSuggested Focus: ${contextAnalysis.suggestedFocus.join(', ')}`;
+      if (contextAnalysis.potentialIssues.length > 0) {
+        enhancedContext += `\nPotential Issues: ${contextAnalysis.potentialIssues.join(', ')}`;
+      }
+
+      // Start the analysis with enhanced context
+      const settings: PluginExportSettings = {
+        frames: selectedFrames,
+        context: enhancedContext,
+        scale: 2,
+        format: 'PNG',
+        sessionToken: sessionToken
+      };
+
+      // Continue with normal analysis flow...
+      figma.ui.postMessage({
+        type: 'analysis-progress',
+        message: 'Starting smart focus analysis...',
+        progress: 5
+      });
+
+      console.log('🚀 Starting smart focus analysis with enhanced context');
+      
+      // Export and analyze frames (reuse existing logic)
+      const images = [];
+      
+      for (let i = 0; i < settings.frames.length; i++) {
+        const frame = settings.frames[i];
+        console.log(`📸 Exporting frame ${i + 1}/${settings.frames.length}: ${frame.name}`);
+        
+        const node = figma.getNodeById(frame.id) as SceneNode;
+        
+        if (node && 'exportAsync' in node) {
+          const imageData = await node.exportAsync({
+            format: settings.format as 'PNG' | 'JPG',
+            constraint: { type: 'SCALE', value: settings.scale }
+          });
+          
+          const base64 = figma.base64Encode(imageData);
+          const mimeType = 'image/png';
+          
+          images.push({
+            name: node.name,
+            format: settings.format,
+            image: `data:${mimeType};base64,${base64}`
+          });
+          
+          const exportProgress = Math.floor(10 + (i + 1) / settings.frames.length * 40);
+          figma.ui.postMessage({ 
+            type: 'analysis-progress', 
+            message: `Exported ${i + 1}/${settings.frames.length} frames`,
+            progress: exportProgress
+          });
+        }
+      }
+
+      // Upload with enhanced metadata
+      const uploadResponse = await fetch(`${SUPABASE_URL}/functions/v1/figmant-plugin-api`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${settings.sessionToken}`,
+          'apikey': SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({
+          images,
+          context: enhancedContext,
+          sessionTitle: `Smart Analysis - ${msg.focusArea || 'Focused'} - ${new Date().toLocaleString()}`,
+          metadata: metadata,
+          contextAnalysis: contextAnalysis
+        })
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error(`Upload failed: ${uploadResponse.status}`);
+      }
+
+      const uploadResult = await uploadResponse.json();
+      const sessionId = uploadResult.session_id;
+
+      // Trigger analysis
+      const analysisResponse = await fetch(`${SUPABASE_URL}/functions/v1/figmant-analyze-design`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${settings.sessionToken}`,
+          'apikey': SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({
+          sessionId: sessionId
+        })
+      });
+
+      if (!analysisResponse.ok) {
+        throw new Error(`Analysis failed: ${analysisResponse.status}`);
+      }
+
+      const analysisResult = await analysisResponse.json();
+
+      figma.ui.postMessage({
+        type: 'analysis-complete',
+        sessionId: sessionId,
+        analysisResult: analysisResult,
+        imagesProcessed: uploadResult.images_processed,
+        totalImages: uploadResult.total_images,
+        message: `Smart ${msg.focusArea || 'focus'} analysis completed!`,
+        viewUrl: `${FIGMANT_WEB_URL}/analysis/${sessionId}`
+      });
+
+    } catch (error: any) {
+      console.error('❌ Smart focus analysis error:', error);
+      figma.ui.postMessage({
+        type: 'export-error',
+        data: { error: 'Smart analysis failed: ' + error.message }
+      } as PluginMessage);
+    }
+  }
+
+  if (msg.type === 'toggle-auto-analysis') {
+    try {
+      const autoAnalysisEnabled = msg.autoAnalysisEnabled || false;
+      await figma.clientStorage.setAsync('figmant_auto_analysis', autoAnalysisEnabled);
+      
+      figma.ui.postMessage({
+        type: 'auto-analysis-trigger',
+        autoTriggerEnabled: autoAnalysisEnabled,
+        message: autoAnalysisEnabled ? 'Auto-analysis enabled' : 'Auto-analysis disabled'
+      });
+    } catch (error: any) {
+      console.error('❌ Auto-analysis toggle error:', error);
+    }
+  }
+
   if (msg.type === 'cancel') {
     figma.closePlugin();
   }

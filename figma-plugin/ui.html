@@ -276,6 +276,70 @@
       width: 14px;
       height: 14px;
     }
+
+    .tabs {
+      display: flex;
+      border-radius: 6px;
+      background: #f8f9fa;
+      padding: 2px;
+      margin-bottom: 12px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 6px 12px;
+      background: transparent;
+      border: none;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab.active {
+      background: #fff;
+      color: #0d9488;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    .analysis-mode {
+      display: none;
+    }
+
+    .analysis-mode.active {
+      display: block;
+    }
+
+    .context-insights {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 6px;
+      padding: 12px;
+      margin-top: 12px;
+    }
+
+    .context-detail {
+      font-size: 10px;
+      margin-bottom: 8px;
+    }
+
+    .context-detail strong {
+      color: #059669;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      width: auto;
+    }
   </style>
 </head>
 <body>
@@ -336,29 +400,95 @@
       </div>
     </div>
 
-    <!-- Analysis Form -->
+    <!-- Smart Analysis Options -->
     <div class="section">
-      <div class="section-title">Analysis Settings</div>
+      <div class="section-title">Smart Analysis</div>
       
       <div class="input-group">
-        <label class="label" for="sessionTitle">Session Title (Optional)</label>
-        <input 
-          type="text" 
-          id="sessionTitle" 
-          class="input" 
-          placeholder="e.g., Dashboard Redesign Review"
-        >
+        <div class="tabs">
+          <button id="quickAnalysisTab" class="tab active" onclick="switchAnalysisMode('quick')">Quick</button>
+          <button id="smartAnalysisTab" class="tab" onclick="switchAnalysisMode('smart')">Smart Focus</button>
+          <button id="customAnalysisTab" class="tab" onclick="switchAnalysisMode('custom')">Custom</button>
+        </div>
       </div>
 
-      <div class="input-group">
-        <label class="label" for="analysisContext">Analysis Context (Optional)</label>
-        <textarea 
-          id="analysisContext" 
-          class="input textarea" 
-          placeholder="What would you like to focus on? e.g., conversion optimization, accessibility, mobile responsiveness..."
-        ></textarea>
+      <!-- Quick Analysis -->
+      <div id="quickAnalysisMode" class="analysis-mode active">
         <div class="help-text">
-          Provide context to get more targeted analysis results
+          Fast analysis with automatic context detection
+        </div>
+      </div>
+
+      <!-- Smart Focus Analysis -->
+      <div id="smartAnalysisMode" class="analysis-mode">
+        <div class="input-group">
+          <label class="label" for="focusArea">Focus Area</label>
+          <select id="focusArea" class="input">
+            <option value="">Auto-detect</option>
+            <option value="usability">Usability & Navigation</option>
+            <option value="accessibility">Accessibility</option>
+            <option value="visual-hierarchy">Visual Hierarchy</option>
+            <option value="mobile-responsiveness">Mobile Responsiveness</option>
+            <option value="conversion-optimization">Conversion Optimization</option>
+            <option value="design-system">Design System Consistency</option>
+            <option value="information-architecture">Information Architecture</option>
+          </select>
+        </div>
+        
+        <div class="input-group">
+          <label class="label" for="analysisDepth">Analysis Depth</label>
+          <select id="analysisDepth" class="input">
+            <option value="detailed">Detailed (Recommended)</option>
+            <option value="quick">Quick Overview</option>
+            <option value="comprehensive">Comprehensive</option>
+          </select>
+        </div>
+        
+        <button id="extractMetadataButton" class="button button-secondary">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 11h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          Analyze Design Context
+        </button>
+        
+        <div id="contextInsights" class="context-insights" style="display: none;">
+          <div class="section-title">Context Insights</div>
+          <div id="contextDetails"></div>
+        </div>
+      </div>
+
+      <!-- Custom Analysis -->
+      <div id="customAnalysisMode" class="analysis-mode">
+        <div class="input-group">
+          <label class="label" for="sessionTitle">Session Title (Optional)</label>
+          <input 
+            type="text" 
+            id="sessionTitle" 
+            class="input" 
+            placeholder="e.g., Dashboard Redesign Review"
+          >
+        </div>
+
+        <div class="input-group">
+          <label class="label" for="analysisContext">Analysis Context</label>
+          <textarea 
+            id="analysisContext" 
+            class="input textarea" 
+            placeholder="What would you like to focus on? e.g., conversion optimization, accessibility, mobile responsiveness..."
+          ></textarea>
+          <div class="help-text">
+            Provide specific context to get targeted analysis results
+          </div>
+        </div>
+        
+        <div class="input-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="autoAnalysisToggle"> 
+            Enable auto-analysis on selection change
+          </label>
+          <div class="help-text">
+            Automatically analyze when you select new frames
+          </div>
         </div>
       </div>
     </div>
@@ -420,8 +550,19 @@
       progressText: document.getElementById('progressText'),
       errorMessage: document.getElementById('errorMessage'),
       successMessage: document.getElementById('successMessage'),
-      analyzeButton: document.getElementById('analyzeButton')
+      analyzeButton: document.getElementById('analyzeButton'),
+      focusArea: document.getElementById('focusArea'),
+      analysisDepth: document.getElementById('analysisDepth'),
+      extractMetadataButton: document.getElementById('extractMetadataButton'),
+      contextInsights: document.getElementById('contextInsights'),
+      contextDetails: document.getElementById('contextDetails'),
+      autoAnalysisToggle: document.getElementById('autoAnalysisToggle')
     };
+
+    // State for analysis mode
+    let currentAnalysisMode = 'quick';
+    let designMetadata = null;
+    let contextAnalysis = null;
 
     // Initialize
     function init() {
@@ -433,6 +574,8 @@
       elements.loginButton.addEventListener('click', login);
       elements.logoutButton.addEventListener('click', logout);
       elements.analyzeButton.addEventListener('click', startAnalysis);
+      elements.extractMetadataButton.addEventListener('click', extractMetadata);
+      elements.autoAnalysisToggle.addEventListener('change', toggleAutoAnalysis);
       
       elements.emailInput.addEventListener('input', updateUI);
       elements.passwordInput.addEventListener('input', updateUI);
@@ -440,6 +583,68 @@
       elements.passwordInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') login();
       });
+    }
+
+    function switchAnalysisMode(mode) {
+      currentAnalysisMode = mode;
+      
+      // Update tabs
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      document.getElementById(`${mode}AnalysisTab`).classList.add('active');
+      
+      // Update panels
+      document.querySelectorAll('.analysis-mode').forEach(panel => panel.classList.remove('active'));
+      document.getElementById(`${mode}AnalysisMode`).classList.add('active');
+      
+      updateUI();
+    }
+
+    function extractMetadata() {
+      if (!state.isAuthenticated) {
+        showError('Please log in first');
+        return;
+      }
+      
+      clearMessages();
+      parent.postMessage({
+        pluginMessage: { type: 'analyze-context' }
+      }, '*');
+    }
+
+    function toggleAutoAnalysis() {
+      const enabled = elements.autoAnalysisToggle.checked;
+      parent.postMessage({
+        pluginMessage: {
+          type: 'toggle-auto-analysis',
+          autoAnalysisEnabled: enabled
+        }
+      }, '*');
+    }
+
+    function displayContextInsights(metadata, contextAnalysis) {
+      let html = '';
+      
+      if (contextAnalysis) {
+        html += `<div class="context-detail"><strong>Project Type:</strong> ${contextAnalysis.projectType}</div>`;
+        html += `<div class="context-detail"><strong>Complexity:</strong> ${contextAnalysis.complexity}</div>`;
+        
+        if (contextAnalysis.suggestedFocus.length > 0) {
+          html += `<div class="context-detail"><strong>Suggested Focus:</strong> ${contextAnalysis.suggestedFocus.join(', ')}</div>`;
+        }
+        
+        if (contextAnalysis.potentialIssues.length > 0) {
+          html += `<div class="context-detail"><strong>Potential Issues:</strong> ${contextAnalysis.potentialIssues.join(', ')}</div>`;
+        }
+      }
+      
+      if (metadata) {
+        html += `<div class="context-detail"><strong>Frames:</strong> ${metadata.totalFrames}</div>`;
+        html += `<div class="context-detail"><strong>Components:</strong> ${metadata.componentCount}</div>`;
+        html += `<div class="context-detail"><strong>Design System Score:</strong> ${metadata.designSystem.consistencyScore}%</div>`;
+      }
+      
+      elements.contextDetails.innerHTML = html;
+      elements.contextInsights.style.display = 'block';
     }
 
     function checkAuth() {
@@ -484,11 +689,24 @@
       state.isAnalyzing = true;
       updateUI();
 
+      // Determine analysis type based on current mode
+      let analysisType = 'analyze-selection';
+      let messageData = {
+        sessionTitle: elements.sessionTitle.value.trim() || `${currentAnalysisMode} Analysis`,
+        context: elements.analysisContext.value.trim()
+      };
+
+      if (currentAnalysisMode === 'smart') {
+        analysisType = 'smart-focus-analysis';
+        messageData.focusArea = elements.focusArea.value;
+        messageData.analysisDepth = elements.analysisDepth.value;
+        messageData.context = `Focus: ${elements.focusArea.value || 'Auto-detect'}, Depth: ${elements.analysisDepth.value}`;
+      }
+
       parent.postMessage({
         pluginMessage: {
-          type: 'analyze-selection',
-          sessionTitle: elements.sessionTitle.value.trim(),
-          context: elements.analysisContext.value.trim()
+          type: analysisType,
+          ...messageData
         }
       }, '*');
     }
@@ -651,6 +869,22 @@
           hideProgress();
           showError(msg.data?.error || 'Analysis failed');
           updateUI();
+          break;
+
+        case 'metadata-extracted':
+          designMetadata = msg.designMetadata;
+          showSuccess('Design metadata extracted successfully!');
+          break;
+
+        case 'design-context-analysis':
+          designMetadata = msg.designMetadata;
+          contextAnalysis = msg.contextAnalysis;
+          displayContextInsights(designMetadata, contextAnalysis);
+          showSuccess('Context analysis completed!');
+          break;
+
+        case 'auto-analysis-trigger':
+          showSuccess(msg.message || 'Auto-analysis setting updated');
           break;
 
         default:
