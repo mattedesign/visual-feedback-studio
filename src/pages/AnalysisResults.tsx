@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Check } from 'lucide-react';
 import { useParams } from 'react-router-dom';
@@ -43,9 +44,15 @@ const AnalysisResults = () => {
   // Get analysis ID from URL
   const { id } = useParams<{id: string}>();
 
-  // 🔧 FIX: Enhanced data transformation function
+  // 🔧 FIX: Enhanced data transformation function with debugging
   const transformToEnhancedFormat = (figmantResult: any) => {
-    console.log('🔄 TRANSFORM: Starting enhanced data transformation');
+    console.log('🔄 TRANSFORM (AnalysisResults.tsx): Starting enhanced data transformation');
+    console.log('📊 Raw figmant result structure:', {
+      hasClaudeAnalysis: !!(figmantResult?.claude_analysis),
+      claudeAnalysisKeys: figmantResult?.claude_analysis ? Object.keys(figmantResult.claude_analysis) : [],
+      fullStructure: figmantResult
+    });
+    
     const claudeAnalysis = figmantResult.claude_analysis as any;
     
     if (!claudeAnalysis) {
@@ -54,10 +61,13 @@ const AnalysisResults = () => {
     }
 
     const enhancedIssues: any[] = [];
+    const enhancedSuggestions: any[] = [];
     
-    // Transform critical issues
+    // Process critical issues as both issues and suggestions
     if (claudeAnalysis?.criticalIssues) {
+      console.log('🔍 Processing criticalIssues:', claudeAnalysis.criticalIssues.length, 'items');
       claudeAnalysis.criticalIssues.forEach((issue: any, index: number) => {
+        // Add as issue
         enhancedIssues.push({
           id: `critical-${index}`,
           title: issue.title || issue.issue || 'Critical Issue',
@@ -89,12 +99,24 @@ const AnalysisResults = () => {
             quick_win: issue.effort === 'Low'
           }
         });
+        
+        // Add as suggestion too
+        enhancedSuggestions.push({
+          id: `critical-suggestion-${index}`,
+          title: `Fix: ${issue.title || issue.issue || 'Critical Issue'}`,
+          description: issue.solution || issue.reasoning || 'Critical fix needed immediately',
+          impact: 'Critical',
+          effort: issue.effort || 'High',
+          category: 'critical-fix'
+        });
       });
     }
     
-    // Transform recommendations
+    // Process recommendations as suggestions
     if (claudeAnalysis?.recommendations) {
+      console.log('🔍 Processing recommendations:', claudeAnalysis.recommendations.length, 'items');
       claudeAnalysis.recommendations.forEach((rec: any, index: number) => {
+        // Add as issue
         enhancedIssues.push({
           id: `recommendation-${index}`,
           title: rec.title || 'Improvement Recommendation',
@@ -127,12 +149,23 @@ const AnalysisResults = () => {
             quick_win: rec.effort === 'Low'
           }
         });
+        
+        // Add as suggestion
+        enhancedSuggestions.push({
+          id: `recommendation-suggestion-${index}`,
+          title: rec.title || 'Design Recommendation',
+          description: rec.description || rec.solution || 'Recommended improvement',
+          impact: rec.effort === 'Low' ? 'High' : 'Medium',
+          effort: rec.effort || 'Medium',
+          category: 'improvement'
+        });
       });
     }
     
     const transformedData = {
       imageUrl: '/placeholder-design.png',
       issues: enhancedIssues,
+      suggestions: enhancedSuggestions,
       analysisMetadata: {
         processingTime: figmantResult.processing_time_ms,
         confidence: 0.85,
@@ -140,10 +173,12 @@ const AnalysisResults = () => {
       }
     };
 
-    console.log('✅ TRANSFORM: Enhanced data transformation complete:', {
+    console.log('✅ TRANSFORM (AnalysisResults.tsx): Enhanced data transformation complete:', {
       issueCount: enhancedIssues.length,
+      suggestionCount: enhancedSuggestions.length,
       hasMetadata: !!transformedData.analysisMetadata,
-      imageUrl: transformedData.imageUrl
+      imageUrl: transformedData.imageUrl,
+      suggestions: enhancedSuggestions
     });
 
     return transformedData;
@@ -353,11 +388,12 @@ const AnalysisResults = () => {
   // 🔧 FIX: Updated condition to properly detect enhanced UI usage
   const shouldUseEnhancedUI = analysisData && analysisData.issues && Array.isArray(analysisData.issues) && analysisData.issues.length > 0;
 
-  console.log('🎨 UI DECISION: Enhanced UI check:', {
+  console.log('🎨 UI DECISION (AnalysisResults.tsx): Enhanced UI check:', {
     hasAnalysisData: !!analysisData,
     hasIssues: !!(analysisData?.issues),
     isIssuesArray: Array.isArray(analysisData?.issues),
     issueCount: analysisData?.issues?.length || 0,
+    suggestionCount: analysisData?.suggestions?.length || 0,
     shouldUseEnhancedUI,
     currentURL: window.location.href
   });
@@ -399,7 +435,7 @@ const AnalysisResults = () => {
 
   // 🔧 FIX: ENHANCED UI - Rich Analysis Results (PRIMARY PATH)
   if (shouldUseEnhancedUI) {
-    console.log('✅ UI DECISION: Using Enhanced Analysis Results UI');
+    console.log('✅ UI DECISION (AnalysisResults.tsx): Using Enhanced Analysis Results UI');
     
     // Transform data to match new interface
     const images = analysisData.images || [{ 
@@ -407,6 +443,13 @@ const AnalysisResults = () => {
       url: analysisData.imageUrl || '/placeholder-design.png',
       fileName: 'Analysis Image'
     }];
+    
+    console.log('🎨 PASSING TO ENHANCED COMPONENT:', {
+      imageCount: images.length,
+      issueCount: analysisData.issues.length,
+      suggestionCount: analysisData.suggestions?.length || 0,
+      suggestions: analysisData.suggestions
+    });
     
     return (
       <EnhancedAnalysisResults

@@ -33,9 +33,14 @@ const FigmantResultsPage = () => {
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'menu' | 'chat'>('menu');
 
-  // Utility function to transform Figmant data to enhanced format
+  // Enhanced utility function to transform Figmant data to enhanced format
   const transformToEnhancedFormat = (analysisData: any, sessionData: any) => {
-    console.log('🔄 Transforming Figmant data to enhanced format:', { analysisData, sessionData });
+    console.log('🔄 TRANSFORM START: Raw analysis data structure:', {
+      hasAnalysisData: !!analysisData,
+      analysisDataKeys: analysisData ? Object.keys(analysisData) : [],
+      claudeAnalysisExists: !!(analysisData?.claude_analysis),
+      claudeAnalysisKeys: analysisData?.claude_analysis ? Object.keys(analysisData.claude_analysis) : []
+    });
     
     if (!analysisData?.claude_analysis) {
       console.warn('❌ No Claude analysis data to transform');
@@ -43,6 +48,16 @@ const FigmantResultsPage = () => {
     }
 
     const claudeAnalysis = analysisData.claude_analysis;
+    console.log('📊 CLAUDE ANALYSIS STRUCTURE:', {
+      type: typeof claudeAnalysis,
+      keys: Object.keys(claudeAnalysis),
+      hasIssues: 'issues' in claudeAnalysis,
+      hasSuggestions: 'suggestions' in claudeAnalysis,
+      hasRecommendations: 'recommendations' in claudeAnalysis,
+      hasCriticalIssues: 'criticalIssues' in claudeAnalysis,
+      hasImprovements: 'improvements' in claudeAnalysis
+    });
+
     const issues: any[] = [];
     const suggestions: any[] = [];
     let overallScore = 45; // Default from your session data
@@ -54,6 +69,7 @@ const FigmantResultsPage = () => {
 
     // Transform Claude analysis issues to enhanced format
     if (claudeAnalysis.issues && Array.isArray(claudeAnalysis.issues)) {
+      console.log('🔍 PROCESSING ISSUES:', claudeAnalysis.issues.length, 'issues found');
       claudeAnalysis.issues.forEach((issue: any, index: number) => {
         const transformedIssue = {
           id: issue.id || `issue-${index}`,
@@ -85,10 +101,20 @@ const FigmantResultsPage = () => {
       });
     }
 
-    // Transform suggestions if present
+    // ENHANCED SUGGESTIONS PROCESSING - Check multiple possible sources
+    console.log('🔍 SUGGESTIONS PROCESSING - Checking all possible sources...');
+    
+    // Source 1: Direct suggestions array
     if (claudeAnalysis.suggestions && Array.isArray(claudeAnalysis.suggestions)) {
-      console.log('📝 Found suggestions in Claude analysis:', claudeAnalysis.suggestions);
+      console.log('📝 Found suggestions array:', claudeAnalysis.suggestions.length, 'items');
       claudeAnalysis.suggestions.forEach((suggestion: any, index: number) => {
+        console.log(`  📋 Suggestion ${index + 1}:`, {
+          id: suggestion.id,
+          title: suggestion.title,
+          type: typeof suggestion,
+          keys: Object.keys(suggestion)
+        });
+        
         suggestions.push({
           id: suggestion.id || `suggestion-${index}`,
           title: suggestion.title || suggestion.recommendation || 'Design Suggestion',
@@ -98,22 +124,91 @@ const FigmantResultsPage = () => {
           category: suggestion.category || 'enhancement'
         });
       });
-    } else {
-      console.log('ℹ️ No suggestions found in Claude analysis. Available keys:', Object.keys(claudeAnalysis));
-      // Try alternative suggestion sources
-      if (claudeAnalysis.recommendations && Array.isArray(claudeAnalysis.recommendations)) {
-        console.log('📝 Found recommendations, converting to suggestions:', claudeAnalysis.recommendations);
-        claudeAnalysis.recommendations.forEach((rec: any, index: number) => {
-          suggestions.push({
-            id: `recommendation-${index}`,
-            title: typeof rec === 'string' ? `Recommendation ${index + 1}` : (rec.title || 'Design Recommendation'),
-            description: typeof rec === 'string' ? rec : (rec.description || rec.text || 'Design improvement recommendation'),
-            impact: 'Medium',
-            effort: 'Medium',
-            category: 'improvement'
-          });
+    }
+    
+    // Source 2: Recommendations array (fallback)
+    if (claudeAnalysis.recommendations && Array.isArray(claudeAnalysis.recommendations)) {
+      console.log('📝 Found recommendations array:', claudeAnalysis.recommendations.length, 'items');
+      claudeAnalysis.recommendations.forEach((rec: any, index: number) => {
+        console.log(`  📋 Recommendation ${index + 1}:`, {
+          type: typeof rec,
+          isString: typeof rec === 'string',
+          keys: typeof rec === 'object' ? Object.keys(rec) : 'N/A'
         });
-      }
+        
+        suggestions.push({
+          id: `recommendation-${index}`,
+          title: typeof rec === 'string' ? `Recommendation ${index + 1}` : (rec.title || 'Design Recommendation'),
+          description: typeof rec === 'string' ? rec : (rec.description || rec.text || 'Design improvement recommendation'),
+          impact: 'Medium',
+          effort: 'Medium',
+          category: 'improvement'
+        });
+      });
+    }
+    
+    // Source 3: Critical issues as suggestions
+    if (claudeAnalysis.criticalIssues && Array.isArray(claudeAnalysis.criticalIssues)) {
+      console.log('📝 Found criticalIssues array:', claudeAnalysis.criticalIssues.length, 'items');
+      claudeAnalysis.criticalIssues.forEach((issue: any, index: number) => {
+        console.log(`  📋 Critical Issue ${index + 1}:`, {
+          title: issue.title,
+          solution: issue.solution,
+          reasoning: issue.reasoning
+        });
+        
+        // Add critical issues as high-priority suggestions
+        suggestions.push({
+          id: `critical-suggestion-${index}`,
+          title: `Fix: ${issue.title || issue.issue || 'Critical Issue'}`,
+          description: issue.solution || issue.reasoning || 'Critical issue requiring immediate attention',
+          impact: 'Critical',
+          effort: issue.effort || 'High',
+          category: 'critical-fix'
+        });
+      });
+    }
+    
+    // Source 4: Improvements array
+    if (claudeAnalysis.improvements && Array.isArray(claudeAnalysis.improvements)) {
+      console.log('📝 Found improvements array:', claudeAnalysis.improvements.length, 'items');
+      claudeAnalysis.improvements.forEach((improvement: any, index: number) => {
+        suggestions.push({
+          id: `improvement-${index}`,
+          title: improvement.title || `Improvement ${index + 1}`,
+          description: improvement.description || improvement.details || 'Design improvement opportunity',
+          impact: improvement.impact || 'Medium',
+          effort: improvement.effort || 'Low',
+          category: 'improvement'
+        });
+      });
+    }
+    
+    // Source 5: Any other molecular-level data
+    const otherKeys = Object.keys(claudeAnalysis).filter(key => 
+      !['issues', 'suggestions', 'recommendations', 'criticalIssues', 'improvements', 'overall_score', 'executiveSummary'].includes(key)
+    );
+    
+    if (otherKeys.length > 0) {
+      console.log('🔍 Other available keys in Claude analysis:', otherKeys);
+      otherKeys.forEach(key => {
+        const data = claudeAnalysis[key];
+        if (Array.isArray(data) && data.length > 0) {
+          console.log(`📋 Processing ${key} as potential suggestions:`, data.length, 'items');
+          data.forEach((item: any, index: number) => {
+            if (typeof item === 'object' && (item.title || item.description || item.recommendation)) {
+              suggestions.push({
+                id: `${key}-${index}`,
+                title: item.title || item.recommendation || `${key} ${index + 1}`,
+                description: item.description || item.details || `Suggestion from ${key}`,
+                impact: item.impact || 'Medium',
+                effort: item.effort || 'Medium',
+                category: key
+              });
+            }
+          });
+        }
+      });
     }
 
     // Create image URLs from session data
@@ -137,7 +232,17 @@ const FigmantResultsPage = () => {
       }
     };
 
-    console.log('✅ Transformed data:', transformedData);
+    console.log('✅ TRANSFORM COMPLETE:', {
+      issueCount: issues.length,
+      suggestionCount: suggestions.length,
+      imageCount: images.length,
+      hasMetadata: !!transformedData.analysisMetadata,
+      suggestionsBreakdown: suggestions.reduce((acc, s) => {
+        acc[s.category] = (acc[s.category] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>)
+    });
+
     return transformedData;
   };
 
@@ -187,10 +292,21 @@ const FigmantResultsPage = () => {
 
   // Check if we should use enhanced UI
   const shouldUseEnhancedUI = (data: any) => {
-    return data && (
+    const result = data && (
       (data.issues && Array.isArray(data.issues)) ||
       (data.claude_analysis && data.claude_analysis.issues && Array.isArray(data.claude_analysis.issues))
     );
+    
+    console.log('🎨 ENHANCED UI CHECK:', {
+      hasData: !!data,
+      hasIssues: !!(data?.issues),
+      isIssuesArray: Array.isArray(data?.issues),
+      hasClaudeAnalysis: !!(data?.claude_analysis),
+      hasClaudeIssues: !!(data?.claude_analysis?.issues),
+      result
+    });
+    
+    return result;
   };
 
   useEffect(() => {
@@ -233,11 +349,12 @@ const FigmantResultsPage = () => {
         getFigmantSession(actualSessionId)
       ]);
 
-      console.log('📊 Loaded results:', { 
+      console.log('📊 RAW DATA LOADED:', { 
         hasResults: !!results, 
         hasSession: !!session,
         resultKeys: results ? Object.keys(results) : [],
-        sessionImageCount: session?.images?.length || 0
+        sessionImageCount: session?.images?.length || 0,
+        rawResults: results // LOG THE COMPLETE RAW DATA
       });
 
       setAnalysisData(results);
@@ -375,7 +492,12 @@ const FigmantResultsPage = () => {
     if (shouldUseEnhancedUI(analysisData)) {
       const enhancedData = transformToEnhancedFormat(analysisData, sessionData);
       if (enhancedData) {
-        console.log('🎨 Using Enhanced Analysis Results component');
+        console.log('🎨 USING ENHANCED UI - Final data passed to component:', {
+          imageCount: enhancedData.images.length,
+          issueCount: enhancedData.issues.length,
+          suggestionCount: enhancedData.suggestions.length,
+          suggestions: enhancedData.suggestions
+        });
         
         return (
           <EnhancedAnalysisResults 

@@ -91,6 +91,17 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
   analysisMetadata,
   onBack
 }) => {
+  // Add comprehensive logging for props
+  console.log('🎨 AnalysisResults RENDER - Props received:', {
+    imageCount: images?.length || 0,
+    issueCount: issues?.length || 0,
+    suggestionCount: suggestions?.length || 0,
+    hasAnalysisMetadata: !!analysisMetadata,
+    suggestionsDetailed: suggestions,
+    firstSuggestion: suggestions?.[0],
+    suggestionsIsArray: Array.isArray(suggestions)
+  });
+
   const [selectedIssue, setSelectedIssue] = useState<string | null>(null);
   const [showAnnotations, setShowAnnotations] = useState(true);
   const [activeFilter, setActiveFilter] = useState<'all' | 'critical' | 'warning' | 'improvement'>('all');
@@ -208,6 +219,11 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
               <h1 className="text-2xl font-bold text-foreground">Analysis Results</h1>
               <p className="text-muted-foreground">
                 {stats.total} issues found • {Math.round(stats.avgConfidence * 100)}% avg confidence
+                {suggestions.length > 0 && (
+                  <span className="ml-2 text-primary font-medium">
+                    • {suggestions.length} molecular suggestions
+                  </span>
+                )}
               </p>
             </div>
             
@@ -290,42 +306,92 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
             </CardContent>
           </Card>
 
-          {/* Suggestions Section */}
+          {/* ENHANCED Suggestions Section with Debug Info */}
+          {console.log('🔍 SUGGESTIONS RENDER CHECK:', {
+            hasSuggestions: suggestions.length > 0,
+            suggestionCount: suggestions.length,
+            suggestions: suggestions
+          })}
+          
           {suggestions.length > 0 && (
             <Card className="mb-6">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Lightbulb className="w-5 h-5 text-primary" />
-                  Molecular Suggestions
+                  Molecular Suggestions ({suggestions.length})
+                  <Badge variant="secondary" className="ml-2">
+                    {suggestions.filter(s => s.impact === 'Critical').length} Critical
+                  </Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4">
-                  {suggestions.map((suggestion, index) => (
-                    <div key={suggestion.id} className="p-4 border border-border rounded-lg bg-muted/20">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold">
-                            {index + 1}
+                  {suggestions.map((suggestion, index) => {
+                    console.log(`🔍 Rendering suggestion ${index + 1}:`, suggestion);
+                    
+                    return (
+                      <div key={suggestion.id} className={cn(
+                        "p-4 border border-border rounded-lg",
+                        suggestion.impact === 'Critical' ? 'bg-destructive/5 border-destructive/20' :
+                        suggestion.impact === 'High' ? 'bg-warning/5 border-warning/20' :
+                        'bg-muted/20'
+                      )}>
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <div className={cn(
+                              "w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold",
+                              suggestion.impact === 'Critical' ? 'bg-destructive' :
+                              suggestion.impact === 'High' ? 'bg-warning' :
+                              'bg-primary'
+                            )}>
+                              {index + 1}
+                            </div>
+                            <h4 className="font-medium">{suggestion.title}</h4>
                           </div>
-                          <h4 className="font-medium">{suggestion.title}</h4>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">{suggestion.category}</Badge>
+                            <Badge variant={
+                              suggestion.impact === 'Critical' ? 'destructive' :
+                              suggestion.impact === 'High' ? 'secondary' :
+                              'default'
+                            } className="text-xs">
+                              {suggestion.impact}
+                            </Badge>
+                          </div>
                         </div>
-                        <Badge variant="outline" className="text-xs">{suggestion.category}</Badge>
+                        <p className="text-sm text-muted-foreground mb-3">{suggestion.description}</p>
+                        <div className="flex items-center gap-4 text-xs">
+                          <div className="flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3 text-green-600" />
+                            <span>Impact: {suggestion.impact}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-blue-600" />
+                            <span>Effort: {suggestion.effort}</span>
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-sm text-muted-foreground mb-3">{suggestion.description}</p>
-                      <div className="flex items-center gap-4 text-xs">
-                        <div className="flex items-center gap-1">
-                          <TrendingUp className="w-3 h-3 text-green-600" />
-                          <span>Impact: {suggestion.impact}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-blue-600" />
-                          <span>Effort: {suggestion.effort}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Debug Info for Suggestions (temporary) */}
+          {process.env.NODE_ENV === 'development' && (
+            <Card className="mb-6 border-yellow-200 bg-yellow-50">
+              <CardHeader>
+                <CardTitle className="text-sm text-yellow-800">🐛 Debug: Suggestions Data</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <pre className="text-xs text-yellow-700 overflow-auto max-h-32">
+                  {JSON.stringify({ 
+                    suggestionCount: suggestions.length,
+                    suggestions: suggestions,
+                    analysisMetadata 
+                  }, null, 2)}
+                </pre>
               </CardContent>
             </Card>
           )}
