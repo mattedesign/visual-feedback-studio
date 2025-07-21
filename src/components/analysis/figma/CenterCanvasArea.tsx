@@ -169,6 +169,11 @@ export const CenterCanvasArea: React.FC<CenterCanvasAreaProps> = ({
                 onAnnotationSelect={(id) => onAnnotationSelect(id)}
                 showAnnotations={true}
                 viewMode="canvas"
+                // Phase 3.1: Enhanced filtering options
+                confidenceThreshold={0.6}
+                severityFilter={['critical', 'warning', 'improvement']}
+                showPatternViolations={true}
+                showQuickWins={false}
               />
             ) : (
               <InteractiveCanvas
