@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Sparkles, AlertTriangle, RefreshCw } from 'lucide-react';
@@ -54,8 +53,12 @@ const FigmantResultsPage = () => {
       hasIssues: 'issues' in claudeAnalysis,
       hasSuggestions: 'suggestions' in claudeAnalysis,
       hasRecommendations: 'recommendations' in claudeAnalysis,
+      hasTopRecommendations: 'top_recommendations' in claudeAnalysis,
       hasCriticalIssues: 'criticalIssues' in claudeAnalysis,
-      hasImprovements: 'improvements' in claudeAnalysis
+      hasImprovements: 'improvements' in claudeAnalysis,
+      hasUsabilityIssues: 'usability_issues' in claudeAnalysis,
+      hasAccessibilityIssues: 'accessibility_issues' in claudeAnalysis,
+      hasPerformanceIssues: 'performance_issues' in claudeAnalysis
     });
 
     const issues: any[] = [];
@@ -98,6 +101,29 @@ const FigmantResultsPage = () => {
           }
         };
         issues.push(transformedIssue);
+
+        // EXTRACT SUGGESTIONS FROM ISSUES - New logic!
+        if (issue.suggested_fix) {
+          suggestions.push({
+            id: `issue-suggestion-${index}`,
+            title: `Fix: ${issue.description || issue.impact || 'Design Issue'}`,
+            description: issue.suggested_fix,
+            impact: mapImpactLevel(issue.severity || 'medium'),
+            effort: mapEffortLevel(issue.implementation?.effort || 'medium'),
+            category: 'issue-fix'
+          });
+        }
+
+        if (issue.implementation?.code_snippet) {
+          suggestions.push({
+            id: `code-suggestion-${index}`,
+            title: `Code Solution: ${issue.description || 'Implementation'}`,
+            description: `${issue.implementation.design_guidance || 'Implementation guidance'}\n\nCode: ${issue.implementation.code_snippet}`,
+            impact: 'High',
+            effort: mapEffortLevel(issue.implementation.effort || 'medium'),
+            category: 'code-solution'
+          });
+        }
       });
     }
 
@@ -126,7 +152,40 @@ const FigmantResultsPage = () => {
       });
     }
     
-    // Source 2: Recommendations array (fallback)
+    // Source 2: Top recommendations array (new source!)
+    if (claudeAnalysis.top_recommendations && Array.isArray(claudeAnalysis.top_recommendations)) {
+      console.log('📝 Found top_recommendations array:', claudeAnalysis.top_recommendations.length, 'items');
+      claudeAnalysis.top_recommendations.forEach((rec: any, index: number) => {
+        console.log(`  📋 Top Recommendation ${index + 1}:`, {
+          type: typeof rec,
+          isString: typeof rec === 'string',
+          keys: typeof rec === 'object' ? Object.keys(rec) : 'N/A',
+          content: rec
+        });
+        
+        if (typeof rec === 'string') {
+          suggestions.push({
+            id: `top-rec-${index}`,
+            title: `Priority Recommendation ${index + 1}`,
+            description: rec,
+            impact: 'Critical',
+            effort: 'Medium',
+            category: 'top-priority'
+          });
+        } else if (typeof rec === 'object' && rec !== null) {
+          suggestions.push({
+            id: `top-rec-obj-${index}`,
+            title: rec.title || rec.recommendation || `Top Recommendation ${index + 1}`,
+            description: rec.description || rec.details || rec.text || 'High priority recommendation',
+            impact: rec.impact || 'Critical',
+            effort: rec.effort || 'Medium',
+            category: 'top-priority'
+          });
+        }
+      });
+    }
+    
+    // Source 3: Regular recommendations array (fallback)
     if (claudeAnalysis.recommendations && Array.isArray(claudeAnalysis.recommendations)) {
       console.log('📝 Found recommendations array:', claudeAnalysis.recommendations.length, 'items');
       claudeAnalysis.recommendations.forEach((rec: any, index: number) => {
@@ -147,7 +206,7 @@ const FigmantResultsPage = () => {
       });
     }
     
-    // Source 3: Critical issues as suggestions
+    // Source 4: Critical issues as suggestions
     if (claudeAnalysis.criticalIssues && Array.isArray(claudeAnalysis.criticalIssues)) {
       console.log('📝 Found criticalIssues array:', claudeAnalysis.criticalIssues.length, 'items');
       claudeAnalysis.criticalIssues.forEach((issue: any, index: number) => {
@@ -169,7 +228,7 @@ const FigmantResultsPage = () => {
       });
     }
     
-    // Source 4: Improvements array
+    // Source 5: Improvements array
     if (claudeAnalysis.improvements && Array.isArray(claudeAnalysis.improvements)) {
       console.log('📝 Found improvements array:', claudeAnalysis.improvements.length, 'items');
       claudeAnalysis.improvements.forEach((improvement: any, index: number) => {
@@ -183,11 +242,45 @@ const FigmantResultsPage = () => {
         });
       });
     }
+
+    // Source 6: Category-specific issue arrays (usability_issues, accessibility_issues, etc.)
+    const categoryArrays = [
+      { key: 'usability_issues', category: 'usability-fix' },
+      { key: 'accessibility_issues', category: 'accessibility-fix' },
+      { key: 'performance_issues', category: 'performance-fix' },
+      { key: 'visual_issues', category: 'visual-fix' }
+    ];
+
+    categoryArrays.forEach(({ key, category }) => {
+      if (claudeAnalysis[key] && Array.isArray(claudeAnalysis[key])) {
+        console.log(`📝 Found ${key} array:`, claudeAnalysis[key].length, 'items');
+        claudeAnalysis[key].forEach((item: any, index: number) => {
+          if (typeof item === 'string') {
+            suggestions.push({
+              id: `${key}-${index}`,
+              title: `${key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} Fix`,
+              description: item,
+              impact: 'Medium',
+              effort: 'Medium',
+              category
+            });
+          } else if (typeof item === 'object' && item !== null) {
+            suggestions.push({
+              id: `${key}-obj-${index}`,
+              title: item.title || item.issue || `${key} Fix ${index + 1}`,
+              description: item.solution || item.description || item.fix || 'Issue fix needed',
+              impact: item.impact || 'Medium',
+              effort: item.effort || 'Medium',
+              category
+            });
+          }
+        });
+      }
+    });
     
-    // Source 5: Any other molecular-level data
-    const otherKeys = Object.keys(claudeAnalysis).filter(key => 
-      !['issues', 'suggestions', 'recommendations', 'criticalIssues', 'improvements', 'overall_score', 'executiveSummary'].includes(key)
-    );
+    // Source 7: Any other molecular-level data
+    const processedKeys = ['issues', 'suggestions', 'recommendations', 'top_recommendations', 'criticalIssues', 'improvements', 'overall_score', 'executiveSummary', 'usability_issues', 'accessibility_issues', 'performance_issues', 'visual_issues'];
+    const otherKeys = Object.keys(claudeAnalysis).filter(key => !processedKeys.includes(key));
     
     if (otherKeys.length > 0) {
       console.log('🔍 Other available keys in Claude analysis:', otherKeys);
@@ -196,11 +289,20 @@ const FigmantResultsPage = () => {
         if (Array.isArray(data) && data.length > 0) {
           console.log(`📋 Processing ${key} as potential suggestions:`, data.length, 'items');
           data.forEach((item: any, index: number) => {
-            if (typeof item === 'object' && (item.title || item.description || item.recommendation)) {
+            if (typeof item === 'string') {
               suggestions.push({
-                id: `${key}-${index}`,
-                title: item.title || item.recommendation || `${key} ${index + 1}`,
-                description: item.description || item.details || `Suggestion from ${key}`,
+                id: `${key}-str-${index}`,
+                title: `${key.replace(/[_-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} ${index + 1}`,
+                description: item,
+                impact: 'Medium',
+                effort: 'Medium',
+                category: key
+              });
+            } else if (typeof item === 'object' && item !== null && (item.title || item.description || item.recommendation || item.suggestion)) {
+              suggestions.push({
+                id: `${key}-obj-${index}`,
+                title: item.title || item.recommendation || item.suggestion || `${key} ${index + 1}`,
+                description: item.description || item.details || item.text || `Suggestion from ${key}`,
                 impact: item.impact || 'Medium',
                 effort: item.effort || 'Medium',
                 category: key
@@ -240,7 +342,8 @@ const FigmantResultsPage = () => {
       suggestionsBreakdown: suggestions.reduce((acc, s) => {
         acc[s.category] = (acc[s.category] || 0) + 1;
         return acc;
-      }, {} as Record<string, number>)
+      }, {} as Record<string, number>),
+      detailedSuggestions: suggestions.map(s => ({ id: s.id, title: s.title, category: s.category }))
     });
 
     return transformedData;
@@ -286,6 +389,27 @@ const FigmantResultsPage = () => {
       'days': 'Medium (few days)', 
       'weeks': 'High (weeks)',
       'minutes': 'Very Low (minutes)'
+    };
+    return effortMap[effort] || 'Medium';
+  };
+
+  // New helper functions for suggestion mapping
+  const mapImpactLevel = (severity: string) => {
+    const impactMap: Record<string, string> = {
+      'critical': 'Critical',
+      'high': 'High',
+      'medium': 'Medium',
+      'low': 'Low'
+    };
+    return impactMap[severity] || 'Medium';
+  };
+
+  const mapEffortLevel = (effort: string) => {
+    const effortMap: Record<string, string> = {
+      'minutes': 'Low',
+      'hours': 'Medium',
+      'days': 'High',
+      'weeks': 'Very High'
     };
     return effortMap[effort] || 'Medium';
   };
