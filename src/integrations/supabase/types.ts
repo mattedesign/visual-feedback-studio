@@ -634,6 +634,10 @@ export type Database = {
           pattern_analysis_data: Json | null
           pattern_violations: Json | null
           processing_time_ms: number | null
+          prototype_count: number | null
+          prototype_generation_completed_at: string | null
+          prototype_generation_started_at: string | null
+          prototype_generation_status: string | null
           screen_type_detected: string | null
           session_id: string | null
           severity_breakdown: Json | null
@@ -654,6 +658,10 @@ export type Database = {
           pattern_analysis_data?: Json | null
           pattern_violations?: Json | null
           processing_time_ms?: number | null
+          prototype_count?: number | null
+          prototype_generation_completed_at?: string | null
+          prototype_generation_started_at?: string | null
+          prototype_generation_status?: string | null
           screen_type_detected?: string | null
           session_id?: string | null
           severity_breakdown?: Json | null
@@ -674,6 +682,10 @@ export type Database = {
           pattern_analysis_data?: Json | null
           pattern_violations?: Json | null
           processing_time_ms?: number | null
+          prototype_count?: number | null
+          prototype_generation_completed_at?: string | null
+          prototype_generation_started_at?: string | null
+          prototype_generation_status?: string | null
           screen_type_detected?: string | null
           session_id?: string | null
           severity_breakdown?: Json | null
@@ -821,6 +833,98 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "figmant_analysis_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      figmant_visual_prototypes: {
+        Row: {
+          after_css: string
+          after_html: string
+          analysis_id: string
+          before_css: string | null
+          before_html: string | null
+          business_impact: string | null
+          category: string
+          created_at: string | null
+          hotspot_height: number
+          hotspot_type: string
+          hotspot_width: number
+          hotspot_x: number
+          hotspot_y: number
+          id: string
+          implementation_notes: Json | null
+          interactive_css: string | null
+          interactive_html: string | null
+          interactive_js: string | null
+          issue_id: string
+          key_changes: Json | null
+          mobile_css: string | null
+          mobile_html: string | null
+          summary: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          after_css: string
+          after_html: string
+          analysis_id: string
+          before_css?: string | null
+          before_html?: string | null
+          business_impact?: string | null
+          category: string
+          created_at?: string | null
+          hotspot_height: number
+          hotspot_type?: string
+          hotspot_width: number
+          hotspot_x: number
+          hotspot_y: number
+          id?: string
+          implementation_notes?: Json | null
+          interactive_css?: string | null
+          interactive_html?: string | null
+          interactive_js?: string | null
+          issue_id: string
+          key_changes?: Json | null
+          mobile_css?: string | null
+          mobile_html?: string | null
+          summary: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          after_css?: string
+          after_html?: string
+          analysis_id?: string
+          before_css?: string | null
+          before_html?: string | null
+          business_impact?: string | null
+          category?: string
+          created_at?: string | null
+          hotspot_height?: number
+          hotspot_type?: string
+          hotspot_width?: number
+          hotspot_x?: number
+          hotspot_y?: number
+          id?: string
+          implementation_notes?: Json | null
+          interactive_css?: string | null
+          interactive_html?: string | null
+          interactive_js?: string | null
+          issue_id?: string
+          key_changes?: Json | null
+          mobile_css?: string | null
+          mobile_html?: string | null
+          summary?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "figmant_visual_prototypes_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "figmant_analysis_results"
             referencedColumns: ["id"]
           },
         ]
