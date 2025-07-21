@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 
 export const FigmantDashboard = () => {
   return (
-    <div className="space-y-6">
+    <div className="w-full space-y-6">
       {/* Top Stats Cards */}
       <div className="figmant-grid">
         <Card className="figmant-card">
@@ -48,7 +48,7 @@ export const FigmantDashboard = () => {
       </div>
 
       {/* Activity and Patterns Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Active Days Calendar */}
         <Card className="figmant-card">
           <CardHeader className="flex flex-row items-center justify-between pb-4">

@@ -15,8 +15,8 @@ const FigmantLayoutComponent = ({ children }: FigmantLayoutProps) => {
   const layoutClasses = useMemo(() => ({
     main: "figmant-layout",
     content: "figmant-main",
-    innerContent: "figmant-content flex flex-col flex-1",
-    childrenContainer: "flex-1 flex flex-col"
+    innerContent: "figmant-content w-full",
+    childrenContainer: "w-full h-full"
   }), []);
   
   return (
