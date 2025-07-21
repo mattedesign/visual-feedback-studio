@@ -268,16 +268,78 @@ class EnhancedRagService {
   private getEmptyVisionResult(): VisionAnalysisResult {
     return {
       uiElements: [],
-      layout: { type: 'landing', confidence: 0.3, description: 'General layout' },
-      industry: { industry: 'marketing', confidence: 0.3, indicators: [] },
+      layout: { 
+        type: 'landing', 
+        confidence: 0.3, 
+        description: 'General layout',
+        structure: {
+          sections: [{ name: 'main', position: 'center', area: 100 }],
+          hierarchy: ['main'],
+          gridSystem: { columns: 1, gutters: 0 }
+        }
+      },
+      industry: { 
+        industry: 'marketing', 
+        confidence: 0.3, 
+        indicators: [],
+        metadata: {
+          designPatterns: [],
+          brandElements: [],
+          userInterfaceStyle: 'basic'
+        }
+      },
       accessibility: [],
       textContent: [],
       colors: {
         dominantColors: ['#000000'],
         colorPalette: { primary: '#000000', secondary: '#666666', accent: '#0066cc' },
-        colorContrast: { textBackground: 4.5, accessibility: 'AA' }
+        colorContrast: { textBackground: 4.5, accessibility: 'AA' },
+        colorHarmony: { scheme: 'monochrome', temperature: 'neutral', saturation: 0 }
       },
-      deviceType: { type: 'desktop', confidence: 0.7, dimensions: { width: 1200, height: 800, aspectRatio: 1.5 } },
+      deviceType: { 
+        type: 'desktop', 
+        confidence: 0.7, 
+        dimensions: { width: 1200, height: 800, aspectRatio: 1.5 },
+        responsiveBreakpoints: [
+          { name: 'mobile', minWidth: 320, maxWidth: 768 },
+          { name: 'desktop', minWidth: 1024, maxWidth: 1920 }
+        ]
+      },
+      designTokens: {
+        spacing: [{ name: 'md', value: 16 }],
+        typography: [{ element: 'body', fontSize: 16, lineHeight: 24, fontWeight: 'normal' }],
+        borderRadius: [{ name: 'none', value: 0 }],
+        shadows: [{ name: 'none', blur: 0, offset: { x: 0, y: 0 } }]
+      },
+      visualHierarchy: {
+        primaryFocusAreas: [],
+        readingFlow: {
+          pattern: 'standard',
+          confidence: 0.3,
+          keypoints: []
+        }
+      },
+      interactionElements: [],
+      brandAnalysis: {
+        logoDetected: false,
+        brandConsistency: 0.3,
+        visualIdentity: {
+          style: 'basic',
+          mood: 'neutral',
+          personality: []
+        }
+      },
+      technicalMetadata: {
+        imageQuality: {
+          resolution: { width: 1200, height: 800 },
+          compression: 'unknown',
+          clarity: 0.5
+        },
+        performanceIndicators: {
+          estimatedLoadTime: 3.0,
+          optimizationSuggestions: []
+        }
+      },
       overallConfidence: 0.3,
       processingTime: 0
     };

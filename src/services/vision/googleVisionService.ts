@@ -6,26 +6,65 @@ export interface VisionAnalysisResult {
     type: string;
     confidence: number;
     description: string;
+    boundingBox?: {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    };
+    properties?: Record<string, any>;
   }>;
   layout: {
     type: string;
     confidence: number;
     description: string;
+    structure: {
+      sections: Array<{
+        name: string;
+        position: string;
+        area: number;
+      }>;
+      hierarchy: string[];
+      gridSystem?: {
+        columns: number;
+        gutters: number;
+      };
+    };
   };
   industry: {
     industry: string;
     confidence: number;
     indicators: string[];
+    metadata: {
+      designPatterns: string[];
+      brandElements: string[];
+      userInterfaceStyle: string;
+    };
   };
   accessibility: Array<{
     issue: string;
     severity: string;
     suggestion: string;
+    wcagLevel: string;
+    element?: string;
+    position?: { x: number; y: number };
   }>;
   textContent: Array<{
     text: string;
     confidence: number;
     context: string;
+    boundingBox?: {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    };
+    textProperties?: {
+      fontSize: number;
+      fontFamily: string;
+      fontWeight: string;
+      color: string;
+    };
   }>;
   colors: {
     dominantColors: string[];
@@ -38,6 +77,12 @@ export interface VisionAnalysisResult {
       textBackground: number;
       accessibility: string;
     };
+    colorHarmony: {
+      scheme: string;
+      temperature: string;
+      saturation: number;
+    };
+    brandColors?: string[];
   };
   deviceType: {
     type: string;
@@ -46,6 +91,62 @@ export interface VisionAnalysisResult {
       width: number;
       height: number;
       aspectRatio: number;
+    };
+    responsiveBreakpoints?: Array<{
+      name: string;
+      minWidth: number;
+      maxWidth: number;
+    }>;
+  };
+  designTokens: {
+    spacing: Array<{ name: string; value: number }>;
+    typography: Array<{
+      element: string;
+      fontSize: number;
+      lineHeight: number;
+      fontWeight: string;
+    }>;
+    borderRadius: Array<{ name: string; value: number }>;
+    shadows: Array<{ name: string; blur: number; offset: { x: number; y: number } }>;
+  };
+  visualHierarchy: {
+    primaryFocusAreas: Array<{
+      element: string;
+      importance: number;
+      visualWeight: number;
+      position: { x: number; y: number };
+    }>;
+    readingFlow: {
+      pattern: string;
+      confidence: number;
+      keypoints: Array<{ x: number; y: number; order: number }>;
+    };
+  };
+  interactionElements: Array<{
+    type: string;
+    state: string;
+    accessibility: boolean;
+    hoverEffects: boolean;
+    clickTarget: { x: number; y: number; size: number };
+  }>;
+  brandAnalysis: {
+    logoDetected: boolean;
+    brandConsistency: number;
+    visualIdentity: {
+      style: string;
+      mood: string;
+      personality: string[];
+    };
+  };
+  technicalMetadata: {
+    imageQuality: {
+      resolution: { width: number; height: number };
+      compression: string;
+      clarity: number;
+    };
+    performanceIndicators: {
+      estimatedLoadTime: number;
+      optimizationSuggestions: string[];
     };
   };
   overallConfidence: number;
@@ -299,12 +400,29 @@ class GoogleVisionService {
       layout: {
         type: 'web_application',
         confidence: 0.8,
-        description: 'Web application layout detected'
+        description: 'Web application layout detected',
+        structure: {
+          sections: [
+            { name: 'header', position: 'top', area: 15 },
+            { name: 'main', position: 'center', area: 70 },
+            { name: 'footer', position: 'bottom', area: 15 }
+          ],
+          hierarchy: ['header', 'navigation', 'main', 'sidebar', 'footer'],
+          gridSystem: {
+            columns: 12,
+            gutters: 20
+          }
+        }
       },
       industry: {
         industry: 'technology',
         confidence: 0.7,
-        indicators: ['digital interface', 'web elements']
+        indicators: ['digital interface', 'web elements'],
+        metadata: {
+          designPatterns: ['card-based', 'grid-layout', 'responsive'],
+          brandElements: ['logo', 'color-scheme', 'typography'],
+          userInterfaceStyle: 'modern'
+        }
       },
       accessibility: [],
       textContent,
@@ -318,7 +436,13 @@ class GoogleVisionService {
         colorContrast: {
           textBackground: 4.5,
           accessibility: 'AA'
-        }
+        },
+        colorHarmony: {
+          scheme: 'monochromatic',
+          temperature: 'cool',
+          saturation: 70
+        },
+        brandColors: dominantColors.slice(0, 3)
       },
       deviceType: {
         type: 'desktop',
@@ -327,6 +451,77 @@ class GoogleVisionService {
           width: 1200,
           height: 800,
           aspectRatio: 1.5
+        },
+        responsiveBreakpoints: [
+          { name: 'mobile', minWidth: 320, maxWidth: 768 },
+          { name: 'tablet', minWidth: 768, maxWidth: 1024 },
+          { name: 'desktop', minWidth: 1024, maxWidth: 1920 }
+        ]
+      },
+      designTokens: {
+        spacing: [
+          { name: 'xs', value: 4 },
+          { name: 'sm', value: 8 },
+          { name: 'md', value: 16 },
+          { name: 'lg', value: 24 },
+          { name: 'xl', value: 32 }
+        ],
+        typography: [
+          { element: 'h1', fontSize: 32, lineHeight: 40, fontWeight: 'bold' },
+          { element: 'h2', fontSize: 24, lineHeight: 32, fontWeight: 'semibold' },
+          { element: 'body', fontSize: 16, lineHeight: 24, fontWeight: 'normal' }
+        ],
+        borderRadius: [
+          { name: 'none', value: 0 },
+          { name: 'sm', value: 4 },
+          { name: 'md', value: 8 },
+          { name: 'lg', value: 12 }
+        ],
+        shadows: [
+          { name: 'sm', blur: 4, offset: { x: 0, y: 2 } },
+          { name: 'md', blur: 8, offset: { x: 0, y: 4 } },
+          { name: 'lg', blur: 16, offset: { x: 0, y: 8 } }
+        ]
+      },
+      visualHierarchy: {
+        primaryFocusAreas: [
+          { element: 'hero-section', importance: 10, visualWeight: 9, position: { x: 50, y: 20 } },
+          { element: 'cta-button', importance: 9, visualWeight: 8, position: { x: 50, y: 60 } },
+          { element: 'navigation', importance: 8, visualWeight: 7, position: { x: 50, y: 5 } }
+        ],
+        readingFlow: {
+          pattern: 'Z-pattern',
+          confidence: 0.8,
+          keypoints: [
+            { x: 10, y: 10, order: 1 },
+            { x: 90, y: 10, order: 2 },
+            { x: 10, y: 50, order: 3 },
+            { x: 90, y: 90, order: 4 }
+          ]
+        }
+      },
+      interactionElements: [
+        { type: 'button', state: 'default', accessibility: true, hoverEffects: true, clickTarget: { x: 50, y: 60, size: 44 } },
+        { type: 'link', state: 'default', accessibility: true, hoverEffects: true, clickTarget: { x: 20, y: 5, size: 32 } }
+      ],
+      brandAnalysis: {
+        logoDetected: true,
+        brandConsistency: 0.8,
+        visualIdentity: {
+          style: 'modern',
+          mood: 'professional',
+          personality: ['trustworthy', 'innovative', 'accessible']
+        }
+      },
+      technicalMetadata: {
+        imageQuality: {
+          resolution: { width: 1200, height: 800 },
+          compression: 'moderate',
+          clarity: 0.9
+        },
+        performanceIndicators: {
+          estimatedLoadTime: 2.5,
+          optimizationSuggestions: ['compress images', 'optimize fonts', 'minify css']
         }
       },
       overallConfidence: Math.min(0.9, (uiElements.length * 0.1 + textContent.length * 0.05 + 0.6)),
@@ -370,18 +565,36 @@ class GoogleVisionService {
       layout: {
         type: 'landing',
         confidence: 0.7,
-        description: 'Standard landing page layout'
+        description: 'Standard landing page layout',
+        structure: {
+          sections: [
+            { name: 'header', position: 'top', area: 20 },
+            { name: 'hero', position: 'center', area: 60 },
+            { name: 'footer', position: 'bottom', area: 20 }
+          ],
+          hierarchy: ['header', 'hero', 'footer'],
+          gridSystem: {
+            columns: 12,
+            gutters: 16
+          }
+        }
       },
       industry: {
         industry: 'technology',
         confidence: 0.6,
-        indicators: ['modern design', 'clean layout']
+        indicators: ['modern design', 'clean layout'],
+        metadata: {
+          designPatterns: ['simple-layout', 'standard-navigation'],
+          brandElements: ['minimal-branding'],
+          userInterfaceStyle: 'clean'
+        }
       },
       accessibility: [
         {
           issue: 'Color contrast needs verification',
           severity: 'medium',
-          suggestion: 'Ensure sufficient contrast ratios'
+          suggestion: 'Ensure sufficient contrast ratios',
+          wcagLevel: 'AA'
         }
       ],
       textContent: [
@@ -397,7 +610,13 @@ class GoogleVisionService {
         colorContrast: {
           textBackground: 4.5,
           accessibility: 'AA'
-        }
+        },
+        colorHarmony: {
+          scheme: 'complementary',
+          temperature: 'neutral',
+          saturation: 60
+        },
+        brandColors: ['#0066cc', '#666666', '#ff6600']
       },
       deviceType: {
         type: 'desktop',
@@ -406,6 +625,70 @@ class GoogleVisionService {
           width: 1200,
           height: 800,
           aspectRatio: 1.5
+        },
+        responsiveBreakpoints: [
+          { name: 'mobile', minWidth: 320, maxWidth: 768 },
+          { name: 'tablet', minWidth: 768, maxWidth: 1024 },
+          { name: 'desktop', minWidth: 1024, maxWidth: 1920 }
+        ]
+      },
+      designTokens: {
+        spacing: [
+          { name: 'xs', value: 4 },
+          { name: 'sm', value: 8 },
+          { name: 'md', value: 16 },
+          { name: 'lg', value: 24 }
+        ],
+        typography: [
+          { element: 'h1', fontSize: 28, lineHeight: 36, fontWeight: 'bold' },
+          { element: 'body', fontSize: 16, lineHeight: 24, fontWeight: 'normal' }
+        ],
+        borderRadius: [
+          { name: 'none', value: 0 },
+          { name: 'sm', value: 4 },
+          { name: 'md', value: 8 }
+        ],
+        shadows: [
+          { name: 'sm', blur: 4, offset: { x: 0, y: 2 } },
+          { name: 'md', blur: 8, offset: { x: 0, y: 4 } }
+        ]
+      },
+      visualHierarchy: {
+        primaryFocusAreas: [
+          { element: 'header', importance: 8, visualWeight: 7, position: { x: 50, y: 10 } },
+          { element: 'main-content', importance: 10, visualWeight: 9, position: { x: 50, y: 50 } }
+        ],
+        readingFlow: {
+          pattern: 'F-pattern',
+          confidence: 0.7,
+          keypoints: [
+            { x: 10, y: 10, order: 1 },
+            { x: 90, y: 10, order: 2 },
+            { x: 10, y: 50, order: 3 }
+          ]
+        }
+      },
+      interactionElements: [
+        { type: 'button', state: 'default', accessibility: true, hoverEffects: false, clickTarget: { x: 50, y: 70, size: 40 } }
+      ],
+      brandAnalysis: {
+        logoDetected: false,
+        brandConsistency: 0.6,
+        visualIdentity: {
+          style: 'minimal',
+          mood: 'neutral',
+          personality: ['simple', 'clean']
+        }
+      },
+      technicalMetadata: {
+        imageQuality: {
+          resolution: { width: 1200, height: 800 },
+          compression: 'standard',
+          clarity: 0.8
+        },
+        performanceIndicators: {
+          estimatedLoadTime: 2.0,
+          optimizationSuggestions: ['basic optimization needed']
         }
       },
       overallConfidence: fallbackConfidence,
