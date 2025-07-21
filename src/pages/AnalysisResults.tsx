@@ -43,14 +43,119 @@ const AnalysisResults = () => {
   // Get analysis ID from URL
   const { id } = useParams<{id: string}>();
 
-  // ✅ STREAMLINED: Always load analysis data for enhanced UI
-  const loadAnalysisData = async () => {
+  // 🔧 FIX: Enhanced data transformation function
+  const transformToEnhancedFormat = (figmantResult: any) => {
+    console.log('🔄 TRANSFORM: Starting enhanced data transformation');
+    const claudeAnalysis = figmantResult.claude_analysis as any;
+    
+    if (!claudeAnalysis) {
+      console.warn('❌ No Claude analysis found in Figmant result');
+      return null;
+    }
+
+    const enhancedIssues: any[] = [];
+    
+    // Transform critical issues
+    if (claudeAnalysis?.criticalIssues) {
+      claudeAnalysis.criticalIssues.forEach((issue: any, index: number) => {
+        enhancedIssues.push({
+          id: `critical-${index}`,
+          title: issue.title || issue.issue || 'Critical Issue',
+          description: issue.description || issue.impact || 'Critical issue identified',
+          category: issue.category?.toLowerCase() || 'usability',
+          severity: 'critical',
+          confidence: 0.9,
+          impact_scope: 'task-completion',
+          element: {
+            location: {
+              x: Math.random() * 800,
+              y: Math.random() * 600,
+              width: 100,
+              height: 50,
+              xPercent: Math.random() * 80 + 10,
+              yPercent: Math.random() * 70 + 10,
+              widthPercent: 15,
+              heightPercent: 8
+            }
+          },
+          implementation: {
+            effort: issue.effort === 'Low' ? 'minutes' : issue.effort === 'High' ? 'days' : 'hours',
+            rationale: issue.reasoning || 'Critical issue affecting user experience',
+            design_guidance: issue.solution || 'Immediate attention required'
+          },
+          business_impact: {
+            roi_score: 8,
+            priority_level: 'critical',
+            quick_win: issue.effort === 'Low'
+          }
+        });
+      });
+    }
+    
+    // Transform recommendations
+    if (claudeAnalysis?.recommendations) {
+      claudeAnalysis.recommendations.forEach((rec: any, index: number) => {
+        enhancedIssues.push({
+          id: `recommendation-${index}`,
+          title: rec.title || 'Improvement Recommendation',
+          description: rec.description || 'Improvement opportunity identified',
+          category: rec.category?.toLowerCase() || 'improvement',
+          severity: rec.effort === 'Low' ? 'improvement' : rec.effort === 'High' ? 'warning' : 'improvement',
+          confidence: 0.75,
+          impact_scope: 'aesthetic',
+          element: {
+            location: {
+              x: Math.random() * 800,
+              y: Math.random() * 600,
+              width: 120,
+              height: 60,
+              xPercent: Math.random() * 80 + 10,
+              yPercent: Math.random() * 70 + 10,
+              widthPercent: 18,
+              heightPercent: 10
+            }
+          },
+          implementation: {
+            effort: rec.effort === 'Low' ? 'minutes' : rec.effort === 'High' ? 'days' : 'hours',
+            rationale: rec.reasoning || 'Enhancement opportunity for better user experience',
+            design_guidance: rec.solution || 'Consider implementing this improvement',
+            code_snippet: rec.effort === 'Low' ? `// Quick fix example\n.element {\n  /* improvement */\n}` : undefined
+          },
+          business_impact: {
+            roi_score: rec.effort === 'Low' ? 7 : 5,
+            priority_level: rec.effort === 'Low' ? 'high' : 'medium',
+            quick_win: rec.effort === 'Low'
+          }
+        });
+      });
+    }
+    
+    const transformedData = {
+      imageUrl: '/placeholder-design.png',
+      issues: enhancedIssues,
+      analysisMetadata: {
+        processingTime: figmantResult.processing_time_ms,
+        confidence: 0.85,
+        totalIssues: enhancedIssues.length
+      }
+    };
+
+    console.log('✅ TRANSFORM: Enhanced data transformation complete:', {
+      issueCount: enhancedIssues.length,
+      hasMetadata: !!transformedData.analysisMetadata,
+      imageUrl: transformedData.imageUrl
+    });
+
+    return transformedData;
+  };
+
+  // 🔧 FIX: Improved data loading with proper transformation
+  const loadEnhancedAnalysisData = async () => {
     if (!id) return;
 
     try {
-      console.log('🎨 Loading Figmant analysis data for enhanced UI:', id);
+      console.log('🎨 ENHANCED: Loading enhanced analysis data for ID:', id);
       
-      // Fetch real analysis results from Figmant tables
       const figmantResult = await getFigmantResults(id);
       
       if (!figmantResult) {
@@ -59,12 +164,51 @@ const AnalysisResults = () => {
         return;
       }
 
-      console.log('📊 Raw Figmant result:', figmantResult);
+      console.log('📊 ENHANCED: Raw Figmant result loaded:', figmantResult);
+      
+      // Transform to enhanced format
+      const enhancedData = transformToEnhancedFormat(figmantResult);
+      
+      if (!enhancedData) {
+        console.warn('❌ ENHANCED: Failed to transform data to enhanced format');
+        toast.error('Failed to process analysis data');
+        return;
+      }
 
-      // Transform the Figmant data to match the enhanced UI format
+      setAnalysisData(enhancedData);
+      
+      console.log('✅ ENHANCED: Enhanced analysis data loaded successfully:', {
+        issueCount: enhancedData.issues.length,
+        hasMetadata: !!enhancedData.analysisMetadata,
+        shouldUseEnhancedUI: true
+      });
+      
+    } catch (error) {
+      console.error('❌ ENHANCED: Failed to load enhanced analysis data:', error);
+      toast.error('Failed to load analysis data');
+    }
+  };
+
+  // 🔧 FIX: Simplified legacy data loading for backward compatibility
+  const loadLegacyAnalysisData = async () => {
+    if (!id) return;
+
+    try {
+      console.log('📊 LEGACY: Loading legacy analysis data for ID:', id);
+      
+      const figmantResult = await getFigmantResults(id);
+      
+      if (!figmantResult) {
+        console.warn('❌ No Figmant analysis results found for ID:', id);
+        toast.error('Analysis results not found');
+        return;
+      }
+
+      console.log('📊 LEGACY: Raw Figmant result:', figmantResult);
+
       const claudeAnalysis = figmantResult.claude_analysis as any;
       
-      // Extract annotations from Claude analysis
+      // Extract annotations from Claude analysis for legacy format
       let annotations: any[] = [];
       
       if (claudeAnalysis?.criticalIssues) {
@@ -87,9 +231,9 @@ const AnalysisResults = () => {
         })));
       }
 
-      const transformedData = {
+      const legacyData = {
         annotations,
-        images: [], // Figmant doesn't store images in results yet
+        images: [],
         totalAnnotations: annotations.length,
         processingTime: figmantResult.processing_time_ms,
         aiModel: figmantResult.ai_model_used || 'claude-sonnet-4',
@@ -98,15 +242,14 @@ const AnalysisResults = () => {
         overallScore: claudeAnalysis?.overallScore
       };
 
-      setAnalysisData(transformedData);
-      console.log('✅ Figmant analysis data loaded for enhanced UI:', {
-        annotationCount: transformedData.annotations.length,
-        totalAnnotations: transformedData.totalAnnotations,
-        overallScore: transformedData.overallScore
+      setAnalysisData(legacyData);
+      console.log('✅ LEGACY: Legacy analysis data loaded:', {
+        annotationCount: legacyData.annotations.length,
+        totalAnnotations: legacyData.totalAnnotations
       });
       
     } catch (error) {
-      console.error('❌ Failed to load Figmant analysis data:', error);
+      console.error('❌ LEGACY: Failed to load legacy analysis data:', error);
       toast.error('Failed to load analysis data');
     }
   };
@@ -116,7 +259,8 @@ const AnalysisResults = () => {
     if (isStrategistMode && id && !strategistAnalysis) {
       loadAnalysisAndEnhance();
     } else if (id && !analysisData) {
-      loadAnalysisData();
+      // 🔧 FIX: Always try enhanced format first
+      loadEnhancedAnalysisData();
     }
   }, [isStrategistMode, id]);
 
@@ -206,140 +350,17 @@ const AnalysisResults = () => {
     }
   };
 
-  // Transform Figmant data to enhanced format for rich UI
-  const transformToEnhancedFormat = (figmantResult: any) => {
-    const claudeAnalysis = figmantResult.claude_analysis as any;
-    const enhancedIssues: any[] = [];
-    
-    // Transform critical issues
-    if (claudeAnalysis?.criticalIssues) {
-      claudeAnalysis.criticalIssues.forEach((issue: any, index: number) => {
-        enhancedIssues.push({
-          id: `critical-${index}`,
-          title: issue.title || issue.issue || 'Critical Issue',
-          description: issue.description || issue.impact || 'Critical issue identified',
-          category: issue.category?.toLowerCase() || 'usability',
-          severity: 'critical',
-          confidence: 0.9, // High confidence for critical issues
-          impact_scope: 'task-completion',
-          element: {
-            location: {
-              x: Math.random() * 800,
-              y: Math.random() * 600,
-              width: 100,
-              height: 50,
-              xPercent: Math.random() * 80 + 10,
-              yPercent: Math.random() * 70 + 10,
-              widthPercent: 15,
-              heightPercent: 8
-            }
-          },
-          implementation: {
-            effort: issue.effort === 'Low' ? 'hours' : issue.effort === 'High' ? 'days' : 'hours',
-            rationale: issue.reasoning || 'Critical issue affecting user experience',
-            design_guidance: issue.solution || 'Immediate attention required'
-          },
-          business_impact: {
-            roi_score: 8,
-            priority_level: 'critical',
-            quick_win: issue.effort === 'Low'
-          }
-        });
-      });
-    }
-    
-    // Transform recommendations
-    if (claudeAnalysis?.recommendations) {
-      claudeAnalysis.recommendations.forEach((rec: any, index: number) => {
-        enhancedIssues.push({
-          id: `recommendation-${index}`,
-          title: rec.title || 'Improvement Recommendation',
-          description: rec.description || 'Improvement opportunity identified',
-          category: rec.category?.toLowerCase() || 'improvement',
-          severity: rec.effort === 'Low' ? 'improvement' : rec.effort === 'High' ? 'warning' : 'improvement',
-          confidence: 0.75,
-          impact_scope: 'aesthetic',
-          element: {
-            location: {
-              x: Math.random() * 800,
-              y: Math.random() * 600,
-              width: 120,
-              height: 60,
-              xPercent: Math.random() * 80 + 10,
-              yPercent: Math.random() * 70 + 10,
-              widthPercent: 18,
-              heightPercent: 10
-            }
-          },
-          implementation: {
-            effort: rec.effort === 'Low' ? 'minutes' : rec.effort === 'High' ? 'days' : 'hours',
-            rationale: rec.reasoning || 'Enhancement opportunity for better user experience',
-            design_guidance: rec.solution || 'Consider implementing this improvement',
-            code_snippet: rec.effort === 'Low' ? `// Quick fix example\n.element {\n  /* improvement */\n}` : undefined
-          },
-          business_impact: {
-            roi_score: rec.effort === 'Low' ? 7 : 5,
-            priority_level: rec.effort === 'Low' ? 'high' : 'medium',
-            quick_win: rec.effort === 'Low'
-          }
-        });
-      });
-    }
-    
-    return {
-      imageUrl: '/placeholder-design.png', // Default placeholder - in real app, this would come from Figmant
-      issues: enhancedIssues,
-      analysisMetadata: {
-        processingTime: figmantResult.processing_time_ms,
-        confidence: 0.85,
-        totalIssues: enhancedIssues.length
-      }
-    };
-  };
+  // 🔧 FIX: Updated condition to properly detect enhanced UI usage
+  const shouldUseEnhancedUI = analysisData && analysisData.issues && Array.isArray(analysisData.issues) && analysisData.issues.length > 0;
 
-  // Enhanced data loading with rich format transformation
-  const loadEnhancedAnalysisData = async () => {
-    if (!id) return;
-
-    try {
-      console.log('🎨 Loading enhanced analysis data:', id);
-      
-      const figmantResult = await getFigmantResults(id);
-      
-      if (!figmantResult) {
-        console.warn('❌ No Figmant analysis results found for ID:', id);
-        toast.error('Analysis results not found');
-        return;
-      }
-
-      console.log('📊 Raw Figmant result:', figmantResult);
-      
-      // Transform to enhanced format
-      const enhancedData = transformToEnhancedFormat(figmantResult);
-      setAnalysisData(enhancedData);
-      
-      console.log('✅ Enhanced analysis data loaded:', {
-        issueCount: enhancedData.issues.length,
-        hasMetadata: !!enhancedData.analysisMetadata
-      });
-      
-    } catch (error) {
-      console.error('❌ Failed to load enhanced analysis data:', error);
-      toast.error('Failed to load analysis data');
-    }
-  };
-
-  // ✅ STREAMLINED: Load analysis data on mount or when strategist mode is enabled
-  useEffect(() => {
-    if (isStrategistMode && id && !strategistAnalysis) {
-      loadAnalysisAndEnhance();
-    } else if (id && !analysisData) {
-      loadAnalysisData();
-    }
-  }, [isStrategistMode, id]);
-
-  // Check for enhanced UI usage
-  const shouldUseEnhancedUI = id && analysisData && analysisData.issues && analysisData.issues.length > 0;
+  console.log('🎨 UI DECISION: Enhanced UI check:', {
+    hasAnalysisData: !!analysisData,
+    hasIssues: !!(analysisData?.issues),
+    isIssuesArray: Array.isArray(analysisData?.issues),
+    issueCount: analysisData?.issues?.length || 0,
+    shouldUseEnhancedUI,
+    currentURL: window.location.href
+  });
 
   // STRATEGIST MODE: Loading state
   if (isStrategistMode && strategistLoading) {
@@ -376,9 +397,9 @@ const AnalysisResults = () => {
     );
   }
 
-  // ENHANCED UI: Rich Analysis Results
-  if (shouldUseEnhancedUI && analysisData.issues) {
-    console.log('🎨 Using Enhanced Analysis Results UI');
+  // 🔧 FIX: ENHANCED UI - Rich Analysis Results (PRIMARY PATH)
+  if (shouldUseEnhancedUI) {
+    console.log('✅ UI DECISION: Using Enhanced Analysis Results UI');
     return (
       <EnhancedAnalysisResults
         imageUrl={analysisData.imageUrl || '/placeholder-design.png'}
@@ -389,26 +410,32 @@ const AnalysisResults = () => {
     );
   }
 
-  // ✅ STREAMLINED: Always use enhanced Figma-inspired UI for fallback
-  console.log('🎨 Enhanced UI Check:', { currentURL: window.location.href });
-  
-  // Always use enhanced Figma UI for results display
-  if (id) {
-    // Load enhanced data if not already loaded
-    if (!analysisData) {
-      loadEnhancedAnalysisData();
-    }
+  // FIGMA LAYOUT: Enhanced Figma-inspired UI for results display (SECONDARY PATH)
+  if (id && analysisData) {
+    console.log('📊 UI DECISION: Using Figma-inspired layout (legacy compatibility)');
     
-    // Get stored context for user challenge
     const contextKey = `strategist_context_${id}`;
     const storedContext = localStorage.getItem(contextKey);
     
     return (
       <FigmaInspiredAnalysisLayout 
-        analysisData={analysisData || { annotations: [] }}
+        analysisData={analysisData}
         strategistAnalysis={strategistAnalysis}
         userChallenge={id ? (storedContext ? JSON.parse(storedContext).userChallenge : undefined) : undefined}
       />
+    );
+  }
+
+  // LOADING STATE: Show loading while data is being fetched
+  if (id && !analysisData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold mb-2">Loading Analysis Results...</h2>
+          <p className="text-muted-foreground">Retrieving your design analysis</p>
+        </div>
+      </div>
     );
   }
 
