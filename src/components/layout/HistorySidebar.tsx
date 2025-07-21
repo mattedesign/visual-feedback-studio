@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Eye, Calendar, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { getUserAnalysisHistory, AnalysisResultsResponse } from '@/services/analysisResultsService';
+import { getUnifiedAnalysisHistory, UnifiedAnalysisHistory, getAnalysisViewUrl } from '@/services/unifiedHistoryService';
 import { useNavigate } from 'react-router-dom';
 
 interface HistorySidebarProps {
@@ -13,7 +13,7 @@ interface HistorySidebarProps {
 
 export const HistorySidebar: React.FC<HistorySidebarProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
-  const [analyses, setAnalyses] = useState<AnalysisResultsResponse[]>([]);
+  const [analyses, setAnalyses] = useState<UnifiedAnalysisHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -25,7 +25,7 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = ({ isOpen, onClose 
   const loadRecentAnalyses = async () => {
     try {
       setIsLoading(true);
-      const history = await getUserAnalysisHistory();
+      const history = await getUnifiedAnalysisHistory();
       // Show only the 10 most recent analyses
       setAnalyses(history.slice(0, 10));
     } catch (error) {
@@ -42,13 +42,14 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = ({ isOpen, onClose 
     });
   };
 
-  const getAnalysisTitle = (analysis: AnalysisResultsResponse) => {
-    const context = analysis.analysis_context || 'UX Analysis';
+  const getAnalysisTitle = (analysis: UnifiedAnalysisHistory) => {
+    const context = analysis.analysis_context || analysis.title || 'UX Analysis';
     return context.length > 30 ? context.substring(0, 30) + '...' : context;
   };
 
-  const handleViewAnalysis = (analysisId: string) => {
-    navigate(`/analysis/${analysisId}?beta=true`);
+  const handleViewAnalysis = (analysis: UnifiedAnalysisHistory) => {
+    const url = getAnalysisViewUrl(analysis);
+    navigate(url);
     onClose();
   };
 
@@ -58,13 +59,8 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = ({ isOpen, onClose 
   };
 
   // Helper function to determine analysis status
-  const getAnalysisStatus = (analysis: AnalysisResultsResponse) => {
-    // Since AnalysisResultsResponse doesn't have analysis_status, 
-    // we'll assume completed if it has annotations and images
-    if (analysis.total_annotations > 0 && analysis.images?.length > 0) {
-      return 'completed';
-    }
-    return 'processing';
+  const getAnalysisStatus = (analysis: UnifiedAnalysisHistory) => {
+    return analysis.status;
   };
 
   if (!isOpen) return null;
@@ -144,7 +140,7 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = ({ isOpen, onClose 
                     <div
                       key={analysis.id}
                       className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-                      onClick={() => handleViewAnalysis(analysis.analysis_id)}
+                      onClick={() => handleViewAnalysis(analysis)}
                     >
                       {/* Thumbnail */}
                       <div className="w-12 h-12 bg-gray-200 dark:bg-slate-600 rounded-lg overflow-hidden flex-shrink-0">
@@ -179,7 +175,7 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = ({ isOpen, onClose 
                           </Badge>
                         </div>
                         <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                          {analysis.total_annotations} insights • {analysis.images?.length || 0} images
+                          {analysis.insight_count || 0} insights • {analysis.images?.length || 0} images • {analysis.type}
                         </div>
                       </div>
                       
@@ -190,8 +186,9 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = ({ isOpen, onClose 
                         className="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleViewAnalysis(analysis.analysis_id);
+                          handleViewAnalysis(analysis);
                         }}
+                        disabled={!analysis.hasResults}
                       >
                         <Eye className="w-4 h-4" />
                       </Button>

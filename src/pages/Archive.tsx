@@ -6,14 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getUserAnalysisHistory, AnalysisResultsResponse } from '@/services/analysisResultsService';
+import { getUnifiedAnalysisHistory, UnifiedAnalysisHistory, getAnalysisViewUrl } from '@/services/unifiedHistoryService';
 import { toast } from 'sonner';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { FigmaDashboardLayout } from '@/components/dashboard/FigmaDashboardLayout';
 
 const Archive = () => {
   const navigate = useNavigate();
-  const [analyses, setAnalyses] = useState<AnalysisResultsResponse[]>([]);
+  const [analyses, setAnalyses] = useState<UnifiedAnalysisHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'completed' | 'processing'>('all');
@@ -25,7 +25,7 @@ const Archive = () => {
   const loadAnalysisHistory = async () => {
     try {
       setIsLoading(true);
-      const history = await getUserAnalysisHistory();
+      const history = await getUnifiedAnalysisHistory();
       console.log('🔍 DASHBOARD DEBUG - Analysis history loaded:', {
         count: history.length,
         sampleData: history.slice(0, 3).map(item => ({
@@ -34,7 +34,7 @@ const Archive = () => {
           images: item.images,
           imagesLength: item.images?.length,
           imagesType: typeof item.images,
-          total_annotations: item.total_annotations
+          insight_count: item.insight_count
         }))
       });
       setAnalyses(history);
@@ -54,34 +54,19 @@ const Archive = () => {
     });
   };
 
-  const getAnalysisPreview = (analysis: AnalysisResultsResponse) => {
-    const context = analysis.analysis_context || 'UX Analysis';
+  const getAnalysisPreview = (analysis: UnifiedAnalysisHistory) => {
+    const context = analysis.analysis_context || analysis.title || 'UX Analysis';
     return context.length > 50 ? context.substring(0, 50) + '...' : context;
   };
 
   // ✅ FIXED: Better logic to determine analysis status - don't require images for completion
-  const getAnalysisStatus = (analysis: AnalysisResultsResponse) => {
-    // Analysis is completed if it has annotations, regardless of image count
-    if (analysis.total_annotations > 0) {
-      return 'completed';
-    }
-    
-    // If no annotations but analysis was recently created (within last hour), it might be processing
-    const createdAt = new Date(analysis.created_at);
-    const now = new Date();
-    const hoursSinceCreation = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
-    
-    if (hoursSinceCreation <= 1) {
-      return 'processing';
-    }
-    
-    // Otherwise, likely failed or incomplete
-    return 'processing';
+  const getAnalysisStatus = (analysis: UnifiedAnalysisHistory) => {
+    return analysis.status === 'completed' ? 'completed' : 'processing';
   };
 
   // 🚀 FIXED: Simplified image count calculation with proper TypeScript handling
-  const calculateImageCount = (analysis: AnalysisResultsResponse): number => {
-    console.log(`🔍 IMAGE COUNT - Analysis ${analysis.analysis_id}:`, {
+  const calculateImageCount = (analysis: UnifiedAnalysisHistory): number => {
+    console.log(`🔍 IMAGE COUNT - Analysis ${analysis.id}:`, {
       images: analysis.images,
       imagesType: typeof analysis.images,
       isArray: Array.isArray(analysis.images),
@@ -97,7 +82,8 @@ const Archive = () => {
   };
 
   const filteredAnalyses = analyses.filter(analysis => {
-    const matchesSearch = analysis.analysis_context?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false;
+    const searchText = `${analysis.analysis_context || ''} ${analysis.title || ''}`.toLowerCase();
+    const matchesSearch = searchText.includes(searchTerm.toLowerCase());
     const analysisStatus = getAnalysisStatus(analysis);
     const matchesFilter = filterStatus === 'all' || 
       (filterStatus === 'completed' && analysisStatus === 'completed') ||
@@ -120,8 +106,9 @@ const Archive = () => {
     navigate('/analyze');
   };
 
-  const handleViewAnalysis = (analysisId: string) => {
-    navigate(`/analysis/${analysisId}?beta=true`);
+  const handleViewAnalysis = (analysis: UnifiedAnalysisHistory) => {
+    const url = getAnalysisViewUrl(analysis);
+    navigate(url);
   };
 
   // Always use simple card layout for Dashboard
@@ -242,9 +229,9 @@ const Archive = () => {
             const imageCount = calculateImageCount(analysis);
             
             console.log('🎯 DASHBOARD CARD RENDER:', {
-              analysisId: analysis.analysis_id,
+              analysisId: analysis.analysis_id || analysis.session_id,
               imageCount,
-              totalAnnotations: analysis.total_annotations,
+              insightCount: analysis.insight_count,
               status: analysisStatus,
             });
             
@@ -252,7 +239,7 @@ const Archive = () => {
               <Card
                 key={analysis.id}
                 className="hover:shadow-lg transition-shadow cursor-pointer border border-gray-200"
-                onClick={() => handleViewAnalysis(analysis.analysis_id)}
+                onClick={() => handleViewAnalysis(analysis)}
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
@@ -297,7 +284,7 @@ const Archive = () => {
                         Insights Found
                       </span>
                       <span className="font-semibold text-gray-900">
-                        {analysis.total_annotations}
+                        {analysis.insight_count || 0}
                       </span>
                     </div>
                     
@@ -310,16 +297,14 @@ const Archive = () => {
                       </span>
                     </div>
                     
-                    {analysis.knowledge_sources_used && analysis.knowledge_sources_used > 0 && (
-                      <div className="flex justify-between items-center py-1">
-                        <span className="text-sm text-gray-600">
-                          Research Sources
-                        </span>
-                        <span className="font-semibold text-blue-600">
-                          {analysis.knowledge_sources_used}
-                        </span>
-                      </div>
-                    )}
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-sm text-gray-600">
+                        Analysis Type
+                      </span>
+                      <span className="font-semibold text-purple-600 capitalize">
+                        {analysis.type}
+                      </span>
+                    </div>
                   </div>
                   
                   <Button
@@ -328,7 +313,7 @@ const Archive = () => {
                     className="w-full mt-4"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleViewAnalysis(analysis.analysis_id);
+                      handleViewAnalysis(analysis);
                     }}
                   >
                     <Eye className="w-4 h-4 mr-2" />

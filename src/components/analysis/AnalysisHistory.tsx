@@ -3,11 +3,13 @@ import React, { useEffect, useState } from 'react';
 import { Clock, Eye, Trash2, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getUserAnalysisHistory, AnalysisResultsResponse } from '@/services/analysisResultsService';
+import { getUnifiedAnalysisHistory, UnifiedAnalysisHistory, getAnalysisViewUrl } from '@/services/unifiedHistoryService';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 export const AnalysisHistory = () => {
-  const [analyses, setAnalyses] = useState<AnalysisResultsResponse[]>([]);
+  const navigate = useNavigate();
+  const [analyses, setAnalyses] = useState<UnifiedAnalysisHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -17,7 +19,7 @@ export const AnalysisHistory = () => {
   const loadAnalysisHistory = async () => {
     try {
       setIsLoading(true);
-      const history = await getUserAnalysisHistory();
+      const history = await getUnifiedAnalysisHistory();
       setAnalyses(history);
     } catch (error) {
       console.error('Failed to load analysis history:', error);
@@ -37,12 +39,13 @@ export const AnalysisHistory = () => {
     });
   };
 
-  const viewAnalysis = (analysisId: string) => {
-    window.location.href = `/analysis/${analysisId}?beta=true`;
+  const viewAnalysis = (analysis: UnifiedAnalysisHistory) => {
+    const url = getAnalysisViewUrl(analysis);
+    navigate(url);
   };
 
-  const getAnalysisPreview = (analysis: AnalysisResultsResponse) => {
-    const context = analysis.analysis_context || 'No context provided';
+  const getAnalysisPreview = (analysis: UnifiedAnalysisHistory) => {
+    const context = analysis.analysis_context || analysis.title || 'No context provided';
     return context.length > 100 ? context.substring(0, 100) + '...' : context;
   };
 
@@ -97,20 +100,16 @@ export const AnalysisHistory = () => {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-slate-300 font-medium">
-                  {analysis.total_annotations} insights found
+                  {analysis.insight_count || 0} insights found
                 </span>
                 <span className="text-slate-500">•</span>
                 <span className="text-slate-500 text-sm">
                   {analysis.images.length} image{analysis.images.length !== 1 ? 's' : ''}
                 </span>
-                {analysis.knowledge_sources_used > 0 && (
-                  <>
-                    <span className="text-slate-500">•</span>
-                    <span className="text-blue-400 text-sm">
-                      {analysis.knowledge_sources_used} research sources
-                    </span>
-                  </>
-                )}
+                <span className="text-slate-500">•</span>
+                <span className="text-purple-400 text-sm capitalize">
+                  {analysis.type} analysis
+                </span>
               </div>
               
               <p className="text-slate-400 text-sm mb-2 truncate">
@@ -122,21 +121,24 @@ export const AnalysisHistory = () => {
                 <span>{formatDate(analysis.created_at)}</span>
                 <span>•</span>
                 <span>{analysis.ai_model_used}</span>
-                {analysis.well_done_data && (
-                  <>
-                    <span>•</span>
-                    <span className="text-green-400">Well Done insights</span>
-                  </>
-                )}
+                <span>•</span>
+                <span className={`capitalize ${
+                  analysis.status === 'completed' ? 'text-green-400' : 
+                  analysis.status === 'processing' ? 'text-yellow-400' : 
+                  analysis.status === 'failed' ? 'text-red-400' : 'text-slate-400'
+                }`}>
+                  {analysis.status}
+                </span>
               </div>
             </div>
             
             <div className="flex items-center gap-2 ml-4">
               <Button
-                onClick={() => viewAnalysis(analysis.analysis_id)}
+                onClick={() => viewAnalysis(analysis)}
                 variant="outline"
                 size="sm"
                 className="border-slate-600 hover:bg-slate-600 text-slate-200"
+                disabled={!analysis.hasResults}
               >
                 <Eye className="w-4 h-4 mr-1" />
                 View
