@@ -87,6 +87,7 @@ const FigmantResultsPage = () => {
 
     // Transform suggestions if present
     if (claudeAnalysis.suggestions && Array.isArray(claudeAnalysis.suggestions)) {
+      console.log('📝 Found suggestions in Claude analysis:', claudeAnalysis.suggestions);
       claudeAnalysis.suggestions.forEach((suggestion: any, index: number) => {
         suggestions.push({
           id: suggestion.id || `suggestion-${index}`,
@@ -97,6 +98,22 @@ const FigmantResultsPage = () => {
           category: suggestion.category || 'enhancement'
         });
       });
+    } else {
+      console.log('ℹ️ No suggestions found in Claude analysis. Available keys:', Object.keys(claudeAnalysis));
+      // Try alternative suggestion sources
+      if (claudeAnalysis.recommendations && Array.isArray(claudeAnalysis.recommendations)) {
+        console.log('📝 Found recommendations, converting to suggestions:', claudeAnalysis.recommendations);
+        claudeAnalysis.recommendations.forEach((rec: any, index: number) => {
+          suggestions.push({
+            id: `recommendation-${index}`,
+            title: typeof rec === 'string' ? `Recommendation ${index + 1}` : (rec.title || 'Design Recommendation'),
+            description: typeof rec === 'string' ? rec : (rec.description || rec.text || 'Design improvement recommendation'),
+            impact: 'Medium',
+            effort: 'Medium',
+            category: 'improvement'
+          });
+        });
+      }
     }
 
     // Create image URLs from session data
