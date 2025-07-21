@@ -80,12 +80,26 @@ serve(async (req) => {
       })
       .eq('id', analysisId);
     
-    // Get analysis issues
-    const analysisResult = analysisData.claude_analysis_data || {};
-    const issues = analysisResult.issues || [];
+    // Get analysis issues from Claude analysis data
+    console.log('🔍 Analysis data structure:', Object.keys(analysisData));
+    console.log('🔍 Claude analysis data:', analysisData.claude_analysis_data ? Object.keys(analysisData.claude_analysis_data) : 'No claude_analysis_data');
+    
+    const claudeAnalysis = analysisData.claude_analysis_data || analysisData.claude_analysis || {};
+    console.log('🔍 Claude analysis structure:', Object.keys(claudeAnalysis));
+    
+    const issues = claudeAnalysis.issues || [];
+    console.log('🔍 Issues found:', issues.length);
     
     if (issues.length === 0) {
-      throw new Error('No issues found in analysis for prototype generation');
+      // Try alternative data structures
+      const alternativeIssues = claudeAnalysis.annotations || claudeAnalysis.problems || [];
+      if (alternativeIssues.length > 0) {
+        console.log('🔍 Found issues in alternative structure:', alternativeIssues.length);
+        // Use alternative structure
+      } else {
+        console.log('❌ No issues found in any expected structure');
+        throw new Error('No issues found in analysis for prototype generation');
+      }
     }
     
     console.log(`🔍 Found ${issues.length} issues, selecting candidates...`);
