@@ -104,6 +104,23 @@ export const ResultsContent = ({ analysisData, sessionData }: ResultsContentProp
     let overallScore = 0;
     let executiveSummary = '';
 
+    // Check for MaxDepthReached artifacts indicating truncated data
+    const isDataTruncated = (obj: any): boolean => {
+      if (!obj || typeof obj !== 'object') return false;
+      
+      const checkDepth = (item: any): boolean => {
+        if (item && typeof item === 'object') {
+          if (item._type === 'MaxDepthReached') return true;
+          for (const key in item) {
+            if (checkDepth(item[key])) return true;
+          }
+        }
+        return false;
+      };
+      
+      return checkDepth(obj);
+    };
+
     // Handle different possible structures
     if (typeof claudeAnalysis === 'string') {
       try {
@@ -113,6 +130,13 @@ export const ResultsContent = ({ analysisData, sessionData }: ResultsContentProp
         console.warn('Failed to parse Claude analysis string:', e);
         return { issues: [], overallScore: 0, executiveSummary: claudeAnalysis };
       }
+    }
+
+    // Check if data is truncated and warn user
+    if (isDataTruncated(claudeAnalysis)) {
+      console.warn('⚠️ Analysis data appears to be truncated due to depth limits');
+      executiveSummary = 'Analysis completed but data structure was truncated. Please re-run the analysis for complete results.';
+      return { issues: [], overallScore: 0, executiveSummary };
     }
 
     // NEW: Handle ux_analysis wrapper structure
