@@ -147,16 +147,42 @@ export const FigmantSidebar = () => {
                     ) : (
                       <NavLink 
                         to={item.href} 
-                        className={({ isActive }) => `flex items-center justify-between px-3 py-3 md:px-3 md:py-3 sm:px-2 sm:py-2 xs:px-1 xs:py-1 rounded-lg transition-colors text-gray-600 ${isActive ? 'bg-muted' : 'hover:bg-muted/50'}`}
+                        className={({ isActive }) => 
+                          isActive 
+                            ? `flex h-10 px-1 pr-3 items-center gap-3 self-stretch rounded-xl border border-[#ECECEC] bg-[#F1F1F1] text-[#121212] font-medium text-xs leading-4 tracking-[-0.12px] transition-colors overflow-hidden text-ellipsis font-inter`
+                            : `flex items-center justify-between px-3 py-3 md:px-3 md:py-3 sm:px-2 sm:py-2 xs:px-1 xs:py-1 rounded-lg transition-colors text-gray-600 hover:bg-muted/50`
+                        }
                       >
-                        <div className="flex items-center gap-3 md:gap-3 sm:gap-2 xs:gap-1">
-                          <item.icon className="w-5 h-5 md:w-5 md:h-5 sm:w-4 sm:h-4 xs:w-4 xs:h-4 text-gray-600" />
-                          {!isCollapsed && <span className="font-medium text-sm md:text-sm sm:text-xs text-gray-600">{item.label}</span>}
-                        </div>
-                        {item.count && !isCollapsed && (
-                          <span className="text-xs bg-muted text-gray-600 px-2 py-1 md:px-2 md:py-1 sm:px-1 sm:py-0.5 xs:hidden rounded-full">
-                            {item.count}
-                          </span>
+                        {({ isActive }) => (
+                          <>
+                            <div className="flex items-center gap-3 md:gap-3 sm:gap-2 xs:gap-1">
+                              <div className={
+                                isActive 
+                                  ? `flex p-1.5 justify-center items-center gap-2 rounded-lg bg-[#FCFCFC] shadow-[0px_0px_4px_0px_rgba(18,18,18,0.10)] text-[#7B7B7B]`
+                                  : ``
+                              }>
+                                <item.icon className={
+                                  isActive 
+                                    ? `w-4 h-4 text-[#7B7B7B]`
+                                    : `w-5 h-5 md:w-5 md:h-5 sm:w-4 sm:h-4 xs:w-4 xs:h-4 text-gray-600`
+                                } />
+                              </div>
+                              {!isCollapsed && (
+                                <span className={
+                                  isActive 
+                                    ? `font-medium text-xs leading-4 tracking-[-0.12px] text-[#121212] font-inter`
+                                    : `font-medium text-sm md:text-sm sm:text-xs text-gray-600`
+                                }>
+                                  {item.label}
+                                </span>
+                              )}
+                            </div>
+                            {item.count && !isCollapsed && !isActive && (
+                              <span className="text-xs bg-muted text-gray-600 px-2 py-1 md:px-2 md:py-1 sm:px-1 sm:py-0.5 xs:hidden rounded-full">
+                                {item.count}
+                              </span>
+                            )}
+                          </>
                         )}
                       </NavLink>
                     )}
