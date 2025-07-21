@@ -463,3 +463,76 @@ export interface ComparisonItem {
   after: any;
   change_percentage?: number;
 }
+
+// Add these new interfaces to existing analysis.ts file
+
+export interface VisualPrototype {
+  id: string;
+  analysisId: string;
+  issueId: string;
+  title: string;
+  category: string;
+  
+  // Visual positioning for overlay
+  hotspot: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    type: 'pulse' | 'glow' | 'outline';
+  };
+  
+  // Comprehensive improvement code
+  improvement: {
+    beforeCode: { html: string; css: string; };
+    afterCode: { html: string; css: string; };
+    interactiveDemo: { html: string; css: string; js: string; };
+    mobileResponsive: { html: string; css: string; };
+  };
+  
+  // Rich explanation
+  explanation: {
+    summary: string;
+    keyChanges: string[];
+    businessImpact: string;
+    implementationNotes: string[];
+  };
+  
+  createdAt: string;
+}
+
+export interface PrototypeCandidate {
+  issue: any; // Using existing AnalysisIssue type
+  prototypeType: 'component' | 'layout' | 'interaction' | 'content';
+  complexity: 'comprehensive' | 'advanced' | 'detailed';
+  impactScore: number;
+  visualScope: 'single-element' | 'element-group' | 'section' | 'page';
+}
+
+export interface PrototypeGenerationRequest {
+  analysisId: string;
+  candidates: PrototypeCandidate[];
+  visionData: any;
+  designContext: {
+    dominantColors: string[];
+    detectedElements: any[];
+    overallStyle: string;
+    platform: string;
+  };
+  originalImageUrl: string;
+}
+
+export interface PrototypeOverlayData {
+  originalImageUrl: string;
+  prototypes: VisualPrototype[];
+  totalPrototypes: number;
+  generatedAt: string;
+}
+
+// Update existing AnalysisResult interface to include prototypes
+export interface EnhancedAnalysisResult {
+  // ... existing fields
+  visualPrototypes?: VisualPrototype[];
+  prototypeOverlayData?: PrototypeOverlayData;
+  hasPrototypes: boolean;
+}
