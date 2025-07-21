@@ -376,6 +376,72 @@ export default function AnalyzeResults() {
                   </div>
                 </div>
               </Card>
+
+              {/* Molecule-Level Suggestions */}
+              {results?.suggestions && results.suggestions.length > 0 && (
+                <Card className="p-6">
+                  <h2 className="text-2xl font-semibold mb-4">Molecule-Level Suggestions</h2>
+                  <div className="space-y-4">
+                    {results.suggestions.map((suggestion: any, idx: number) => (
+                      <div key={idx} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div className="flex items-start justify-between mb-3">
+                          <h4 className="font-medium text-foreground">{suggestion.title}</h4>
+                          <div className="flex items-center gap-2">
+                            <Badge
+                              variant="outline"
+                              className={`text-xs ${
+                                suggestion.priority === 'high'
+                                  ? 'text-red-600 border-red-300 dark:text-red-400 dark:border-red-600'
+                                  : suggestion.priority === 'medium'
+                                  ? 'text-yellow-600 border-yellow-300 dark:text-yellow-400 dark:border-yellow-600'
+                                  : 'text-green-600 border-green-300 dark:text-green-400 dark:border-green-600'
+                              }`}
+                            >
+                              {suggestion.priority} priority
+                            </Badge>
+                            {suggestion.businessImpact && (
+                              <Badge variant="secondary" className="text-xs">
+                                {suggestion.businessImpact.level} impact
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <p className="text-sm text-muted-foreground mb-3">{suggestion.description}</p>
+                        
+                        {suggestion.businessImpact && (
+                          <div className="bg-muted/50 rounded p-3 mb-3">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="font-medium">Business Impact:</span>
+                              <span className="text-muted-foreground">
+                                {suggestion.businessImpact.timeToImplement && `${suggestion.businessImpact.timeToImplement} to implement`}
+                              </span>
+                            </div>
+                            {suggestion.businessImpact.expectedOutcome && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {suggestion.businessImpact.expectedOutcome}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        
+                        {suggestion.actionItems && suggestion.actionItems.length > 0 && (
+                          <div>
+                            <h5 className="text-sm font-medium mb-2">Action Items:</h5>
+                            <ul className="space-y-1">
+                              {suggestion.actionItems.map((item: string, itemIdx: number) => (
+                                <li key={itemIdx} className="text-xs text-muted-foreground">
+                                  • {item}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              )}
             </>
           )}
         </TabsContent>
