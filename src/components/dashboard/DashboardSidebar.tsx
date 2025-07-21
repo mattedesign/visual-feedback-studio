@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { 
   BarChart3, 
@@ -23,6 +24,7 @@ import { Separator } from '@/components/ui/separator';
 import { FigmantLogo } from '@/components/ui/figmant-logo';
 
 export function DashboardSidebar() {
+  const navigate = useNavigate();
   const [isAnalysisExpanded, setIsAnalysisExpanded] = useState(true);
 
   const pagesItems = [
@@ -30,7 +32,8 @@ export function DashboardSidebar() {
       icon: LayoutDashboard, 
       label: 'Dashboard', 
       isActive: false,
-      count: 112
+      count: 112,
+      href: '/dashboard'
     },
     { 
       icon: BarChart3, 
@@ -39,14 +42,15 @@ export function DashboardSidebar() {
       isExpandable: true,
       isExpanded: isAnalysisExpanded,
       subItems: [
-        { label: 'Start New Analysis', isActive: false },
-        { label: 'History', isActive: false }
+        { label: 'Start New Analysis', isActive: false, href: '/analyze' },
+        { label: 'History', isActive: false, href: '/history' }
       ]
     },
     { 
       icon: User, 
       label: 'Subscription', 
-      isActive: false
+      isActive: false,
+      href: '/subscription'
     }
   ];
 
@@ -84,6 +88,8 @@ export function DashboardSidebar() {
                 onClick={() => {
                   if (item.isExpandable) {
                     setIsAnalysisExpanded(!isAnalysisExpanded);
+                  } else if (item.href) {
+                    navigate(item.href);
                   }
                 }}
               >
@@ -118,6 +124,7 @@ export function DashboardSidebar() {
                       variant="ghost"
                       size="sm"
                       className="w-full justify-start text-sm text-gray-600 hover:text-gray-600"
+                      onClick={() => subItem.href && navigate(subItem.href)}
                     >
                       {subItem.label}
                     </Button>
