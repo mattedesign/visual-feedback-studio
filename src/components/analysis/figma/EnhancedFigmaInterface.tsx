@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo, memo } from 'react';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { EnhancedCanvasViewer } from './EnhancedCanvasViewer';
 import { AnnotationSystem } from './AnnotationSystem';
@@ -31,7 +31,7 @@ interface Comment {
   createdAt: Date;
 }
 
-export const EnhancedFigmaInterface: React.FC<EnhancedFigmaInterfaceProps> = ({
+const EnhancedFigmaInterfaceComponent: React.FC<EnhancedFigmaInterfaceProps> = ({
   workflow
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -40,13 +40,14 @@ export const EnhancedFigmaInterface: React.FC<EnhancedFigmaInterfaceProps> = ({
   const [pendingPosition, setPendingPosition] = useState<{ x: number; y: number } | null>(null);
   const [analysisMessage, setAnalysisMessage] = useState(workflow.analysisContext || '');
 
-  const handleImageSelect = (index: number) => {
+  // Memoized event handlers for better performance
+  const handleImageSelect = useCallback((index: number) => {
     setCurrentImageIndex(index);
     setSelectedAnnotation(null);
     setPendingPosition(null);
-  };
+  }, []);
 
-  const handleFileRemove = (index: number) => {
+  const handleFileRemove = useCallback((index: number) => {
     const newImages = [...workflow.selectedImages];
     newImages.splice(index, 1);
     workflow.selectImages(newImages);
@@ -56,57 +57,74 @@ export const EnhancedFigmaInterface: React.FC<EnhancedFigmaInterfaceProps> = ({
     } else if (newImages.length === 0) {
       setCurrentImageIndex(0);
     }
-  };
+  }, [workflow, currentImageIndex]);
 
-  const handleFilesAdd = (newFiles: string[]) => {
+  const handleFilesAdd = useCallback((newFiles: string[]) => {
     newFiles.forEach((file) => {
       workflow.addUploadedFile(file);
     });
-  };
+  }, [workflow]);
 
-  const handleCanvasClick = (x: number, y: number) => {
+  const handleCanvasClick = useCallback((x: number, y: number) => {
     if (selectedAnnotation) {
       setSelectedAnnotation(null);
     } else {
       setPendingPosition({ x, y });
     }
-  };
+  }, [selectedAnnotation]);
 
-  const handleAnnotationClick = (annotation: Annotation) => {
+  const handleAnnotationClick = useCallback((annotation: Annotation) => {
     setSelectedAnnotation(annotation);
     setPendingPosition(null);
-  };
+  }, []);
 
-  const handleAnnotationCreate = (annotationData: Omit<Annotation, 'id' | 'createdAt'>) => {
+  const handleAnnotationCreate = useCallback((annotationData: Omit<Annotation, 'id' | 'createdAt'>) => {
     const newAnnotation: Annotation = {
       ...annotationData,
       id: Date.now().toString(),
       createdAt: new Date()
     };
     setAnnotations(prev => [...prev, newAnnotation]);
-  };
+  }, []);
 
-  const handleAnnotationUpdate = (id: string, updates: Partial<Annotation>) => {
+  const handleAnnotationUpdate = useCallback((id: string, updates: Partial<Annotation>) => {
     setAnnotations(prev => prev.map(ann => 
       ann.id === id ? { ...ann, ...updates } : ann
     ));
-  };
+  }, []);
 
-  const handleStartAnalysis = () => {
+  const handleStartAnalysis = useCallback(() => {
     if (!analysisMessage.trim() || workflow.selectedImages.length === 0) return;
     
     workflow.setAnalysisContext(analysisMessage);
     workflow.goToStep('analyzing');
-  };
+  }, [analysisMessage, workflow]);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleStartAnalysis();
     }
-  };
+  }, [handleStartAnalysis]);
 
-  const canAnalyze = workflow.selectedImages.length > 0 && analysisMessage.trim().length > 0;
+  // Memoized computed values
+  const canAnalyze = useMemo(() => 
+    workflow.selectedImages.length > 0 && analysisMessage.trim().length > 0,
+    [workflow.selectedImages.length, analysisMessage]
+  );
+
+  const statusInfo = useMemo(() => ({
+    designCount: workflow.selectedImages.length,
+    annotationCount: annotations.length,
+    hasDesigns: workflow.selectedImages.length > 0
+  }), [workflow.selectedImages.length, annotations.length]);
+
+  const placeholderText = useMemo(() => 
+    statusInfo.hasDesigns 
+      ? "Describe what you'd like to analyze about these designs..."
+      : "Upload designs first, then describe your analysis goals...",
+    [statusInfo.hasDesigns]
+  );
 
   return (
     <div className="h-full flex bg-background">
@@ -175,23 +193,19 @@ export const EnhancedFigmaInterface: React.FC<EnhancedFigmaInterfaceProps> = ({
                   value={analysisMessage}
                   onChange={(e) => setAnalysisMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder={
-                    workflow.selectedImages.length > 0 
-                      ? "Describe what you'd like to analyze about these designs..."
-                      : "Upload designs first, then describe your analysis goals..."
-                  }
+                  placeholder={placeholderText}
                   className="min-h-[3rem] text-base"
-                  disabled={workflow.selectedImages.length === 0 || workflow.isAnalyzing}
+                  disabled={!statusInfo.hasDesigns || workflow.isAnalyzing}
                 />
                 
-                {workflow.selectedImages.length > 0 && (
+                {statusInfo.hasDesigns && (
                   <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span>{workflow.selectedImages.length} design{workflow.selectedImages.length !== 1 ? 's' : ''} ready</span>
+                      <span>{statusInfo.designCount} design{statusInfo.designCount !== 1 ? 's' : ''} ready</span>
                     </div>
                     <span>•</span>
-                    <span>{annotations.length} annotation{annotations.length !== 1 ? 's' : ''}</span>
+                    <span>{statusInfo.annotationCount} annotation{statusInfo.annotationCount !== 1 ? 's' : ''}</span>
                     <span>•</span>
                     <span>AI-powered analysis with 272+ UX research studies</span>
                   </div>
@@ -223,3 +237,6 @@ export const EnhancedFigmaInterface: React.FC<EnhancedFigmaInterfaceProps> = ({
     </div>
   );
 };
+
+// Export memoized component for performance optimization
+export const EnhancedFigmaInterface = memo(EnhancedFigmaInterfaceComponent);
