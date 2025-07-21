@@ -323,6 +323,7 @@ const FigmantResultsPage = () => {
 
     const transformedData = {
       sessionId: sessionData?.id || '',
+      analysisId: analysisData.id, // Add the analysis result ID here!
       images,
       issues,
       suggestions,
@@ -331,7 +332,8 @@ const FigmantResultsPage = () => {
         completedAt: analysisData.created_at,
         totalIssues: issues.length,
         confidenceLevel: 'high',
-        screenType: analysisData.google_vision_summary?.screen_type_detected || 'checkout'
+        screenType: analysisData.google_vision_summary?.screen_type_detected || 'checkout',
+        analysisId: analysisData.id // Also add it to the metadata for backup
       }
     };
 
@@ -630,6 +632,7 @@ const FigmantResultsPage = () => {
             issues={enhancedData.issues}
             suggestions={enhancedData.suggestions}
             analysisMetadata={enhancedData.analysisMetadata}
+            analysisId={enhancedData.analysisId}
             onBack={() => navigate('/analyze')}
           />
         );
@@ -683,6 +686,7 @@ const FigmantResultsPage = () => {
             issues={enhancedData.issues}
             suggestions={enhancedData.suggestions}
             analysisMetadata={enhancedData.analysisMetadata}
+            analysisId={enhancedData.analysisId}
             onBack={() => navigate('/analyze')}
           />
         );

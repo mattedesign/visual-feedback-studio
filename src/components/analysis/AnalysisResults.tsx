@@ -86,7 +86,9 @@ interface AnalysisResultsProps {
     confidence?: number;
     totalIssues?: number;
     screenType?: string;
+    analysisId?: string; // Add the analysis ID to metadata
   };
+  analysisId?: string; // Add direct analysis ID prop
   onBack?: () => void;
 }
 
@@ -95,6 +97,7 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
   issues,
   suggestions = [],
   analysisMetadata,
+  analysisId,
   onBack
 }) => {
   // Add comprehensive logging for props
@@ -233,10 +236,13 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
   // Add this useEffect to load prototypes when analysis is available
   useEffect(() => {
     const loadPrototypes = async () => {
-      if (images[0]?.id && !prototypesLoaded) {
+      // Get the analysis ID from either direct prop or metadata
+      const currentAnalysisId = analysisId || analysisMetadata?.analysisId;
+      
+      if (currentAnalysisId && !prototypesLoaded) {
         try {
-          console.log('🎨 Loading prototypes for analysis:', images[0].id);
-          const loadedPrototypes = await PrototypeStorageService.getPrototypesByAnalysisId(images[0].id);
+          console.log('🎨 Loading prototypes for analysis:', currentAnalysisId);
+          const loadedPrototypes = await PrototypeStorageService.getPrototypesByAnalysisId(currentAnalysisId);
           setPrototypes(loadedPrototypes);
           setPrototypesLoaded(true);
           console.log(`✅ Loaded ${loadedPrototypes.length} prototypes`);
@@ -247,7 +253,7 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
     };
     
     loadPrototypes();
-  }, [images, prototypesLoaded]);
+  }, [analysisId, analysisMetadata?.analysisId, prototypesLoaded]);
 
   // Add these handler functions
   const handlePrototypeSelect = (prototype: VisualPrototype) => {
@@ -266,15 +272,18 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
 
   // Handle prototype generation
   const handleGeneratePrototypes = async () => {
-    if (!images[0]?.id) {
+    // Get the analysis ID from either direct prop or metadata
+    const currentAnalysisId = analysisId || analysisMetadata?.analysisId;
+    
+    if (!currentAnalysisId) {
       console.error('No analysis ID available for prototype generation');
       return;
     }
     
     try {
-      await generatePrototypes(images[0].id);
+      await generatePrototypes(currentAnalysisId);
       // Reload prototypes after generation
-      const loadedPrototypes = await PrototypeStorageService.getPrototypesByAnalysisId(images[0].id);
+      const loadedPrototypes = await PrototypeStorageService.getPrototypesByAnalysisId(currentAnalysisId);
       setPrototypes(loadedPrototypes);
     } catch (error) {
       console.error('❌ Failed to generate prototypes:', error);
