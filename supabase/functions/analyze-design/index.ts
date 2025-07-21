@@ -272,6 +272,378 @@ class BusinessImpactAnalyzer {
   }
 }
 
+// RAG Context Builder for enhanced analysis (embedded for edge function use)
+interface RAGContext {
+  retrievedKnowledge: {
+    relevantPatterns: any[];
+    competitorInsights: any[];
+  };
+  enhancedPrompt: string;
+  researchCitations: Array<{
+    title: string;
+    source: string;
+    summary: string;
+    category: string;
+    relevance: number;
+    confidence: number;
+  }>;
+  industryContext: string;
+  ragEnabled: boolean;
+}
+
+async function buildRAGContext(
+  request: any,
+  visionData: VisionAPIResponse,
+  screenType: string,
+  supabase: any
+): Promise<RAGContext> {
+  console.log('🔍 Building RAG context with knowledge base integration');
+  
+  try {
+    // Get OpenAI API key for embeddings
+    const openaiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openaiKey) {
+      console.log('⚠️ OpenAI API key not found, RAG disabled');
+      return buildFallbackRAGContext();
+    }
+
+    // Generate search queries based on context
+    const searchQueries = generateRAGSearchQueries(request, visionData, screenType);
+    console.log('🔍 Generated RAG search queries:', searchQueries);
+
+    const allKnowledge: any[] = [];
+    const allPatterns: any[] = [];
+
+    // Execute knowledge retrieval for each query
+    for (const query of searchQueries) {
+      try {
+        // Generate embedding for the query
+        const embedding = await generateEmbedding(query, openaiKey);
+        
+        // Search knowledge base
+        const { data: knowledgeData, error: knowledgeError } = await supabase.rpc('match_knowledge', {
+          query_embedding: embedding,
+          match_threshold: 0.7,
+          match_count: 8
+        });
+
+        if (!knowledgeError && knowledgeData?.length > 0) {
+          allKnowledge.push(...knowledgeData);
+          console.log(`✅ Found ${knowledgeData.length} knowledge entries for "${query.substring(0, 50)}..."`);
+        }
+
+        // Search competitor patterns
+        const { data: patternsData, error: patternsError } = await supabase.rpc('match_patterns', {
+          query_embedding: embedding,
+          match_threshold: 0.7,
+          match_count: 4
+        });
+
+        if (!patternsError && patternsData?.length > 0) {
+          allPatterns.push(...patternsData);
+          console.log(`✅ Found ${patternsData.length} patterns for "${query.substring(0, 50)}..."`);
+        }
+
+      } catch (error) {
+        console.warn(`⚠️ RAG query failed for "${query}":`, error.message);
+      }
+    }
+
+    // Deduplicate and sort results
+    const uniqueKnowledge = deduplicateKnowledge(allKnowledge, 10);
+    const uniquePatterns = deduplicatePatterns(allPatterns, 6);
+
+    // Generate research citations
+    const researchCitations = generateResearchCitations(uniqueKnowledge, uniquePatterns);
+
+    // Infer industry context
+    const industryContext = inferIndustryContext(uniqueKnowledge, uniquePatterns, JSON.stringify(request));
+
+    console.log('✅ RAG context built successfully:', {
+      knowledgeEntries: uniqueKnowledge.length,
+      patterns: uniquePatterns.length,
+      citations: researchCitations.length,
+      industry: industryContext
+    });
+
+    return {
+      retrievedKnowledge: {
+        relevantPatterns: uniqueKnowledge,
+        competitorInsights: uniquePatterns
+      },
+      enhancedPrompt: '', // Will be built separately
+      researchCitations,
+      industryContext,
+      ragEnabled: true
+    };
+
+  } catch (error) {
+    console.error('❌ RAG context building failed:', error);
+    return buildFallbackRAGContext();
+  }
+}
+
+function generateRAGSearchQueries(request: any, visionData: VisionAPIResponse, screenType: string): string[] {
+  const queries = new Set<string>();
+  
+  // Base UX queries for comprehensive analysis
+  queries.add('UX design best practices heuristics');
+  queries.add('user interface usability principles');
+  
+  // Screen type specific queries
+  const screenQueries = {
+    'checkout': 'ecommerce checkout optimization conversion UX',
+    'dashboard': 'dashboard design patterns data visualization UX',
+    'form': 'form design best practices user registration UX',
+    'landing': 'landing page conversion optimization UX patterns',
+    'profile': 'user profile interface design patterns'
+  };
+  
+  if (screenQueries[screenType]) {
+    queries.add(screenQueries[screenType]);
+  }
+  
+  // Vision-based queries
+  if (visionData.labels.some(l => l.toLowerCase().includes('mobile'))) {
+    queries.add('mobile UX responsive design patterns');
+  }
+  
+  if (visionData.contextualTags.includes('complex-form')) {
+    queries.add('complex form design UX patterns validation');
+  }
+  
+  // Add accessibility query for inclusive design
+  queries.add('web accessibility WCAG inclusive design');
+  
+  return Array.from(queries).slice(0, 5); // Limit to 5 for performance
+}
+
+async function generateEmbedding(text: string, apiKey: string): Promise<number[]> {
+  const response = await fetch('https://api.openai.com/v1/embeddings', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      input: text,
+      model: 'text-embedding-ada-002',
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`OpenAI API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.data[0].embedding;
+}
+
+function deduplicateKnowledge(knowledge: any[], limit: number = 10): any[] {
+  const seen = new Set<string>();
+  return knowledge.filter(entry => {
+    if (seen.has(entry.id)) return false;
+    seen.add(entry.id);
+    return true;
+  }).sort((a, b) => (b.similarity || 0) - (a.similarity || 0)).slice(0, limit);
+}
+
+function deduplicatePatterns(patterns: any[], limit: number = 6): any[] {
+  const seen = new Set<string>();
+  return patterns.filter(pattern => {
+    if (seen.has(pattern.id)) return false;
+    seen.add(pattern.id);
+    return true;
+  }).sort((a, b) => (b.similarity || 0) - (a.similarity || 0)).slice(0, limit);
+}
+
+function generateResearchCitations(knowledge: any[], patterns: any[]): Array<{
+  title: string;
+  source: string;
+  summary: string;
+  category: string;
+  relevance: number;
+  confidence: number;
+}> {
+  const citations: Array<{
+    title: string;
+    source: string;
+    summary: string;
+    category: string;
+    relevance: number;
+    confidence: number;
+  }> = [];
+  
+  knowledge.slice(0, 6).forEach(entry => {
+    citations.push({
+      title: entry.title || 'UX Research Entry',
+      source: entry.source || 'UX Research Database',
+      summary: (entry.content || entry.title || '').substring(0, 150) + '...',
+      category: entry.category || 'ux-research',
+      relevance: entry.similarity || 0.8,
+      confidence: entry.similarity || 0.8
+    });
+  });
+  
+  patterns.slice(0, 3).forEach(pattern => {
+    citations.push({
+      title: pattern.pattern_name || 'Design Pattern',
+      source: `${pattern.industry || 'Industry'} Pattern Analysis`,
+      summary: (pattern.description || pattern.pattern_name || '').substring(0, 150) + '...',
+      category: pattern.pattern_type || 'design-pattern',
+      relevance: pattern.similarity || 0.8,
+      confidence: (pattern.effectiveness_score || 70) / 100
+    });
+  });
+  
+  return citations;
+}
+
+function inferIndustryContext(knowledge: any[], patterns: any[], requestText: string): string {
+  const industries = new Set<string>();
+  
+  // Check patterns for industry indicators
+  patterns.forEach(pattern => {
+    if (pattern.industry) {
+      industries.add(pattern.industry);
+    }
+  });
+  
+  // Check knowledge content for industry keywords
+  knowledge.forEach(entry => {
+    const content = (entry.content || '').toLowerCase();
+    if (content.includes('ecommerce') || content.includes('retail')) {
+      industries.add('E-commerce');
+    }
+    if (content.includes('saas') || content.includes('software')) {
+      industries.add('SaaS');
+    }
+    if (content.includes('healthcare')) {
+      industries.add('Healthcare');
+    }
+    if (content.includes('fintech') || content.includes('banking')) {
+      industries.add('Financial Services');
+    }
+  });
+  
+  const detectedIndustries = Array.from(industries);
+  return detectedIndustries.length > 0 ? detectedIndustries[0] : 'General Web Application';
+}
+
+function buildFallbackRAGContext(): RAGContext {
+  console.log('🔄 Using fallback RAG context');
+  return {
+    retrievedKnowledge: {
+      relevantPatterns: [],
+      competitorInsights: []
+    },
+    enhancedPrompt: '',
+    researchCitations: [
+      {
+        title: "UX Heuristics for User Interface Design",
+        source: "Nielsen Norman Group",
+        summary: "10 general principles for interaction design that improve usability and user experience",
+        category: "ux-principles",
+        relevance: 0.9,
+        confidence: 0.95
+      }
+    ],
+    industryContext: 'General Web Application',
+    ragEnabled: false
+  };
+}
+
+// Enhanced prompt building with RAG context
+function buildEnhancedPromptWithRAG(context: any): string {
+  const { metadata, visionData, designTokens, ragContext } = context;
+  
+  let prompt = `You are an expert Senior Principal UX Designer analyzing user interfaces with deep knowledge of design systems, accessibility standards, and conversion optimization.
+
+ANALYSIS CONTEXT:
+- Screen: ${metadata.screen_name} (${metadata.screen_type})
+- Platform: ${metadata.platform}
+- User Goal: ${metadata.user_goal || 'Improve user experience'}
+- Detected Elements: ${JSON.stringify(visionData.labels)}
+- Layout Type: ${visionData.layoutType}
+- Industry Context: ${ragContext.industryContext}`;
+
+  // Add RAG context if available
+  if (ragContext.ragEnabled && ragContext.retrievedKnowledge.relevantPatterns.length > 0) {
+    prompt += `\n\n=== RESEARCH-BACKED UX INSIGHTS ===\n`;
+    prompt += `Based on comprehensive UX research and industry patterns:\n\n`;
+    
+    ragContext.retrievedKnowledge.relevantPatterns.slice(0, 5).forEach((entry: any, index: number) => {
+      const content = (entry.content || entry.title || '').substring(0, 200);
+      prompt += `${index + 1}. ${entry.title} (${entry.source || 'Research'})\n   ${content}...\n\n`;
+    });
+  }
+
+  if (ragContext.ragEnabled && ragContext.retrievedKnowledge.competitorInsights.length > 0) {
+    prompt += `\n=== INDUSTRY DESIGN PATTERNS ===\n`;
+    ragContext.retrievedKnowledge.competitorInsights.slice(0, 3).forEach((pattern: any, index: number) => {
+      const description = (pattern.description || pattern.pattern_name || '').substring(0, 150);
+      prompt += `${index + 1}. ${pattern.pattern_name} (${pattern.industry || 'Industry'})\n   ${description}...\n\n`;
+    });
+  }
+
+  prompt += `\nDESIGN TOKENS:
+- Primary Color: ${designTokens.colors.primary}
+- Font Family: ${designTokens.typography.fontFamily}
+- Base Font Size: ${designTokens.typography.sizes.base}
+
+ANALYSIS INSTRUCTIONS:
+1. Analyze systematically referencing the research context provided above
+2. Cite specific research sources in your recommendations 
+3. For each issue, assess confidence level (0.0-1.0) based on research backing
+4. Reference violated design patterns from the research context
+5. Generate code using provided design tokens
+6. Consider industry-specific best practices from the context above
+
+${ragContext.ragEnabled ? 
+  'IMPORTANT: Reference the research sources above in your analysis and cite them in the "rationale" field.' :
+  'Note: Limited research context available, focus on fundamental UX principles.'}
+
+Return ONLY valid JSON matching this exact structure:
+{
+  "screen_id": "${metadata.screen_id || 'screen-' + Date.now()}",
+  "screen_name": "${metadata.screen_name}",
+  "overall_score": 85,
+  "issues": [
+    {
+      "id": "issue-1",
+      "level": "molecular",
+      "severity": "critical", 
+      "category": "accessibility",
+      "confidence": 0.95,
+      "impact_scope": "task-completion",
+      "element": {
+        "type": "button",
+        "location": { "x": 100, "y": 200, "width": 120, "height": 40 }
+      },
+      "description": "Submit button lacks sufficient color contrast",
+      "impact": "Users with visual impairments cannot identify the primary action",
+      "suggested_fix": "Increase button background contrast to meet WCAG AA standards",
+      "implementation": {
+        "effort": "minutes",
+        "code_snippet": "background-color: ${designTokens.colors.primary}; color: white;",
+        "design_guidance": "Use primary color token with white text"
+      },
+      "violated_patterns": ["wcag-contrast"],
+      "rationale": ["WCAG 2.1 AA requires 4.5:1 contrast ratio (Nielsen research)", "Current ratio below accessibility standards"],
+      "metrics": {
+        "affects_users": "15% (users with visual impairments)",
+        "potential_improvement": "+12% task completion rate"
+      }
+    }
+  ],
+  "strengths": ["Clear visual hierarchy", "Consistent spacing"],
+  "top_recommendations": ["Fix button contrast", "Add focus indicators", "Improve mobile touch targets"],
+  "research_citations": ${JSON.stringify(ragContext.researchCitations.slice(0, 3))}
+}`;
+
+  return prompt;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -352,15 +724,25 @@ serve(async (req) => {
       // Step 2: Detect screen type
       const screenType = detectScreenType(enrichedVision.labels, visionData.text);
       
-      // Step 3: Build Claude prompt with all enhancements
-      console.log('🤖 Building enhanced prompt');
-      const prompt = buildEnhancedPrompt({
+      // Step 3: Build enhanced RAG context (NEW: Research-Augmented Generation)
+      console.log('🔍 Building research-augmented context with knowledge base');
+      const ragContext = await buildRAGContext(
+        { imageUrl, metadata, userId }, 
+        visionData, 
+        screenType,
+        supabase
+      );
+
+      // Step 4: Build Claude prompt with all enhancements + RAG
+      console.log('🤖 Building enhanced prompt with RAG context');
+      const prompt = buildEnhancedPromptWithRAG({
         metadata: { ...metadata, screen_type: screenType },
         visionData: enrichedVision,
-        designTokens: designTokens || getDefaultDesignTokens()
+        designTokens: designTokens || getDefaultDesignTokens(),
+        ragContext: ragContext
       });
 
-      // Step 4: Call Claude with retry logic
+      // Step 5: Call Claude with enhanced context
       console.log('🤖 Executing enhanced AI analysis');
       const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
       if (!anthropicKey) {
@@ -528,9 +910,16 @@ serve(async (req) => {
             recommendations: analysisResult.top_recommendations?.length || 0
           },
           businessImpact: businessSummary,
+          ragContext: {
+            enabled: ragContext.ragEnabled,
+            knowledgeSourcesUsed: ragContext.retrievedKnowledge.relevantPatterns.length,
+            industryContext: ragContext.industryContext,
+            researchCitations: ragContext.researchCitations
+          },
           analysisResult: {
             ...analysisResult,
-            businessSummary
+            businessSummary,
+            research_citations: ragContext.researchCitations
           }
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
