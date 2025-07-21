@@ -190,6 +190,88 @@ function validateAnalysisResponse(response: any): boolean {
   return issuesValid;
 }
 
+// Business Impact Analysis class (embedded for edge function use)
+class BusinessImpactAnalyzer {
+  private industryBenchmarks: Record<string, any>;
+  private conversionData: Record<string, number>;
+  
+  constructor() {
+    this.industryBenchmarks = {
+      'e-commerce': { averageConversionRate: 2.5, averageOrderValue: 75 },
+      'saas': { averageConversionRate: 3.2, averageOrderValue: 150 },
+      'fintech': { averageConversionRate: 2.8, averageOrderValue: 200 },
+      'default': { averageConversionRate: 3.0, averageOrderValue: 100 }
+    };
+
+    this.conversionData = {
+      'critical-accessibility': 15.0,
+      'critical-usability': 12.0,
+      'warning-accessibility': 8.0,
+      'warning-usability': 6.0,
+      'improvement-visual': 3.0
+    };
+  }
+
+  analyzeBusinessImpact(issue: any, screenType: string, industry: string = 'default', monthlyTraffic: number = 10000, currentConversionRate: number = 3.0) {
+    const benchmark = this.industryBenchmarks[industry] || this.industryBenchmarks['default'];
+    const impactKey = `${issue.severity}-${issue.category}`;
+    const baseImpactPercentage = this.conversionData[impactKey] || 5.0;
+    
+    const roiScore = this.calculateROIScore(issue, baseImpactPercentage);
+    const priorityLevel = roiScore >= 15 ? 'critical' : roiScore >= 12 ? 'high' : roiScore >= 8 ? 'medium' : 'low';
+    
+    const currentMonthlyRevenue = monthlyTraffic * (currentConversionRate / 100) * benchmark.averageOrderValue;
+    const adjustedImpact = baseImpactPercentage * issue.confidence;
+    const monthlyIncrease = (currentMonthlyRevenue * adjustedImpact / 100);
+    
+    return {
+      roi_score: roiScore,
+      priority_level: priorityLevel,
+      revenue_impact: {
+        monthly_increase: `$${Math.round(monthlyIncrease).toLocaleString()}`,
+        annual_projection: `$${Math.round(monthlyIncrease * 12).toLocaleString()}`,
+        confidence_level: issue.confidence >= 0.8 ? 'high' : issue.confidence >= 0.6 ? 'medium' : 'low',
+        methodology: `Based on ${adjustedImpact.toFixed(1)}% conversion improvement`
+      },
+      user_experience_metrics: {
+        satisfaction_improvement: issue.category === 'usability' ? '10-15%' : '5-10%'
+      },
+      implementation_analysis: {
+        effort_category: issue.implementation?.effort === 'minutes' ? 'quick-win' : 'standard',
+        time_estimate: issue.implementation?.effort === 'minutes' ? '15-30 minutes' : '2-8 hours',
+        resource_requirements: ['Frontend developer']
+      }
+    };
+  }
+
+  private calculateROIScore(issue: any, baseImpact: number): number {
+    let score = baseImpact * issue.confidence;
+    const severityMultipliers = { 'critical': 1.5, 'warning': 1.0, 'improvement': 0.6 };
+    score *= severityMultipliers[issue.severity] || 1.0;
+    return Math.round(score * 10) / 10;
+  }
+
+  generateBusinessSummary(issues: any[]) {
+    const totalMonthlyRevenue = issues.reduce((sum, issue) => {
+      if (issue.business_impact?.revenue_impact?.monthly_increase) {
+        const revenueStr = issue.business_impact.revenue_impact.monthly_increase.replace(/[$,]/g, '');
+        return sum + parseInt(revenueStr, 10);
+      }
+      return sum;
+    }, 0);
+    
+    const quickWins = issues.filter(i => i.business_impact?.implementation_analysis?.effort_category === 'quick-win');
+    const criticalIssues = issues.filter(i => i.business_impact?.priority_level === 'critical');
+    
+    return {
+      totalPotentialRevenue: `$${totalMonthlyRevenue.toLocaleString()}`,
+      quickWinsAvailable: quickWins.length,
+      criticalIssuesCount: criticalIssues.length,
+      averageROIScore: issues.length > 0 ? Math.round((issues.reduce((sum, i) => sum + (i.business_impact?.roi_score || 0), 0) / issues.length) * 10) / 10 : 0
+    };
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -347,8 +429,8 @@ serve(async (req) => {
         }
       }
 
-      // Step 5: Process and enrich results
-      console.log('⚡ Processing and enhancing results');
+      // Step 5: Process and enrich results with business impact
+      console.log('⚡ Processing and enhancing results with business impact analysis');
       
       // Ensure confidence scores are valid
       analysisResult.issues = analysisResult.issues.map((issue: any) => ({
@@ -379,6 +461,28 @@ serve(async (req) => {
         });
       }
 
+      // Enhanced Business Impact Analysis
+      console.log('💰 Calculating business impact and ROI metrics');
+      const businessImpactAnalyzer = new BusinessImpactAnalyzer();
+      
+      analysisResult.issues = analysisResult.issues.map((issue: any) => {
+        const businessImpact = businessImpactAnalyzer.analyzeBusinessImpact(
+          issue,
+          screenType,
+          metadata.industry || 'default',
+          metadata.monthlyTraffic || 10000,
+          metadata.currentConversionRate || 3.0
+        );
+        
+        return {
+          ...issue,
+          business_impact: businessImpact
+        };
+      });
+
+      // Generate business summary
+      const businessSummary = businessImpactAnalyzer.generateBusinessSummary(analysisResult.issues);
+
       // Step 6: Store enhanced results
       console.log('💾 Storing enhanced results');
 
@@ -402,6 +506,7 @@ serve(async (req) => {
           pattern_violations: analysisResult.issues?.flatMap((i: any) => i.violated_patterns || []) || [],
           screen_type_detected: screenType,
           vision_enrichment_data: enrichedVision,
+          enhanced_business_metrics: businessSummary,
           processing_time_ms: Date.now() - new Date(analysis.created_at).getTime()
         })
         .eq('id', analysis.id);
@@ -422,7 +527,11 @@ serve(async (req) => {
             strengths: analysisResult.strengths?.length || 0,
             recommendations: analysisResult.top_recommendations?.length || 0
           },
-          analysisResult
+          businessImpact: businessSummary,
+          analysisResult: {
+            ...analysisResult,
+            businessSummary
+          }
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
