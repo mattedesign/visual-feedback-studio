@@ -1500,6 +1500,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          automation_preferences: Json | null
           created_at: string | null
           email: string | null
           full_name: string | null
@@ -1511,6 +1512,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          automation_preferences?: Json | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
@@ -1522,6 +1524,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          automation_preferences?: Json | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null

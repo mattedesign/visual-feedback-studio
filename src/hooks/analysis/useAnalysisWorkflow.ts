@@ -148,14 +148,34 @@ export const useAnalysisWorkflow = () => {
   const [visionConfidenceScore, setVisionConfidenceScore] = useState<number | undefined>(undefined);
   const [visionElementsDetected, setVisionElementsDetected] = useState<number>(0);
   
-  // ✅ NEW: Phase 4.2 - Automated Analysis Triggers
+  // ✅ NEW: Phase 4.2 - Automated Analysis Triggers (now persistent)
   const [autoAnalysisEnabled, setAutoAnalysisEnabled] = useState<boolean>(false);
-  const [autoAnalysisDelay, setAutoAnalysisDelay] = useState<number>(3000); // 3 second delay
+  const [autoAnalysisDelay, setAutoAnalysisDelay] = useState<number>(3000);
   const [lastChangeTimestamp, setLastChangeTimestamp] = useState<number>(0);
   const [pendingAutoAnalysis, setPendingAutoAnalysis] = useState<NodeJS.Timeout | null>(null);
   const [autoAnalysisHistory, setAutoAnalysisHistory] = useState<Array<{timestamp: number, trigger: string, imageCount: number}>>([]);
-  const [smartTriggerThreshold, setSmartTriggerThreshold] = useState<number>(2); // Minimum images needed for auto-analysis
+  const [smartTriggerThreshold, setSmartTriggerThreshold] = useState<number>(2);
   const [autoAnalysisContext, setAutoAnalysisContext] = useState<string>('Auto-analysis based on design changes');
+  
+  // ✅ NEW: Load automation preferences from database
+  useEffect(() => {
+    const loadAutomationPreferences = async () => {
+      try {
+        const { automationPreferencesService } = await import('@/services/figmant/automationPreferencesService');
+        const preferences = await automationPreferencesService.getPreferences();
+        
+        setAutoAnalysisEnabled(preferences.autoAnalysisEnabled);
+        setAutoAnalysisDelay(preferences.autoAnalysisDelay);
+        setSmartTriggerThreshold(preferences.smartTriggerThreshold);
+        
+        console.log('📋 Loaded automation preferences:', preferences);
+      } catch (error) {
+        console.warn('Failed to load automation preferences:', error);
+      }
+    };
+
+    loadAutomationPreferences();
+  }, []);
   
   // ✅ NEW: Phase 4.3 - Enhanced workflow state synchronization
   useEffect(() => {
@@ -453,14 +473,21 @@ export const useAnalysisWorkflow = () => {
     setPendingAutoAnalysis(timeout);
   }, [autoAnalysisEnabled, isAnalyzing, smartTriggerThreshold, pendingAutoAnalysis, autoAnalysisDelay, images.length, analysisContext, autoAnalysisContext, currentAnalysis]);
 
-  // ✅ NEW: Phase 4.2 - Toggle auto-analysis
-  const toggleAutoAnalysis = useCallback((enabled: boolean) => {
+  // ✅ NEW: Phase 4.2 - Toggle auto-analysis with persistence
+  const toggleAutoAnalysis = useCallback(async (enabled: boolean) => {
     setAutoAnalysisEnabled(enabled);
     if (!enabled && pendingAutoAnalysis) {
       clearTimeout(pendingAutoAnalysis);
       setPendingAutoAnalysis(null);
     }
-    toast.success(`Auto-analysis ${enabled ? 'enabled' : 'disabled'}`);
+    
+    // Save to user preferences
+    try {
+      const { automationPreferencesService } = await import('@/services/figmant/automationPreferencesService');
+      await automationPreferencesService.toggleFeature('autoAnalysisEnabled', enabled);
+    } catch (error) {
+      console.warn('Failed to save automation preference:', error);
+    }
   }, [pendingAutoAnalysis]);
 
   const selectImages = useCallback((imageUrls: string[]) => {

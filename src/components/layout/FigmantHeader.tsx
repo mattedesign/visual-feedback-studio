@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Share2, Download, Settings, HelpCircle, Menu, X } from 'lucide-react';
 import { MobileMenu } from './MobileMenu';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { AutomationSettingsDialog } from '@/components/analysis/figma/AutomationSettingsDialog';
 
 const FigmantHeaderComponent = () => {
   const location = useLocation();

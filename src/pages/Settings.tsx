@@ -1,11 +1,12 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Bell, Shield, Activity, Key } from 'lucide-react';
+import { User, Bell, Shield, Activity, Key, Zap } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { ProfileSettings } from '@/components/settings/ProfileSettings';
 import { NotificationSettings } from '@/components/settings/NotificationSettings';
 import { PrivacySettings } from '@/components/settings/PrivacySettings';
 import { ApiKeyManagement } from '@/components/settings/ApiKeyManagement';
+import { AutomationSettings } from '@/components/settings/AutomationSettings';
 import { AdminHealthDashboard } from '@/components/settings/AdminHealthDashboard';
 const Settings = () => {
   const {
@@ -25,6 +26,10 @@ const Settings = () => {
     value: 'notifications',
     label: 'Notifications',
     icon: Bell
+  }, {
+    value: 'automation',
+    label: 'Automation',
+    icon: Zap
   }, {
     value: 'privacy',
     label: 'Privacy',
@@ -58,7 +63,7 @@ const Settings = () => {
       </div>
 
       <Tabs defaultValue={defaultTab} className="w-full space-y-6">
-        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-5' : 'grid-cols-4'}`}>
+        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-6' : 'grid-cols-5'}`}>
           {availableTabs.map(tab => <TabsTrigger key={tab.value} value={tab.value} className="flex items-center gap-2">
               <tab.icon className="h-4 w-4" />
               {tab.label}
@@ -71,6 +76,10 @@ const Settings = () => {
 
         <TabsContent value="notifications" className="w-full">
           <NotificationSettings />
+        </TabsContent>
+
+        <TabsContent value="automation" className="w-full">
+          <AutomationSettings />
         </TabsContent>
 
         <TabsContent value="privacy" className="w-full">
