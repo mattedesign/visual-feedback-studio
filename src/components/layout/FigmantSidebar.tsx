@@ -133,6 +133,7 @@ export const FigmantSidebar = () => {
                       <button 
                         style={item.isActive ? {
                           display: 'flex',
+                          height: '32px',
                           padding: '4px 12px 4px 4px',
                           alignItems: 'center',
                           gap: '10px',
@@ -153,10 +154,11 @@ export const FigmantSidebar = () => {
                           justifyContent: 'space-between'
                         } : {
                           width: '100%',
+                          height: '32px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
-                          padding: '12px',
+                          padding: '8px 12px',
                           borderRadius: '8px',
                           transition: 'background-color 0.2s ease',
                           backgroundColor: 'transparent',
@@ -210,12 +212,40 @@ export const FigmantSidebar = () => {
                     ) : (
                       <NavLink 
                         to={item.href} 
-                        className={({ isActive }) => {
+                        style={({ isActive }) => {
                           // Special case for Dashboard: consider both "/" and "/dashboard" as active
                           const isCurrentlyActive = item.href === '/dashboard' 
                             ? (location.pathname === '/' || location.pathname === '/dashboard')
                             : isActive;
-                          return `w-full flex items-center justify-between px-3 py-3 md:px-3 md:py-3 sm:px-2 sm:py-2 xs:px-1 xs:py-1 rounded-lg transition-colors ${isCurrentlyActive ? 'bg-muted' : 'hover:bg-muted/50'}`;
+                          
+                          return {
+                            width: '100%',
+                            height: '32px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            transition: 'background-color 0.2s ease',
+                            backgroundColor: isCurrentlyActive ? 'rgba(0, 0, 0, 0.05)' : 'transparent',
+                            textDecoration: 'none'
+                          };
+                        }}
+                        onMouseEnter={(e) => {
+                          const isCurrentlyActive = item.href === '/dashboard' 
+                            ? (location.pathname === '/' || location.pathname === '/dashboard')
+                            : location.pathname === item.href;
+                          if (!isCurrentlyActive) {
+                            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          const isCurrentlyActive = item.href === '/dashboard' 
+                            ? (location.pathname === '/' || location.pathname === '/dashboard')
+                            : location.pathname === item.href;
+                          if (!isCurrentlyActive) {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }
                         }}
                       >
                         {({ isActive }) => {
@@ -261,7 +291,7 @@ export const FigmantSidebar = () => {
                               isActive 
                                 ? {
                                     display: 'flex',
-                                    height: '40px',
+                                    height: '32px',
                                     padding: '4px 12px 4px 4px',
                                     alignItems: 'center',
                                     gap: '12px',
@@ -283,9 +313,10 @@ export const FigmantSidebar = () => {
                                   }
                                 : {
                                     display: 'flex',
+                                    height: '32px',
                                     alignItems: 'center',
                                     justifyContent: 'space-between',
-                                    padding: '12px',
+                                    padding: '8px 12px',
                                     borderRadius: '8px',
                                     transition: 'background-color 0.2s ease',
                                     color: '#7B7B7B',
