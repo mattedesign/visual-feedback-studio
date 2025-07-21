@@ -195,9 +195,9 @@ export async function getAnalysisBySessionId(sessionId: string): Promise<Unified
  */
 export function getAnalysisViewUrl(analysis: UnifiedAnalysisHistory): string {
   if (analysis.type === 'figmant') {
-    return `/figmant/${analysis.session_id}`;
+    return `/analysis/${analysis.session_id}`; // Using the correct figmant route
   } else {
-    return `/analysis/${analysis.analysis_id}`;
+    return `/analysis/${analysis.analysis_id}`; // Legacy analyses also use /analysis/
   }
 }
 
