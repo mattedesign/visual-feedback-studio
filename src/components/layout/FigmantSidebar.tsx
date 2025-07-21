@@ -147,26 +147,106 @@ export const FigmantSidebar = () => {
                     ) : (
                       <NavLink 
                         to={item.href} 
-                        className={({ isActive }) => 
+                        style={({ isActive }) => 
                           isActive 
-                            ? 'figmant-menu-item-active'
-                            : 'figmant-menu-item-inactive'
+                            ? {
+                                display: 'flex',
+                                height: '40px',
+                                padding: '4px 12px 4px 4px',
+                                alignItems: 'center',
+                                gap: '12px',
+                                alignSelf: 'stretch',
+                                borderRadius: '12px',
+                                border: '1px solid #ECECEC',
+                                background: '#F1F1F1',
+                                overflow: 'hidden',
+                                color: '#121212',
+                                textOverflow: 'ellipsis',
+                                fontFamily: 'Inter',
+                                fontSize: '12px',
+                                fontStyle: 'normal',
+                                fontWeight: '500',
+                                lineHeight: '16px',
+                                letterSpacing: '-0.12px',
+                                textDecoration: 'none'
+                              }
+                            : {
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                padding: '12px',
+                                borderRadius: '8px',
+                                transition: 'background-color 0.2s ease',
+                                color: '#7B7B7B',
+                                textDecoration: 'none'
+                              }
                         }
+                        onMouseEnter={(e) => {
+                          if (!e.currentTarget.getAttribute('aria-current')) {
+                            e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!e.currentTarget.getAttribute('aria-current')) {
+                            e.currentTarget.style.background = 'transparent';
+                          }
+                        }}
                       >
                         {({ isActive }) => (
                           <>
-                            <div className="flex items-center gap-3">
-                              <div className={isActive ? 'figmant-menu-icon-active' : ''}>
-                                <item.icon className={isActive ? 'w-4 h-4' : 'w-5 h-5'} />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <div style={
+                                isActive 
+                                  ? {
+                                      display: 'flex',
+                                      padding: '6px',
+                                      justifyContent: 'center',
+                                      alignItems: 'center',
+                                      gap: '8px',
+                                      borderRadius: '8px',
+                                      background: '#FCFCFC',
+                                      boxShadow: '0px 0px 4px 0px rgba(18, 18, 18, 0.10)',
+                                      color: '#7B7B7B'
+                                    }
+                                  : {}
+                              }>
+                                <item.icon 
+                                  style={
+                                    isActive 
+                                      ? { width: '16px', height: '16px', color: '#7B7B7B' }
+                                      : { width: '20px', height: '20px', color: '#7B7B7B' }
+                                  }
+                                />
                               </div>
                               {!isCollapsed && (
-                                <span>
+                                <span style={
+                                  isActive 
+                                    ? {
+                                        fontFamily: 'Inter',
+                                        fontSize: '12px',
+                                        fontWeight: '500',
+                                        lineHeight: '16px',
+                                        letterSpacing: '-0.12px',
+                                        color: '#121212'
+                                      }
+                                    : {
+                                        fontSize: '14px',
+                                        fontWeight: '500',
+                                        color: '#7B7B7B'
+                                      }
+                                }>
                                   {item.label}
                                 </span>
                               )}
                             </div>
                             {item.count && !isCollapsed && !isActive && (
-                              <span className="text-xs bg-muted text-gray-600 px-2 py-1 rounded-full">
+                              <span style={{
+                                fontSize: '12px',
+                                background: '#f1f1f1',
+                                color: '#7B7B7B',
+                                padding: '4px 8px',
+                                borderRadius: '9999px'
+                              }}>
                                 {item.count}
                               </span>
                             )}
