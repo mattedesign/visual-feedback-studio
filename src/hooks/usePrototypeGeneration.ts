@@ -31,11 +31,11 @@ export function usePrototypeGeneration() {
     
     try {
       // Call the edge function for prototype generation
-      const response = await fetch('/api/functions/generate-visual-prototypes', {
+      const response = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/functions/v1/generate-visual-prototypes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14eHR2dHdjb3BsZmFqdmF6cGF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2MDU2NjgsImV4cCI6MjA2NjE4MTY2OH0.b9sNxeDALujnw2tQD-qnbs3YkZvvTkja8jG6clgpibA`
         },
         body: JSON.stringify({
           analysisId,
