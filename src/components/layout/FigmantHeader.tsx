@@ -50,18 +50,48 @@ const FigmantHeaderComponent = () => {
   // Early return for hidden header pages
   if (shouldHideHeader) {
     return (
-      <MobileMenu 
-        isOpen={isMobileMenuOpen} 
-        onClose={handleCloseMobileMenu} 
-      />
+      <>
+        {isMobile && (
+          <div className="fixed top-0 left-0 right-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 py-3 flex items-center justify-between border-b border-border">
+            <h1 className="text-lg font-semibold text-card-foreground">{pageTitle}</h1>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={handleOpenMobileMenu}
+              className="p-2"
+            >
+              <Menu className="w-6 h-6" />
+            </Button>
+          </div>
+        )}
+        <MobileMenu 
+          isOpen={isMobileMenuOpen} 
+          onClose={handleCloseMobileMenu} 
+        />
+      </>
     );
   }
 
   return (
-    <MobileMenu 
-      isOpen={isMobileMenuOpen} 
-      onClose={handleCloseMobileMenu} 
-    />
+    <>
+      {isMobile && (
+        <div className="fixed top-0 left-0 right-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 py-3 flex items-center justify-between border-b border-border">
+          <h1 className="text-lg font-semibold text-card-foreground">{pageTitle}</h1>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={handleOpenMobileMenu}
+            className="p-2"
+          >
+            <Menu className="w-6 h-6" />
+          </Button>
+        </div>
+      )}
+      <MobileMenu 
+        isOpen={isMobileMenuOpen} 
+        onClose={handleCloseMobileMenu} 
+      />
+    </>
   );
 };
 
