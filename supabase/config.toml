@@ -101,3 +101,6 @@ verify_jwt = true
 
 [functions.api-analysis-data]
 verify_jwt = false
+
+[functions.generate-visual-prototypes]
+verify_jwt = true
