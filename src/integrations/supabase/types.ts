@@ -623,14 +623,18 @@ export type Database = {
           ai_model_used: string | null
           business_impact_enhanced: Json | null
           claude_analysis: Json
+          confidence_metadata: Json | null
           confidence_scores: Json | null
           created_at: string
+          enhanced_business_metrics: Json | null
           enhanced_metadata_tracking: Json | null
           google_vision_summary: Json | null
           id: string
           implementation_timeline: Json | null
           pattern_analysis_data: Json | null
+          pattern_violations: Json | null
           processing_time_ms: number | null
+          screen_type_detected: string | null
           session_id: string | null
           severity_breakdown: Json | null
           user_id: string | null
@@ -639,14 +643,18 @@ export type Database = {
           ai_model_used?: string | null
           business_impact_enhanced?: Json | null
           claude_analysis: Json
+          confidence_metadata?: Json | null
           confidence_scores?: Json | null
           created_at?: string
+          enhanced_business_metrics?: Json | null
           enhanced_metadata_tracking?: Json | null
           google_vision_summary?: Json | null
           id?: string
           implementation_timeline?: Json | null
           pattern_analysis_data?: Json | null
+          pattern_violations?: Json | null
           processing_time_ms?: number | null
+          screen_type_detected?: string | null
           session_id?: string | null
           severity_breakdown?: Json | null
           user_id?: string | null
@@ -655,14 +663,18 @@ export type Database = {
           ai_model_used?: string | null
           business_impact_enhanced?: Json | null
           claude_analysis?: Json
+          confidence_metadata?: Json | null
           confidence_scores?: Json | null
           created_at?: string
+          enhanced_business_metrics?: Json | null
           enhanced_metadata_tracking?: Json | null
           google_vision_summary?: Json | null
           id?: string
           implementation_timeline?: Json | null
           pattern_analysis_data?: Json | null
+          pattern_violations?: Json | null
           processing_time_ms?: number | null
+          screen_type_detected?: string | null
           session_id?: string | null
           severity_breakdown?: Json | null
           user_id?: string | null
@@ -680,10 +692,13 @@ export type Database = {
       figmant_analysis_sessions: {
         Row: {
           business_goals: string[] | null
+          confidence_threshold: number | null
           created_at: string
           design_type: string | null
           id: string
           industry: string | null
+          pattern_tracking_enabled: boolean | null
+          screen_detection_metadata: Json | null
           status: string | null
           title: string
           updated_at: string
@@ -691,10 +706,13 @@ export type Database = {
         }
         Insert: {
           business_goals?: string[] | null
+          confidence_threshold?: number | null
           created_at?: string
           design_type?: string | null
           id?: string
           industry?: string | null
+          pattern_tracking_enabled?: boolean | null
+          screen_detection_metadata?: Json | null
           status?: string | null
           title?: string
           updated_at?: string
@@ -702,10 +720,13 @@ export type Database = {
         }
         Update: {
           business_goals?: string[] | null
+          confidence_threshold?: number | null
           created_at?: string
           design_type?: string | null
           id?: string
           industry?: string | null
+          pattern_tracking_enabled?: boolean | null
+          screen_detection_metadata?: Json | null
           status?: string | null
           title?: string
           updated_at?: string

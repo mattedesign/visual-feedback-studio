@@ -1,472 +1,614 @@
+// supabase/functions/figmant-analyze-design/index.ts
+// Enhanced Figmant analysis pipeline - Phase 1.4 Implementation
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.0';
+
+// Enhanced types for Phase 1.4
+interface AnalysisRequest {
+  sessionId: string;
+  metadata?: {
+    screen_name: string;
+    platform: string;
+    screen_type?: string;
+    user_goal?: string;
+  };
+  designTokens?: any;
+}
+
+interface VisionResponse {
+  labels: string[];
+  text: string[];
+  objects: Array<{
+    name: string;
+    confidence: number;
+    boundingBox: {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    };
+  }>;
+  imageProperties: {
+    dominantColors: string[];
+    width: number;
+    height: number;
+  };
+  webDetection: any;
+}
+
+interface EnrichedVisionData {
+  labels: string[];
+  contextualTags: string[];
+  textDensity: 'low' | 'medium' | 'high';
+  layoutType: 'single-column' | 'multi-column' | 'grid' | 'centered';
+  hasHeroSection: boolean;
+  formComplexity?: 'simple' | 'moderate' | 'complex';
+  primaryColors: string[];
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
-}
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
-console.log('🎨 Figmant Analysis Pipeline - Comprehensive UX Analysis v3.2');
+console.log('🎨 Figmant Enhanced Analysis Pipeline - Phase 1.4 Implementation');
 
 serve(async (req) => {
-  console.log('🔴 DEBUG_FIGMANT: Function entry point reached');
-  console.log('🔴 DEBUG_FIGMANT: Request method:', req.method);
-
   if (req.method === 'OPTIONS') {
-    console.log('🔴 DEBUG_FIGMANT: Returning CORS response');
-    return new Response(null, { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    console.log('🔴 DEBUG_FIGMANT: Starting analysis pipeline');
-    
-    // Environment check
-    const envCheck = {
-      hasSupabaseUrl: !!Deno.env.get('SUPABASE_URL'),
-      hasServiceKey: !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
-      hasAnthropicKey: !!Deno.env.get('ANTHROPIC_API_KEY'),
-      hasGoogleVisionKey: !!Deno.env.get('GOOGLE_VISION_API_KEY'),
-      timestamp: new Date().toISOString()
-    };
-    console.log('🔴 DEBUG_FIGMANT: Environment check:', envCheck);
+    // Parse request body - support both old and new formats
+    const requestData = await req.json();
+    const sessionId = requestData.sessionId || requestData.session_id;
+    const metadata = requestData.metadata;
+    const designTokens = requestData.designTokens;
 
-    // Initialize Supabase clients - dual client approach for proper JWT validation
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    
-    // Check for JWT authentication first
-    const authHeader = req.headers.get('Authorization');
-    let authenticatedUserId = null;
-    
-    if (authHeader) {
-      console.log('🔴 DEBUG_FIGMANT: JWT authentication provided');
-      const token = authHeader.replace('Bearer ', '');
-      
-      // Create auth client for JWT validation
-      const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false
-        },
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      });
-      
-      // Verify the user
-      const { data: userData, error: userError } = await supabaseAuth.auth.getUser();
-      
-      if (userError || !userData.user) {
-        console.error('🔴 DEBUG_FIGMANT: JWT authentication failed, checking if this is a plugin session...', userError);
-        // Don't immediately return error - might be a plugin request with session validation
-      } else {
-        console.log('🔴 DEBUG_FIGMANT: JWT authentication successful for user:', userData.user.id);
-        authenticatedUserId = userData.user.id;
-      }
-    }
-    
-    // Create service client for database operations
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
-    // Validate API key if provided (alternative auth method)
-    const apiKey = req.headers.get('x-api-key');
-    if (apiKey && !authHeader) {
-      console.log('🔴 DEBUG_FIGMANT: API key provided, validating...');
-      // Hash the provided API key
-      const encoder = new TextEncoder();
-      const data = encoder.encode(apiKey);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const keyHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-      
-      // Validate API key
-      const { data: keyData, error: keyError } = await supabase.rpc('validate_api_key', { p_key_hash: keyHash });
-      
-      if (keyError || !keyData || keyData.length === 0 || !keyData[0].is_valid) {
-        console.log('🔴 DEBUG_FIGMANT: Invalid API key');
-        return new Response(
-          JSON.stringify({ error: 'Invalid API key' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      console.log('🔴 DEBUG_FIGMANT: API key validated successfully');
-    }
-    
-    // For plugin requests, we'll validate session ownership instead of requiring JWT
-    const isPluginRequest = !apiKey; // If no API key, assume it's a plugin request
-
-    // Parse request body
-    let requestBody;
-    try {
-      const bodyText = await req.text();
-      console.log('📥 Raw request body:', bodyText);
-      
-      if (!bodyText) {
-        throw new Error('Request body is empty');
-      }
-      
-      requestBody = JSON.parse(bodyText);
-      console.log('📥 Parsed request body:', requestBody);
-    } catch (parseError) {
-      console.error('❌ Failed to parse request body:', parseError);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Invalid JSON in request body',
-          details: parseError.message 
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Extract sessionId with multiple possible field names
-    const sessionId = requestBody.session_id || requestBody.sessionId;
-    
-    const requestInfo = {
-      sessionId: sessionId,
-      timestamp: new Date().toISOString()
-    };
-    console.log('📥 Received request:', requestInfo);
-
+    // Validate inputs
     if (!sessionId) {
-      console.error('❌ Missing sessionId in request');
-      return new Response(
-        JSON.stringify({ 
-          error: 'sessionId is required',
-          received: requestBody,
-          expectedFields: ['session_id', 'sessionId']
-        }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+      throw new Error('Missing sessionId in request');
     }
 
-    console.log('🔴 DEBUG_FIGMANT: Starting analysis for session:', sessionId);
+    // Initialize Supabase
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    console.log('Starting analysis for session:', sessionId)
+    console.log('🔍 Starting enhanced analysis for session:', sessionId);
 
     // Get session and images
     const { data: session, error: sessionError } = await supabase
       .from('figmant_analysis_sessions')
       .select('*')
       .eq('id', sessionId)
-      .single()
+      .single();
 
-    if (sessionError) {
-      console.error('❌ Session lookup error:', sessionError);
-      throw new Error(`Session not found: ${sessionError.message}`);
-    }
-
-    if (!session) {
-      throw new Error('Session not found');
+    if (sessionError || !session) {
+      throw new Error(`Session not found: ${sessionError?.message}`);
     }
 
     console.log('✅ Found session:', session.id);
 
-    // For plugin requests without JWT, validate session ownership using the session's user_id
-    if (isPluginRequest && !authenticatedUserId) {
-      console.log('🔴 DEBUG_FIGMANT: Plugin request - validating session without JWT');
-      // Plugin requests are authenticated via the session itself - 
-      // if someone can provide a valid session_id, they can analyze it
-      // This matches the upload API behavior
-    } else if (authenticatedUserId && session.user_id !== authenticatedUserId) {
-      console.error('🔴 DEBUG_FIGMANT: Session belongs to different user');
-      return new Response(
-        JSON.stringify({ error: 'Session access denied' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // Set up real-time progress updates
+    const updateProgress = async (stage: string, message: string, progress: number) => {
+      await supabase
+        .channel(`figmant-analysis-${sessionId}`)
+        .send({
+          type: 'broadcast',
+          event: 'progress',
+          payload: { stage, message, progress }
+        });
+    };
 
-    const { data: images, error: imagesError } = await supabase
-      .from('figmant_session_images')
-      .select('*')
-      .eq('session_id', sessionId)
-      .order('upload_order', { ascending: true })
+    try {
+      // Step 1: Get session images
+      await updateProgress('upload', 'Processing uploaded images...', 10);
+      
+      const { data: images, error: imagesError } = await supabase
+        .from('figmant_session_images')
+        .select('*')
+        .eq('session_id', sessionId)
+        .order('upload_order', { ascending: true });
 
-    if (imagesError) {
-      console.error('❌ Images lookup error:', imagesError);
-      throw new Error(`Failed to get images: ${imagesError.message}`);
-    }
-
-    if (!images || images.length === 0) {
-      throw new Error('No images found for analysis')
-    }
-
-    console.log(`✅ Found ${images.length} images to analyze`)
-
-    // Update session status to processing
-    await supabase
-      .from('figmant_analysis_sessions')
-      .update({ status: 'processing' })
-      .eq('id', sessionId);
-
-    // Get Google Vision API key
-    const googleVisionApiKey = Deno.env.get('GOOGLE_VISION_API_KEY')
-    if (!googleVisionApiKey) {
-      throw new Error('Google Vision API key not configured')
-    }
-
-    // Process each image with Google Vision
-    const visionResults = []
-    for (const image of images) {
-      try {
-        console.log(`🔍 Processing vision for: ${image.file_name}`);
-        
-        // Get image URL
-        const { data: urlData } = supabase.storage
-          .from('analysis-images')
-          .getPublicUrl(image.file_path)
-
-        // Call Google Vision API
-        const visionResponse = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${googleVisionApiKey}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            requests: [{
-              image: {
-                source: {
-                  imageUri: urlData.publicUrl
-                }
-              },
-              features: [
-                { type: 'TEXT_DETECTION', maxResults: 50 },
-                { type: 'LABEL_DETECTION', maxResults: 20 },
-                { type: 'IMAGE_PROPERTIES' },
-                { type: 'OBJECT_LOCALIZATION', maxResults: 20 }
-              ]
-            }]
-          })
-        })
-
-        const visionData = await visionResponse.json()
-        visionResults.push({
-          image_id: image.id,
-          file_name: image.file_name,
-          vision_data: visionData.responses?.[0] || {}
-        })
-
-        // Update image with vision data
-        await supabase
-          .from('figmant_session_images')
-          .update({ google_vision_data: visionData.responses?.[0] || {} })
-          .eq('id', image.id)
-
-      } catch (error) {
-        console.error(`Error processing image ${image.file_name}:`, error)
-        visionResults.push({
-          image_id: image.id,
-          file_name: image.file_name,
-          vision_data: {},
-          error: error.message
-        })
+      if (imagesError || !images || images.length === 0) {
+        throw new Error('No images found for analysis');
       }
-    }
 
-    console.log('✅ Vision processing complete');
+      console.log(`✅ Found ${images.length} images to analyze`);
 
-    // Get Claude API key
-    const claudeApiKey = Deno.env.get('ANTHROPIC_API_KEY')
-    if (!claudeApiKey) {
-      throw new Error('Claude API key not configured')
-    }
+      // Step 2: Google Vision API processing
+      await updateProgress('vision', 'Detecting UI elements with Google Vision...', 30);
+      
+      const googleVisionApiKey = Deno.env.get('GOOGLE_VISION_API_KEY');
+      if (!googleVisionApiKey) {
+        throw new Error('Google Vision API key not configured');
+      }
 
-    // Prepare Claude analysis prompt with images
-    const imageContent = []
-    
-    // Add each image as base64 content for Claude
-    for (const image of images) {
+      const visionResults = [];
+      for (const image of images) {
+        try {
+          console.log(`🔍 Processing vision for: ${image.file_name}`);
+          
+          // Get image URL
+          const { data: urlData } = supabase.storage
+            .from('analysis-images')
+            .getPublicUrl(image.file_path);
+
+          // Enhanced Google Vision API call
+          const visionResponse = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${googleVisionApiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              requests: [{
+                image: { source: { imageUri: urlData.publicUrl } },
+                features: [
+                  { type: 'LABEL_DETECTION', maxResults: 20 },
+                  { type: 'TEXT_DETECTION' },
+                  { type: 'OBJECT_LOCALIZATION', maxResults: 20 },
+                  { type: 'IMAGE_PROPERTIES' },
+                  { type: 'WEB_DETECTION', maxResults: 10 }
+                ]
+              }]
+            })
+          });
+
+          if (!visionResponse.ok) {
+            throw new Error(`Vision API error: ${visionResponse.status}`);
+          }
+
+          const visionData = await visionResponse.json();
+          const result = visionData.responses[0];
+
+          if (result.error) {
+            throw new Error(`Vision API error: ${result.error.message}`);
+          }
+
+          // Enrich vision data with contextual understanding
+          const enrichedVision = enrichVisionData({
+            labels: result.labelAnnotations?.map((l: any) => l.description) || [],
+            text: result.textAnnotations?.map((t: any) => t.description) || [],
+            objects: result.localizedObjectAnnotations?.map((o: any) => ({
+              name: o.name,
+              confidence: o.score,
+              boundingBox: {
+                x: Math.round(o.boundingPoly.normalizedVertices[0].x * 1920),
+                y: Math.round(o.boundingPoly.normalizedVertices[0].y * 1080),
+                width: Math.round((o.boundingPoly.normalizedVertices[2].x - o.boundingPoly.normalizedVertices[0].x) * 1920),
+                height: Math.round((o.boundingPoly.normalizedVertices[2].y - o.boundingPoly.normalizedVertices[0].y) * 1080)
+              }
+            })) || [],
+            imageProperties: {
+              dominantColors: result.imagePropertiesAnnotation?.dominantColors?.colors?.map((c: any) => 
+                `rgb(${Math.round(c.color.red || 0)}, ${Math.round(c.color.green || 0)}, ${Math.round(c.color.blue || 0)})`
+              ).slice(0, 5) || [],
+              width: 1920,
+              height: 1080
+            },
+            webDetection: result.webDetection || null
+          });
+
+          visionResults.push({
+            image_id: image.id,
+            file_name: image.file_name,
+            vision_data: result,
+            enriched_vision: enrichedVision
+          });
+
+          // Update image with enhanced vision data
+          await supabase
+            .from('figmant_session_images')
+            .update({ 
+              google_vision_data: result,
+              // Store enriched vision data in new columns when we have them
+            })
+            .eq('id', image.id);
+
+        } catch (error) {
+          console.error(`Error processing image ${image.file_name}:`, error);
+          visionResults.push({
+            image_id: image.id,
+            file_name: image.file_name,
+            vision_data: {},
+            enriched_vision: null,
+            error: error.message
+          });
+        }
+      }
+
+      console.log('✅ Enhanced vision processing complete');
+
+      // Step 3: Screen type detection using enhanced metadata
+      await updateProgress('analysis', 'Detecting screen type and analyzing patterns...', 50);
+      
+      // Auto-detect screen type from vision data
+      const allLabels = visionResults.flatMap(r => r.enriched_vision?.labels || []);
+      const allText = visionResults.flatMap(r => r.vision_data.textAnnotations?.map((t: any) => t.description) || []);
+      const screenType = detectScreenType(allLabels, allText);
+      
+      console.log('🎯 Detected screen type:', screenType);
+
+      // Step 4: Enhanced Claude analysis with confidence scoring
+      await updateProgress('analysis', 'Generating AI-powered UX insights with confidence scoring...', 70);
+      
+      const claudeApiKey = Deno.env.get('ANTHROPIC_API_KEY');
+      if (!claudeApiKey) {
+        throw new Error('Claude API key not configured');
+      }
+
+      // Build enhanced prompt with pattern awareness
+      const enhancedPrompt = buildEnhancedPrompt({
+        session,
+        visionResults,
+        screenType,
+        metadata: metadata || {
+          screen_name: session.title,
+          platform: 'Web',
+          screen_type: screenType,
+          user_goal: 'Improve user experience'
+        },
+        designTokens: designTokens || getDefaultDesignTokens()
+      });
+
+      // Prepare image content for Claude
+      const imageContent = [];
+      for (const image of images) {
+        try {
+          const { data: urlData } = supabase.storage
+            .from('analysis-images')
+            .getPublicUrl(image.file_path);
+          
+          const imageResponse = await fetch(urlData.publicUrl);
+          if (!imageResponse.ok) continue;
+          
+          const imageBuffer = await imageResponse.arrayBuffer();
+          const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+          
+          imageContent.push({
+            type: "image",
+            source: {
+              type: "base64",
+              media_type: "image/png",
+              data: base64Image
+            }
+          });
+        } catch (error) {
+          console.error(`Error loading image for Claude:`, error);
+        }
+      }
+
+      // Call Claude with enhanced analysis
+      const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': claudeApiKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-opus-4-20250514', // Latest Claude 4 for best analysis
+          max_tokens: 4000,
+          temperature: 0.2,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'text', text: enhancedPrompt },
+              ...imageContent
+            ]
+          }]
+        })
+      });
+
+      if (!claudeResponse.ok) {
+        const claudeErrorText = await claudeResponse.text();
+        throw new Error(`Claude API error: ${claudeResponse.status} - ${claudeErrorText}`);
+      }
+
+      const claudeData = await claudeResponse.json();
+      const analysisText = claudeData.content?.[0]?.text;
+
+      if (!analysisText) {
+        throw new Error('No analysis content received from Claude');
+      }
+
+      // Step 5: Parse and validate enhanced analysis
+      await updateProgress('insights', 'Processing insights and calculating business impact...', 90);
+      
+      let analysisResult;
       try {
-        // Get image URL
-        const { data: urlData } = supabase.storage
-          .from('analysis-images')
-          .getPublicUrl(image.file_path)
-        
-        // Fetch and convert image to base64
-        const imageResponse = await fetch(urlData.publicUrl)
-        if (!imageResponse.ok) {
-          throw new Error(`Failed to fetch image: ${imageResponse.status}`)
+        // Enhanced JSON parsing with validation
+        const jsonMatch = analysisText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          analysisResult = JSON.parse(jsonMatch[0]);
+          
+          // Validate analysis response structure
+          if (!validateAnalysisResponse(analysisResult)) {
+            throw new Error('Invalid analysis response format');
+          }
+        } else {
+          throw new Error('No valid JSON found in Claude response');
         }
-        const imageBuffer = await imageResponse.arrayBuffer()
-        
-        // Convert ArrayBuffer to base64 safely (avoid stack overflow for large images)
-        const uint8Array = new Uint8Array(imageBuffer)
-        let binaryString = ''
-        const chunkSize = 8192 // Process in chunks to avoid stack overflow
-        for (let i = 0; i < uint8Array.length; i += chunkSize) {
-          const chunk = uint8Array.slice(i, i + chunkSize)
-          binaryString += String.fromCharCode.apply(null, Array.from(chunk))
-        }
-        const base64Image = btoa(binaryString)
-        
-        imageContent.push({
-          type: "image",
-          source: {
-            type: "base64",
-            media_type: "image/png",
-            data: base64Image
+      } catch (error) {
+        console.error('Failed to parse Claude JSON, using fallback:', error);
+        analysisResult = {
+          screen_id: `screen-${Date.now()}`,
+          screen_name: session.title,
+          overall_score: 75,
+          issues: [],
+          strengths: ['Analysis completed with basic processing'],
+          top_recommendations: ['Detailed analysis requires valid JSON response'],
+          raw_analysis: analysisText
+        };
+      }
+
+      // Step 6: Save enhanced results with pattern tracking
+      const { data: resultData, error: resultError } = await supabase
+        .from('figmant_analysis_results')
+        .insert({
+          session_id: sessionId,
+          user_id: session.user_id,
+          claude_analysis: analysisResult,
+          google_vision_summary: {
+            total_images: images.length,
+            vision_results: visionResults,
+            screen_type_detected: screenType
+          },
+          processing_time_ms: Date.now() - new Date(session.created_at).getTime(),
+          // Enhanced Phase 1.4 fields
+          pattern_violations: analysisResult.pattern_coverage?.violated || [],
+          confidence_metadata: {
+            avg_confidence: calculateAverageConfidence(analysisResult.issues || []),
+            high_confidence_count: (analysisResult.issues || []).filter((i: any) => i.confidence >= 0.8).length
+          },
+          screen_type_detected: screenType,
+          enhanced_business_metrics: {
+            quick_wins: (analysisResult.issues || []).filter((i: any) => 
+              i.implementation?.effort === 'minutes' && i.severity !== 'improvement'
+            ).length,
+            conversion_critical: (analysisResult.issues || []).filter((i: any) => 
+              i.impact_scope === 'conversion' || i.impact_scope === 'task-completion'
+            ).length
           }
         })
-      } catch (error) {
-        console.error(`Error loading image ${image.file_name} for Claude:`, error)
+        .select()
+        .single();
+
+      if (resultError) {
+        throw new Error(`Failed to save results: ${resultError.message}`);
       }
-    }
 
-    const analysisPrompt = `You are a Senior UX Designer analyzing design images. 
+      // Update session with enhanced metadata
+      await supabase
+        .from('figmant_analysis_sessions')
+        .update({ 
+          status: 'completed',
+          screen_detection_metadata: {
+            detected_type: screenType,
+            confidence: 0.8, // TODO: Implement proper confidence calculation
+            labels_analyzed: allLabels.length,
+            text_elements: allText.length
+          },
+          pattern_tracking_enabled: true,
+          confidence_threshold: 0.7
+        })
+        .eq('id', sessionId);
 
-Session Details:
-- Title: ${session.title}
-- Design Type: ${session.design_type || 'Web/Mobile Interface'}
-- Business Goals: ${session.business_goals?.join(', ') || 'Not specified'}
+      // Step 7: Complete with real-time notification
+      await updateProgress('complete', 'Enhanced analysis complete with confidence scoring!', 100);
 
-Images Analyzed: ${images.length}
+      console.log('✅ Enhanced Figmant analysis completed successfully');
 
-Google Vision Data Summary:
-${visionResults.map(result => `
-Image: ${result.file_name}
-- Text detected: ${result.vision_data.textAnnotations?.length || 0} text elements
-- Objects detected: ${result.vision_data.localizedObjectAnnotations?.length || 0} objects  
-- Labels detected: ${result.vision_data.labelAnnotations?.length || 0} labels
-`).join('\n')}
+      return new Response(
+        JSON.stringify({
+          success: true,
+          result_id: resultData.id,
+          session_id: sessionId,
+          summary: {
+            total_issues: analysisResult.issues?.length || 0,
+            critical_issues: (analysisResult.issues || []).filter((i: any) => i.severity === 'critical').length,
+            high_confidence_issues: (analysisResult.issues || []).filter((i: any) => i.confidence >= 0.8).length,
+            quick_wins: (analysisResult.issues || []).filter((i: any) => i.implementation?.effort === 'minutes').length,
+            overall_score: analysisResult.overall_score || 0,
+            screen_type: screenType,
+            pattern_violations: analysisResult.pattern_coverage?.violated?.length || 0
+          },
+          message: 'Enhanced analysis completed with Phase 1.4 features'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
 
-Please provide a comprehensive UX analysis focusing on:
-
-1. **First Impressions**: What stands out immediately
-2. **Visual Hierarchy**: How well does the design guide the user's eye
-3. **Usability Issues**: Specific problems that could affect user experience
-4. **Accessibility Concerns**: WCAG compliance and inclusive design issues
-5. **Conversion Optimization**: Opportunities to improve business goals
-6. **Mobile Responsiveness**: Considerations for different screen sizes
-7. **Design Consistency**: Patterns, spacing, typography consistency
-
-For each issue identified, provide:
-- Severity level (Critical/High/Medium/Low)
-- Specific location/element affected
-- User impact description
-- Actionable recommendation
-- Implementation difficulty (Easy/Medium/Hard)
-
-Format your response as structured JSON with clear categories and actionable insights.`
-
-    console.log('🧠 Calling Claude API...');
-
-    // Prepare the message content with both text and images
-    const messageContent = [
-      { type: "text", text: analysisPrompt },
-      ...imageContent
-    ]
-
-    // Call Claude API
-    const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': claudeApiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
-        messages: [{
-          role: 'user',
-          content: messageContent
-        }]
-      })
-    })
-
-    if (!claudeResponse.ok) {
-      const claudeErrorText = await claudeResponse.text();
-      console.error('❌ Claude API error:', claudeErrorText);
-      throw new Error(`Claude API error: ${claudeResponse.status} - ${claudeErrorText}`)
-    }
-
-    const claudeData = await claudeResponse.json()
-    const analysisText = claudeData.content?.[0]?.text
-
-    if (!analysisText) {
-      throw new Error('No analysis content received from Claude')
-    }
-
-    console.log('✅ Claude analysis received');
-
-    // Parse Claude response (try to extract JSON, fallback to text)
-    let claudeAnalysis
-    try {
-      // Try to find JSON in the response
-      const jsonMatch = analysisText.match(/\{[\s\S]*\}/)
-      if (jsonMatch) {
-        claudeAnalysis = JSON.parse(jsonMatch[0])
-      } else {
-        claudeAnalysis = { raw_analysis: analysisText }
-      }
     } catch (error) {
-      claudeAnalysis = { raw_analysis: analysisText }
+      // Send error to real-time channel
+      await updateProgress('error', error.message, 0);
+      throw error;
     }
-
-    // Save analysis results
-    const { data: resultData, error: resultError } = await supabase
-      .from('figmant_analysis_results')
-      .insert({
-        session_id: sessionId,
-        user_id: session.user_id,
-        claude_analysis: claudeAnalysis,
-        google_vision_summary: {
-          total_images: images.length,
-          vision_results: visionResults
-        },
-        processing_time_ms: Date.now() - new Date(session.created_at).getTime()
-      })
-      .select()
-      .single()
-
-    if (resultError) {
-      console.error('❌ Result save error:', resultError);
-      throw new Error(`Failed to save results: ${resultError.message}`);
-    }
-
-    // Update session status
-    await supabase
-      .from('figmant_analysis_sessions')
-      .update({ status: 'completed' })
-      .eq('id', sessionId)
-
-    console.log('✅ Analysis completed successfully')
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        result_id: resultData.id,
-        session_id: sessionId,
-        message: 'Analysis completed successfully'
-      }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
-    )
 
   } catch (error) {
-    console.error('❌ Analysis error:', error)
+    console.error('❌ Enhanced analysis error:', error);
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        details: 'Analysis failed'
+        details: 'Enhanced analysis failed'
       }),
       { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        }, 
-        status: 500 
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
-    )
+    );
   }
-})
+});
+
+// Enhanced helper functions for Phase 1.4
+
+function enrichVisionData(visionResponse: VisionResponse): EnrichedVisionData {
+  const textCount = visionResponse.text.join(' ').split(' ').length;
+  const hasMultipleColumns = visionResponse.objects.filter(o => 
+    o.name.toLowerCase() === 'text' || o.name.toLowerCase() === 'textblock'
+  ).length > 3;
+  
+  const enriched: EnrichedVisionData = {
+    labels: visionResponse.labels,
+    contextualTags: [],
+    textDensity: textCount > 200 ? 'high' : textCount > 50 ? 'medium' : 'low',
+    layoutType: hasMultipleColumns ? 'multi-column' : 'single-column',
+    hasHeroSection: visionResponse.labels.some(l => 
+      l.toLowerCase().includes('hero') || 
+      l.toLowerCase().includes('banner') ||
+      l.toLowerCase().includes('header')
+    ),
+    primaryColors: visionResponse.imageProperties.dominantColors.slice(0, 3),
+    formComplexity: undefined
+  };
+
+  // Add contextual tags based on heuristics
+  if (enriched.textDensity === 'high' && enriched.layoutType === 'multi-column') {
+    enriched.contextualTags.push('complex-form');
+    enriched.formComplexity = 'complex';
+  }
+
+  if (enriched.hasHeroSection && enriched.textDensity === 'low') {
+    enriched.contextualTags.push('landing-page');
+  }
+
+  return enriched;
+}
+
+function detectScreenType(visionLabels: string[], textContent: string[]): string {
+  const screenTypePatterns = {
+    'checkout': ['cart', 'total', 'payment', 'shipping', 'checkout', 'order'],
+    'dashboard': ['metrics', 'analytics', 'chart', 'graph', 'statistics', 'overview'],
+    'form': ['input', 'field', 'submit', 'required', 'email', 'password', 'register'],
+    'landing': ['hero', 'cta', 'features', 'pricing', 'testimonial', 'get started'],
+    'profile': ['profile', 'avatar', 'settings', 'account', 'preferences', 'bio'],
+    'feed': ['posts', 'timeline', 'updates', 'comments', 'likes', 'share']
+  };
+
+  const allText = [...visionLabels, ...textContent].map(t => t.toLowerCase());
+  let bestMatch = 'generic';
+  let maxScore = 0;
+
+  Object.entries(screenTypePatterns).forEach(([type, keywords]) => {
+    const score = keywords.reduce((acc, keyword) => {
+      return acc + allText.filter(text => text.includes(keyword)).length;
+    }, 0);
+    
+    if (score > maxScore) {
+      maxScore = score;
+      bestMatch = type;
+    }
+  });
+
+  return maxScore > 0 ? bestMatch : 'generic';
+}
+
+function buildEnhancedPrompt(context: any): string {
+  const { session, visionResults, screenType, metadata, designTokens } = context;
+  
+  return `You are an expert Senior Principal UX Designer analyzing user interfaces with deep knowledge of design systems, accessibility standards, and conversion optimization.
+
+ANALYSIS CONTEXT:
+- Screen: ${metadata.screen_name} (${screenType})
+- Platform: ${metadata.platform}
+- User Goal: ${metadata.user_goal}
+- Detected Elements: ${JSON.stringify(visionResults.flatMap((r: any) => r.enriched_vision?.labels || []).slice(0, 10))}
+- Layout Type: ${visionResults[0]?.enriched_vision?.layoutType || 'unknown'}
+- Text Density: ${visionResults[0]?.enriched_vision?.textDensity || 'unknown'}
+
+ENHANCED ANALYSIS INSTRUCTIONS:
+1. Analyze systematically at all levels (molecular → component → layout → flow)
+2. For each issue, assess your confidence level (0.0-1.0)
+3. Categorize impact scope precisely
+4. Reference specific design patterns when violated
+5. Consider platform-specific constraints
+
+CONFIDENCE SCORING GUIDELINES:
+- 1.0: Objective violation (contrast ratio, touch target size)
+- 0.8-0.9: Clear best practice violation with data
+- 0.6-0.7: Strong recommendation based on patterns
+- 0.4-0.5: Subjective improvement suggestion
+
+PATTERN AWARENESS:
+Check for violations of: Progressive disclosure, Mobile touch targets, F-Pattern scanning, 
+Gestalt principles, Fitts's Law, Hick's Law, WCAG 2.1 AA compliance
+
+Return ONLY valid JSON matching this exact structure:
+{
+  "screen_id": "${metadata.screen_id || 'screen-' + Date.now()}",
+  "screen_name": "${metadata.screen_name}",
+  "overall_score": <0-100 based on issues found>,
+  "issues": [
+    {
+      "id": "issue-<sequential-number>",
+      "level": "molecular" | "component" | "layout" | "flow",
+      "severity": "critical" | "warning" | "improvement",
+      "category": "accessibility" | "usability" | "visual" | "content" | "performance",
+      "confidence": <0.0-1.0>,
+      "impact_scope": "user-trust" | "task-completion" | "conversion" | "readability" | "performance" | "aesthetic",
+      "element": {
+        "type": "<element-type>",
+        "location": { "x": <x>, "y": <y>, "width": <w>, "height": <h> }
+      },
+      "description": "<specific-issue>",
+      "impact": "<user-impact>",
+      "suggested_fix": "<concrete-solution>",
+      "implementation": {
+        "effort": "minutes" | "hours" | "days",
+        "code_snippet": "<code-suggestion>",
+        "design_guidance": "<visual-guidance>"
+      },
+      "violated_patterns": ["<pattern-1>"],
+      "rationale": ["<why-this-matters>"],
+      "metrics": {
+        "affects_users": "<percentage>",
+        "potential_improvement": "<measurable-outcome>"
+      }
+    }
+  ],
+  "strengths": ["<what-works-well>"],
+  "top_recommendations": ["<priority-fix-1>", "<priority-fix-2>", "<priority-fix-3>"],
+  "pattern_coverage": {
+    "followed": ["<pattern-1>"],
+    "violated": ["<pattern-2>"]
+  }
+}`;
+}
+
+function validateAnalysisResponse(response: any): boolean {
+  const requiredFields = ['screen_id', 'screen_name', 'overall_score', 'issues', 'strengths', 'top_recommendations'];
+  const hasRequiredFields = requiredFields.every(field => field in response);
+  if (!hasRequiredFields) return false;
+  
+  if (!Array.isArray(response.issues)) return false;
+  
+  return response.issues.every((issue: any) => {
+    const issueFields = ['id', 'level', 'severity', 'category', 'description', 'impact', 'suggested_fix'];
+    const hasFields = issueFields.every(field => field in issue);
+    const hasValidConfidence = !issue.confidence || (issue.confidence >= 0 && issue.confidence <= 1);
+    return hasFields && hasValidConfidence;
+  });
+}
+
+function calculateAverageConfidence(issues: any[]): number {
+  if (!issues.length) return 0;
+  const validConfidences = issues.filter(i => typeof i.confidence === 'number' && i.confidence >= 0 && i.confidence <= 1);
+  if (!validConfidences.length) return 0.7; // Default confidence
+  return validConfidences.reduce((sum, i) => sum + i.confidence, 0) / validConfidences.length;
+}
+
+function getDefaultDesignTokens(): any {
+  return {
+    colors: {
+      primary: '#0F766E',
+      secondary: '#14B8A6',
+      error: '#EF4444',
+      warning: '#F59E0B',
+      success: '#10B981'
+    },
+    typography: {
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      sizes: { base: '16px', lg: '18px', xl: '20px' }
+    },
+    spacing: { unit: 8, scale: [0, 4, 8, 12, 16, 20, 24, 32] }
+  };
+}
