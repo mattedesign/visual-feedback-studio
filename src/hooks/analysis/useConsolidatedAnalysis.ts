@@ -193,7 +193,7 @@ export const useConsolidatedAnalysis = () => {
 
     console.log('✅ Simple analysis completed:', {
       annotationCount: analysisResult.annotations?.length || 0,
-      modelUsed: 'claude-3-5-sonnet-20241022'
+      modelUsed: 'claude-sonnet-4-20250514'
     });
 
     // Phase 3: Complete
