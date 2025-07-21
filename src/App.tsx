@@ -15,6 +15,7 @@ import Auth from "./pages/Auth";
 import Settings from "./pages/Settings";
 import Subscription from "./pages/Subscription";
 import { PublicAchievement } from "@/pages/public/Achievement";
+import HistoryPage from "./pages/History";
 
 const queryClient = new QueryClient();
 
@@ -63,7 +64,7 @@ const App = () => {
                         <Route path="/create-new" element={<Navigate to="/analyze" replace />} />
                         <Route path="/analysis-studio" element={<Navigate to="/analyze" replace />} />
                         <Route path="/mentor" element={<Navigate to="/dashboard" replace />} />
-                        <Route path="/history" element={<Navigate to="/dashboard" replace />} />
+                        <Route path="/history" element={<HistoryPage />} />
                         
                         {/* Catch all */}
                         <Route path="*" element={<Navigate to="/" replace />} />
