@@ -9,6 +9,7 @@ import { FigmantImageGrid } from '@/components/analysis/figmant/FigmantImageGrid
 import { FigmantImageDetail } from '@/components/analysis/figmant/FigmantImageDetail';
 import { ResultsContent } from '@/components/analysis/results/ResultsContent';
 import { ResultsChat } from '@/components/analysis/results/ResultsChat';
+import { AnalysisResults as EnhancedAnalysisResults } from '@/components/analysis/AnalysisResults';
 import { FigmantSidebar } from '@/components/layout/FigmantSidebar';
 import { FigmantLogo } from '@/components/ui/figmant-logo';
 import { toast } from 'sonner';
@@ -31,6 +32,126 @@ const FigmantResultsPage = () => {
   const [selectedImage, setSelectedImage] = useState<FigmantImage | null>(null);
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'menu' | 'chat'>('menu');
+
+  // Utility function to transform Figmant data to enhanced format
+  const transformToEnhancedFormat = (analysisData: any, sessionData: any) => {
+    console.log('🔄 Transforming Figmant data to enhanced format:', { analysisData, sessionData });
+    
+    if (!analysisData?.claude_analysis) {
+      console.warn('❌ No Claude analysis data to transform');
+      return null;
+    }
+
+    const claudeAnalysis = analysisData.claude_analysis;
+    const issues: any[] = [];
+    let overallScore = 45; // Default from your session data
+
+    // Extract overall score
+    if (claudeAnalysis.overall_score) {
+      overallScore = claudeAnalysis.overall_score;
+    }
+
+    // Transform Claude analysis issues to enhanced format
+    if (claudeAnalysis.issues && Array.isArray(claudeAnalysis.issues)) {
+      claudeAnalysis.issues.forEach((issue: any, index: number) => {
+        const transformedIssue = {
+          id: issue.id || `issue-${index}`,
+          title: issue.description || issue.impact || 'Design Issue',
+          description: issue.suggested_fix || issue.implementation?.design_guidance || 'Issue detected in design analysis',
+          category: mapCategory(issue.category),
+          severity: mapSeverity(issue.severity),
+          confidence: issue.confidence || 0.8,
+          impact_scope: mapImpactScope(issue.impact_scope),
+          element: {
+            location: {
+              x: issue.element?.location?.x || 0,
+              y: issue.element?.location?.y || 0,
+              width: issue.element?.location?.width || 100,
+              height: issue.element?.location?.height || 50,
+              xPercent: ((issue.element?.location?.x || 0) / 1200) * 100,
+              yPercent: ((issue.element?.location?.y || 0) / 800) * 100,
+              widthPercent: ((issue.element?.location?.width || 100) / 1200) * 100,
+              heightPercent: ((issue.element?.location?.height || 50) / 800) * 100,
+            }
+          },
+          businessMetrics: {
+            estimatedImpact: issue.metrics?.affects_users || '85%',
+            potentialImprovement: issue.metrics?.potential_improvement || '25-35% reduction in cart abandonment',
+            implementationEffort: mapEffort(issue.implementation?.effort)
+          }
+        };
+        issues.push(transformedIssue);
+      });
+    }
+
+    const transformedData = {
+      sessionId: sessionData?.id || '',
+      images: sessionData?.images || [],
+      issues,
+      overallScore,
+      analysisMetadata: {
+        completedAt: analysisData.created_at,
+        totalIssues: issues.length,
+        confidenceLevel: 'high',
+        screenType: analysisData.google_vision_summary?.screen_type_detected || 'checkout'
+      }
+    };
+
+    console.log('✅ Transformed data:', transformedData);
+    return transformedData;
+  };
+
+  // Helper functions for data transformation
+  const mapCategory = (category: string) => {
+    const categoryMap: Record<string, string> = {
+      'usability': 'usability',
+      'accessibility': 'accessibility', 
+      'visual': 'visual',
+      'content': 'content',
+      'performance': 'performance'
+    };
+    return categoryMap[category] || 'usability';
+  };
+
+  const mapSeverity = (severity: string) => {
+    const severityMap: Record<string, string> = {
+      'critical': 'critical',
+      'high': 'warning', 
+      'medium': 'warning',
+      'low': 'improvement',
+      'warning': 'warning',
+      'improvement': 'improvement'
+    };
+    return severityMap[severity] || 'warning';
+  };
+
+  const mapImpactScope = (scope: string) => {
+    const scopeMap: Record<string, string> = {
+      'task-completion': 'task-completion',
+      'user-trust': 'user-trust',
+      'conversion': 'conversion',
+      'readability': 'readability'
+    };
+    return scopeMap[scope] || 'task-completion';
+  };
+
+  const mapEffort = (effort: string) => {
+    const effortMap: Record<string, string> = {
+      'hours': 'Low (few hours)',
+      'days': 'Medium (few days)', 
+      'weeks': 'High (weeks)',
+      'minutes': 'Very Low (minutes)'
+    };
+    return effortMap[effort] || 'Medium';
+  };
+
+  // Check if we should use enhanced UI
+  const shouldUseEnhancedUI = (data: any) => {
+    return data && (
+      (data.issues && Array.isArray(data.issues)) ||
+      (data.claude_analysis && data.claude_analysis.issues && Array.isArray(data.claude_analysis.issues))
+    );
+  };
 
   useEffect(() => {
     if (sessionId) {
@@ -208,8 +329,29 @@ const FigmantResultsPage = () => {
     setSelectedImage(null);
   };
 
-  // Results view - just render the main content, let FigmantLayout handle the sidebar
+  // Results view - check if we should use enhanced UI
   if (currentView === 'results') {
+    // Check if we should use enhanced UI
+    if (shouldUseEnhancedUI(analysisData)) {
+      const enhancedData = transformToEnhancedFormat(analysisData, sessionData);
+      if (enhancedData) {
+        console.log('🎨 Using Enhanced Analysis Results component');
+        const firstImage = enhancedData.images && enhancedData.images[0];
+        const imageUrl = firstImage ? `https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/${firstImage.file_path}` : '';
+        
+        return (
+          <EnhancedAnalysisResults 
+            imageUrl={imageUrl}
+            issues={enhancedData.issues}
+            analysisMetadata={enhancedData.analysisMetadata}
+            onBack={() => navigate('/analyze')}
+          />
+        );
+      }
+    }
+    
+    // Fallback to basic results
+    console.log('📊 Using basic ResultsContent component');
     return (
       <ResultsContent 
         analysisData={analysisData}
@@ -244,6 +386,23 @@ const FigmantResultsPage = () => {
 
   // Fallback: Show results even without images
   if (analysisData) {
+    // Try enhanced UI first
+    if (shouldUseEnhancedUI(analysisData)) {
+      const enhancedData = transformToEnhancedFormat(analysisData, sessionData);
+      if (enhancedData) {
+        console.log('🎨 Using Enhanced Analysis Results component (fallback)');
+        return (
+          <EnhancedAnalysisResults 
+            imageUrl=""
+            issues={enhancedData.issues}
+            analysisMetadata={enhancedData.analysisMetadata}
+            onBack={() => navigate('/analyze')}
+          />
+        );
+      }
+    }
+    
+    // Basic fallback
     return (
       <ResultsContent 
         analysisData={analysisData}
