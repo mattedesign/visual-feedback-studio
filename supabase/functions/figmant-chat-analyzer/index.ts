@@ -84,9 +84,9 @@ serve(async (req) => {
       console.error('❌ Session images lookup failed:', imagesError);
     }
 
-    // Get conversation history (check if there's a conversation table for figmant)
+    // Get conversation history from Figmant conversation table
     const { data: conversationHistory } = await supabase
-      .from('goblin_refinement_history') // We'll reuse this table or create figmant-specific one
+      .from('figmant_conversation_history')
       .select('role, content, created_at')
       .eq('session_id', sessionId)
       .order('created_at', { ascending: true })
@@ -148,14 +148,14 @@ Respond conversationally and helpfully, drawing from the analysis context to pro
       }
     ];
 
-    // Process and include images if requested
+    // Include images from existing analysis if requested and available
     let processedImagesCount = 0;
-    if (includeImages && sessionImages && sessionImages.length > 0) {
-      console.log(`📸 Processing up to ${MAX_IMAGES} images for context`);
+    if (includeImages && analysisResults && sessionImages && sessionImages.length > 0) {
+      console.log(`📸 Including up to ${MAX_IMAGES} images from existing analysis`);
       
-      const imagesToProcess = sessionImages.slice(0, MAX_IMAGES);
+      const imagesToInclude = sessionImages.slice(0, MAX_IMAGES);
       
-      for (const image of imagesToProcess) {
+      for (const image of imagesToInclude) {
         try {
           let imageUrl = image.file_path;
           
@@ -164,7 +164,7 @@ Respond conversationally and helpfully, drawing from the analysis context to pro
             continue;
           }
 
-          console.log(`🔍 Processing image: ${image.file_name} - ${imageUrl.substring(0, 80)}...`);
+          console.log(`🔍 Including image from analysis: ${image.file_name}`);
           
           // Create signed URL if needed
           if (!imageUrl.startsWith('http')) {
@@ -236,7 +236,7 @@ Respond conversationally and helpfully, drawing from the analysis context to pro
             });
             
             processedImagesCount++;
-            console.log(`✅ Image ${processedImagesCount} processed: ${image.file_name}, ${mediaType}, ${fileSizeMB.toFixed(1)}MB`);
+            console.log(`✅ Image ${processedImagesCount} included: ${image.file_name}, ${mediaType}, ${fileSizeMB.toFixed(1)}MB`);
             
           } catch (fetchError) {
             clearTimeout(timeoutId);
@@ -249,12 +249,14 @@ Respond conversationally and helpfully, drawing from the analysis context to pro
           }
           
         } catch (error) {
-          console.error(`❌ Error processing image ${image.file_name}:`, error.message);
+          console.error(`❌ Error including image ${image.file_name}:`, error.message);
           continue;
         }
       }
       
-      console.log(`✅ Successfully processed ${processedImagesCount}/${imagesToProcess.length} images`);
+      console.log(`✅ Successfully included ${processedImagesCount}/${imagesToInclude.length} images from analysis`);
+    } else if (includeImages && !analysisResults) {
+      console.log('⚠️ No analysis results available - chat will work without image context');
     }
 
     // Call Claude API with timeout
@@ -307,11 +309,11 @@ Respond conversationally and helpfully, drawing from the analysis context to pro
     const claudeProcessingTime = Date.now() - claudeStartTime;
     console.log(`🤖 Claude response received in ${claudeProcessingTime}ms`);
 
-    // Store conversation in database (reusing goblin_refinement_history table)
+    // Store conversation in Figmant conversation table
     const conversationLength = conversationHistory?.length || 0;
     const storePromises = [
       // User message
-      supabase.from('goblin_refinement_history').insert({
+      supabase.from('figmant_conversation_history').insert({
         session_id: sessionId,
         user_id: sessionData?.user_id,
         role: 'user',
@@ -326,7 +328,7 @@ Respond conversationally and helpfully, drawing from the analysis context to pro
         }
       }),
       // AI response
-      supabase.from('goblin_refinement_history').insert({
+      supabase.from('figmant_conversation_history').insert({
         session_id: sessionId,
         user_id: sessionData?.user_id,
         role: 'assistant',
