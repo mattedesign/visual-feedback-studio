@@ -12,6 +12,27 @@ import { useNavigate } from 'react-router-dom';
 
 export type WorkflowStep = 'upload' | 'annotate' | 'review' | 'analyzing' | 'results';
 
+// ✅ NEW: Phase 4.3 - Enhanced workflow state management
+export type WorkflowStatus = 'idle' | 'busy' | 'error' | 'success';
+export type WorkflowTransition = {
+  from: WorkflowStep;
+  to: WorkflowStep;
+  timestamp: number;
+  trigger: string;
+  metadata?: Record<string, any>;
+};
+
+interface WorkflowState {
+  currentStep: WorkflowStep;
+  status: WorkflowStatus;
+  canProceed: boolean;
+  canGoBack: boolean;
+  isTransitioning: boolean;
+  lastError?: string;
+  transitionHistory: WorkflowTransition[];
+  validationErrors: Record<WorkflowStep, string[]>;
+}
+
 // Legacy interface for backward compatibility
 interface UserAnnotation {
   id: string;
@@ -85,6 +106,25 @@ const saveImagesToUploadedFiles = async (imageUrls: string[], analysisId: string
 
 export const useAnalysisWorkflow = () => {
   const navigate = useNavigate();
+  
+  // ✅ NEW: Phase 4.3 - Enhanced workflow state management
+  const [workflowState, setWorkflowState] = useState<WorkflowState>({
+    currentStep: 'upload',
+    status: 'idle',
+    canProceed: false,
+    canGoBack: false,
+    isTransitioning: false,
+    transitionHistory: [],
+    validationErrors: {
+      upload: [],
+      annotate: [],
+      review: [],
+      analyzing: [],
+      results: []
+    }
+  });
+  
+  // Legacy state for backward compatibility
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('upload');
   const [images, setImages] = useState<string[]>([]);
   const [activeImageUrl, setActiveImageUrl] = useState<string | null>(null);
@@ -117,6 +157,58 @@ export const useAnalysisWorkflow = () => {
   const [smartTriggerThreshold, setSmartTriggerThreshold] = useState<number>(2); // Minimum images needed for auto-analysis
   const [autoAnalysisContext, setAutoAnalysisContext] = useState<string>('Auto-analysis based on design changes');
   
+  // ✅ NEW: Phase 4.3 - Enhanced workflow state synchronization
+  useEffect(() => {
+    setWorkflowState(prev => ({
+      ...prev,
+      currentStep,
+      status: isAnalyzing ? 'busy' : (analysisResults ? 'success' : 'idle'),
+      canProceed: validateCanProceed(currentStep, images, analysisContext),
+      canGoBack: validateCanGoBack(currentStep),
+      isTransitioning: false
+    }));
+  }, [currentStep, isAnalyzing, analysisResults, images, analysisContext]);
+
+  // ✅ NEW: Phase 4.3 - Workflow validation functions
+  const validateCanProceed = useCallback((step: WorkflowStep, imageList: string[], context: string): boolean => {
+    switch (step) {
+      case 'upload':
+        return imageList.length > 0;
+      case 'annotate':
+        return true; // Can always proceed from annotate
+      case 'review':
+        return context.trim().length > 0;
+      case 'analyzing':
+        return false; // Cannot proceed while analyzing
+      case 'results':
+        return false; // End state
+      default:
+        return false;
+    }
+  }, []);
+
+  const validateCanGoBack = useCallback((step: WorkflowStep): boolean => {
+    return step !== 'upload' && step !== 'analyzing';
+  }, []);
+
+  // ✅ NEW: Phase 4.3 - Enhanced workflow transition tracking
+  const recordTransition = useCallback((from: WorkflowStep, to: WorkflowStep, trigger: string, metadata?: Record<string, any>) => {
+    const transition: WorkflowTransition = {
+      from,
+      to,
+      timestamp: Date.now(),
+      trigger,
+      metadata
+    };
+
+    setWorkflowState(prev => ({
+      ...prev,
+      transitionHistory: [...prev.transitionHistory, transition].slice(-20) // Keep last 20 transitions
+    }));
+
+    console.log('🔄 Workflow Transition:', transition);
+  }, []);
+
   // 🔧 FIX: Reset workflow state when component mounts (user navigates to analysis page)
   useEffect(() => {
     console.log('🔄 WORKFLOW INITIALIZATION: Ensuring clean state for new analysis');
@@ -138,6 +230,25 @@ export const useAnalysisWorkflow = () => {
     setVisionElementsDetected(0);
     setIsAnalyzing(false);
     setCurrentAnalysis(null);
+    
+    // ✅ NEW: Reset enhanced workflow state
+    setWorkflowState(prev => ({
+      ...prev,
+      currentStep: 'upload',
+      status: 'idle',
+      canProceed: false,
+      canGoBack: false,
+      isTransitioning: false,
+      lastError: undefined,
+      transitionHistory: [],
+      validationErrors: {
+        upload: [],
+        annotate: [],
+        review: [],
+        analyzing: [],
+        results: []
+      }
+    }));
   }, []); // Only run on mount
 
   const enhancedAnalysis = useEnhancedAnalysis({ currentAnalysis });
@@ -602,46 +713,60 @@ export const useAnalysisWorkflow = () => {
     }
   }, [images, userComments, analysisContext, isAnalyzing, getTotalAnnotationsCount, navigate, currentAnalysis]);
 
-  const goToStep = useCallback((step: WorkflowStep) => {
-    console.log('🔄 Workflow: Navigating to step:', step);
+  // ✅ NEW: Phase 4.3 - Enhanced workflow step management with transition tracking
+  const goToStep = useCallback((step: WorkflowStep, trigger: string = 'manual') => {
+    const previousStep = currentStep;
+    console.log('🔄 Workflow: Navigating to step:', { from: previousStep, to: step, trigger });
+    
+    recordTransition(previousStep, step, trigger);
     setCurrentStep(step);
-  }, []);
+  }, [currentStep, recordTransition]);
 
   const goToNextStep = useCallback(() => {
+    const previousStep = currentStep;
+
     switch (currentStep) {
       case 'upload':
         if (images.length > 0) {
+          recordTransition(previousStep, 'annotate', 'next_step');
           setCurrentStep('annotate');
         }
         break;
       case 'annotate':
         // ✅ FIXED: Skip review step and go directly to analyzing with consolidated pipeline
+        recordTransition(previousStep, 'analyzing', 'next_step');
         setCurrentStep('analyzing');
         break;
       case 'review':
+        recordTransition(previousStep, 'analyzing', 'start_analysis');
         startAnalysis();
         break;
       case 'analyzing':
         break;
       case 'results':
+        recordTransition(previousStep, 'upload', 'reset_workflow');
         resetWorkflow();
         break;
     }
-  }, [currentStep, images.length, startAnalysis, resetWorkflow]);
+  }, [currentStep, images.length, startAnalysis, resetWorkflow, recordTransition]);
 
   const goToPreviousStep = useCallback(() => {
+    const previousStep = currentStep;
     switch (currentStep) {
       case 'annotate':
+        recordTransition(previousStep, 'upload', 'previous_step');
         setCurrentStep('upload');
         break;
       case 'review':
+        recordTransition(previousStep, 'annotate', 'previous_step');
         setCurrentStep('annotate');
         break;
       case 'results':
+        recordTransition(previousStep, 'review', 'previous_step');
         setCurrentStep('review');
         break;
     }
-  }, [currentStep]);
+  }, [currentStep, recordTransition]);
 
   const proceedFromReview = useCallback(() => {
     setCurrentStep('annotate');
@@ -704,6 +829,15 @@ export const useAnalysisWorkflow = () => {
     autoAnalysisHistory,
     toggleAutoAnalysis,
     setSmartTriggerThreshold,
-    setAutoAnalysisDelay
+    setAutoAnalysisDelay,
+    
+    // ✅ NEW: Phase 4.3 - Enhanced workflow orchestration
+    workflowState,
+    transitionHistory: workflowState.transitionHistory,
+    canProceed: workflowState.canProceed,
+    canGoBack: workflowState.canGoBack,
+    workflowStatus: workflowState.status,
+    validationErrors: workflowState.validationErrors,
+    recordTransition
   };
 };
