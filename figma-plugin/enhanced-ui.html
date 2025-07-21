@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Figmant AI UX Analyzer</title>
+  <style>
+    /* Enhanced Phase 4.1 UI Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 12px;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      color: #1e293b;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    .container {
+      padding: 16px;
+      max-width: 100%;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 16px;
+      background: linear-gradient(135deg, #0d9488 0%, #06b6d4 100%);
+      border-radius: 12px;
+      color: white;
+      box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    .subtitle {
+      font-size: 11px;
+      opacity: 0.9;
+      font-weight: 500;
+    }
+
+    .status-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-left: 8px;
+      animation: pulse 2s infinite;
+    }
+
+    .status-indicator.connected {
+      background: #10b981;
+    }
+
+    .status-indicator.disconnected {
+      background: #ef4444;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .section {
+      margin-bottom: 20px;
+      background: white;
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      border: 1px solid #e2e8f0;
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-icon {
+      font-size: 16px;
+    }
+
+    .input-group {
+      margin-bottom: 12px;
+    }
+
+    .label {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: #64748b;
+    }
+
+    .input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 12px;
+      transition: all 0.2s;
+      background: white;
+    }
+
+    .input:focus {
+      outline: none;
+      border-color: #0d9488;
+      box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+    }
+
+    .button {
+      width: 100%;
+      padding: 12px 16px;
+      background: linear-gradient(135deg, #0d9488 0%, #06b6d4 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 2px 4px rgba(13, 148, 136, 0.2);
+    }
+
+    .button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+    }
+
+    .button:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .button-secondary {
+      background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+    }
+
+    .button-secondary:hover:not(:disabled) {
+      box-shadow: 0 4px 12px rgba(100, 116, 139, 0.3);
+    }
+
+    .enhanced-features {
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      border: 1px solid #bbf7d0;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+
+    .feature-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .feature-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: #059669;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 40px;
+      height: 20px;
+      background: #d1d5db;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .toggle-switch.active {
+      background: #059669;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+
+    .toggle-switch.active .toggle-slider {
+      transform: translateX(20px);
+    }
+
+    .real-time-feedback {
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+      border: 1px solid #93c5fd;
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 12px;
+      display: none;
+    }
+
+    .real-time-feedback.active {
+      display: block;
+    }
+
+    .feedback-item {
+      font-size: 10px;
+      color: #1e40af;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .design-tokens-preview {
+      background: #fafafa;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 8px;
+      margin-top: 8px;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    .token-item {
+      font-size: 10px;
+      color: #6b7280;
+      margin-bottom: 2px;
+      font-family: 'SF Mono', Monaco, monospace;
+    }
+
+    .progress-enhanced {
+      background: white;
+      border-radius: 8px;
+      padding: 12px;
+      margin: 16px 0;
+      display: none;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .progress-enhanced.show {
+      display: block;
+    }
+
+    .progress-stages {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .progress-stage {
+      flex: 1;
+      text-align: center;
+      font-size: 9px;
+      color: #64748b;
+      position: relative;
+    }
+
+    .progress-stage.active {
+      color: #0d9488;
+      font-weight: 600;
+    }
+
+    .progress-stage.completed {
+      color: #10b981;
+    }
+
+    .stage-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      margin: 0 auto 4px;
+    }
+
+    .progress-stage.active .stage-dot {
+      background: #0d9488;
+      animation: pulse 1.5s infinite;
+    }
+
+    .progress-stage.completed .stage-dot {
+      background: #10b981;
+    }
+
+    .annotation-preview {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      border-radius: 6px;
+      padding: 8px;
+      margin-top: 8px;
+      font-size: 10px;
+      display: none;
+    }
+
+    .annotation-preview.show {
+      display: block;
+    }
+
+    .error {
+      background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+      border: 1px solid #fca5a5;
+      color: #dc2626;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      margin-bottom: 12px;
+      display: none;
+    }
+
+    .error.show {
+      display: block;
+    }
+
+    .success {
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      border: 1px solid #bbf7d0;
+      color: #059669;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      margin-bottom: 12px;
+      display: none;
+    }
+
+    .success.show {
+      display: block;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top: 2px solid #ffffff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .beta-badge {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      color: white;
+      font-size: 9px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 10px;
+      margin-left: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">
+        Figmant AI
+        <span class="beta-badge">Phase 4.1</span>
+      </div>
+      <div class="subtitle">
+        Advanced UX Analysis & Real-time Feedback
+        <span id="connectionStatus" class="status-indicator disconnected"></span>
+      </div>
+    </div>
+
+    <!-- Enhanced Features Section -->
+    <div class="enhanced-features">
+      <div class="feature-toggle">
+        <span class="feature-label">🔄 Real-time Feedback</span>
+        <div id="realTimeFeedbackToggle" class="toggle-switch active">
+          <div class="toggle-slider"></div>
+        </div>
+      </div>
+      
+      <div class="feature-toggle">
+        <span class="feature-label">🎯 Auto Annotations</span>
+        <div id="autoAnnotationsToggle" class="toggle-switch active">
+          <div class="toggle-slider"></div>
+        </div>
+      </div>
+      
+      <div class="feature-toggle">
+        <span class="feature-label">🎨 Design Token Extraction</span>
+        <div id="designTokensToggle" class="toggle-switch active">
+          <div class="toggle-slider"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Real-time Feedback Display -->
+    <div id="realTimeFeedback" class="real-time-feedback active">
+      <div class="feedback-item">
+        ⚡ Ready for real-time analysis
+      </div>
+    </div>
+
+    <!-- Auth Section (same as before but enhanced styling) -->
+    <div id="authSection" class="section">
+      <div class="section-title">
+        <span class="section-icon">🔑</span>
+        Authentication
+      </div>
+      
+      <div id="loginForm">
+        <div class="input-group">
+          <label class="label" for="emailInput">Email</label>
+          <input 
+            type="email" 
+            id="emailInput" 
+            class="input" 
+            placeholder="your@email.com"
+          >
+        </div>
+        <div class="input-group">
+          <label class="label" for="passwordInput">Password</label>
+          <input 
+            type="password" 
+            id="passwordInput" 
+            class="input" 
+            placeholder="Your password"
+          >
+        </div>
+        <button id="loginButton" class="button" disabled>
+          Login to Figmant
+        </button>
+      </div>
+
+      <div id="userInfo" style="display: none;">
+        <div class="input-group">
+          <span id="userEmail" class="label"></span>
+        </div>
+        <button id="logoutButton" class="button button-secondary">
+          Logout
+        </button>
+      </div>
+    </div>
+
+    <!-- Enhanced Analysis Section -->
+    <div id="analysisSection" class="section">
+      <div class="section-title">
+        <span class="section-icon">🔬</span>
+        Smart Analysis
+      </div>
+      
+      <div class="input-group">
+        <label class="label" for="analysisContext">Analysis Focus</label>
+        <select id="analysisContext" class="input">
+          <option value="">Auto-detect context</option>
+          <option value="usability">Usability & Navigation</option>
+          <option value="accessibility">Accessibility Compliance</option>
+          <option value="visual-hierarchy">Visual Hierarchy</option>
+          <option value="design-system">Design System Consistency</option>
+          <option value="conversion">Conversion Optimization</option>
+          <option value="mobile">Mobile Responsiveness</option>
+        </select>
+      </div>
+
+      <button id="extractTokensButton" class="button button-secondary">
+        <span class="section-icon">🎨</span>
+        Extract Design Tokens
+      </button>
+
+      <div id="designTokensPreview" class="design-tokens-preview" style="display: none;">
+        <div class="token-item">Loading design tokens...</div>
+      </div>
+
+      <button id="analyzeButton" class="button">
+        <span class="section-icon">🚀</span>
+        Start AI Analysis
+      </button>
+    </div>
+
+    <!-- Enhanced Progress Section -->
+    <div id="progressContainer" class="progress-enhanced">
+      <div class="progress-stages">
+        <div class="progress-stage" data-stage="upload">
+          <div class="stage-dot"></div>
+          <div>Upload</div>
+        </div>
+        <div class="progress-stage" data-stage="tokens">
+          <div class="stage-dot"></div>
+          <div>Tokens</div>
+        </div>
+        <div class="progress-stage" data-stage="vision">
+          <div class="stage-dot"></div>
+          <div>Vision</div>
+        </div>
+        <div class="progress-stage" data-stage="analysis">
+          <div class="stage-dot"></div>
+          <div>Analysis</div>
+        </div>
+        <div class="progress-stage" data-stage="feedback">
+          <div class="stage-dot"></div>
+          <div>Feedback</div>
+        </div>
+      </div>
+      
+      <div id="progressText" class="feedback-item">
+        Initializing enhanced analysis pipeline...
+      </div>
+    </div>
+
+    <!-- Annotation Preview -->
+    <div id="annotationPreview" class="annotation-preview">
+      <strong>📍 Real-time Annotations:</strong>
+      <div id="annotationList"></div>
+    </div>
+
+    <!-- Messages -->
+    <div id="errorMessage" class="error"></div>
+    <div id="successMessage" class="success"></div>
+  </div>
+
+  <script>
+    // Enhanced Phase 4.1 JavaScript functionality
+    let isAuthenticated = false;
+    let realTimeFeedbackEnabled = true;
+    let autoAnnotationsEnabled = true;
+    let designTokensEnabled = true;
+    let currentSelection = [];
+
+    // Initialize enhanced features
+    document.addEventListener('DOMContentLoaded', function() {
+      setupEnhancedFeatures();
+      setupEventListeners();
+      checkAuthStatus();
+    });
+
+    function setupEnhancedFeatures() {
+      // Setup toggle switches
+      setupToggle('realTimeFeedbackToggle', (enabled) => {
+        realTimeFeedbackEnabled = enabled;
+        updateRealTimeFeedback();
+      });
+
+      setupToggle('autoAnnotationsToggle', (enabled) => {
+        autoAnnotationsEnabled = enabled;
+      });
+
+      setupToggle('designTokensToggle', (enabled) => {
+        designTokensEnabled = enabled;
+        document.getElementById('extractTokensButton').style.display = enabled ? 'flex' : 'none';
+      });
+    }
+
+    function setupToggle(toggleId, callback) {
+      const toggle = document.getElementById(toggleId);
+      toggle.addEventListener('click', function() {
+        toggle.classList.toggle('active');
+        const isActive = toggle.classList.contains('active');
+        callback(isActive);
+      });
+    }
+
+    function setupEventListeners() {
+      // Enhanced event listeners for Phase 4.1 features
+      document.getElementById('loginButton').addEventListener('click', handleLogin);
+      document.getElementById('logoutButton').addEventListener('click', handleLogout);
+      document.getElementById('extractTokensButton').addEventListener('click', extractDesignTokens);
+      document.getElementById('analyzeButton').addEventListener('click', startAnalysis);
+
+      // Real-time input validation
+      ['emailInput', 'passwordInput'].forEach(id => {
+        document.getElementById(id).addEventListener('input', validateLoginForm);
+      });
+    }
+
+    function updateRealTimeFeedback() {
+      const feedbackContainer = document.getElementById('realTimeFeedback');
+      const statusIndicator = document.getElementById('connectionStatus');
+      
+      if (realTimeFeedbackEnabled) {
+        feedbackContainer.classList.add('active');
+        statusIndicator.classList.remove('disconnected');
+        statusIndicator.classList.add('connected');
+        
+        // Send message to plugin to enable real-time mode
+        parent.postMessage({ pluginMessage: { 
+          type: 'enable-real-time-feedback',
+          enabled: true 
+        }}, '*');
+      } else {
+        feedbackContainer.classList.remove('active');
+        statusIndicator.classList.remove('connected');
+        statusIndicator.classList.add('disconnected');
+        
+        parent.postMessage({ pluginMessage: { 
+          type: 'enable-real-time-feedback',
+          enabled: false 
+        }}, '*');
+      }
+    }
+
+    function updateProgress(stage, message) {
+      const stages = document.querySelectorAll('.progress-stage');
+      const progressText = document.getElementById('progressText');
+      
+      stages.forEach(stageEl => {
+        const stageName = stageEl.dataset.stage;
+        stageEl.classList.remove('active');
+        
+        if (stageName === stage) {
+          stageEl.classList.add('active');
+        }
+      });
+      
+      progressText.textContent = message;
+    }
+
+    function extractDesignTokens() {
+      if (!designTokensEnabled) return;
+      
+      showMessage('Extracting design tokens...', 'info');
+      
+      parent.postMessage({ pluginMessage: { 
+        type: 'extract-design-tokens'
+      }}, '*');
+    }
+
+    function startAnalysis() {
+      if (!isAuthenticated) {
+        showMessage('Please login first', 'error');
+        return;
+      }
+
+      const context = document.getElementById('analysisContext').value;
+      document.getElementById('progressContainer').classList.add('show');
+      
+      updateProgress('upload', 'Preparing enhanced analysis...');
+      
+      parent.postMessage({ pluginMessage: { 
+        type: 'start-enhanced-analysis',
+        context: context,
+        realTimeFeedback: realTimeFeedbackEnabled,
+        autoAnnotations: autoAnnotationsEnabled,
+        designTokens: designTokensEnabled
+      }}, '*');
+    }
+
+    function handleLogin() {
+      const email = document.getElementById('emailInput').value;
+      const password = document.getElementById('passwordInput').value;
+      
+      if (!email || !password) return;
+      
+      document.getElementById('loginButton').disabled = true;
+      document.getElementById('loginButton').innerHTML = '<div class="spinner"></div> Logging in...';
+      
+      parent.postMessage({ pluginMessage: { 
+        type: 'login',
+        email: email,
+        password: password
+      }}, '*');
+    }
+
+    function handleLogout() {
+      parent.postMessage({ pluginMessage: { type: 'logout' }}, '*');
+    }
+
+    function validateLoginForm() {
+      const email = document.getElementById('emailInput').value;
+      const password = document.getElementById('passwordInput').value;
+      const loginButton = document.getElementById('loginButton');
+      
+      loginButton.disabled = !email || !password;
+    }
+
+    function showMessage(message, type) {
+      const errorEl = document.getElementById('errorMessage');
+      const successEl = document.getElementById('successMessage');
+      
+      errorEl.classList.remove('show');
+      successEl.classList.remove('show');
+      
+      if (type === 'error') {
+        errorEl.textContent = message;
+        errorEl.classList.add('show');
+      } else {
+        successEl.textContent = message;
+        successEl.classList.add('show');
+      }
+      
+      setTimeout(() => {
+        errorEl.classList.remove('show');
+        successEl.classList.remove('show');
+      }, 5000);
+    }
+
+    function checkAuthStatus() {
+      parent.postMessage({ pluginMessage: { type: 'check-auth' }}, '*');
+    }
+
+    // Listen for messages from the plugin
+    window.addEventListener('message', function(event) {
+      const message = event.data.pluginMessage;
+      if (!message) return;
+
+      switch (message.type) {
+        case 'auth-status':
+          handleAuthStatus(message.data);
+          break;
+        case 'design-tokens-extracted':
+          displayDesignTokens(message.data);
+          break;
+        case 'real-time-feedback':
+          displayRealTimeFeedback(message.data);
+          break;
+        case 'progress-update':
+          updateProgress(message.stage, message.message);
+          break;
+        case 'analysis-complete':
+          handleAnalysisComplete(message.data);
+          break;
+        case 'selection-changed':
+          handleSelectionChange(message.data);
+          break;
+        case 'error':
+          showMessage(message.message, 'error');
+          break;
+      }
+    });
+
+    function handleAuthStatus(data) {
+      isAuthenticated = data.authenticated;
+      
+      if (isAuthenticated) {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('userInfo').style.display = 'block';
+        document.getElementById('userEmail').textContent = data.email;
+        showMessage('Successfully authenticated!', 'success');
+      } else {
+        document.getElementById('loginForm').style.display = 'block';
+        document.getElementById('userInfo').style.display = 'none';
+      }
+      
+      document.getElementById('loginButton').disabled = false;
+      document.getElementById('loginButton').textContent = 'Login to Figmant';
+    }
+
+    function displayDesignTokens(tokens) {
+      const preview = document.getElementById('designTokensPreview');
+      const tokenItems = [
+        `Colors: ${tokens.colors?.length || 0} found`,
+        `Typography: ${tokens.typography?.length || 0} styles`,
+        `Components: ${tokens.components || 0} detected`,
+        `Violations: ${tokens.designSystemViolations?.length || 0} found`,
+        `Responsive: ${tokens.responsiveBreakpoints?.detected?.length || 0} breakpoints`
+      ];
+      
+      preview.innerHTML = tokenItems.map(item => 
+        `<div class="token-item">${item}</div>`
+      ).join('');
+      
+      preview.style.display = 'block';
+      showMessage('Design tokens extracted successfully!', 'success');
+    }
+
+    function displayRealTimeFeedback(feedback) {
+      if (!realTimeFeedbackEnabled) return;
+      
+      const container = document.getElementById('realTimeFeedback');
+      const feedbackHtml = feedback.map(item => 
+        `<div class="feedback-item">${item.icon} ${item.message}</div>`
+      ).join('');
+      
+      container.innerHTML = feedbackHtml;
+    }
+
+    function handleAnalysisComplete(data) {
+      document.getElementById('progressContainer').classList.remove('show');
+      showMessage(`Analysis complete! View results at ${data.url}`, 'success');
+      
+      if (autoAnnotationsEnabled && data.annotations) {
+        displayAnnotationPreview(data.annotations);
+      }
+    }
+
+    function handleSelectionChange(data) {
+      currentSelection = data.selection;
+      
+      if (realTimeFeedbackEnabled && currentSelection.length > 0) {
+        const feedback = [
+          { icon: '📏', message: `${currentSelection.length} elements selected` },
+          { icon: '🎯', message: 'Ready for contextual analysis' }
+        ];
+        
+        displayRealTimeFeedback(feedback);
+      }
+    }
+
+    function displayAnnotationPreview(annotations) {
+      const preview = document.getElementById('annotationPreview');
+      const list = document.getElementById('annotationList');
+      
+      const annotationHtml = annotations.slice(0, 3).map(annotation => 
+        `<div class="token-item">• ${annotation.type}: ${annotation.message}</div>`
+      ).join('');
+      
+      list.innerHTML = annotationHtml;
+      preview.classList.add('show');
+    }
+  </script>
+</body>
+</html>

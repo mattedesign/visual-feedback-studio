@@ -1,6 +1,7 @@
 /// <reference types="@figma/plugin-typings" />
 
-// This file runs in the main Figma environment
+// Enhanced Figma Plugin for Figmant Phase 4.1
+// Features: Design token extraction, real-time feedback, advanced annotation creation
 
 // Define types directly in this file since imports can be problematic in Figma
 interface PluginMessage {
@@ -97,14 +98,20 @@ interface PluginExportSettings {
 const SUPABASE_URL = 'https://mxxtvtwcoplfajvazpav.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14eHR2dHdjb3BsZmFqdmF6cGF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2MDU2NjgsImV4cCI6MjA2NjE4MTY2OH0.b9sNxeDALujnw2tQD-qnbs3YkZvvTkja8jG6clgpibA';
 
-// Figmant Web App URL - Update this to your actual domain
-const FIGMANT_WEB_URL = 'https://app.figmant.com'; // Replace with your actual domain
+// Enhanced Figmant Configuration for Phase 4.1
+const FIGMANT_WEB_URL = 'https://preview--figmant-ai.lovable.app'; // Updated domain
+const SUPABASE_URL = 'https://mxxtvtwcoplfajvazpav.supabase.co';
 
-// Show UI
+// Real-time feedback configuration  
+const REAL_TIME_FEEDBACK_ENABLED = true;
+const AUTO_ANNOTATION_ENABLED = true;
+
+// Enhanced UI with real-time features
 figma.showUI(__html__, {
-  width: 420,
-  height: 600,
-  title: 'Figmant Analysis'
+  width: 340,
+  height: 720,
+  title: 'Figmant AI Analysis',
+  themeColors: true
 });
 
 // Function to get selected frames

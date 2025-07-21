@@ -16,6 +16,12 @@ interface PluginRequest {
   images: ImageData[];
   sessionTitle?: string;
   context?: string;
+  // Phase 4.1 enhancements
+  designTokens?: any;
+  realTimeFeedback?: boolean;
+  autoAnnotations?: boolean;
+  metadata?: any;
+  contextAnalysis?: any;
 }
 
 serve(async (req) => {
@@ -152,14 +158,30 @@ serve(async (req) => {
       }
     }
 
-    // Create analysis session
+// Create enhanced analysis session for Phase 4.1
     const { data: sessionData, error: sessionError } = await supabase
       .from('figmant_analysis_sessions')
       .insert({
         user_id: userId,
         title: body.sessionTitle || `Plugin Analysis - ${new Date().toISOString()}`,
         status: 'draft',
-        design_type: 'figma_export'
+        design_type: 'figma_export',
+        // Phase 4.1 enhancements
+        pattern_tracking_enabled: !!body.designTokens,
+        confidence_threshold: 0.8,
+        screen_detection_metadata: {
+          plugin_version: '4.1',
+          real_time_enabled: body.realTimeFeedback || false,
+          auto_annotations: body.autoAnnotations || false,
+          extracted_tokens: body.designTokens || {},
+          metadata: body.metadata || {},
+          context_analysis: body.contextAnalysis || {},
+          enhanced_features: {
+            design_token_extraction: !!body.designTokens,
+            real_time_feedback: !!body.realTimeFeedback,
+            auto_annotations: !!body.autoAnnotations
+          }
+        }
       })
       .select()
       .single();
