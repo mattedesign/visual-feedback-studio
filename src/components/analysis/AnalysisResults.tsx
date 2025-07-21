@@ -457,11 +457,12 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
                 >
                   <Collapsible open={isExpanded} onOpenChange={() => toggleIssueExpansion(issue.id)}>
                     <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2">
+                      <div className="flex flex-col space-y-3">
+                        {/* Top row - Number, category, and quick win badges */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
                             <div
-                              className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                              className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
                               style={{ backgroundColor: severityConfig.color }}
                             >
                               {index + 1}
@@ -477,33 +478,37 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
                             )}
                           </div>
                           
-                          <CardTitle className="text-sm font-medium line-clamp-2 mb-2">
-                            {issue.title}
-                          </CardTitle>
-                          
-                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <SeverityIcon className="w-3 h-3" />
-                              {severityConfig.label}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Star className={cn("w-3 h-3", getConfidenceColor(issue.confidence))} />
-                              {Math.round(issue.confidence * 100)}%
-                            </div>
-                            {issue.implementation && (
-                              <div className="flex items-center gap-1">
-                                <EffortIcon className={cn("w-3 h-3", effortConfig.color)} />
-                                {effortConfig.label}
-                              </div>
-                            )}
-                          </div>
+                          <CollapsibleTrigger asChild>
+                            <Button variant="ghost" size="sm" className="flex-shrink-0">
+                              {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            </Button>
+                          </CollapsibleTrigger>
                         </div>
                         
-                        <CollapsibleTrigger asChild>
-                          <Button variant="ghost" size="sm" className="ml-2">
-                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                          </Button>
-                        </CollapsibleTrigger>
+                        {/* Title row */}
+                        <div className="pr-2">
+                          <CardTitle className="text-sm font-medium leading-tight mb-3">
+                            {issue.title}
+                          </CardTitle>
+                        </div>
+                        
+                        {/* Bottom row - Severity, confidence, and effort */}
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
+                          <div className="flex items-center gap-1">
+                            <SeverityIcon className="w-3 h-3" />
+                            {severityConfig.label}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Star className={cn("w-3 h-3", getConfidenceColor(issue.confidence))} />
+                            {Math.round(issue.confidence * 100)}%
+                          </div>
+                          {issue.implementation && (
+                            <div className="flex items-center gap-1">
+                              <EffortIcon className={cn("w-3 h-3", effortConfig.color)} />
+                              {effortConfig.label}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </CardHeader>
 
