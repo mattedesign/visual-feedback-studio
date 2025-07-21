@@ -159,34 +159,34 @@ export const InteractiveResultsDashboard: React.FC<InteractiveResultsDashboardPr
   };
 
   return (
-    <div className="space-y-6 p-6 bg-background min-h-screen">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 lg:p-6 bg-background min-h-screen">
       {/* Header Section */}
-      <div className="bg-card rounded-lg shadow-sm border p-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div className="bg-card rounded-lg shadow-sm border p-4 sm:p-6">
+        <div className="flex flex-col gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-card-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold text-card-foreground">
               {analysisData?.analysis_context || 'Interactive Analysis Dashboard'}
             </h1>
-            <p className="text-lg text-muted-foreground mt-1">
+            <p className="text-base sm:text-lg text-muted-foreground mt-1">
               Comprehensive business impact analysis with actionable insights
             </p>
-            <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-3 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
-                <BarChart3 className="w-4 h-4" />
+                <BarChart3 className="w-4 h-4 flex-shrink-0" />
                 {businessMetrics.priorityItems.length} recommendations
               </span>
               <span className="flex items-center gap-1">
-                <DollarSign className="w-4 h-4" />
+                <DollarSign className="w-4 h-4 flex-shrink-0" />
                 ${(businessMetrics.potentialRevenue / 1000).toFixed(0)}K potential value
               </span>
             </div>
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={handleExportReport}>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button variant="outline" onClick={handleExportReport} className="w-full sm:w-auto">
               <Download className="w-4 h-4 mr-2" />
               Export Report
             </Button>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Share2 className="w-4 h-4 mr-2" />
               Share Results
             </Button>
@@ -195,7 +195,7 @@ export const InteractiveResultsDashboard: React.FC<InteractiveResultsDashboardPr
       </div>
 
       {/* Key Metrics Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {/* Overall Score */}
         <Card className="relative overflow-hidden">
           <CardHeader className="pb-3">
@@ -299,16 +299,17 @@ export const InteractiveResultsDashboard: React.FC<InteractiveResultsDashboardPr
       {/* Interactive Recommendations Section */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <CardTitle className="flex items-center gap-2">
               <Lightbulb className="w-5 h-5" />
               Prioritized Recommendations
             </CardTitle>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant={selectedPriority === 'all' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setSelectedPriority('all')}
+                className="flex-1 sm:flex-none min-w-0"
               >
                 All ({businessMetrics.priorityItems.length})
               </Button>
@@ -316,52 +317,56 @@ export const InteractiveResultsDashboard: React.FC<InteractiveResultsDashboardPr
                 variant={selectedPriority === 'quick-wins' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setSelectedPriority('quick-wins')}
+                className="flex-1 sm:flex-none min-w-0"
               >
                 <Zap className="w-4 h-4 mr-1" />
-                Quick Wins
+                <span className="hidden sm:inline">Quick Wins</span>
+                <span className="sm:hidden">Wins</span>
               </Button>
               <Button
                 variant={selectedPriority === 'high-impact' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setSelectedPriority('high-impact')}
+                className="flex-1 sm:flex-none min-w-0"
               >
                 <Star className="w-4 h-4 mr-1" />
-                High Impact
+                <span className="hidden sm:inline">High Impact</span>
+                <span className="sm:hidden">Impact</span>
               </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {filteredPriorityItems.slice(0, 10).map((item, index) => (
               <div
                 key={item.id}
-                className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer touch-manipulation active:scale-95"
                 onClick={() => onAnnotationSelect?.(item.id)}
               >
                 <div className="flex-shrink-0">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${
+                  <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-bold ${
                     item.impact === 'high' ? 'bg-destructive' : item.impact === 'medium' ? 'bg-warning' : 'bg-success'
                   }`}>
                     {index + 1}
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-card-foreground mb-1 truncate">
+                  <h4 className="font-medium text-card-foreground mb-1 truncate text-sm sm:text-base">
                     {item.title}
                   </h4>
-                  <div className="flex items-center gap-4 text-sm">
-                    <Badge variant="outline" className="text-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm">
+                    <Badge variant="outline" className="text-xs w-fit">
                       {item.category}
                     </Badge>
-                    <span className="text-muted-foreground">
+                    <span className="text-muted-foreground text-xs">
                       Impact: {item.impact} • Effort: {item.effort}
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                   <div className="text-right">
-                    <div className="text-sm font-medium text-success">
+                    <div className="text-xs sm:text-sm font-medium text-success">
                       ROI: {item.roi}%
                     </div>
                   </div>
@@ -372,16 +377,16 @@ export const InteractiveResultsDashboard: React.FC<InteractiveResultsDashboardPr
           </div>
           
           {filteredPriorityItems.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              <Lightbulb className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>No recommendations match the current filter</p>
+            <div className="text-center py-6 sm:py-8 text-muted-foreground">
+              <Lightbulb className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-4 opacity-50" />
+              <p className="text-sm sm:text-base">No recommendations match the current filter</p>
             </div>
           )}
         </CardContent>
       </Card>
 
       {/* Action Items Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-success">
@@ -393,15 +398,15 @@ export const InteractiveResultsDashboard: React.FC<InteractiveResultsDashboardPr
             </p>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {businessMetrics.priorityItems
                 .filter(item => item.effort === 'low' && item.impact !== 'low')
                 .slice(0, 5)
                 .map((item, index) => (
-                  <div key={item.id} className="flex items-center gap-3 p-3 bg-success/10 rounded-lg">
-                    <CheckCircle className="w-5 h-5 text-success flex-shrink-0" />
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">{item.title}</div>
+                  <div key={item.id} className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-success/10 rounded-lg">
+                    <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-success flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-xs sm:text-sm truncate">{item.title}</div>
                       <div className="text-xs text-muted-foreground">
                         Expected completion: 1-2 weeks
                       </div>
@@ -410,7 +415,7 @@ export const InteractiveResultsDashboard: React.FC<InteractiveResultsDashboardPr
                 ))
               }
             </div>
-            <Button className="w-full mt-4" variant="outline">
+            <Button className="w-full mt-3 sm:mt-4" variant="outline" size="sm">
               <Calendar className="w-4 h-4 mr-2" />
               Create Implementation Plan
             </Button>
@@ -428,15 +433,15 @@ export const InteractiveResultsDashboard: React.FC<InteractiveResultsDashboardPr
             </p>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {businessMetrics.priorityItems
                 .filter(item => item.impact === 'high' && item.effort === 'high')
                 .slice(0, 5)
                 .map((item, index) => (
-                  <div key={item.id} className="flex items-center gap-3 p-3 bg-primary/10 rounded-lg">
-                    <Star className="w-5 h-5 text-primary flex-shrink-0" />
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">{item.title}</div>
+                  <div key={item.id} className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-primary/10 rounded-lg">
+                    <Star className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-xs sm:text-sm truncate">{item.title}</div>
                       <div className="text-xs text-muted-foreground">
                         Estimated timeline: 4-8 weeks
                       </div>
@@ -445,7 +450,7 @@ export const InteractiveResultsDashboard: React.FC<InteractiveResultsDashboardPr
                 ))
               }
             </div>
-            <Button className="w-full mt-4" variant="outline">
+            <Button className="w-full mt-3 sm:mt-4" variant="outline" size="sm">
               <Users className="w-4 h-4 mr-2" />
               Plan Stakeholder Review
             </Button>
