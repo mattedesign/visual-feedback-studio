@@ -265,3 +265,201 @@ export interface Analysis {
   ai_model_used?: string;
   analysisCompletedAt?: string;
 }
+
+// Enhanced analysis issue type with confidence scoring and pattern tracking
+export interface EnhancedAnalysisIssue {
+  id: string;
+  level: 'molecular' | 'component' | 'layout' | 'flow';
+  severity: 'critical' | 'warning' | 'improvement';
+  category: 'accessibility' | 'usability' | 'visual' | 'content' | 'performance';
+  
+  // Confidence scoring (ChatGPT suggestion)
+  confidence: number; // 0.0 - 1.0
+  
+  // Impact categorization (ChatGPT suggestion)
+  impact_scope: 'user-trust' | 'task-completion' | 'conversion' | 
+                'readability' | 'performance' | 'aesthetic';
+  
+  element: {
+    type: string;
+    location: ResponsiveLocation;
+    nodeId?: string; // For Figma integration
+  };
+  
+  description: string;
+  impact: string;
+  suggested_fix: string;
+  
+  implementation: {
+    effort: 'minutes' | 'hours' | 'days';
+    code_snippet?: string;
+    design_guidance?: string;
+  };
+  
+  // Pattern tracking (ChatGPT suggestion)
+  violated_patterns?: string[];
+  
+  rationale: string[];
+  metrics: {
+    affects_users: string;
+    potential_improvement: string;
+  };
+}
+
+export interface ResponsiveLocation {
+  // Pixel values (absolute)
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  
+  // Percentage values (responsive) - ChatGPT suggestion
+  xPercent: number;
+  yPercent: number;
+  widthPercent: number;
+  heightPercent: number;
+}
+
+export interface EnrichedVisionData {
+  labels: string[];
+  contextualTags: string[];
+  textDensity: 'low' | 'medium' | 'high';
+  layoutType: 'single-column' | 'multi-column' | 'grid' | 'centered';
+  hasHeroSection: boolean;
+  formComplexity?: 'simple' | 'moderate' | 'complex';
+  primaryColors: string[];
+}
+
+export interface DesignTokens {
+  colors: {
+    primary: string;
+    secondary: string;
+    error: string;
+    warning: string;
+    success: string;
+    neutral: Record<string, string>;
+  };
+  typography: {
+    fontFamily: string;
+    sizes: Record<string, string>;
+    weights: Record<string, number>;
+  };
+  spacing: {
+    unit: number;
+    scale: number[];
+  };
+  borderRadius: Record<string, string>;
+  shadows: Record<string, string>;
+}
+
+// Pattern tracking types
+export const DESIGN_PATTERNS = {
+  'progressive-disclosure': {
+    description: 'Complex information revealed gradually',
+    checkFunction: 'hasProgressiveDisclosure'
+  },
+  'mobile-touch-targets': {
+    description: 'Touch targets at least 44x44px',
+    checkFunction: 'checkTouchTargets'
+  },
+  'f-pattern-scanning': {
+    description: 'Content follows F-shaped reading pattern',
+    checkFunction: 'checkFPattern'
+  },
+  'z-pattern-scanning': {
+    description: 'Layout follows Z-shaped visual flow',
+    checkFunction: 'checkZPattern'
+  },
+  'fitts-law': {
+    description: 'Important actions are large and close',
+    checkFunction: 'checkFittsLaw'
+  },
+  'hicks-law': {
+    description: 'Limited choices to prevent overload',
+    checkFunction: 'checkHicksLaw'
+  },
+  'gestalt-proximity': {
+    description: 'Related items grouped together',
+    checkFunction: 'checkProximity'
+  },
+  'error-prevention': {
+    description: 'Design prevents user errors',
+    checkFunction: 'checkErrorPrevention'
+  }
+};
+
+// Triage presets for filtering
+export const TRIAGE_PRESETS = {
+  'quick-wins': {
+    name: 'Quick Wins',
+    filter: (issue: EnhancedAnalysisIssue) => 
+      issue.implementation.effort === 'minutes' && 
+      issue.severity !== 'improvement'
+  },
+  'high-confidence': {
+    name: 'High Confidence',
+    filter: (issue: EnhancedAnalysisIssue) => 
+      issue.confidence >= 0.8
+  },
+  'conversion-critical': {
+    name: 'Conversion Critical',
+    filter: (issue: EnhancedAnalysisIssue) => 
+      issue.impact_scope === 'conversion' || 
+      issue.impact_scope === 'task-completion'
+  },
+  'accessibility': {
+    name: 'Accessibility',
+    filter: (issue: EnhancedAnalysisIssue) => 
+      issue.category === 'accessibility'
+  },
+  'trust-builders': {
+    name: 'Trust Builders',
+    filter: (issue: EnhancedAnalysisIssue) => 
+      issue.impact_scope === 'user-trust'
+  }
+};
+
+// Temporal flow analysis types
+export interface FlowAnalysis {
+  screens: ScreenAnalysis[];
+  transitions: TransitionAnalysis[];
+  dropOffRisks: DropOffRisk[];
+}
+
+export interface ScreenAnalysis {
+  id: string;
+  name: string;
+  type: string;
+  issues: EnhancedAnalysisIssue[];
+  score: number;
+}
+
+export interface TransitionAnalysis {
+  from: string;
+  to: string;
+  issues: string[];
+  smoothness: number; // 0-1
+}
+
+export interface DropOffRisk {
+  screen: string;
+  reason: string;
+  severity: 'high' | 'medium' | 'low';
+  suggestion: string;
+}
+
+// Comparison mode types
+export interface ComparisonResult {
+  improved: ComparisonItem[];
+  degraded: ComparisonItem[];
+  unchanged: ComparisonItem[];
+  new_issues: EnhancedAnalysisIssue[];
+  resolved_issues: EnhancedAnalysisIssue[];
+}
+
+export interface ComparisonItem {
+  aspect: string;
+  before: any;
+  after: any;
+  change_percentage?: number;
+}
