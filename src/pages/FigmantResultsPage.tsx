@@ -657,30 +657,6 @@ const FigmantResultsPage = () => {
           />
         )}
       </div>
-      
-      {/* Quick Actions */}
-      <div className="fixed bottom-6 right-6 flex gap-3">
-        <button 
-          onClick={() => setViewMode(viewMode === 'visual' ? 'detailed' : 'visual')}
-          className="px-4 py-2 bg-white rounded-lg shadow-lg 
-                   hover:shadow-xl transition-shadow border border-gray-200"
-        >
-          💬 Ask Follow-up
-        </button>
-        <button 
-          onClick={() => {
-            // Scroll to visual alternatives section
-            const visualSection = document.querySelector('[data-section="visual-alternatives"]');
-            if (visualSection) {
-              visualSection.scrollIntoView({ behavior: 'smooth' });
-            }
-          }}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg 
-                   shadow-lg hover:shadow-xl transition-shadow"
-        >
-          🎨 See More Ideas
-        </button>
-      </div>
     </div>
   );
 };
