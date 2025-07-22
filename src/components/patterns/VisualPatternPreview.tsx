@@ -28,7 +28,26 @@ export function VisualPatternPreview({ patternId, showInteraction = false }: Pro
         onMouseLeave={() => setIsHovered(false)}
         onClick={() => setShowDetails(!showDetails)}
       >
-        <div className="aspect-video bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+        <img 
+          src={isHovered && pattern.thumbnails.hover 
+            ? pattern.thumbnails.hover 
+            : pattern.thumbnails.default
+          }
+          alt={pattern.name}
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          onError={(e) => {
+            // Fallback to placeholder if image fails to load
+            const target = e.currentTarget as HTMLImageElement;
+            const nextElement = target.nextElementSibling as HTMLElement;
+            target.style.display = 'none';
+            if (nextElement) {
+              nextElement.style.display = 'flex';
+            }
+          }}
+        />
+        
+        {/* Fallback placeholder */}
+        <div className="hidden aspect-video bg-gradient-to-br from-blue-50 to-purple-50 items-center justify-center">
           <div className="text-center p-4">
             <h3 className="font-semibold text-gray-800 mb-2">{pattern.name}</h3>
             <p className="text-sm text-gray-600 mb-3">{pattern.description}</p>
