@@ -615,19 +615,29 @@ const FigmantResultsPage = () => {
       <div className="max-w-7xl mx-auto p-6">
         {viewMode === 'visual' ? (
           // Visual view - switch between Classic and Holistic modes
-          analysisMode === 'holistic' ? (
-            <HolisticPrototypeViewer
-              analysisId={analysisData?.id}
-              contextId={userContext?.id}
-              originalImage={sessionData?.images?.[0]?.file_path ? getImageUrl(sessionData.images[0].file_path) : undefined}
-            />
-          ) : (
-            // Classic Visual Mentor View
-            <VisualMentorSummary 
-              mentorData={analysisData?.enhanced_context?.mentor_summary}
-              userImage={sessionData?.images?.[0]?.file_path ? getImageUrl(sessionData.images[0].file_path) : undefined}
-            />
-          )
+          <>
+            {console.log('🎯 Visual mode - analysisMode:', analysisMode, 'isHolisticEnabled:', isHolisticEnabled, 'analysisData?.id:', analysisData?.id)}
+            {analysisMode === 'holistic' ? (
+              <>
+                {console.log('🚀 Rendering HolisticPrototypeViewer with:', { 
+                  analysisId: analysisData?.id, 
+                  contextId: userContext?.id, 
+                  hasOriginalImage: !!sessionData?.images?.[0]?.file_path 
+                })}
+                <HolisticPrototypeViewer
+                  analysisId={analysisData?.id}
+                  contextId={userContext?.id}
+                  originalImage={sessionData?.images?.[0]?.file_path ? getImageUrl(sessionData.images[0].file_path) : undefined}
+                />
+              </>
+            ) : (
+              // Classic Visual Mentor View
+              <VisualMentorSummary 
+                mentorData={analysisData?.enhanced_context?.mentor_summary}
+                userImage={sessionData?.images?.[0]?.file_path ? getImageUrl(sessionData.images[0].file_path) : undefined}
+              />
+            )}
+          </>
         ) : (
           // Detailed analysis view with gallery and sidebar layout
           <EnhancedAnalysisResults 
