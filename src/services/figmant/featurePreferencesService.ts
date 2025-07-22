@@ -18,27 +18,8 @@ class FeaturePreferencesService {
     }
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        return defaultFeaturePreferences;
-      }
-
-      // Check if user has feature preferences in privacy_preferences table
-      const { data, error } = await supabase
-        .from('privacy_preferences')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching feature preferences:', error);
-        return defaultFeaturePreferences;
-      }
-
-      // Extract holistic AI prototypes preference from metadata or use default
-      const holisticAiPrototypes = data?.improve_product === true 
-        ? localStorage.getItem('holistic-ai-prototypes-enabled') === 'true'
-        : false;
+      // Read directly from localStorage for consistency with useFeatureFlag hook
+      const holisticAiPrototypes = localStorage.getItem('holistic-ai-prototypes-enabled') === 'true';
 
       this.cache = {
         holisticAiPrototypes,
@@ -53,24 +34,16 @@ class FeaturePreferencesService {
 
   async updateHolisticAiPrototypes(enabled: boolean): Promise<boolean> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        return false;
-      }
-
       // Store in localStorage for immediate effect
       localStorage.setItem('holistic-ai-prototypes-enabled', enabled.toString());
 
-      // Update cache
-      this.cache = {
-        ...this.cache || defaultFeaturePreferences,
-        holisticAiPrototypes: enabled,
-      };
+      // Clear cache to force reload
+      this.clearCache();
 
       // Track usage metrics
       if (enabled) {
         // Log feature enablement for analytics
-        console.log('Holistic AI Prototypes enabled for user:', user.id);
+        console.log('Holistic AI Prototypes enabled for user');
       }
 
       return true;
