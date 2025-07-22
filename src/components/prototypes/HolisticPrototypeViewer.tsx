@@ -185,34 +185,73 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
     }
   };
 
-  const executeComponent = (componentCode) => {
+  const executeGeneratedComponent = (componentCode: string) => {
+    if (!componentCode || typeof componentCode !== 'string') {
+      console.error('Invalid component code provided');
+      return null;
+    }
+
     try {
-      // Create a function that returns the component
-      const componentFunction = new Function(
-        'React',
-        'useState',
-        'useEffect',
-        'useCallback',
-        'useMemo',
-        `
+      // CRITICAL: Make React available on window for the generated code
+      const originalWindowReact = (window as any).React;
+      (window as any).React = React;
+
+      // Create and execute the component
+      const componentFunction = new Function(`
         ${componentCode}
-        return EnhancedDesign;
-        `
-      );
-      
-      // Execute with React context
-      const Component = componentFunction(
-        React,
-        React.useState,
-        React.useEffect,
-        React.useCallback,
-        React.useMemo
-      );
-      
+        
+        if (typeof EnhancedDesign === 'function') {
+          return EnhancedDesign;
+        } else {
+          throw new Error('EnhancedDesign function not found');
+        }
+      `);
+
+      const Component = componentFunction();
+
+      // Restore original window.React state
+      if (originalWindowReact) {
+        (window as any).React = originalWindowReact;
+      } else {
+        delete (window as any).React;
+      }
+
       return Component;
+
     } catch (error) {
-      console.error('Failed to execute component:', error);
-      throw error;
+      console.error('Component execution failed:', error);
+      
+      // Fallback: Try with explicit React context
+      try {
+        const fallbackFunction = new Function('React', `
+          window.React = React; // Ensure React is available
+          ${componentCode}
+          return EnhancedDesign;
+        `);
+        
+        return fallbackFunction(React);
+        
+      } catch (fallbackError) {
+        console.error('Fallback execution also failed:', fallbackError);
+        
+        // Return error component
+        return function ErrorComponent() {
+          return (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+              <h3 className="text-red-800 font-semibold mb-2">Component Execution Error</h3>
+              <p className="text-red-600 text-sm">{error.message}</p>
+              <details className="mt-2">
+                <summary className="cursor-pointer text-red-700 text-sm hover:underline">
+                  View Component Code
+                </summary>
+                <pre className="mt-2 p-2 bg-red-100 rounded text-xs overflow-auto">
+                  {componentCode.substring(0, 500)}...
+                </pre>
+              </details>
+            </div>
+          );
+        };
+      }
     }
   };
 
@@ -235,7 +274,7 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
       // For React.createElement based components, try direct execution
       const ComponentWrapper = () => {
         try {
-          const GeneratedComponent = executeComponent(cleanCode);
+          const GeneratedComponent = executeGeneratedComponent(cleanCode);
           
           if (GeneratedComponent) {
             return <GeneratedComponent />;
