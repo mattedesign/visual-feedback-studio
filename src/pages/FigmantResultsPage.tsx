@@ -47,6 +47,7 @@ const FigmantResultsPage = () => {
   const [prototypeViewMode, setPrototypeViewMode] = useState<'list' | 'overlay'>('list');
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'menu' | 'chat'>('menu');
+  const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
 
   // Add prototype generation hook
   const { 
@@ -466,10 +467,11 @@ const FigmantResultsPage = () => {
         
         {/* Right Panel - Context Recommendations */}
         <div 
-          className="flex flex-col items-center self-stretch overflow-hidden"
+          className={`flex flex-col items-center self-stretch overflow-hidden transition-all duration-300 ${
+            isRightPanelCollapsed ? 'max-w-[48px]' : 'max-w-[240px]'
+          }`}
           style={{
             display: 'flex',
-            maxWidth: '240px',
             flexDirection: 'column',
             alignItems: 'center',
             alignSelf: 'stretch',
@@ -481,51 +483,68 @@ const FigmantResultsPage = () => {
           }}
         >
           {/* Header */}
-          <div className="p-4 border-b border-border w-full">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="font-semibold text-foreground">
-                  {selectedImage ? 'Figmant Analysis' : 'Analysis Results'}
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  {selectedImage ? 'Detailed Analysis' : '5 insights found'}
-                </p>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/figmant')}
-                className="p-1 h-8 w-8"
-                title="Collapse panel"
-              >
-                <PanelRightClose className="h-4 w-4" />
-              </Button>
-            </div>
-            
-            {selectedImage && (
-              <div className="flex bg-muted rounded-lg p-1 gap-1 mb-4">
-                <Button 
-                  variant={rightPanelTab === 'annotations' ? 'secondary' : 'ghost'} 
-                  size="sm" 
-                  className="flex-1"
-                  onClick={() => setRightPanelTab('annotations')}
+          <div className={`${isRightPanelCollapsed ? 'p-2' : 'p-4'} border-b border-border w-full`}>
+            {!isRightPanelCollapsed ? (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="font-semibold text-foreground">
+                      {selectedImage ? 'Figmant Analysis' : 'Analysis Results'}
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedImage ? 'Detailed Analysis' : '5 insights found'}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsRightPanelCollapsed(!isRightPanelCollapsed)}
+                    className="p-1 h-8 w-8"
+                    title="Collapse panel"
+                  >
+                    <PanelRightClose className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                {selectedImage && (
+                  <div className="flex bg-muted rounded-lg p-1 gap-1 mb-4">
+                    <Button 
+                      variant={rightPanelTab === 'annotations' ? 'secondary' : 'ghost'} 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => setRightPanelTab('annotations')}
+                    >
+                      Annotations
+                    </Button>
+                    <Button 
+                      variant={rightPanelTab === 'ideas' ? 'secondary' : 'ghost'} 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => setRightPanelTab('ideas')}
+                    >
+                      Ideas
+                    </Button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex justify-center">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsRightPanelCollapsed(!isRightPanelCollapsed)}
+                  className="p-1 h-8 w-8"
+                  title="Expand panel"
                 >
-                  Annotations
-                </Button>
-                <Button 
-                  variant={rightPanelTab === 'ideas' ? 'secondary' : 'ghost'} 
-                  size="sm" 
-                  className="flex-1"
-                  onClick={() => setRightPanelTab('ideas')}
-                >
-                  Ideas
+                  <PanelRightClose className="h-4 w-4 rotate-180" />
                 </Button>
               </div>
             )}
           </div>
           
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-4 w-full">
+          {!isRightPanelCollapsed && (
+            <div className="flex-1 overflow-y-auto p-4 w-full">
             {!selectedImage ? (
               // Summary view
               <div className="space-y-6">
@@ -800,6 +819,7 @@ const FigmantResultsPage = () => {
               </div>
             )}
           </div>
+          )}
         </div>
       </div>
       
