@@ -135,11 +135,24 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
     cleanCode = cleanCode.replace(/'''jsx?\n?/g, '');
     cleanCode = cleanCode.replace(/'''\n?$/g, '');
     
-    // Remove any leading/trailing whitespace and comments
+    // Remove any leading/trailing whitespace
     cleanCode = cleanCode.trim();
     
     // Remove comment blocks at the start if they exist
     cleanCode = cleanCode.replace(/^\/\*[\s\S]*?\*\/\s*/g, '');
+    
+    // Fix unterminated comments by completing them or removing them
+    cleanCode = cleanCode.replace(/\/\*[^*]*\*?(?:[^/*][^*]*\*+)*(?:[^/*](?:[^*])*\*+)*\/|\/\*[^*]*\*?(?:[^/*][^*]*\*+)*(?:[^/*](?:[^*])*\*+)*/g, (match) => {
+      // If comment is properly closed, keep it
+      if (match.endsWith('*/')) {
+        return match;
+      }
+      // If it's an unterminated comment, close it or remove it
+      return match + ' */';
+    });
+    
+    // Remove any remaining unterminated single-line comments at the end of lines
+    cleanCode = cleanCode.replace(/\/\*[^*\n]*$/gm, '');
     
     // Fix common template literal issues
     cleanCode = cleanCode.replace(/className=\{`([^`]*)`\}/g, 'className="$1"');
