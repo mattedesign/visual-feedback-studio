@@ -31,35 +31,47 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
 
   const loadAnalysis = async () => {
     console.log('🔍 Loading holistic analysis for:', { analysisId, contextId });
-    // Load holistic analysis - get the most recent one if multiple exist
-    const { data } = await supabase
-      .from('figmant_holistic_analyses')
-      .select('*')
-      .eq('analysis_id', analysisId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (data) {
-      console.log('✅ Found existing holistic analysis:', data);
-      setAnalysis(data);
-      // Load any existing prototypes
-      const { data: existingPrototypes } = await supabase
-        .from('figmant_holistic_prototypes')
+    
+    try {
+      // Load holistic analysis - get the most recent one if multiple exist
+      const { data, error } = await supabase
+        .from('figmant_holistic_analyses')
         .select('*')
-        .eq('analysis_id', analysisId);
-      
-      const prototypeMap = {};
-      existingPrototypes?.forEach(p => {
-        prototypeMap[p.solution_type] = p;
-      });
-      setPrototypes(prototypeMap);
-    } else {
-      console.log('❌ No holistic analysis found, generating new one for analysisId:', analysisId);
-      // Generate initial analysis
-      generateAnalysis();
+        .eq('analysis_id', analysisId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      console.log('📊 Holistic analysis query result:', { data, error, analysisId });
+
+      if (data) {
+        console.log('✅ Found existing holistic analysis:', data);
+        setAnalysis(data);
+        // Load any existing prototypes
+        const { data: existingPrototypes, error: prototypeError } = await supabase
+          .from('figmant_holistic_prototypes')
+          .select('*')
+          .eq('analysis_id', analysisId);
+        
+        console.log('🎨 Prototype query result:', { existingPrototypes, prototypeError, analysisId });
+        
+        const prototypeMap = {};
+        existingPrototypes?.forEach(p => {
+          prototypeMap[p.solution_type] = p;
+        });
+        console.log('🗂️ Prototype map created:', prototypeMap);
+        setPrototypes(prototypeMap);
+      } else {
+        console.log('❌ No holistic analysis found, generating new one for analysisId:', analysisId);
+        // Generate initial analysis
+        generateAnalysis();
+      }
+    } catch (error) {
+      console.error('💥 Error in loadAnalysis:', error);
+    } finally {
+      console.log('🏁 Setting loading to false');
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const generateAnalysis = async () => {
