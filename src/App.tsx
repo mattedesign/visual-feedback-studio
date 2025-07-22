@@ -12,6 +12,7 @@ import { FigmantLayout } from "@/components/layout/FigmantLayout";
 import { FigmantDashboard } from "@/pages/FigmantDashboard";
 import FigmantAnalysisPage from "@/pages/FigmantAnalysisPage";
 import FigmantResultsPage from "@/pages/FigmantResultsPage";
+import FigmantTestHolistic from "@/pages/FigmantTestHolistic";
 import Auth from "./pages/Auth";
 import Settings from "./pages/Settings";
 import Subscription from "./pages/Subscription";
@@ -70,6 +71,9 @@ const App = () => {
                         <Route path="/analysis-studio" element={<Navigate to="/analyze" replace />} />
                         <Route path="/mentor" element={<Navigate to="/dashboard" replace />} />
                         <Route path="/history" element={<HistoryPage />} />
+                        
+                        {/* Test Routes */}
+                        <Route path="/figmant/test-holistic" element={<FigmantTestHolistic />} />
                         
                         {/* Admin Routes */}
                         <Route path="/admin/pattern-capture" element={<AdminPatternCapture />} />
