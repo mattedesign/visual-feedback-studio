@@ -298,107 +298,74 @@ function buildPrototypePrompt(solution: any, analysisData: any, contextData: any
   const extractedContent = extractContentFromAnalysis(analysisData);
   const problems = holisticAnalysis.identified_problems || [];
   
-  // Create different prompts based on solution approach
-  let approachGuidance = '';
-  let scopeInstructions = '';
-  
-  if (solution.approach === 'conservative') {
-    approachGuidance = `
-CONSERVATIVE APPROACH - MOLECULAR FIXES:
-Focus on fixing ONE specific, high-impact issue with minimal changes.
-- Choose the most critical problem from the list below
-- Make targeted improvements to that specific element/area only
-- Keep the overall design structure intact
-- Implement quick wins that can be done immediately
-- Focus on improving usability of a single component or interaction`;
-    
-    scopeInstructions = `Create a targeted fix for ONE specific issue. Do NOT redesign the entire interface.`;
-    
-  } else if (solution.approach === 'balanced') {
-    approachGuidance = `
-BALANCED APPROACH - STRATEGIC IMPROVEMENTS:
-Combine 2-3 related improvements that work together synergistically.
-- Address the top 2-3 most impactful problems
-- Apply modern UX patterns selectively
-- Improve information hierarchy and flow
-- Balance user needs with business constraints
-- Make moderate structural improvements`;
-    
-    scopeInstructions = `Create a moderately enhanced version addressing 2-3 key issues with strategic improvements.`;
-    
-  } else if (solution.approach === 'innovative') {
-    approachGuidance = `
-INNOVATIVE APPROACH - HOLISTIC REDESIGN:
-Reimagine the entire experience to solve ALL problems comprehensively.
-- Address ALL identified problems in an integrated solution
-- Apply cutting-edge UX patterns and interactions
-- Completely rethink the information architecture
-- Maximize user engagement and delight
-- Create a best-in-class experience that sets new standards`;
-    
-    scopeInstructions = `Create a comprehensive redesign that addresses ALL problems with innovative solutions.`;
-  }
-  
-  return `You are creating a COMPLETE React component that implements the ${solution.approach} solution approach.
+  return `Create a browser-compatible React component for the ${solution.approach} approach.
 
-${approachGuidance}
-
-PROBLEMS IDENTIFIED:
-${problems.map((p, i) => `${i + 1}. ${p.title || p.description} (Impact: ${p.impact || 'Medium'})`).join('\\n')}
+PROBLEMS TO FIX:
+${problems.map((p: any, i: number) => `${i + 1}. ${p.title || p.description}`).join('\n')}
 
 SOLUTION: ${solution.name}
 ${solution.description}
 
-KEY CHANGES FOR THIS APPROACH:
-${(solution.keyChanges || []).map(c => `- ${c}`).join('\\n')}
+CONTENT TO USE:
+- Buttons: ${extractedContent.buttons?.join(', ') || 'Get Started, Learn More'}
+- Key Text: ${extractedContent.headings?.slice(0, 3).join(', ') || 'Dashboard, Analytics, Reports'}
+- Primary Colors: ${extractedContent.colors?.slice(0, 2).join(', ') || 'blue, gray'}
 
-EXTRACTED CONTENT TO USE:
-${JSON.stringify(extractedContent, null, 2)}
-
-BUSINESS CONTEXT:
-${contextData ? `
-- Business Type: ${contextData.business_type}
-- Primary Goal: ${contextData.primary_goal}
-- Target Audience: ${contextData.target_audience}
-` : 'No specific business context provided'}
-
-${scopeInstructions}
-
-Create a production-ready React component that:
-1. ${solution.approach === 'conservative' ? 'Fixes the most critical issue with minimal changes' : 
-     solution.approach === 'balanced' ? 'Addresses 2-3 key problems with strategic improvements' :
-     'Solves ALL problems with a comprehensive, innovative redesign'}
-2. Incorporates extracted content appropriately
-3. Includes all necessary states and interactions
-4. Has proper error handling and loading states
-5. Is fully accessible (ARIA labels, keyboard navigation)
-6. Uses only Tailwind CSS classes
-7. Includes helpful comments explaining design decisions
-
-CRITICAL: Generate browser-compatible React component code.
-
-Use this EXACT structure (NO ES6 imports, browser-compatible only):
-
-/*
-${solution.approach.toUpperCase()} SOLUTION - ${solution.name}
-Problems addressed: [list the specific problems this approach solves]
-*/
+Generate ONLY this exact format (no markdown, no imports):
 
 function EnhancedDesign() {
-  const { useState, useEffect, useMemo, useCallback } = React;
-  
-  // Component implementation here
-  // Use ONLY React built-in hooks and standard HTML elements
-  // Use ONLY Tailwind CSS classes for styling
-  // NO external library imports (no recharts, no headlessui, etc.)
+  const { useState } = React;
+  const [activeTab, setActiveTab] = useState('overview');
   
   return (
-    // JSX here using only standard HTML elements
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-6xl mx-auto">
+        <header className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Enhanced Dashboard</h1>
+          <p className="text-gray-600">Improved user experience with better visibility</p>
+        </header>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-semibold mb-4">Usage Metrics</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span>Active Users</span>
+                <span className="font-bold">1,234</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Sessions</span>
+                <span className="font-bold">5,678</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-semibold mb-4">Performance</h3>
+            <div className="space-y-3">
+              <div className="bg-blue-100 p-3 rounded">
+                <div className="text-sm text-blue-800">Load Time</div>
+                <div className="text-xl font-bold text-blue-900">2.1s</div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-semibold mb-4">Actions</h3>
+            <div className="space-y-3">
+              <button className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                Generate Report
+              </button>
+              <button className="w-full bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300">
+                View Details
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
-}
-
-Do NOT include import/export statements. Do NOT use external libraries. Only generate the function component that works in a browser environment.`;
-}
+}`;
 
 async function callClaude(prompt: string, apiKey: string) {
   console.log('🔥 Calling Claude API with prompt length:', prompt.length);
