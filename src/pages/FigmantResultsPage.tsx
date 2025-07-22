@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Sparkles, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Sparkles, AlertTriangle, RefreshCw, Grid, FileText, ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getFigmantResults, getFigmantSession } from '@/services/figmantAnalysisService';
 import { FigmantSessionService } from '@/services/figmantSessionService';
@@ -9,6 +9,7 @@ import { FigmantImageDetail } from '@/components/analysis/figmant/FigmantImageDe
 import { ResultsContent } from '@/components/analysis/results/ResultsContent';
 import { ResultsChat } from '@/components/analysis/results/ResultsChat';
 import { AnalysisResults as EnhancedAnalysisResults } from '@/components/analysis/AnalysisResults';
+import { EnhancedFigmaAnalysisLayout } from '@/components/analysis/figma/EnhancedFigmaAnalysisLayout';
 
 import { FigmantSidebar } from '@/components/layout/FigmantSidebar';
 import { FigmantLogo } from '@/components/ui/figmant-logo';
@@ -28,8 +29,8 @@ const FigmantResultsPage = () => {
   const [analysisData, setAnalysisData] = useState<any>(null);
   const [sessionData, setSessionData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<'grid' | 'detail' | 'results'>('grid');
   const [selectedImage, setSelectedImage] = useState<FigmantImage | null>(null);
+  const [viewMode, setViewMode] = useState<'gallery' | 'detail'>('gallery');
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'menu' | 'chat'>('menu');
 
@@ -487,13 +488,11 @@ const FigmantResultsPage = () => {
       setAnalysisData(results);
       setSessionData(session || foundSession);
       
-      // If we have analysis data, show results view by default and activate chat tab
-      if (results && (session?.images?.length > 0 || foundSession)) {
-        setCurrentView('results');
-        setActiveTab('chat'); // Default to chat tab when analysis results are available
-        if (session?.images?.length > 0) {
-          setSelectedImage(session.images[0]);
-        }
+      // If we have images, default to gallery view
+      if (session?.images?.length > 0) {
+        setViewMode('gallery');
+      } else {
+        setViewMode('detail'); // Show details if no images
       }
     } catch (error) {
       console.error('Failed to load analysis results:', error);
@@ -603,114 +602,219 @@ const FigmantResultsPage = () => {
     );
   }
 
+  // Handle image selection - switch to detail view
   const handleImageSelect = (image: FigmantImage) => {
     setSelectedImage(image);
-    setCurrentView('results');
+    setViewMode('detail');
   };
 
-  const handleBackToGrid = () => {
-    setCurrentView('grid');
+  // Handle back to gallery
+  const handleBackToGallery = () => {
     setSelectedImage(null);
+    setViewMode('gallery');
   };
 
-  // Results view - check if we should use enhanced UI
-  if (currentView === 'results') {
-    // Check if we should use enhanced UI
-    if (shouldUseEnhancedUI(analysisData)) {
-      const enhancedData = transformToEnhancedFormat(analysisData, sessionData);
-      if (enhancedData) {
-        console.log('🎨 USING ENHANCED UI - Final data passed to component:', {
-          imageCount: enhancedData.images.length,
-          issueCount: enhancedData.issues.length,
-          suggestionCount: enhancedData.suggestions.length,
-          suggestions: enhancedData.suggestions
-        });
-        
-        return (
-          <EnhancedAnalysisResults 
-            images={enhancedData.images}
-            issues={enhancedData.issues}
-            suggestions={enhancedData.suggestions}
-            analysisMetadata={enhancedData.analysisMetadata}
-            analysisId={enhancedData.analysisId}
-            onBack={() => navigate('/analyze')}
-          />
-        );
-      }
-    }
-    
-    // Fallback to basic results
-    console.log('📊 Using basic ResultsContent component');
+  // Main render - implement two-part layout structure
+  if (!sessionData && !analysisData) {
     return (
-      <ResultsContent 
-        analysisData={analysisData}
-        sessionData={sessionData}
-      />
-    );
-  }
-
-  // Show detail view
-  if (currentView === 'detail' && selectedImage) {
-    return (
-      <FigmantImageDetail 
-        image={selectedImage}
-        analysisData={analysisData}
-        onBack={handleBackToGrid}
-      />
-    );
-  }
-
-  // Show grid view
-  if (sessionData?.images?.length > 0) {
-    return (
-      <div className="h-full">
-        <FigmantImageGrid 
-          images={sessionData.images}
-          onImageSelect={handleImageSelect}
-          analysisData={analysisData}
-        />
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <AlertTriangle className="w-8 h-8 mx-auto mb-4 text-red-500" />
+          <h2 className="text-lg font-semibold mb-2">No Analysis Data</h2>
+          <p className="text-muted-foreground mb-4">No analysis data was found for this session.</p>
+          <Button onClick={() => navigate('/figmant')}>
+            Start New Analysis
+          </Button>
+        </div>
       </div>
     );
   }
 
-  // Fallback: Show results even without images
-  if (analysisData) {
-    // Try enhanced UI first
-    if (shouldUseEnhancedUI(analysisData)) {
-      const enhancedData = transformToEnhancedFormat(analysisData, sessionData);
-      if (enhancedData) {
-        console.log('🎨 Using Enhanced Analysis Results component (fallback)');
-        return (
-          <EnhancedAnalysisResults 
-            images={enhancedData.images}
-            issues={enhancedData.issues}
-            suggestions={enhancedData.suggestions}
-            analysisMetadata={enhancedData.analysisMetadata}
-            analysisId={enhancedData.analysisId}
-            onBack={() => navigate('/analyze')}
-          />
-        );
-      }
-    }
-    
-    // Basic fallback
-    return (
-      <ResultsContent 
-        analysisData={analysisData}
-        sessionData={sessionData}
-      />
-    );
-  }
-
+  // Two-part layout structure
   return (
-    <div className="h-full flex items-center justify-center">
-      <div className="text-center">
-        <AlertTriangle className="w-8 h-8 mx-auto mb-4 text-red-500" />
-        <h2 className="text-lg font-semibold mb-2">No Analysis Data</h2>
-        <p className="text-muted-foreground mb-4">No analysis data was found for this session.</p>
-        <Button onClick={() => navigate('/figmant')}>
-          Start New Analysis
-        </Button>
+    <div className="h-screen flex bg-muted/20">
+      {/* Left Sidebar - Analysis Summary */}
+      <div className="w-80 flex flex-col bg-card border-r border-border">
+        {/* Header */}
+        <div className="p-4 border-b border-border">
+          <div className="flex items-center gap-3 mb-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/figmant')}
+              className="p-1 h-8 w-8"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-sm">F</span>
+            </div>
+            <div>
+              <h2 className="font-semibold text-foreground">Figmant Analysis</h2>
+              <p className="text-sm text-muted-foreground">
+                {viewMode === 'gallery' ? 'Image Gallery' : 'Detailed Analysis'}
+              </p>
+            </div>
+          </div>
+          
+          {/* View Toggle */}
+          <div className="flex bg-muted rounded-lg p-1">
+            <Button 
+              variant={viewMode === 'gallery' ? 'secondary' : 'ghost'} 
+              size="sm" 
+              className="flex-1 flex items-center gap-2"
+              onClick={handleBackToGallery}
+            >
+              <Grid className="h-4 w-4" />
+              Gallery
+            </Button>
+            <Button 
+              variant={viewMode === 'detail' ? 'secondary' : 'ghost'} 
+              size="sm" 
+              className="flex-1 flex items-center gap-2"
+              disabled={!selectedImage}
+            >
+              <FileText className="h-4 w-4" />
+              Details
+            </Button>
+          </div>
+        </div>
+        
+        {/* Analysis Summary Content */}
+        <div className="flex-1 overflow-y-auto p-4">
+          {viewMode === 'gallery' ? (
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold text-foreground mb-2">Session Overview</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Images:</span>
+                    <span className="text-foreground">{sessionData?.images?.length || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Issues Found:</span>
+                    <span className="text-foreground">
+                      {analysisData?.claude_analysis?.issues?.length || 0}
+                    </span>
+                  </div>
+                  {analysisData?.claude_analysis?.overall_score && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Score:</span>
+                      <span className="text-foreground font-semibold">
+                        {analysisData.claude_analysis.overall_score}/100
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-foreground mb-2">Select an Image</h3>
+                <p className="text-sm text-muted-foreground">
+                  Click on any image in the gallery to view detailed analysis and recommendations.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold text-foreground mb-2">Image Analysis</h3>
+                <p className="text-sm text-muted-foreground">
+                  Viewing detailed recommendations for: {selectedImage?.file_name}
+                </p>
+              </div>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBackToGallery}
+                className="w-full"
+              >
+                <Grid className="h-4 w-4 mr-2" />
+                Back to Gallery
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col">
+        {viewMode === 'gallery' ? (
+          <div className="flex-1 p-6 overflow-y-auto">
+            <div className="max-w-6xl mx-auto">
+              <div className="mb-6">
+                <h1 className="text-2xl font-bold text-foreground mb-2">Image Gallery</h1>
+                <p className="text-muted-foreground">
+                  Select an image to view detailed analysis and recommendations
+                </p>
+              </div>
+              
+              {sessionData?.images?.length > 0 ? (
+                <FigmantImageGrid
+                  images={sessionData.images}
+                  onImageSelect={handleImageSelect}
+                  analysisData={analysisData}
+                />
+              ) : (
+                <div className="text-center py-12">
+                  <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-muted-foreground">No images found for this session</p>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-hidden">
+            {/* Enhanced detail view using EnhancedFigmaAnalysisLayout */}
+            {shouldUseEnhancedUI(analysisData) ? (
+              (() => {
+                const enhancedData = transformToEnhancedFormat(analysisData, sessionData);
+                if (enhancedData) {
+                  // Map the enhanced data to the expected format for EnhancedFigmaAnalysisLayout
+                  const formattedAnalysisData = {
+                    id: enhancedData.analysisId,
+                    annotations: enhancedData.issues.map(issue => ({
+                      id: issue.id,
+                      title: issue.title,
+                      feedback: issue.description,
+                      severity: issue.severity,
+                      category: issue.category
+                    })),
+                    images: enhancedData.images.map(img => img.url),
+                    totalAnnotations: enhancedData.issues.length,
+                    processingTime: undefined,
+                    knowledgeSourcesUsed: undefined,
+                    aiModel: 'claude-3'
+                  };
+                  
+                  return (
+                    <EnhancedFigmaAnalysisLayout
+                      analysisData={formattedAnalysisData}
+                      strategistAnalysis={null}
+                      userChallenge=""
+                      onBack={handleBackToGallery}
+                    />
+                  );
+                }
+                return null;
+              })()
+            ) : selectedImage ? (
+              <FigmantImageDetail 
+                image={selectedImage}
+                analysisData={analysisData}
+                onBack={handleBackToGallery}
+              />
+            ) : (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center">
+                  <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-muted-foreground">Select an image to view details</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
