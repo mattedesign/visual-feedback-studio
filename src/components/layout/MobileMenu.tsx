@@ -6,6 +6,7 @@ import {
   User, 
   Settings,
   HelpCircle,
+  History,
   LogOut,
   X
 } from 'lucide-react';
@@ -38,6 +39,11 @@ export const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
       icon: BarChart3, 
       label: 'New Analysis', 
       href: '/analyze'
+    },
+    { 
+      icon: History, 
+      label: 'History', 
+      href: '/history'
     },
     { 
       icon: User, 
