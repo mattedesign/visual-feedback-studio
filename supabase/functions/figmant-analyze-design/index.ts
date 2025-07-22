@@ -496,73 +496,67 @@ function detectScreenType(visionLabels: string[], textContent: string[]): string
 function buildEnhancedPrompt(context: any): string {
   const { session, visionResults, screenType, metadata, designTokens } = context;
   
-  return `You are an expert Senior Principal UX Designer analyzing user interfaces with deep knowledge of design systems, accessibility standards, and conversion optimization.
+const VISUAL_MENTOR_PROMPT = `
+You are a friendly senior UX designer mentoring a fellow designer.
 
-ANALYSIS CONTEXT:
-- Screen: ${metadata.screen_name} (${screenType})
-- Platform: ${metadata.platform}
-- User Goal: ${metadata.user_goal}
-- Detected Elements: ${JSON.stringify(visionResults.flatMap((r: any) => r.enriched_vision?.labels || []).slice(0, 10))}
-- Layout Type: ${visionResults[0]?.enriched_vision?.layoutType || 'unknown'}
-- Text Density: ${visionResults[0]?.enriched_vision?.textDensity || 'unknown'}
+CRITICAL: Focus on visual possibilities, not problems. Think "inspiration board" not "code review."
 
-ENHANCED ANALYSIS INSTRUCTIONS:
-1. Analyze systematically at all levels (molecular → component → layout → flow)
-2. For each issue, assess your confidence level (0.0-1.0)
-3. Categorize impact scope precisely
-4. Reference specific design patterns when violated
-5. Consider platform-specific constraints
+Analyze the uploaded design and provide:
 
-CONFIDENCE SCORING GUIDELINES:
-- 1.0: Objective violation (contrast ratio, touch target size)
-- 0.8-0.9: Clear best practice violation with data
-- 0.6-0.7: Strong recommendation based on patterns
-- 0.4-0.5: Subjective improvement suggestion
+1. STRENGTHS (2-3 specific things done well)
+2. INTENT (What you think they're trying to achieve)
+3. QUESTIONS (1-2 clarifying questions about their goals) 
+4. VISUAL ALTERNATIVES (3-4 different approaches with real-world examples)
 
-PATTERN AWARENESS:
-Check for violations of: Progressive disclosure, Mobile touch targets, F-Pattern scanning, 
-Gestalt principles, Fitts's Law, Hick's Law, WCAG 2.1 AA compliance
+For each alternative, reference successful companies and explain the visual pattern, NOT the code.
 
-Return ONLY valid JSON matching this exact structure:
+Return JSON in this format:
 {
-  "screen_id": "${metadata.screen_id || 'screen-' + Date.now()}",
-  "screen_name": "${metadata.screen_name}",
-  "overall_score": <0-100 based on issues found>,
-  "issues": [
-    {
-      "id": "issue-<sequential-number>",
-      "level": "molecular" | "component" | "layout" | "flow",
-      "severity": "critical" | "warning" | "improvement",
-      "category": "accessibility" | "usability" | "visual" | "content" | "performance",
-      "confidence": <0.0-1.0>,
-      "impact_scope": "user-trust" | "task-completion" | "conversion" | "readability" | "performance" | "aesthetic",
-      "element": {
-        "type": "<element-type>",
-        "location": { "x": <x>, "y": <y>, "width": <w>, "height": <h> }
+  "mentor_analysis": {
+    "greeting": "Hey! Love what you're building here...",
+    "strengths": [
+      "Clean card-based layout creates scannable hierarchy",
+      "Consistent color system guides the eye effectively"
+    ],
+    "intent_inference": "Looks like you're creating an analytics dashboard for...",
+    "follow_up_questions": [
+      "Are your users checking this daily or weekly?",
+      "What's the #1 metric they need to see first?"
+    ],
+    "visual_alternatives": [
+      {
+        "title": "Notion-style Modular Dashboard",
+        "description": "Draggable widgets let users customize their view",
+        "visual_reference": "notion-dashboard",
+        "company_example": "Notion",
+        "impact": "40% higher daily active usage",
+        "why_it_works": [
+          "Users feel ownership over their workspace",
+          "Important metrics naturally float to the top"
+        ]
       },
-      "description": "<specific-issue>",
-      "impact": "<user-impact>",
-      "suggested_fix": "<concrete-solution>",
-      "implementation": {
-        "effort": "minutes" | "hours" | "days",
-        "code_snippet": "<code-suggestion>",
-        "design_guidance": "<visual-guidance>"
-      },
-      "violated_patterns": ["<pattern-1>"],
-      "rationale": ["<why-this-matters>"],
-      "metrics": {
-        "affects_users": "<percentage>",
-        "potential_improvement": "<measurable-outcome>"
+      {
+        "title": "Stripe's Focus Mode",
+        "description": "One key metric huge, everything else secondary",
+        "visual_reference": "stripe-focus",
+        "company_example": "Stripe",
+        "impact": "Users make decisions 3x faster",
+        "why_it_works": [
+          "Reduces cognitive load",
+          "Clear visual hierarchy"
+        ]
       }
-    }
-  ],
-  "strengths": ["<what-works-well>"],
-  "top_recommendations": ["<priority-fix-1>", "<priority-fix-2>", "<priority-fix-3>"],
-  "pattern_coverage": {
-    "followed": ["<pattern-1>"],
-    "violated": ["<pattern-2>"]
-  }
+    ],
+    "next_steps": [
+      "Pick one approach that resonates",
+      "We can explore implementation details",
+      "Or see more examples from your industry"
+    ]
+  },
+  "issues": []
 }`;
+
+  return VISUAL_MENTOR_PROMPT;
 }
 
 function validateAnalysisResponse(response: any): boolean {
