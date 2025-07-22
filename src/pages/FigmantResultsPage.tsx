@@ -191,47 +191,62 @@ const FigmantResultsPage = () => {
       }
 
       try {
-        console.log('🔍 Loading data for session:', sessionId);
+        console.log('🔍 Loading data for ID:', sessionId);
         
         // Try both methods to find the session
         let session = null;
         let analysis = null;
+        let actualSessionId = sessionId;
 
-        // Method 1: Direct session lookup
+        // First, determine if the ID is a session ID or analysis result ID
+        // Check if it's an analysis result ID first
         try {
-          session = await getFigmantSession(sessionId);
+          const { data: analysisCheck, error: analysisCheckError } = await supabase
+            .from('figmant_analysis_results')
+            .select('id, session_id')
+            .eq('id', sessionId)
+            .single();
+          
+          if (analysisCheck && !analysisCheckError) {
+            console.log('📊 ID is an analysis result ID, getting session ID:', analysisCheck.session_id);
+            actualSessionId = analysisCheck.session_id;
+          }
+        } catch (error) {
+          console.log('🔍 ID is not an analysis result ID, treating as session ID');
+        }
+
+        // Method 1: Direct session lookup using the actual session ID
+        try {
+          session = await getFigmantSession(actualSessionId);
           console.log('📊 Direct session lookup result:', session);
         } catch (directError) {
           console.warn('❌ Direct session lookup failed:', directError);
         }
 
-        // Method 2: Skip FigmantSessionService (not available)
-        // if (!session) {
-        //   try {
-        //     const sessionResult = await FigmantSessionService.getSessionById(sessionId);
-        //     session = sessionResult;
-        //     console.log('📊 FigmantSessionService lookup result:', session);
-        //   } catch (serviceError) {
-        //     console.warn('❌ FigmantSessionService lookup failed:', serviceError);
-        //   }
-        // }
-
-        // Method 3: Search analysis results table directly
-        if (!session) {
-          try {
-            analysis = await getFigmantResults(sessionId);
-            console.log('📊 Analysis results lookup:', analysis);
+        // Method 2: Get analysis results using actual session ID
+        try {
+          analysis = await getFigmantResults(actualSessionId);
+          console.log('📊 Analysis results lookup:', analysis);
+          
+          // If we have analysis data but no session data, try to construct it from the analysis
+          if (analysis && !session) {
+            // The getFigmantResults includes session data, but let's get images separately
+            const { data: images, error: imagesError } = await supabase
+              .from('figmant_session_images')
+              .select('*')
+              .eq('session_id', actualSessionId)
+              .order('upload_order');
             
-            if (analysis && analysis.figmant_session_images) {
-              // Construct session data from analysis
+            if (!imagesError && images) {
               session = {
-                id: sessionId,
-                images: analysis.figmant_session_images
+                id: actualSessionId,
+                images: images,
+                ...analysis.session // This comes from the join in getFigmantResults
               };
             }
-          } catch (analysisError) {
-            console.warn('❌ Analysis lookup failed:', analysisError);
           }
+        } catch (analysisError) {
+          console.warn('❌ Analysis lookup failed:', analysisError);
         }
 
         if (session) {
@@ -245,9 +260,10 @@ const FigmantResultsPage = () => {
         }
 
         if (!session && !analysis) {
-          console.warn('❌ No data found for session:', sessionId);
+          console.warn('❌ No data found for ID:', sessionId);
           setDebugInfo({
             requestedSessionId: sessionId,
+            actualSessionId: actualSessionId,
             matchType: 'none',
             error: 'No session or analysis data found'
           });
