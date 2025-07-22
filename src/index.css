@@ -136,7 +136,6 @@
   .figmant-sidebar {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
     align-self: stretch;
     flex-shrink: 0; /* Prevent sidebar from shrinking */
     border-radius: 20px;
@@ -144,6 +143,7 @@
     background: var(--Surface-01, #FCFCFC);
     clip-path: inset(0 round 20px);
     transition: all 0.3s ease;
+    height: 100vh; /* Full viewport height */
   }
   
   .figmant-sidebar .text-sm {

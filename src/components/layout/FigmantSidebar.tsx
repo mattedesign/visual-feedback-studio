@@ -76,8 +76,8 @@ export const FigmantSidebar = () => {
   }];
 
   return (
-    <div className={`figmant-sidebar transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} min-h-screen bg-white border-r border-gray-200 flex flex-col`}>
-      <div className="flex flex-col h-full overflow-hidden">{/* Changed to overflow-hidden and h-full */}
+    <div className={`figmant-sidebar transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
+      <div className="flex flex-col h-full">{/* Simplified structure */}
         {/* Header */}
         <div className={`p-4 ${isCollapsed ? 'px-2' : ''}`} style={{borderBottom: '1px solid var(--Stroke-01, #ECECEC)'}}>
           <div className="flex items-center justify-between">
