@@ -30,12 +30,14 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
 
   const loadAnalysis = async () => {
     console.log('🔍 Loading holistic analysis for:', { analysisId, contextId });
-    // Load holistic analysis
+    // Load holistic analysis - get the most recent one if multiple exist
     const { data } = await supabase
       .from('figmant_holistic_analyses')
       .select('*')
       .eq('analysis_id', analysisId)
-      .single();
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     if (data) {
       console.log('✅ Found existing holistic analysis:', data);
