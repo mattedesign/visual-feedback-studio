@@ -5,9 +5,8 @@ export const visualPatterns = {
     name: 'Modular Dashboard',
     company: 'Notion',
     thumbnails: {
-      default: '/patterns/notion/dashboard-default.jpg',
-      hover: '/patterns/notion/dashboard-hover.jpg',
-      mobile: '/patterns/notion/dashboard-mobile.jpg'
+      default: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/notion/dashboard-default.webp',
+      hover: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/notion/dashboard-hover.webp'
     },
     description: 'Draggable widgets with customizable layout',
     impact: '40% higher engagement',
@@ -20,8 +19,8 @@ export const visualPatterns = {
     name: 'Single Metric Focus',
     company: 'Stripe',
     thumbnails: {
-      default: '/patterns/stripe/focus-default.jpg',
-      hover: '/patterns/stripe/focus-detail.jpg'
+      default: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/stripe/focus-default.webp',
+      hover: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/stripe/focus-detail.webp'
     },
     description: 'One huge number, supporting metrics below',
     impact: '3x faster decisions',
@@ -34,8 +33,8 @@ export const visualPatterns = {
     name: 'Activity Stream',
     company: 'Linear',
     thumbnails: {
-      default: '/patterns/linear/activity-default.jpg',
-      hover: '/patterns/linear/activity-hover.jpg'
+      default: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/linear/activity-default.webp',
+      hover: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/linear/activity-hover.webp'
     },
     description: 'Real-time timeline of team activity',
     impact: 'Teams aligned without meetings',
@@ -43,14 +42,28 @@ export const visualPatterns = {
     tags: ['realtime', 'collaborative', 'timeline'],
     implementation_time: '3-4 days'
   },
+  'mixpanel-dashboard': {
+    id: 'mixpanel-dashboard',
+    name: 'Analytics Dashboard',
+    company: 'Mixpanel',
+    thumbnails: {
+      default: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/mixpanel/dashboard-default.webp',
+      hover: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/mixpanel/dashboard-hover.webp'
+    },
+    description: 'Advanced analytics with interactive visualizations',
+    impact: '60% better insights',
+    category: 'dashboard',
+    tags: ['analytics', 'interactive', 'data-driven'],
+    implementation_time: '4-5 days'
+  },
   // CTA Patterns
   'stripe-cta': {
     id: 'stripe-cta',
     name: 'High Contrast CTA',
     company: 'Stripe',
     thumbnails: {
-      default: '/patterns/stripe/cta-default.jpg',
-      hover: '/patterns/stripe/cta-hover.jpg'
+      default: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/stripe/cta-default.webp',
+      hover: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/stripe/cta-hover.webp'
     },
     description: 'Bold button with subtle shadow and perfect contrast',
     impact: '+32% click rate',
@@ -60,13 +73,13 @@ export const visualPatterns = {
   },
   'spotify-cta': {
     id: 'spotify-cta',
-    name: 'Rounded CTA',
+    name: 'Music-Focused CTA',
     company: 'Spotify',
     thumbnails: {
-      default: '/patterns/spotify/cta-default.jpg',
-      hover: '/patterns/spotify/cta-hover.jpg'
+      default: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/spotify/cta-default.webp',
+      hover: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/spotify/cta-hover.webp'
     },
-    description: 'Rounded button with vibrant colors',
+    description: 'Vibrant music streaming interface buttons',
     impact: '+25% engagement',
     category: 'cta',
     tags: ['modern', 'playful', 'bold'],
@@ -74,13 +87,13 @@ export const visualPatterns = {
   },
   'airbnb-cta': {
     id: 'airbnb-cta',
-    name: 'Gradient CTA',
+    name: 'Trust-Building CTA',
     company: 'Airbnb',
     thumbnails: {
-      default: '/patterns/airbnb/cta-default.jpg',
-      hover: '/patterns/airbnb/cta-hover.jpg'
+      default: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/airbnb/cta-default.webp',
+      hover: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/airbnb/cta-hover.webp'
     },
-    description: 'Gradient background with smooth transitions',
+    description: 'Trust-building booking interface buttons',
     impact: '+30% bookings',
     category: 'cta',
     tags: ['premium', 'trust', 'engaging'],
@@ -88,13 +101,13 @@ export const visualPatterns = {
   },
   'apple-cta': {
     id: 'apple-cta',
-    name: 'Minimalist CTA',
+    name: 'Minimal Premium CTA',
     company: 'Apple',
     thumbnails: {
-      default: '/patterns/apple/cta-default.jpg',
-      hover: '/patterns/apple/cta-hover.jpg'
+      default: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/apple/cta-default.webp',
+      hover: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/apple/cta-hover.webp'
     },
-    description: 'Clean, minimal button with perfect typography',
+    description: 'Clean, minimal buttons with perfect typography',
     impact: '+40% conversions',
     category: 'cta',
     tags: ['minimal', 'elegant', 'premium'],
@@ -103,11 +116,11 @@ export const visualPatterns = {
   // Card Patterns
   'figma-card': {
     id: 'figma-card',
-    name: 'Interactive Design Card',
+    name: 'Design File Cards',
     company: 'Figma',
     thumbnails: {
-      default: '/patterns/figma/card-default.jpg',
-      hover: '/patterns/figma/card-hover.jpg'
+      default: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/figma/card-default.webp',
+      hover: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/figma/card-hover.webp'
     },
     description: 'Cards with preview thumbnails and collaboration indicators',
     impact: '50% faster file discovery',
@@ -117,11 +130,11 @@ export const visualPatterns = {
   },
   'trello-card': {
     id: 'trello-card',
-    name: 'Kanban Card',
+    name: 'Project Cards',
     company: 'Trello',
     thumbnails: {
-      default: '/patterns/trello/card-default.jpg',
-      hover: '/patterns/trello/card-hover.jpg'
+      default: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/trello/card-default.webp',
+      hover: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/trello/card-hover.webp'
     },
     description: 'Draggable cards with labels and due dates',
     impact: '60% better task organization',
@@ -132,11 +145,11 @@ export const visualPatterns = {
   // Form Patterns
   'typeform-form': {
     id: 'typeform-form',
-    name: 'Progressive Form',
+    name: 'Conversational Forms',
     company: 'Typeform',
     thumbnails: {
-      default: '/patterns/typeform/form-default.jpg',
-      hover: '/patterns/typeform/form-hover.jpg'
+      default: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/typeform/form-default.webp',
+      hover: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/typeform/form-hover.webp'
     },
     description: 'One question at a time with smooth transitions',
     impact: '40% higher completion rate',
@@ -146,11 +159,11 @@ export const visualPatterns = {
   },
   'google-form': {
     id: 'google-form',
-    name: 'Clean Material Form',
+    name: 'Clean Simple Forms',
     company: 'Google',
     thumbnails: {
-      default: '/patterns/google/form-default.jpg',
-      hover: '/patterns/google/form-hover.jpg'
+      default: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/google/form-default.webp',
+      hover: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/google/form-hover.webp'
     },
     description: 'Material design with floating labels and clear validation',
     impact: '35% fewer form errors',
@@ -161,11 +174,11 @@ export const visualPatterns = {
   // Navigation Patterns
   'vercel-nav': {
     id: 'vercel-nav',
-    name: 'Minimal Navigation',
+    name: 'Developer Navigation',
     company: 'Vercel',
     thumbnails: {
-      default: '/patterns/vercel/nav-default.jpg',
-      hover: '/patterns/vercel/nav-hover.jpg'
+      default: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/vercel/nav-default.webp',
+      hover: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/vercel/nav-hover.webp'
     },
     description: 'Clean navigation with subtle hover states',
     impact: '25% better user flow',
@@ -175,11 +188,11 @@ export const visualPatterns = {
   },
   'arc-nav': {
     id: 'arc-nav',
-    name: 'Sidebar Navigation',
+    name: 'Browser Navigation',
     company: 'Arc',
     thumbnails: {
-      default: '/patterns/arc/nav-default.jpg',
-      hover: '/patterns/arc/nav-hover.jpg'
+      default: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/arc/nav-default.webp',
+      hover: 'https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/patterns/arc/nav-hover.webp'
     },
     description: 'Collapsible sidebar with icon-first design',
     impact: '20% more screen space',
