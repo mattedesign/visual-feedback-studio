@@ -392,7 +392,7 @@ async function callClaude(prompt: string, apiKey: string) {
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514', // 🚀 UPGRADED: Latest Claude 4 Sonnet
+      model: 'claude-3-5-sonnet-20241022', // Fixed: Use correct model name
       max_tokens: 4000,
       temperature: 0.7,
       messages: [{ role: 'user', content: prompt }]
