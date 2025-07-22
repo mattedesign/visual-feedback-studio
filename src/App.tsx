@@ -17,9 +17,7 @@ import Settings from "./pages/Settings";
 import Subscription from "./pages/Subscription";
 import { PublicAchievement } from "@/pages/public/Achievement";
 import HistoryPage from "./pages/History";
-import GoblinStudio from "./pages/goblin/GoblinStudio";
-import GoblinStudioPage from "./pages/goblin/GoblinStudioPage";
-import GoblinResults from "./pages/goblin/GoblinResults";
+// Goblin imports removed - archived
 
 const queryClient = new QueryClient();
 
@@ -60,10 +58,7 @@ const App = () => {
                         <Route path="/analysis/:sessionId" element={<FigmantResultsPage />} />
                         <Route path="/analysis-results/:sessionId" element={<FigmantResultsPage />} />
                         
-                        {/* Goblin Routes */}
-                        <Route path="/goblin/studio" element={<GoblinStudio />} />
-                        <Route path="/goblin/studio-page" element={<GoblinStudioPage />} />
-                        <Route path="/goblin/results/:sessionId" element={<GoblinResults />} />
+                        {/* Goblin Routes - Archived */}
                         
                         {/* Settings & Account */}
                         <Route path="/settings" element={<Settings />} />

@@ -23,7 +23,7 @@ import {
   Target
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { AnnotationOverlay } from '@/components/goblin/ImageAnnotationOverlay';
+import { FigmantAnnotationOverlay } from '@/components/figmant/FigmantAnnotationOverlay';
 // Add to existing imports
 import { VisualPrototypeOverlay } from '@/components/prototypes/VisualPrototypeOverlay';
 import { ComprehensivePrototypeViewer } from '@/components/prototypes/ComprehensivePrototypeViewer';
@@ -377,7 +377,7 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
           <Card className="mb-6">
             <CardContent className="p-6">
               {images[selectedImageIndex] && (
-                <AnnotationOverlay
+                <FigmantAnnotationOverlay
                   imageUrl={images[selectedImageIndex].url}
                   issues={filteredAndSortedIssues}
                   selectedIssue={selectedIssue}

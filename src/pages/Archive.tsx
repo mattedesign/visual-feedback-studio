@@ -149,7 +149,7 @@ const Archive = () => {
             variant="outline"
             size="lg"
           >
-            🧠 New Goblin Dashboard
+            🧠 New Analysis
           </Button>
           
           <Button

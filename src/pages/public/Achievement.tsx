@@ -18,7 +18,7 @@ export function PublicAchievement() {
 
     try {
       const { data } = await supabase
-        .from('goblin_achievements')
+        .from('figmant_achievements')
         .select('*')
         .eq('share_token', shareToken)
         .single();
@@ -56,7 +56,7 @@ export function PublicAchievement() {
             Earned on Figmant's UX Analysis Platform
           </p>
           <Button asChild className="w-full">
-            <a href="/goblin">Track Your UX Maturity</a>
+            <a href="/analyze">Analyze Your UX</a>
           </Button>
         </div>
       </Card>

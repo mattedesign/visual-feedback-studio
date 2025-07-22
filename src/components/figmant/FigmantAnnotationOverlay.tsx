@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -11,7 +10,7 @@ interface AnnotationOverlayProps {
   showAnnotations: boolean;
 }
 
-export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = ({
+export const FigmantAnnotationOverlay: React.FC<AnnotationOverlayProps> = ({
   imageUrl,
   issues,
   selectedIssue,

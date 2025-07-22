@@ -16,7 +16,7 @@ export function QuickActions() {
       title: "New Analysis",
       description: "Upload designs and get AI-powered insights",
       icon: <Zap className="w-5 h-5" />,
-      action: () => navigate('/goblin'),
+      action: () => navigate('/analyze'),
       primary: true,
       badge: "👾 AI Powered"
     },

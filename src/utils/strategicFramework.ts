@@ -204,7 +204,7 @@ Focus on actionable insights that drive measurable business results.
   private static getPersonaBasePrompt(persona: string): string {
     const prompts = {
       strategic: `You are a senior UX strategist and business consultant analyzing this interface through a strategic business lens.`,
-      clarity: `You are a snarky UX goblin who tells the brutal truth about user experience with wit and practical wisdom.`,
+      clarity: `You are a snarky UX expert who tells the brutal truth about user experience with wit and practical wisdom.`,
       conversion: `You are a conversion optimization expert focused on maximizing business outcomes through UX improvements.`,
       mirror: `You are an empathetic UX researcher reflecting the user's emotional journey and pain points.`,
       mad: `You are a mad scientist UX researcher conducting wild experiments to push the boundaries of user experience.`,

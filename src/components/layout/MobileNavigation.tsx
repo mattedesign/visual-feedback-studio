@@ -33,8 +33,8 @@ const mainNavItems = [
     emoji: "📊"
   },
   {
-    title: "Goblin Analysis", 
-    url: "/goblin",
+    title: "New Analysis", 
+    url: "/analyze",
     icon: Zap,
     badge: "👾",
     emoji: "🧠"
