@@ -799,6 +799,88 @@ export type Database = {
           },
         ]
       }
+      figmant_holistic_analyses: {
+        Row: {
+          analysis_id: string | null
+          created_at: string
+          id: string
+          identified_problems: Json | null
+          solution_approaches: Json | null
+          vision_insights: Json | null
+        }
+        Insert: {
+          analysis_id?: string | null
+          created_at?: string
+          id?: string
+          identified_problems?: Json | null
+          solution_approaches?: Json | null
+          vision_insights?: Json | null
+        }
+        Update: {
+          analysis_id?: string | null
+          created_at?: string
+          id?: string
+          identified_problems?: Json | null
+          solution_approaches?: Json | null
+          vision_insights?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "figmant_holistic_analyses_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "figmant_analysis_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      figmant_holistic_prototypes: {
+        Row: {
+          analysis_id: string | null
+          component_code: string | null
+          created_at: string
+          description: string | null
+          expected_impact: Json | null
+          generation_metadata: Json | null
+          id: string
+          key_changes: Json | null
+          solution_type: Database["public"]["Enums"]["figmant_solution_type"]
+          title: string
+        }
+        Insert: {
+          analysis_id?: string | null
+          component_code?: string | null
+          created_at?: string
+          description?: string | null
+          expected_impact?: Json | null
+          generation_metadata?: Json | null
+          id?: string
+          key_changes?: Json | null
+          solution_type: Database["public"]["Enums"]["figmant_solution_type"]
+          title: string
+        }
+        Update: {
+          analysis_id?: string | null
+          component_code?: string | null
+          created_at?: string
+          description?: string | null
+          expected_impact?: Json | null
+          generation_metadata?: Json | null
+          id?: string
+          key_changes?: Json | null
+          solution_type?: Database["public"]["Enums"]["figmant_solution_type"]
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "figmant_holistic_prototypes_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "figmant_analysis_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       figmant_session_images: {
         Row: {
           created_at: string | null
@@ -833,6 +915,113 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "figmant_session_images_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "figmant_analysis_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      figmant_solution_metrics: {
+        Row: {
+          created_at: string
+          downloaded: boolean | null
+          id: string
+          implemented: boolean | null
+          prototype_id: string | null
+          reported_impact: Json | null
+          user_rating: number | null
+        }
+        Insert: {
+          created_at?: string
+          downloaded?: boolean | null
+          id?: string
+          implemented?: boolean | null
+          prototype_id?: string | null
+          reported_impact?: Json | null
+          user_rating?: number | null
+        }
+        Update: {
+          created_at?: string
+          downloaded?: boolean | null
+          id?: string
+          implemented?: boolean | null
+          prototype_id?: string | null
+          reported_impact?: Json | null
+          user_rating?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "figmant_solution_metrics_prototype_id_fkey"
+            columns: ["prototype_id"]
+            isOneToOne: false
+            referencedRelation: "figmant_holistic_prototypes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      figmant_user_contexts: {
+        Row: {
+          admired_companies: string[] | null
+          brand_guidelines: Json | null
+          business_type:
+            | Database["public"]["Enums"]["figmant_business_type"]
+            | null
+          created_at: string
+          current_metrics: Json | null
+          design_constraints: string[] | null
+          design_type: Database["public"]["Enums"]["figmant_design_type"] | null
+          id: string
+          primary_goal:
+            | Database["public"]["Enums"]["figmant_primary_goal"]
+            | null
+          session_id: string | null
+          specific_challenges: Json | null
+          target_audience: string | null
+        }
+        Insert: {
+          admired_companies?: string[] | null
+          brand_guidelines?: Json | null
+          business_type?:
+            | Database["public"]["Enums"]["figmant_business_type"]
+            | null
+          created_at?: string
+          current_metrics?: Json | null
+          design_constraints?: string[] | null
+          design_type?:
+            | Database["public"]["Enums"]["figmant_design_type"]
+            | null
+          id?: string
+          primary_goal?:
+            | Database["public"]["Enums"]["figmant_primary_goal"]
+            | null
+          session_id?: string | null
+          specific_challenges?: Json | null
+          target_audience?: string | null
+        }
+        Update: {
+          admired_companies?: string[] | null
+          brand_guidelines?: Json | null
+          business_type?:
+            | Database["public"]["Enums"]["figmant_business_type"]
+            | null
+          created_at?: string
+          current_metrics?: Json | null
+          design_constraints?: string[] | null
+          design_type?:
+            | Database["public"]["Enums"]["figmant_design_type"]
+            | null
+          id?: string
+          primary_goal?:
+            | Database["public"]["Enums"]["figmant_primary_goal"]
+            | null
+          session_id?: string | null
+          specific_challenges?: Json | null
+          target_audience?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "figmant_user_contexts_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "figmant_analysis_sessions"
@@ -2142,6 +2331,25 @@ export type Database = {
       }
     }
     Enums: {
+      figmant_business_type:
+        | "saas"
+        | "ecommerce"
+        | "marketplace"
+        | "content"
+        | "other"
+      figmant_design_type:
+        | "landing-page"
+        | "dashboard"
+        | "onboarding"
+        | "checkout"
+        | "other"
+      figmant_primary_goal:
+        | "increase-conversions"
+        | "improve-engagement"
+        | "reduce-churn"
+        | "simplify-ux"
+        | "other"
+      figmant_solution_type: "conservative" | "balanced" | "innovative"
       user_role:
         | "designer"
         | "developer"
@@ -2277,6 +2485,28 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      figmant_business_type: [
+        "saas",
+        "ecommerce",
+        "marketplace",
+        "content",
+        "other",
+      ],
+      figmant_design_type: [
+        "landing-page",
+        "dashboard",
+        "onboarding",
+        "checkout",
+        "other",
+      ],
+      figmant_primary_goal: [
+        "increase-conversions",
+        "improve-engagement",
+        "reduce-churn",
+        "simplify-ux",
+        "other",
+      ],
+      figmant_solution_type: ["conservative", "balanced", "innovative"],
       user_role: [
         "designer",
         "developer",
