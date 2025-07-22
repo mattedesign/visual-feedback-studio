@@ -136,6 +136,33 @@ const FigmantResultsPage = () => {
     if (claudeAnalysis?.mentor_analysis?.visual_alternatives && Array.isArray(claudeAnalysis.mentor_analysis.visual_alternatives)) {
       console.log('🔍 Processing visual alternatives:', claudeAnalysis.mentor_analysis.visual_alternatives.length, 'items');
       claudeAnalysis.mentor_analysis.visual_alternatives.forEach((alt: any, index: number) => {
+        // Map company names to existing visual reference IDs in the pattern library
+        const getVisualReference = (company: string, title: string) => {
+          const companyLower = company.toLowerCase();
+          const titleLower = title.toLowerCase();
+          
+          // Map to existing patterns in the library
+          if (companyLower.includes('stripe')) return 'stripe-cta';
+          if (companyLower.includes('spotify')) return 'spotify-cta';
+          if (companyLower.includes('airbnb')) return 'airbnb-cta';
+          if (companyLower.includes('apple')) return 'apple-cta';
+          if (companyLower.includes('figma')) return 'figma-card';
+          if (companyLower.includes('trello')) return 'trello-card';
+          if (companyLower.includes('typeform')) return 'typeform-form';
+          if (companyLower.includes('google')) return 'google-form';
+          if (companyLower.includes('vercel')) return 'vercel-nav';
+          if (companyLower.includes('arc')) return 'arc-nav';
+          
+          // Fallback to related patterns based on context
+          if (titleLower.includes('grid') || titleLower.includes('visual')) return 'figma-card';
+          if (titleLower.includes('progressive') || titleLower.includes('step')) return 'typeform-form';
+          if (titleLower.includes('preview') || titleLower.includes('interaction')) return 'trello-card';
+          if (titleLower.includes('skip') || titleLower.includes('navigation')) return 'vercel-nav';
+          
+          // Final fallback to most versatile pattern
+          return 'figma-card';
+        };
+        
         enhancedSuggestions.push({
           id: `alternative-${index}`,
           title: alt.title || 'Visual Alternative',
@@ -144,7 +171,8 @@ const FigmantResultsPage = () => {
           effort: 'Medium',
           category: 'design-pattern',
           company_example: alt.company_example,
-          why_it_works: alt.why_it_works
+          why_it_works: alt.why_it_works,
+          visual_reference: getVisualReference(alt.company_example || '', alt.title || '')
         });
       });
     }
@@ -154,10 +182,48 @@ const FigmantResultsPage = () => {
       suggestionsCount: enhancedSuggestions.length
     });
     
+    // Also add visual_reference to the mentor analysis visual alternatives for VisualMentorSummary
+    const enhancedMentorAnalysis = { ...claudeAnalysis?.mentor_analysis };
+    if (enhancedMentorAnalysis?.visual_alternatives) {
+      enhancedMentorAnalysis.visual_alternatives = enhancedMentorAnalysis.visual_alternatives.map((alt: any, index: number) => {
+        const getVisualReference = (company: string, title: string) => {
+          const companyLower = company.toLowerCase();
+          const titleLower = title.toLowerCase();
+          
+          if (companyLower.includes('stripe')) return 'stripe-cta';
+          if (companyLower.includes('spotify')) return 'spotify-cta';
+          if (companyLower.includes('airbnb')) return 'airbnb-cta';
+          if (companyLower.includes('apple')) return 'apple-cta';
+          if (companyLower.includes('figma')) return 'figma-card';
+          if (companyLower.includes('trello')) return 'trello-card';
+          if (companyLower.includes('typeform')) return 'typeform-form';
+          if (companyLower.includes('google')) return 'google-form';
+          if (companyLower.includes('vercel')) return 'vercel-nav';
+          if (companyLower.includes('arc')) return 'arc-nav';
+          
+          if (titleLower.includes('grid') || titleLower.includes('visual')) return 'figma-card';
+          if (titleLower.includes('progressive') || titleLower.includes('step')) return 'typeform-form';
+          if (titleLower.includes('preview') || titleLower.includes('interaction')) return 'trello-card';
+          if (titleLower.includes('skip') || titleLower.includes('navigation')) return 'vercel-nav';
+          
+          return 'figma-card';
+        };
+        
+        return {
+          ...alt,
+          visual_reference: getVisualReference(alt.company_example || '', alt.title || '')
+        };
+      });
+    }
+    
     return {
       ...analysis,
       issues: enhancedIssues,
-      suggestions: enhancedSuggestions
+      suggestions: enhancedSuggestions,
+      enhanced_context: {
+        ...analysis.enhanced_context,
+        mentor_summary: enhancedMentorAnalysis
+      }
     };
   };
 
