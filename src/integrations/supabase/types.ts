@@ -627,6 +627,7 @@ export type Database = {
           confidence_scores: Json | null
           created_at: string
           enhanced_business_metrics: Json | null
+          enhanced_context: Json | null
           enhanced_metadata_tracking: Json | null
           google_vision_summary: Json | null
           id: string
@@ -651,6 +652,7 @@ export type Database = {
           confidence_scores?: Json | null
           created_at?: string
           enhanced_business_metrics?: Json | null
+          enhanced_context?: Json | null
           enhanced_metadata_tracking?: Json | null
           google_vision_summary?: Json | null
           id?: string
@@ -675,6 +677,7 @@ export type Database = {
           confidence_scores?: Json | null
           created_at?: string
           enhanced_business_metrics?: Json | null
+          enhanced_context?: Json | null
           enhanced_metadata_tracking?: Json | null
           google_vision_summary?: Json | null
           id?: string
