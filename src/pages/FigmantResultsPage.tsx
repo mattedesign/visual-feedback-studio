@@ -26,6 +26,7 @@ import { useNavigate } from 'react-router-dom';
 import { VisualMentorSummary } from '@/components/analysis/VisualMentorSummary';
 import { UserContextForm } from '@/components/analysis/UserContextForm';
 import { HolisticPrototypeViewer } from '@/components/prototypes/HolisticPrototypeViewer';
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 
 interface FigmantImage {
   id: string;
@@ -55,6 +56,9 @@ const FigmantResultsPage = () => {
   const [showContextForm, setShowContextForm] = useState(false);
   const [contextLoading, setContextLoading] = useState(false);
   const [analysisMode, setAnalysisMode] = useState<'classic' | 'holistic'>('holistic');
+
+  // Feature flags
+  const isHolisticEnabled = useFeatureFlag('holistic-ai-prototypes');
 
   // Add prototype generation hook
   const { 
@@ -442,10 +446,10 @@ const FigmantResultsPage = () => {
             if (contextData && !contextError) {
               setUserContext(contextData);
               console.log('✅ User context found:', contextData);
-            } else if (!analysis) {
-              // Only show context form if we don't have analysis data yet
+            } else if (isHolisticEnabled && !analysis) {
+              // Show context form if holistic feature is enabled and we don't have analysis data yet
               setShowContextForm(true);
-              console.log('💡 No user context found, showing context form');
+              console.log('💡 Holistic feature enabled - showing context form');
             }
           } catch (error) {
             console.warn('Failed to load user context:', error);
