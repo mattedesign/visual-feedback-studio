@@ -375,11 +375,9 @@ Create a production-ready React component that:
 6. Uses only Tailwind CSS classes
 7. Includes helpful comments explaining design decisions
 
-CRITICAL: Generate a complete React component with ALL necessary imports.
+CRITICAL: Generate browser-compatible React component code.
 
-Use this EXACT structure:
-
-import React, { useState, useEffect } from 'react';
+Use this EXACT structure (NO ES6 imports, browser-compatible only):
 
 /*
 ${solution.approach.toUpperCase()} SOLUTION - ${solution.name}
@@ -387,15 +385,19 @@ Problems addressed: [list the specific problems this approach solves]
 */
 
 function EnhancedDesign() {
+  const { useState, useEffect, useMemo, useCallback } = React;
+  
   // Component implementation here
+  // Use ONLY React built-in hooks and standard HTML elements
+  // Use ONLY Tailwind CSS classes for styling
+  // NO external library imports (no recharts, no headlessui, etc.)
+  
   return (
-    // JSX here
+    // JSX here using only standard HTML elements
   );
 }
 
-export default EnhancedDesign;
-
-Do NOT generate any text before or after the component code. Only the complete React component with imports.`;
+Do NOT include import/export statements. Do NOT use external libraries. Only generate the function component that works in a browser environment.`;
 }
 
 async function callClaude(prompt: string, apiKey: string) {
