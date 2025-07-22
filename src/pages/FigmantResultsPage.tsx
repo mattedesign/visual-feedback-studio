@@ -24,6 +24,7 @@ import { FigmantLogo } from '@/components/ui/figmant-logo';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { VisualMentorSummary } from '@/components/analysis/VisualMentorSummary';
+import { UserContextForm } from '@/components/analysis/UserContextForm';
 
 interface FigmantImage {
   id: string;
@@ -49,6 +50,9 @@ const FigmantResultsPage = () => {
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'menu' | 'chat'>('menu');
   const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
+  const [userContext, setUserContext] = useState<any>(null);
+  const [showContextForm, setShowContextForm] = useState(false);
+  const [contextLoading, setContextLoading] = useState(false);
 
   // Add prototype generation hook
   const { 
@@ -424,6 +428,28 @@ const FigmantResultsPage = () => {
           console.log('✅ Analysis data set:', transformedAnalysis);
         }
 
+        // Check for existing user context
+        if (actualSessionId) {
+          try {
+            const { data: contextData, error: contextError } = await supabase
+              .from('figmant_user_contexts')
+              .select('*')
+              .eq('session_id', actualSessionId)
+              .maybeSingle();
+
+            if (contextData && !contextError) {
+              setUserContext(contextData);
+              console.log('✅ User context found:', contextData);
+            } else if (!analysis) {
+              // Only show context form if we don't have analysis data yet
+              setShowContextForm(true);
+              console.log('💡 No user context found, showing context form');
+            }
+          } catch (error) {
+            console.warn('Failed to load user context:', error);
+          }
+        }
+
         if (!session && !analysis) {
           console.warn('❌ No data found for ID:', sessionId);
           setDebugInfo({
@@ -444,6 +470,20 @@ const FigmantResultsPage = () => {
 
     loadData();
   }, [sessionId]);
+
+  // Handle context form completion
+  const handleContextComplete = (contextId: string) => {
+    setShowContextForm(false);
+    setUserContext({ id: contextId }); // Set basic context data
+    toast.success('Context saved! Starting enhanced analysis...');
+    // Optionally trigger a more comprehensive analysis here
+  };
+
+  // Handle context form skip
+  const handleContextSkip = () => {
+    setShowContextForm(false);
+    toast.info('Context skipped. Proceeding with standard analysis.');
+  };
 
   // Handle image selection - no longer used in new structure
   const handleImageSelect = (image: FigmantImage) => {
@@ -485,6 +525,19 @@ const FigmantResultsPage = () => {
             Start New Analysis
           </Button>
         </div>
+      </div>
+    );
+  }
+
+  // Show context form if we need user context and don't have analysis yet
+  if (showContextForm && sessionId) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <UserContextForm
+          sessionId={sessionId}
+          onComplete={handleContextComplete}
+          onSkip={handleContextSkip}
+        />
       </div>
     );
   }
