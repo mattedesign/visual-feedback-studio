@@ -306,20 +306,13 @@ async function generatePrototype(
     }
   }
   
-  // Validate the component code
+  // Validate the component code (JSX-compatible validation)
   try {
-    // Basic validation - check if it's valid JavaScript
-    new Function(cleanedCode);
+    // Use the cleanAndValidateCode function instead of raw Function validation
+    cleanedCode = cleanAndValidateCode(cleanedCode);
   } catch (error) {
-    console.error('💥 Error in generatePrototype:', error);
-    console.error('💥 Error stack:', error.stack);
-    console.error('💥 Error details:', {
-      message: error.message,
-      name: error.name,
-      solutionType: solution?.approach,
-      analysisId: analysisData?.id
-    });
-    throw error;
+    console.error('💥 Code validation failed, using fallback:', error);
+    cleanedCode = generateSafeFallbackComponent();
   }
   
   const { data: prototype, error } = await supabase
