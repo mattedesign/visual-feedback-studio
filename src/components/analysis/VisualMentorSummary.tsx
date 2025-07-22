@@ -30,6 +30,13 @@ interface Props {
 export function VisualMentorSummary({ mentorData, userImage }: Props) {
   const [selectedAlternative, setSelectedAlternative] = useState(0);
   const [showPatternBrowser, setShowPatternBrowser] = useState(false);
+  const [activeChatPrompt, setActiveChatPrompt] = useState<string | null>(null);
+
+  const handleNextStepClick = (step: string) => {
+    // Set the active chat prompt to trigger follow-up
+    setActiveChatPrompt(step);
+    console.log('User clicked on next step:', step);
+  };
   
   // Handle case where mentorData is not available
   if (!mentorData) {
@@ -171,8 +178,9 @@ export function VisualMentorSummary({ mentorData, userImage }: Props) {
         {(mentorData.next_steps || []).map((step, i) => (
           <button
             key={i}
+            onClick={() => handleNextStepClick(step)}
             className="px-4 py-2 bg-white border border-gray-300 rounded-lg 
-                     hover:bg-gray-50 transition-colors text-sm"
+                     hover:bg-gray-50 hover:border-blue-300 hover:shadow-sm transition-all text-sm cursor-pointer"
           >
             {step}
           </button>
