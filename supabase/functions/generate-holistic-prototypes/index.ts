@@ -299,91 +299,52 @@ async function generatePrototype(
 
 function buildPrototypePrompt(solution: any, analysisData: any, contextData: any, holisticAnalysis: any) {
   const extractedContent = extractContentFromAnalysis(analysisData);
-  const problems = holisticAnalysis.identified_problems || [];
   
-  // Create different prompts based on solution approach
-  let approachGuidance = '';
-  let scopeInstructions = '';
-  
-  if (solution.approach === 'conservative') {
-    approachGuidance = `CONSERVATIVE APPROACH - Target ONE critical issue with minimal changes.
-- Focus on the highest-impact problem only
-- Keep existing layout and structure
-- Make targeted improvements to specific elements
-- Quick wins that can be implemented immediately`;
-    
-    scopeInstructions = `Create a targeted fix for the most critical issue while keeping the overall design intact.`;
-    
-  } else if (solution.approach === 'balanced') {
-    approachGuidance = `BALANCED APPROACH - Address 2-3 key problems with strategic improvements.
-- Improve information hierarchy and clarity
-- Apply proven UX patterns selectively
-- Enhance user flow and interactions
-- Balance innovation with usability`;
-    
-    scopeInstructions = `Create an improved version that addresses multiple key issues with modern UX patterns.`;
-    
-  } else if (solution.approach === 'innovative') {
-    approachGuidance = `INNOVATIVE APPROACH - Comprehensive redesign addressing ALL problems.
-- Completely reimagine the user experience
-- Apply cutting-edge design patterns
-- Maximize engagement and usability
-- Create a best-in-class solution`;
-    
-    scopeInstructions = `Create a bold, comprehensive redesign that solves all identified problems with innovative solutions.`;
-  }
-  
-  return `You are creating a browser-compatible React component for ${solution.approach} improvements.
+  return `You are creating a COMPLETE React component that implements the ${solution.approach} solution approach.
 
-${approachGuidance}
+PROBLEMS TO SOLVE:
+${(holisticAnalysis.identified_problems || []).map((p) => `- ${p.description} (${p.severity})`).join('\n')}
 
-PROBLEMS TO ADDRESS:
-${problems.map((p: any, i: number) => `${i + 1}. ${p.title || p.description} - ${p.impact || 'Impact on user experience'}`).join('\n')}
+SOLUTION: ${solution.name}
+${solution.description}
 
-SOLUTION DETAILS:
-Name: ${solution.name}
-Description: ${solution.description}
-Key Changes: ${(solution.keyChanges || []).join(', ')}
+KEY CHANGES:
+${(solution.keyChanges || []).map((c) => `- ${c}`).join('\n')}
 
-AVAILABLE CONTENT:
-- Text Elements: ${extractedContent.texts?.slice(0, 5).join(', ') || 'Dashboard, Analytics, Overview'}
-- Button Labels: ${extractedContent.buttons?.join(', ') || 'Get Started, Learn More, View Details'}
-- Key Headings: ${extractedContent.headings?.slice(0, 3).join(', ') || 'Main Dashboard, Statistics, Actions'}
-- Color Palette: ${extractedContent.colors?.slice(0, 3).join(', ') || 'blue, gray, white'}
+EXTRACTED CONTENT TO USE:
+${JSON.stringify(extractedContent, null, 2)}
 
-BUSINESS CONTEXT:
-${contextData ? `Business: ${contextData.business_type} | Goal: ${contextData.primary_goal} | Audience: ${contextData.target_audience}` : 'General business application'}
+CRITICAL REACT COMPONENT RULES:
+1. DO NOT include any import statements
+2. DO NOT include export statements
+3. Use function declaration syntax: function EnhancedDesign() { ... }
+4. React and hooks (useState, useEffect, etc.) are already available globally
+5. Use className instead of class for styling
+6. Use only Tailwind CSS classes for styling
+7. Ensure all JSX elements are properly closed
+8. DO NOT use React.createElement directly
+9. Return valid JSX from the component
 
-${scopeInstructions}
+Create a production-ready React component that:
+1. Solves all identified problems using this approach
+2. Incorporates all extracted content appropriately  
+3. Includes all necessary states and interactions
+4. Has proper error handling and loading states
+5. Is fully accessible (ARIA labels, keyboard navigation)
+6. Uses only Tailwind CSS classes
+7. Includes helpful comments explaining design decisions
 
-CRITICAL CODE GENERATION RULES:
-1. Generate EXACTLY ONE function called EnhancedDesign
-2. Use React.createElement() syntax - NO JSX brackets < >
-3. Declare React variables ONLY ONCE at the top
-4. NO duplicate variable declarations
-5. NO import/export statements
-6. Include complete working component with sample data
-
-EXACT TEMPLATE TO FOLLOW:
-
+IMPORTANT: Generate ONLY the function body, starting exactly with:
 function EnhancedDesign() {
-  const React = window.React;
-  const useState = React.useState;
-  const useEffect = React.useEffect;
-  const createElement = React.createElement;
-  
-  // State declarations here
-  
-  // Helper functions here
-  
-  // Main component logic here
-  
-  return createElement('div', {
-    className: 'max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg'
-  }, 'Your enhanced design content here');
+  // Your component logic here
+  return (
+    <div>
+      {/* Your JSX here */}
+    </div>
+  );
 }
 
-IMPORTANT: Follow this exact structure to avoid variable redeclaration errors.`;
+DO NOT include any other code outside the function declaration.`;
 }
 
 async function callClaude(prompt: string, apiKey: string) {
@@ -448,12 +409,6 @@ function cleanAndValidateCode(code: string): string {
   console.log('🧹 Cleaning and validating generated code');
   
   try {
-    // Remove any JSX angle brackets if they exist
-    if (code.includes('<') && code.includes('>')) {
-      console.log('⚠️ JSX detected in generated code, replacing with safe fallback');
-      return generateSafeFallbackComponent();
-    }
-    
     // Basic syntax validation - check for common issues
     const issues = [];
     
@@ -476,8 +431,14 @@ function cleanAndValidateCode(code: string): string {
       issues.push('Missing EnhancedDesign function');
     }
     
-    if (!code.includes('React.createElement')) {
-      issues.push('Missing React.createElement calls');
+    // Check for valid JSX structure (now we expect JSX)
+    if (!code.includes('<') || !code.includes('>')) {
+      issues.push('Missing JSX elements');
+    }
+    
+    // Check for import/export statements that shouldn't be there
+    if (code.includes('import ') || code.includes('export ')) {
+      issues.push('Contains forbidden import/export statements');
     }
     
     if (issues.length > 0) {
@@ -496,31 +457,26 @@ function cleanAndValidateCode(code: string): string {
 
 function generateSafeFallbackComponent(): string {
   return `function EnhancedDesign() {
-  const React = window.React;
-  const { useState } = React;
-  
   const [isActive, setIsActive] = useState(false);
   
-  return React.createElement('div', {
-    className: 'max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg'
-  }, 
-    React.createElement('div', {
-      className: 'text-center'
-    },
-      React.createElement('h1', {
-        className: 'text-2xl font-bold text-gray-900 mb-4'
-      }, 'Enhanced Design'),
-      React.createElement('p', {
-        className: 'text-gray-600 mb-6'
-      }, 'This is a safe fallback component generated to avoid parsing errors.'),
-      React.createElement('button', {
-        className: 'px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors',
-        onClick: () => setIsActive(!isActive)
-      }, isActive ? 'Active' : 'Click Me'),
-      isActive && React.createElement('div', {
-        className: 'mt-4 p-4 bg-green-50 border border-green-200 rounded-lg'
-      }, 'Interactive state is working!')
-    )
+  return (
+    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">Enhanced Design</h1>
+        <p className="text-gray-600 mb-6">This is a safe fallback component generated to avoid parsing errors.</p>
+        <button 
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          onClick={() => setIsActive(!isActive)}
+        >
+          {isActive ? 'Active' : 'Click Me'}
+        </button>
+        {isActive && (
+          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+            Interactive state is working!
+          </div>
+        )}
+      </div>
+    </div>
   );
 }`;
 }
