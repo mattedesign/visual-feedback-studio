@@ -42,6 +42,11 @@ export const FigmantSidebar = () => {
       isActive: false
     }]
   }, {
+    icon: Settings,
+    label: 'Settings',
+    href: '/settings',
+    isActive: isActive('/settings')
+  }, {
     icon: User,
     label: 'Subscription',
     href: '/subscription',
@@ -377,13 +382,6 @@ export const FigmantSidebar = () => {
               </div>
             </div>
 
-            {/* Automation Settings Section */}
-            {!isCollapsed && (
-              <div className="px-4 py-3 border-t border-gray-100">
-                <h3 className="sidebar-section-header mb-3">Automation</h3>
-                <AutomationIndicator className="w-full" />
-              </div>
-            )}
 
             {/* Upgrade Section */}
             {!isCollapsed && (
