@@ -468,7 +468,7 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
         )}
       </div>
       {/* Problem Summary */}
-      {analysis?.identified_problems && (
+      {analysis?.identified_problems && Array.isArray(analysis.identified_problems) && analysis.identified_problems.length > 0 && (
         <Card className="p-6 bg-red-50 border-red-200">
           <h3 className="font-semibold text-red-900 mb-3 flex items-center gap-2">
             <AlertCircle className="w-5 h-5" />
@@ -477,10 +477,10 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
           <div className="space-y-2">
             {analysis.identified_problems.map((problem, idx) => (
               <div key={idx} className="flex items-start gap-3">
-                <Badge variant="destructive" className="mt-0.5">{problem.severity}</Badge>
+                <Badge variant="destructive" className="mt-0.5">{problem?.severity || 'medium'}</Badge>
                 <div className="flex-1">
-                  <p className="text-red-800">{problem.description}</p>
-                  <p className="text-sm text-red-600 mt-1">Impact: {problem.businessImpact}</p>
+                  <p className="text-red-800">{problem?.description || 'Problem description not available'}</p>
+                  <p className="text-sm text-red-600 mt-1">Impact: {problem?.businessImpact || 'Impact not specified'}</p>
                 </div>
               </div>
             ))}
@@ -490,43 +490,55 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
 
       {/* Solution Selector */}
       <div className="grid md:grid-cols-3 gap-4">
-        {analysis?.solution_approaches?.map((solution) => (
-          <Card
-            key={solution.approach}
-            className={`p-4 cursor-pointer transition-all ${
-              selectedSolution === solution.approach ? 'ring-2 ring-blue-600' : ''
-            }`}
-            onClick={() => setSelectedSolution(solution.approach)}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              {solution.approach === 'conservative' && <Shield className="w-5 h-5 text-green-600" />}
-              {solution.approach === 'balanced' && <Target className="w-5 h-5 text-blue-600" />}
-              {solution.approach === 'innovative' && <Zap className="w-5 h-5 text-purple-600" />}
-              <h4 className="font-semibold">{solution.name}</h4>
+        {analysis?.solution_approaches && Array.isArray(analysis.solution_approaches) && analysis.solution_approaches.length > 0 ? (
+          analysis.solution_approaches.map((solution) => (
+            <Card
+              key={solution?.approach || Math.random()}
+              className={`p-4 cursor-pointer transition-all ${
+                selectedSolution === solution?.approach ? 'ring-2 ring-blue-600' : ''
+              }`}
+              onClick={() => setSelectedSolution(solution?.approach || 'balanced')}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                {solution?.approach === 'conservative' && <Shield className="w-5 h-5 text-green-600" />}
+                {solution?.approach === 'balanced' && <Target className="w-5 h-5 text-blue-600" />}
+                {solution?.approach === 'innovative' && <Zap className="w-5 h-5 text-purple-600" />}
+                <h4 className="font-semibold">{solution?.name || 'Solution'}</h4>
+              </div>
+              <p className="text-sm text-gray-600 mb-3">{solution?.description || 'Description not available'}</p>
+              <div className="space-y-1">
+                {solution?.expectedImpact && Array.isArray(solution.expectedImpact) && solution.expectedImpact.map((impact, i) => (
+                  <p key={i} className="text-xs text-green-600">
+                    {impact?.metric || 'Metric'}: {impact?.improvement || 'Improvement'}
+                  </p>
+                ))}
+              </div>
+              {!prototypes[solution?.approach] && (
+                <Button
+                  size="sm"
+                  className="w-full mt-3"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    generatePrototype(solution?.approach || 'balanced');
+                  }}
+                  disabled={generating[solution?.approach]}
+                >
+                  {generating[solution?.approach] ? 'Generating...' : 'Generate Prototype'}
+                </Button>
+              )}
+            </Card>
+          ))
+        ) : (
+          <Card className="p-6 bg-yellow-50 border-yellow-200 col-span-full">
+            <div className="text-center">
+              <AlertCircle className="w-8 h-8 mx-auto mb-2 text-yellow-600" />
+              <h3 className="font-semibold text-yellow-900 mb-2">No Solutions Available</h3>
+              <p className="text-yellow-700 text-sm">
+                Analysis is still being generated. Please wait for the holistic analysis to complete.
+              </p>
             </div>
-            <p className="text-sm text-gray-600 mb-3">{solution.description}</p>
-            <div className="space-y-1">
-              {solution.expectedImpact?.map((impact, i) => (
-                <p key={i} className="text-xs text-green-600">
-                  {impact.metric}: {impact.improvement}
-                </p>
-              ))}
-            </div>
-            {!prototypes[solution.approach] && (
-              <Button
-                size="sm"
-                className="w-full mt-3"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  generatePrototype(solution.approach);
-                }}
-                disabled={generating[solution.approach]}
-              >
-                {generating[solution.approach] ? 'Generating...' : 'Generate Prototype'}
-              </Button>
-            )}
           </Card>
-        ))}
+        )}
       </div>
 
       {/* Prototype Display */}
@@ -592,12 +604,16 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
                 <div>
                   <h5 className="font-medium text-sm mb-1">Key Changes</h5>
                   <ul className="text-sm text-gray-600 space-y-1">
-                    {prototypes[selectedSolution].key_changes?.map((change, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <CheckCircle className="w-4 h-4 text-green-500 mt-0.5" />
-                        {change}
-                      </li>
-                    ))}
+                    {prototypes[selectedSolution]?.key_changes && Array.isArray(prototypes[selectedSolution].key_changes) && prototypes[selectedSolution].key_changes.length > 0 ? (
+                      prototypes[selectedSolution].key_changes.map((change, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-500 mt-0.5" />
+                          {change}
+                        </li>
+                      ))
+                    ) : (
+                      <li className="text-gray-500 text-sm">No key changes available</li>
+                    )}
                   </ul>
                 </div>
               </div>
