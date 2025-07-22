@@ -71,15 +71,6 @@ export const AnalysisStudioLayout = ({
         </div>
       </div>
 
-      {/* Right Panel - Results & Actions - Show for results step */}
-      {!rightPanelCollapsed && workflow.currentStep === 'results' && (
-        <StudioRightPanel 
-          workflow={workflow}
-          selectedDevice={selectedDevice}
-          activeAnnotation={activeAnnotation}
-          onAnnotationClick={handleAnnotationClick}
-        />
-      )}
     </div>
   );
 };
