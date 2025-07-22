@@ -1,4 +1,5 @@
 
+
 import { useState } from 'react';
 import { AnalysisStudioLayout } from './studio/AnalysisStudioLayout';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
@@ -33,3 +34,4 @@ export const AnalysisStudio = () => {
     </div>
   );
 };
+

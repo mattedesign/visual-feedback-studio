@@ -1,4 +1,5 @@
 
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,6 +17,9 @@ import Settings from "./pages/Settings";
 import Subscription from "./pages/Subscription";
 import { PublicAchievement } from "@/pages/public/Achievement";
 import HistoryPage from "./pages/History";
+import GoblinStudio from "./pages/goblin/GoblinStudio";
+import GoblinStudioPage from "./pages/goblin/GoblinStudioPage";
+import GoblinResults from "./pages/goblin/GoblinResults";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +60,11 @@ const App = () => {
                         <Route path="/analysis/:sessionId" element={<FigmantResultsPage />} />
                         <Route path="/analysis-results/:sessionId" element={<FigmantResultsPage />} />
                         
+                        {/* Goblin Routes */}
+                        <Route path="/goblin/studio" element={<GoblinStudio />} />
+                        <Route path="/goblin/studio-page" element={<GoblinStudioPage />} />
+                        <Route path="/goblin/results/:sessionId" element={<GoblinResults />} />
+                        
                         {/* Settings & Account */}
                         <Route path="/settings" element={<Settings />} />
                         <Route path="/subscription" element={<Subscription />} />
@@ -82,3 +91,4 @@ const App = () => {
 };
 
 export default App;
+
