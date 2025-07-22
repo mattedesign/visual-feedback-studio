@@ -355,21 +355,23 @@ ${scopeInstructions}
 
 CRITICAL REQUIREMENTS:
 - NO import/export statements (browser execution only)
-- Use React hooks from global React object
-- Only standard HTML elements and Tailwind CSS
+- Use React.createElement syntax ONLY - NO JSX angle brackets
+- Access React from window.React object
+- Only standard HTML elements and Tailwind CSS classes
 - Must be complete, functional, and realistic
 - Include interactive states and sample data
 
 Generate EXACTLY this format with NO markdown blocks:
 
 function EnhancedDesign() {
+  const React = window.React;
   const { useState, useEffect } = React;
   
-  // [Your component logic here based on the approach and problems to solve]
+  // Component state and logic here
   
-  return (
-    // [Your JSX implementation addressing the specific problems]
-  );
+  return React.createElement('div', {
+    className: 'max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg'
+  }, 'Enhanced Design Content');
 }`;
 
 async function callClaude(prompt: string, apiKey: string) {
