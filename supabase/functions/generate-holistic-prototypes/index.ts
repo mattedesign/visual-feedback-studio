@@ -298,72 +298,77 @@ function buildPrototypePrompt(solution: any, analysisData: any, contextData: any
   const extractedContent = extractContentFromAnalysis(analysisData);
   const problems = holisticAnalysis.identified_problems || [];
   
-  return `Create a browser-compatible React component for the ${solution.approach} approach.
+  // Create different prompts based on solution approach
+  let approachGuidance = '';
+  let scopeInstructions = '';
+  
+  if (solution.approach === 'conservative') {
+    approachGuidance = `CONSERVATIVE APPROACH - Target ONE critical issue with minimal changes.
+- Focus on the highest-impact problem only
+- Keep existing layout and structure
+- Make targeted improvements to specific elements
+- Quick wins that can be implemented immediately`;
+    
+    scopeInstructions = `Create a targeted fix for the most critical issue while keeping the overall design intact.`;
+    
+  } else if (solution.approach === 'balanced') {
+    approachGuidance = `BALANCED APPROACH - Address 2-3 key problems with strategic improvements.
+- Improve information hierarchy and clarity
+- Apply proven UX patterns selectively
+- Enhance user flow and interactions
+- Balance innovation with usability`;
+    
+    scopeInstructions = `Create an improved version that addresses multiple key issues with modern UX patterns.`;
+    
+  } else if (solution.approach === 'innovative') {
+    approachGuidance = `INNOVATIVE APPROACH - Comprehensive redesign addressing ALL problems.
+- Completely reimagine the user experience
+- Apply cutting-edge design patterns
+- Maximize engagement and usability
+- Create a best-in-class solution`;
+    
+    scopeInstructions = `Create a bold, comprehensive redesign that solves all identified problems with innovative solutions.`;
+  }
+  
+  return `You are creating a browser-compatible React component for ${solution.approach} improvements.
 
-PROBLEMS TO FIX:
-${problems.map((p: any, i: number) => `${i + 1}. ${p.title || p.description}`).join('\n')}
+${approachGuidance}
 
-SOLUTION: ${solution.name}
-${solution.description}
+PROBLEMS TO ADDRESS:
+${problems.map((p: any, i: number) => `${i + 1}. ${p.title || p.description} - ${p.impact || 'Impact on user experience'}`).join('\n')}
 
-CONTENT TO USE:
-- Buttons: ${extractedContent.buttons?.join(', ') || 'Get Started, Learn More'}
-- Key Text: ${extractedContent.headings?.slice(0, 3).join(', ') || 'Dashboard, Analytics, Reports'}
-- Primary Colors: ${extractedContent.colors?.slice(0, 2).join(', ') || 'blue, gray'}
+SOLUTION DETAILS:
+Name: ${solution.name}
+Description: ${solution.description}
+Key Changes: ${(solution.keyChanges || []).join(', ')}
 
-Generate ONLY this exact format (no markdown, no imports):
+AVAILABLE CONTENT:
+- Text Elements: ${extractedContent.texts?.slice(0, 5).join(', ') || 'Dashboard, Analytics, Overview'}
+- Button Labels: ${extractedContent.buttons?.join(', ') || 'Get Started, Learn More, View Details'}
+- Key Headings: ${extractedContent.headings?.slice(0, 3).join(', ') || 'Main Dashboard, Statistics, Actions'}
+- Color Palette: ${extractedContent.colors?.slice(0, 3).join(', ') || 'blue, gray, white'}
+
+BUSINESS CONTEXT:
+${contextData ? `Business: ${contextData.business_type} | Goal: ${contextData.primary_goal} | Audience: ${contextData.target_audience}` : 'General business application'}
+
+${scopeInstructions}
+
+CRITICAL REQUIREMENTS:
+- NO import/export statements (browser execution only)
+- Use React hooks from global React object
+- Only standard HTML elements and Tailwind CSS
+- Must be complete, functional, and realistic
+- Include interactive states and sample data
+
+Generate EXACTLY this format with NO markdown blocks:
 
 function EnhancedDesign() {
-  const { useState } = React;
-  const [activeTab, setActiveTab] = useState('overview');
+  const { useState, useEffect } = React;
+  
+  // [Your component logic here based on the approach and problems to solve]
   
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Enhanced Dashboard</h1>
-          <p className="text-gray-600">Improved user experience with better visibility</p>
-        </header>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-semibold mb-4">Usage Metrics</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span>Active Users</span>
-                <span className="font-bold">1,234</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Sessions</span>
-                <span className="font-bold">5,678</span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-semibold mb-4">Performance</h3>
-            <div className="space-y-3">
-              <div className="bg-blue-100 p-3 rounded">
-                <div className="text-sm text-blue-800">Load Time</div>
-                <div className="text-xl font-bold text-blue-900">2.1s</div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-semibold mb-4">Actions</h3>
-            <div className="space-y-3">
-              <button className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                Generate Report
-              </button>
-              <button className="w-full bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300">
-                View Details
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    // [Your JSX implementation addressing the specific problems]
   );
 }`;
 
