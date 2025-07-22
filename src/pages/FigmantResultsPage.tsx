@@ -31,6 +31,7 @@ const FigmantResultsPage = () => {
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<FigmantImage | null>(null);
   const [viewMode, setViewMode] = useState<'gallery' | 'detail'>('gallery');
+  const [currentView, setCurrentView] = useState<'gallery' | 'detail'>('gallery');
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'menu' | 'chat'>('menu');
 
