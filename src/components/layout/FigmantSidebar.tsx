@@ -35,11 +35,11 @@ export const FigmantSidebar = () => {
     subItems: [{
       label: 'Start New Analysis',
       href: '/analyze',
-      isActive: false
+      isActive: isActive('/analyze')
     }, {
       label: 'History',
-      href: '/history',
-      isActive: false
+      href: '/history', 
+      isActive: isActive('/history')
     }]
   }, {
     icon: Settings,
