@@ -328,6 +328,21 @@ serve(async (req) => {
         };
       }
 
+      // Step 6: Process mentor analysis and enhanced context
+      let enhanced_context = {};
+      
+      // Process mentor analysis if available
+      if (parsedAnalysis.mentor_analysis) {
+        enhanced_context.mentor_summary = parsedAnalysis.mentor_analysis;
+        
+        // Map visual references to our pattern library
+        enhanced_context.visual_patterns = parsedAnalysis.mentor_analysis.visual_alternatives.map(alt => ({
+          pattern_id: alt.visual_reference,
+          relevance: 'high',
+          category: detectCategory(alt.title)
+        }));
+      }
+
       // Step 6: Save enhanced results with Phase 2.1 multi-model tracking
       const { data: resultData, error: resultError } = await supabase
         .from('figmant_analysis_results')
@@ -335,6 +350,7 @@ serve(async (req) => {
           session_id: sessionId,
           user_id: session.user_id,
           claude_analysis: parsedAnalysis,
+          enhanced_context: enhanced_context,
           google_vision_summary: {
             total_images: images.length,
             vision_results: visionResults,
@@ -596,6 +612,20 @@ function getDefaultDesignTokens(): any {
     },
     spacing: { unit: 8, scale: [0, 4, 8, 12, 16, 20, 24, 32] }
   };
+}
+
+// Helper function for detecting category from title
+function detectCategory(title: string): string {
+  const titleLower = title.toLowerCase();
+  
+  if (titleLower.includes('dashboard') || titleLower.includes('analytics')) return 'dashboard';
+  if (titleLower.includes('navigation') || titleLower.includes('menu')) return 'navigation';
+  if (titleLower.includes('form') || titleLower.includes('input')) return 'form';
+  if (titleLower.includes('card') || titleLower.includes('content')) return 'content';
+  if (titleLower.includes('cta') || titleLower.includes('button')) return 'interaction';
+  if (titleLower.includes('layout') || titleLower.includes('grid')) return 'layout';
+  
+  return 'general';
 }
 
 // Phase 2.1: Multi-Model Analysis Integration
