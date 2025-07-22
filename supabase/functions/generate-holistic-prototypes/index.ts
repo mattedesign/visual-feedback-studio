@@ -55,21 +55,41 @@ serve(async (req) => {
 
     // Generate holistic analysis if it doesn't exist
     if (!holisticAnalysis) {
+      console.log('🔍 No existing holistic analysis found, generating new one...');
       const analysisPrompt = buildHolisticAnalysisPrompt(analysisData, contextData);
       const analysisResponse = await callClaude(analysisPrompt, anthropicKey);
       
-      const { data: newAnalysis } = await supabase
+      console.log('📊 Analysis response structure:', {
+        hasProblems: !!analysisResponse?.problems,
+        hasSolutions: !!analysisResponse?.solutions,
+        hasVisionInsights: !!analysisResponse?.visionInsights,
+        problemsCount: analysisResponse?.problems?.length || 0,
+        solutionsCount: analysisResponse?.solutions?.length || 0
+      });
+
+      if (!analysisResponse || !analysisResponse.problems || !analysisResponse.solutions) {
+        console.error('🚨 Invalid analysis response structure:', analysisResponse);
+        throw new Error('Claude did not return a properly structured analysis response');
+      }
+      
+      const { data: newAnalysis, error: insertError } = await supabase
         .from('figmant_holistic_analyses')
         .insert({
           analysis_id: analysisId,
-          identified_problems: analysisResponse.problems,
-          solution_approaches: analysisResponse.solutions,
-          vision_insights: analysisResponse.visionInsights
+          identified_problems: analysisResponse.problems || [],
+          solution_approaches: analysisResponse.solutions || [],
+          vision_insights: analysisResponse.visionInsights || {}
         })
         .select()
         .single();
+
+      if (insertError) {
+        console.error('🚨 Error inserting holistic analysis:', insertError);
+        throw new Error(`Failed to save holistic analysis: ${insertError.message}`);
+      }
         
       holisticAnalysis = newAnalysis;
+      console.log('✅ Created new holistic analysis:', holisticAnalysis.id);
     }
 
     // Generate prototypes
@@ -251,6 +271,8 @@ Generate ONLY the React component code starting with: function EnhancedDesign() 
 }
 
 async function callClaude(prompt: string, apiKey: string) {
+  console.log('🔥 Calling Claude API with prompt length:', prompt.length);
+  
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -266,16 +288,39 @@ async function callClaude(prompt: string, apiKey: string) {
     })
   });
 
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('🚨 Claude API error:', response.status, errorText);
+    throw new Error(`Claude API failed: ${response.status} - ${errorText}`);
+  }
+
   const data = await response.json();
-  const content = data.content[0].text;
+  console.log('📝 Claude response received:', { 
+    hasContent: !!data.content?.[0]?.text,
+    contentLength: data.content?.[0]?.text?.length || 0 
+  });
+
+  const content = data.content?.[0]?.text;
+  if (!content) {
+    console.error('🚨 No content in Claude response:', data);
+    throw new Error('No content received from Claude API');
+  }
 
   // Try to parse as JSON for analysis, or return as string for code
   try {
-    return JSON.parse(content);
-  } catch {
+    const parsed = JSON.parse(content);
+    console.log('✅ Successfully parsed JSON response');
+    return parsed;
+  } catch (parseError) {
+    console.log('📄 Not JSON, checking for code blocks...');
     // Extract code from markdown if present
     const codeMatch = content.match(/```(?:jsx?|tsx?)?\n([\s\S]*?)\n```/);
-    return codeMatch ? codeMatch[1] : content;
+    if (codeMatch) {
+      console.log('✅ Extracted code from markdown');
+      return codeMatch[1];
+    }
+    console.log('⚠️ Returning raw content:', content.substring(0, 200) + '...');
+    return content;
   }
 }
 

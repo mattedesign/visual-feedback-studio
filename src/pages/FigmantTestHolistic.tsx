@@ -28,8 +28,8 @@ export default function FigmantTestHolistic() {
   const [testResults, setTestResults] = useState({});
   const [activeTest, setActiveTest] = useState(null);
   const [mockData, setMockData] = useState({
-    sessionId: 'test-session-123',
-    analysisId: 'test-analysis-456',
+    sessionId: 'bc98a8e0-0238-4bae-a913-33754cbe498b',
+    analysisId: 'd06049e9-3f0d-4fab-9e88-23a4281c49d2', // Real session from user report
     contextId: null,
     originalImage: '/placeholder.svg'
   });
