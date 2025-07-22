@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Target, Zap, AlertCircle, CheckCircle, Download, Eye, Code, Columns } from 'lucide-react';
@@ -25,11 +25,48 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
 
   console.log('🎯 HolisticPrototypeViewer props:', { analysisId, contextId, originalImage });
 
-  useEffect(() => {
-    loadAnalysis();
-  }, [analysisId]);
+  const generateAnalysisFunction = useCallback(async () => {
+    setGeneratingAnalysis(true);
+    try {
+      const response = await supabase.functions.invoke('generate-holistic-prototypes', {
+        body: { analysisId, contextId }
+      });
+      
+      if (response.data?.success) {
+        // After generating, reload the analysis
+        const { data, error } = await supabase
+          .from('figmant_holistic_analyses')
+          .select('*')
+          .eq('analysis_id', analysisId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-  const loadAnalysis = async () => {
+        if (data) {
+          setAnalysis(data);
+          // Load any existing prototypes
+          const { data: existingPrototypes } = await supabase
+            .from('figmant_holistic_prototypes')
+            .select('*')
+            .eq('analysis_id', analysisId);
+          
+          const prototypeMap = {};
+          existingPrototypes?.forEach(p => {
+            prototypeMap[p.solution_type] = p;
+          });
+          setPrototypes(prototypeMap);
+        }
+      } else {
+        toast.error('Failed to generate holistic analysis');
+      }
+    } catch (error) {
+      console.error('Analysis generation error:', error);
+      toast.error('Failed to generate holistic analysis');
+    }
+    setGeneratingAnalysis(false);
+  }, [analysisId, contextId]);
+
+  const loadAnalysis = useCallback(async () => {
     console.log('🔍 Loading holistic analysis for:', { analysisId, contextId });
     
     try {
@@ -64,7 +101,7 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
       } else {
         console.log('❌ No holistic analysis found, generating new one for analysisId:', analysisId);
         // Generate initial analysis
-        generateAnalysis();
+        generateAnalysisFunction();
       }
     } catch (error) {
       console.error('💥 Error in loadAnalysis:', error);
@@ -72,41 +109,39 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
       console.log('🏁 Setting loading to false');
       setLoading(false);
     }
-  };
+  }, [analysisId, contextId, generateAnalysisFunction]);
 
-  const generateAnalysis = async () => {
-    setGeneratingAnalysis(true);
+  useEffect(() => {
+    if (analysisId) {
+      loadAnalysis();
+    }
+  }, [analysisId, loadAnalysis]);
+
+  const generatePrototype = useCallback(async (solutionType: string) => {
+    setGenerating(prev => ({ ...prev, [solutionType]: true }));
+    
     try {
-      const response = await supabase.functions.invoke('generate-holistic-prototypes', {
-        body: { analysisId, contextId }
+      const { data: response, error } = await supabase.functions.invoke('generate-holistic-prototypes', {
+        body: { analysisId, contextId, solutionType }
       });
       
-      if (response.data?.success) {
-        await loadAnalysis();
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      if (response?.success) {
+        setPrototypes(prev => ({ ...prev, [solutionType]: response.prototype }));
+        toast.success('Prototype generated successfully!');
       } else {
-        toast.error('Failed to generate holistic analysis');
+        throw new Error(response?.error || 'Failed to generate prototype');
       }
     } catch (error) {
-      console.error('Analysis generation error:', error);
-      toast.error('Failed to generate holistic analysis');
+      console.error('❌ Error generating prototype:', error);
+      toast.error('Failed to generate prototype');
+    } finally {
+      setGenerating(prev => ({ ...prev, [solutionType]: false }));
     }
-    setGeneratingAnalysis(false);
-  };
-
-  const generatePrototype = async (solutionType) => {
-    setGenerating({ ...generating, [solutionType]: true });
-    
-    const response = await supabase.functions.invoke('generate-holistic-prototypes', {
-      body: { analysisId, contextId, solutionType }
-    });
-    
-    if (response.data?.success) {
-      setPrototypes({ ...prototypes, [solutionType]: response.data.prototype });
-      toast.success('Prototype generated successfully!');
-    }
-    
-    setGenerating({ ...generating, [solutionType]: false });
-  };
+  }, [analysisId, contextId]);
 
   const downloadPrototype = (prototype) => {
     const blob = new Blob([prototype.component_code], { type: 'text/javascript' });

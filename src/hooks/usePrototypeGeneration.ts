@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import type { VisualPrototype } from '@/types/analysis';
 
 interface PrototypeGenerationState {
@@ -30,35 +31,27 @@ export function usePrototypeGeneration() {
     });
     
     try {
-      // Call the edge function for prototype generation
-      const response = await fetch('https://mxxtvtwcoplfajvazpav.supabase.co/functions/v1/generate-visual-prototypes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14eHR2dHdjb3BsZmFqdmF6cGF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2MDU2NjgsImV4cCI6MjA2NjE4MTY2OH0.b9sNxeDALujnw2tQD-qnbs3YkZvvTkja8jG6clgpibA`
-        },
-        body: JSON.stringify({
+      // Call the edge function for prototype generation using Supabase client
+      const { data: response, error: functionError } = await supabase.functions.invoke('generate-visual-prototypes', {
+        body: {
           analysisId,
           maxPrototypes: 3
-        })
+        }
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate prototypes');
+      if (functionError) {
+        throw new Error(`Function call failed: ${functionError.message}`);
       }
       
-      const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Prototype generation failed');
+      if (!response?.success) {
+        throw new Error(response?.error || 'Prototype generation failed');
       }
       
       setState({
         isGenerating: false,
         progress: { 
           step: 'complete', 
-          message: `Successfully generated ${result.prototypeCount} visual prototypes!`
+          message: `Successfully generated ${response.prototypeCount} visual prototypes!`
         },
         error: null
       });
