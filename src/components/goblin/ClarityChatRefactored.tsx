@@ -11,8 +11,8 @@ import { useChatHistory } from './chat/hooks/useChatHistory';
 import { useMessagePersistence } from './chat/hooks/useMessagePersistence';
 import { safeExtractAnalysisContent } from './validation/dataValidation';
 import ChatMessageComponent from './chat/components/ChatMessage';
-import ChatInput from './chat/components/ChatInput';
-import LoadingIndicator from './chat/components/LoadingIndicator';
+import ChatInput from '@/archive/goblin/chat/components/ChatInput';
+import LoadingIndicator from '@/archive/goblin/chat/components/LoadingIndicator';
 
 const ClarityChat: React.FC<ClarityChatProps> = ({ session, personaData, onFeedbackUpdate }) => {
   const [inputValue, setInputValue] = useState('');

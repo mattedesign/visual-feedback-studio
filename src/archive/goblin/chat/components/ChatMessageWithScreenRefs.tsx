@@ -1,6 +1,10 @@
 
 import React from 'react';
-import { ChatMessage } from '../types';
+// import { ChatMessage } from '../types';
+
+interface ChatMessage {
+  content: string;
+}
 
 interface ChatMessageWithScreenRefsProps {
   message: ChatMessage;

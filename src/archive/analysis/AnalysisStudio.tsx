@@ -1,7 +1,7 @@
 
 
 import { useState } from 'react';
-import { AnalysisStudioLayout } from './studio/AnalysisStudioLayout';
+import { AnalysisStudioLayout } from '@/components/analysis/studio/AnalysisStudioLayout';
 import { useAnalysisWorkflow } from '@/hooks/analysis/useAnalysisWorkflow';
 import { useAuth } from '@/hooks/useAuth';
 
