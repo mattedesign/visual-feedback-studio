@@ -805,7 +805,21 @@ const FigmantResultsPage = () => {
       </div>
       
       {/* Right Panel - Context Recommendations */}
-      <div className="w-96 bg-card border-l border-border flex flex-col">
+      <div 
+        className="flex flex-col items-center self-stretch overflow-hidden"
+        style={{
+          display: 'flex',
+          maxWidth: '240px',
+          flexDirection: 'column',
+          alignItems: 'center',
+          alignSelf: 'stretch',
+          border: '1px solid #E2E2E2',
+          background: '#FCFCFC',
+          clipPath: 'inset(0 round 20px)',
+          WebkitClipPath: 'inset(0 round 20px)',
+          borderRadius: '20px'
+        }}
+      >
         {/* Header */}
         <div className="p-4 border-b border-border">
           <div className="flex items-center gap-3 mb-4">
