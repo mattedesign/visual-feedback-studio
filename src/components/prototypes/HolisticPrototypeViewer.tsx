@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { ClearPrototypesButton } from '@/components/admin/ClearPrototypesButton';
 
 interface HolisticPrototypeViewerProps {
   analysisId?: string;
