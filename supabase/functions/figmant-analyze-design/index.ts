@@ -260,21 +260,43 @@ serve(async (req) => {
             .getPublicUrl(image.file_path);
           
           const imageResponse = await fetch(urlData.publicUrl);
-          if (!imageResponse.ok) continue;
+          if (!imageResponse.ok) {
+            console.warn(`Failed to fetch image ${image.file_name}: ${imageResponse.status}`);
+            continue;
+          }
           
           const imageBuffer = await imageResponse.arrayBuffer();
-          const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+          
+          // Safe base64 conversion for large images
+          const uint8Array = new Uint8Array(imageBuffer);
+          const chunkSize = 8192;
+          let binary = '';
+          for (let i = 0; i < uint8Array.length; i += chunkSize) {
+            const chunk = uint8Array.slice(i, i + chunkSize);
+            binary += String.fromCharCode.apply(null, Array.from(chunk));
+          }
+          const base64Image = btoa(binary);
+          
+          // Determine media type from file extension
+          const fileExtension = image.file_name.toLowerCase().split('.').pop();
+          let mediaType = 'image/png';
+          if (fileExtension === 'jpg' || fileExtension === 'jpeg') {
+            mediaType = 'image/jpeg';
+          } else if (fileExtension === 'webp') {
+            mediaType = 'image/webp';
+          }
           
           imageContent.push({
             type: "image",
             source: {
               type: "base64",
-              media_type: "image/png",
+              media_type: mediaType,
               data: base64Image
             }
           });
+          console.log(`✅ Successfully loaded image ${image.file_name} for Claude analysis`);
         } catch (error) {
-          console.error(`Error loading image for Claude:`, error);
+          console.error(`Error loading image ${image.file_name} for Claude:`, error);
         }
       }
 
