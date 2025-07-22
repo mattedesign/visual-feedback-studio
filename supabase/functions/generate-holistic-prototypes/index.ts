@@ -356,26 +356,34 @@ ${contextData ? `Business: ${contextData.business_type} | Goal: ${contextData.pr
 
 ${scopeInstructions}
 
-CRITICAL REQUIREMENTS:
-- NO import/export statements (browser execution only)
-- Use React.createElement syntax ONLY - NO JSX angle brackets
-- Access React from window.React object
-- Only standard HTML elements and Tailwind CSS classes
-- Must be complete, functional, and realistic
-- Include interactive states and sample data
+CRITICAL CODE GENERATION RULES:
+1. Generate EXACTLY ONE function called EnhancedDesign
+2. Use React.createElement() syntax - NO JSX brackets < >
+3. Declare React variables ONLY ONCE at the top
+4. NO duplicate variable declarations
+5. NO import/export statements
+6. Include complete working component with sample data
 
-Generate EXACTLY this format with NO markdown blocks:
+EXACT TEMPLATE TO FOLLOW:
 
 function EnhancedDesign() {
   const React = window.React;
-  const { useState, useEffect } = React;
+  const useState = React.useState;
+  const useEffect = React.useEffect;
+  const createElement = React.createElement;
   
-  // Component state and logic here
+  // State declarations here
   
-  return React.createElement('div', {
+  // Helper functions here
+  
+  // Main component logic here
+  
+  return createElement('div', {
     className: 'max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg'
-  }, 'Enhanced Design Content');
-}`;
+  }, 'Your enhanced design content here');
+}
+
+IMPORTANT: Follow this exact structure to avoid variable redeclaration errors.`;
 }
 
 async function callClaude(prompt: string, apiKey: string) {
