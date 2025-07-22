@@ -545,6 +545,7 @@ Analyze the uploaded design and provide:
 2. INTENT (What you think they're trying to achieve)
 3. QUESTIONS (1-2 clarifying questions about their goals) 
 4. VISUAL ALTERNATIVES (3-4 different approaches with real-world examples)
+5. GENTLE IMPROVEMENTS (2-3 small tweaks that could enhance the experience)
 
 For each alternative, reference successful companies and explain the visual pattern, NOT the code.
 
@@ -591,13 +592,53 @@ Return JSON in this format:
       "Or see more examples from your industry"
     ]
   },
-  "issues": []
+  "screen_id": "screen-${Date.now()}",
+  "screen_name": "Design Analysis",
+  "overall_score": 78,
+  "issues": [
+    {
+      "id": "gentle-1",
+      "level": "suggestion",
+      "severity": "improvement",
+      "category": "enhancement",
+      "description": "Consider adding more visual hierarchy with font sizes",
+      "impact": "Would help users scan content 15% faster",
+      "suggested_fix": "Try larger headings and clearer content sections",
+      "confidence": 0.8
+    }
+  ],
+  "strengths": [
+    "Clean visual design with good use of whitespace",
+    "Consistent color palette creates cohesive experience"
+  ],
+  "top_recommendations": [
+    "Explore visual alternatives that match your user goals",
+    "Consider patterns from companies in your industry",
+    "Test different approaches with real users"
+  ]
 }`;
 
   return VISUAL_MENTOR_PROMPT;
 }
 
 function validateAnalysisResponse(response: any): boolean {
+  // Check for new visual mentor format
+  if (response.mentor_analysis) {
+    const mentorAnalysis = response.mentor_analysis;
+    const requiredMentorFields = ['greeting', 'strengths', 'intent_inference', 'visual_alternatives'];
+    const hasRequiredMentorFields = requiredMentorFields.every(field => field in mentorAnalysis);
+    
+    if (!hasRequiredMentorFields) return false;
+    if (!Array.isArray(mentorAnalysis.strengths)) return false;
+    if (!Array.isArray(mentorAnalysis.visual_alternatives)) return false;
+    
+    return mentorAnalysis.visual_alternatives.every((alt: any) => {
+      const altFields = ['title', 'description', 'company_example', 'impact'];
+      return altFields.every(field => field in alt);
+    });
+  }
+  
+  // Check for legacy format
   const requiredFields = ['screen_id', 'screen_name', 'overall_score', 'issues', 'strengths', 'top_recommendations'];
   const hasRequiredFields = requiredFields.every(field => field in response);
   if (!hasRequiredFields) return false;
