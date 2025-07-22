@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
 };
 
-interface Request {
+interface RequestBody {
   analysisId: string;
   contextId?: string;
   generateAll?: boolean;
@@ -19,11 +19,16 @@ serve(async (req) => {
   }
 
   try {
-    const { analysisId, contextId, generateAll = false, solutionType } = await req.json();
+    const { analysisId, contextId, generateAll = false, solutionType }: RequestBody = await req.json();
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
+
+    if (!supabaseUrl || !supabaseKey || !anthropicKey) {
+      throw new Error('Missing required environment variables');
+    }
+
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Fetch all necessary data
@@ -31,6 +36,10 @@ serve(async (req) => {
       supabase.from('figmant_analysis_results').select('*').eq('id', analysisId).single(),
       contextId ? supabase.from('figmant_user_contexts').select('*').eq('id', contextId).single() : { data: null }
     ]);
+
+    if (analysisResult.error || !analysisResult.data) {
+      throw new Error(`Failed to fetch analysis data: ${analysisResult.error?.message}`);
+    }
 
     const analysisData = analysisResult.data;
     const contextData = contextResult.data;
@@ -66,7 +75,7 @@ serve(async (req) => {
     // Generate prototypes
     if (generateAll) {
       const results = await Promise.all(
-        holisticAnalysis.solution_approaches.map(solution => 
+        (holisticAnalysis.solution_approaches || []).map(solution => 
           generatePrototype(solution, analysisData, contextData, holisticAnalysis, supabase, anthropicKey)
         )
       );
@@ -76,7 +85,10 @@ serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } else if (solutionType) {
-      const solution = holisticAnalysis.solution_approaches.find(s => s.approach === solutionType);
+      const solution = (holisticAnalysis.solution_approaches || []).find(s => s.approach === solutionType);
+      if (!solution) {
+        throw new Error(`Solution type '${solutionType}' not found in analysis`);
+      }
       const prototype = await generatePrototype(solution, analysisData, contextData, holisticAnalysis, supabase, anthropicKey);
       
       return new Response(
@@ -195,7 +207,7 @@ async function generatePrototype(
       expected_impact: solution.expectedImpact,
       generation_metadata: {
         contextUsed: !!contextData,
-        problemsSolved: holisticAnalysis.problems.map(p => p.id),
+        problemsSolved: (holisticAnalysis.identified_problems || []).map(p => p.id),
         generatedAt: new Date().toISOString()
       }
     })
@@ -211,19 +223,19 @@ function buildPrototypePrompt(solution: any, analysisData: any, contextData: any
   return `You are creating a COMPLETE React component that implements the ${solution.approach} solution approach.
 
 PROBLEMS TO SOLVE:
-${holisticAnalysis.problems.map(p => `- ${p.description} (${p.severity})`).join('\\n')}
+${(holisticAnalysis.identified_problems || []).map(p => `- ${p.description} (${p.severity})`).join('\\n')}
 
 SOLUTION: ${solution.name}
 ${solution.description}
 
 KEY CHANGES:
-${solution.keyChanges.map(c => `- ${c}`).join('\\n')}
+${(solution.keyChanges || []).map(c => `- ${c}`).join('\\n')}
 
 EXTRACTED CONTENT TO USE:
 ${JSON.stringify(extractedContent, null, 2)}
 
 IMPLEMENTATION GUIDANCE:
-${JSON.stringify(solution.implementationGuidance)}
+${JSON.stringify(solution.implementationGuidance || 'No specific guidance provided')}
 
 Create a production-ready React component that:
 1. Solves all identified problems using this approach
