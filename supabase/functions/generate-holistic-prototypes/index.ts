@@ -292,34 +292,86 @@ async function generatePrototype(
 
 function buildPrototypePrompt(solution: any, analysisData: any, contextData: any, holisticAnalysis: any) {
   const extractedContent = extractContentFromAnalysis(analysisData);
+  const problems = holisticAnalysis.identified_problems || [];
+  
+  // Create different prompts based on solution approach
+  let approachGuidance = '';
+  let scopeInstructions = '';
+  
+  if (solution.approach === 'conservative') {
+    approachGuidance = `
+CONSERVATIVE APPROACH - MOLECULAR FIXES:
+Focus on fixing ONE specific, high-impact issue with minimal changes.
+- Choose the most critical problem from the list below
+- Make targeted improvements to that specific element/area only
+- Keep the overall design structure intact
+- Implement quick wins that can be done immediately
+- Focus on improving usability of a single component or interaction`;
+    
+    scopeInstructions = `Create a targeted fix for ONE specific issue. Do NOT redesign the entire interface.`;
+    
+  } else if (solution.approach === 'balanced') {
+    approachGuidance = `
+BALANCED APPROACH - STRATEGIC IMPROVEMENTS:
+Combine 2-3 related improvements that work together synergistically.
+- Address the top 2-3 most impactful problems
+- Apply modern UX patterns selectively
+- Improve information hierarchy and flow
+- Balance user needs with business constraints
+- Make moderate structural improvements`;
+    
+    scopeInstructions = `Create a moderately enhanced version addressing 2-3 key issues with strategic improvements.`;
+    
+  } else if (solution.approach === 'innovative') {
+    approachGuidance = `
+INNOVATIVE APPROACH - HOLISTIC REDESIGN:
+Reimagine the entire experience to solve ALL problems comprehensively.
+- Address ALL identified problems in an integrated solution
+- Apply cutting-edge UX patterns and interactions
+- Completely rethink the information architecture
+- Maximize user engagement and delight
+- Create a best-in-class experience that sets new standards`;
+    
+    scopeInstructions = `Create a comprehensive redesign that addresses ALL problems with innovative solutions.`;
+  }
   
   return `You are creating a COMPLETE React component that implements the ${solution.approach} solution approach.
 
-PROBLEMS TO SOLVE:
-${(holisticAnalysis.identified_problems || []).map(p => `- ${p.description} (${p.severity})`).join('\\n')}
+${approachGuidance}
+
+PROBLEMS IDENTIFIED:
+${problems.map((p, i) => `${i + 1}. ${p.title || p.description} (Impact: ${p.impact || 'Medium'})`).join('\\n')}
 
 SOLUTION: ${solution.name}
 ${solution.description}
 
-KEY CHANGES:
+KEY CHANGES FOR THIS APPROACH:
 ${(solution.keyChanges || []).map(c => `- ${c}`).join('\\n')}
 
 EXTRACTED CONTENT TO USE:
 ${JSON.stringify(extractedContent, null, 2)}
 
-IMPLEMENTATION GUIDANCE:
-${JSON.stringify(solution.implementationGuidance || 'No specific guidance provided')}
+BUSINESS CONTEXT:
+${contextData ? `
+- Business Type: ${contextData.business_type}
+- Primary Goal: ${contextData.primary_goal}
+- Target Audience: ${contextData.target_audience}
+` : 'No specific business context provided'}
+
+${scopeInstructions}
 
 Create a production-ready React component that:
-1. Solves all identified problems using this approach
-2. Incorporates all extracted content appropriately  
+1. ${solution.approach === 'conservative' ? 'Fixes the most critical issue with minimal changes' : 
+     solution.approach === 'balanced' ? 'Addresses 2-3 key problems with strategic improvements' :
+     'Solves ALL problems with a comprehensive, innovative redesign'}
+2. Incorporates extracted content appropriately
 3. Includes all necessary states and interactions
 4. Has proper error handling and loading states
 5. Is fully accessible (ARIA labels, keyboard navigation)
 6. Uses only Tailwind CSS classes
 7. Includes helpful comments explaining design decisions
 
-Start the component with a comment block listing the problems this solves.
+Start the component with a comment block listing the specific problems this ${solution.approach} approach solves.
 Generate ONLY the React component code starting with: function EnhancedDesign() {`;
 }
 
