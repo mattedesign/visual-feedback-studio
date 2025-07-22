@@ -19,12 +19,35 @@ interface MentorData {
 }
 
 interface Props {
-  mentorData: MentorData;
-  userImage: string;
+  mentorData: MentorData | null | undefined;
+  userImage: string | undefined;
 }
 
 export function VisualMentorSummary({ mentorData, userImage }: Props) {
   const [selectedAlternative, setSelectedAlternative] = useState(0);
+  
+  // Handle case where mentorData is not available
+  if (!mentorData) {
+    return (
+      <div className="space-y-8">
+        <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-xl">
+          <p className="text-lg text-gray-800">
+            ✨ Hey! Your analysis is still processing. We'll show you visual alternatives and mentor insights once the analysis is complete.
+          </p>
+        </div>
+        
+        <div className="bg-blue-50 p-6 rounded-xl">
+          <h2 className="text-xl font-bold mb-3">What's coming next:</h2>
+          <ul className="space-y-2 text-gray-700">
+            <li>🎨 Visual alternatives from successful companies</li>
+            <li>💡 Specific improvement suggestions</li>
+            <li>📊 Impact analysis for each recommendation</li>
+            <li>🚀 Implementation guidance</li>
+          </ul>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-8">
@@ -39,7 +62,7 @@ export function VisualMentorSummary({ mentorData, userImage }: Props) {
           ✨ What's Working Well
         </h3>
         <ul className="space-y-1">
-          {mentorData.strengths.map((strength, i) => (
+          {(mentorData.strengths || []).map((strength, i) => (
             <li key={i} className="text-sm text-green-800 flex items-start gap-2">
               <span>✓</span> {strength}
             </li>
@@ -53,10 +76,9 @@ export function VisualMentorSummary({ mentorData, userImage }: Props) {
           🎨 Alternative Approaches to Explore
         </h2>
         
-        {/* Alternative Selector Tabs */
-}
+        {/* Alternative Selector Tabs */}
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-          {mentorData.visual_alternatives.map((alt, i) => (
+          {mentorData.visual_alternatives?.map((alt, i) => (
             <button
               key={i}
               onClick={() => setSelectedAlternative(i)}
@@ -68,53 +90,63 @@ export function VisualMentorSummary({ mentorData, userImage }: Props) {
             >
               {alt.company_example}: {alt.title}
             </button>
-          ))}
+          )) || []}
         </div>
         
-        {/* Visual Comparison */}
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* User's Design */}
-          <div>
-            <h3 className="text-sm font-medium text-gray-600 mb-2">
-              Your Current Design
-            </h3>
-            <img 
-              src={userImage} 
-              alt="Your design"
-              className="w-full rounded-lg border-2 border-gray-200 shadow-sm"
-            />
-          </div>
-          
-          {/* Selected Alternative */}
-          <div>
-            <h3 className="text-sm font-medium text-gray-600 mb-2">
-              {mentorData.visual_alternatives[selectedAlternative].company_example} Approach
-            </h3>
-            <VisualPatternPreview 
-              patternId={mentorData.visual_alternatives[selectedAlternative].visual_reference}
-              showInteraction={true}
-            />
+        {/* Visual Comparison - Only show if alternatives exist */}
+        {mentorData.visual_alternatives && mentorData.visual_alternatives.length > 0 && (
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* User's Design */}
+            <div>
+              <h3 className="text-sm font-medium text-gray-600 mb-2">
+                Your Current Design
+              </h3>
+              {userImage ? (
+                <img 
+                  src={userImage} 
+                  alt="Your design"
+                  className="w-full rounded-lg border-2 border-gray-200 shadow-sm"
+                />
+              ) : (
+                <div className="w-full h-48 bg-gray-100 rounded-lg border-2 border-gray-200 flex items-center justify-center">
+                  <span className="text-gray-500">Design image loading...</span>
+                </div>
+              )}
+            </div>
             
-            {/* Why It Works */}
-            <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-              <p className="font-medium text-blue-900 mb-2">
-                {mentorData.visual_alternatives[selectedAlternative].impact}
-              </p>
-              <ul className="space-y-1">
-                {mentorData.visual_alternatives[selectedAlternative].why_it_works.map((reason, i) => (
-                  <li key={i} className="text-sm text-blue-800">
-                    • {reason}
-                  </li>
-                ))}
-              </ul>
+            {/* Selected Alternative */}
+            <div>
+              <h3 className="text-sm font-medium text-gray-600 mb-2">
+                {mentorData.visual_alternatives[selectedAlternative]?.company_example || 'Example'} Approach
+              </h3>
+              <VisualPatternPreview 
+                patternId={mentorData.visual_alternatives[selectedAlternative]?.visual_reference || 'default'}
+                showInteraction={true}
+              />
+              
+              {/* Why It Works */}
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                <p className="font-medium text-blue-900 mb-2">
+                  {mentorData.visual_alternatives[selectedAlternative]?.impact || 'Improved user experience'}
+                </p>
+                <ul className="space-y-1">
+                  {(mentorData.visual_alternatives[selectedAlternative]?.why_it_works || []).map((reason, i) => (
+                    <li key={i} className="text-sm text-blue-800">
+                      • {reason}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
-        </div>
+        )}
         
         {/* Description - Brief */}
-        <p className="mt-4 text-gray-600">
-          {mentorData.visual_alternatives[selectedAlternative].description}
-        </p>
+        {mentorData.visual_alternatives && mentorData.visual_alternatives[selectedAlternative] && (
+          <p className="mt-4 text-gray-600">
+            {mentorData.visual_alternatives[selectedAlternative].description}
+          </p>
+        )}
       </div>
       
       {/* Questions - Collapsed by default */}
@@ -123,7 +155,7 @@ export function VisualMentorSummary({ mentorData, userImage }: Props) {
           💭 Help me understand your goals better...
         </summary>
         <div className="mt-3 space-y-2">
-          {mentorData.follow_up_questions.map((q, i) => (
+          {(mentorData.follow_up_questions || []).map((q, i) => (
             <p key={i} className="text-amber-800">• {q}</p>
           ))}
         </div>
@@ -131,7 +163,7 @@ export function VisualMentorSummary({ mentorData, userImage }: Props) {
       
       {/* Next Steps - Simple CTAs */}
       <div className="flex flex-wrap gap-3">
-        {mentorData.next_steps.map((step, i) => (
+        {(mentorData.next_steps || []).map((step, i) => (
           <button
             key={i}
             className="px-4 py-2 bg-white border border-gray-300 rounded-lg 
