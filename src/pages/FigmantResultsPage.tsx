@@ -446,13 +446,11 @@ const FigmantResultsPage = () => {
             if (contextData && !contextError) {
               setUserContext(contextData);
               console.log('✅ User context found:', contextData);
-            } else if (isHolisticEnabled && !analysis && !contextData) {
-              // Show context form if holistic feature is enabled, no analysis data yet, and no context
+            } else if (isHolisticEnabled && !contextData) {
+              // Show context form if holistic feature is enabled and no context exists
+              // This allows context collection even if analysis already exists
               setShowContextForm(true);
-              console.log('💡 Holistic feature enabled - showing context form');
-            } else if (isHolisticEnabled && analysis && !contextData) {
-              // If analysis exists but no context, we can still show a simplified context form or skip
-              console.log('💡 Analysis exists but no context - holistic analysis will proceed without context');
+              console.log('💡 Holistic feature enabled - showing context form for existing analysis');
             }
           } catch (error) {
             console.warn('Failed to load user context:', error);
