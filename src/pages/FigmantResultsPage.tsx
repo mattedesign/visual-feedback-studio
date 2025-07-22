@@ -371,14 +371,25 @@ const FigmantResultsPage = () => {
           />
         ) : (
           // Existing detailed analysis view - need to transform data to match interface
-          <EnhancedAnalysisResults 
-            images={sessionData?.images?.map(img => ({
-              url: getImageUrl(img.file_path),
-              fileName: img.file_name,
-              id: img.id
-            })) || []}
-            issues={analysisData?.issues || []}
-          />
+          <div className="space-y-6">
+            <EnhancedAnalysisResults 
+              images={sessionData?.images?.map(img => ({
+                url: getImageUrl(img.file_path),
+                fileName: img.file_name,
+                id: img.id
+              })) || []}
+              issues={analysisData?.issues || []}
+            />
+            
+            {/* Pattern Discovery Section for Detailed View */}
+            <div className="mt-8 p-6 bg-white rounded-lg shadow-sm">
+              <h2 className="text-xl font-semibold mb-4">Discover More Patterns</h2>
+              <p className="text-gray-600 mb-4">
+                Explore our library of proven UI patterns from successful companies
+              </p>
+              {/* Could add PatternSearch component here if needed */}
+            </div>
+          </div>
         )}
       </div>
       

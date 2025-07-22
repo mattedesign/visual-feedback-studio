@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { visualPatterns, getPatternById } from '@/data/visualPatternLibrary';
+import { PatternSearch } from '@/components/patterns/PatternSearch';
 import { VisualPatternPreview } from '@/components/patterns/VisualPatternPreview';
+import { PatternComparisonSlider } from '@/components/patterns/PatternComparisonSlider';
+import { QuickImplementation } from '@/components/patterns/QuickImplementation';
+import { SimilarPatterns } from '@/components/patterns/SimilarPatterns';
 
 interface MentorData {
   greeting: string;
@@ -25,6 +29,7 @@ interface Props {
 
 export function VisualMentorSummary({ mentorData, userImage }: Props) {
   const [selectedAlternative, setSelectedAlternative] = useState(0);
+  const [showPatternBrowser, setShowPatternBrowser] = useState(false);
   
   // Handle case where mentorData is not available
   if (!mentorData) {
@@ -172,7 +177,26 @@ export function VisualMentorSummary({ mentorData, userImage }: Props) {
             {step}
           </button>
         ))}
+        
+        {/* Browse More Patterns Button */}
+        <button
+          onClick={() => setShowPatternBrowser(!showPatternBrowser)}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg 
+                   hover:bg-blue-700 transition-colors text-sm font-medium"
+        >
+          {showPatternBrowser ? 'Hide' : 'Browse'} Pattern Library
+        </button>
       </div>
+      
+      {/* Pattern Browser */}
+      {showPatternBrowser && (
+        <div className="mt-8 p-6 bg-gray-50 rounded-lg">
+          <PatternSearch onPatternSelect={(patternId) => {
+            // Handle pattern selection - could update selected alternative
+            console.log('Selected pattern:', patternId);
+          }} />
+        </div>
+      )}
     </div>
   );
 }
