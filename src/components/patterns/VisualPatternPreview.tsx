@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { getPatternById } from '@/data/visualPatternLibrary';
 
-export function VisualPatternPreview({ patternId, showInteraction = false }) {
+interface Props {
+  patternId: string;
+  showInteraction?: boolean;
+}
+
+export function VisualPatternPreview({ patternId, showInteraction = false }: Props) {
   const pattern = getPatternById(patternId);
   const [isHovered, setIsHovered] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
@@ -23,14 +28,15 @@ export function VisualPatternPreview({ patternId, showInteraction = false }) {
         onMouseLeave={() => setIsHovered(false)}
         onClick={() => setShowDetails(!showDetails)}
       >
-        <img 
-          src={isHovered && pattern.thumbnails.hover 
-            ? pattern.thumbnails.hover 
-            : pattern.thumbnails.default
-          }
-          alt={pattern.name}
-          className="w-full transition-transform duration-300 group-hover:scale-105"
-        />
+        <div className="aspect-video bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+          <div className="text-center p-4">
+            <h3 className="font-semibold text-gray-800 mb-2">{pattern.name}</h3>
+            <p className="text-sm text-gray-600 mb-3">{pattern.description}</p>
+            <div className="text-xs text-gray-500">
+              Implementation: {pattern.implementation_time}
+            </div>
+          </div>
+        </div>
         
         {/* Overlay Badge */}
         <div className="absolute top-3 left-3 px-3 py-1 bg-black/70 

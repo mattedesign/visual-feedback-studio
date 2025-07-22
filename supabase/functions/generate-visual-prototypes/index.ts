@@ -82,9 +82,9 @@ serve(async (req) => {
     
     // Get analysis issues from Claude analysis data
     console.log('🔍 Analysis data structure:', Object.keys(analysisData));
-    console.log('🔍 Claude analysis data:', analysisData.claude_analysis_data ? Object.keys(analysisData.claude_analysis_data) : 'No claude_analysis_data');
+    console.log('🔍 Claude analysis data:', analysisData.claude_analysis ? Object.keys(analysisData.claude_analysis) : 'No claude_analysis');
     
-    const claudeAnalysis = analysisData.claude_analysis_data || analysisData.claude_analysis || {};
+    const claudeAnalysis = analysisData.claude_analysis || {};
     console.log('🔍 Claude analysis structure:', Object.keys(claudeAnalysis));
     
     const issues = claudeAnalysis.issues || [];

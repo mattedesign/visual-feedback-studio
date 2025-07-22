@@ -1,14 +1,56 @@
-const SUPABASE_URL = "https://mxxtvtwcoplfajvazpav.supabase.co";
-
 export const visualPatterns = {
-  // CTA Patterns - Using captured screenshots
+  // Dashboard Patterns
+  'notion-dashboard': {
+    id: 'notion-dashboard',
+    name: 'Modular Dashboard',
+    company: 'Notion',
+    thumbnails: {
+      default: '/patterns/notion/dashboard-default.jpg',
+      hover: '/patterns/notion/dashboard-hover.jpg',
+      mobile: '/patterns/notion/dashboard-mobile.jpg'
+    },
+    description: 'Draggable widgets with customizable layout',
+    impact: '40% higher engagement',
+    category: 'dashboard',
+    tags: ['modular', 'customizable', 'personal'],
+    implementation_time: '2-3 days'
+  },
+  'stripe-focus': {
+    id: 'stripe-focus', 
+    name: 'Single Metric Focus',
+    company: 'Stripe',
+    thumbnails: {
+      default: '/patterns/stripe/focus-default.jpg',
+      hover: '/patterns/stripe/focus-detail.jpg'
+    },
+    description: 'One huge number, supporting metrics below',
+    impact: '3x faster decisions',
+    category: 'dashboard',
+    tags: ['minimal', 'focus', 'hierarchy'],
+    implementation_time: '1 day'
+  },
+  'linear-activity': {
+    id: 'linear-activity',
+    name: 'Activity Stream',
+    company: 'Linear',
+    thumbnails: {
+      default: '/patterns/linear/activity-default.jpg',
+      hover: '/patterns/linear/activity-hover.jpg'
+    },
+    description: 'Real-time timeline of team activity',
+    impact: 'Teams aligned without meetings',
+    category: 'dashboard',
+    tags: ['realtime', 'collaborative', 'timeline'],
+    implementation_time: '3-4 days'
+  },
+  // CTA Patterns
   'stripe-cta': {
     id: 'stripe-cta',
     name: 'High Contrast CTA',
     company: 'Stripe',
     thumbnails: {
-      default: `${SUPABASE_URL}/storage/v1/object/public/analysis-images/patterns/stripe/cta-default.webp`,
-      hover: `${SUPABASE_URL}/storage/v1/object/public/analysis-images/patterns/stripe/cta-hover.webp`
+      default: '/patterns/stripe/cta-default.jpg',
+      hover: '/patterns/stripe/cta-hover.jpg'
     },
     description: 'Bold button with subtle shadow and perfect contrast',
     impact: '+32% click rate',
@@ -16,137 +58,134 @@ export const visualPatterns = {
     tags: ['conversion', 'accessibility', 'trust'],
     implementation_time: '30 minutes'
   },
-  'airbnb-cta': {
-    id: 'airbnb-cta',
-    name: 'Engaging CTA',
-    company: 'Airbnb',
-    thumbnails: {
-      default: `${SUPABASE_URL}/storage/v1/object/public/analysis-images/patterns/airbnb/cta-default.webp`,
-      hover: `${SUPABASE_URL}/storage/v1/object/public/analysis-images/patterns/airbnb/cta-hover.webp`
-    },
-    description: 'Inviting CTA with warm colors and clear messaging',
-    impact: '+28% engagement',
-    category: 'cta',
-    tags: ['warm', 'inviting', 'conversion'],
-    implementation_time: '1 hour'
-  },
   'spotify-cta': {
     id: 'spotify-cta',
-    name: 'Brand-Forward CTA',
+    name: 'Rounded CTA',
     company: 'Spotify',
     thumbnails: {
-      default: `${SUPABASE_URL}/storage/v1/object/public/analysis-images/patterns/spotify/cta-default.webp`,
-      hover: `${SUPABASE_URL}/storage/v1/object/public/analysis-images/patterns/spotify/cta-hover.webp`
+      default: '/patterns/spotify/cta-default.jpg',
+      hover: '/patterns/spotify/cta-hover.jpg'
     },
-    description: 'Bold brand colors with strong call-to-action',
-    impact: '+35% conversion',
+    description: 'Rounded button with vibrant colors',
+    impact: '+25% engagement',
     category: 'cta',
-    tags: ['bold', 'branded', 'music'],
+    tags: ['modern', 'playful', 'bold'],
     implementation_time: '45 minutes'
+  },
+  'airbnb-cta': {
+    id: 'airbnb-cta',
+    name: 'Gradient CTA',
+    company: 'Airbnb',
+    thumbnails: {
+      default: '/patterns/airbnb/cta-default.jpg',
+      hover: '/patterns/airbnb/cta-hover.jpg'
+    },
+    description: 'Gradient background with smooth transitions',
+    impact: '+30% bookings',
+    category: 'cta',
+    tags: ['premium', 'trust', 'engaging'],
+    implementation_time: '1 hour'
   },
   'apple-cta': {
     id: 'apple-cta',
     name: 'Minimalist CTA',
     company: 'Apple',
     thumbnails: {
-      default: `${SUPABASE_URL}/storage/v1/object/public/analysis-images/patterns/apple/cta-default.webp`,
-      hover: `${SUPABASE_URL}/storage/v1/object/public/analysis-images/patterns/apple/cta-hover.webp`
+      default: '/patterns/apple/cta-default.jpg',
+      hover: '/patterns/apple/cta-hover.jpg'
     },
-    description: 'Clean, minimal design with clear hierarchy',
-    impact: '+25% premium conversions',
+    description: 'Clean, minimal button with perfect typography',
+    impact: '+40% conversions',
     category: 'cta',
-    tags: ['minimal', 'premium', 'clean'],
-    implementation_time: '1 hour'
+    tags: ['minimal', 'elegant', 'premium'],
+    implementation_time: '30 minutes'
   },
-  
-  // Card Patterns - Using captured screenshots
-  'trello-card': {
-    id: 'trello-card',
-    name: 'Task Card',
-    company: 'Trello',
-    thumbnails: {
-      default: `${SUPABASE_URL}/storage/v1/object/public/analysis-images/patterns/trello/card-default.webp`,
-      hover: `${SUPABASE_URL}/storage/v1/object/public/analysis-images/patterns/trello/card-hover.webp`
-    },
-    description: 'Kanban-style cards with clear visual hierarchy',
-    impact: '3x longer engagement',
-    category: 'card',
-    tags: ['kanban', 'organized', 'interactive'],
-    implementation_time: '1-2 hours'
-  },
+  // Card Patterns
   'figma-card': {
     id: 'figma-card',
-    name: 'Design Card',
+    name: 'Interactive Design Card',
     company: 'Figma',
     thumbnails: {
-      default: `${SUPABASE_URL}/storage/v1/object/public/analysis-images/patterns/figma/card-default.webp`,
-      hover: `${SUPABASE_URL}/storage/v1/object/public/analysis-images/patterns/figma/card-hover.webp`
+      default: '/patterns/figma/card-default.jpg',
+      hover: '/patterns/figma/card-hover.jpg'
     },
-    description: 'Creative-focused cards with visual previews',
-    impact: 'Find designs 50% faster',
+    description: 'Cards with preview thumbnails and collaboration indicators',
+    impact: '50% faster file discovery',
     category: 'card',
-    tags: ['creative', 'visual', 'collaboration'],
+    tags: ['interactive', 'visual', 'collaborative'],
     implementation_time: '2 hours'
   },
-
-  // Form Patterns - Using captured screenshots  
+  'trello-card': {
+    id: 'trello-card',
+    name: 'Kanban Card',
+    company: 'Trello',
+    thumbnails: {
+      default: '/patterns/trello/card-default.jpg',
+      hover: '/patterns/trello/card-hover.jpg'
+    },
+    description: 'Draggable cards with labels and due dates',
+    impact: '60% better task organization',
+    category: 'card',
+    tags: ['draggable', 'organized', 'productive'],
+    implementation_time: '3 hours'
+  },
+  // Form Patterns
   'typeform-form': {
     id: 'typeform-form',
-    name: 'Conversational Form',
+    name: 'Progressive Form',
     company: 'Typeform',
     thumbnails: {
-      default: `${SUPABASE_URL}/storage/v1/object/public/analysis-images/patterns/typeform/form-default.webp`,
-      hover: `${SUPABASE_URL}/storage/v1/object/public/analysis-images/patterns/typeform/form-hover.webp`
+      default: '/patterns/typeform/form-default.jpg',
+      hover: '/patterns/typeform/form-hover.jpg'
     },
-    description: 'Step-by-step conversational form experience',
-    impact: '60% higher completion rate',
+    description: 'One question at a time with smooth transitions',
+    impact: '40% higher completion rate',
     category: 'form',
-    tags: ['conversational', 'engaging', 'progressive'],
-    implementation_time: '3-4 hours'
+    tags: ['progressive', 'engaging', 'conversational'],
+    implementation_time: '4 hours'
   },
   'google-form': {
     id: 'google-form',
-    name: 'Clean Form',
+    name: 'Clean Material Form',
     company: 'Google',
     thumbnails: {
-      default: `${SUPABASE_URL}/storage/v1/object/public/analysis-images/patterns/google/form-default.webp`,
-      hover: `${SUPABASE_URL}/storage/v1/object/public/analysis-images/patterns/google/form-hover.webp`
+      default: '/patterns/google/form-default.jpg',
+      hover: '/patterns/google/form-hover.jpg'
     },
-    description: 'Simple, accessible form with clear validation',
-    impact: '40% better accessibility',
+    description: 'Material design with floating labels and clear validation',
+    impact: '35% fewer form errors',
     category: 'form',
-    tags: ['accessible', 'simple', 'reliable'],
-    implementation_time: '2-3 hours'
+    tags: ['material', 'accessible', 'clear'],
+    implementation_time: '2 hours'
   },
-
-  // Navigation Patterns - Using captured screenshots
+  // Navigation Patterns
   'vercel-nav': {
     id: 'vercel-nav',
-    name: 'Developer Navigation',
+    name: 'Minimal Navigation',
     company: 'Vercel',
     thumbnails: {
-      default: `${SUPABASE_URL}/storage/v1/object/public/analysis-images/patterns/vercel/nav-default.webp`,
-      hover: `${SUPABASE_URL}/storage/v1/object/public/analysis-images/patterns/vercel/nav-hover.webp`
+      default: '/patterns/vercel/nav-default.jpg',
+      hover: '/patterns/vercel/nav-hover.jpg'
     },
-    description: 'Developer-focused navigation with clear hierarchy',
-    impact: '30% faster navigation',
+    description: 'Clean navigation with subtle hover states',
+    impact: '25% better user flow',
     category: 'navigation',
-    tags: ['developer', 'technical', 'organized'],
-    implementation_time: '2-3 hours'
+    tags: ['minimal', 'clean', 'modern'],
+    implementation_time: '1.5 hours'
   },
   'arc-nav': {
     id: 'arc-nav',
-    name: 'Modern Navigation',
+    name: 'Sidebar Navigation',
     company: 'Arc',
     thumbnails: {
-      default: `${SUPABASE_URL}/storage/v1/object/public/analysis-images/patterns/arc/nav-default.webp`,
-      hover: `${SUPABASE_URL}/storage/v1/object/public/analysis-images/patterns/arc/nav-hover.webp`
+      default: '/patterns/arc/nav-default.jpg',
+      hover: '/patterns/arc/nav-hover.jpg'
     },
-    description: 'Innovative browser navigation with smooth animations',
-    impact: '45% more intuitive',
+    description: 'Collapsible sidebar with icon-first design',
+    impact: '20% more screen space',
     category: 'navigation',
-    tags: ['innovative', 'smooth', 'modern'],
-    implementation_time: '3-4 hours'
+    tags: ['collapsible', 'space-efficient', 'modern'],
+    implementation_time: '3 hours'
   }
 };
 
@@ -156,11 +195,11 @@ export function getPatternsByCategory(category: string) {
 }
 
 export function getPatternById(id: string) {
-  return visualPatterns[id as keyof typeof visualPatterns];
+  return visualPatterns[id];
 }
 
 export function getRelatedPatterns(patternId: string, limit = 3) {
-  const pattern = visualPatterns[patternId as keyof typeof visualPatterns];
+  const pattern = visualPatterns[patternId];
   if (!pattern) return [];
   
   return Object.values(visualPatterns)
