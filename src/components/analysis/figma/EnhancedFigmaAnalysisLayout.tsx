@@ -256,45 +256,6 @@ export const EnhancedFigmaAnalysisLayout: React.FC<EnhancedFigmaAnalysisLayoutPr
                 </div>
               </div>
 
-              {/* Compact Filters & Sort - Horizontal Layout */}
-              <div className="flex items-center justify-between py-2 bg-background">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <Filter className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Filters & Sort</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant={activeFilter === 'all' ? "default" : "ghost"}
-                      size="sm"
-                      onClick={() => setActiveFilter('all')}
-                      className="h-8 px-3 text-xs font-medium rounded-full"
-                    >
-                      All
-                    </Button>
-                    {categories.filter(cat => cat !== 'all').map((category) => (
-                      <Button
-                        key={category}
-                        variant={activeFilter === category ? "default" : "ghost"}
-                        size="sm"
-                        onClick={() => setActiveFilter(category)}
-                        className="h-8 px-3 text-xs font-medium rounded-full capitalize"
-                      >
-                        {category}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <select className="text-sm border border-border rounded px-3 py-1.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20">
-                    <option value="severity">Sort by Severity</option>
-                    <option value="category">Sort by Category</option>
-                    <option value="title">Sort by Title</option>
-                  </select>
-                </div>
-              </div>
 
               {strategistAnalysis && (
                 <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 mb-4">
