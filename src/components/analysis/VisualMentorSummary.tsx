@@ -5,6 +5,7 @@ import { VisualPatternPreview } from '@/components/patterns/VisualPatternPreview
 import { PatternComparisonSlider } from '@/components/patterns/PatternComparisonSlider';
 import { QuickImplementation } from '@/components/patterns/QuickImplementation';
 import { SimilarPatterns } from '@/components/patterns/SimilarPatterns';
+import { MessageCircle, Lightbulb, ArrowRight } from 'lucide-react';
 
 interface MentorData {
   greeting: string;
@@ -30,12 +31,17 @@ interface Props {
 export function VisualMentorSummary({ mentorData, userImage }: Props) {
   const [selectedAlternative, setSelectedAlternative] = useState(0);
   const [showPatternBrowser, setShowPatternBrowser] = useState(false);
+  const [showChatInterface, setShowChatInterface] = useState(false);
   const [activeChatPrompt, setActiveChatPrompt] = useState<string | null>(null);
 
   const handleNextStepClick = (step: string) => {
-    // Set the active chat prompt to trigger follow-up
-    setActiveChatPrompt(step);
-    console.log('User clicked on next step:', step);
+    setActiveChatPrompt(`Help me with: "${step}"`);
+    setShowChatInterface(true);
+  };
+
+  const handleQuestionClick = (question: string) => {
+    setActiveChatPrompt(question);
+    setShowChatInterface(true);
   };
   
   // Handle case where mentorData is not available
@@ -161,17 +167,27 @@ export function VisualMentorSummary({ mentorData, userImage }: Props) {
         )}
       </div>
       
-      {/* Questions - Collapsed by default */}
-      <details className="bg-amber-50 p-4 rounded-lg">
-        <summary className="cursor-pointer font-medium text-amber-900">
+      {/* Questions - Interactive */}
+      <div className="bg-amber-50 p-4 rounded-lg">
+        <h3 className="font-medium text-amber-900 mb-3 flex items-center gap-2">
+          <MessageCircle className="w-4 h-4" />
           💭 Help me understand your goals better...
-        </summary>
-        <div className="mt-3 space-y-2">
+        </h3>
+        <div className="space-y-2">
           {(mentorData.follow_up_questions || []).map((q, i) => (
-            <p key={i} className="text-amber-800">• {q}</p>
+            <button
+              key={i}
+              onClick={() => handleQuestionClick(q)}
+              className="block w-full text-left p-2 text-amber-800 hover:bg-amber-100 
+                       rounded transition-colors cursor-pointer border border-transparent 
+                       hover:border-amber-200"
+            >
+              <ArrowRight className="w-3 h-3 inline mr-2" />
+              {q}
+            </button>
           ))}
         </div>
-      </details>
+      </div>
       
       {/* Next Steps - Simple CTAs */}
       <div className="flex flex-wrap gap-3">
@@ -203,6 +219,44 @@ export function VisualMentorSummary({ mentorData, userImage }: Props) {
             // Handle pattern selection - could update selected alternative
             console.log('Selected pattern:', patternId);
           }} />
+        </div>
+      )}
+
+      {/* Chat Interface */}
+      {showChatInterface && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <div className="bg-blue-600 text-white p-4 flex justify-between items-center">
+              <h3 className="font-semibold">💬 Follow-up Chat</h3>
+              <button 
+                onClick={() => setShowChatInterface(false)}
+                className="text-white hover:text-gray-200 text-xl"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                <p className="text-sm text-gray-600 mb-2">Your question:</p>
+                <p className="font-medium">{activeChatPrompt}</p>
+              </div>
+              <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                <p className="text-blue-800">
+                  Great question! I'd love to help you explore this further. Based on your design and goals, here are some suggestions...
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  placeholder="Ask a follow-up question..."
+                  className="flex-1 p-2 border rounded-lg"
+                />
+                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                  Send
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
