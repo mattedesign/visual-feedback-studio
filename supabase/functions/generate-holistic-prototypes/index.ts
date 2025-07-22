@@ -223,8 +223,11 @@ async function generatePrototype(
   if (existing) return existing;
 
   // Generate new prototype
-  const prototypePrompt = buildPrototypePrompt(solution, analysisData, contextData, holisticAnalysis);
-  const code = await callClaude(prototypePrompt, anthropicKey);
+        const prototypePrompt = buildPrototypePrompt(solution, analysisData, contextData, holisticAnalysis);
+        const codeResponse = await callClaude(prototypePrompt, anthropicKey);
+        
+        // Handle both string responses and parsed JSON responses
+        const code = typeof codeResponse === 'string' ? codeResponse : codeResponse.code || JSON.stringify(codeResponse, null, 2);
 
   const { data: prototype } = await supabase
     .from('figmant_holistic_prototypes')
