@@ -74,10 +74,11 @@ const FigmantResultsPage = () => {
   // Load prototypes when analysis data is available
   useEffect(() => {
     const loadPrototypes = async () => {
-      if (analysisData?.id && !isGenerating) {
+      const currentAnalysisId = analysisData?.id || sessionId;
+      if (currentAnalysisId && !isGenerating) {
         try {
-          console.log('🎨 Loading prototypes for analysis:', analysisData.id);
-          const loadedPrototypes = await PrototypeStorageService.getPrototypesByAnalysisId(analysisData.id);
+          console.log('🎨 Loading prototypes for analysis:', currentAnalysisId);
+          const loadedPrototypes = await PrototypeStorageService.getPrototypesByAnalysisId(currentAnalysisId);
           setPrototypes(loadedPrototypes);
           console.log(`✅ Loaded ${loadedPrototypes.length} prototypes`);
         } catch (error) {
@@ -86,20 +87,21 @@ const FigmantResultsPage = () => {
       }
     };
     loadPrototypes();
-  }, [analysisData?.id, isGenerating]);
+  }, [analysisData?.id, sessionId, isGenerating]);
 
   // Handle prototype generation
   const handleGeneratePrototypes = async () => {
-    if (!analysisData?.id) {
+    const currentAnalysisId = analysisData?.id || sessionId;
+    if (!currentAnalysisId) {
       toast.error('No analysis ID available for prototype generation');
       return;
     }
 
     try {
       toast.info('Starting prototype generation...');
-      await generatePrototypes(analysisData.id);
+      await generatePrototypes(currentAnalysisId);
       // Reload prototypes after generation
-      const loadedPrototypes = await PrototypeStorageService.getPrototypesByAnalysisId(analysisData.id);
+      const loadedPrototypes = await PrototypeStorageService.getPrototypesByAnalysisId(currentAnalysisId);
       setPrototypes(loadedPrototypes);
       toast.success(`Generated ${loadedPrototypes.length} visual prototypes!`);
     } catch (error) {
