@@ -272,8 +272,8 @@ async function generatePrototype(
   // Handle both string responses and parsed JSON responses
   let code = typeof codeResponse === 'string' ? codeResponse : codeResponse.code || JSON.stringify(codeResponse, null, 2);
   
-  // Clean any JSX syntax that might slip through
-  code = cleanJSXFromCode(code);
+  // Clean and validate the generated code
+  code = cleanAndValidateCode(code);
 
   const { data: prototype } = await supabase
     .from('figmant_holistic_prototypes')
@@ -376,6 +376,7 @@ function EnhancedDesign() {
     className: 'max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg'
   }, 'Enhanced Design Content');
 }`;
+}
 
 async function callClaude(prompt: string, apiKey: string) {
   console.log('🔥 Calling Claude API with prompt length:', prompt.length);
@@ -388,7 +389,7 @@ async function callClaude(prompt: string, apiKey: string) {
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-4-20250514', // 🚀 UPGRADED: Latest Claude 4 Sonnet
       max_tokens: 4000,
       temperature: 0.7,
       messages: [{ role: 'user', content: prompt }]
@@ -435,15 +436,58 @@ async function callClaude(prompt: string, apiKey: string) {
   }
 }
 
-function cleanJSXFromCode(code: string): string {
-  // Remove any JSX angle brackets and convert to React.createElement
-  // This is a safety measure in case Claude generates JSX despite our prompt
-  console.log('🧹 Cleaning potential JSX from generated code');
+function cleanAndValidateCode(code: string): string {
+  console.log('🧹 Cleaning and validating generated code');
   
-  // If code contains JSX patterns, replace with safe fallback
-  if (code.includes('<') && code.includes('>')) {
-    console.log('⚠️ JSX detected in generated code, replacing with safe fallback');
-    return `function EnhancedDesign() {
+  try {
+    // Remove any JSX angle brackets if they exist
+    if (code.includes('<') && code.includes('>')) {
+      console.log('⚠️ JSX detected in generated code, replacing with safe fallback');
+      return generateSafeFallbackComponent();
+    }
+    
+    // Basic syntax validation - check for common issues
+    const issues = [];
+    
+    // Check for missing braces
+    const openBraces = (code.match(/\{/g) || []).length;
+    const closeBraces = (code.match(/\}/g) || []).length;
+    if (openBraces !== closeBraces) {
+      issues.push(`Mismatched braces: ${openBraces} open, ${closeBraces} close`);
+    }
+    
+    // Check for missing parentheses
+    const openParens = (code.match(/\(/g) || []).length;
+    const closeParens = (code.match(/\)/g) || []).length;
+    if (openParens !== closeParens) {
+      issues.push(`Mismatched parentheses: ${openParens} open, ${closeParens} close`);
+    }
+    
+    // Check for basic function structure
+    if (!code.includes('function EnhancedDesign')) {
+      issues.push('Missing EnhancedDesign function');
+    }
+    
+    if (!code.includes('React.createElement')) {
+      issues.push('Missing React.createElement calls');
+    }
+    
+    if (issues.length > 0) {
+      console.error('🚨 Code validation failed:', issues);
+      return generateSafeFallbackComponent();
+    }
+    
+    console.log('✅ Code validation passed');
+    return code;
+    
+  } catch (error) {
+    console.error('🚨 Code validation error:', error);
+    return generateSafeFallbackComponent();
+  }
+}
+
+function generateSafeFallbackComponent(): string {
+  return `function EnhancedDesign() {
   const React = window.React;
   const { useState } = React;
   
@@ -452,17 +496,25 @@ function cleanJSXFromCode(code: string): string {
   return React.createElement('div', {
     className: 'max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg'
   }, 
-    React.createElement('h1', {
-      className: 'text-2xl font-bold text-gray-900 mb-4'
-    }, 'Enhanced Design'),
-    React.createElement('p', {
-      className: 'text-gray-600'
-    }, 'This is a safe fallback component generated to avoid parsing errors.')
+    React.createElement('div', {
+      className: 'text-center'
+    },
+      React.createElement('h1', {
+        className: 'text-2xl font-bold text-gray-900 mb-4'
+      }, 'Enhanced Design'),
+      React.createElement('p', {
+        className: 'text-gray-600 mb-6'
+      }, 'This is a safe fallback component generated to avoid parsing errors.'),
+      React.createElement('button', {
+        className: 'px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors',
+        onClick: () => setIsActive(!isActive)
+      }, isActive ? 'Active' : 'Click Me'),
+      isActive && React.createElement('div', {
+        className: 'mt-4 p-4 bg-green-50 border border-green-200 rounded-lg'
+      }, 'Interactive state is working!')
+    )
   );
 }`;
-  }
-  
-  return code;
 }
 
 function extractContentFromAnalysis(analysis: any) {
