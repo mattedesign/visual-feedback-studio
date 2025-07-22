@@ -201,7 +201,7 @@ export const FigmantSidebar = () => {
                               letterSpacing: '-0.12px',
                               color: '#FCFCFC'
                             } : {
-                              fontSize: '14px',
+                              fontSize: '13px',
                               fontWeight: '500',
                               color: '#7B7B7B'
                             }}>
@@ -234,7 +234,8 @@ export const FigmantSidebar = () => {
                             borderRadius: '8px',
                             transition: 'background-color 0.2s ease',
                             backgroundColor: isCurrentlyActive ? 'rgba(0, 0, 0, 0.05)' : 'transparent',
-                            textDecoration: 'none'
+                            textDecoration: 'none',
+                            color: '#7B7B7B' // Override any visited link colors
                           };
                         }}
                         onMouseEnter={(e) => {
@@ -264,7 +265,7 @@ export const FigmantSidebar = () => {
                             <>
                               <div className="flex items-center gap-3 md:gap-3 sm:gap-2 xs:gap-1">
                                 <item.icon className="w-5 h-5 md:w-5 md:h-5 sm:w-4 sm:h-4 xs:w-4 xs:h-4 text-gray-600" />
-                                {!isCollapsed && <span className="font-medium text-sm md:text-sm sm:text-xs text-gray-600">{item.label}</span>}
+                                {!isCollapsed && <span style={{ fontSize: '13px', fontWeight: '500', color: '#7B7B7B' }}>{item.label}</span>}
                               </div>
                               {item.count && !isCollapsed && !isCurrentlyActive && (
                                 <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
@@ -309,7 +310,7 @@ export const FigmantSidebar = () => {
                                     color: '#121212',
                                     textOverflow: 'ellipsis',
                                     fontFamily: 'Inter',
-                                    fontSize: '12px',
+                                    fontSize: '13px',
                                     fontStyle: 'normal',
                                     fontWeight: '500',
                                     lineHeight: '16px',
@@ -357,14 +358,14 @@ export const FigmantSidebar = () => {
                                   isActive 
                                     ? {
                                         fontFamily: 'Inter',
-                                        fontSize: '12px',
+                                        fontSize: '13px',
                                         fontWeight: '500',
                                         lineHeight: '16px',
                                         letterSpacing: '-0.12px',
                                         color: '#121212'
                                       }
                                     : {
-                                        fontSize: '14px',
+                                        fontSize: '13px',
                                         fontWeight: '500',
                                         color: '#7B7B7B'
                                       }
