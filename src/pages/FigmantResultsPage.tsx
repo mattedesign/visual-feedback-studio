@@ -34,6 +34,7 @@ const FigmantResultsPage = () => {
   const [selectedImage, setSelectedImage] = useState<FigmantImage | null>(null);
   const [viewMode, setViewMode] = useState<'gallery' | 'detail'>('gallery');
   const [currentView, setCurrentView] = useState<'gallery' | 'detail'>('gallery');
+  const [rightPanelTab, setRightPanelTab] = useState<'annotations' | 'ideas'>('annotations');
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'menu' | 'chat'>('menu');
 
@@ -623,12 +624,15 @@ const FigmantResultsPage = () => {
   const handleImageSelect = (image: FigmantImage) => {
     setSelectedImage(image);
     setViewMode('detail');
+    setCurrentView('detail');
+    setRightPanelTab('annotations'); // Default to annotations tab
   };
 
   // Handle back to gallery
   const handleBackToGallery = () => {
     setSelectedImage(null);
     setViewMode('gallery');
+    setCurrentView('gallery');
   };
 
   // Main render - implement two-part layout structure
@@ -663,79 +667,139 @@ const FigmantResultsPage = () => {
     );
   }
 
-  // Three-panel layout: Left (existing sidebar) + Middle (gallery) + Right (context)
+  // Three-panel layout: Left (existing sidebar) + Middle (gallery/detail) + Right (context)
   return (
     <div className="h-full flex">
-      {/* Middle Panel - Image Gallery */}
-      <div className="flex-1 p-6 overflow-y-auto">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-foreground mb-2">Image Gallery</h1>
-          <p className="text-muted-foreground">
-            Select an image to view detailed analysis and recommendations
-          </p>
-        </div>
-        
-        {sessionData?.images?.length > 0 ? (
-          <div className="grid grid-cols-2 gap-6 max-w-4xl">
-            {sessionData.images.map((image, index) => {
-              const imageNames = [
-                'Create Account2 1',
-                'Create Account',
-                'Dashboard Overview',
-                'Settings Panel'
-              ];
-              
-              return (
-                <Card 
-                  key={image.id} 
-                  className={`cursor-pointer hover:shadow-lg transition-all duration-200 group ${
-                    selectedImage?.id === image.id ? 'ring-2 ring-primary' : ''
-                  }`}
-                  onClick={() => handleImageSelect(image)}
-                >
-                  <div className="p-0 overflow-hidden rounded-lg">
-                    {/* Image container with proper aspect ratio */}
-                    <div className="aspect-[4/3] bg-gradient-to-br from-blue-50 to-purple-50 relative overflow-hidden">
-                      <img 
-                        src={getImageUrl(image.file_path)}
-                        alt={imageNames[index] || image.file_name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          target.parentElement!.innerHTML = `
-                            <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-100 to-blue-100">
-                              <div class="text-center p-6">
-                                <div class="w-16 h-16 bg-white/30 rounded-xl mb-3 mx-auto flex items-center justify-center">
-                                  <span class="text-2xl">${index === 0 ? '📊' : index === 1 ? '👤' : index === 2 ? '📈' : '⚙️'}</span>
+      {/* Middle Panel - Gallery or Single Image Detail */}
+      <div className="flex-1 overflow-y-auto">
+        {viewMode === 'gallery' ? (
+          // Gallery View
+          <div className="p-6">
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold text-foreground mb-2">Image Gallery</h1>
+              <p className="text-muted-foreground">
+                Select an image to view detailed analysis and recommendations
+              </p>
+            </div>
+            
+            {sessionData?.images?.length > 0 ? (
+              <div className="grid grid-cols-2 gap-6 max-w-4xl">
+                {sessionData.images.map((image, index) => {
+                  const imageNames = [
+                    'Create Account2 1',
+                    'Create Account',
+                    'Dashboard Overview',
+                    'Settings Panel'
+                  ];
+                  
+                  return (
+                    <Card 
+                      key={image.id} 
+                      className="cursor-pointer hover:shadow-lg transition-all duration-200 group"
+                      onClick={() => handleImageSelect(image)}
+                    >
+                      <div className="p-0 overflow-hidden rounded-lg">
+                        {/* Image container with proper aspect ratio */}
+                        <div className="aspect-[4/3] bg-gradient-to-br from-blue-50 to-purple-50 relative overflow-hidden">
+                          <img 
+                            src={getImageUrl(image.file_path)}
+                            alt={imageNames[index] || image.file_name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              target.parentElement!.innerHTML = `
+                                <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-100 to-blue-100">
+                                  <div class="text-center p-6">
+                                    <div class="w-16 h-16 bg-white/30 rounded-xl mb-3 mx-auto flex items-center justify-center">
+                                      <span class="text-2xl">${index === 0 ? '📊' : index === 1 ? '👤' : index === 2 ? '📈' : '⚙️'}</span>
+                                    </div>
+                                    <h3 class="font-semibold text-sm text-gray-800">${imageNames[index] || image.file_name}</h3>
+                                  </div>
                                 </div>
-                                <h3 class="font-semibold text-sm text-gray-800">${imageNames[index] || image.file_name}</h3>
-                              </div>
-                            </div>
-                          `;
-                        }}
-                      />
-                    </div>
-                    
-                    {/* Card Footer */}
-                    <div className="p-4">
-                      <h3 className="font-semibold text-base text-foreground mb-1">
-                        {imageNames[index] || getImageTitle(image)}
-                      </h3>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-green-500" />
-                        <span className="text-xs text-muted-foreground">Analyzed</span>
+                              `;
+                            }}
+                          />
+                        </div>
+                        
+                        {/* Card Footer */}
+                        <div className="p-4">
+                          <h3 className="font-semibold text-base text-foreground mb-1">
+                            {imageNames[index] || getImageTitle(image)}
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-green-500" />
+                            <span className="text-xs text-muted-foreground">Analyzed</span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
+                    </Card>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground">No images found for this session</p>
+              </div>
+            )}
           </div>
         ) : (
-          <div className="text-center py-12">
-            <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-muted-foreground">No images found for this session</p>
+          // Single Image Detail View with Annotations
+          <div className="p-6 h-full">
+            <div className="flex items-center gap-3 mb-6">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBackToGallery}
+                className="flex items-center gap-2"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Back to Gallery
+              </Button>
+              <div>
+                <h1 className="text-xl font-bold text-foreground">
+                  {selectedImage ? getImageTitle(selectedImage) : 'Image Detail'}
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  Detailed analysis with annotations
+                </p>
+              </div>
+            </div>
+            
+            {selectedImage && (
+              <div className="bg-muted/20 rounded-lg p-6 h-[calc(100%-120px)] flex items-center justify-center">
+                <div className="relative max-w-full max-h-full">
+                  <img 
+                    src={getImageUrl(selectedImage.file_path)}
+                    alt={getImageTitle(selectedImage)}
+                    className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      target.parentElement!.innerHTML = `
+                        <div class="w-96 h-64 bg-gradient-to-br from-orange-100 to-blue-100 rounded-lg flex items-center justify-center">
+                          <div class="text-center p-6">
+                            <div class="w-16 h-16 bg-white/30 rounded-xl mb-3 mx-auto flex items-center justify-center">
+                              <span class="text-2xl">🎨</span>
+                            </div>
+                            <h3 class="font-semibold text-gray-800">${getImageTitle(selectedImage)}</h3>
+                          </div>
+                        </div>
+                      `;
+                    }}
+                  />
+                  
+                  {/* Sample Annotation Hotspots */}
+                  <div className="absolute top-4 left-4 w-3 h-3 bg-red-500 border-2 border-white rounded-full shadow-lg animate-pulse cursor-pointer" 
+                       title="Critical issue: Password field accessibility"></div>
+                  <div className="absolute top-20 right-8 w-3 h-3 bg-yellow-500 border-2 border-white rounded-full shadow-lg animate-pulse cursor-pointer"
+                       title="Warning: CTA button contrast"></div>
+                  <div className="absolute bottom-16 left-1/3 w-3 h-3 bg-blue-500 border-2 border-white rounded-full shadow-lg animate-pulse cursor-pointer"
+                       title="Improvement: Layout optimization"></div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -764,14 +828,22 @@ const FigmantResultsPage = () => {
           </div>
           
           {selectedImage && (
-            <div className="flex bg-muted rounded-lg p-1 gap-1">
+            <div className="flex bg-muted rounded-lg p-1 gap-1 mb-4">
               <Button 
-                variant="secondary" 
+                variant={rightPanelTab === 'annotations' ? 'secondary' : 'ghost'} 
                 size="sm" 
-                className="flex-1 flex items-center gap-2"
+                className="flex-1"
+                onClick={() => setRightPanelTab('annotations')}
               >
-                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                UX Analysis
+                Annotations
+              </Button>
+              <Button 
+                variant={rightPanelTab === 'ideas' ? 'secondary' : 'ghost'} 
+                size="sm" 
+                className="flex-1"
+                onClick={() => setRightPanelTab('ideas')}
+              >
+                Ideas
               </Button>
             </div>
           )}
@@ -853,79 +925,133 @@ const FigmantResultsPage = () => {
               </div>
             </div>
           ) : (
-            // Image-specific view
-            <div className="space-y-6">
-              <div>
-                <h3 className="font-semibold text-foreground mb-2">Image Analysis</h3>
-                <p className="text-sm text-muted-foreground">
-                  Viewing detailed recommendations for: {selectedImage?.file_name}
-                </p>
-              </div>
-              
-              <div>
-                <h3 className="font-semibold text-foreground mb-3">Filters & Sort</h3>
-                <div className="flex flex-wrap gap-2 mb-3">
-                  <Button variant="secondary" size="sm">All</Button>
-                  <Button variant="ghost" size="sm">Accessibility</Button>
-                  <Button variant="ghost" size="sm">Usability</Button>
-                  <Button variant="ghost" size="sm">Visual</Button>
-                  <Button variant="ghost" size="sm">Content</Button>
-                </div>
-                <select className="w-full p-2 text-sm border rounded-lg bg-background">
-                  <option>Sort by Severity</option>
-                  <option>Sort by Impact</option>
-                  <option>Sort by Category</option>
-                </select>
-              </div>
-              
-              {/* Sample recommendations */}
-              <div className="space-y-4">
-                <div className="border border-red-200 rounded-lg p-3">
-                  <div className="flex items-start justify-between mb-2">
-                    <h4 className="font-semibold text-sm">Password field use...</h4>
-                    <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">critical</span>
+            // Image-specific view with Annotations/Ideas tabs
+            <div className="space-y-4">
+              {rightPanelTab === 'annotations' ? (
+                // Annotations Tab
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold text-foreground mb-2">Image Annotations</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Click on the colored dots to see detailed analysis for each area
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Replace dots with asterisks or add character counter...
-                  </p>
-                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">accessibility</span>
-                </div>
-                
-                <div className="border border-yellow-200 rounded-lg p-3">
-                  <div className="flex items-start justify-between mb-2">
-                    <h4 className="font-semibold text-sm">Primary CTA us...</h4>
-                    <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">warning</span>
+                  
+                  {/* Annotation List */}
+                  <div className="space-y-3">
+                    <div className="border border-red-200 rounded-lg p-3">
+                      <div className="flex items-start gap-3">
+                        <div className="w-3 h-3 bg-red-500 rounded-full flex-shrink-0 mt-1"></div>
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between mb-2">
+                            <h4 className="font-semibold text-sm">Password field accessibility</h4>
+                            <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">critical</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mb-2">
+                            Replace dots with asterisks or add character counter for better accessibility compliance.
+                          </p>
+                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">accessibility</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="border border-yellow-200 rounded-lg p-3">
+                      <div className="flex items-start gap-3">
+                        <div className="w-3 h-3 bg-yellow-500 rounded-full flex-shrink-0 mt-1"></div>
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between mb-2">
+                            <h4 className="font-semibold text-sm">CTA button contrast</h4>
+                            <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">warning</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mb-2">
+                            Use brand primary color with higher contrast ratio to meet WCAG standards.
+                          </p>
+                          <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">usability</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="border border-blue-200 rounded-lg p-3">
+                      <div className="flex items-start gap-3">
+                        <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0 mt-1"></div>
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between mb-2">
+                            <h4 className="font-semibold text-sm">Layout optimization</h4>
+                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">improvement</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mb-2">
+                            Reduce illustration size or use responsive 50/50 split for better mobile experience.
+                          </p>
+                          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">visual</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Use brand primary color with higher contrast ratio...
-                  </p>
-                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">usability</span>
                 </div>
-                
-                <div className="border border-blue-200 rounded-lg p-3">
-                  <div className="flex items-start justify-between mb-2">
-                    <h4 className="font-semibold text-sm">Large illu...</h4>
-                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">improvement</span>
+              ) : (
+                // Ideas Tab
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold text-foreground mb-2">Improvement Ideas</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Actionable suggestions to enhance this interface
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Reduce illustration size or use responsive 50/50 split...
-                  </p>
-                  <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">visual</span>
+                  
+                  {/* Ideas List */}
+                  <div className="space-y-3">
+                    <div className="border rounded-lg p-3">
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="font-semibold text-sm">Add progress indicator</h4>
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">high impact</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Show users where they are in the signup process to reduce abandonment.
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>💡 Effort: Low</span>
+                        <span>•</span>
+                        <span>📈 Impact: High</span>
+                      </div>
+                    </div>
+                    
+                    <div className="border rounded-lg p-3">
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="font-semibold text-sm">Social login options</h4>
+                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">medium impact</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Add Google/Apple sign-in to reduce friction and increase conversions.
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>💡 Effort: Medium</span>
+                        <span>•</span>
+                        <span>📈 Impact: Medium</span>
+                      </div>
+                    </div>
+                    
+                    <div className="border rounded-lg p-3">
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="font-semibold text-sm">Real-time validation</h4>
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">high impact</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Validate email format and password strength in real-time for better UX.
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>💡 Effort: Medium</span>
+                        <span>•</span>
+                        <span>📈 Impact: High</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Button className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white">
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Generate Implementation Plan
+                  </Button>
                 </div>
-              </div>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSelectedImage(null);
-                  setViewMode('gallery');
-                }}
-                className="w-full"
-              >
-                <Grid className="h-4 w-4 mr-2" />
-                Back to Gallery
-              </Button>
+              )}
             </div>
           )}
         </div>
