@@ -135,8 +135,6 @@
   
   .figmant-sidebar {
     display: flex;
-    max-width: 288px;
-    min-width: 288px; /* Ensure consistent sidebar width */
     flex-direction: column;
     justify-content: space-between;
     align-self: stretch;
@@ -145,6 +143,7 @@
     border: 1px solid var(--Stroke-02, #E2E2E2);
     background: var(--Surface-01, #FCFCFC);
     clip-path: inset(0 round 20px);
+    transition: all 0.3s ease;
   }
   
   .figmant-sidebar .text-sm {
