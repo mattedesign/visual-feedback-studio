@@ -418,7 +418,7 @@ When generating React components:
 6. Don't include import statements - they will be handled by the runtime
 
 Example React Component Format:
-```
+\`\`\`
 function EnhancedDesign() {
   const [isHovered, setIsHovered] = useState(false);
   
@@ -429,7 +429,7 @@ function EnhancedDesign() {
     </div>
   );
 }
-```
+\`\`\`
 
 ### Content Requirements
 1. **Realistic Content**: Use meaningful text instead of Lorem ipsum when possible
