@@ -160,89 +160,81 @@ ${contextData ? `
 ` : 'No specific context provided - analyze based on common UX principles'}
 
 VISION ANALYSIS DATA:
-- Detected Text: ${JSON.stringify(visionData?.text)}
-- Layout Structure: ${JSON.stringify(visionData?.layout)}
-- Colors: ${JSON.stringify(visionData?.imageProperties?.dominantColors)}
+- Detected Text: ${JSON.stringify(visionData?.text || [])}
+- Layout Structure: ${JSON.stringify(visionData?.layout || {})}
+- Colors: ${JSON.stringify(visionData?.imageProperties?.dominantColors || [])}
+- Detected Objects: ${JSON.stringify(visionData?.objects || [])}
+- Safe Search: ${JSON.stringify(visionData?.safeSearch || {})}
 
 EXISTING UX ANALYSIS:
-${JSON.stringify(claudeInsights)}
+${JSON.stringify(claudeInsights || {})}
 
 TASK:
 1. Identify 3-5 SPECIFIC UX PROBLEMS that prevent this design from achieving its goals
-2. For each problem, explain:
-   - What's wrong and why it matters
-   - How it impacts the primary business goal
-   - Which UX principle or user psychology it violates
+2. For each problem, provide:
+   - id: A unique identifier (e.g., "problem-1", "problem-2")
+   - description: What's wrong and why it matters
+   - severity: "critical" | "high" | "medium" | "low"
+   - impact: How it affects the primary business goal
+   - principle: Which UX principle or user psychology it violates
+   - location: Where in the design this occurs (if applicable)
 
 3. Create 3 DIFFERENT SOLUTION APPROACHES:
    
-   CONSERVATIVE (Molecular Fix):
-   - Target ONE specific, high-impact problem only
-   - Minimal changes that can be implemented fast  
-   - Keep existing structure mostly intact
-   - Focus on quick wins for a single component or interaction
+   CONSERVATIVE (Quick Wins):
+   - approach: "conservative"
+   - name: "Quick UX Improvements"
+   - description: Minimal changes for immediate impact
+   - keyChanges: Array of 3-5 specific changes
+   - expectedImpact: Measurable improvements expected
+   - examples: Companies using similar approaches
+   - implementationGuidance: Step-by-step guidance
    
-   BALANCED (Strategic Improvements):
-   - Address 2-3 related problems that work together
-   - Apply modern UX patterns selectively
-   - Make moderate structural improvements
-   - Balance user needs with business constraints
+   BALANCED (Best Practices):
+   - approach: "balanced"
+   - name: "Modern UX Redesign"
+   - description: Apply current best practices
+   - keyChanges: Array of 4-6 specific changes
+   - expectedImpact: Significant improvements expected
+   - examples: Companies using similar approaches
+   - implementationGuidance: Step-by-step guidance
    
-   INNOVATIVE (Complete Holistic Redesign):
-   - Address ALL identified problems in one comprehensive solution
-   - Completely reimagine the entire screen/experience
-   - Apply cutting-edge UX patterns and interactions
-   - Create a best-in-class experience that sets new standards
-   - Design the ideal version that solves every problem holistically
+   INNOVATIVE (Cutting Edge):
+   - approach: "innovative"
+   - name: "Next-Gen Experience"
+   - description: Bold, creative solutions
+   - keyChanges: Array of 5-7 specific changes
+   - expectedImpact: Transformative improvements expected
+   - examples: Companies using similar approaches
+   - implementationGuidance: Step-by-step guidance
 
-For each approach include:
-- Name and description
-- Key changes to make
-- Expected impact on metrics
-- Real companies using similar approaches
-- Implementation guidance
-
-Return as JSON with exactly this structure (no additional text before or after):
+Return ONLY valid JSON in this exact structure:
 {
   "problems": [
     {
-      "id": "p1",
-      "title": "Problem Title",
-      "description": "Problem description",
-      "impact": "Impact statement",
-      "businessImpact": "Business impact",
-      "principle": "UX principle violated"
+      "id": "string",
+      "description": "string",
+      "severity": "critical|high|medium|low",
+      "impact": "string",
+      "principle": "string",
+      "location": "string (optional)"
     }
   ],
   "solutions": [
     {
-      "approach": "conservative",
-      "name": "Quick Wins Solution",
-      "description": "Solution description",
-      "keyChanges": ["Change 1", "Change 2"],
-      "expectedImpact": [{"metric": "conversion", "improvement": "+15%"}],
-      "implementationGuidance": "Implementation steps"
-    },
-    {
-      "approach": "balanced", 
-      "name": "Best Practices Solution",
-      "description": "Solution description",
-      "keyChanges": ["Change 1", "Change 2"],
-      "expectedImpact": [{"metric": "engagement", "improvement": "+25%"}],
-      "implementationGuidance": "Implementation steps"
-    },
-    {
-      "approach": "innovative",
-      "name": "Cutting Edge Solution", 
-      "description": "Solution description",
-      "keyChanges": ["Change 1", "Change 2"],
-      "expectedImpact": [{"metric": "retention", "improvement": "+40%"}],
-      "implementationGuidance": "Implementation steps"
+      "approach": "conservative|balanced|innovative",
+      "name": "string",
+      "description": "string",
+      "keyChanges": ["string"],
+      "expectedImpact": "string",
+      "examples": ["string"],
+      "implementationGuidance": "string"
     }
   ],
   "visionInsights": {
-    "keyTrends": ["trend1", "trend2"],
-    "recommendedFocus": "focus recommendation"
+    "dominantElements": ["string"],
+    "colorPsychology": "string",
+    "layoutEffectiveness": "string"
   }
 }`;
 }
