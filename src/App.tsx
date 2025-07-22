@@ -16,6 +16,7 @@ import Auth from "./pages/Auth";
 import Settings from "./pages/Settings";
 import Subscription from "./pages/Subscription";
 import { PublicAchievement } from "@/pages/public/Achievement";
+import AdminPatternCapture from "@/pages/AdminPatternCapture";
 import HistoryPage from "./pages/History";
 // Goblin imports removed - archived
 
@@ -69,6 +70,9 @@ const App = () => {
                         <Route path="/analysis-studio" element={<Navigate to="/analyze" replace />} />
                         <Route path="/mentor" element={<Navigate to="/dashboard" replace />} />
                         <Route path="/history" element={<HistoryPage />} />
+                        
+                        {/* Admin Routes */}
+                        <Route path="/admin/pattern-capture" element={<AdminPatternCapture />} />
                         
                         {/* Catch all */}
                         <Route path="*" element={<Navigate to="/" replace />} />
