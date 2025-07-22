@@ -2169,6 +2169,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      clear_prototypes_for_analysis: {
+        Args: { p_analysis_id: string }
+        Returns: number
+      }
       emergency_cleanup_stuck_analyses: {
         Args: Record<PropertyKey, never>
         Returns: number

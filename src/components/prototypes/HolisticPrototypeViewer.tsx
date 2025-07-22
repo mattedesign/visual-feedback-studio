@@ -160,6 +160,30 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
       .insert({ prototype_id: prototype.id, downloaded: true });
   };
 
+  const clearAllPrototypes = async () => {
+    if (!analysisId) return;
+    
+    try {
+      const { data, error } = await supabase.rpc('clear_prototypes_for_analysis', {
+        p_analysis_id: analysisId
+      });
+      
+      if (error) throw error;
+      
+      // Reset local state
+      setPrototypes({});
+      setAnalysis(null);
+      
+      // Reload analysis to trigger fresh generation
+      await loadAnalysis();
+      
+      toast.success(`Cleared ${data || 0} prototypes. You can now regenerate them.`);
+    } catch (error) {
+      console.error('Error clearing prototypes:', error);
+      toast.error('Failed to clear prototypes');
+    }
+  };
+
   const renderPrototypePreview = (code) => {
     try {
       // Clean markdown code blocks
@@ -402,6 +426,22 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
 
   return (
     <div className="space-y-6">
+      {/* Header with Clear Button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900">AI-Generated Prototypes</h2>
+          <p className="text-sm text-gray-600">Holistic solutions targeting your specific UX problems</p>
+        </div>
+        {Object.keys(prototypes).length > 0 && (
+          <Button
+            variant="outline"
+            onClick={clearAllPrototypes}
+            className="text-red-600 border-red-200 hover:bg-red-50"
+          >
+            Clear All Prototypes
+          </Button>
+        )}
+      </div>
       {/* Problem Summary */}
       {analysis?.identified_problems && (
         <Card className="p-6 bg-red-50 border-red-200">
