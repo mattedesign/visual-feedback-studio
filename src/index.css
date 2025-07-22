@@ -166,8 +166,8 @@
   }
   
   .figmant-content {
-    @apply flex-1 p-3 space-y-6 overflow-auto w-full
-           md:p-3 sm:p-3 xs:p-3
+    @apply flex-1 p-0 space-y-6 overflow-auto w-full
+           md:p-0 sm:p-0 xs:p-0
            md:space-y-6 sm:space-y-4 xs:space-y-3;
     min-height: 0; /* Allow content to shrink if needed */
   }
