@@ -330,7 +330,7 @@ const FigmantResultsPage = () => {
   // Three-panel layout: Left (existing sidebar) + Middle (gallery/detail) + Right (context)
   return (
     <>
-      <div className="h-full flex">
+      <div className="h-full flex gap-4">
         {/* Middle Panel - Gallery or Single Image Detail */}
         <div className="flex-1 overflow-y-auto">
           {viewMode === 'gallery' ? (
