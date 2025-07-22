@@ -76,10 +76,10 @@ export const FigmantSidebar = () => {
   }];
 
   return (
-    <div className={`figmant-sidebar transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
-      <div className="flex flex-col h-full">{/* Simplified structure */}
+    <div className={`figmant-sidebar transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} h-full max-h-screen`}>
+      <div className="flex flex-col h-full max-h-screen overflow-hidden">{/* Force height constraints */}
         {/* Header */}
-        <div className={`p-4 ${isCollapsed ? 'px-2' : ''}`} style={{borderBottom: '1px solid var(--Stroke-01, #ECECEC)'}}>
+        <div className={`${isCollapsed ? 'px-2' : 'px-4'} py-4 flex-shrink-0`} style={{borderBottom: '1px solid var(--Stroke-01, #ECECEC)'}}>
           <div className="flex items-center justify-between">
             <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center w-full' : ''}`}>
               <FigmantLogo size={40} className="md:w-10 md:h-10 sm:w-8 sm:h-8 xs:w-6 xs:h-6" />
@@ -140,9 +140,9 @@ export const FigmantSidebar = () => {
             />
           </div>
         ) : (
-          <div className="flex flex-col h-full overflow-hidden">
+          <div className="flex flex-col h-full min-h-0 overflow-hidden">
             {/* Pages Section - Scrollable content */}
-            <div className={`flex-1 overflow-y-auto ${isCollapsed ? 'px-2' : 'px-4'} pb-4 pt-5`}>
+            <div className={`flex-1 min-h-0 overflow-y-auto ${isCollapsed ? 'px-2' : 'px-4'} pb-2 pt-5`}>
               {!isCollapsed && <h3 className="sidebar-section-header mb-4 hidden sm:block">Pages</h3>}
               <div className="space-y-0.5">
                 {pagesItems.map((item, index) => (
@@ -408,9 +408,9 @@ export const FigmantSidebar = () => {
               </div>
             </div>
 
-            {/* Upgrade Section - Fixed at bottom */}
+            {/* Upgrade Section - Fixed at bottom with proper constraints */}
             {!isCollapsed && (
-              <div className="flex-shrink-0 p-3 border-t border-gray-100">
+              <div className="flex-shrink-0 p-3 border-t border-gray-100 bg-white">{/* Added bg-white to ensure visibility */}
                 <div className="flex flex-col items-start gap-1.5 self-stretch rounded-2xl p-[14px]" style={{background: '#E7EEEF'}}>
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-lg md:text-lg sm:text-base xs:text-sm">🚀</span>
