@@ -136,19 +136,54 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
       // Create a safe component wrapper
       const ComponentWrapper = () => {
         try {
+          // Import additional React utilities that generated components might need
+          const { 
+            useState, 
+            useEffect, 
+            useRef, 
+            useCallback, 
+            useMemo,
+            useContext,
+            createContext,
+            Fragment,
+            createElement
+          } = React;
+
           // Use Function constructor to create the component from the code
+          // Provide the same environment that the iframe had
           const componentFunction = new Function(
             'React', 
             'useState', 
             'useEffect',
+            'useRef',
+            'useCallback', 
+            'useMemo',
+            'useContext',
+            'createContext',
+            'Fragment',
+            'createElement',
             `
+            // Make React utilities available in the generated code context
             const { createElement, Fragment } = React;
+            
             ${cleanCode}
+            
             return typeof EnhancedDesign !== 'undefined' ? EnhancedDesign : null;
             `
           );
           
-          const GeneratedComponent = componentFunction(React, useState, useEffect);
+          const GeneratedComponent = componentFunction(
+            React, 
+            useState, 
+            useEffect,
+            useRef,
+            useCallback, 
+            useMemo,
+            useContext,
+            createContext,
+            Fragment,
+            createElement
+          );
           
           if (GeneratedComponent) {
             return <GeneratedComponent />;
@@ -158,6 +193,7 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
             <div className="p-8 text-center bg-yellow-50 rounded-lg">
               <h3 className="font-semibold text-yellow-900 mb-2">Component Not Found</h3>
               <p className="text-yellow-700">EnhancedDesign component could not be loaded from the generated code.</p>
+              <p className="text-sm text-yellow-600 mt-2">The component may be using a different export name or structure.</p>
             </div>
           );
         } catch (error) {
@@ -166,7 +202,11 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
             <div className="p-8 bg-red-50 border border-red-200 rounded-lg">
               <h3 className="font-semibold text-red-900 mb-2">Preview Error</h3>
               <p className="text-red-700 mb-2">There was an error rendering the generated component:</p>
-              <code className="text-sm text-red-600 bg-red-100 p-2 rounded">{error.message}</code>
+              <code className="text-sm text-red-600 bg-red-100 p-2 rounded block mt-2 whitespace-pre-wrap">{error.message}</code>
+              <details className="mt-3">
+                <summary className="text-sm text-red-600 cursor-pointer">Stack trace</summary>
+                <code className="text-xs text-red-500 bg-red-50 p-2 rounded block mt-1 whitespace-pre-wrap">{error.stack}</code>
+              </details>
               <p className="text-sm text-red-600 mt-2">You can view the raw code in the Code tab to debug the issue.</p>
             </div>
           );
@@ -185,6 +225,7 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
             <h3 className="font-semibold text-red-900 mb-2">Preview Generation Failed</h3>
             <p className="text-red-700 mb-4">Unable to generate preview for this prototype.</p>
             <p className="text-sm text-red-600">Please check the Code tab to view the generated code directly.</p>
+            <code className="text-xs text-red-500 bg-red-100 p-2 rounded block mt-2">{error.message}</code>
           </div>
         </div>
       );
