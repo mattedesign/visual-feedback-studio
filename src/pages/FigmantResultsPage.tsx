@@ -207,7 +207,7 @@ const FigmantResultsPage = () => {
             .from('figmant_analysis_results')
             .select('id, session_id')
             .eq('id', sessionId)
-            .single();
+            .maybeSingle();
           
           if (analysisCheck && !analysisCheckError) {
             console.log('📊 ID is an analysis result ID, getting session ID:', analysisCheck.session_id);
