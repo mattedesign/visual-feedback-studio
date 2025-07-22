@@ -262,38 +262,67 @@ async function generatePrototype(
     .eq('analysis_id', analysisData.id)
     .eq('solution_type', solution.approach)
     .single();
-
+    
   if (existing) return existing;
-
+  
   // Generate new prototype
   const prototypePrompt = buildPrototypePrompt(solution, analysisData, contextData, holisticAnalysis);
-  const codeResponse = await callClaude(prototypePrompt, anthropicKey);
+  const code = await callClaude(prototypePrompt, anthropicKey);
   
-  // Handle both string responses and parsed JSON responses
-  let code = typeof codeResponse === 'string' ? codeResponse : codeResponse.code || JSON.stringify(codeResponse, null, 2);
+  // Clean the code to ensure it's just the function
+  let cleanedCode = code;
   
-  // Clean and validate the generated code
-  code = cleanAndValidateCode(code);
-
-  const { data: prototype } = await supabase
+  // Remove any markdown code blocks if present
+  if (code.includes('```')) {
+    const match = code.match(/```(?:jsx?|javascript|tsx?)?\n?([\s\S]*?)\n?```/);
+    if (match) {
+      cleanedCode = match[1];
+    }
+  }
+  
+  // Ensure the code starts with function declaration
+  if (!cleanedCode.trim().startsWith('function')) {
+    console.error('Generated code does not start with function declaration:', cleanedCode.substring(0, 100));
+    // Try to extract function if it's wrapped in other content
+    const functionMatch = cleanedCode.match(/function\s+EnhancedDesign\s*\(\s*\)\s*{[\s\S]*}/);
+    if (functionMatch) {
+      cleanedCode = functionMatch[0];
+    }
+  }
+  
+  // Validate the component code
+  try {
+    // Basic validation - check if it's valid JavaScript
+    new Function(cleanedCode);
+  } catch (error) {
+    console.error('Invalid component code generated:', error);
+    throw new Error('Generated component code is invalid');
+  }
+  
+  const { data: prototype, error } = await supabase
     .from('figmant_holistic_prototypes')
     .insert({
       analysis_id: analysisData.id,
       solution_type: solution.approach,
       title: solution.name,
       description: solution.description,
-      component_code: code,
+      component_code: cleanedCode,
       key_changes: solution.keyChanges,
       expected_impact: solution.expectedImpact,
       generation_metadata: {
         contextUsed: !!contextData,
-        problemsSolved: (holisticAnalysis.identified_problems || []).map(p => p.id),
+        problemsSolved: (holisticAnalysis.identified_problems || []).map((p) => p.id || p.description),
         generatedAt: new Date().toISOString()
       }
     })
     .select()
     .single();
-
+    
+  if (error) {
+    console.error('Error inserting prototype:', error);
+    throw error;
+  }
+    
   return prototype;
 }
 
