@@ -814,7 +814,7 @@ const FigmantResultsPage = () => {
       {/* Prototype Overlay */}
       {prototypeViewMode === 'overlay' && prototypes.length > 0 && sessionData?.images?.length > 0 && (
         <div className="fixed inset-0 z-50 bg-black/50">
-          <div className="absolute inset-4 bg-white rounded-lg overflow-hidden">
+          <div className="absolute inset-4 bg-white rounded-lg">
             <div className="h-full flex flex-col">
               <div className="p-4 border-b flex items-center justify-between">
                 <h2 className="text-lg font-semibold">Visual Prototypes Overlay</h2>
@@ -835,7 +835,7 @@ const FigmantResultsPage = () => {
                   </Button>
                 </div>
               </div>
-              <div className="flex-1 overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-4">
                 <VisualPrototypeOverlay
                   originalImageUrl={getImageUrl(sessionData.images[0].file_path)}
                   prototypes={prototypes}
