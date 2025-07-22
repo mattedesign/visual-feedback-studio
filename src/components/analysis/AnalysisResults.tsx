@@ -134,22 +134,53 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
     resetState 
   } = usePrototypeGeneration();
 
-  // Filter and sort issues
+  // Convert suggestions to annotation format for visual overlay
+  const suggestionAnnotations = useMemo(() => {
+    return (suggestions || []).map((suggestion, index) => ({
+      ...suggestion,
+      severity: 'improvement' as const, // Map all suggestions to improvement severity
+      confidence: 0.8, // Default confidence for suggestions
+      element: {
+        location: {
+          x: 0,
+          y: 0,
+          width: 50,
+          height: 30,
+          xPercent: 20 + (index % 3) * 30, // 20%, 50%, 80% horizontally
+          yPercent: 15 + Math.floor(index / 3) * 25, // 15%, 40%, 65% vertically
+          widthPercent: 8,
+          heightPercent: 6
+        }
+      },
+      implementation: {
+        effort: suggestion.effort === 'Low' ? 'minutes' as const : 
+                suggestion.effort === 'Medium' ? 'hours' as const : 'days' as const
+      }
+    }));
+  }, [suggestions]);
+
+  // Merge molecular suggestions with issues as annotations
+  const allAnnotations = useMemo(() => {
+    const issueAnnotations = issues || [];
+    return [...issueAnnotations, ...suggestionAnnotations];
+  }, [issues, suggestionAnnotations]);
+
+  // Filter and sort all annotations (issues + molecular suggestions)
   const filteredAndSortedIssues = useMemo(() => {
-    let filtered = issues;
+    let filtered = allAnnotations;
     
     // Apply severity filter
     if (activeFilter !== 'all') {
-      filtered = issues.filter(issue => issue.severity === activeFilter);
+      filtered = allAnnotations.filter(item => item.severity === activeFilter);
     }
     
-    // Sort issues
+    // Sort annotations
     return filtered.sort((a, b) => {
       if (sortBy === 'severity') {
         const severityOrder = { critical: 3, warning: 2, improvement: 1 };
-        return severityOrder[b.severity] - severityOrder[a.severity];
+        return (severityOrder[b.severity] || 0) - (severityOrder[a.severity] || 0);
       } else if (sortBy === 'confidence') {
-        return b.confidence - a.confidence;
+        return (b.confidence || 0) - (a.confidence || 0);
       } else if (sortBy === 'effort') {
         const effortOrder = { minutes: 1, hours: 2, days: 3 };
         return (effortOrder[a.implementation?.effort || 'days'] || 3) - 
@@ -157,7 +188,7 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
       }
       return 0;
     });
-  }, [issues, activeFilter, sortBy]);
+  }, [allAnnotations, activeFilter, sortBy]);
 
   // Statistics
   const stats = useMemo(() => {
