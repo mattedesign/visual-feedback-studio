@@ -283,7 +283,9 @@ async function generatePrototype(
   
   // Generate new prototype
   const prototypePrompt = buildPrototypePrompt(solution, analysisData, contextData, holisticAnalysis);
+  console.log('🔄 Calling Claude for prototype generation...');
   const code = await callClaude(prototypePrompt, anthropicKey);
+  console.log('📝 Raw Claude response received:', typeof code, code.substring(0, 200) + '...');
   
   // Clean the code to ensure it's just the function
   let cleanedCode = code;
@@ -293,26 +295,37 @@ async function generatePrototype(
     const match = code.match(/```(?:jsx?|javascript|tsx?)?\n?([\s\S]*?)\n?```/);
     if (match) {
       cleanedCode = match[1];
+      console.log('✂️ Extracted code from markdown blocks');
     }
   }
   
   // Ensure the code starts with function declaration
   if (!cleanedCode.trim().startsWith('function')) {
-    console.error('Generated code does not start with function declaration:', cleanedCode.substring(0, 100));
+    console.error('⚠️ Generated code does not start with function declaration:', cleanedCode.substring(0, 100));
     // Try to extract function if it's wrapped in other content
     const functionMatch = cleanedCode.match(/function\s+EnhancedDesign\s*\(\s*\)\s*{[\s\S]*}/);
     if (functionMatch) {
       cleanedCode = functionMatch[0];
+      console.log('✂️ Extracted function from wrapped content');
+    } else {
+      console.error('🚨 Could not find valid function in Claude response');
+      console.error('📄 Full response preview:', code.substring(0, 500));
+      cleanedCode = generateSafeFallbackComponent();
     }
   }
   
-  // Validate the component code (JSX-compatible validation)
-  try {
-    // Use the cleanAndValidateCode function instead of raw Function validation
-    cleanedCode = cleanAndValidateCode(cleanedCode);
-  } catch (error) {
-    console.error('💥 Code validation failed, using fallback:', error);
+  console.log('🧹 Final cleaned code length:', cleanedCode.length);
+  console.log('🔍 Code starts with:', cleanedCode.substring(0, 100));
+
+  // Only do basic validation now - don't use cleanAndValidateCode which is too strict
+  if (!cleanedCode.includes('function EnhancedDesign')) {
+    console.error('🚨 No EnhancedDesign function found, using fallback');
     cleanedCode = generateSafeFallbackComponent();
+  } else if (!cleanedCode.includes('return') || !cleanedCode.includes('<')) {
+    console.error('🚨 No JSX return found, using fallback');
+    cleanedCode = generateSafeFallbackComponent();
+  } else {
+    console.log('✅ Basic validation passed - function and JSX detected');
   }
   
   const { data: prototype, error } = await supabase
@@ -403,7 +416,7 @@ async function callClaude(prompt: string, apiKey: string) {
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'claude-3-5-sonnet-20241022', // Fixed: Use correct model name
+      model: 'claude-3-5-sonnet-20241022', // Use the most reliable model for code generation
       max_tokens: 4000,
       temperature: 0.7,
       messages: [{ role: 'user', content: prompt }]
