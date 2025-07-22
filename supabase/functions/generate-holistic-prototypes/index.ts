@@ -58,7 +58,18 @@ serve(async (req) => {
     // Generate holistic analysis if it doesn't exist
     if (!holisticAnalysis) {
       console.log('🔍 No existing holistic analysis found, generating new one...');
+      console.log('📊 Analysis data available:', {
+        hasVisionData: !!analysisData.google_vision_summary,
+        hasClaudeAnalysis: !!analysisData.claude_analysis,
+        hasContext: !!contextData,
+        contextType: contextData?.business_type || 'none',
+        visionTextCount: analysisData.google_vision_summary?.vision_results?.text?.length || 0
+      });
+      
       const analysisPrompt = buildHolisticAnalysisPrompt(analysisData, contextData);
+      console.log('📝 Prompt length:', analysisPrompt.length);
+      console.log('📋 Prompt preview:', analysisPrompt.substring(0, 500) + '...');
+      
       const analysisResponse = await callClaude(analysisPrompt, anthropicKey);
       
       console.log('📊 Analysis response structure:', {
@@ -66,7 +77,9 @@ serve(async (req) => {
         hasSolutions: !!analysisResponse?.solutions,
         hasVisionInsights: !!analysisResponse?.visionInsights,
         problemsCount: analysisResponse?.problems?.length || 0,
-        solutionsCount: analysisResponse?.solutions?.length || 0
+        solutionsCount: analysisResponse?.solutions?.length || 0,
+        responseType: typeof analysisResponse,
+        responseKeys: analysisResponse ? Object.keys(analysisResponse) : []
       });
 
       if (!analysisResponse || typeof analysisResponse !== 'object') {
