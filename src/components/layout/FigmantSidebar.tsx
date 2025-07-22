@@ -76,8 +76,8 @@ export const FigmantSidebar = () => {
   }];
 
   return (
-    <div className={`figmant-sidebar transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} min-h-screen bg-white border-r border-gray-200`}>
-      <div className="h-full flex flex-col rounded-lg">
+    <div className={`figmant-sidebar transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} min-h-screen bg-white border-r border-gray-200 flex flex-col`}>
+      <div className="flex flex-col h-full overflow-hidden">{/* Changed to overflow-hidden and h-full */}
         {/* Header */}
         <div className={`p-4 ${isCollapsed ? 'px-2' : ''}`} style={{borderBottom: '1px solid var(--Stroke-01, #ECECEC)'}}>
           <div className="flex items-center justify-between">
@@ -140,9 +140,9 @@ export const FigmantSidebar = () => {
             />
           </div>
         ) : (
-          <>
-            {/* Pages Section */}
-            <div className={`px-4 pb-4 md:px-4 sm:px-3 xs:px-2 pt-5 ${isCollapsed ? 'px-2' : ''}`}>
+          <div className="flex flex-col h-full overflow-hidden">
+            {/* Pages Section - Scrollable content */}
+            <div className={`flex-1 overflow-y-auto ${isCollapsed ? 'px-2' : 'px-4'} pb-4 pt-5`}>
               {!isCollapsed && <h3 className="sidebar-section-header mb-4 hidden sm:block">Pages</h3>}
               <div className="space-y-0.5">
                 {pagesItems.map((item, index) => (
@@ -408,10 +408,9 @@ export const FigmantSidebar = () => {
               </div>
             </div>
 
-
-            {/* Upgrade Section */}
+            {/* Upgrade Section - Fixed at bottom */}
             {!isCollapsed && (
-              <div className="mt-auto p-3">
+              <div className="flex-shrink-0 p-3 border-t border-gray-100">
                 <div className="flex flex-col items-start gap-1.5 self-stretch rounded-2xl p-[14px]" style={{background: '#E7EEEF'}}>
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-lg md:text-lg sm:text-base xs:text-sm">🚀</span>
@@ -434,7 +433,7 @@ export const FigmantSidebar = () => {
                 </div>
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
     </div>
