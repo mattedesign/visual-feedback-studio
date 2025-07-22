@@ -149,7 +149,7 @@ serve(async (req) => {
   }
 
   try {
-    const { patterns = 'all', format = 'webp' } = await req.json();
+    const { patterns = 'all', format = 'webp', batch_size = 5, batch_index = 0 } = await req.json();
     
     // Initialize Supabase
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -162,13 +162,20 @@ serve(async (req) => {
       throw new Error('Screenshot One API key not configured');
     }
 
-    console.log('🔍 Starting visual pattern capture...');
+    console.log(`🔍 Starting visual pattern capture batch ${batch_index}...`);
     
     const results = [];
     const patternsToCapture = patterns === 'all' ? VISUAL_PATTERNS : 
       VISUAL_PATTERNS.filter(p => patterns.includes(p.id));
     
-    for (const pattern of patternsToCapture) {
+    // Process in batches to avoid timeout
+    const startIndex = batch_index * batch_size;
+    const endIndex = Math.min(startIndex + batch_size, patternsToCapture.length);
+    const batchPatterns = patternsToCapture.slice(startIndex, endIndex);
+    
+    console.log(`📦 Processing batch ${batch_index}: patterns ${startIndex}-${endIndex-1} of ${patternsToCapture.length}`);
+    
+    for (const pattern of batchPatterns) {
       console.log(`📸 Capturing pattern: ${pattern.name} (${pattern.company})`);
       
       try {
@@ -249,16 +256,23 @@ serve(async (req) => {
       }
     }
     
-    console.log(`✅ Capture complete! Processed ${results.length} screenshots`);
+    console.log(`✅ Batch ${batch_index} complete! Processed ${results.length} screenshots`);
+    
+    const totalPatterns = patternsToCapture.length;
+    const hasMoreBatches = endIndex < totalPatterns;
     
     return new Response(
       JSON.stringify({
         success: true,
-        total_patterns: patternsToCapture.length,
+        batch_index: batch_index,
+        batch_size: batch_size,
+        patterns_in_batch: batchPatterns.length,
+        total_patterns: totalPatterns,
         successful_captures: results.filter(r => !r.error).length,
         failed_captures: results.filter(r => r.error).length,
+        has_more_batches: hasMoreBatches,
         results: results,
-        message: `Captured visual patterns for ${patternsToCapture.length} patterns`
+        message: `Batch ${batch_index} completed: ${batchPatterns.length} patterns processed`
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

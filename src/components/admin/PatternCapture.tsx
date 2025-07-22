@@ -30,27 +30,69 @@ export function PatternCapture() {
     
     try {
       toast.info('Starting visual pattern capture...', {
-        description: 'This will take several minutes to complete'
+        description: 'Processing in small batches to avoid timeouts'
       });
 
-      const { data, error } = await supabase.functions.invoke('capture-visual-patterns', {
-        body: { 
-          patterns: 'all',
-          format: 'webp'
+      // Get total patterns first
+      const TOTAL_PATTERNS = 14; // Known pattern count
+      const BATCH_SIZE = 3; // Small batches to avoid timeout
+      const totalBatches = Math.ceil(TOTAL_PATTERNS / BATCH_SIZE);
+      
+      setTotalCount(TOTAL_PATTERNS);
+      
+      let allResults: CaptureResult[] = [];
+      let successCount = 0;
+      
+      // Process each batch
+      for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+        try {
+          toast.info(`Processing batch ${batchIndex + 1} of ${totalBatches}...`);
+          
+          const { data, error } = await supabase.functions.invoke('capture-visual-patterns', {
+            body: { 
+              patterns: 'all',
+              format: 'webp',
+              batch_size: BATCH_SIZE,
+              batch_index: batchIndex
+            }
+          });
+
+          if (error) {
+            throw new Error(`Batch ${batchIndex + 1} failed: ${error.message}`);
+          }
+
+          const batchResults = data.results || [];
+          allResults = [...allResults, ...batchResults];
+          successCount += data.successful_captures || 0;
+          
+          setCapturedCount(successCount);
+          setResults(allResults);
+          setProgress(((batchIndex + 1) / totalBatches) * 100);
+          
+          // Short delay between batches
+          if (batchIndex < totalBatches - 1) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+          
+        } catch (error: any) {
+          console.error(`Batch ${batchIndex + 1} error:`, error);
+          toast.error(`Batch ${batchIndex + 1} failed`, {
+            description: error.message
+          });
+          
+          // Add error results for this batch
+          allResults.push({
+            pattern_id: `batch-${batchIndex}`,
+            company: 'unknown',
+            variant: 'batch',
+            error: error.message
+          });
         }
-      });
-
-      if (error) {
-        throw new Error(error.message);
       }
 
-      setResults(data.results || []);
-      setCapturedCount(data.successful_captures || 0);
-      setTotalCount(data.total_patterns || 0);
       setProgress(100);
-
       toast.success('Pattern capture completed!', {
-        description: `Successfully captured ${data.successful_captures} of ${data.total_patterns} patterns`
+        description: `Successfully captured ${successCount} patterns`
       });
 
     } catch (error: any) {
