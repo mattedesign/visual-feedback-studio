@@ -372,41 +372,71 @@ ${solution.description}
 KEY CHANGES:
 ${(solution.keyChanges || []).map((c) => `- ${c}`).join('\n')}
 
-EXTRACTED CONTENT TO USE:
-${JSON.stringify(extractedContent, null, 2)}
+VISUAL STYLE GUIDE FROM USER'S IMAGE:
+Color Palette: ${JSON.stringify(extractedContent.colorPalette, null, 2)}
+Brand Personality: ${extractedContent.visualStyle?.brandPersonality || 'modern'}
+Design Style: ${extractedContent.visualStyle?.designStyle || 'balanced'}
+Background Tone: ${extractedContent.visualStyle?.backgroundTone || 'light'}
+
+LAYOUT STRUCTURE FROM USER'S IMAGE:
+Layout Type: ${extractedContent.layoutStructure?.layoutType || 'standard'}
+Header Elements: ${JSON.stringify(extractedContent.layoutStructure?.headerElements || [])}
+Navigation Items: ${JSON.stringify(extractedContent.layoutStructure?.navigationItems || [])}
+CTA Elements: ${JSON.stringify(extractedContent.layoutStructure?.ctaElements || [])}
+
+CONTENT FROM USER'S IMAGE:
+Logo/Brand: ${extractedContent.designElements?.logoText || 'Brand'}
+Headings: ${JSON.stringify(extractedContent.typography?.headings?.slice(0, 3) || [])}
+Buttons: ${JSON.stringify(extractedContent.buttons || [])}
+Metrics/Numbers: ${JSON.stringify(extractedContent.metrics || [])}
+Social Proof: ${JSON.stringify(extractedContent.designElements?.socialProof || [])}
+Features: ${JSON.stringify(extractedContent.designElements?.featureList || [])}
+
+CRITICAL STYLING REQUIREMENTS:
+1. Use the EXACT colors from the extracted palette: primary ${extractedContent.colorPalette?.primary}, secondary ${extractedContent.colorPalette?.secondary}, accent ${extractedContent.colorPalette?.accent}
+2. Match the brand personality: ${extractedContent.visualStyle?.brandPersonality || 'modern'} 
+3. Follow the detected design style: ${extractedContent.visualStyle?.designStyle || 'balanced'}
+4. Use actual text content from the user's image where possible
+5. Recreate the layout structure type: ${extractedContent.layoutStructure?.layoutType || 'standard'}
+6. Include the detected navigation items and CTAs
+7. Maintain the visual hierarchy found in the original
+
+TAILWIND CSS COLOR IMPLEMENTATION:
+- Convert hex colors to RGB for Tailwind: use style={{backgroundColor: '${extractedContent.colorPalette?.primary}'}} for primary color
+- Use style={{color: '${extractedContent.colorPalette?.text}'}} for text color
+- Background should use: style={{backgroundColor: '${extractedContent.colorPalette?.background}'}}
 
 CRITICAL REACT COMPONENT RULES:
 1. DO NOT include any import statements
-2. DO NOT include export statements
+2. DO NOT include export statements  
 3. Use function declaration syntax: function EnhancedDesign() { ... }
 4. React and hooks (useState, useEffect, etc.) are already available globally
-5. Use className instead of class for styling
-6. Use only Tailwind CSS classes for styling
-7. Ensure all JSX elements are properly closed
-8. DO NOT use React.createElement directly
-9. Return valid JSX from the component
-10. CRITICAL: Always use DOUBLE QUOTES for strings containing apostrophes (e.g., "Let's go" not 'Let's go')
-11. CRITICAL: Escape special characters properly in strings
-12. Use consistent quote style: double quotes for strings, single quotes for JSX attributes when possible
+5. Use className for Tailwind AND style={{}} for exact colors from the image
+6. Incorporate ALL extracted content (headings, buttons, metrics, features)
+7. Match the visual personality and design style detected
+8. Use the EXACT color palette extracted from the user's image
+9. Recreate the layout structure type found in the original
+10. Include actual text content from the user's uploads where relevant
 
 QUOTE HANDLING EXAMPLES:
 ✅ CORRECT: const message = "Let's get started with this amazing feature";
 ❌ WRONG: const message = 'Let's get started with this amazing feature';
-✅ CORRECT: const text = "Don't worry, it's working perfectly";
-❌ WRONG: const text = 'Don't worry, it's working perfectly';
-✅ CORRECT: <button onClick={() => setMessage("It's ready!")}>Click me</button>
-❌ WRONG: <button onClick={() => setMessage('It's ready!')}>Click me</button>
+✅ CORRECT: <button style={{backgroundColor: '${extractedContent.colorPalette?.primary}'}}>Click me</button>
 
 Create a production-ready React component that:
 1. Solves all identified problems using this approach
-2. Incorporates all extracted content appropriately  
-3. Includes all necessary states and interactions
-4. Has proper error handling and loading states
-5. Is fully accessible (ARIA labels, keyboard navigation)
-6. Uses only Tailwind CSS classes
-7. Includes helpful comments explaining design decisions
+2. Uses the EXACT visual style extracted from the user's image
+3. Incorporates ALL extracted content (text, colors, layout, branding)
+4. Matches the brand personality and design style detected
+5. Includes all necessary states and interactions
+6. Has proper error handling and loading states
+7. Is fully accessible (ARIA labels, keyboard navigation)
+8. Uses Tailwind CSS + inline styles for exact color matching
+9. Feels like a natural evolution of the user's original design
 
-IMPORTANT: Generate ONLY the function body, starting exactly with:
+IMPORTANT: This should look like the user's design but improved. Use their colors, their text content, their layout patterns, and their visual style. Make it feel connected to their brand and visual identity.
+
+Generate ONLY the function body, starting exactly with:
 function EnhancedDesign() {
   // Your component logic here
   return (
@@ -417,6 +447,7 @@ function EnhancedDesign() {
 }
 
 DO NOT include any other code outside the function declaration.`;
+}
 }
 
 async function callClaude(prompt: string, apiKey: string) {
@@ -604,13 +635,235 @@ function fixQuoteIssues(code: string): string {
 
 function extractContentFromAnalysis(analysis: any) {
   const visionData = analysis.google_vision_summary?.vision_results;
+  const imageProperties = visionData?.imageProperties;
+  
+  console.log('🎨 Extracting enhanced visual style data...');
   
   return {
+    // Content extraction
     texts: visionData?.text || [],
     metrics: extractMetrics(visionData?.text || []),
-    colors: visionData?.imageProperties?.dominantColors?.map(c => c.color) || [],
     buttons: extractButtons(visionData?.text || []),
-    headings: extractHeadings(visionData?.text || [])
+    headings: extractHeadings(visionData?.text || []),
+    
+    // Enhanced visual style extraction
+    visualStyle: extractVisualStyle(imageProperties, visionData?.text || []),
+    layoutStructure: extractLayoutStructure(visionData),
+    designElements: extractDesignElements(visionData),
+    colorPalette: extractColorPalette(imageProperties),
+    typography: extractTypography(visionData?.text || [])
+  };
+}
+
+function extractVisualStyle(imageProperties: any, texts: string[]) {
+  const colors = imageProperties?.dominantColors || [];
+  
+  return {
+    primaryColor: colors[0]?.color || '#3B82F6',
+    secondaryColor: colors[1]?.color || '#10B981', 
+    accentColor: colors[2]?.color || '#F59E0B',
+    backgroundTone: detectBackgroundTone(colors),
+    brandPersonality: detectBrandPersonality(texts),
+    designStyle: detectDesignStyle(imageProperties, texts)
+  };
+}
+
+function extractColorPalette(imageProperties: any) {
+  const colors = imageProperties?.dominantColors || [];
+  
+  return {
+    primary: colors[0]?.color || '#3B82F6',
+    secondary: colors[1]?.color || '#10B981',
+    accent: colors[2]?.color || '#F59E0B',
+    neutral: colors[3]?.color || '#6B7280',
+    background: colors[4]?.color || '#F9FAFB',
+    text: detectTextColor(colors),
+    palette: colors.slice(0, 8).map(c => c.color)
+  };
+}
+
+function extractLayoutStructure(visionData: any) {
+  // Analyze spatial relationships and layout patterns
+  const texts = visionData?.text || [];
+  
+  return {
+    headerElements: texts.filter(t => t.length < 50 && isLikelyHeader(t)),
+    navigationItems: extractNavigationItems(texts),
+    contentSections: groupContentSections(texts),
+    ctaElements: texts.filter(t => isCallToAction(t)),
+    layoutType: detectLayoutType(texts)
+  };
+}
+
+function extractDesignElements(visionData: any) {
+  const texts = visionData?.text || [];
+  
+  return {
+    logoText: extractLogoText(texts),
+    brandElements: extractBrandElements(texts),
+    formFields: extractFormFields(texts),
+    socialProof: extractSocialProof(texts),
+    featureList: extractFeatures(texts)
+  };
+}
+
+function extractTypography(texts: string[]) {
+  return {
+    headings: texts.filter(t => t.length > 3 && t.length < 100 && isLikelyHeading(t)),
+    bodyText: texts.filter(t => t.length > 20 && t.length < 200),
+    labels: texts.filter(t => t.length < 20 && isLikelyLabel(t)),
+    hierarchy: analyzeTextHierarchy(texts)
+  };
+}
+
+// Helper functions for visual analysis
+function detectBackgroundTone(colors: any[]) {
+  if (!colors.length) return 'light';
+  const lightness = colors[0]?.color ? getColorLightness(colors[0].color) : 0.9;
+  return lightness > 0.5 ? 'light' : 'dark';
+}
+
+function detectBrandPersonality(texts: string[]) {
+  const allText = texts.join(' ').toLowerCase();
+  
+  if (allText.includes('professional') || allText.includes('enterprise') || allText.includes('business')) {
+    return 'professional';
+  } else if (allText.includes('creative') || allText.includes('design') || allText.includes('art')) {
+    return 'creative';
+  } else if (allText.includes('playful') || allText.includes('fun') || allText.includes('game')) {
+    return 'playful';
+  } else if (allText.includes('modern') || allText.includes('tech') || allText.includes('digital')) {
+    return 'modern';
+  }
+  return 'neutral';
+}
+
+function detectDesignStyle(imageProperties: any, texts: string[]) {
+  const colors = imageProperties?.dominantColors || [];
+  const colorCount = colors.length;
+  const hasGradients = colorCount > 3;
+  
+  const allText = texts.join(' ').toLowerCase();
+  const hasMinimalText = texts.filter(t => t.length > 10).length < 5;
+  
+  if (hasMinimalText && colorCount <= 2) return 'minimal';
+  if (hasGradients && allText.includes('modern')) return 'modern';
+  if (colorCount > 5) return 'vibrant';
+  return 'balanced';
+}
+
+function detectTextColor(colors: any[]) {
+  const bgLightness = colors[0] ? getColorLightness(colors[0].color) : 0.9;
+  return bgLightness > 0.5 ? '#1F2937' : '#F9FAFB';
+}
+
+function getColorLightness(colorHex: string): number {
+  // Convert hex to RGB and calculate relative luminance
+  const hex = colorHex.replace('#', '');
+  const r = parseInt(hex.substr(0, 2), 16) / 255;
+  const g = parseInt(hex.substr(2, 2), 16) / 255;
+  const b = parseInt(hex.substr(4, 2), 16) / 255;
+  
+  // Simple luminance calculation
+  return (r * 0.299 + g * 0.587 + b * 0.114);
+}
+
+function isLikelyHeader(text: string): boolean {
+  return text.length < 50 && 
+         (text.match(/^[A-Z]/) !== null) && 
+         !text.includes('.') && 
+         !text.includes('@');
+}
+
+function extractNavigationItems(texts: string[]): string[] {
+  const navPatterns = ['home', 'about', 'services', 'contact', 'products', 'blog', 'portfolio', 'pricing'];
+  return texts.filter(text => 
+    text.length < 20 && 
+    navPatterns.some(pattern => text.toLowerCase().includes(pattern))
+  );
+}
+
+function groupContentSections(texts: string[]): string[] {
+  return texts.filter(text => 
+    text.length > 50 && text.length < 300
+  ).slice(0, 5); // Top 5 content sections
+}
+
+function isCallToAction(text: string): boolean {
+  const ctaPatterns = ['get started', 'sign up', 'learn more', 'contact us', 'buy now', 'try free', 'download'];
+  return ctaPatterns.some(pattern => text.toLowerCase().includes(pattern));
+}
+
+function detectLayoutType(texts: string[]): string {
+  const headerCount = texts.filter(t => isLikelyHeader(t)).length;
+  const longTextCount = texts.filter(t => t.length > 100).length;
+  
+  if (headerCount > 3 && longTextCount > 2) return 'multi-section';
+  if (longTextCount === 0 && headerCount <= 2) return 'landing';
+  if (longTextCount > 3) return 'content-heavy';
+  return 'standard';
+}
+
+function extractLogoText(texts: string[]): string {
+  // Look for short, likely brand names at the top
+  return texts.find(t => t.length < 20 && t.length > 2 && /^[A-Z]/.test(t)) || 'Brand';
+}
+
+function extractBrandElements(texts: string[]): string[] {
+  return texts.filter(t => 
+    t.length < 30 && 
+    (t.includes('®') || t.includes('™') || /^[A-Z][a-z]+$/.test(t))
+  );
+}
+
+function extractFormFields(texts: string[]): string[] {
+  const fieldPatterns = ['email', 'name', 'phone', 'message', 'password', 'username'];
+  return texts.filter(text => 
+    fieldPatterns.some(pattern => text.toLowerCase().includes(pattern))
+  );
+}
+
+function extractSocialProof(texts: string[]): string[] {
+  return texts.filter(text => 
+    text.includes('%') || 
+    text.includes('customers') || 
+    text.includes('users') || 
+    text.includes('reviews') ||
+    /\d+[KMB]?[\s+]/.test(text)
+  );
+}
+
+function extractFeatures(texts: string[]): string[] {
+  return texts.filter(text => 
+    text.length > 20 && 
+    text.length < 100 && 
+    (text.includes('✓') || text.includes('•') || text.startsWith('-'))
+  );
+}
+
+function isLikelyHeading(text: string): boolean {
+  return /^[A-Z]/.test(text) && 
+         text.length < 100 && 
+         !text.includes('.') && 
+         !text.includes('@') &&
+         text.split(' ').length < 10;
+}
+
+function isLikelyLabel(text: string): boolean {
+  return text.endsWith(':') || 
+         ['name', 'email', 'phone', 'address'].some(field => 
+           text.toLowerCase().includes(field)
+         );
+}
+
+function analyzeTextHierarchy(texts: string[]): any {
+  const byLength = texts.sort((a, b) => a.length - b.length);
+  
+  return {
+    h1: byLength.filter(t => t.length < 50)[0] || 'Main Heading',
+    h2: byLength.filter(t => t.length > 20 && t.length < 80).slice(0, 3),
+    h3: byLength.filter(t => t.length > 10 && t.length < 50).slice(0, 5),
+    body: byLength.filter(t => t.length > 50)
   };
 }
 
@@ -631,7 +884,7 @@ function extractMetrics(texts: string[]) {
 }
 
 function extractButtons(texts: string[]) {
-  const buttonPatterns = ['Get Started', 'Sign Up', 'Learn More', 'Try', 'Start', 'Continue', 'Next'];
+  const buttonPatterns = ['Get Started', 'Sign Up', 'Learn More', 'Try', 'Start', 'Continue', 'Next', 'Contact', 'Buy', 'Download'];
   return texts.filter(text => 
     buttonPatterns.some(pattern => text.toLowerCase().includes(pattern.toLowerCase()))
   );
