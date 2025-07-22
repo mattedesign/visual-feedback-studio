@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Sparkles, AlertTriangle, RefreshCw, Grid, FileText, ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { getFigmantResults, getFigmantSession } from '@/services/figmantAnalysisService';
 import { FigmantSessionService } from '@/services/figmantSessionService';
@@ -12,6 +13,9 @@ import { ResultsContent } from '@/components/analysis/results/ResultsContent';
 import { ResultsChat } from '@/components/analysis/results/ResultsChat';
 import { AnalysisResults as EnhancedAnalysisResults } from '@/components/analysis/AnalysisResults';
 import { EnhancedFigmaAnalysisLayout } from '@/components/analysis/figma/EnhancedFigmaAnalysisLayout';
+import { usePrototypeGeneration } from '@/hooks/usePrototypeGeneration';
+import { PrototypeStorageService } from '@/services/prototypes/prototypeStorageService';
+import type { VisualPrototype } from '@/types/analysis';
 
 import { FigmantSidebar } from '@/components/layout/FigmantSidebar';
 import { FigmantLogo } from '@/components/ui/figmant-logo';
@@ -35,8 +39,18 @@ const FigmantResultsPage = () => {
   const [viewMode, setViewMode] = useState<'gallery' | 'detail'>('gallery');
   const [currentView, setCurrentView] = useState<'gallery' | 'detail'>('gallery');
   const [rightPanelTab, setRightPanelTab] = useState<'annotations' | 'ideas'>('annotations');
+  const [prototypes, setPrototypes] = useState<VisualPrototype[]>([]);
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'menu' | 'chat'>('menu');
+
+  // Add prototype generation hook
+  const { 
+    isGenerating, 
+    progress, 
+    error: prototypeError, 
+    generatePrototypes, 
+    resetState: resetPrototypeState
+  } = usePrototypeGeneration();
 
   // Enhanced utility function to transform Figmant data to enhanced format
   const transformToEnhancedFormat = (analysisData: any, sessionData: any) => {
@@ -453,6 +467,43 @@ const FigmantResultsPage = () => {
     });
     
     return result;
+  };
+
+  // Load prototypes when analysis data is available
+  useEffect(() => {
+    const loadPrototypes = async () => {
+      if (analysisData?.id && !isGenerating) {
+        try {
+          console.log('🎨 Loading prototypes for analysis:', analysisData.id);
+          const loadedPrototypes = await PrototypeStorageService.getPrototypesByAnalysisId(analysisData.id);
+          setPrototypes(loadedPrototypes);
+          console.log(`✅ Loaded ${loadedPrototypes.length} prototypes`);
+        } catch (error) {
+          console.error('❌ Failed to load prototypes:', error);
+        }
+      }
+    };
+    loadPrototypes();
+  }, [analysisData?.id, isGenerating]);
+
+  // Handle prototype generation
+  const handleGeneratePrototypes = async () => {
+    if (!analysisData?.id) {
+      toast.error('No analysis ID available for prototype generation');
+      return;
+    }
+
+    try {
+      toast.info('Starting prototype generation...');
+      await generatePrototypes(analysisData.id);
+      // Reload prototypes after generation
+      const loadedPrototypes = await PrototypeStorageService.getPrototypesByAnalysisId(analysisData.id);
+      setPrototypes(loadedPrototypes);
+      toast.success(`Generated ${loadedPrototypes.length} visual prototypes!`);
+    } catch (error) {
+      console.error('❌ Failed to generate prototypes:', error);
+      toast.error(`Failed to generate prototypes: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
   useEffect(() => {
@@ -912,17 +963,81 @@ const FigmantResultsPage = () => {
                 </div>
               </div>
               
-              <div>
-                <h3 className="font-semibold text-foreground mb-3">Generate Visual Prototypes</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Transform your top recommendations into interactive visual prototypes with working code. 
-                  We'll select 2-3 high-impact improvements and create comprehensive implementation examples.
-                </p>
-                <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Generate Prototypes
-                </Button>
-              </div>
+              
+              {/* Prototype Generation Section */}
+              {prototypes.length === 0 && !isGenerating && (
+                <div>
+                  <h3 className="font-semibold text-foreground mb-3">Generate Visual Prototypes</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Transform your top recommendations into interactive visual prototypes with working code. 
+                    We'll select 2-3 high-impact improvements and create comprehensive implementation examples.
+                  </p>
+                  <Button 
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                    onClick={handleGeneratePrototypes}
+                    disabled={isGenerating}
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Generate Prototypes
+                  </Button>
+                </div>
+              )}
+
+              {/* Prototype Generation Progress */}
+              {isGenerating && (
+                <div>
+                  <h3 className="font-semibold text-foreground mb-3">Generating Visual Prototypes</h3>
+                  <p className="text-sm text-muted-foreground mb-3">{progress.message}</p>
+                  {progress.currentPrototype && progress.totalPrototypes && (
+                    <div className="mb-3">
+                      <Progress 
+                        value={(progress.currentPrototype / progress.totalPrototypes) * 100} 
+                        className="h-2"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Prototype {progress.currentPrototype} of {progress.totalPrototypes}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Prototype Generation Error */}
+              {prototypeError && (
+                <div className="border border-red-200 bg-red-50 rounded-lg p-3">
+                  <h3 className="font-semibold text-red-800">Prototype Generation Failed</h3>
+                  <p className="text-sm text-red-600 mt-1">{prototypeError}</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={resetPrototypeState}
+                    className="mt-2"
+                  >
+                    Try Again
+                  </Button>
+                </div>
+              )}
+
+              {/* Generated Prototypes Summary */}
+              {prototypes.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-foreground mb-3">Visual Prototypes</h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    {prototypes.length} interactive prototypes generated
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={() => {
+                      // TODO: Add prototype viewer functionality
+                      toast.info('Prototype viewer coming soon!');
+                    }}
+                  >
+                    View Prototypes
+                  </Button>
+                </div>
+              )}
               
               <div>
                 <h3 className="font-semibold text-foreground mb-3">Actions</h3>
