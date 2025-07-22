@@ -418,18 +418,18 @@ When generating React components:
 6. Don't include import statements - they will be handled by the runtime
 
 Example React Component Format:
-\`\`\`
+```
 function EnhancedDesign() {
   const [isHovered, setIsHovered] = useState(false);
   
   return (
-    <div className="p-6 bg-white rounded-lg shadow-lg">
-      <h1 className="text-2xl font-bold mb-4">Enhanced Design</h1>
-      {/* Component content */}
+    <div className="p-6 bg-white rounded-lg shadow-lg" onMouseEnter={() => setIsHovered(true)}>
+      <h2 className="text-2xl font-bold text-gray-800">Enhanced Design</h2>
+      <p className="text-gray-600 mt-2">This addresses the identified issues with improved UX.</p>
     </div>
   );
 }
-\`\`\`
+```
 
 ### Content Requirements
 1. **Realistic Content**: Use meaningful text instead of Lorem ipsum when possible
