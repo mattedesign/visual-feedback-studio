@@ -5,6 +5,7 @@ import { useSubscription } from '@/contexts/SubscriptionContext';
 import { FigmantLogo } from '@/components/ui/figmant-logo';
 import { Button } from '@/components/ui/button';
 import { ResultsChat } from '@/components/analysis/results/ResultsChat';
+import { AutomationIndicator } from '@/components/analysis/figma/AutomationIndicator';
 
 export const FigmantSidebar = () => {
   const location = useLocation();
@@ -376,6 +377,15 @@ export const FigmantSidebar = () => {
               </div>
             </div>
 
+            {/* Automation Settings Section */}
+            {!isCollapsed && (
+              <div className="px-4 py-3 border-t border-gray-100">
+                <h3 className="sidebar-section-header mb-3">Automation</h3>
+                <AutomationIndicator className="w-full" />
+              </div>
+            )}
+
+            {/* Upgrade Section */}
             {!isCollapsed && (
               <div className="mt-auto p-3">
                 <div className="flex flex-col items-start gap-1.5 self-stretch rounded-2xl p-[14px]" style={{background: '#E7EEEF'}}>
