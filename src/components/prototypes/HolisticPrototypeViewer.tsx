@@ -184,11 +184,16 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
               
               ${cleanCode}
               
-              const ComponentToRender = typeof EnhancedDesign !== 'undefined' ? EnhancedDesign : 
-                () => React.createElement('div', {className: 'p-8 text-center'}, 
+              function ComponentToRender() {
+                if (typeof EnhancedDesign !== 'undefined') {
+                  return React.createElement(EnhancedDesign);
+                }
+                return React.createElement('div', 
+                  { className: 'p-8 text-center' },
                   React.createElement('h3', null, 'Component Not Found'),
                   React.createElement('p', null, 'EnhancedDesign component could not be loaded from the generated code.')
                 );
+              }
               
               ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(ComponentToRender));
             } catch (error) {
