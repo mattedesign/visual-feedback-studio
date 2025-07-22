@@ -66,6 +66,101 @@ const FigmantResultsPage = () => {
     return supabase.storage.from('analysis-images').getPublicUrl(filePath).data.publicUrl;
   };
 
+  // Transform analysis data to extract issues and suggestions
+  const transformAnalysisData = (analysis: any) => {
+    console.log('🔧 Transforming analysis data:', analysis);
+    
+    const claudeAnalysis = analysis?.claude_analysis;
+    const enhancedIssues: any[] = [];
+    const enhancedSuggestions: any[] = [];
+    
+    console.log('🔍 Claude Analysis Structure Check:', {
+      hasClaudeAnalysis: !!claudeAnalysis,
+      claudeAnalysisKeys: claudeAnalysis ? Object.keys(claudeAnalysis) : 'none',
+      hasIssues: !!claudeAnalysis?.issues,
+      issuesIsArray: Array.isArray(claudeAnalysis?.issues),
+      issuesLength: claudeAnalysis?.issues?.length || 0,
+      issuesData: claudeAnalysis?.issues
+    });
+    
+    // Handle the new mentor analysis format
+    if (claudeAnalysis?.issues && Array.isArray(claudeAnalysis.issues)) {
+      console.log('🔍 Processing new format issues:', claudeAnalysis.issues.length, 'items');
+      claudeAnalysis.issues.forEach((issue: any, index: number) => {
+        // Add as issue
+        enhancedIssues.push({
+          id: issue.id || `issue-${index}`,
+          title: issue.description || 'Analysis Suggestion',
+          description: issue.suggested_fix || issue.impact || 'Improvement opportunity identified',
+          category: issue.category?.toLowerCase() || 'usability',
+          severity: issue.severity || 'improvement',
+          confidence: issue.confidence || 0.8,
+          impact_scope: 'task-completion',
+          element: {
+            location: {
+              x: Math.random() * 800,
+              y: Math.random() * 600,
+              width: 100,
+              height: 50,
+              xPercent: Math.random() * 80 + 10,
+              yPercent: Math.random() * 70 + 10,
+              widthPercent: 15,
+              heightPercent: 8
+            }
+          },
+          implementation: {
+            effort: issue.level === 'suggestion' ? 'hours' : 'days',
+            rationale: issue.impact || 'Improvement opportunity',
+            design_guidance: issue.suggested_fix || 'Apply suggested improvements'
+          },
+          business_impact: {
+            roi_score: issue.severity === 'critical' ? 9 : issue.severity === 'warning' ? 7 : 5,
+            priority_level: issue.severity,
+            quick_win: issue.level === 'suggestion'
+          }
+        });
+        
+        // Add as suggestion too
+        enhancedSuggestions.push({
+          id: `suggestion-${index}`,
+          title: issue.description || 'Improvement Suggestion',
+          description: issue.suggested_fix || issue.impact || 'Consider this improvement',
+          impact: issue.severity === 'critical' ? 'High' : issue.severity === 'warning' ? 'Medium' : 'Low',
+          effort: issue.level === 'suggestion' ? 'Low' : 'Medium',
+          category: 'improvement'
+        });
+      });
+    }
+    
+    // Handle mentor analysis alternatives as suggestions
+    if (claudeAnalysis?.mentor_analysis?.visual_alternatives && Array.isArray(claudeAnalysis.mentor_analysis.visual_alternatives)) {
+      console.log('🔍 Processing visual alternatives:', claudeAnalysis.mentor_analysis.visual_alternatives.length, 'items');
+      claudeAnalysis.mentor_analysis.visual_alternatives.forEach((alt: any, index: number) => {
+        enhancedSuggestions.push({
+          id: `alternative-${index}`,
+          title: alt.title || 'Visual Alternative',
+          description: alt.description || 'Alternative design approach',
+          impact: 'High',
+          effort: 'Medium',
+          category: 'design-pattern',
+          company_example: alt.company_example,
+          why_it_works: alt.why_it_works
+        });
+      });
+    }
+    
+    console.log('🔧 Transformation complete:', {
+      issuesCount: enhancedIssues.length,
+      suggestionsCount: enhancedSuggestions.length
+    });
+    
+    return {
+      ...analysis,
+      issues: enhancedIssues,
+      suggestions: enhancedSuggestions
+    };
+  };
+
   // Helper function to get image title
   const getImageTitle = (image: FigmantImage) => {
     const nameWithoutExt = image.file_name.replace(/\.(jpg|jpeg|png|gif|webp)$/i, '');
@@ -257,8 +352,10 @@ const FigmantResultsPage = () => {
         }
 
         if (analysis) {
-          setAnalysisData(analysis);
-          console.log('✅ Analysis data set:', analysis);
+          // Transform the analysis data to extract issues and suggestions
+          const transformedAnalysis = transformAnalysisData(analysis);
+          setAnalysisData(transformedAnalysis);
+          console.log('✅ Analysis data set:', transformedAnalysis);
         }
 
         if (!session && !analysis) {
