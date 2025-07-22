@@ -55,7 +55,7 @@ const FigmantResultsPage = () => {
   const [userContext, setUserContext] = useState<any>(null);
   const [showContextForm, setShowContextForm] = useState(false);
   const [contextLoading, setContextLoading] = useState(false);
-  const [analysisMode, setAnalysisMode] = useState<'classic' | 'holistic'>('holistic');
+  const [analysisMode, setAnalysisMode] = useState<'classic' | 'holistic'>('classic');
 
   // Feature flags
   const isHolisticEnabled = useFeatureFlag('holistic-ai-prototypes');
