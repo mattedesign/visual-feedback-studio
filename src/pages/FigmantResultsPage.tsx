@@ -23,6 +23,7 @@ import { FigmantSidebar } from '@/components/layout/FigmantSidebar';
 import { FigmantLogo } from '@/components/ui/figmant-logo';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { VisualMentorSummary } from '@/components/analysis/VisualMentorSummary';
 
 interface FigmantImage {
   id: string;
@@ -38,7 +39,7 @@ const FigmantResultsPage = () => {
   const [sessionData, setSessionData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<FigmantImage | null>(null);
-  const [viewMode, setViewMode] = useState<'gallery' | 'detail'>('gallery');
+  const [viewMode, setViewMode] = useState<'visual' | 'detailed'>('visual');
   const [currentView, setCurrentView] = useState<'gallery' | 'detail'>('gallery');
   const [rightPanelTab, setRightPanelTab] = useState<'annotations' | 'ideas'>('annotations');
   const [prototypes, setPrototypes] = useState<VisualPrototype[]>([]);
@@ -281,18 +282,16 @@ const FigmantResultsPage = () => {
     loadData();
   }, [sessionId]);
 
-  // Handle image selection - switch to detail view
+  // Handle image selection - no longer used in new structure
   const handleImageSelect = (image: FigmantImage) => {
     setSelectedImage(image);
-    setViewMode('detail');
     setCurrentView('detail');
     setRightPanelTab('annotations'); // Default to annotations tab
   };
 
-  // Handle back to gallery
+  // Handle back to gallery - no longer used in new structure  
   const handleBackToGallery = () => {
     setSelectedImage(null);
-    setViewMode('gallery');
     setCurrentView('gallery');
   };
 
@@ -327,547 +326,74 @@ const FigmantResultsPage = () => {
     );
   }
 
-  // Three-panel layout: Left (existing sidebar) + Middle (gallery/detail) + Right (context)
   return (
-    <>
-      <div className="h-full flex gap-4">
-        {/* Middle Panel - Gallery or Single Image Detail */}
-        <div className="flex-1 overflow-y-auto">
-          {viewMode === 'gallery' ? (
-            // Gallery View
-            <div className="p-6">
-              <div className="mb-6">
-                <h1 className="text-2xl font-bold text-foreground mb-2">Image Gallery</h1>
-                <p className="text-muted-foreground">
-                  Select an image to view detailed analysis and recommendations
-                </p>
-              </div>
-              
-              {sessionData?.images?.length > 0 ? (
-                <div className="grid grid-cols-2 gap-6 max-w-4xl">
-                  {sessionData.images.map((image, index) => {
-                    const imageNames = [
-                      'Create Account2 1',
-                      'Create Account',
-                      'Dashboard Overview',
-                      'Settings Panel'
-                    ];
-                    
-                    return (
-                      <Card 
-                        key={image.id} 
-                        className="cursor-pointer hover:shadow-lg transition-all duration-200 group"
-                        onClick={() => handleImageSelect(image)}
-                      >
-                        <div className="p-0 overflow-hidden rounded-lg">
-                          {/* Image container with proper aspect ratio */}
-                          <div className="aspect-[4/3] bg-gradient-to-br from-blue-50 to-purple-50 relative overflow-hidden">
-                            <img 
-                              src={getImageUrl(image.file_path)}
-                              alt={imageNames[index] || image.file_name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                                target.parentElement!.innerHTML = `
-                                  <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-100 to-blue-100">
-                                    <div class="text-center p-6">
-                                      <div class="w-16 h-16 bg-white/30 rounded-xl mb-3 mx-auto flex items-center justify-center">
-                                        <span class="text-2xl">${index === 0 ? '📊' : index === 1 ? '👤' : index === 2 ? '📈' : '⚙️'}</span>
-                                      </div>
-                                      <h3 class="font-semibold text-sm text-gray-800">${imageNames[index] || image.file_name}</h3>
-                                    </div>
-                                  </div>
-                                `;
-                              }}
-                            />
-                          </div>
-                          
-                          {/* Card Footer */}
-                          <div className="p-4">
-                            <h3 className="font-semibold text-base text-foreground mb-1">
-                              {imageNames[index] || getImageTitle(image)}
-                            </h3>
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-green-500" />
-                              <span className="text-xs text-muted-foreground">Analyzed</span>
-                            </div>
-                          </div>
-                        </div>
-                      </Card>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">No images found for this session</p>
-                </div>
-              )}
-            </div>
-          ) : (
-            // Single Image Detail View with Annotations
-            <div className="p-6 h-full">
-              <div className="flex items-center gap-3 mb-6">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleBackToGallery}
-                  className="flex items-center gap-2"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Back to Gallery
-                </Button>
-                <div>
-                  <h1 className="text-xl font-bold text-foreground">
-                    {selectedImage ? getImageTitle(selectedImage) : 'Image Detail'}
-                  </h1>
-                  <p className="text-sm text-muted-foreground">
-                    Detailed analysis with annotations
-                  </p>
-                </div>
-              </div>
-              
-              {selectedImage && (
-                <div className="bg-muted/20 rounded-lg p-6 h-[calc(100%-120px)] flex items-center justify-center">
-                  <div className="relative max-w-full max-h-full">
-                    <img 
-                      src={getImageUrl(selectedImage.file_path)}
-                      alt={getImageTitle(selectedImage)}
-                      className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        target.parentElement!.innerHTML = `
-                          <div class="w-96 h-64 bg-gradient-to-br from-orange-100 to-blue-100 rounded-lg flex items-center justify-center">
-                            <div class="text-center p-6">
-                              <div class="w-16 h-16 bg-white/30 rounded-xl mb-3 mx-auto flex items-center justify-center">
-                                <span class="text-2xl">🎨</span>
-                              </div>
-                              <h3 class="font-semibold text-gray-800">${getImageTitle(selectedImage)}</h3>
-                            </div>
-                          </div>
-                        `;
-                      }}
-                    />
-                    
-                    {/* Sample Annotation Hotspots */}
-                    <div className="absolute top-4 left-4 w-3 h-3 bg-red-500 border-2 border-white rounded-full shadow-lg animate-pulse cursor-pointer" 
-                         title="Critical issue: Password field accessibility"></div>
-                    <div className="absolute top-20 right-8 w-3 h-3 bg-yellow-500 border-2 border-white rounded-full shadow-lg animate-pulse cursor-pointer"
-                         title="Warning: CTA button contrast"></div>
-                    <div className="absolute bottom-16 left-1/3 w-3 h-3 bg-blue-500 border-2 border-white rounded-full shadow-lg animate-pulse cursor-pointer"
-                         title="Improvement: Layout optimization"></div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-        
-        {/* Right Panel - Context Recommendations */}
-        <div 
-          className={`flex flex-col items-center self-stretch overflow-hidden transition-all duration-300 ${
-            isRightPanelCollapsed ? 'max-w-[48px]' : 'max-w-[240px]'
-          }`}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            alignSelf: 'stretch',
-            border: '1px solid #E2E2E2',
-            background: '#FCFCFC',
-            clipPath: 'inset(0 round 20px)',
-            WebkitClipPath: 'inset(0 round 20px)',
-            borderRadius: '20px'
-          }}
-        >
-          {/* Header */}
-          <div className={`${isRightPanelCollapsed ? 'p-2' : 'p-4'} border-b border-border w-full`}>
-            {!isRightPanelCollapsed ? (
-              <>
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h2 className="font-semibold text-foreground">
-                      {selectedImage ? 'Figmant Analysis' : 'Analysis Results'}
-                    </h2>
-                    <p className="text-sm text-muted-foreground">
-                      {selectedImage ? 'Detailed Analysis' : '5 insights found'}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsRightPanelCollapsed(!isRightPanelCollapsed)}
-                    className="p-1 h-8 w-8"
-                    title="Collapse panel"
-                  >
-                    <PanelRightClose className="h-4 w-4" />
-                  </Button>
-                </div>
-                
-                {selectedImage && (
-                  <div className="flex bg-muted rounded-lg p-1 gap-1 mb-4">
-                    <Button 
-                      variant={rightPanelTab === 'annotations' ? 'secondary' : 'ghost'} 
-                      size="sm" 
-                      className="flex-1"
-                      onClick={() => setRightPanelTab('annotations')}
-                    >
-                      Annotations
-                    </Button>
-                    <Button 
-                      variant={rightPanelTab === 'ideas' ? 'secondary' : 'ghost'} 
-                      size="sm" 
-                      className="flex-1"
-                      onClick={() => setRightPanelTab('ideas')}
-                    >
-                      Ideas
-                    </Button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="flex justify-center">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsRightPanelCollapsed(!isRightPanelCollapsed)}
-                  className="p-1 h-8 w-8"
-                  title="Expand panel"
-                >
-                  <PanelRightClose className="h-4 w-4 rotate-180" />
-                </Button>
-              </div>
-            )}
-          </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b px-6 py-4">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <h1 className="text-2xl font-bold">
+            Design Analysis Results
+          </h1>
           
-          {/* Content */}
-          {!isRightPanelCollapsed && (
-            <div className="flex-1 overflow-y-auto p-4 w-full">
-            {!selectedImage ? (
-              // Summary view
-              <div className="space-y-6">
-                <div>
-                  <h3 className="font-semibold text-foreground mb-2">Overview</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Total Insights</span>
-                      <span className="text-foreground font-semibold">5</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Images</span>
-                      <span className="text-foreground">{sessionData?.images?.length || 2}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Date</span>
-                      <span className="text-foreground">Recently</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="font-semibold text-foreground mb-3">Categories</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-foreground">All</span>
-                      <span className="text-xs bg-muted px-2 py-1 rounded">5</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-foreground">Accessibility</span>
-                      <span className="text-xs bg-muted px-2 py-1 rounded">1</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-foreground">Usability</span>
-                      <span className="text-xs bg-muted px-2 py-1 rounded">2</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-foreground">Visual</span>
-                      <span className="text-xs bg-muted px-2 py-1 rounded">1</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-foreground">Content</span>
-                      <span className="text-xs bg-muted px-2 py-1 rounded">1</span>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Prototype Generation Section */}
-                {prototypes.length === 0 && !isGenerating && (
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-3">Generate Visual Prototypes</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Transform your top recommendations into interactive visual prototypes with working code. 
-                      We'll select 2-3 high-impact improvements and create comprehensive implementation examples.
-                    </p>
-                    <Button 
-                      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
-                      onClick={handleGeneratePrototypes}
-                      disabled={isGenerating}
-                    >
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Generate Prototypes
-                    </Button>
-                  </div>
-                )}
-
-                {/* Prototype Generation Progress */}
-                {isGenerating && (
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-3">Generating Visual Prototypes</h3>
-                    <p className="text-sm text-muted-foreground mb-3">{progress.message}</p>
-                    {progress.currentPrototype && progress.totalPrototypes && (
-                      <div className="mb-3">
-                        <Progress 
-                          value={(progress.currentPrototype / progress.totalPrototypes) * 100} 
-                          className="h-2"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Prototype {progress.currentPrototype} of {progress.totalPrototypes}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Prototype Generation Error */}
-                {prototypeError && (
-                  <div className="border border-red-200 bg-red-50 rounded-lg p-3">
-                    <h3 className="font-semibold text-red-800">Prototype Generation Failed</h3>
-                    <p className="text-sm text-red-600 mt-1">{prototypeError}</p>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={resetPrototypeState}
-                      className="mt-2"
-                    >
-                      Try Again
-                    </Button>
-                  </div>
-                )}
-
-                {/* Generated Prototypes Summary */}
-                {prototypes.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-3">Visual Prototypes</h3>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      {prototypes.length} interactive prototypes generated
-                    </p>
-                    <div className="space-y-2">
-                      <Button 
-                        variant="default" 
-                        size="sm" 
-                        className="w-full bg-[#22c4a8] hover:bg-[#1ba896] text-white"
-                        onClick={handleViewPrototypes}
-                      >
-                        View Prototypes
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full"
-                        onClick={togglePrototypeView}
-                      >
-                        {prototypeViewMode === 'overlay' ? 'List View' : 'Overlay View'}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-                
-                <div>
-                  <h3 className="font-semibold text-foreground mb-3">Actions</h3>
-                  <div className="space-y-2">
-                    <Button variant="outline" size="sm" className="w-full justify-start">
-                      <FileText className="w-4 h-4 mr-2" />
-                      Export Report
-                    </Button>
-                    <Button variant="outline" size="sm" className="w-full justify-start">
-                      <Grid className="w-4 h-4 mr-2" />
-                      Share Analysis
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              // Image-specific view with Annotations/Ideas tabs
-              <div className="space-y-4">
-                {rightPanelTab === 'annotations' ? (
-                  // Annotations Tab
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="font-semibold text-foreground mb-2">Image Annotations</h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Click on the colored dots to see detailed analysis for each area
-                      </p>
-                    </div>
-                    
-                    {/* Annotation List */}
-                    <div className="space-y-3">
-                      <div className="border border-red-200 rounded-lg p-3">
-                        <div className="flex items-start gap-3">
-                          <div className="w-3 h-3 bg-red-500 rounded-full flex-shrink-0 mt-1"></div>
-                          <div className="flex-1">
-                            <div className="flex items-start justify-between mb-2">
-                              <h4 className="font-semibold text-sm">Password field accessibility</h4>
-                              <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">critical</span>
-                            </div>
-                            <p className="text-xs text-muted-foreground mb-2">
-                              Replace dots with asterisks or add character counter for better accessibility compliance.
-                            </p>
-                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">accessibility</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="border border-yellow-200 rounded-lg p-3">
-                        <div className="flex items-start gap-3">
-                          <div className="w-3 h-3 bg-yellow-500 rounded-full flex-shrink-0 mt-1"></div>
-                          <div className="flex-1">
-                            <div className="flex items-start justify-between mb-2">
-                              <h4 className="font-semibold text-sm">CTA button contrast</h4>
-                              <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">warning</span>
-                            </div>
-                            <p className="text-xs text-muted-foreground mb-2">
-                              Use brand primary color with higher contrast ratio to meet WCAG standards.
-                            </p>
-                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">usability</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="border border-blue-200 rounded-lg p-3">
-                        <div className="flex items-start gap-3">
-                          <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0 mt-1"></div>
-                          <div className="flex-1">
-                            <div className="flex items-start justify-between mb-2">
-                              <h4 className="font-semibold text-sm">Layout optimization</h4>
-                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">improvement</span>
-                            </div>
-                            <p className="text-xs text-muted-foreground mb-2">
-                              Reduce illustration size or use responsive 50/50 split for better mobile experience.
-                            </p>
-                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">visual</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  // Ideas Tab
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="font-semibold text-foreground mb-2">Improvement Ideas</h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Actionable suggestions to enhance this interface
-                      </p>
-                    </div>
-                    
-                    {/* Ideas List */}
-                    <div className="space-y-3">
-                      <div className="border rounded-lg p-3">
-                        <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-semibold text-sm">Add progress indicator</h4>
-                          <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">high impact</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground mb-2">
-                          Show users where they are in the signup process to reduce abandonment.
-                        </p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>💡 Effort: Low</span>
-                          <span>•</span>
-                          <span>📈 Impact: High</span>
-                        </div>
-                      </div>
-                      
-                      <div className="border rounded-lg p-3">
-                        <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-semibold text-sm">Social login options</h4>
-                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">medium impact</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground mb-2">
-                          Add Google/Apple sign-in to reduce friction and increase conversions.
-                        </p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>💡 Effort: Medium</span>
-                          <span>•</span>
-                          <span>📈 Impact: Medium</span>
-                        </div>
-                      </div>
-                      
-                      <div className="border rounded-lg p-3">
-                        <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-semibold text-sm">Real-time validation</h4>
-                          <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">high impact</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground mb-2">
-                          Validate email format and password strength in real-time for better UX.
-                        </p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>💡 Effort: Medium</span>
-                          <span>•</span>
-                          <span>📈 Impact: High</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <Button className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white">
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Generate Implementation Plan
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
+          {/* View Toggle */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setViewMode('visual')}
+              className={`px-4 py-2 rounded-lg ${
+                viewMode === 'visual' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-100'
+              }`}
+            >
+              🎨 Visual Ideas
+            </button>
+            <button
+              onClick={() => setViewMode('detailed')}
+              className={`px-4 py-2 rounded-lg ${
+                viewMode === 'detailed' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-100'
+              }`}
+            >
+              📊 Detailed Analysis
+            </button>
           </div>
-          )}
         </div>
       </div>
       
-      {/* Prototype Viewer Modal */}
-      {showPrototypeViewer && selectedPrototype && (
-        <ComprehensivePrototypeViewer
-          prototype={selectedPrototype}
-          isOpen={showPrototypeViewer}
-          onClose={closePrototypeViewer}
-        />
-      )}
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto p-6">
+        {viewMode === 'visual' ? (
+          // Visual mentor view - default
+          <VisualMentorSummary 
+            mentorData={analysisData?.enhanced_context?.mentor_summary}
+            userImage={sessionData?.images?.[0]?.file_path}
+          />
+        ) : (
+          // Existing detailed analysis view - need to transform data to match interface
+          <EnhancedAnalysisResults 
+            images={sessionData?.images?.map(img => ({
+              url: getImageUrl(img.file_path),
+              fileName: img.file_name,
+              id: img.id
+            })) || []}
+            issues={analysisData?.issues || []}
+          />
+        )}
+      </div>
       
-      {/* Prototype Overlay */}
-      {prototypeViewMode === 'overlay' && prototypes.length > 0 && sessionData?.images?.length > 0 && (
-        <div className="fixed inset-0 z-50 bg-black/50">
-          <div className="absolute inset-4 bg-white rounded-lg">
-            <div className="h-full flex flex-col">
-              <div className="p-4 border-b flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Visual Prototypes Overlay</h2>
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={togglePrototypeView}
-                  >
-                    Switch to List View
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => setPrototypeViewMode('list')}
-                  >
-                    ✕
-                  </Button>
-                </div>
-              </div>
-              <div className="flex-1 overflow-y-auto p-4">
-                <VisualPrototypeOverlay
-                  originalImageUrl={getImageUrl(sessionData.images[0].file_path)}
-                  prototypes={prototypes}
-                  onPrototypeSelect={handlePrototypeSelect}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+      {/* Quick Actions */}
+      <div className="fixed bottom-6 right-6 flex gap-3">
+        <button className="px-4 py-2 bg-white rounded-lg shadow-lg 
+                         hover:shadow-xl transition-shadow">
+          💬 Ask Follow-up
+        </button>
+        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg 
+                         shadow-lg hover:shadow-xl transition-shadow">
+          🎨 See More Ideas
+        </button>
+      </div>
+    </div>
   );
 };
 
