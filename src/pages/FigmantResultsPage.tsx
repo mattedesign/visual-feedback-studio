@@ -74,7 +74,27 @@ const FigmantResultsPage = () => {
   // Load prototypes when analysis data is available
   useEffect(() => {
     const loadPrototypes = async () => {
-      const currentAnalysisId = analysisData?.id || sessionId;
+      // Get the actual analysis result ID from the session
+      let currentAnalysisId = analysisData?.id;
+      
+      if (!currentAnalysisId && sessionId) {
+        // Look up analysis result ID using session ID
+        try {
+          const { data, error } = await supabase
+            .from('figmant_analysis_results')
+            .select('id')
+            .eq('session_id', sessionId)
+            .single();
+          
+          if (data && !error) {
+            currentAnalysisId = data.id;
+          }
+        } catch (error) {
+          console.log('No analysis result found for session:', sessionId);
+          return;
+        }
+      }
+      
       if (currentAnalysisId && !isGenerating) {
         try {
           console.log('🎨 Loading prototypes for analysis:', currentAnalysisId);
@@ -91,7 +111,31 @@ const FigmantResultsPage = () => {
 
   // Handle prototype generation
   const handleGeneratePrototypes = async () => {
-    const currentAnalysisId = analysisData?.id || sessionId;
+    // Get the actual analysis result ID from the session
+    let currentAnalysisId = analysisData?.id;
+    
+    if (!currentAnalysisId && sessionId) {
+      // Look up analysis result ID using session ID
+      try {
+        const { data, error } = await supabase
+          .from('figmant_analysis_results')
+          .select('id')
+          .eq('session_id', sessionId)
+          .single();
+        
+        if (error || !data) {
+          toast.error('No analysis found for this session');
+          return;
+        }
+        
+        currentAnalysisId = data.id;
+      } catch (error) {
+        console.error('Failed to lookup analysis ID:', error);
+        toast.error('Failed to find analysis data');
+        return;
+      }
+    }
+    
     if (!currentAnalysisId) {
       toast.error('No analysis ID available for prototype generation');
       return;
