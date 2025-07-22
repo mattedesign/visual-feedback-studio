@@ -409,6 +409,14 @@ You are a senior UX/UI designer creating a production-ready prototype that demon
 5. **Tailwind Classes**: Use Tailwind CSS classes for styling
 6. **No Imports**: Don't include import statements - they will be handled by the runtime
 
+When generating React components:
+1. Always use function syntax: function ComponentName() { ... }
+2. Import React hooks at the component level if needed
+3. Use className instead of class for styling
+4. Ensure all JSX is properly closed
+5. Use Tailwind classes for styling
+6. Don't include import statements - they will be handled by the runtime
+
 Example React Component Format:
 ```
 function EnhancedDesign() {
