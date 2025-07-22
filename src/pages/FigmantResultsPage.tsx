@@ -367,7 +367,7 @@ const FigmantResultsPage = () => {
           // Visual mentor view - default
           <VisualMentorSummary 
             mentorData={analysisData?.enhanced_context?.mentor_summary}
-            userImage={sessionData?.images?.[0]?.file_path}
+            userImage={sessionData?.images?.[0]?.file_path ? getImageUrl(sessionData.images[0].file_path) : undefined}
           />
         ) : (
           // Detailed analysis view with gallery and sidebar layout
