@@ -76,26 +76,38 @@ export const FigmantSidebar = () => {
   }];
 
   return (
-    <div className={`figmant-sidebar transition-all duration-300 ${isCollapsed ? 'w-16' : ''}`}>
+    <div className={`figmant-sidebar transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} min-h-screen bg-white border-r border-gray-200`}>
       <div className="h-full flex flex-col rounded-lg">
         {/* Header */}
-        <div className="p-4" style={{borderBottom: '1px solid var(--Stroke-01, #ECECEC)'}}>
+        <div className={`p-4 ${isCollapsed ? 'px-2' : ''}`} style={{borderBottom: '1px solid var(--Stroke-01, #ECECEC)'}}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 md:gap-3 sm:gap-2 xs:gap-2">
+            <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center w-full' : ''}`}>
               <FigmantLogo size={40} className="md:w-10 md:h-10 sm:w-8 sm:h-8 xs:w-6 xs:h-6" />
             </div>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="p-1 hover:bg-muted/50"
-            >
-              <PanelLeft className={`w-4 h-4 text-gray-600 transition-transform ${isCollapsed ? 'rotate-180' : ''}`} />
-            </Button>
+            {!isCollapsed && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                className="p-1 hover:bg-muted/50"
+              >
+                <PanelLeft className={`w-4 h-4 text-gray-600 transition-transform ${isCollapsed ? 'rotate-180' : ''}`} />
+              </Button>
+            )}
+            {isCollapsed && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                className="p-1 hover:bg-muted/50 mx-auto"
+              >
+                <PanelLeft className="w-4 h-4 text-gray-600 rotate-180" />
+              </Button>
+            )}
           </div>
           
-          {/* Tab Navigation - only show if we're on analysis results */}
-          {showTabs && (
+          {/* Tab Navigation - only show if we're on analysis results and not collapsed */}
+          {showTabs && !isCollapsed && (
             <div className="mt-4">
               <div className="flex bg-muted rounded-lg p-1">
                 <Button 
@@ -120,7 +132,7 @@ export const FigmantSidebar = () => {
         </div>
 
         {/* Content - show chat if chat tab is active and we're on analysis results, otherwise show menu */}
-        {showTabs && activeTab === 'chat' ? (
+        {showTabs && activeTab === 'chat' && !isCollapsed ? (
           <div className="flex-1 overflow-hidden">
             <ResultsChat 
               analysisData={null} // Will be passed proper data when integrated
@@ -130,7 +142,7 @@ export const FigmantSidebar = () => {
         ) : (
           <>
             {/* Pages Section */}
-            <div className="px-4 pb-4 md:px-4 sm:px-3 xs:px-2 pt-5">
+            <div className={`px-4 pb-4 md:px-4 sm:px-3 xs:px-2 pt-5 ${isCollapsed ? 'px-2' : ''}`}>
               {!isCollapsed && <h3 className="sidebar-section-header mb-4 hidden sm:block">Pages</h3>}
               <div className="space-y-0.5">
                 {pagesItems.map((item, index) => (
