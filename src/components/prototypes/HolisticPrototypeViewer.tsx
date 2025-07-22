@@ -104,6 +104,20 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
   };
 
   const renderPrototypePreview = (code) => {
+    // Clean and validate the code before rendering
+    const cleanCode = code
+      .replace(/[`${}]/g, (match) => {
+        // Escape template literals that might cause issues
+        if (match === '`') return "'";
+        if (match === '${') return "'+";
+        if (match === '}') return "+'";
+        return match;
+      })
+      .replace(/className=\{[^}]*\}/g, (match) => {
+        // Fix className template literals
+        return match.replace(/`([^`]*)`/g, "'$1'");
+      });
+
     // Render in iframe with React and Tailwind
     const html = `
       <!DOCTYPE html>
@@ -113,13 +127,30 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
           <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
           <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
           <script src="https://cdn.tailwindcss.com"></script>
+          <style>
+            body { margin: 0; padding: 16px; font-family: system-ui, -apple-system, sans-serif; }
+            .error { background: #fee; border: 1px solid #fcc; padding: 12px; border-radius: 6px; color: #900; }
+          </style>
         </head>
         <body>
           <div id="root"></div>
           <script type="text/babel">
             const { useState, useEffect } = React;
-            ${code}
-            ReactDOM.createRoot(document.getElementById('root')).render(<EnhancedDesign />);
+            
+            try {
+              ${cleanCode}
+              ReactDOM.createRoot(document.getElementById('root')).render(<EnhancedDesign />);
+            } catch (error) {
+              ReactDOM.createRoot(document.getElementById('root')).render(
+                React.createElement('div', {className: 'error'}, 
+                  React.createElement('h3', null, 'Preview Error'),
+                  React.createElement('p', null, 'There was a syntax error in the generated code:'),
+                  React.createElement('code', null, error.message),
+                  React.createElement('p', null, 'You can still view and download the raw code from the Code tab.')
+                )
+              );
+              console.error('Preview render error:', error);
+            }
           </script>
         </body>
       </html>
