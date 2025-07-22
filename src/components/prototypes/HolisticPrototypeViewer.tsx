@@ -20,6 +20,7 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
   const [selectedSolution, setSelectedSolution] = useState('balanced');
   const [viewMode, setViewMode] = useState('preview');
   const [loading, setLoading] = useState(true);
+  const [generatingAnalysis, setGeneratingAnalysis] = useState(false);
   const [generating, setGenerating] = useState<any>({});
 
   console.log('🎯 HolisticPrototypeViewer props:', { analysisId, contextId, originalImage });
@@ -62,13 +63,22 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
   };
 
   const generateAnalysis = async () => {
-    const response = await supabase.functions.invoke('generate-holistic-prototypes', {
-      body: { analysisId, contextId }
-    });
-    
-    if (response.data?.success) {
-      loadAnalysis();
+    setGeneratingAnalysis(true);
+    try {
+      const response = await supabase.functions.invoke('generate-holistic-prototypes', {
+        body: { analysisId, contextId }
+      });
+      
+      if (response.data?.success) {
+        await loadAnalysis();
+      } else {
+        toast.error('Failed to generate holistic analysis');
+      }
+    } catch (error) {
+      console.error('Analysis generation error:', error);
+      toast.error('Failed to generate holistic analysis');
     }
+    setGeneratingAnalysis(false);
   };
 
   const generatePrototype = async (solutionType) => {
@@ -180,13 +190,57 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
     );
   };
 
-  if (loading) {
+  if (loading || generatingAnalysis) {
     return (
-      <Card className="p-8 text-center">
-        <div className="text-sm text-gray-500 mb-4">
-          Debug: analysisId={analysisId}, contextId={contextId}
+      <Card className="p-8">
+        <div className="text-center space-y-4">
+          <motion.div
+            className="w-12 h-12 mx-auto border-4 border-blue-200 border-t-blue-600 rounded-full"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          />
+          
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-2">
+              {loading ? 'Loading Analysis...' : 'Generating Holistic Analysis...'}
+            </h3>
+            {generatingAnalysis && (
+              <div className="space-y-2">
+                <p className="text-sm text-gray-600">
+                  Our AI is analyzing your design and identifying specific UX problems...
+                </p>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0">
+                      <motion.div
+                        className="w-2 h-2 bg-blue-600 rounded-full"
+                        animate={{ opacity: [1, 0.5, 1] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                      />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-medium text-blue-900">What we're doing:</p>
+                      <ul className="text-xs text-blue-700 mt-2 space-y-1">
+                        <li>• Analyzing visual hierarchy and layout patterns</li>
+                        <li>• Identifying conversion optimization opportunities</li>
+                        <li>• Comparing against UX best practices</li>
+                        <li>• Generating tailored solution approaches</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-3">
+                  This typically takes 15-30 seconds...
+                </p>
+              </div>
+            )}
+            {loading && (
+              <p className="text-sm text-gray-600">
+                Checking for existing analysis data...
+              </p>
+            )}
+          </div>
         </div>
-        Loading holistic analysis...
       </Card>
     );
   }
