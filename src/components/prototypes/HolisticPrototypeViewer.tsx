@@ -8,19 +8,28 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 
-export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }) {
-  const [analysis, setAnalysis] = useState(null);
-  const [prototypes, setPrototypes] = useState({});
+interface HolisticPrototypeViewerProps {
+  analysisId?: string;
+  contextId?: string;
+  originalImage?: string;
+}
+
+export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }: HolisticPrototypeViewerProps) {
+  const [analysis, setAnalysis] = useState<any>(null);
+  const [prototypes, setPrototypes] = useState<any>({});
   const [selectedSolution, setSelectedSolution] = useState('balanced');
   const [viewMode, setViewMode] = useState('preview');
   const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState({});
+  const [generating, setGenerating] = useState<any>({});
+
+  console.log('🎯 HolisticPrototypeViewer props:', { analysisId, contextId, originalImage });
 
   useEffect(() => {
     loadAnalysis();
   }, [analysisId]);
 
   const loadAnalysis = async () => {
+    console.log('🔍 Loading holistic analysis for:', { analysisId, contextId });
     // Load holistic analysis
     const { data } = await supabase
       .from('figmant_holistic_analyses')
@@ -29,6 +38,7 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
       .single();
 
     if (data) {
+      console.log('✅ Found existing holistic analysis:', data);
       setAnalysis(data);
       // Load any existing prototypes
       const { data: existingPrototypes } = await supabase
@@ -42,6 +52,7 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
       });
       setPrototypes(prototypeMap);
     } else {
+      console.log('❌ No holistic analysis found, generating new one for analysisId:', analysisId);
       // Generate initial analysis
       generateAnalysis();
     }
@@ -122,7 +133,26 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
   };
 
   if (loading) {
-    return <Card className="p-8 text-center">Loading analysis...</Card>;
+    return (
+      <Card className="p-8 text-center">
+        <div className="text-sm text-gray-500 mb-4">
+          Debug: analysisId={analysisId}, contextId={contextId}
+        </div>
+        Loading holistic analysis...
+      </Card>
+    );
+  }
+
+  if (!analysisId) {
+    return (
+      <Card className="p-8 text-center bg-yellow-50 border-yellow-200">
+        <AlertCircle className="w-8 h-8 mx-auto mb-4 text-yellow-600" />
+        <h3 className="font-semibold text-yellow-900 mb-2">No Analysis Available</h3>
+        <p className="text-yellow-700">
+          No analysis ID provided for holistic prototype generation.
+        </p>
+      </Card>
+    );
   }
 
   return (
