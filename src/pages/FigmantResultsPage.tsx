@@ -647,251 +647,288 @@ const FigmantResultsPage = () => {
     );
   }
 
-  // Two-part layout structure - matching the benchmark exactly
+  // Main render - use existing FigmantLayout structure with three panels
+  if (!sessionData && !analysisData) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <AlertTriangle className="w-8 h-8 mx-auto mb-4 text-red-500" />
+          <h2 className="text-lg font-semibold mb-2">No Analysis Data</h2>
+          <p className="text-muted-foreground mb-4">No analysis data was found for this session.</p>
+          <Button onClick={() => navigate('/figmant')}>
+            Start New Analysis
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Three-panel layout: Left (existing sidebar) + Middle (gallery) + Right (context)
   return (
-    <div className="h-screen flex bg-background">
-      {/* Left Sidebar */}
-      <div className="w-80 bg-card border-r border-border flex flex-col">
-        {/* Tab Buttons */}
-        <div className="p-4 border-b border-border">
-          <div className="flex bg-muted rounded-lg p-1 gap-1">
-            <Button 
-              variant={activeTab === 'menu' ? 'secondary' : 'ghost'} 
-              size="sm" 
-              className="flex-1"
-              onClick={() => setActiveTab('menu')}
-            >
-              Menu
-            </Button>
-            <Button 
-              variant={activeTab === 'chat' ? 'secondary' : 'ghost'} 
-              size="sm" 
-              className="flex-1"
-              onClick={() => setActiveTab('chat')}
-            >
-              Chat
-            </Button>
-          </div>
+    <div className="h-full flex">
+      {/* Middle Panel - Image Gallery */}
+      <div className="flex-1 p-6 overflow-y-auto">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-foreground mb-2">Image Gallery</h1>
+          <p className="text-muted-foreground">
+            Select an image to view detailed analysis and recommendations
+          </p>
         </div>
         
-        {/* Sidebar Content */}
-        <div className="flex-1 overflow-y-auto">
-          {activeTab === 'menu' ? (
-            <div className="p-4 space-y-6">
-              {/* Welcome Message */}
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-[#22757C] rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-white text-sm font-medium">F</span>
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Welcome to Figmant. You can upload image(s) to start an analysis.
-                </div>
-              </div>
+        {sessionData?.images?.length > 0 ? (
+          <div className="grid grid-cols-2 gap-6 max-w-4xl">
+            {sessionData.images.map((image, index) => {
+              const imageNames = [
+                'Create Account2 1',
+                'Create Account',
+                'Dashboard Overview',
+                'Settings Panel'
+              ];
               
-              {/* New Analysis Button */}
-              <Button 
-                className="w-full bg-[#22757C] hover:bg-[#1a5a5f] text-white"
-                onClick={() => navigate('/figmant')}
-              >
-                I want to start a new analysis.
-              </Button>
-              
-              {/* Analysis Status */}
-              <div className="space-y-4">
-                <div className="text-sm">
-                  <div className="flex items-start gap-3 mb-2">
-                    <div className="w-8 h-8 bg-[#22757C] rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-white text-sm font-medium">F</span>
-                    </div>
-                    <div className="text-sm">Thinking..</div>
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="font-semibold text-sm mb-2">Analysis Overview</h3>
-                  
-                  <div className="space-y-3">
-                    {/* Processing Status Cards */}
-                    <div className="bg-muted/50 rounded-lg p-3">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-6 h-6 bg-green-100 rounded flex items-center justify-center">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium">{sessionData?.images?.length || 3} Images</div>
-                          <div className="text-xs text-green-600">1 analysed</div>
-                        </div>
-                      </div>
+              return (
+                <Card 
+                  key={image.id} 
+                  className={`cursor-pointer hover:shadow-lg transition-all duration-200 group ${
+                    selectedImage?.id === image.id ? 'ring-2 ring-primary' : ''
+                  }`}
+                  onClick={() => handleImageSelect(image)}
+                >
+                  <div className="p-0 overflow-hidden rounded-lg">
+                    {/* Image container with proper aspect ratio */}
+                    <div className="aspect-[4/3] bg-gradient-to-br from-blue-50 to-purple-50 relative overflow-hidden">
+                      <img 
+                        src={getImageUrl(image.file_path)}
+                        alt={imageNames[index] || image.file_name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.parentElement!.innerHTML = `
+                            <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-100 to-blue-100">
+                              <div class="text-center p-6">
+                                <div class="w-16 h-16 bg-white/30 rounded-xl mb-3 mx-auto flex items-center justify-center">
+                                  <span class="text-2xl">${index === 0 ? '📊' : index === 1 ? '👤' : index === 2 ? '📈' : '⚙️'}</span>
+                                </div>
+                                <h3 class="font-semibold text-sm text-gray-800">${imageNames[index] || image.file_name}</h3>
+                              </div>
+                            </div>
+                          `;
+                        }}
+                      />
                     </div>
                     
-                    <div className="bg-muted/50 rounded-lg p-3">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-6 h-6 bg-yellow-100 rounded flex items-center justify-center">
-                          <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium">{sessionData?.images?.length || 3} Images</div>
-                          <div className="text-xs text-yellow-600">Processing</div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-muted/50 rounded-lg p-3">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center">
-                          <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium">1 analysed</div>
-                          <div className="text-xs text-gray-500">Processing</div>
-                        </div>
+                    {/* Card Footer */}
+                    <div className="p-4">
+                      <h3 className="font-semibold text-base text-foreground mb-1">
+                        {imageNames[index] || getImageTitle(image)}
+                      </h3>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-green-500" />
+                        <span className="text-xs text-muted-foreground">Analyzed</span>
                       </div>
                     </div>
                   </div>
-                </div>
-                
-                {/* Integration Logos */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 p-2">
-                    <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">S</span>
-                    </div>
-                    <span className="text-sm">SalesForce</span>
-                    <span className="text-xs text-muted-foreground ml-auto">Automate email communi...</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 p-2">
-                    <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">H</span>
-                    </div>
-                    <span className="text-sm">Hubspot</span>
-                    <span className="text-xs text-muted-foreground ml-auto">Automate email communi...</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 p-2">
-                    <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">Z</span>
-                    </div>
-                    <span className="text-sm">Zapier</span>
-                    <span className="text-xs text-muted-foreground ml-auto">Automate email communi...</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 p-2">
-                    <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">S</span>
-                    </div>
-                    <span className="text-sm">SendGrid</span>
-                    <span className="text-xs text-muted-foreground ml-auto">Automate email communi...</span>
-                  </div>
-                </div>
-              </div>
+                </Card>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+            <p className="text-muted-foreground">No images found for this session</p>
+          </div>
+        )}
+      </div>
+      
+      {/* Right Panel - Context Recommendations */}
+      <div className="w-96 bg-card border-l border-border flex flex-col">
+        {/* Header */}
+        <div className="p-4 border-b border-border">
+          <div className="flex items-center gap-3 mb-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/figmant')}
+              className="p-1 h-8 w-8"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <h2 className="font-semibold text-foreground">
+                {selectedImage ? 'Figmant Analysis' : 'Analysis Results'}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {selectedImage ? 'Detailed Analysis' : '5 insights found'}
+              </p>
             </div>
-          ) : (
-            <div className="p-4">
-              <div className="text-center text-muted-foreground text-sm">
-                Chat interface coming soon...
-              </div>
+          </div>
+          
+          {selectedImage && (
+            <div className="flex bg-muted rounded-lg p-1 gap-1">
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                className="flex-1 flex items-center gap-2"
+              >
+                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                UX Analysis
+              </Button>
             </div>
           )}
         </div>
         
-        {/* Bottom Input */}
-        <div className="p-4 border-t border-border">
-          <div className="text-sm text-muted-foreground mb-2">What would you like to analyze?</div>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" className="h-8 w-8 p-0">
-              <span className="text-lg">+</span>
-            </Button>
-            <Button size="sm" variant="outline" className="h-8 w-8 p-0">
-              <span className="text-lg">🎤</span>
-            </Button>
-            <Button size="sm" variant="outline" className="h-8 w-8 p-0">
-              <span className="text-lg">↑</span>
-            </Button>
-          </div>
-        </div>
-      </div>
-      
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col">
-        {viewMode === 'gallery' ? (
-          <div className="flex-1 overflow-y-auto">
-            {/* Image Gallery - Rebuild to match benchmark */}
-            <div className="p-8">
-              <div className="grid grid-cols-2 gap-6 max-w-4xl">
-                {sessionData?.images?.map((image, index) => {
-                  const imageNames = [
-                    'Saas Website Landing Page',
-                    'Cute Shop Storefront Icon',
-                    'Futuristic Humanoid Robot',
-                    'Cute Shop Storefront Icon'
-                  ];
-                  const subtitle = index === 0 ? '4 Annotations' : '3D Icons';
-                  
-                  return (
-                    <Card 
-                      key={image.id} 
-                      className="cursor-pointer hover:shadow-lg transition-all duration-200 group"
-                      onClick={() => handleImageSelect(image)}
-                    >
-                      <div className="p-0 overflow-hidden rounded-lg">
-                        {/* Image container with proper aspect ratio */}
-                        <div className="aspect-[4/3] bg-gradient-to-br from-blue-50 to-purple-50 relative overflow-hidden">
-                          <img 
-                            src={getImageUrl(image.file_path)}
-                            alt={imageNames[index] || image.file_name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                              target.parentElement!.innerHTML = `
-                                <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-100 to-blue-100">
-                                  <div class="text-center p-6">
-                                    <div class="w-16 h-16 bg-white/30 rounded-xl mb-3 mx-auto flex items-center justify-center">
-                                      <span class="text-2xl">${index === 0 ? '📊' : index === 1 ? '🛍️' : index === 2 ? '🤖' : '🎨'}</span>
-                                    </div>
-                                    <h3 class="font-semibold text-sm text-gray-800">${imageNames[index] || image.file_name}</h3>
-                                  </div>
-                                </div>
-                              `;
-                            }}
-                          />
-                        </div>
-                        
-                        {/* Card Footer */}
-                        <div className="p-4">
-                          <h3 className="font-semibold text-base text-foreground mb-1">
-                            {imageNames[index] || getImageTitle(image)}
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            {subtitle}
-                          </p>
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                })} 
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="flex-1 overflow-hidden">
-            {selectedImage ? (
-              <FigmantImageDetail 
-                image={selectedImage}
-                analysisData={analysisData}
-                onBack={handleBackToGallery}
-              />
-            ) : (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center">
-                  <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">Select an image to view details</p>
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-4">
+          {!selectedImage ? (
+            // Summary view
+            <div className="space-y-6">
+              <div>
+                <h3 className="font-semibold text-foreground mb-2">Overview</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Total Insights</span>
+                    <span className="text-foreground font-semibold">5</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Images</span>
+                    <span className="text-foreground">{sessionData?.images?.length || 2}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Date</span>
+                    <span className="text-foreground">Recently</span>
+                  </div>
                 </div>
               </div>
-            )}
-          </div>
-        )}
+              
+              <div>
+                <h3 className="font-semibold text-foreground mb-3">Categories</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-foreground">All</span>
+                    <span className="text-xs bg-muted px-2 py-1 rounded">5</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-foreground">Accessibility</span>
+                    <span className="text-xs bg-muted px-2 py-1 rounded">1</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-foreground">Usability</span>
+                    <span className="text-xs bg-muted px-2 py-1 rounded">2</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-foreground">Visual</span>
+                    <span className="text-xs bg-muted px-2 py-1 rounded">1</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-foreground">Content</span>
+                    <span className="text-xs bg-muted px-2 py-1 rounded">1</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-foreground mb-3">Generate Visual Prototypes</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Transform your top recommendations into interactive visual prototypes with working code. 
+                  We'll select 2-3 high-impact improvements and create comprehensive implementation examples.
+                </p>
+                <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Generate Prototypes
+                </Button>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-foreground mb-3">Actions</h3>
+                <div className="space-y-2">
+                  <Button variant="outline" size="sm" className="w-full justify-start">
+                    <FileText className="w-4 h-4 mr-2" />
+                    Export Report
+                  </Button>
+                  <Button variant="outline" size="sm" className="w-full justify-start">
+                    <Grid className="w-4 h-4 mr-2" />
+                    Share Analysis
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            // Image-specific view
+            <div className="space-y-6">
+              <div>
+                <h3 className="font-semibold text-foreground mb-2">Image Analysis</h3>
+                <p className="text-sm text-muted-foreground">
+                  Viewing detailed recommendations for: {selectedImage?.file_name}
+                </p>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-foreground mb-3">Filters & Sort</h3>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  <Button variant="secondary" size="sm">All</Button>
+                  <Button variant="ghost" size="sm">Accessibility</Button>
+                  <Button variant="ghost" size="sm">Usability</Button>
+                  <Button variant="ghost" size="sm">Visual</Button>
+                  <Button variant="ghost" size="sm">Content</Button>
+                </div>
+                <select className="w-full p-2 text-sm border rounded-lg bg-background">
+                  <option>Sort by Severity</option>
+                  <option>Sort by Impact</option>
+                  <option>Sort by Category</option>
+                </select>
+              </div>
+              
+              {/* Sample recommendations */}
+              <div className="space-y-4">
+                <div className="border border-red-200 rounded-lg p-3">
+                  <div className="flex items-start justify-between mb-2">
+                    <h4 className="font-semibold text-sm">Password field use...</h4>
+                    <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">critical</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Replace dots with asterisks or add character counter...
+                  </p>
+                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">accessibility</span>
+                </div>
+                
+                <div className="border border-yellow-200 rounded-lg p-3">
+                  <div className="flex items-start justify-between mb-2">
+                    <h4 className="font-semibold text-sm">Primary CTA us...</h4>
+                    <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">warning</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Use brand primary color with higher contrast ratio...
+                  </p>
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">usability</span>
+                </div>
+                
+                <div className="border border-blue-200 rounded-lg p-3">
+                  <div className="flex items-start justify-between mb-2">
+                    <h4 className="font-semibold text-sm">Large illu...</h4>
+                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">improvement</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Reduce illustration size or use responsive 50/50 split...
+                  </p>
+                  <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">visual</span>
+                </div>
+              </div>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedImage(null);
+                  setViewMode('gallery');
+                }}
+                className="w-full"
+              >
+                <Grid className="h-4 w-4 mr-2" />
+                Back to Gallery
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
