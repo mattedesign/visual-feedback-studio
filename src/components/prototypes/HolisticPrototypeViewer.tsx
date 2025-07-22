@@ -126,99 +126,124 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
   };
 
   const renderPrototypePreview = (code) => {
-    // Clean markdown code blocks and other formatting issues
-    let cleanCode = code;
-    
-    // Remove markdown code block markers
-    cleanCode = cleanCode.replace(/```jsx?\n?/g, '');
-    cleanCode = cleanCode.replace(/```\n?$/g, '');
-    cleanCode = cleanCode.replace(/'''jsx?\n?/g, '');
-    cleanCode = cleanCode.replace(/'''\n?$/g, '');
-    
-    // Remove any leading/trailing whitespace
-    cleanCode = cleanCode.trim();
-    
-    // Remove comment blocks at the start if they exist
-    cleanCode = cleanCode.replace(/^\/\*[\s\S]*?\*\/\s*/g, '');
-    
-    // Fix unterminated comments by completing them or removing them
-    cleanCode = cleanCode.replace(/\/\*[^*]*\*?(?:[^/*][^*]*\*+)*(?:[^/*](?:[^*])*\*+)*\/|\/\*[^*]*\*?(?:[^/*][^*]*\*+)*(?:[^/*](?:[^*])*\*+)*/g, (match) => {
-      // If comment is properly closed, keep it
-      if (match.endsWith('*/')) {
-        return match;
+    try {
+      // More robust code cleaning
+      let cleanCode = code;
+      
+      // Remove markdown code block markers
+      cleanCode = cleanCode.replace(/```(?:jsx?|tsx?)?\n?/g, '');
+      cleanCode = cleanCode.replace(/```\n?$/g, '');
+      
+      // Remove any leading/trailing whitespace
+      cleanCode = cleanCode.trim();
+      
+      // Remove comment blocks at the start if they exist
+      cleanCode = cleanCode.replace(/^\/\*[\s\S]*?\*\/\s*/g, '');
+      
+      // More aggressive comment cleanup - remove all block comments to avoid parsing issues
+      cleanCode = cleanCode.replace(/\/\*[\s\S]*?\*\//g, '');
+      
+      // Remove single-line comments that might cause issues
+      cleanCode = cleanCode.replace(/\/\/.*$/gm, '');
+      
+      // Fix template literal issues
+      cleanCode = cleanCode.replace(/className=\{`([^`]*)`\}/g, 'className="$1"');
+      
+      // Ensure quotes are properly escaped
+      cleanCode = cleanCode.replace(/'/g, "\\'");
+      cleanCode = cleanCode.replace(/"/g, '\\"');
+      
+      // Validate that we have a proper React component
+      if (!cleanCode.includes('function') && !cleanCode.includes('const')) {
+        cleanCode = `function EnhancedDesign() {
+          return React.createElement('div', 
+            { className: 'p-8 text-center' },
+            React.createElement('h3', null, 'Generated code format not recognized'),
+            React.createElement('p', null, 'Please check the Code tab for the raw output')
+          );
+        }`;
       }
-      // If it's an unterminated comment, close it or remove it
-      return match + ' */';
-    });
-    
-    // Remove any remaining unterminated single-line comments at the end of lines
-    cleanCode = cleanCode.replace(/\/\*[^*\n]*$/gm, '');
-    
-    // Fix common template literal issues
-    cleanCode = cleanCode.replace(/className=\{`([^`]*)`\}/g, 'className="$1"');
-    
-    // Validate that we have a proper React component
-    if (!cleanCode.includes('function') && !cleanCode.includes('const') && !cleanCode.includes('export')) {
-      cleanCode = `function EnhancedDesign() {\n  return (\n    <div className="p-8 text-center">\n      <p>Generated code format not recognized</p>\n      <p>Please check the Code tab for the raw output</p>\n    </div>\n  );\n}`;
-    }
 
-    // Render in iframe with React and Tailwind
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-          <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-          <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-          <script src="https://cdn.tailwindcss.com"></script>
-          <style>
-            body { margin: 0; padding: 16px; font-family: system-ui, -apple-system, sans-serif; }
-            .error { background: #fee; border: 1px solid #fcc; padding: 12px; border-radius: 6px; color: #900; }
-          </style>
-        </head>
-        <body>
-          <div id="root"></div>
-          <script type="text/babel">
-            try {
-              const { useState, useEffect } = React;
-              
-              ${cleanCode}
-              
-              function ComponentToRender() {
-                if (typeof EnhancedDesign !== 'undefined') {
-                  return React.createElement(EnhancedDesign);
+      // Use a more robust approach - encode the code as base64 to avoid injection issues
+      const encodedCode = btoa(cleanCode);
+      
+      const html = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+            <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+            <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+            <script src="https://cdn.tailwindcss.com"></script>
+            <style>
+              body { margin: 0; padding: 16px; font-family: system-ui, -apple-system, sans-serif; }
+              .error { background: #fee; border: 1px solid #fcc; padding: 12px; border-radius: 6px; color: #900; }
+            </style>
+          </head>
+          <body>
+            <div id="root"></div>
+            <script>
+              try {
+                // Decode the base64 encoded code
+                const decodedCode = atob('${encodedCode}');
+                
+                // Transform and execute the code
+                const transformedCode = Babel.transform(decodedCode, {
+                  presets: ['react']
+                }).code;
+                
+                // Create a function to safely execute the code
+                const executeCode = new Function('React', 'ReactDOM', 'useState', 'useEffect', transformedCode + '; return typeof EnhancedDesign !== "undefined" ? EnhancedDesign : null;');
+                
+                const { useState, useEffect } = React;
+                const EnhancedDesign = executeCode(React, ReactDOM, useState, useEffect);
+                
+                if (EnhancedDesign) {
+                  ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(EnhancedDesign));
+                } else {
+                  ReactDOM.createRoot(document.getElementById('root')).render(
+                    React.createElement('div', 
+                      { className: 'p-8 text-center' },
+                      React.createElement('h3', null, 'Component Not Found'),
+                      React.createElement('p', null, 'EnhancedDesign component could not be loaded from the generated code.')
+                    )
+                  );
                 }
-                return React.createElement('div', 
-                  { className: 'p-8 text-center' },
-                  React.createElement('h3', null, 'Component Not Found'),
-                  React.createElement('p', null, 'EnhancedDesign component could not be loaded from the generated code.')
+              } catch (error) {
+                console.error('Preview render error:', error);
+                ReactDOM.createRoot(document.getElementById('root')).render(
+                  React.createElement('div', {className: 'error'}, 
+                    React.createElement('h3', null, 'Preview Error'),
+                    React.createElement('p', null, 'There was a syntax error in the generated code:'),
+                    React.createElement('code', null, error.message),
+                    React.createElement('p', null, 'You can view the raw code in the Code tab to debug the issue.')
+                  )
                 );
               }
-              
-              ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(ComponentToRender));
-            } catch (error) {
-              console.error('Preview render error:', error);
-              ReactDOM.createRoot(document.getElementById('root')).render(
-                React.createElement('div', {className: 'error'}, 
-                  React.createElement('h3', null, 'Preview Error'),
-                  React.createElement('p', null, 'There was a syntax error in the generated code:'),
-                  React.createElement('code', null, error.message),
-                  React.createElement('p', null, 'You can view the raw code in the Code tab to debug the issue.')
-                )
-              );
-            }
-          </script>
-        </body>
-      </html>
-    `;
-    
-    return (
-      <iframe
-        srcDoc={html}
-        className="w-full h-[600px] border-0"
-        sandbox="allow-scripts"
-      />
-    );
+            </script>
+          </body>
+        </html>
+      `;
+      
+      return (
+        <iframe
+          srcDoc={html}
+          className="w-full h-[600px] border-0"
+          sandbox="allow-scripts"
+        />
+      );
+    } catch (error) {
+      // Fallback if even the preview generation fails
+      return (
+        <div className="w-full h-[600px] bg-red-50 border border-red-200 rounded-lg flex items-center justify-center">
+          <div className="text-center p-8">
+            <h3 className="font-semibold text-red-900 mb-2">Preview Generation Failed</h3>
+            <p className="text-red-700 mb-4">Unable to generate preview for this prototype.</p>
+            <p className="text-sm text-red-600">Please check the Code tab to view the generated code directly.</p>
+          </div>
+        </div>
+      );
+    }
   };
 
   if (loading || generatingAnalysis) {
