@@ -368,51 +368,106 @@ function buildPrototypePrompt(candidate: any, context: any): string {
     || ['#2563eb', '#ffffff', '#f8fafc'];
   
   return `
-# VISUAL PROTOTYPE GENERATION
+# PROFESSIONAL UI PROTOTYPE GENERATION
 
-## Issue Analysis
-- **Issue**: ${issue.description}
-- **Improvement**: ${issue.suggested_fix || issue.impact}
-- **Severity**: ${issue.severity}
-- **Element**: ${issue.element?.type || 'unknown'} at ${issue.element?.location?.x || 0}, ${issue.element?.location?.y || 0}
+You are a senior UX/UI designer creating a production-ready prototype that demonstrates a specific improvement.
 
-## Design Context  
-- **Colors**: ${dominantColors.join(', ')}
-- **Element Size**: ${issue.element?.location?.width || 200}px × ${issue.element?.location?.height || 50}px
+## Issue Context
+**Problem**: ${issue.description}
+**Suggested Fix**: ${issue.suggested_fix || issue.impact}
+**Severity**: ${issue.severity} (${issue.confidence}% confidence)
+**Element Type**: ${issue.element?.type || 'general UI element'}
+**Location**: ${issue.element?.location?.x || 0}px, ${issue.element?.location?.y || 0}px
+**Size**: ${issue.element?.location?.width || 200}px × ${issue.element?.location?.height || 50}px
 
-Create a comprehensive visual prototype showing the improvement.
+## Design Context
+**Detected Colors**: ${dominantColors.join(', ')}
+**Platform**: Web interface
+**Style**: Modern, professional UI design
 
-OUTPUT JSON:
+## CRITICAL REQUIREMENTS
+
+### Visual Quality Standards
+1. **Professional Aesthetics**: Use modern design principles (proper spacing, typography, shadows)
+2. **High Contrast**: Ensure ALL text has sufficient contrast (dark text on light backgrounds, light text on dark backgrounds)
+3. **Consistent Styling**: Use a cohesive color palette and spacing system
+4. **Interactive States**: Include hover, focus, and active states for interactive elements
+5. **Production Ready**: Generate clean, maintainable code that could be implemented immediately
+
+### Technical Requirements
+1. **Semantic HTML**: Use proper HTML5 elements and structure
+2. **Modern CSS**: Use flexbox/grid, custom properties, and modern selectors
+3. **Accessibility**: Include ARIA labels, focus indicators, and keyboard navigation
+4. **Responsive Design**: Ensure mobile compatibility with proper breakpoints
+5. **Performance**: Minimize CSS complexity and avoid unnecessary JavaScript
+
+### Content Requirements
+1. **Realistic Content**: Use meaningful text instead of Lorem ipsum when possible
+2. **Clear Hierarchy**: Establish visual hierarchy through typography and spacing
+3. **User-Focused Copy**: Write UI text that guides and helps users
+
+## OUTPUT REQUIREMENTS
+
+Generate a JSON response with a complete, working prototype that demonstrates the improvement.
+
+**MANDATORY COLOR CONTRAST RULES:**
+- Light backgrounds (#ffffff, #f8fafc, #e2e8f0): Use dark text (#1f2937, #374151, #0f172a)
+- Dark backgrounds (#1f2937, #111827, #0f172a): Use light text (#ffffff, #f9fafb, #e5e7eb)
+- Colored backgrounds: Ensure 4.5:1 contrast ratio minimum
+- Interactive elements: Use clear hover/focus states with good contrast
+
 \`\`\`json
 {
-  "title": "Brief improvement title",
+  "title": "Clear, actionable improvement title (max 60 chars)",
   "category": "${issue.category}",
   "improvement": {
     "beforeCode": {
-      "html": "<!-- Current HTML -->",
-      "css": "/* Current CSS */"
+      "html": "<!-- Current problematic HTML structure -->",
+      "css": "/* Current problematic styles that demonstrate the issue */"
     },
     "afterCode": {
-      "html": "<!-- Improved HTML -->", 
-      "css": "/* Improved CSS using colors: ${dominantColors.join(', ')} */"
+      "html": "<!-- Improved HTML with semantic structure, proper accessibility, and clear content -->",
+      "css": "/* Complete improved CSS with:\n   - High contrast colors (dark text on light bg or light text on dark bg)\n   - Professional spacing and typography\n   - Modern design elements (subtle shadows, rounded corners)\n   - Color palette: ${dominantColors.join(', ')}\n   - Smooth transitions and micro-interactions\n   - Responsive units (rem, em, %, vw/vh) */"
     },
     "interactiveDemo": {
-      "html": "<!-- Interactive demo -->",
-      "css": "/* All states: hover, focus, active */",
-      "js": "/* Optional interactions */"
+      "html": "<!-- Interactive version with all states and feedback -->",
+      "css": "/* Comprehensive interaction styles:\n   :hover - visible feedback on hover\n   :focus - clear focus indicators\n   :active - pressed/clicked state\n   :disabled - disabled state styling\n   Smooth transitions between all states */",
+      "js": "/* Minimal, focused JavaScript for enhanced UX:\n  - Form validation feedback\n  - Progressive enhancement\n  - Accessibility helpers\n  - Performance optimized */"
     },
     "mobileResponsive": {
-      "html": "<!-- Mobile version -->",
-      "css": "/* Responsive CSS */"
+      "html": "<!-- Mobile-optimized structure with touch-friendly elements -->",
+      "css": "/* Mobile-first responsive design:\n   @media (max-width: 768px) - tablet adjustments\n   @media (max-width: 480px) - mobile optimizations\n   Touch targets minimum 44px\n   Readable font sizes (16px+)\n   Optimized spacing and layout */"
     }
   },
   "explanation": {
-    "summary": "What was improved and why",
-    "keyChanges": ["Change 1", "Change 2", "Change 3"],
-    "businessImpact": "Expected impact",
-    "implementationNotes": ["Note 1", "Note 2"]
+    "summary": "Concise explanation of what was improved and the user benefit (1-2 sentences)",
+    "keyChanges": [
+      "Specific change 1 with measurable improvement",
+      "Specific change 2 with technical detail", 
+      "Specific change 3 with business/user impact"
+    ],
+    "businessImpact": "Quantified expected improvement (e.g., '25% better conversion', 'reduces task completion time by 30%')",
+    "implementationNotes": [
+      "Browser compatibility note (IE11+, modern browsers)",
+      "Performance consideration or optimization",
+      "Accessibility compliance note (WCAG 2.1 AA)",
+      "Integration requirement or dependency"
+    ]
   }
 }
 \`\`\`
+
+**FINAL CHECKLIST:**
+✅ High contrast text (readable on all backgrounds)
+✅ Professional visual design with proper spacing
+✅ Semantic HTML structure
+✅ Modern, maintainable CSS
+✅ Interactive states for all clickable elements
+✅ Mobile-responsive design
+✅ Accessibility features included
+✅ Realistic, helpful content
+✅ Clear improvement demonstration
+✅ Production-ready code quality
 `;
+}
 }
