@@ -104,19 +104,28 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
   };
 
   const renderPrototypePreview = (code) => {
-    // Clean and validate the code before rendering
-    const cleanCode = code
-      .replace(/[`${}]/g, (match) => {
-        // Escape template literals that might cause issues
-        if (match === '`') return "'";
-        if (match === '${') return "'+";
-        if (match === '}') return "+'";
-        return match;
-      })
-      .replace(/className=\{[^}]*\}/g, (match) => {
-        // Fix className template literals
-        return match.replace(/`([^`]*)`/g, "'$1'");
-      });
+    // Clean markdown code blocks and other formatting issues
+    let cleanCode = code;
+    
+    // Remove markdown code block markers
+    cleanCode = cleanCode.replace(/```jsx?\n?/g, '');
+    cleanCode = cleanCode.replace(/```\n?$/g, '');
+    cleanCode = cleanCode.replace(/'''jsx?\n?/g, '');
+    cleanCode = cleanCode.replace(/'''\n?$/g, '');
+    
+    // Remove any leading/trailing whitespace and comments
+    cleanCode = cleanCode.trim();
+    
+    // Remove comment blocks at the start if they exist
+    cleanCode = cleanCode.replace(/^\/\*[\s\S]*?\*\/\s*/g, '');
+    
+    // Fix common template literal issues
+    cleanCode = cleanCode.replace(/className=\{`([^`]*)`\}/g, 'className="$1"');
+    
+    // Validate that we have a proper React component
+    if (!cleanCode.includes('function') && !cleanCode.includes('const') && !cleanCode.includes('export')) {
+      cleanCode = `function EnhancedDesign() {\n  return (\n    <div className="p-8 text-center">\n      <p>Generated code format not recognized</p>\n      <p>Please check the Code tab for the raw output</p>\n    </div>\n  );\n}`;
+    }
 
     // Render in iframe with React and Tailwind
     const html = `
@@ -139,17 +148,23 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
             
             try {
               ${cleanCode}
+              
+              // Ensure we have an EnhancedDesign component to render
+              if (typeof EnhancedDesign === 'undefined') {
+                throw new Error('EnhancedDesign component not found in generated code');
+              }
+              
               ReactDOM.createRoot(document.getElementById('root')).render(<EnhancedDesign />);
             } catch (error) {
+              console.error('Preview render error:', error);
               ReactDOM.createRoot(document.getElementById('root')).render(
                 React.createElement('div', {className: 'error'}, 
                   React.createElement('h3', null, 'Preview Error'),
                   React.createElement('p', null, 'There was a syntax error in the generated code:'),
                   React.createElement('code', null, error.message),
-                  React.createElement('p', null, 'You can still view and download the raw code from the Code tab.')
+                  React.createElement('p', null, 'You can view the raw code in the Code tab to debug the issue.')
                 )
               );
-              console.error('Preview render error:', error);
             }
           </script>
         </body>
