@@ -67,9 +67,20 @@ serve(async (req) => {
         solutionsCount: analysisResponse?.solutions?.length || 0
       });
 
-      if (!analysisResponse || !analysisResponse.problems || !analysisResponse.solutions) {
-        console.error('🚨 Invalid analysis response structure:', analysisResponse);
-        throw new Error('Claude did not return a properly structured analysis response');
+      if (!analysisResponse || typeof analysisResponse !== 'object') {
+        console.error('🚨 Invalid analysis response - not an object:', analysisResponse);
+        throw new Error('Claude did not return a valid response object');
+      }
+
+      // Ensure we have the required arrays, defaulting to empty arrays if missing
+      if (!Array.isArray(analysisResponse.problems)) {
+        console.warn('⚠️ Problems array missing, defaulting to empty array');
+        analysisResponse.problems = [];
+      }
+      
+      if (!Array.isArray(analysisResponse.solutions)) {
+        console.warn('⚠️ Solutions array missing, defaulting to empty array');
+        analysisResponse.solutions = [];
       }
       
       const { data: newAnalysis, error: insertError } = await supabase
