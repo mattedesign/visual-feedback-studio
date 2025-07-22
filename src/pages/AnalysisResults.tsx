@@ -63,6 +63,15 @@ const AnalysisResults = () => {
     const enhancedIssues: any[] = [];
     const enhancedSuggestions: any[] = [];
     
+    console.log('🔍 Claude Analysis Structure Check:', {
+      hasClaudeAnalysis: !!claudeAnalysis,
+      claudeAnalysisKeys: claudeAnalysis ? Object.keys(claudeAnalysis) : 'none',
+      hasIssues: !!claudeAnalysis?.issues,
+      issuesIsArray: Array.isArray(claudeAnalysis?.issues),
+      issuesLength: claudeAnalysis?.issues?.length || 0,
+      issuesData: claudeAnalysis?.issues
+    });
+    
     // 🔧 NEW FORMAT: Handle the new mentor analysis format
     if (claudeAnalysis?.issues && Array.isArray(claudeAnalysis.issues)) {
       console.log('🔍 Processing new format issues:', claudeAnalysis.issues.length, 'items');
