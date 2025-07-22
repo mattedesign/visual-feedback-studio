@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Sparkles, AlertTriangle, RefreshCw, Grid, FileText, ChevronLeft } from 'lucide-react';
+import { Sparkles, AlertTriangle, RefreshCw, Grid, FileText, ChevronLeft, PanelRightClose } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -482,15 +482,7 @@ const FigmantResultsPage = () => {
         >
           {/* Header */}
           <div className="p-4 border-b border-border w-full">
-            <div className="flex items-center gap-3 mb-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/figmant')}
-                className="p-1 h-8 w-8"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
+            <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="font-semibold text-foreground">
                   {selectedImage ? 'Figmant Analysis' : 'Analysis Results'}
@@ -499,6 +491,15 @@ const FigmantResultsPage = () => {
                   {selectedImage ? 'Detailed Analysis' : '5 insights found'}
                 </p>
               </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/figmant')}
+                className="p-1 h-8 w-8"
+                title="Collapse panel"
+              >
+                <PanelRightClose className="h-4 w-4" />
+              </Button>
             </div>
             
             {selectedImage && (
