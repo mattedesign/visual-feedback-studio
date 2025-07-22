@@ -127,113 +127,58 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
 
   const renderPrototypePreview = (code) => {
     try {
-      // More robust code cleaning
-      let cleanCode = code;
+      // Clean markdown code blocks
+      let cleanCode = code.replace(/```(?:jsx?|tsx?)?\n?/g, '').replace(/```\n?$/g, '').trim();
       
-      // Remove markdown code block markers
-      cleanCode = cleanCode.replace(/```(?:jsx?|tsx?)?\n?/g, '');
-      cleanCode = cleanCode.replace(/```\n?$/g, '');
-      
-      // Remove any leading/trailing whitespace
-      cleanCode = cleanCode.trim();
-      
-      // Remove comment blocks at the start if they exist
+      // Remove comment blocks that might cause issues
       cleanCode = cleanCode.replace(/^\/\*[\s\S]*?\*\/\s*/g, '');
       
-      // More aggressive comment cleanup - remove all block comments to avoid parsing issues
-      cleanCode = cleanCode.replace(/\/\*[\s\S]*?\*\//g, '');
-      
-      // Remove single-line comments that might cause issues
-      cleanCode = cleanCode.replace(/\/\/.*$/gm, '');
-      
-      // Fix template literal issues
-      cleanCode = cleanCode.replace(/className=\{`([^`]*)`\}/g, 'className="$1"');
-      
-      // Ensure quotes are properly escaped
-      cleanCode = cleanCode.replace(/'/g, "\\'");
-      cleanCode = cleanCode.replace(/"/g, '\\"');
-      
-      // Validate that we have a proper React component
-      if (!cleanCode.includes('function') && !cleanCode.includes('const')) {
-        cleanCode = `function EnhancedDesign() {
-          return React.createElement('div', 
-            { className: 'p-8 text-center' },
-            React.createElement('h3', null, 'Generated code format not recognized'),
-            React.createElement('p', null, 'Please check the Code tab for the raw output')
+      // Create a safe component wrapper
+      const ComponentWrapper = () => {
+        try {
+          // Use Function constructor to create the component from the code
+          const componentFunction = new Function(
+            'React', 
+            'useState', 
+            'useEffect',
+            `
+            const { createElement, Fragment } = React;
+            ${cleanCode}
+            return typeof EnhancedDesign !== 'undefined' ? EnhancedDesign : null;
+            `
           );
-        }`;
-      }
-
-      // Use a more robust approach - encode the code as base64 to avoid injection issues
-      const encodedCode = btoa(cleanCode);
-      
-      const html = `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-            <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-            <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-            <script src="https://cdn.tailwindcss.com"></script>
-            <style>
-              body { margin: 0; padding: 16px; font-family: system-ui, -apple-system, sans-serif; }
-              .error { background: #fee; border: 1px solid #fcc; padding: 12px; border-radius: 6px; color: #900; }
-            </style>
-          </head>
-          <body>
-            <div id="root"></div>
-            <script>
-              try {
-                // Decode the base64 encoded code
-                const decodedCode = atob('${encodedCode}');
-                
-                // Transform and execute the code
-                const transformedCode = Babel.transform(decodedCode, {
-                  presets: ['react']
-                }).code;
-                
-                // Create a function to safely execute the code
-                const executeCode = new Function('React', 'ReactDOM', 'useState', 'useEffect', transformedCode + '; return typeof EnhancedDesign !== "undefined" ? EnhancedDesign : null;');
-                
-                const { useState, useEffect } = React;
-                const EnhancedDesign = executeCode(React, ReactDOM, useState, useEffect);
-                
-                if (EnhancedDesign) {
-                  ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(EnhancedDesign));
-                } else {
-                  ReactDOM.createRoot(document.getElementById('root')).render(
-                    React.createElement('div', 
-                      { className: 'p-8 text-center' },
-                      React.createElement('h3', null, 'Component Not Found'),
-                      React.createElement('p', null, 'EnhancedDesign component could not be loaded from the generated code.')
-                    )
-                  );
-                }
-              } catch (error) {
-                console.error('Preview render error:', error);
-                ReactDOM.createRoot(document.getElementById('root')).render(
-                  React.createElement('div', {className: 'error'}, 
-                    React.createElement('h3', null, 'Preview Error'),
-                    React.createElement('p', null, 'There was a syntax error in the generated code:'),
-                    React.createElement('code', null, error.message),
-                    React.createElement('p', null, 'You can view the raw code in the Code tab to debug the issue.')
-                  )
-                );
-              }
-            </script>
-          </body>
-        </html>
-      `;
+          
+          const GeneratedComponent = componentFunction(React, useState, useEffect);
+          
+          if (GeneratedComponent) {
+            return <GeneratedComponent />;
+          }
+          
+          return (
+            <div className="p-8 text-center bg-yellow-50 rounded-lg">
+              <h3 className="font-semibold text-yellow-900 mb-2">Component Not Found</h3>
+              <p className="text-yellow-700">EnhancedDesign component could not be loaded from the generated code.</p>
+            </div>
+          );
+        } catch (error) {
+          console.error('Component render error:', error);
+          return (
+            <div className="p-8 bg-red-50 border border-red-200 rounded-lg">
+              <h3 className="font-semibold text-red-900 mb-2">Preview Error</h3>
+              <p className="text-red-700 mb-2">There was an error rendering the generated component:</p>
+              <code className="text-sm text-red-600 bg-red-100 p-2 rounded">{error.message}</code>
+              <p className="text-sm text-red-600 mt-2">You can view the raw code in the Code tab to debug the issue.</p>
+            </div>
+          );
+        }
+      };
       
       return (
-        <iframe
-          srcDoc={html}
-          className="w-full h-[600px] border-0"
-          sandbox="allow-scripts"
-        />
+        <div className="w-full min-h-[600px] border border-gray-200 rounded-lg overflow-auto bg-white p-4">
+          <ComponentWrapper />
+        </div>
       );
     } catch (error) {
-      // Fallback if even the preview generation fails
       return (
         <div className="w-full h-[600px] bg-red-50 border border-red-200 rounded-lg flex items-center justify-center">
           <div className="text-center p-8">
