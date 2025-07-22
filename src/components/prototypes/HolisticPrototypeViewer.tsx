@@ -185,6 +185,37 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
     }
   };
 
+  const executeComponent = (componentCode) => {
+    try {
+      // Create a function that returns the component
+      const componentFunction = new Function(
+        'React',
+        'useState',
+        'useEffect',
+        'useCallback',
+        'useMemo',
+        `
+        ${componentCode}
+        return EnhancedDesign;
+        `
+      );
+      
+      // Execute with React context
+      const Component = componentFunction(
+        React,
+        React.useState,
+        React.useEffect,
+        React.useCallback,
+        React.useMemo
+      );
+      
+      return Component;
+    } catch (error) {
+      console.error('Failed to execute component:', error);
+      throw error;
+    }
+  };
+
   const renderPrototypePreview = (code) => {
     try {
       // Clean markdown code blocks
@@ -197,60 +228,14 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
       const hasJSX = /<[^>]*>/.test(cleanCode.replace(/"[^"]*"/g, '').replace(/'[^']*'/g, ''));
       
       if (hasJSX) {
-        // If JSX is detected, fall back to iframe with Babel
+        // If JSX is detected, use iframe with Babel for proper JSX compilation
         return renderJSXInIframe(cleanCode);
       }
       
-      // Create a safe component wrapper for plain JavaScript
+      // For React.createElement based components, try direct execution
       const ComponentWrapper = () => {
         try {
-          // Import additional React utilities that generated components might need
-          const { 
-            useState, 
-            useEffect, 
-            useRef, 
-            useCallback, 
-            useMemo,
-            useContext,
-            createContext,
-            Fragment,
-            createElement
-          } = React;
-
-          // Use Function constructor to create the component from the code
-          const componentFunction = new Function(
-            'React', 
-            'useState', 
-            'useEffect',
-            'useRef',
-            'useCallback', 
-            'useMemo',
-            'useContext',
-            'createContext',
-            'Fragment',
-            'createElement',
-            `
-            // Make React utilities available in the generated code context
-            const { createElement, Fragment } = React;
-            
-            ${cleanCode}
-            
-            return typeof EnhancedDesign !== 'undefined' ? EnhancedDesign : null;
-            `
-          );
-          
-          const GeneratedComponent = componentFunction(
-            React, 
-            useState, 
-            useEffect,
-            useRef,
-            useCallback, 
-            useMemo,
-            useContext,
-            createContext,
-            Fragment,
-            createElement
-          );
+          const GeneratedComponent = executeComponent(cleanCode);
           
           if (GeneratedComponent) {
             return <GeneratedComponent />;
@@ -317,7 +302,7 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
           <div id="root"></div>
           <script type="text/babel">
             try {
-              const { useState, useEffect } = React;
+              const { useState, useEffect, useCallback, useMemo } = React;
               
               ${code}
               
