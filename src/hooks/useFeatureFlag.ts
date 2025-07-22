@@ -25,6 +25,9 @@ export const useFeatureFlag = (flagName: string): boolean => {
     'collaborative-features': true, // ENABLED: Multi-user analysis review
     'version-history': true, // ENABLED: Track analysis iterations
     'enhanced-analysis-layout': true, // ENABLED: Enhanced Figma layout
+    
+    // Holistic AI Prototypes - Feature Flag for Safe Rollout
+    'holistic-ai-prototypes': false, // DISABLED: New holistic analysis system
   };
   
   // Check for specific flag activation via URL parameters
@@ -54,6 +57,12 @@ export const useFeatureFlag = (flagName: string): boolean => {
   if (flagName === 'perplexity-integration') {
     if (urlParams.get('perplexity') === 'true') return true;
     if (localStorage.getItem('perplexity-enabled') === 'true') return true;
+  }
+  
+  // Holistic AI Prototypes activation
+  if (flagName === 'holistic-ai-prototypes') {
+    if (urlParams.get('holistic') === 'true') return true;
+    if (localStorage.getItem('holistic-ai-prototypes-enabled') === 'true') return true;
   }
   
   // Individual flag activation (e.g., ?perplexity=true)
