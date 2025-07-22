@@ -230,12 +230,16 @@ export const FigmantSidebar = () => {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            padding: '8px 12px',
-                            borderRadius: '8px',
+                            padding: isCurrentlyActive ? '12px' : '8px 12px',
+                            borderRadius: isCurrentlyActive ? '10px' : '8px',
                             transition: 'background-color 0.2s ease',
-                            backgroundColor: isCurrentlyActive ? 'rgba(0, 0, 0, 0.05)' : 'transparent',
+                            backgroundColor: 'transparent',
+                            background: isCurrentlyActive ? 'linear-gradient(180deg, #22757C 0%, #18686F 100%)' : 'transparent',
+                            border: isCurrentlyActive ? '1px solid #22757C' : 'none',
                             textDecoration: 'none',
-                            color: '#7B7B7B' // Override any visited link colors
+                            color: isCurrentlyActive ? '#FCFCFC' : '#7B7B7B',
+                            fontWeight: isCurrentlyActive ? '600' : '500',
+                            fontSize: '13px'
                           };
                         }}
                         onMouseEnter={(e) => {
@@ -264,8 +268,16 @@ export const FigmantSidebar = () => {
                           return (
                             <>
                               <div className="flex items-center gap-3 md:gap-3 sm:gap-2 xs:gap-1">
-                                <item.icon className="w-5 h-5 md:w-5 md:h-5 sm:w-4 sm:h-4 xs:w-4 xs:h-4 text-gray-600" />
-                                {!isCollapsed && <span style={{ fontSize: '13px', fontWeight: '500', color: '#7B7B7B' }}>{item.label}</span>}
+                                <item.icon style={{ 
+                                  width: '20px', 
+                                  height: '20px', 
+                                  color: isCurrentlyActive ? '#FCFCFC' : '#7B7B7B' 
+                                }} />
+                                {!isCollapsed && <span style={{ 
+                                  fontSize: '13px', 
+                                  fontWeight: isCurrentlyActive ? '600' : '500', 
+                                  color: isCurrentlyActive ? '#FCFCFC' : '#7B7B7B' 
+                                }}>{item.label}</span>}
                               </div>
                               {item.count && !isCollapsed && !isCurrentlyActive && (
                                 <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
@@ -305,9 +317,9 @@ export const FigmantSidebar = () => {
                                     alignSelf: 'stretch',
                                     borderRadius: '12px',
                                     border: '1px solid #ECECEC',
-                                    background: '#F1F1F1',
+                                    backgroundColor: '#E7EEEF',
                                     overflow: 'hidden',
-                                    color: '#121212',
+                                    color: '#151619',
                                     textOverflow: 'ellipsis',
                                     fontFamily: 'Inter',
                                     fontSize: '13px',
@@ -326,7 +338,8 @@ export const FigmantSidebar = () => {
                                     padding: '8px 12px',
                                     borderRadius: '8px',
                                     transition: 'background-color 0.2s ease',
-                                    color: '#7B7B7B',
+                                    backgroundColor: item.isActive ? '#E7EEEF' : 'transparent',
+                                    color: item.isActive ? '#151619' : '#7B7B7B',
                                     textDecoration: 'none',
                                     position: 'relative'
                                   }
@@ -362,12 +375,12 @@ export const FigmantSidebar = () => {
                                         fontWeight: '500',
                                         lineHeight: '16px',
                                         letterSpacing: '-0.12px',
-                                        color: '#121212'
+                                        color: '#151619'
                                       }
                                     : {
                                         fontSize: '13px',
                                         fontWeight: '500',
-                                        color: '#7B7B7B'
+                                        color: item.isActive ? '#151619' : '#7B7B7B'
                                       }
                                 }>
                                   {subItem.label}
