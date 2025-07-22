@@ -3,10 +3,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
 };
 
-interface RequestBody {
+interface Request {
   analysisId: string;
   contextId?: string;
   generateAll?: boolean;
@@ -19,46 +19,21 @@ serve(async (req) => {
   }
 
   try {
-    const { analysisId, contextId, generateAll = false, solutionType }: RequestBody = await req.json();
-
-    console.log(`Processing request: analysisId=${analysisId}, contextId=${contextId}, generateAll=${generateAll}, solutionType=${solutionType}`);
+    const { analysisId, contextId, generateAll = false, solutionType } = await req.json();
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
-
-    if (!supabaseUrl || !supabaseKey || !anthropicKey) {
-      throw new Error('Missing required environment variables');
-    }
-
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch analysis data
-    const { data: analysisData, error: analysisError } = await supabase
-      .from('figmant_analysis_results')
-      .select('*')
-      .eq('id', analysisId)
-      .single();
+    // Fetch all necessary data
+    const [analysisResult, contextResult] = await Promise.all([
+      supabase.from('figmant_analysis_results').select('*').eq('id', analysisId).single(),
+      contextId ? supabase.from('figmant_user_contexts').select('*').eq('id', contextId).single() : { data: null }
+    ]);
 
-    if (analysisError || !analysisData) {
-      throw new Error(`Failed to fetch analysis data: ${analysisError?.message}`);
-    }
-
-    // Fetch context data if provided
-    let contextData = null;
-    if (contextId) {
-      const { data: context, error: contextError } = await supabase
-        .from('figmant_user_contexts')
-        .select('*')
-        .eq('id', contextId)
-        .single();
-
-      if (contextError) {
-        console.warn(`Failed to fetch context data: ${contextError.message}`);
-      } else {
-        contextData = context;
-      }
-    }
+    const analysisData = analysisResult.data;
+    const contextData = contextResult.data;
 
     // Check if holistic analysis already exists
     const { data: existingAnalysis } = await supabase
@@ -71,32 +46,25 @@ serve(async (req) => {
 
     // Generate holistic analysis if it doesn't exist
     if (!holisticAnalysis) {
-      console.log('Generating holistic analysis...');
       const analysisPrompt = buildHolisticAnalysisPrompt(analysisData, contextData);
       const analysisResponse = await callClaude(analysisPrompt, anthropicKey);
       
-      const { data: newAnalysis, error: insertError } = await supabase
+      const { data: newAnalysis } = await supabase
         .from('figmant_holistic_analyses')
         .insert({
           analysis_id: analysisId,
-          identified_problems: analysisResponse.problems || [],
-          solution_approaches: analysisResponse.solutions || [],
-          vision_insights: analysisResponse.visionInsights || {}
+          identified_problems: analysisResponse.problems,
+          solution_approaches: analysisResponse.solutions,
+          vision_insights: analysisResponse.visionInsights
         })
         .select()
         .single();
-
-      if (insertError) {
-        throw new Error(`Failed to store holistic analysis: ${insertError.message}`);
-      }
         
       holisticAnalysis = newAnalysis;
-      console.log('Holistic analysis stored successfully');
     }
 
     // Generate prototypes
     if (generateAll) {
-      console.log('Generating all prototypes...');
       const results = await Promise.all(
         holisticAnalysis.solution_approaches.map(solution => 
           generatePrototype(solution, analysisData, contextData, holisticAnalysis, supabase, anthropicKey)
@@ -108,12 +76,7 @@ serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } else if (solutionType) {
-      console.log(`Generating ${solutionType} prototype...`);
       const solution = holisticAnalysis.solution_approaches.find(s => s.approach === solutionType);
-      if (!solution) {
-        throw new Error(`Solution type ${solutionType} not found in analysis`);
-      }
-      
       const prototype = await generatePrototype(solution, analysisData, contextData, holisticAnalysis, supabase, anthropicKey);
       
       return new Response(
@@ -128,7 +91,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in generate-holistic-prototypes:', error);
+    console.error('Error:', error);
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -192,31 +155,9 @@ For each approach include:
 
 Return as JSON:
 {
-  "problems": [
-    {
-      "id": "unique_id",
-      "description": "problem description",
-      "severity": "high|medium|low",
-      "businessImpact": "how it affects business goals",
-      "uxPrinciple": "which UX principle is violated"
-    }
-  ],
-  "solutions": [
-    {
-      "approach": "conservative|balanced|innovative",
-      "name": "solution name",
-      "description": "solution description",
-      "keyChanges": ["change 1", "change 2"],
-      "expectedImpact": {
-        "metric": "improvement description"
-      },
-      "implementationGuidance": "specific implementation steps",
-      "exampleCompanies": ["company1", "company2"]
-    }
-  ],
-  "visionInsights": {
-    "summary": "key insights from vision analysis"
-  }
+  "problems": [...],
+  "solutions": [...],
+  "visionInsights": { ... }
 }`;
 }
 
@@ -236,17 +177,13 @@ async function generatePrototype(
     .eq('solution_type', solution.approach)
     .single();
 
-  if (existing) {
-    console.log(`Prototype for ${solution.approach} already exists`);
-    return existing;
-  }
+  if (existing) return existing;
 
   // Generate new prototype
-  console.log(`Generating new ${solution.approach} prototype...`);
   const prototypePrompt = buildPrototypePrompt(solution, analysisData, contextData, holisticAnalysis);
   const code = await callClaude(prototypePrompt, anthropicKey);
 
-  const { data: prototype, error: insertError } = await supabase
+  const { data: prototype } = await supabase
     .from('figmant_holistic_prototypes')
     .insert({
       analysis_id: analysisData.id,
@@ -254,22 +191,17 @@ async function generatePrototype(
       title: solution.name,
       description: solution.description,
       component_code: code,
-      key_changes: solution.keyChanges || [],
-      expected_impact: solution.expectedImpact || {},
+      key_changes: solution.keyChanges,
+      expected_impact: solution.expectedImpact,
       generation_metadata: {
         contextUsed: !!contextData,
-        problemsSolved: holisticAnalysis.identified_problems?.map(p => p.id) || [],
+        problemsSolved: holisticAnalysis.problems.map(p => p.id),
         generatedAt: new Date().toISOString()
       }
     })
     .select()
     .single();
 
-  if (insertError) {
-    throw new Error(`Failed to store prototype: ${insertError.message}`);
-  }
-
-  console.log(`${solution.approach} prototype generated and stored successfully`);
   return prototype;
 }
 
@@ -279,19 +211,19 @@ function buildPrototypePrompt(solution: any, analysisData: any, contextData: any
   return `You are creating a COMPLETE React component that implements the ${solution.approach} solution approach.
 
 PROBLEMS TO SOLVE:
-${holisticAnalysis.identified_problems?.map(p => `- ${p.description} (${p.severity})`).join('\\n') || 'No specific problems identified'}
+${holisticAnalysis.problems.map(p => `- ${p.description} (${p.severity})`).join('\\n')}
 
 SOLUTION: ${solution.name}
 ${solution.description}
 
 KEY CHANGES:
-${solution.keyChanges?.map(c => `- ${c}`).join('\\n') || 'No specific changes defined'}
+${solution.keyChanges.map(c => `- ${c}`).join('\\n')}
 
 EXTRACTED CONTENT TO USE:
 ${JSON.stringify(extractedContent, null, 2)}
 
 IMPLEMENTATION GUIDANCE:
-${solution.implementationGuidance || 'No specific guidance provided'}
+${JSON.stringify(solution.implementationGuidance)}
 
 Create a production-ready React component that:
 1. Solves all identified problems using this approach
@@ -307,7 +239,6 @@ Generate ONLY the React component code starting with: function EnhancedDesign() 
 }
 
 async function callClaude(prompt: string, apiKey: string) {
-  console.log('Calling Claude API...');
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -322,10 +253,6 @@ async function callClaude(prompt: string, apiKey: string) {
       messages: [{ role: 'user', content: prompt }]
     })
   });
-
-  if (!response.ok) {
-    throw new Error(`Claude API error: ${response.status} ${response.statusText}`);
-  }
 
   const data = await response.json();
   const content = data.content[0].text;
