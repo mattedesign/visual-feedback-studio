@@ -306,9 +306,13 @@ async function callClaude(prompt: string, apiKey: string) {
     throw new Error('No content received from Claude API');
   }
 
+  // First try to extract JSON from markdown if present
+  const jsonMatch = content.match(/```(?:json)?\s*\n([\s\S]*?)\n```/);
+  const jsonContent = jsonMatch ? jsonMatch[1] : content;
+
   // Try to parse as JSON for analysis, or return as string for code
   try {
-    const parsed = JSON.parse(content);
+    const parsed = JSON.parse(jsonContent);
     console.log('✅ Successfully parsed JSON response');
     return parsed;
   } catch (parseError) {
