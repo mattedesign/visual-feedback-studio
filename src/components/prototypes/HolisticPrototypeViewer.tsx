@@ -179,17 +179,18 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
         <body>
           <div id="root"></div>
           <script type="text/babel">
-            const { useState, useEffect } = React;
-            
             try {
+              const { useState, useEffect } = React;
+              
               ${cleanCode}
               
-              // Ensure we have an EnhancedDesign component to render
-              if (typeof EnhancedDesign === 'undefined') {
-                throw new Error('EnhancedDesign component not found in generated code');
-              }
+              const ComponentToRender = typeof EnhancedDesign !== 'undefined' ? EnhancedDesign : 
+                () => React.createElement('div', {className: 'p-8 text-center'}, 
+                  React.createElement('h3', null, 'Component Not Found'),
+                  React.createElement('p', null, 'EnhancedDesign component could not be loaded from the generated code.')
+                );
               
-              ReactDOM.createRoot(document.getElementById('root')).render(<EnhancedDesign />);
+              ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(ComponentToRender));
             } catch (error) {
               console.error('Preview render error:', error);
               ReactDOM.createRoot(document.getElementById('root')).render(
