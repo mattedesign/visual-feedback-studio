@@ -104,3 +104,6 @@ verify_jwt = false
 
 [functions.generate-visual-prototypes]
 verify_jwt = true
+
+[functions.capture-visual-patterns]
+verify_jwt = false
