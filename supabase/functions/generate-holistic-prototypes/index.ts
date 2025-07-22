@@ -198,11 +198,48 @@ For each approach include:
 - Real companies using similar approaches
 - Implementation guidance
 
-Return as JSON:
+Return as JSON with exactly this structure (no additional text before or after):
 {
-  "problems": [...],
-  "solutions": [...],
-  "visionInsights": { ... }
+  "problems": [
+    {
+      "id": "p1",
+      "title": "Problem Title",
+      "description": "Problem description",
+      "impact": "Impact statement",
+      "businessImpact": "Business impact",
+      "principle": "UX principle violated"
+    }
+  ],
+  "solutions": [
+    {
+      "approach": "conservative",
+      "name": "Quick Wins Solution",
+      "description": "Solution description",
+      "keyChanges": ["Change 1", "Change 2"],
+      "expectedImpact": [{"metric": "conversion", "improvement": "+15%"}],
+      "implementationGuidance": "Implementation steps"
+    },
+    {
+      "approach": "balanced", 
+      "name": "Best Practices Solution",
+      "description": "Solution description",
+      "keyChanges": ["Change 1", "Change 2"],
+      "expectedImpact": [{"metric": "engagement", "improvement": "+25%"}],
+      "implementationGuidance": "Implementation steps"
+    },
+    {
+      "approach": "innovative",
+      "name": "Cutting Edge Solution", 
+      "description": "Solution description",
+      "keyChanges": ["Change 1", "Change 2"],
+      "expectedImpact": [{"metric": "retention", "improvement": "+40%"}],
+      "implementationGuidance": "Implementation steps"
+    }
+  ],
+  "visionInsights": {
+    "keyTrends": ["trend1", "trend2"],
+    "recommendedFocus": "focus recommendation"
+  }
 }`;
 }
 
