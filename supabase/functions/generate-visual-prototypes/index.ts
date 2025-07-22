@@ -87,19 +87,29 @@ serve(async (req) => {
     const claudeAnalysis = analysisData.claude_analysis || {};
     console.log('🔍 Claude analysis structure:', Object.keys(claudeAnalysis));
     
-    const issues = claudeAnalysis.issues || [];
-    console.log('🔍 Issues found:', issues.length);
+    let issues = claudeAnalysis.issues || [];
+    console.log('🔍 Issues found in claude_analysis:', issues.length);
+    
+    // Also check analysis_results table for molecular issues
+    const { data: molecularAnalysis } = await supabase
+      .from('analysis_results')
+      .select('annotations')
+      .eq('analysis_id', analysisData.session_id)
+      .maybeSingle();
+    
+    if (molecularAnalysis?.annotations) {
+      const molecularIssues = Array.isArray(molecularAnalysis.annotations) 
+        ? molecularAnalysis.annotations 
+        : [];
+      console.log('🔍 Found molecular issues:', molecularIssues.length);
+      issues = [...issues, ...molecularIssues];
+    }
+    
+    console.log('🔍 Total issues after combining sources:', issues.length);
     
     if (issues.length === 0) {
-      // Try alternative data structures
-      const alternativeIssues = claudeAnalysis.annotations || claudeAnalysis.problems || [];
-      if (alternativeIssues.length > 0) {
-        console.log('🔍 Found issues in alternative structure:', alternativeIssues.length);
-        // Use alternative structure
-      } else {
-        console.log('❌ No issues found in any expected structure');
-        throw new Error('No issues found in analysis for prototype generation');
-      }
+      console.log('❌ No issues found in any structure');
+      throw new Error('No issues found in analysis for prototype generation');
     }
     
     console.log(`🔍 Found ${issues.length} issues, selecting candidates...`);
@@ -245,18 +255,22 @@ serve(async (req) => {
 function selectPrototypeCandidates(issues: any[], maxPrototypes: number) {
   return issues
     .filter(issue => {
-      // Must have location for visual prototype
-      if (!issue.element?.location) return false;
-      
-      // Calculate impact score
+      // Calculate impact score - lowered threshold and accept more severities
       let score = 0;
       if (issue.impact_scope === 'conversion') score += 0.4;
       if (issue.impact_scope === 'task-completion') score += 0.3;
+      if (issue.impact_scope === 'usability') score += 0.2;
+      
+      // Accept more severity levels
       if (issue.severity === 'critical') score += 0.3;
       if (issue.severity === 'warning') score += 0.2;
+      if (issue.severity === 'improvement') score += 0.15;
+      if (issue.severity === 'suggestion') score += 0.1;
+      
       score += (issue.confidence || 0.5) * 0.3;
       
-      return score > 0.7; // High impact only
+      // Lower threshold from 0.7 to 0.3
+      return score > 0.3;
     })
     .sort((a, b) => {
       const scoreA = calculateIssueScore(a);
@@ -277,8 +291,14 @@ function calculateIssueScore(issue: any): number {
   let score = 0;
   if (issue.impact_scope === 'conversion') score += 0.4;
   if (issue.impact_scope === 'task-completion') score += 0.3;
+  if (issue.impact_scope === 'usability') score += 0.2;
+  
+  // Accept more severity levels with updated scoring
   if (issue.severity === 'critical') score += 0.3;
   if (issue.severity === 'warning') score += 0.2;
+  if (issue.severity === 'improvement') score += 0.15;
+  if (issue.severity === 'suggestion') score += 0.1;
+  
   score += (issue.confidence || 0.5) * 0.3;
   return score;
 }
@@ -328,8 +348,8 @@ async function generateSinglePrototype(candidate: any, context: any) {
     title: parsed.title,
     category: parsed.category || candidate.issue.category,
     hotspot: {
-      x: candidate.issue.element?.location?.x || 100,
-      y: candidate.issue.element?.location?.y || 100,
+      x: candidate.issue.element?.location?.x || Math.floor(Math.random() * 300) + 50,
+      y: candidate.issue.element?.location?.y || Math.floor(Math.random() * 200) + 50,
       width: candidate.issue.element?.location?.width || 200,
       height: candidate.issue.element?.location?.height || 50,
       type: 'pulse'
