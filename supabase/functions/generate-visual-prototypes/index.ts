@@ -470,4 +470,3 @@ Generate a JSON response with a complete, working prototype that demonstrates th
 ✅ Production-ready code quality
 `;
 }
-}
