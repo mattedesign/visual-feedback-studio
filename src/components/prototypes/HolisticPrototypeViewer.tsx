@@ -133,7 +133,15 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
       // Remove comment blocks that might cause issues
       cleanCode = cleanCode.replace(/^\/\*[\s\S]*?\*\/\s*/g, '');
       
-      // Create a safe component wrapper
+      // Check if the code contains JSX (< character outside of strings)
+      const hasJSX = /<[^>]*>/.test(cleanCode.replace(/"[^"]*"/g, '').replace(/'[^']*'/g, ''));
+      
+      if (hasJSX) {
+        // If JSX is detected, fall back to iframe with Babel
+        return renderJSXInIframe(cleanCode);
+      }
+      
+      // Create a safe component wrapper for plain JavaScript
       const ComponentWrapper = () => {
         try {
           // Import additional React utilities that generated components might need
@@ -150,7 +158,6 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
           } = React;
 
           // Use Function constructor to create the component from the code
-          // Provide the same environment that the iframe had
           const componentFunction = new Function(
             'React', 
             'useState', 
@@ -230,6 +237,65 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
         </div>
       );
     }
+  };
+
+  const renderJSXInIframe = (code) => {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+          <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+          <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+          <script src="https://cdn.tailwindcss.com"></script>
+          <style>
+            body { margin: 0; padding: 16px; font-family: system-ui, -apple-system, sans-serif; }
+            .error { background: #fee; border: 1px solid #fcc; padding: 12px; border-radius: 6px; color: #900; }
+          </style>
+        </head>
+        <body>
+          <div id="root"></div>
+          <script type="text/babel">
+            try {
+              const { useState, useEffect } = React;
+              
+              ${code}
+              
+              function ComponentToRender() {
+                if (typeof EnhancedDesign !== 'undefined') {
+                  return React.createElement(EnhancedDesign);
+                }
+                return React.createElement('div', 
+                  { className: 'p-8 text-center' },
+                  React.createElement('h3', null, 'Component Not Found'),
+                  React.createElement('p', null, 'EnhancedDesign component could not be loaded from the generated code.')
+                );
+              }
+              
+              ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(ComponentToRender));
+            } catch (error) {
+              console.error('Preview render error:', error);
+              ReactDOM.createRoot(document.getElementById('root')).render(
+                React.createElement('div', {className: 'error'}, 
+                  React.createElement('h3', null, 'Preview Error'),
+                  React.createElement('p', null, 'There was a syntax error in the generated code:'),
+                  React.createElement('code', null, error.message),
+                  React.createElement('p', null, 'You can view the raw code in the Code tab to debug the issue.')
+                )
+              );
+            }
+          </script>
+        </body>
+      </html>
+    `;
+    
+    return (
+      <iframe
+        srcDoc={html}
+        className="w-full h-[600px] border-0"
+        sandbox="allow-scripts"
+      />
+    );
   };
 
   if (loading || generatingAnalysis) {
