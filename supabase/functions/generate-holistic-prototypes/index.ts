@@ -375,8 +375,27 @@ Create a production-ready React component that:
 6. Uses only Tailwind CSS classes
 7. Includes helpful comments explaining design decisions
 
-Start the component with a comment block listing the specific problems this ${solution.approach} approach solves.
-Generate ONLY the React component code starting with: function EnhancedDesign() {`;
+CRITICAL: Generate a complete React component with ALL necessary imports.
+
+Use this EXACT structure:
+
+import React, { useState, useEffect } from 'react';
+
+/*
+${solution.approach.toUpperCase()} SOLUTION - ${solution.name}
+Problems addressed: [list the specific problems this approach solves]
+*/
+
+function EnhancedDesign() {
+  // Component implementation here
+  return (
+    // JSX here
+  );
+}
+
+export default EnhancedDesign;
+
+Do NOT generate any text before or after the component code. Only the complete React component with imports.`;
 }
 
 async function callClaude(prompt: string, apiKey: string) {
