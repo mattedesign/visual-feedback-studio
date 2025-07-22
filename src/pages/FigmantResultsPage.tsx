@@ -13,6 +13,8 @@ import { ResultsContent } from '@/components/analysis/results/ResultsContent';
 import { ResultsChat } from '@/components/analysis/results/ResultsChat';
 import { AnalysisResults as EnhancedAnalysisResults } from '@/components/analysis/AnalysisResults';
 import { EnhancedFigmaAnalysisLayout } from '@/components/analysis/figma/EnhancedFigmaAnalysisLayout';
+import { VisualPrototypeOverlay } from '@/components/prototypes/VisualPrototypeOverlay';
+import { ComprehensivePrototypeViewer } from '@/components/prototypes/ComprehensivePrototypeViewer';
 import { usePrototypeGeneration } from '@/hooks/usePrototypeGeneration';
 import { PrototypeStorageService } from '@/services/prototypes/prototypeStorageService';
 import type { VisualPrototype } from '@/types/analysis';
@@ -40,6 +42,9 @@ const FigmantResultsPage = () => {
   const [currentView, setCurrentView] = useState<'gallery' | 'detail'>('gallery');
   const [rightPanelTab, setRightPanelTab] = useState<'annotations' | 'ideas'>('annotations');
   const [prototypes, setPrototypes] = useState<VisualPrototype[]>([]);
+  const [selectedPrototype, setSelectedPrototype] = useState<VisualPrototype | null>(null);
+  const [showPrototypeViewer, setShowPrototypeViewer] = useState(false);
+  const [prototypeViewMode, setPrototypeViewMode] = useState<'list' | 'overlay'>('list');
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'menu' | 'chat'>('menu');
 
@@ -51,390 +56,6 @@ const FigmantResultsPage = () => {
     generatePrototypes, 
     resetState: resetPrototypeState
   } = usePrototypeGeneration();
-
-  // Enhanced utility function to transform Figmant data to enhanced format
-  const transformToEnhancedFormat = (analysisData: any, sessionData: any) => {
-    console.log('🔄 TRANSFORM START: Raw analysis data structure:', {
-      hasAnalysisData: !!analysisData,
-      analysisDataKeys: analysisData ? Object.keys(analysisData) : [],
-      claudeAnalysisExists: !!(analysisData?.claude_analysis),
-      claudeAnalysisKeys: analysisData?.claude_analysis ? Object.keys(analysisData.claude_analysis) : []
-    });
-    
-    if (!analysisData?.claude_analysis) {
-      console.warn('❌ No Claude analysis data to transform');
-      return null;
-    }
-
-    const claudeAnalysis = analysisData.claude_analysis;
-    console.log('📊 CLAUDE ANALYSIS STRUCTURE:', {
-      type: typeof claudeAnalysis,
-      keys: Object.keys(claudeAnalysis),
-      hasIssues: 'issues' in claudeAnalysis,
-      hasSuggestions: 'suggestions' in claudeAnalysis,
-      hasRecommendations: 'recommendations' in claudeAnalysis,
-      hasTopRecommendations: 'top_recommendations' in claudeAnalysis,
-      hasCriticalIssues: 'criticalIssues' in claudeAnalysis,
-      hasImprovements: 'improvements' in claudeAnalysis,
-      hasUsabilityIssues: 'usability_issues' in claudeAnalysis,
-      hasAccessibilityIssues: 'accessibility_issues' in claudeAnalysis,
-      hasPerformanceIssues: 'performance_issues' in claudeAnalysis
-    });
-
-    const issues: any[] = [];
-    const suggestions: any[] = [];
-    let overallScore = 45; // Default from your session data
-
-    // Extract overall score
-    if (claudeAnalysis.overall_score) {
-      overallScore = claudeAnalysis.overall_score;
-    }
-
-    // Transform Claude analysis issues to enhanced format
-    if (claudeAnalysis.issues && Array.isArray(claudeAnalysis.issues)) {
-      console.log('🔍 PROCESSING ISSUES:', claudeAnalysis.issues.length, 'issues found');
-      claudeAnalysis.issues.forEach((issue: any, index: number) => {
-        const transformedIssue = {
-          id: issue.id || `issue-${index}`,
-          title: issue.description || issue.impact || 'Design Issue',
-          description: issue.suggested_fix || issue.implementation?.design_guidance || 'Issue detected in design analysis',
-          category: mapCategory(issue.category),
-          severity: mapSeverity(issue.severity),
-          confidence: issue.confidence || 0.8,
-          impact_scope: mapImpactScope(issue.impact_scope),
-          element: {
-            location: {
-              x: issue.element?.location?.x || 0,
-              y: issue.element?.location?.y || 0,
-              width: issue.element?.location?.width || 100,
-              height: issue.element?.location?.height || 50,
-              xPercent: ((issue.element?.location?.x || 0) / 1200) * 100,
-              yPercent: ((issue.element?.location?.y || 0) / 800) * 100,
-              widthPercent: ((issue.element?.location?.width || 100) / 1200) * 100,
-              heightPercent: ((issue.element?.location?.height || 50) / 800) * 100,
-            }
-          },
-          businessMetrics: {
-            estimatedImpact: issue.metrics?.affects_users || '85%',
-            potentialImprovement: issue.metrics?.potential_improvement || '25-35% reduction in cart abandonment',
-            implementationEffort: mapEffort(issue.implementation?.effort)
-          }
-        };
-        issues.push(transformedIssue);
-
-        // EXTRACT SUGGESTIONS FROM ISSUES - New logic!
-        if (issue.suggested_fix) {
-          suggestions.push({
-            id: `issue-suggestion-${index}`,
-            title: `Fix: ${issue.description || issue.impact || 'Design Issue'}`,
-            description: issue.suggested_fix,
-            impact: mapImpactLevel(issue.severity || 'medium'),
-            effort: mapEffortLevel(issue.implementation?.effort || 'medium'),
-            category: 'issue-fix'
-          });
-        }
-
-        if (issue.implementation?.code_snippet) {
-          suggestions.push({
-            id: `code-suggestion-${index}`,
-            title: `Code Solution: ${issue.description || 'Implementation'}`,
-            description: `${issue.implementation.design_guidance || 'Implementation guidance'}\n\nCode: ${issue.implementation.code_snippet}`,
-            impact: 'High',
-            effort: mapEffortLevel(issue.implementation.effort || 'medium'),
-            category: 'code-solution'
-          });
-        }
-      });
-    }
-
-    // ENHANCED SUGGESTIONS PROCESSING - Check multiple possible sources
-    console.log('🔍 SUGGESTIONS PROCESSING - Checking all possible sources...');
-    
-    // Source 1: Direct suggestions array
-    if (claudeAnalysis.suggestions && Array.isArray(claudeAnalysis.suggestions)) {
-      console.log('📝 Found suggestions array:', claudeAnalysis.suggestions.length, 'items');
-      claudeAnalysis.suggestions.forEach((suggestion: any, index: number) => {
-        console.log(`  📋 Suggestion ${index + 1}:`, {
-          id: suggestion.id,
-          title: suggestion.title,
-          type: typeof suggestion,
-          keys: Object.keys(suggestion)
-        });
-        
-        suggestions.push({
-          id: suggestion.id || `suggestion-${index}`,
-          title: suggestion.title || suggestion.recommendation || 'Design Suggestion',
-          description: suggestion.description || suggestion.details || 'Improvement suggestion',
-          impact: suggestion.impact || 'High',
-          effort: suggestion.effort || 'Medium',
-          category: suggestion.category || 'enhancement'
-        });
-      });
-    }
-    
-    // Source 2: Top recommendations array (new source!)
-    if (claudeAnalysis.top_recommendations && Array.isArray(claudeAnalysis.top_recommendations)) {
-      console.log('📝 Found top_recommendations array:', claudeAnalysis.top_recommendations.length, 'items');
-      claudeAnalysis.top_recommendations.forEach((rec: any, index: number) => {
-        console.log(`  📋 Top Recommendation ${index + 1}:`, {
-          type: typeof rec,
-          isString: typeof rec === 'string',
-          keys: typeof rec === 'object' ? Object.keys(rec) : 'N/A',
-          content: rec
-        });
-        
-        if (typeof rec === 'string') {
-          suggestions.push({
-            id: `top-rec-${index}`,
-            title: `Priority Recommendation ${index + 1}`,
-            description: rec,
-            impact: 'Critical',
-            effort: 'Medium',
-            category: 'top-priority'
-          });
-        } else if (typeof rec === 'object' && rec !== null) {
-          suggestions.push({
-            id: `top-rec-obj-${index}`,
-            title: rec.title || rec.recommendation || `Top Recommendation ${index + 1}`,
-            description: rec.description || rec.details || rec.text || 'High priority recommendation',
-            impact: rec.impact || 'Critical',
-            effort: rec.effort || 'Medium',
-            category: 'top-priority'
-          });
-        }
-      });
-    }
-    
-    // Source 3: Regular recommendations array (fallback)
-    if (claudeAnalysis.recommendations && Array.isArray(claudeAnalysis.recommendations)) {
-      console.log('📝 Found recommendations array:', claudeAnalysis.recommendations.length, 'items');
-      claudeAnalysis.recommendations.forEach((rec: any, index: number) => {
-        console.log(`  📋 Recommendation ${index + 1}:`, {
-          type: typeof rec,
-          isString: typeof rec === 'string',
-          keys: typeof rec === 'object' ? Object.keys(rec) : 'N/A'
-        });
-        
-        suggestions.push({
-          id: `recommendation-${index}`,
-          title: typeof rec === 'string' ? `Recommendation ${index + 1}` : (rec.title || 'Design Recommendation'),
-          description: typeof rec === 'string' ? rec : (rec.description || rec.text || 'Design improvement recommendation'),
-          impact: 'Medium',
-          effort: 'Medium',
-          category: 'improvement'
-        });
-      });
-    }
-    
-    // Source 4: Critical issues as suggestions
-    if (claudeAnalysis.criticalIssues && Array.isArray(claudeAnalysis.criticalIssues)) {
-      console.log('📝 Found criticalIssues array:', claudeAnalysis.criticalIssues.length, 'items');
-      claudeAnalysis.criticalIssues.forEach((issue: any, index: number) => {
-        console.log(`  📋 Critical Issue ${index + 1}:`, {
-          title: issue.title,
-          solution: issue.solution,
-          reasoning: issue.reasoning
-        });
-        
-        // Add critical issues as high-priority suggestions
-        suggestions.push({
-          id: `critical-suggestion-${index}`,
-          title: `Fix: ${issue.title || issue.issue || 'Critical Issue'}`,
-          description: issue.solution || issue.reasoning || 'Critical issue requiring immediate attention',
-          impact: 'Critical',
-          effort: issue.effort || 'High',
-          category: 'critical-fix'
-        });
-      });
-    }
-    
-    // Source 5: Improvements array
-    if (claudeAnalysis.improvements && Array.isArray(claudeAnalysis.improvements)) {
-      console.log('📝 Found improvements array:', claudeAnalysis.improvements.length, 'items');
-      claudeAnalysis.improvements.forEach((improvement: any, index: number) => {
-        suggestions.push({
-          id: `improvement-${index}`,
-          title: improvement.title || `Improvement ${index + 1}`,
-          description: improvement.description || improvement.details || 'Design improvement opportunity',
-          impact: improvement.impact || 'Medium',
-          effort: improvement.effort || 'Low',
-          category: 'improvement'
-        });
-      });
-    }
-
-    // Source 6: Category-specific issue arrays (usability_issues, accessibility_issues, etc.)
-    const categoryArrays = [
-      { key: 'usability_issues', category: 'usability-fix' },
-      { key: 'accessibility_issues', category: 'accessibility-fix' },
-      { key: 'performance_issues', category: 'performance-fix' },
-      { key: 'visual_issues', category: 'visual-fix' }
-    ];
-
-    categoryArrays.forEach(({ key, category }) => {
-      if (claudeAnalysis[key] && Array.isArray(claudeAnalysis[key])) {
-        console.log(`📝 Found ${key} array:`, claudeAnalysis[key].length, 'items');
-        claudeAnalysis[key].forEach((item: any, index: number) => {
-          if (typeof item === 'string') {
-            suggestions.push({
-              id: `${key}-${index}`,
-              title: `${key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} Fix`,
-              description: item,
-              impact: 'Medium',
-              effort: 'Medium',
-              category
-            });
-          } else if (typeof item === 'object' && item !== null) {
-            suggestions.push({
-              id: `${key}-obj-${index}`,
-              title: item.title || item.issue || `${key} Fix ${index + 1}`,
-              description: item.solution || item.description || item.fix || 'Issue fix needed',
-              impact: item.impact || 'Medium',
-              effort: item.effort || 'Medium',
-              category
-            });
-          }
-        });
-      }
-    });
-    
-    // Source 7: Any other molecular-level data
-    const processedKeys = ['issues', 'suggestions', 'recommendations', 'top_recommendations', 'criticalIssues', 'improvements', 'overall_score', 'executiveSummary', 'usability_issues', 'accessibility_issues', 'performance_issues', 'visual_issues'];
-    const otherKeys = Object.keys(claudeAnalysis).filter(key => !processedKeys.includes(key));
-    
-    if (otherKeys.length > 0) {
-      console.log('🔍 Other available keys in Claude analysis:', otherKeys);
-      otherKeys.forEach(key => {
-        const data = claudeAnalysis[key];
-        if (Array.isArray(data) && data.length > 0) {
-          console.log(`📋 Processing ${key} as potential suggestions:`, data.length, 'items');
-          data.forEach((item: any, index: number) => {
-            if (typeof item === 'string') {
-              suggestions.push({
-                id: `${key}-str-${index}`,
-                title: `${key.replace(/[_-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} ${index + 1}`,
-                description: item,
-                impact: 'Medium',
-                effort: 'Medium',
-                category: key
-              });
-            } else if (typeof item === 'object' && item !== null && (item.title || item.description || item.recommendation || item.suggestion)) {
-              suggestions.push({
-                id: `${key}-obj-${index}`,
-                title: item.title || item.recommendation || item.suggestion || `${key} ${index + 1}`,
-                description: item.description || item.details || item.text || `Suggestion from ${key}`,
-                impact: item.impact || 'Medium',
-                effort: item.effort || 'Medium',
-                category: key
-              });
-            }
-          });
-        }
-      });
-    }
-
-    // Create image URLs from session data
-    const images = (sessionData?.images || []).map((img: any) => ({
-      id: img.id || img.file_name,
-      url: `https://mxxtvtwcoplfajvazpav.supabase.co/storage/v1/object/public/analysis-images/${img.file_path}`,
-      fileName: img.file_name || `Image ${img.upload_order || 1}`
-    }));
-
-    const transformedData = {
-      sessionId: sessionData?.id || '',
-      analysisId: analysisData.id, // Add the analysis result ID here!
-      images,
-      issues,
-      suggestions,
-      overallScore,
-      analysisMetadata: {
-        completedAt: analysisData.created_at,
-        totalIssues: issues.length,
-        confidenceLevel: 'high',
-        screenType: analysisData.google_vision_summary?.screen_type_detected || 'checkout',
-        analysisId: analysisData.id // Also add it to the metadata for backup
-      }
-    };
-
-    console.log('✅ TRANSFORM COMPLETE:', {
-      issueCount: issues.length,
-      suggestionCount: suggestions.length,
-      imageCount: images.length,
-      hasMetadata: !!transformedData.analysisMetadata,
-      suggestionsBreakdown: suggestions.reduce((acc, s) => {
-        acc[s.category] = (acc[s.category] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>),
-      detailedSuggestions: suggestions.map(s => ({ id: s.id, title: s.title, category: s.category }))
-    });
-
-    return transformedData;
-  };
-
-  // Helper functions for data transformation
-  const mapCategory = (category: string) => {
-    const categoryMap: Record<string, string> = {
-      'usability': 'usability',
-      'accessibility': 'accessibility', 
-      'visual': 'visual',
-      'content': 'content',
-      'performance': 'performance'
-    };
-    return categoryMap[category] || 'usability';
-  };
-
-  const mapSeverity = (severity: string) => {
-    const severityMap: Record<string, string> = {
-      'critical': 'critical',
-      'high': 'warning', 
-      'medium': 'warning',
-      'low': 'improvement',
-      'warning': 'warning',
-      'improvement': 'improvement'
-    };
-    return severityMap[severity] || 'warning';
-  };
-
-  const mapImpactScope = (scope: string) => {
-    const scopeMap: Record<string, string> = {
-      'task-completion': 'task-completion',
-      'user-trust': 'user-trust',
-      'conversion': 'conversion',
-      'readability': 'readability'
-    };
-    return scopeMap[scope] || 'task-completion';
-  };
-
-  const mapEffort = (effort: string) => {
-    const effortMap: Record<string, string> = {
-      'hours': 'Low (few hours)',
-      'days': 'Medium (few days)', 
-      'weeks': 'High (weeks)',
-      'minutes': 'Very Low (minutes)'
-    };
-    return effortMap[effort] || 'Medium';
-  };
-
-  // New helper functions for suggestion mapping
-  const mapImpactLevel = (severity: string) => {
-    const impactMap: Record<string, string> = {
-      'critical': 'Critical',
-      'high': 'High',
-      'medium': 'Medium',
-      'low': 'Low'
-    };
-    return impactMap[severity] || 'Medium';
-  };
-
-  const mapEffortLevel = (effort: string) => {
-    const effortMap: Record<string, string> = {
-      'minutes': 'Low',
-      'hours': 'Medium',
-      'days': 'High',
-      'weeks': 'Very High'
-    };
-    return effortMap[effort] || 'Medium';
-  };
 
   // Helper function to get image URL
   const getImageUrl = (filePath: string) => {
@@ -448,25 +69,6 @@ const FigmantResultsPage = () => {
     const nameWithoutExt = image.file_name.replace(/\.(jpg|jpeg|png|gif|webp)$/i, '');
     const cleanName = nameWithoutExt.replace(/[_-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     return cleanName || `Image ${image.upload_order}`;
-  };
-
-  // Check if we should use enhanced UI
-  const shouldUseEnhancedUI = (data: any) => {
-    const result = data && (
-      (data.issues && Array.isArray(data.issues)) ||
-      (data.claude_analysis && data.claude_analysis.issues && Array.isArray(data.claude_analysis.issues))
-    );
-    
-    console.log('🎨 ENHANCED UI CHECK:', {
-      hasData: !!data,
-      hasIssues: !!(data?.issues),
-      isIssuesArray: Array.isArray(data?.issues),
-      hasClaudeAnalysis: !!(data?.claude_analysis),
-      hasClaudeIssues: !!(data?.claude_analysis?.issues),
-      result
-    });
-    
-    return result;
   };
 
   // Load prototypes when analysis data is available
@@ -506,170 +108,115 @@ const FigmantResultsPage = () => {
     }
   };
 
-  useEffect(() => {
-    if (sessionId) {
-      loadAnalysisResults();
-    }
-  }, [sessionId]);
+  // Handle prototype selection
+  const handlePrototypeSelect = (prototype: VisualPrototype) => {
+    setSelectedPrototype(prototype);
+    setShowPrototypeViewer(true);
+  };
 
-  const loadAnalysisResults = async () => {
-    if (!sessionId) return;
+  // Close prototype viewer
+  const closePrototypeViewer = () => {
+    setShowPrototypeViewer(false);
+    setSelectedPrototype(null);
+  };
 
-    try {
-      setLoading(true);
-      console.log('🔄 Loading analysis results for session:', sessionId);
+  // Toggle prototype view mode
+  const togglePrototypeView = () => {
+    setPrototypeViewMode(current => current === 'list' ? 'overlay' : 'list');
+  };
 
-      // Use the new session service to find the session
-      const { session: foundSession, debugInfo: sessionDebugInfo } = await FigmantSessionService.findSession(sessionId);
-      
-      setDebugInfo(sessionDebugInfo);
-
-      if (!foundSession) {
-        console.error('❌ No session found for ID:', sessionId);
-        return;
+  // Handle view prototypes button click
+  const handleViewPrototypes = () => {
+    if (prototypes.length > 0) {
+      if (sessionData?.images?.length > 0) {
+        // Switch to prototype overlay view
+        setPrototypeViewMode('overlay');
       }
-
-      const actualSessionId = foundSession.id;
-      console.log('✅ Using session ID:', actualSessionId);
-
-      // If we found a different session ID, update the URL
-      if (actualSessionId !== sessionId && sessionDebugInfo.matchType === 'approximate') {
-        console.log('🔄 Redirecting to correct session ID');
-        toast.info('Redirecting to the correct analysis session...');
-        navigate(`/figmant/results/${actualSessionId}`, { replace: true });
-        return;
-      }
-
-      // Load results and session data
-      const [results, session] = await Promise.all([
-        getFigmantResults(actualSessionId),
-        getFigmantSession(actualSessionId)
-      ]);
-
-      console.log('📊 RAW DATA LOADED:', { 
-        hasResults: !!results, 
-        hasSession: !!session,
-        resultKeys: results ? Object.keys(results) : [],
-        sessionImageCount: session?.images?.length || 0,
-        rawResults: results // LOG THE COMPLETE RAW DATA
-      });
-
-      setAnalysisData(results);
-      setSessionData(session || foundSession);
-      
-      // If we have images, default to gallery view
-      if (session?.images?.length > 0) {
-        setViewMode('gallery');
-      } else {
-        setViewMode('detail'); // Show details if no images
-      }
-    } catch (error) {
-      console.error('Failed to load analysis results:', error);
-      toast.error('Failed to load analysis results');
-      setDebugInfo(prev => ({
-        ...prev,
-        error: error.message,
-        timestamp: new Date().toISOString()
-      }));
-    } finally {
-      setLoading(false);
+    } else {
+      toast.error('No prototypes available to view');
     }
   };
 
-  if (loading) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-center">
-          <Sparkles className="w-8 h-8 animate-spin mx-auto mb-4 text-[#22757C]" />
-          <h2 className="text-lg font-semibold mb-2">Loading Analysis Results</h2>
-          <p className="text-muted-foreground">Please wait while we load your design analysis...</p>
-          {sessionId && (
-            <p className="text-xs text-gray-500 mt-2">Session: {sessionId}</p>
-          )}
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    const loadData = async () => {
+      if (!sessionId) {
+        setLoading(false);
+        return;
+      }
 
-  // Enhanced error handling with debug information
-  if (debugInfo && !sessionData) {
-    return (
-      <div className="h-full flex items-center justify-center p-8">
-        <div className="text-center max-w-4xl">
-          <AlertTriangle className="w-12 h-12 mx-auto mb-6 text-red-500" />
-          <h2 className="text-2xl font-semibold mb-4">Analysis Session Not Found</h2>
-          <p className="text-muted-foreground mb-6">
-            We couldn't find an analysis session with the provided ID. This might be due to a URL mismatch or the session may not exist.
-          </p>
-          
-          {/* Debug Information */}
-          <div className="bg-gray-50 p-6 rounded-lg text-left mb-6 max-w-2xl mx-auto">
-            <h3 className="font-semibold mb-4 text-gray-900">Debug Information:</h3>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Requested Session ID:</span>
-                <span className="font-mono text-xs break-all">{debugInfo.requestedSessionId}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Match Type:</span>
-                <span className={`font-medium ${
-                  debugInfo.matchType === 'exact' ? 'text-green-600' :
-                  debugInfo.matchType === 'approximate' ? 'text-yellow-600' : 'text-red-600'
-                }`}>
-                  {debugInfo.matchType}
-                </span>
-              </div>
-              {debugInfo.foundSessionId && (
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Found Session ID:</span>
-                  <span className="font-mono text-xs break-all">{debugInfo.foundSessionId}</span>
-                </div>
-              )}
-              {debugInfo.error && (
-                <div className="text-red-600 text-xs mt-2">
-                  <strong>Error:</strong> {debugInfo.error}
-                </div>
-              )}
-            </div>
-          </div>
+      try {
+        console.log('🔍 Loading data for session:', sessionId);
+        
+        // Try both methods to find the session
+        let session = null;
+        let analysis = null;
 
-          {/* Available Sessions */}
-          {debugInfo.availableSessions && debugInfo.availableSessions.length > 0 && (
-            <div className="bg-blue-50 p-6 rounded-lg text-left mb-6 max-w-2xl mx-auto">
-              <h3 className="font-semibold mb-4 text-blue-900">Recent Analysis Sessions:</h3>
-              <div className="space-y-2">
-                {debugInfo.availableSessions.slice(0, 5).map((session: any) => (
-                  <div key={session.id} className="flex justify-between items-center p-2 bg-white rounded border">
-                    <div>
-                      <div className="font-medium text-sm text-gray-900">{session.title}</div>
-                      <div className="text-xs text-gray-500">{new Date(session.created_at).toLocaleString()}</div>
-                    </div>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => navigate(`/figmant/results/${session.id}`)}
-                    >
-                      View
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          <div className="flex gap-4 justify-center">
-            <Button onClick={() => navigate('/figmant')}>
-              Start New Analysis
-            </Button>
-            <Button variant="outline" onClick={() => window.location.reload()} className="flex items-center gap-2">
-              <RefreshCw className="w-4 h-4" />
-              Retry Loading
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+        // Method 1: Direct session lookup
+        try {
+          session = await getFigmantSession(sessionId);
+          console.log('📊 Direct session lookup result:', session);
+        } catch (directError) {
+          console.warn('❌ Direct session lookup failed:', directError);
+        }
+
+        // Method 2: Skip FigmantSessionService (not available)
+        // if (!session) {
+        //   try {
+        //     const sessionResult = await FigmantSessionService.getSessionById(sessionId);
+        //     session = sessionResult;
+        //     console.log('📊 FigmantSessionService lookup result:', session);
+        //   } catch (serviceError) {
+        //     console.warn('❌ FigmantSessionService lookup failed:', serviceError);
+        //   }
+        // }
+
+        // Method 3: Search analysis results table directly
+        if (!session) {
+          try {
+            analysis = await getFigmantResults(sessionId);
+            console.log('📊 Analysis results lookup:', analysis);
+            
+            if (analysis && analysis.figmant_session_images) {
+              // Construct session data from analysis
+              session = {
+                id: sessionId,
+                images: analysis.figmant_session_images
+              };
+            }
+          } catch (analysisError) {
+            console.warn('❌ Analysis lookup failed:', analysisError);
+          }
+        }
+
+        if (session) {
+          setSessionData(session);
+          console.log('✅ Session data set:', session);
+        }
+
+        if (analysis) {
+          setAnalysisData(analysis);
+          console.log('✅ Analysis data set:', analysis);
+        }
+
+        if (!session && !analysis) {
+          console.warn('❌ No data found for session:', sessionId);
+          setDebugInfo({
+            requestedSessionId: sessionId,
+            matchType: 'none',
+            error: 'No session or analysis data found'
+          });
+        }
+
+      } catch (error) {
+        console.error('❌ Error loading data:', error);
+        toast.error('Failed to load analysis results');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [sessionId]);
 
   // Handle image selection - switch to detail view
   const handleImageSelect = (image: FigmantImage) => {
@@ -686,17 +233,16 @@ const FigmantResultsPage = () => {
     setCurrentView('gallery');
   };
 
-  // Main render - implement two-part layout structure
-  if (!sessionData && !analysisData) {
+  if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
-          <AlertTriangle className="w-8 h-8 mx-auto mb-4 text-red-500" />
-          <h2 className="text-lg font-semibold mb-2">No Analysis Data</h2>
-          <p className="text-muted-foreground mb-4">No analysis data was found for this session.</p>
-          <Button onClick={() => navigate('/figmant')}>
-            Start New Analysis
-          </Button>
+          <Sparkles className="w-8 h-8 animate-spin mx-auto mb-4 text-[#22757C]" />
+          <h2 className="text-lg font-semibold mb-2">Loading Analysis Results</h2>
+          <p className="text-muted-foreground">Please wait while we load your design analysis...</p>
+          {sessionId && (
+            <p className="text-xs text-gray-500 mt-2">Session: {sessionId}</p>
+          )}
         </div>
       </div>
     );
@@ -720,472 +266,525 @@ const FigmantResultsPage = () => {
 
   // Three-panel layout: Left (existing sidebar) + Middle (gallery/detail) + Right (context)
   return (
-    <div className="h-full flex">
-      {/* Middle Panel - Gallery or Single Image Detail */}
-      <div className="flex-1 overflow-y-auto">
-        {viewMode === 'gallery' ? (
-          // Gallery View
-          <div className="p-6">
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold text-foreground mb-2">Image Gallery</h1>
-              <p className="text-muted-foreground">
-                Select an image to view detailed analysis and recommendations
-              </p>
-            </div>
-            
-            {sessionData?.images?.length > 0 ? (
-              <div className="grid grid-cols-2 gap-6 max-w-4xl">
-                {sessionData.images.map((image, index) => {
-                  const imageNames = [
-                    'Create Account2 1',
-                    'Create Account',
-                    'Dashboard Overview',
-                    'Settings Panel'
-                  ];
-                  
-                  return (
-                    <Card 
-                      key={image.id} 
-                      className="cursor-pointer hover:shadow-lg transition-all duration-200 group"
-                      onClick={() => handleImageSelect(image)}
-                    >
-                      <div className="p-0 overflow-hidden rounded-lg">
-                        {/* Image container with proper aspect ratio */}
-                        <div className="aspect-[4/3] bg-gradient-to-br from-blue-50 to-purple-50 relative overflow-hidden">
-                          <img 
-                            src={getImageUrl(image.file_path)}
-                            alt={imageNames[index] || image.file_name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                              target.parentElement!.innerHTML = `
-                                <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-100 to-blue-100">
-                                  <div class="text-center p-6">
-                                    <div class="w-16 h-16 bg-white/30 rounded-xl mb-3 mx-auto flex items-center justify-center">
-                                      <span class="text-2xl">${index === 0 ? '📊' : index === 1 ? '👤' : index === 2 ? '📈' : '⚙️'}</span>
+    <>
+      <div className="h-full flex">
+        {/* Middle Panel - Gallery or Single Image Detail */}
+        <div className="flex-1 overflow-y-auto">
+          {viewMode === 'gallery' ? (
+            // Gallery View
+            <div className="p-6">
+              <div className="mb-6">
+                <h1 className="text-2xl font-bold text-foreground mb-2">Image Gallery</h1>
+                <p className="text-muted-foreground">
+                  Select an image to view detailed analysis and recommendations
+                </p>
+              </div>
+              
+              {sessionData?.images?.length > 0 ? (
+                <div className="grid grid-cols-2 gap-6 max-w-4xl">
+                  {sessionData.images.map((image, index) => {
+                    const imageNames = [
+                      'Create Account2 1',
+                      'Create Account',
+                      'Dashboard Overview',
+                      'Settings Panel'
+                    ];
+                    
+                    return (
+                      <Card 
+                        key={image.id} 
+                        className="cursor-pointer hover:shadow-lg transition-all duration-200 group"
+                        onClick={() => handleImageSelect(image)}
+                      >
+                        <div className="p-0 overflow-hidden rounded-lg">
+                          {/* Image container with proper aspect ratio */}
+                          <div className="aspect-[4/3] bg-gradient-to-br from-blue-50 to-purple-50 relative overflow-hidden">
+                            <img 
+                              src={getImageUrl(image.file_path)}
+                              alt={imageNames[index] || image.file_name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                target.parentElement!.innerHTML = `
+                                  <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-100 to-blue-100">
+                                    <div class="text-center p-6">
+                                      <div class="w-16 h-16 bg-white/30 rounded-xl mb-3 mx-auto flex items-center justify-center">
+                                        <span class="text-2xl">${index === 0 ? '📊' : index === 1 ? '👤' : index === 2 ? '📈' : '⚙️'}</span>
+                                      </div>
+                                      <h3 class="font-semibold text-sm text-gray-800">${imageNames[index] || image.file_name}</h3>
                                     </div>
-                                    <h3 class="font-semibold text-sm text-gray-800">${imageNames[index] || image.file_name}</h3>
                                   </div>
-                                </div>
-                              `;
-                            }}
-                          />
-                        </div>
-                        
-                        {/* Card Footer */}
-                        <div className="p-4">
-                          <h3 className="font-semibold text-base text-foreground mb-1">
-                            {imageNames[index] || getImageTitle(image)}
-                          </h3>
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-green-500" />
-                            <span className="text-xs text-muted-foreground">Analyzed</span>
+                                `;
+                              }}
+                            />
+                          </div>
+                          
+                          {/* Card Footer */}
+                          <div className="p-4">
+                            <h3 className="font-semibold text-base text-foreground mb-1">
+                              {imageNames[index] || getImageTitle(image)}
+                            </h3>
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-green-500" />
+                              <span className="text-xs text-muted-foreground">Analyzed</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </Card>
-                  );
-                })}
+                      </Card>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-muted-foreground">No images found for this session</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            // Single Image Detail View with Annotations
+            <div className="p-6 h-full">
+              <div className="flex items-center gap-3 mb-6">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBackToGallery}
+                  className="flex items-center gap-2"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Back to Gallery
+                </Button>
+                <div>
+                  <h1 className="text-xl font-bold text-foreground">
+                    {selectedImage ? getImageTitle(selectedImage) : 'Image Detail'}
+                  </h1>
+                  <p className="text-sm text-muted-foreground">
+                    Detailed analysis with annotations
+                  </p>
+                </div>
               </div>
-            ) : (
-              <div className="text-center py-12">
-                <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-muted-foreground">No images found for this session</p>
-              </div>
-            )}
-          </div>
-        ) : (
-          // Single Image Detail View with Annotations
-          <div className="p-6 h-full">
-            <div className="flex items-center gap-3 mb-6">
+              
+              {selectedImage && (
+                <div className="bg-muted/20 rounded-lg p-6 h-[calc(100%-120px)] flex items-center justify-center">
+                  <div className="relative max-w-full max-h-full">
+                    <img 
+                      src={getImageUrl(selectedImage.file_path)}
+                      alt={getImageTitle(selectedImage)}
+                      className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        target.parentElement!.innerHTML = `
+                          <div class="w-96 h-64 bg-gradient-to-br from-orange-100 to-blue-100 rounded-lg flex items-center justify-center">
+                            <div class="text-center p-6">
+                              <div class="w-16 h-16 bg-white/30 rounded-xl mb-3 mx-auto flex items-center justify-center">
+                                <span class="text-2xl">🎨</span>
+                              </div>
+                              <h3 class="font-semibold text-gray-800">${getImageTitle(selectedImage)}</h3>
+                            </div>
+                          </div>
+                        `;
+                      }}
+                    />
+                    
+                    {/* Sample Annotation Hotspots */}
+                    <div className="absolute top-4 left-4 w-3 h-3 bg-red-500 border-2 border-white rounded-full shadow-lg animate-pulse cursor-pointer" 
+                         title="Critical issue: Password field accessibility"></div>
+                    <div className="absolute top-20 right-8 w-3 h-3 bg-yellow-500 border-2 border-white rounded-full shadow-lg animate-pulse cursor-pointer"
+                         title="Warning: CTA button contrast"></div>
+                    <div className="absolute bottom-16 left-1/3 w-3 h-3 bg-blue-500 border-2 border-white rounded-full shadow-lg animate-pulse cursor-pointer"
+                         title="Improvement: Layout optimization"></div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        
+        {/* Right Panel - Context Recommendations */}
+        <div 
+          className="flex flex-col items-center self-stretch overflow-hidden"
+          style={{
+            display: 'flex',
+            maxWidth: '240px',
+            flexDirection: 'column',
+            alignItems: 'center',
+            alignSelf: 'stretch',
+            border: '1px solid #E2E2E2',
+            background: '#FCFCFC',
+            clipPath: 'inset(0 round 20px)',
+            WebkitClipPath: 'inset(0 round 20px)',
+            borderRadius: '20px'
+          }}
+        >
+          {/* Header */}
+          <div className="p-4 border-b border-border w-full">
+            <div className="flex items-center gap-3 mb-4">
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                onClick={handleBackToGallery}
-                className="flex items-center gap-2"
+                onClick={() => navigate('/figmant')}
+                className="p-1 h-8 w-8"
               >
                 <ChevronLeft className="h-4 w-4" />
-                Back to Gallery
               </Button>
               <div>
-                <h1 className="text-xl font-bold text-foreground">
-                  {selectedImage ? getImageTitle(selectedImage) : 'Image Detail'}
-                </h1>
+                <h2 className="font-semibold text-foreground">
+                  {selectedImage ? 'Figmant Analysis' : 'Analysis Results'}
+                </h2>
                 <p className="text-sm text-muted-foreground">
-                  Detailed analysis with annotations
+                  {selectedImage ? 'Detailed Analysis' : '5 insights found'}
                 </p>
               </div>
             </div>
             
             {selectedImage && (
-              <div className="bg-muted/20 rounded-lg p-6 h-[calc(100%-120px)] flex items-center justify-center">
-                <div className="relative max-w-full max-h-full">
-                  <img 
-                    src={getImageUrl(selectedImage.file_path)}
-                    alt={getImageTitle(selectedImage)}
-                    className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                      target.parentElement!.innerHTML = `
-                        <div class="w-96 h-64 bg-gradient-to-br from-orange-100 to-blue-100 rounded-lg flex items-center justify-center">
-                          <div class="text-center p-6">
-                            <div class="w-16 h-16 bg-white/30 rounded-xl mb-3 mx-auto flex items-center justify-center">
-                              <span class="text-2xl">🎨</span>
-                            </div>
-                            <h3 class="font-semibold text-gray-800">${getImageTitle(selectedImage)}</h3>
-                          </div>
-                        </div>
-                      `;
-                    }}
-                  />
-                  
-                  {/* Sample Annotation Hotspots */}
-                  <div className="absolute top-4 left-4 w-3 h-3 bg-red-500 border-2 border-white rounded-full shadow-lg animate-pulse cursor-pointer" 
-                       title="Critical issue: Password field accessibility"></div>
-                  <div className="absolute top-20 right-8 w-3 h-3 bg-yellow-500 border-2 border-white rounded-full shadow-lg animate-pulse cursor-pointer"
-                       title="Warning: CTA button contrast"></div>
-                  <div className="absolute bottom-16 left-1/3 w-3 h-3 bg-blue-500 border-2 border-white rounded-full shadow-lg animate-pulse cursor-pointer"
-                       title="Improvement: Layout optimization"></div>
-                </div>
+              <div className="flex bg-muted rounded-lg p-1 gap-1 mb-4">
+                <Button 
+                  variant={rightPanelTab === 'annotations' ? 'secondary' : 'ghost'} 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => setRightPanelTab('annotations')}
+                >
+                  Annotations
+                </Button>
+                <Button 
+                  variant={rightPanelTab === 'ideas' ? 'secondary' : 'ghost'} 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => setRightPanelTab('ideas')}
+                >
+                  Ideas
+                </Button>
               </div>
             )}
           </div>
-        )}
+          
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-4 w-full">
+            {!selectedImage ? (
+              // Summary view
+              <div className="space-y-6">
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">Overview</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Total Insights</span>
+                      <span className="text-foreground font-semibold">5</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Images</span>
+                      <span className="text-foreground">{sessionData?.images?.length || 2}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Date</span>
+                      <span className="text-foreground">Recently</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold text-foreground mb-3">Categories</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-foreground">All</span>
+                      <span className="text-xs bg-muted px-2 py-1 rounded">5</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-foreground">Accessibility</span>
+                      <span className="text-xs bg-muted px-2 py-1 rounded">1</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-foreground">Usability</span>
+                      <span className="text-xs bg-muted px-2 py-1 rounded">2</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-foreground">Visual</span>
+                      <span className="text-xs bg-muted px-2 py-1 rounded">1</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-foreground">Content</span>
+                      <span className="text-xs bg-muted px-2 py-1 rounded">1</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Prototype Generation Section */}
+                {prototypes.length === 0 && !isGenerating && (
+                  <div>
+                    <h3 className="font-semibold text-foreground mb-3">Generate Visual Prototypes</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Transform your top recommendations into interactive visual prototypes with working code. 
+                      We'll select 2-3 high-impact improvements and create comprehensive implementation examples.
+                    </p>
+                    <Button 
+                      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                      onClick={handleGeneratePrototypes}
+                      disabled={isGenerating}
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Generate Prototypes
+                    </Button>
+                  </div>
+                )}
+
+                {/* Prototype Generation Progress */}
+                {isGenerating && (
+                  <div>
+                    <h3 className="font-semibold text-foreground mb-3">Generating Visual Prototypes</h3>
+                    <p className="text-sm text-muted-foreground mb-3">{progress.message}</p>
+                    {progress.currentPrototype && progress.totalPrototypes && (
+                      <div className="mb-3">
+                        <Progress 
+                          value={(progress.currentPrototype / progress.totalPrototypes) * 100} 
+                          className="h-2"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Prototype {progress.currentPrototype} of {progress.totalPrototypes}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Prototype Generation Error */}
+                {prototypeError && (
+                  <div className="border border-red-200 bg-red-50 rounded-lg p-3">
+                    <h3 className="font-semibold text-red-800">Prototype Generation Failed</h3>
+                    <p className="text-sm text-red-600 mt-1">{prototypeError}</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={resetPrototypeState}
+                      className="mt-2"
+                    >
+                      Try Again
+                    </Button>
+                  </div>
+                )}
+
+                {/* Generated Prototypes Summary */}
+                {prototypes.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold text-foreground mb-3">Visual Prototypes</h3>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {prototypes.length} interactive prototypes generated
+                    </p>
+                    <div className="space-y-2">
+                      <Button 
+                        variant="default" 
+                        size="sm" 
+                        className="w-full bg-[#22c4a8] hover:bg-[#1ba896] text-white"
+                        onClick={handleViewPrototypes}
+                      >
+                        View Prototypes
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full"
+                        onClick={togglePrototypeView}
+                      >
+                        {prototypeViewMode === 'overlay' ? 'List View' : 'Overlay View'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                
+                <div>
+                  <h3 className="font-semibold text-foreground mb-3">Actions</h3>
+                  <div className="space-y-2">
+                    <Button variant="outline" size="sm" className="w-full justify-start">
+                      <FileText className="w-4 h-4 mr-2" />
+                      Export Report
+                    </Button>
+                    <Button variant="outline" size="sm" className="w-full justify-start">
+                      <Grid className="w-4 h-4 mr-2" />
+                      Share Analysis
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              // Image-specific view with Annotations/Ideas tabs
+              <div className="space-y-4">
+                {rightPanelTab === 'annotations' ? (
+                  // Annotations Tab
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="font-semibold text-foreground mb-2">Image Annotations</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Click on the colored dots to see detailed analysis for each area
+                      </p>
+                    </div>
+                    
+                    {/* Annotation List */}
+                    <div className="space-y-3">
+                      <div className="border border-red-200 rounded-lg p-3">
+                        <div className="flex items-start gap-3">
+                          <div className="w-3 h-3 bg-red-500 rounded-full flex-shrink-0 mt-1"></div>
+                          <div className="flex-1">
+                            <div className="flex items-start justify-between mb-2">
+                              <h4 className="font-semibold text-sm">Password field accessibility</h4>
+                              <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">critical</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mb-2">
+                              Replace dots with asterisks or add character counter for better accessibility compliance.
+                            </p>
+                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">accessibility</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="border border-yellow-200 rounded-lg p-3">
+                        <div className="flex items-start gap-3">
+                          <div className="w-3 h-3 bg-yellow-500 rounded-full flex-shrink-0 mt-1"></div>
+                          <div className="flex-1">
+                            <div className="flex items-start justify-between mb-2">
+                              <h4 className="font-semibold text-sm">CTA button contrast</h4>
+                              <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">warning</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mb-2">
+                              Use brand primary color with higher contrast ratio to meet WCAG standards.
+                            </p>
+                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">usability</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="border border-blue-200 rounded-lg p-3">
+                        <div className="flex items-start gap-3">
+                          <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0 mt-1"></div>
+                          <div className="flex-1">
+                            <div className="flex items-start justify-between mb-2">
+                              <h4 className="font-semibold text-sm">Layout optimization</h4>
+                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">improvement</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mb-2">
+                              Reduce illustration size or use responsive 50/50 split for better mobile experience.
+                            </p>
+                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">visual</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  // Ideas Tab
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="font-semibold text-foreground mb-2">Improvement Ideas</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Actionable suggestions to enhance this interface
+                      </p>
+                    </div>
+                    
+                    {/* Ideas List */}
+                    <div className="space-y-3">
+                      <div className="border rounded-lg p-3">
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className="font-semibold text-sm">Add progress indicator</h4>
+                          <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">high impact</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Show users where they are in the signup process to reduce abandonment.
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>💡 Effort: Low</span>
+                          <span>•</span>
+                          <span>📈 Impact: High</span>
+                        </div>
+                      </div>
+                      
+                      <div className="border rounded-lg p-3">
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className="font-semibold text-sm">Social login options</h4>
+                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">medium impact</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Add Google/Apple sign-in to reduce friction and increase conversions.
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>💡 Effort: Medium</span>
+                          <span>•</span>
+                          <span>📈 Impact: Medium</span>
+                        </div>
+                      </div>
+                      
+                      <div className="border rounded-lg p-3">
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className="font-semibold text-sm">Real-time validation</h4>
+                          <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">high impact</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Validate email format and password strength in real-time for better UX.
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>💡 Effort: Medium</span>
+                          <span>•</span>
+                          <span>📈 Impact: High</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <Button className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white">
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Generate Implementation Plan
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
       
-      {/* Right Panel - Context Recommendations */}
-      <div 
-        className="flex flex-col items-center self-stretch overflow-hidden"
-        style={{
-          display: 'flex',
-          maxWidth: '240px',
-          flexDirection: 'column',
-          alignItems: 'center',
-          alignSelf: 'stretch',
-          border: '1px solid #E2E2E2',
-          background: '#FCFCFC',
-          clipPath: 'inset(0 round 20px)',
-          WebkitClipPath: 'inset(0 round 20px)',
-          borderRadius: '20px'
-        }}
-      >
-        {/* Header */}
-        <div className="p-4 border-b border-border">
-          <div className="flex items-center gap-3 mb-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/figmant')}
-              className="p-1 h-8 w-8"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <h2 className="font-semibold text-foreground">
-                {selectedImage ? 'Figmant Analysis' : 'Analysis Results'}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {selectedImage ? 'Detailed Analysis' : '5 insights found'}
-              </p>
+      {/* Prototype Viewer Modal */}
+      {showPrototypeViewer && selectedPrototype && (
+        <ComprehensivePrototypeViewer
+          prototype={selectedPrototype}
+          isOpen={showPrototypeViewer}
+          onClose={closePrototypeViewer}
+        />
+      )}
+      
+      {/* Prototype Overlay */}
+      {prototypeViewMode === 'overlay' && prototypes.length > 0 && sessionData?.images?.length > 0 && (
+        <div className="fixed inset-0 z-50 bg-black/50">
+          <div className="absolute inset-4 bg-white rounded-lg overflow-hidden">
+            <div className="h-full flex flex-col">
+              <div className="p-4 border-b flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Visual Prototypes Overlay</h2>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={togglePrototypeView}
+                  >
+                    Switch to List View
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setPrototypeViewMode('list')}
+                  >
+                    ✕
+                  </Button>
+                </div>
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <VisualPrototypeOverlay
+                  originalImageUrl={getImageUrl(sessionData.images[0].file_path)}
+                  prototypes={prototypes}
+                  onPrototypeSelect={handlePrototypeSelect}
+                />
+              </div>
             </div>
           </div>
-          
-          {selectedImage && (
-            <div className="flex bg-muted rounded-lg p-1 gap-1 mb-4">
-              <Button 
-                variant={rightPanelTab === 'annotations' ? 'secondary' : 'ghost'} 
-                size="sm" 
-                className="flex-1"
-                onClick={() => setRightPanelTab('annotations')}
-              >
-                Annotations
-              </Button>
-              <Button 
-                variant={rightPanelTab === 'ideas' ? 'secondary' : 'ghost'} 
-                size="sm" 
-                className="flex-1"
-                onClick={() => setRightPanelTab('ideas')}
-              >
-                Ideas
-              </Button>
-            </div>
-          )}
         </div>
-        
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {!selectedImage ? (
-            // Summary view
-            <div className="space-y-6">
-              <div>
-                <h3 className="font-semibold text-foreground mb-2">Overview</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Total Insights</span>
-                    <span className="text-foreground font-semibold">5</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Images</span>
-                    <span className="text-foreground">{sessionData?.images?.length || 2}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Date</span>
-                    <span className="text-foreground">Recently</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div>
-                <h3 className="font-semibold text-foreground mb-3">Categories</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-foreground">All</span>
-                    <span className="text-xs bg-muted px-2 py-1 rounded">5</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-foreground">Accessibility</span>
-                    <span className="text-xs bg-muted px-2 py-1 rounded">1</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-foreground">Usability</span>
-                    <span className="text-xs bg-muted px-2 py-1 rounded">2</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-foreground">Visual</span>
-                    <span className="text-xs bg-muted px-2 py-1 rounded">1</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-foreground">Content</span>
-                    <span className="text-xs bg-muted px-2 py-1 rounded">1</span>
-                  </div>
-                </div>
-              </div>
-              
-              
-              {/* Prototype Generation Section */}
-              {prototypes.length === 0 && !isGenerating && (
-                <div>
-                  <h3 className="font-semibold text-foreground mb-3">Generate Visual Prototypes</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Transform your top recommendations into interactive visual prototypes with working code. 
-                    We'll select 2-3 high-impact improvements and create comprehensive implementation examples.
-                  </p>
-                  <Button 
-                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
-                    onClick={handleGeneratePrototypes}
-                    disabled={isGenerating}
-                  >
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Generate Prototypes
-                  </Button>
-                </div>
-              )}
-
-              {/* Prototype Generation Progress */}
-              {isGenerating && (
-                <div>
-                  <h3 className="font-semibold text-foreground mb-3">Generating Visual Prototypes</h3>
-                  <p className="text-sm text-muted-foreground mb-3">{progress.message}</p>
-                  {progress.currentPrototype && progress.totalPrototypes && (
-                    <div className="mb-3">
-                      <Progress 
-                        value={(progress.currentPrototype / progress.totalPrototypes) * 100} 
-                        className="h-2"
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Prototype {progress.currentPrototype} of {progress.totalPrototypes}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Prototype Generation Error */}
-              {prototypeError && (
-                <div className="border border-red-200 bg-red-50 rounded-lg p-3">
-                  <h3 className="font-semibold text-red-800">Prototype Generation Failed</h3>
-                  <p className="text-sm text-red-600 mt-1">{prototypeError}</p>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={resetPrototypeState}
-                    className="mt-2"
-                  >
-                    Try Again
-                  </Button>
-                </div>
-              )}
-
-              {/* Generated Prototypes Summary */}
-              {prototypes.length > 0 && (
-                <div>
-                  <h3 className="font-semibold text-foreground mb-3">Visual Prototypes</h3>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    {prototypes.length} interactive prototypes generated
-                  </p>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full"
-                    onClick={() => {
-                      // TODO: Add prototype viewer functionality
-                      toast.info('Prototype viewer coming soon!');
-                    }}
-                  >
-                    View Prototypes
-                  </Button>
-                </div>
-              )}
-              
-              <div>
-                <h3 className="font-semibold text-foreground mb-3">Actions</h3>
-                <div className="space-y-2">
-                  <Button variant="outline" size="sm" className="w-full justify-start">
-                    <FileText className="w-4 h-4 mr-2" />
-                    Export Report
-                  </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-start">
-                    <Grid className="w-4 h-4 mr-2" />
-                    Share Analysis
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            // Image-specific view with Annotations/Ideas tabs
-            <div className="space-y-4">
-              {rightPanelTab === 'annotations' ? (
-                // Annotations Tab
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-2">Image Annotations</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Click on the colored dots to see detailed analysis for each area
-                    </p>
-                  </div>
-                  
-                  {/* Annotation List */}
-                  <div className="space-y-3">
-                    <div className="border border-red-200 rounded-lg p-3">
-                      <div className="flex items-start gap-3">
-                        <div className="w-3 h-3 bg-red-500 rounded-full flex-shrink-0 mt-1"></div>
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between mb-2">
-                            <h4 className="font-semibold text-sm">Password field accessibility</h4>
-                            <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">critical</span>
-                          </div>
-                          <p className="text-xs text-muted-foreground mb-2">
-                            Replace dots with asterisks or add character counter for better accessibility compliance.
-                          </p>
-                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">accessibility</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="border border-yellow-200 rounded-lg p-3">
-                      <div className="flex items-start gap-3">
-                        <div className="w-3 h-3 bg-yellow-500 rounded-full flex-shrink-0 mt-1"></div>
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between mb-2">
-                            <h4 className="font-semibold text-sm">CTA button contrast</h4>
-                            <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">warning</span>
-                          </div>
-                          <p className="text-xs text-muted-foreground mb-2">
-                            Use brand primary color with higher contrast ratio to meet WCAG standards.
-                          </p>
-                          <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">usability</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="border border-blue-200 rounded-lg p-3">
-                      <div className="flex items-start gap-3">
-                        <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0 mt-1"></div>
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between mb-2">
-                            <h4 className="font-semibold text-sm">Layout optimization</h4>
-                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">improvement</span>
-                          </div>
-                          <p className="text-xs text-muted-foreground mb-2">
-                            Reduce illustration size or use responsive 50/50 split for better mobile experience.
-                          </p>
-                          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">visual</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                // Ideas Tab
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-2">Improvement Ideas</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Actionable suggestions to enhance this interface
-                    </p>
-                  </div>
-                  
-                  {/* Ideas List */}
-                  <div className="space-y-3">
-                    <div className="border rounded-lg p-3">
-                      <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-semibold text-sm">Add progress indicator</h4>
-                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">high impact</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mb-2">
-                        Show users where they are in the signup process to reduce abandonment.
-                      </p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>💡 Effort: Low</span>
-                        <span>•</span>
-                        <span>📈 Impact: High</span>
-                      </div>
-                    </div>
-                    
-                    <div className="border rounded-lg p-3">
-                      <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-semibold text-sm">Social login options</h4>
-                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">medium impact</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mb-2">
-                        Add Google/Apple sign-in to reduce friction and increase conversions.
-                      </p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>💡 Effort: Medium</span>
-                        <span>•</span>
-                        <span>📈 Impact: Medium</span>
-                      </div>
-                    </div>
-                    
-                    <div className="border rounded-lg p-3">
-                      <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-semibold text-sm">Real-time validation</h4>
-                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">high impact</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mb-2">
-                        Validate email format and password strength in real-time for better UX.
-                      </p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>💡 Effort: Medium</span>
-                        <span>•</span>
-                        <span>📈 Impact: High</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <Button className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white">
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Generate Implementation Plan
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 };
 
