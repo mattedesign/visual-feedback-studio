@@ -20,6 +20,8 @@ serve(async (req) => {
 
   try {
     const { analysisId, contextId, generateAll = false, solutionType }: RequestBody = await req.json();
+    
+    console.log('🎯 Processing request:', { analysisId, contextId, generateAll, solutionType });
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -295,7 +297,7 @@ async function callClaude(prompt: string, apiKey: string) {
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 4000,
       temperature: 0.7,
       messages: [{ role: 'user', content: prompt }]
