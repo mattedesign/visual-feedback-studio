@@ -45,7 +45,7 @@ serve(async (req) => {
       console.log('🔴 DEBUG_FIGMANT: API key validated successfully');
     }
 
-    const { session_id } = await req.json()
+    const { session_id, context_id } = await req.json()
 
     if (!session_id) {
       throw new Error('Session ID is required')
@@ -77,6 +77,24 @@ serve(async (req) => {
     }
 
     console.log(`Found ${images.length} images to analyze`)
+
+    // Get user context if context_id is provided
+    let userContext = null
+    if (context_id) {
+      console.log('🔴 DEBUG_FIGMANT: Fetching user context:', context_id);
+      const { data: contextData, error: contextError } = await supabase
+        .from('figmant_user_contexts')
+        .select('*')
+        .eq('id', context_id)
+        .single()
+      
+      if (contextError) {
+        console.log('🔴 DEBUG_FIGMANT: Context fetch error:', contextError);
+      } else {
+        userContext = contextData
+        console.log('🔴 DEBUG_FIGMANT: User context loaded successfully');
+      }
+    }
 
     // Get Google Vision API key
     const googleVisionApiKey = Deno.env.get('GOOGLE_VISION_API_KEY')
@@ -146,14 +164,28 @@ serve(async (req) => {
       throw new Error('Claude API key not configured')
     }
 
-    // Prepare Claude analysis prompt
+    // Prepare Claude analysis prompt with user context
+    const contextSection = userContext ? `
+
+USER CONTEXT & BUSINESS GOALS:
+- Business Type: ${userContext.business_type || 'Not specified'}
+- Target Audience: ${userContext.target_audience || 'Not specified'}
+- Primary Goal: ${userContext.primary_goal || 'Not specified'}
+- Specific Challenges: ${userContext.specific_challenges ? JSON.stringify(userContext.specific_challenges) : 'None specified'}
+- Current Metrics: ${userContext.current_metrics ? JSON.stringify(userContext.current_metrics) : 'None provided'}
+- Admired Companies: ${userContext.admired_companies?.join(', ') || 'None specified'}
+- Design Constraints: ${userContext.design_constraints?.join(', ') || 'None specified'}
+
+IMPORTANT: Please tailor your analysis to specifically address the user's business type, primary goals, and challenges mentioned above. Focus on how the design helps or hinders their specific objectives.
+` : '';
+
     const analysisPrompt = `You are a Senior UX Designer analyzing design images. 
 
 Session Details:
 - Title: ${session.title}
 - Design Type: ${session.design_type || 'Web/Mobile Interface'}
 - Business Goals: ${session.business_goals?.join(', ') || 'Not specified'}
-
+${contextSection}
 Images Analyzed: ${images.length}
 
 Google Vision Data Summary:
@@ -170,9 +202,10 @@ Please provide a comprehensive UX analysis focusing on:
 2. **Visual Hierarchy**: How well does the design guide the user's eye
 3. **Usability Issues**: Specific problems that could affect user experience
 4. **Accessibility Concerns**: WCAG compliance and inclusive design issues
-5. **Conversion Optimization**: Opportunities to improve business goals
+5. **Conversion Optimization**: Opportunities to improve business goals${userContext ? ' (especially ' + userContext.primary_goal + ')' : ''}
 6. **Mobile Responsiveness**: Considerations for different screen sizes
 7. **Design Consistency**: Patterns, spacing, typography consistency
+${userContext ? '8. **Business-Specific Impact**: How the design affects your specific business type and target audience' : ''}
 
 For each issue identified, provide:
 - Severity level (Critical/High/Medium/Low)
@@ -180,6 +213,7 @@ For each issue identified, provide:
 - User impact description
 - Actionable recommendation
 - Implementation difficulty (Easy/Medium/Hard)
+${userContext ? '- Business relevance (how this affects your specific goals and challenges)' : ''}
 
 Format your response as structured JSON with clear categories and actionable insights.`
 
@@ -232,6 +266,7 @@ Format your response as structured JSON with clear categories and actionable ins
       .insert({
         session_id: session_id,
         user_id: session.user_id,
+        context_id: context_id || null,
         claude_analysis: claudeAnalysis,
         google_vision_summary: {
           total_images: images.length,

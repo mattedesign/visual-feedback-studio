@@ -625,6 +625,7 @@ export type Database = {
           claude_analysis: Json
           confidence_metadata: Json | null
           confidence_scores: Json | null
+          context_id: string | null
           created_at: string
           enhanced_business_metrics: Json | null
           enhanced_context: Json | null
@@ -650,6 +651,7 @@ export type Database = {
           claude_analysis: Json
           confidence_metadata?: Json | null
           confidence_scores?: Json | null
+          context_id?: string | null
           created_at?: string
           enhanced_business_metrics?: Json | null
           enhanced_context?: Json | null
@@ -675,6 +677,7 @@ export type Database = {
           claude_analysis?: Json
           confidence_metadata?: Json | null
           confidence_scores?: Json | null
+          context_id?: string | null
           created_at?: string
           enhanced_business_metrics?: Json | null
           enhanced_context?: Json | null
@@ -695,6 +698,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "figmant_analysis_results_context_id_fkey"
+            columns: ["context_id"]
+            isOneToOne: false
+            referencedRelation: "figmant_user_contexts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "figmant_analysis_results_session_id_fkey"
             columns: ["session_id"]
