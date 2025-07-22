@@ -317,6 +317,9 @@ async function generatePrototype(
   console.log('🧹 Final cleaned code length:', cleanedCode.length);
   console.log('🔍 Code starts with:', cleanedCode.substring(0, 100));
 
+  // Fix quote issues that could cause syntax errors
+  cleanedCode = fixQuoteIssues(cleanedCode);
+
   // Only do basic validation now - don't use cleanAndValidateCode which is too strict
   if (!cleanedCode.includes('function EnhancedDesign')) {
     console.error('🚨 No EnhancedDesign function found, using fallback');
@@ -382,6 +385,17 @@ CRITICAL REACT COMPONENT RULES:
 7. Ensure all JSX elements are properly closed
 8. DO NOT use React.createElement directly
 9. Return valid JSX from the component
+10. CRITICAL: Always use DOUBLE QUOTES for strings containing apostrophes (e.g., "Let's go" not 'Let's go')
+11. CRITICAL: Escape special characters properly in strings
+12. Use consistent quote style: double quotes for strings, single quotes for JSX attributes when possible
+
+QUOTE HANDLING EXAMPLES:
+✅ CORRECT: const message = "Let's get started with this amazing feature";
+❌ WRONG: const message = 'Let's get started with this amazing feature';
+✅ CORRECT: const text = "Don't worry, it's working perfectly";
+❌ WRONG: const text = 'Don't worry, it's working perfectly';
+✅ CORRECT: <button onClick={() => setMessage("It's ready!")}>Click me</button>
+❌ WRONG: <button onClick={() => setMessage('It's ready!')}>Click me</button>
 
 Create a production-ready React component that:
 1. Solves all identified problems using this approach
@@ -537,6 +551,55 @@ function generateSafeFallbackComponent(): string {
     </div>
   );
 }`;
+}
+
+function fixQuoteIssues(code: string): string {
+  console.log('🔧 Fixing quote issues in generated code...');
+  
+  try {
+    // Fix common quote issues that cause syntax errors
+    let fixedCode = code;
+    
+    // Find single-quoted strings that contain apostrophes
+    // Pattern: 'text with apostrophe like don't or let's'
+    const singleQuotePattern = /'([^']*[''][^']*)+'/g;
+    
+    fixedCode = fixedCode.replace(singleQuotePattern, (match) => {
+      // Convert single quotes to double quotes for strings containing apostrophes
+      const content = match.slice(1, -1); // Remove outer quotes
+      console.log('🔄 Converting problematic quotes:', match, '→', `"${content}"`);
+      return `"${content}"`;
+    });
+    
+    // Also handle common cases directly
+    const commonProblems = [
+      { from: "'Let's", to: '"Let\'s' },
+      { from: "'Don't", to: '"Don\'t' },
+      { from: "'Won't", to: '"Won\'t' },
+      { from: "'Can't", to: '"Can\'t' },
+      { from: "'I'm", to: '"I\'m' },
+      { from: "'We're", to: '"We\'re' },
+      { from: "'You're", to: '"You\'re' },
+      { from: "'It's", to: '"It\'s' },
+      { from: "'That's", to: '"That\'s' },
+      { from: "'Here's", to: '"Here\'s' },
+      { from: "'There's", to: '"There\'s' },
+    ];
+    
+    commonProblems.forEach(({ from, to }) => {
+      if (fixedCode.includes(from)) {
+        console.log('🔄 Fixing common quote issue:', from, '→', to);
+        fixedCode = fixedCode.replace(new RegExp(from, 'g'), to);
+      }
+    });
+    
+    console.log('✅ Quote issues fixed');
+    return fixedCode;
+    
+  } catch (error) {
+    console.error('🚨 Error fixing quotes, returning original:', error);
+    return code;
+  }
 }
 
 function extractContentFromAnalysis(analysis: any) {
