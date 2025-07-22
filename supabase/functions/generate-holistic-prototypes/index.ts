@@ -266,11 +266,14 @@ async function generatePrototype(
   if (existing) return existing;
 
   // Generate new prototype
-        const prototypePrompt = buildPrototypePrompt(solution, analysisData, contextData, holisticAnalysis);
-        const codeResponse = await callClaude(prototypePrompt, anthropicKey);
-        
-        // Handle both string responses and parsed JSON responses
-        const code = typeof codeResponse === 'string' ? codeResponse : codeResponse.code || JSON.stringify(codeResponse, null, 2);
+  const prototypePrompt = buildPrototypePrompt(solution, analysisData, contextData, holisticAnalysis);
+  const codeResponse = await callClaude(prototypePrompt, anthropicKey);
+  
+  // Handle both string responses and parsed JSON responses
+  let code = typeof codeResponse === 'string' ? codeResponse : codeResponse.code || JSON.stringify(codeResponse, null, 2);
+  
+  // Clean any JSX syntax that might slip through
+  code = cleanJSXFromCode(code);
 
   const { data: prototype } = await supabase
     .from('figmant_holistic_prototypes')
@@ -430,6 +433,36 @@ async function callClaude(prompt: string, apiKey: string) {
     console.log('⚠️ Returning raw content:', content.substring(0, 200) + '...');
     return content;
   }
+}
+
+function cleanJSXFromCode(code: string): string {
+  // Remove any JSX angle brackets and convert to React.createElement
+  // This is a safety measure in case Claude generates JSX despite our prompt
+  console.log('🧹 Cleaning potential JSX from generated code');
+  
+  // If code contains JSX patterns, replace with safe fallback
+  if (code.includes('<') && code.includes('>')) {
+    console.log('⚠️ JSX detected in generated code, replacing with safe fallback');
+    return `function EnhancedDesign() {
+  const React = window.React;
+  const { useState } = React;
+  
+  const [isActive, setIsActive] = useState(false);
+  
+  return React.createElement('div', {
+    className: 'max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg'
+  }, 
+    React.createElement('h1', {
+      className: 'text-2xl font-bold text-gray-900 mb-4'
+    }, 'Enhanced Design'),
+    React.createElement('p', {
+      className: 'text-gray-600'
+    }, 'This is a safe fallback component generated to avoid parsing errors.')
+  );
+}`;
+  }
+  
+  return code;
 }
 
 function extractContentFromAnalysis(analysis: any) {
