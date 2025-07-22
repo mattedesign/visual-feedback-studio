@@ -401,6 +401,28 @@ You are a senior UX/UI designer creating a production-ready prototype that demon
 4. **Responsive Design**: Ensure mobile compatibility with proper breakpoints
 5. **Performance**: Minimize CSS complexity and avoid unnecessary JavaScript
 
+### React Component Guidelines (when generating React components)
+1. **Function Syntax**: Always use function syntax: function ComponentName() { ... }
+2. **Hook Usage**: Import React hooks at the component level if needed
+3. **className**: Use className instead of class for styling
+4. **JSX Closure**: Ensure all JSX elements are properly closed
+5. **Tailwind Classes**: Use Tailwind CSS classes for styling
+6. **No Imports**: Don't include import statements - they will be handled by the runtime
+
+Example React Component Format:
+```
+function EnhancedDesign() {
+  const [isHovered, setIsHovered] = useState(false);
+  
+  return (
+    <div className="p-6 bg-white rounded-lg shadow-lg">
+      <h1 className="text-2xl font-bold mb-4">Enhanced Design</h1>
+      {/* Component content */}
+    </div>
+  );
+}
+```
+
 ### Content Requirements
 1. **Realistic Content**: Use meaningful text instead of Lorem ipsum when possible
 2. **Clear Hierarchy**: Establish visual hierarchy through typography and spacing
