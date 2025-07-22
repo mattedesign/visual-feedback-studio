@@ -176,20 +176,24 @@ TASK:
 
 3. Create 3 DIFFERENT SOLUTION APPROACHES:
    
-   CONSERVATIVE (Quick Wins):
-   - Minimal changes that can be implemented fast
-   - Focus on highest-impact, lowest-effort improvements
+   CONSERVATIVE (Molecular Fix):
+   - Target ONE specific, high-impact problem only
+   - Minimal changes that can be implemented fast  
    - Keep existing structure mostly intact
+   - Focus on quick wins for a single component or interaction
    
-   BALANCED (Best Practices):
-   - Apply modern UX patterns and principles
-   - Restructure as needed for clarity
-   - Balance user needs with business goals
+   BALANCED (Strategic Improvements):
+   - Address 2-3 related problems that work together
+   - Apply modern UX patterns selectively
+   - Make moderate structural improvements
+   - Balance user needs with business constraints
    
-   INNOVATIVE (Cutting Edge):
-   - Bold, creative solutions
-   - Latest design trends and interactions
-   - Maximize engagement and delight
+   INNOVATIVE (Complete Holistic Redesign):
+   - Address ALL identified problems in one comprehensive solution
+   - Completely reimagine the entire screen/experience
+   - Apply cutting-edge UX patterns and interactions
+   - Create a best-in-class experience that sets new standards
+   - Design the ideal version that solves every problem holistically
 
 For each approach include:
 - Name and description
