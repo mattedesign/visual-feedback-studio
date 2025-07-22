@@ -131,16 +131,27 @@ serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } else if (solutionType) {
+      console.log('🔥 Starting prototype generation for type:', solutionType);
       const solution = (holisticAnalysis.solution_approaches || []).find(s => s.approach === solutionType);
       if (!solution) {
+        console.error('❌ Solution type not found:', { solutionType, availableSolutions: (holisticAnalysis.solution_approaches || []).map(s => s.approach) });
         throw new Error(`Solution type '${solutionType}' not found in analysis`);
       }
-      const prototype = await generatePrototype(solution, analysisData, contextData, holisticAnalysis, supabase, anthropicKey);
+      console.log('🎯 Found solution:', solution);
       
-      return new Response(
-        JSON.stringify({ success: true, prototype }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      try {
+        const prototype = await generatePrototype(solution, analysisData, contextData, holisticAnalysis, supabase, anthropicKey);
+        console.log('✅ Prototype generated successfully:', prototype?.id);
+        
+        return new Response(
+          JSON.stringify({ success: true, prototype }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (prototypeError) {
+        console.error('💥 Error in prototype generation:', prototypeError);
+        console.error('💥 Prototype error stack:', prototypeError.stack);
+        throw prototypeError;
+      }
     }
 
     return new Response(
@@ -300,8 +311,15 @@ async function generatePrototype(
     // Basic validation - check if it's valid JavaScript
     new Function(cleanedCode);
   } catch (error) {
-    console.error('Invalid component code generated:', error);
-    throw new Error('Generated component code is invalid');
+    console.error('💥 Error in generatePrototype:', error);
+    console.error('💥 Error stack:', error.stack);
+    console.error('💥 Error details:', {
+      message: error.message,
+      name: error.name,
+      solutionType: solution?.approach,
+      analysisId: analysisData?.id
+    });
+    throw error;
   }
   
   const { data: prototype, error } = await supabase
