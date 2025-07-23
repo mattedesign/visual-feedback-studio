@@ -358,7 +358,7 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
               </p>
               
               <div className="space-y-1 mb-3">
-                {solution?.expectedImpact?.map((impact, i) => (
+                {Array.isArray(solution?.expectedImpact) && solution.expectedImpact.map((impact, i) => (
                   <p key={i} className="text-xs text-green-600">
                     {impact?.metric || 'Metric'}: {impact?.improvement || 'Improvement'}
                   </p>
