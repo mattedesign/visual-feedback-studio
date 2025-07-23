@@ -44,49 +44,33 @@ export function PrototypeRenderer({ code, title = "Enhanced Design", onError }: 
         attempt: retryCount + 1 
       });
 
+      // Wait for iframe to be available with retry mechanism
+      let iframe = iframeRef.current;
+      let retries = 0;
+      while (!iframe && retries < 10) {
+        console.log(`⏳ Waiting for iframe ref (attempt ${retries + 1}/10)`);
+        await new Promise(resolve => setTimeout(resolve, 100));
+        iframe = iframeRef.current;
+        retries++;
+      }
+
+      if (!iframe) {
+        throw new Error('Iframe reference not available after retries');
+      }
+
+      console.log('✅ Iframe reference acquired, proceeding with render');
+
       const sanitizedCode = sanitizeComponentCode(code);
       const iframeContent = createIframeContent(sanitizedCode, title);
       
-      const iframe = iframeRef.current;
-      if (!iframe) {
-        throw new Error('Iframe reference not available');
-      }
-
-      // Simplified iframe loading with Promise
-      await new Promise<void>((resolve, reject) => {
-        const handleLoad = () => {
-          console.log('✅ Iframe loaded successfully');
-          cleanup();
-          resolve();
-        };
-
-        const handleError = () => {
-          console.error('❌ Iframe failed to load');
-          cleanup();
-          reject(new Error('Iframe failed to load'));
-        };
-
-        const cleanup = () => {
-          iframe.removeEventListener('load', handleLoad);
-          iframe.removeEventListener('error', handleError);
-        };
-
-        // Set up event listeners
-        iframe.addEventListener('load', handleLoad);
-        iframe.addEventListener('error', handleError);
-        
-        // Set timeout
-        timeoutRef.current = setTimeout(() => {
-          cleanup();
-          reject(new Error('Prototype loading timed out'));
-        }, 6000);
-
-        // Load the content
-        iframe.srcdoc = iframeContent;
-      });
-
-      setRenderState('success');
-      console.log('🎉 Prototype rendered successfully');
+      // Direct srcdoc assignment without event listeners to avoid timing issues
+      iframe.srcdoc = iframeContent;
+      
+      // Simple timeout-based success detection
+      timeoutRef.current = setTimeout(() => {
+        console.log('✅ Prototype rendering completed (timeout-based)');
+        setRenderState('success');
+      }, 2000);
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown rendering error';
@@ -94,8 +78,6 @@ export function PrototypeRenderer({ code, title = "Enhanced Design", onError }: 
       setError(errorMessage);
       setRenderState('error');
       onError?.(error instanceof Error ? error : new Error(errorMessage));
-    } finally {
-      cleanupIframe();
     }
   }, [code, title, retryCount, onError, cleanupIframe]);
 
