@@ -563,44 +563,107 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
         </Card>
       </Collapsible>
 
-      {/* Solution Selector */}
-      <div className="grid md:grid-cols-3 gap-4">
+      {/* Solution Approach Cards */}
+      <div className="grid md:grid-cols-3 gap-6">
         {analysis?.solution_approaches?.map((solution) => {
           const solutionState = generationState[solution?.approach] || { isGenerating: false, retryCount: 0 };
+          const isSelected = selectedSolution === solution?.approach;
+          const hasPrototype = !!prototypes[solution?.approach];
+          
+          // Get approach-specific styling
+          const getApproachStyles = (approach: string) => {
+            switch (approach) {
+              case 'conservative':
+                return {
+                  iconColor: 'text-green-600',
+                  bgColor: isSelected ? 'bg-green-50' : 'bg-white',
+                  borderColor: isSelected ? 'border-green-300 ring-2 ring-green-200' : 'border-gray-200 hover:border-green-200',
+                  titlePrefix: 'Information',
+                  conversionRange: '8-12%'
+                };
+              case 'balanced':
+                return {
+                  iconColor: 'text-blue-600',
+                  bgColor: isSelected ? 'bg-blue-50' : 'bg-white',
+                  borderColor: isSelected ? 'border-blue-300 ring-2 ring-blue-200' : 'border-gray-200 hover:border-blue-200',
+                  titlePrefix: 'Progressive',
+                  conversionRange: '15-20%'
+                };
+              case 'innovative':
+                return {
+                  iconColor: 'text-purple-600',
+                  bgColor: isSelected ? 'bg-purple-50' : 'bg-white',
+                  borderColor: isSelected ? 'border-purple-300 ring-2 ring-purple-200' : 'border-gray-200 hover:border-purple-200',
+                  titlePrefix: 'Smart Contextual',
+                  conversionRange: '25-35%'
+                };
+              default:
+                return {
+                  iconColor: 'text-gray-600',
+                  bgColor: 'bg-white',
+                  borderColor: 'border-gray-200',
+                  titlePrefix: '',
+                  conversionRange: 'TBD'
+                };
+            }
+          };
+          
+          const styles = getApproachStyles(solution?.approach || '');
           
           return (
             <Card
               key={solution?.approach}
-              className={`p-4 cursor-pointer transition-all ${
-                selectedSolution === solution?.approach ? 'ring-2 ring-blue-600' : ''
-              }`}
+              className={`p-6 cursor-pointer transition-all duration-200 ${styles.bgColor} border-2 ${styles.borderColor}`}
               onClick={() => setSelectedSolution(solution?.approach || 'balanced')}
             >
-              <div className="flex items-center gap-2 mb-2">
-                {solution?.approach === 'conservative' && <Shield className="w-5 h-5 text-green-600" />}
-                {solution?.approach === 'balanced' && <Target className="w-5 h-5 text-blue-600" />}
-                {solution?.approach === 'innovative' && <Zap className="w-5 h-5 text-purple-600" />}
-                <h4 className="font-semibold">{solution?.name || 'Solution'}</h4>
+              {/* Header with Icon */}
+              <div className="flex items-start gap-3 mb-4">
+                <div className={`p-2 rounded-lg ${styles.bgColor === 'bg-white' ? 'bg-gray-50' : 'bg-white/60'}`}>
+                  {solution?.approach === 'conservative' && <Shield className={`w-6 h-6 ${styles.iconColor}`} />}
+                  {solution?.approach === 'balanced' && <Target className={`w-6 h-6 ${styles.iconColor}`} />}
+                  {solution?.approach === 'innovative' && <Zap className={`w-6 h-6 ${styles.iconColor}`} />}
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                    {solution?.name || `${styles.titlePrefix} Solution`}
+                  </h3>
+                  {solution?.approach === 'balanced' && (
+                    <div className="text-sm text-gray-600 font-medium">
+                      with Trust Signals
+                    </div>
+                  )}
+                  {solution?.approach === 'innovative' && (
+                    <div className="text-sm text-gray-600 font-medium">
+                      Checkout Experience
+                    </div>
+                  )}
+                </div>
               </div>
               
-              <p className="text-sm text-gray-600 mb-3">
+              {/* Description */}
+              <p className="text-gray-600 mb-4 leading-relaxed">
                 {solution?.description || 'Description not available'}
               </p>
               
-              <div className="space-y-1 mb-3">
-                {Array.isArray(solution?.expectedImpact) && solution.expectedImpact.map((impact, i) => (
-                  <p key={i} className="text-xs text-green-600">
-                    {impact?.metric || 'Metric'}: {impact?.improvement || 'Improvement'}
-                  </p>
-                ))}
+              {/* Conversion Metric */}
+              <div className="mb-4">
+                <div className="text-lg font-semibold text-green-600">
+                  conversion: {styles.conversionRange}
+                </div>
               </div>
               
-              {/* Generation Controls */}
-              {!prototypes[solution?.approach] && (
-                <div className="space-y-2">
+              {/* Generation Status & Controls */}
+              {!hasPrototype && (
+                <div className="space-y-3">
                   <Button
                     size="sm"
-                    className="w-full"
+                    className={`w-full ${
+                      solution?.approach === 'conservative' 
+                        ? 'bg-green-600 hover:bg-green-700' 
+                        : solution?.approach === 'balanced'
+                        ? 'bg-blue-600 hover:bg-blue-700'
+                        : 'bg-purple-600 hover:bg-purple-700'
+                    }`}
                     onClick={(e) => {
                       e.stopPropagation();
                       generatePrototype(solution?.approach || 'balanced');
@@ -610,7 +673,7 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
                     {solutionState.isGenerating ? (
                       <>
                         <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                        Generating...
+                        Generating Prototype...
                       </>
                     ) : (
                       'Generate Prototype'
@@ -618,11 +681,22 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
                   </Button>
                   
                   {solutionState.error && (
-                    <div className="text-xs text-red-600 bg-red-50 p-2 rounded">
-                      Error: {solutionState.error}
-                      {solutionState.retryCount > 0 && ` (Attempt ${solutionState.retryCount + 1}/3)`}
+                    <div className="text-xs text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
+                      <div className="font-medium mb-1">Generation Failed</div>
+                      <div>{solutionState.error}</div>
+                      {solutionState.retryCount > 0 && (
+                        <div className="text-red-500 mt-1">Attempt {solutionState.retryCount + 1}/3</div>
+                      )}
                     </div>
                   )}
+                </div>
+              )}
+              
+              {/* Prototype Ready Indicator */}
+              {hasPrototype && (
+                <div className="flex items-center gap-2 text-green-600 font-medium">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Prototype Ready</span>
                 </div>
               )}
             </Card>
