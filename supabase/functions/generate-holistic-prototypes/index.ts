@@ -486,6 +486,19 @@ async function callClaude(prompt: string, apiKey: string) {
     return parsed;
   } catch {
     console.log('📄 Not JSON, checking for code blocks...');
+    
+    // Look for JSON in code blocks first
+    const jsonMatch = content.match(/```json\n?([\s\S]*?)\n?```/);
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[1]);
+        console.log('✅ Found and parsed JSON from code block');
+        return parsed;
+      } catch (jsonError) {
+        console.log('❌ Failed to parse JSON from code block:', jsonError.message);
+      }
+    }
+    
     // Extract code from markdown if present
     const codeMatch = content.match(/```(?:jsx?|tsx?)?\n([\s\S]*?)\n```/);
     if (codeMatch) {
