@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -15,94 +15,99 @@ export function PrototypeRenderer({ code, title = "Enhanced Design", onError }: 
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const timeoutRef = useRef<NodeJS.Timeout>();
 
-  useEffect(() => {
-    console.log('🔄 PrototypeRenderer useEffect triggered', { hasCode: !!code, codeLength: code?.length, retryCount });
-    if (code && code.trim()) {
-      renderPrototype();
-    } else {
-      console.warn('⚠️ No valid code provided to PrototypeRenderer');
-      setRenderState('error');
-      setError('No component code provided');
+  const cleanupIframe = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = undefined;
     }
-  }, [code, retryCount]);
+  }, []);
 
-  const renderPrototype = async () => {
-    console.log('🎨 Starting prototype render for:', title);
-    setRenderState('loading');
-    setError(null);
+  const renderPrototype = useCallback(async () => {
+    if (!code?.trim()) {
+      const errorMsg = 'No valid component code provided';
+      console.warn('⚠️', errorMsg);
+      setError(errorMsg);
+      setRenderState('error');
+      return;
+    }
 
     try {
-      // Validate and sanitize code
+      setRenderState('loading');
+      setError(null);
+      cleanupIframe();
+
+      console.log('🎨 Rendering prototype:', { 
+        title, 
+        codeLength: code.length,
+        attempt: retryCount + 1 
+      });
+
       const sanitizedCode = sanitizeComponentCode(code);
-      console.log('✅ Code sanitized, length:', sanitizedCode.length);
-      
-      // Create iframe content
       const iframeContent = createIframeContent(sanitizedCode, title);
       
-      // Render in iframe
-      if (iframeRef.current) {
-        console.log('📱 Setting iframe content...');
-        iframeRef.current.srcdoc = iframeContent;
-        
-        // Use a more reliable loading mechanism
-        const loadPromise = new Promise((resolve, reject) => {
-          const timeout = setTimeout(() => {
-            console.error('⏰ Iframe load timeout');
-            reject(new Error('Render timeout - iframe took too long to load'));
-          }, 8000); // Reduced timeout
-          
-          const handleLoad = () => {
-            console.log('✅ Iframe loaded successfully');
-            clearTimeout(timeout);
-            iframeRef.current?.removeEventListener('load', handleLoad);
-            iframeRef.current?.removeEventListener('error', handleError);
-            resolve(void 0);
-          };
-          
-          const handleError = (event) => {
-            console.error('❌ Iframe loading error:', event);
-            clearTimeout(timeout);
-            iframeRef.current?.removeEventListener('load', handleLoad);
-            iframeRef.current?.removeEventListener('error', handleError);
-            reject(new Error('Iframe failed to load'));
-          };
-          
-          iframeRef.current?.addEventListener('load', handleLoad);
-          iframeRef.current?.addEventListener('error', handleError);
-        });
-        
-        await loadPromise;
-        
-        // Additional check: Wait a bit and verify iframe content loaded
-        setTimeout(() => {
-          try {
-            const iframeDoc = iframeRef.current?.contentDocument;
-            if (iframeDoc && iframeDoc.getElementById('root')) {
-              console.log('✅ Iframe content verified');
-              setRenderState('success');
-            } else {
-              console.warn('⚠️ Iframe loaded but content may not be ready');
-              setRenderState('success'); // Still proceed
-            }
-          } catch (e) {
-            console.warn('⚠️ Could not verify iframe content (cross-origin):', e);
-            setRenderState('success'); // Still proceed
-          }
-        }, 1000);
+      const iframe = iframeRef.current;
+      if (!iframe) {
+        throw new Error('Iframe reference not available');
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown rendering error';
-      console.error('❌ Prototype rendering failed:', err);
+
+      // Simplified iframe loading with Promise
+      await new Promise<void>((resolve, reject) => {
+        const handleLoad = () => {
+          console.log('✅ Iframe loaded successfully');
+          cleanup();
+          resolve();
+        };
+
+        const handleError = () => {
+          console.error('❌ Iframe failed to load');
+          cleanup();
+          reject(new Error('Iframe failed to load'));
+        };
+
+        const cleanup = () => {
+          iframe.removeEventListener('load', handleLoad);
+          iframe.removeEventListener('error', handleError);
+        };
+
+        // Set up event listeners
+        iframe.addEventListener('load', handleLoad);
+        iframe.addEventListener('error', handleError);
+        
+        // Set timeout
+        timeoutRef.current = setTimeout(() => {
+          cleanup();
+          reject(new Error('Prototype loading timed out'));
+        }, 6000);
+
+        // Load the content
+        iframe.srcdoc = iframeContent;
+      });
+
+      setRenderState('success');
+      console.log('🎉 Prototype rendered successfully');
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown rendering error';
+      console.error('❌ Prototype rendering failed:', error);
       setError(errorMessage);
       setRenderState('error');
-      onError?.(err instanceof Error ? err : new Error(errorMessage));
+      onError?.(error instanceof Error ? error : new Error(errorMessage));
+    } finally {
+      cleanupIframe();
     }
-  };
+  }, [code, title, retryCount, onError, cleanupIframe]);
 
-  const handleRetry = () => {
+  useEffect(() => {
+    renderPrototype();
+    return cleanupIframe;
+  }, [renderPrototype, cleanupIframe]);
+
+  const handleRetry = useCallback(() => {
+    console.log('🔄 Retrying prototype render...');
     setRetryCount(prev => prev + 1);
-  };
+  }, []);
 
   const sanitizeComponentCode = (rawCode: string): string => {
     // Remove markdown code blocks
