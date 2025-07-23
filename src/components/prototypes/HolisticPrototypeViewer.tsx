@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
 import { PrototypeRenderer } from './PrototypeRenderer';
+import { KeyIssuesCarousel } from '@/components/analysis/KeyIssuesCarousel';
 
 interface HolisticPrototypeViewerProps {
   analysisId?: string;
@@ -453,29 +454,9 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
         )}
       </div>
 
-      {/* Problem Summary */}
+      {/* Key Issues Carousel */}
       {analysis?.identified_problems?.length > 0 && (
-        <Card className="p-6 bg-red-50 border-red-200">
-          <h3 className="font-semibold text-red-900 mb-3 flex items-center gap-2">
-            <AlertCircle className="w-5 h-5" />
-            Key Issues Affecting Your Goals
-          </h3>
-          <div className="space-y-2">
-            {analysis.identified_problems.map((problem, idx) => (
-              <div key={idx} className="flex items-start gap-3">
-                <Badge variant="destructive" className="mt-0.5">
-                  {problem?.severity || 'medium'}
-                </Badge>
-                <div className="flex-1">
-                  <p className="text-red-800">{problem?.description || 'Problem description not available'}</p>
-                  <p className="text-sm text-red-600 mt-1">
-                    Impact: {problem?.businessImpact || 'Impact assessment needed'}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
+        <KeyIssuesCarousel problems={analysis.identified_problems} />
       )}
 
       {/* Classic View Insights - Collapsible */}
