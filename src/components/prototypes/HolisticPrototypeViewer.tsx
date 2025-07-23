@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Target, Zap, AlertCircle, CheckCircle, Download, Eye, Code, Columns, RefreshCw } from 'lucide-react';
+import { Shield, Target, Zap, AlertCircle, CheckCircle, Download, Eye, Code, Columns, RefreshCw, ChevronDown, ChevronRight, Lightbulb, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
 import { PrototypeRenderer } from './PrototypeRenderer';
 
@@ -32,6 +33,8 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
   const [loading, setLoading] = useState(true);
   const [generatingAnalysis, setGeneratingAnalysis] = useState(false);
   const [generationState, setGenerationState] = useState<GenerationState>({});
+  const [showClassicInsights, setShowClassicInsights] = useState(false);
+  const [showPatternReference, setShowPatternReference] = useState(false);
   
 
   console.log('🎯 HolisticPrototypeViewer initialized:', { 
@@ -474,6 +477,126 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
           </div>
         </Card>
       )}
+
+      {/* Classic View Insights - Collapsible */}
+      <Collapsible open={showClassicInsights} onOpenChange={setShowClassicInsights}>
+        <Card className="border-green-200 bg-green-50">
+          <CollapsibleTrigger asChild>
+            <div className="p-4 cursor-pointer hover:bg-green-100 transition-colors">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Lightbulb className="w-5 h-5 text-green-600" />
+                  <h3 className="font-semibold text-green-900">✨ What's Working Well</h3>
+                  <Badge variant="outline" className="text-green-600 border-green-300">
+                    Classic Analysis
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowPatternReference(!showPatternReference);
+                    }}
+                    className="text-green-700 hover:bg-green-200"
+                  >
+                    <Eye className="w-4 h-4 mr-1" />
+                    Pattern Reference
+                  </Button>
+                  {showClassicInsights ? (
+                    <ChevronDown className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-green-600" />
+                  )}
+                </div>
+              </div>
+            </div>
+          </CollapsibleTrigger>
+          
+          <CollapsibleContent>
+            <div className="px-4 pb-4 space-y-4">
+              {/* What's Working Well List */}
+              <div className="bg-white rounded-lg p-4 border border-green-200">
+                <ul className="space-y-2">
+                  <li className="flex items-start gap-2 text-sm text-green-800">
+                    <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span>Clear visual hierarchy with pricing prominently displayed on the right</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-green-800">
+                    <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span>Progressive disclosure of information keeps users focused on the task</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-green-800">
+                    <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span>Smart use of color to highlight savings and call-to-action buttons</span>
+                  </li>
+                  {analysis?.vision_insights?.positive_elements?.map((element, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-sm text-green-800">
+                      <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                      <span>{element}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              
+              {/* Pattern Reference Modal */}
+              {showPatternReference && (
+                <div className="bg-white rounded-lg p-4 border border-green-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-medium text-green-900">Pattern References</h4>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowPatternReference(false)}
+                      className="text-green-600 hover:bg-green-100"
+                    >
+                      ×
+                    </Button>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="p-3 bg-green-50 rounded border border-green-200">
+                        <h5 className="font-medium text-green-900 mb-1">Checkout Flow Pattern</h5>
+                        <p className="text-xs text-green-700 mb-2">
+                          Multi-step checkout with clear progress indication and pricing summary
+                        </p>
+                        <div className="flex gap-2">
+                          <Badge variant="outline" className="text-xs">E-commerce</Badge>
+                          <Badge variant="outline" className="text-xs">Conversion</Badge>
+                        </div>
+                      </div>
+                      <div className="p-3 bg-green-50 rounded border border-green-200">
+                        <h5 className="font-medium text-green-900 mb-1">Progressive Disclosure</h5>
+                        <p className="text-xs text-green-700 mb-2">
+                          Gradual reveal of information to reduce cognitive load
+                        </p>
+                        <div className="flex gap-2">
+                          <Badge variant="outline" className="text-xs">UX Pattern</Badge>
+                          <Badge variant="outline" className="text-xs">Forms</Badge>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                      <div className="flex items-start gap-2">
+                        <MessageCircle className="w-4 h-4 text-blue-600 mt-0.5" />
+                        <div>
+                          <p className="text-xs font-medium text-blue-900 mb-1">
+                            Why these patterns work for checkout flows:
+                          </p>
+                          <p className="text-xs text-blue-700">
+                            Major retailers like Amazon and Shopify use similar approaches because they reduce cart abandonment by maintaining user focus while providing necessary information at the right moment.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
 
       {/* Solution Selector */}
       <div className="grid md:grid-cols-3 gap-4">
