@@ -221,15 +221,122 @@ async function generateHolisticAnalysis(analysisData: any, contextData: any, ant
   }
 }
 
+function estimateTokens(text: string): number {
+  // Rough estimate: 1 token ≈ 4 characters for English text
+  return Math.ceil(text.length / 4);
+}
+
+function truncateText(text: string, maxTokens: number): string {
+  const maxChars = maxTokens * 4;
+  if (text.length <= maxChars) return text;
+  
+  // Try to truncate at sentence boundaries
+  const truncated = text.substring(0, maxChars);
+  const lastSentence = truncated.lastIndexOf('.');
+  if (lastSentence > maxChars * 0.7) {
+    return text.substring(0, lastSentence + 1) + ' [truncated]';
+  }
+  
+  return truncated + '... [truncated]';
+}
+
+function optimizeVisionData(visionSummary: any): any {
+  if (!visionSummary || typeof visionSummary !== 'object') {
+    return { summary: 'No vision data available' };
+  }
+
+  // Extract only the most relevant vision data
+  const optimized: any = {};
+  
+  // Get key text elements (limit to most important)
+  if (visionSummary.vision_results?.text) {
+    const texts = Array.isArray(visionSummary.vision_results.text) 
+      ? visionSummary.vision_results.text 
+      : [];
+    optimized.keyTexts = texts
+      .slice(0, 10) // Limit to first 10 text elements
+      .filter((text: string) => text && text.length > 2)
+      .map((text: string) => text.length > 100 ? text.substring(0, 100) + '...' : text);
+  }
+
+  // Get color information (simplified)
+  if (visionSummary.vision_results?.imageProperties?.dominantColors) {
+    optimized.dominantColors = visionSummary.vision_results.imageProperties.dominantColors
+      .slice(0, 3) // Only top 3 colors
+      .map((color: any) => ({
+        color: color.color,
+        score: color.score
+      }));
+  }
+
+  // Get detected objects (limit and summarize)
+  if (visionSummary.vision_results?.objects) {
+    optimized.detectedObjects = visionSummary.vision_results.objects
+      .slice(0, 5) // Only top 5 objects
+      .map((obj: any) => obj.name);
+  }
+
+  // Screen type
+  if (visionSummary.screen_type_detected) {
+    optimized.screenType = visionSummary.screen_type_detected;
+  }
+
+  return optimized;
+}
+
+function optimizeClaudeAnalysis(claudeAnalysis: any): any {
+  if (!claudeAnalysis || typeof claudeAnalysis !== 'object') {
+    return { summary: 'No Claude analysis available' };
+  }
+
+  const optimized: any = {};
+
+  // Extract key issues (limit and summarize)
+  if (claudeAnalysis.issues) {
+    optimized.keyIssues = Array.isArray(claudeAnalysis.issues)
+      ? claudeAnalysis.issues.slice(0, 5).map((issue: any) => ({
+          severity: issue.severity || 'medium',
+          category: issue.category || 'general',
+          description: issue.description ? truncateText(issue.description, 50) : 'Issue description not available'
+        }))
+      : [];
+  }
+
+  // Extract top recommendations
+  if (claudeAnalysis.top_recommendations) {
+    optimized.topRecommendations = Array.isArray(claudeAnalysis.top_recommendations)
+      ? claudeAnalysis.top_recommendations.slice(0, 3).map((rec: any) => 
+          typeof rec === 'string' ? truncateText(rec, 30) : truncateText(rec.description || '', 30)
+        )
+      : [];
+  }
+
+  // Overall score
+  if (claudeAnalysis.overall_score) {
+    optimized.overallScore = claudeAnalysis.overall_score;
+  }
+
+  // Screen information
+  if (claudeAnalysis.screen_name) {
+    optimized.screenName = claudeAnalysis.screen_name;
+  }
+
+  return optimized;
+}
+
 function buildHolisticAnalysisPrompt(analysisData: any, contextData: any): string {
   const claudeAnalysis = analysisData.claude_analysis || {};
   const visionSummary = analysisData.google_vision_summary || {};
   
-  console.log('📝 Building analysis prompt with context data');
-  console.log(`📊 Claude analysis keys: ${Object.keys(claudeAnalysis).join(', ')}`);
-  console.log(`👁️ Vision summary keys: ${Object.keys(visionSummary).join(', ')}`);
+  // Optimize data to reduce token usage
+  const optimizedVision = optimizeVisionData(visionSummary);
+  const optimizedClaude = optimizeClaudeAnalysis(claudeAnalysis);
   
-  return `You are an expert UX strategist providing holistic design analysis.
+  console.log('📝 Building analysis prompt with optimized data');
+  console.log(`📊 Optimized Claude analysis keys: ${Object.keys(optimizedClaude).join(', ')}`);
+  console.log(`👁️ Optimized vision data keys: ${Object.keys(optimizedVision).join(', ')}`);
+  
+  const prompt = `You are an expert UX strategist providing holistic design analysis.
 
 BUSINESS CONTEXT:
 ${contextData ? `
@@ -240,10 +347,12 @@ ${contextData ? `
 - Design Type: ${contextData.design_type}
 ` : 'No specific context provided - use general UX principles'}
 
-DESIGN ANALYSIS:
-- Issues Found: ${JSON.stringify(claudeAnalysis.issues || [])}
-- Vision Data: ${JSON.stringify(visionSummary)}
-- Screen Type: ${analysisData.screen_type_detected || 'unknown'}
+DESIGN ANALYSIS SUMMARY:
+- Previous Issues: ${JSON.stringify(optimizedClaude.keyIssues || [])}
+- Key Visual Elements: ${JSON.stringify(optimizedVision.keyTexts || [])}
+- Dominant Colors: ${JSON.stringify(optimizedVision.dominantColors || [])}
+- Screen Type: ${optimizedVision.screenType || analysisData.screen_type_detected || 'unknown'}
+- Overall Score: ${optimizedClaude.overallScore || 'not available'}
 
 TASK: Analyze this design and provide:
 
@@ -279,6 +388,73 @@ CRITICAL: Return ONLY valid JSON in this exact format:
   ],
   "visionInsights": {
     "summary": "Key visual insights"
+  }
+}`;
+
+  const tokenEstimate = estimateTokens(prompt);
+  console.log(`📊 Prompt token estimate: ${tokenEstimate} tokens`);
+  
+  // Check if prompt might be too long and truncate if needed
+  if (tokenEstimate > 180000) { // Leave buffer for response
+    console.warn('⚠️ Prompt may be too long, applying additional truncation');
+    // Further reduce the optimized data if needed
+    return buildMinimalPrompt(contextData, optimizedClaude, optimizedVision);
+  }
+  
+  return prompt;
+}
+
+function buildMinimalPrompt(contextData: any, optimizedClaude: any, optimizedVision: any): string {
+  console.log('🔄 Building minimal prompt due to token limits');
+  
+  return `You are an expert UX strategist providing holistic design analysis.
+
+CONTEXT: ${contextData?.business_type || 'General'} product seeking ${contextData?.primary_goal || 'UX improvements'}
+
+CURRENT STATE:
+- Screen: ${optimizedVision.screenType || 'unknown'}
+- Issues: ${optimizedClaude.keyIssues?.length || 0} problems identified
+- Score: ${optimizedClaude.overallScore || 'N/A'}
+
+TASK: Provide UX analysis in JSON format:
+
+{
+  "problems": [
+    {
+      "id": "problem-1",
+      "description": "Specific issue",
+      "severity": "high|medium|low",
+      "businessImpact": "Impact description"
+    }
+  ],
+  "solutions": [
+    {
+      "approach": "conservative",
+      "name": "Quick Wins",
+      "description": "Low-risk improvements",
+      "keyChanges": ["Change 1", "Change 2"],
+      "expectedImpact": [{"metric": "usability", "improvement": "15%"}],
+      "examples": ["Company 1"]
+    },
+    {
+      "approach": "balanced",
+      "name": "Modern UX",
+      "description": "Balanced redesign",
+      "keyChanges": ["Change 1", "Change 2"],
+      "expectedImpact": [{"metric": "engagement", "improvement": "25%"}],
+      "examples": ["Company 2"]
+    },
+    {
+      "approach": "innovative",
+      "name": "Advanced UX",
+      "description": "Cutting-edge design",
+      "keyChanges": ["Change 1", "Change 2"],
+      "expectedImpact": [{"metric": "satisfaction", "improvement": "40%"}],
+      "examples": ["Company 3"]
+    }
+  ],
+  "visionInsights": {
+    "summary": "Key observations"
   }
 }`;
 }
@@ -499,7 +675,14 @@ function generateFallbackComponent(solution: any): string {
 }
 
 async function callClaudeAPI(prompt: string, apiKey: string): Promise<string> {
-  console.log(`🔥 Calling Claude API with prompt length: ${prompt.length}`);
+  const tokenEstimate = estimateTokens(prompt);
+  console.log(`🔥 Calling Claude API with prompt length: ${prompt.length} characters (~${tokenEstimate} tokens)`);
+  
+  // Check token limit before making API call
+  if (tokenEstimate > 190000) { // Leave buffer for response
+    console.error(`❌ Prompt too long: ${tokenEstimate} tokens exceeds safe limit`);
+    throw new Error(`Prompt too long: ${tokenEstimate} tokens exceeds Claude's 200K limit`);
+  }
   
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -511,7 +694,7 @@ async function callClaudeAPI(prompt: string, apiKey: string): Promise<string> {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
+        max_tokens: 8000, // Increased for better responses
         temperature: 0.3,
         messages: [{
           role: 'user',
@@ -525,6 +708,12 @@ async function callClaudeAPI(prompt: string, apiKey: string): Promise<string> {
     if (!response.ok) {
       const errorData = await response.text();
       console.error(`❌ Claude API error: ${response.status} - ${errorData}`);
+      
+      // Handle specific token limit errors
+      if (errorData.includes('prompt is too long') || errorData.includes('token')) {
+        throw new Error(`Token limit exceeded: ${errorData}`);
+      }
+      
       throw new Error(`Claude API error: ${response.status} - ${errorData}`);
     }
 
@@ -541,6 +730,12 @@ async function callClaudeAPI(prompt: string, apiKey: string): Promise<string> {
     return content;
   } catch (error) {
     console.error('❌ Claude API call failed:', error);
+    
+    // Enhanced error handling for token limits
+    if (error.message.includes('token') || error.message.includes('too long')) {
+      console.error('💡 Suggestion: Try reducing vision data or using chunking approach');
+    }
+    
     throw error;
   }
 }
