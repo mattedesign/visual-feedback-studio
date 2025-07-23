@@ -55,7 +55,7 @@ const FigmantResultsPage = () => {
   const [userContext, setUserContext] = useState<any>(null);
   const [showContextForm, setShowContextForm] = useState(false);
   const [contextLoading, setContextLoading] = useState(false);
-  const [analysisMode, setAnalysisMode] = useState<'classic' | 'holistic'>('classic');
+  
 
   // Feature flags
   const isHolisticEnabled = useFeatureFlag('holistic-ai-prototypes');
@@ -558,33 +558,8 @@ const FigmantResultsPage = () => {
             Design Analysis Results
           </h1>
           
-          {/* Mode Toggle */}
+          {/* View Toggle */}
           <div className="flex gap-2">
-            {/* Analysis Mode Toggle */}
-            <div className="flex rounded-lg bg-gray-100 p-1 mr-4">
-              <button
-                onClick={() => setAnalysisMode('classic')}
-                className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                  analysisMode === 'classic' 
-                    ? 'bg-white text-gray-900 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Classic
-              </button>
-              <button
-                onClick={() => setAnalysisMode('holistic')}
-                className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                  analysisMode === 'holistic' 
-                    ? 'bg-white text-gray-900 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Holistic
-              </button>
-            </div>
-            
-            {/* View Toggle */}
             <button
               onClick={() => setViewMode('visual')}
               className={`px-4 py-2 rounded-lg ${
@@ -612,29 +587,18 @@ const FigmantResultsPage = () => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto p-6">
         {viewMode === 'visual' ? (
-          // Visual view - switch between Classic and Holistic modes
+          // Visual Ideas view - always use Holistic approach
           <>
-            {console.log('🎯 Visual mode - analysisMode:', analysisMode, 'isHolisticEnabled:', isHolisticEnabled, 'analysisData?.id:', analysisData?.id)}
-            {analysisMode === 'holistic' ? (
-              <>
-                {console.log('🚀 Rendering HolisticPrototypeViewer with:', { 
-                  analysisId: analysisData?.id, 
-                  contextId: userContext?.id, 
-                  hasOriginalImage: !!sessionData?.images?.[0]?.file_path 
-                })}
-                <HolisticPrototypeViewer
-                  analysisId={analysisData?.id}
-                  contextId={userContext?.id}
-                  originalImage={sessionData?.images?.[0]?.file_path ? getImageUrl(sessionData.images[0].file_path) : undefined}
-                />
-              </>
-            ) : (
-              // Classic Visual Mentor View
-              <VisualMentorSummary 
-                mentorData={analysisData?.enhanced_context?.mentor_summary}
-                userImage={sessionData?.images?.[0]?.file_path ? getImageUrl(sessionData.images[0].file_path) : undefined}
-              />
-            )}
+            {console.log('🚀 Rendering HolisticPrototypeViewer with:', { 
+              analysisId: analysisData?.id, 
+              contextId: userContext?.id, 
+              hasOriginalImage: !!sessionData?.images?.[0]?.file_path 
+            })}
+            <HolisticPrototypeViewer
+              analysisId={analysisData?.id}
+              contextId={userContext?.id}
+              originalImage={sessionData?.images?.[0]?.file_path ? getImageUrl(sessionData.images[0].file_path) : undefined}
+            />
           </>
         ) : (
           // Detailed analysis view with gallery and sidebar layout
