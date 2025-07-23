@@ -66,54 +66,6 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
     }));
   }, []);
 
-  const generateAnalysisFunction = useCallback(async () => {
-    if (!analysisId) {
-      console.error('❌ Cannot generate analysis without analysisId');
-      toast.error('Analysis ID is required to generate holistic analysis');
-      return;
-    }
-
-    console.log('🔍 Starting holistic analysis generation for:', analysisId);
-    setGeneratingAnalysis(true);
-    
-    try {
-      console.log('📡 Calling edge function with params:', { analysisId, contextId });
-      
-      const { data: response, error } = await supabase.functions.invoke('generate-holistic-prototypes', {
-        body: { analysisId, contextId }
-      });
-      
-      console.log('📨 Edge function response:', { 
-        success: response?.success, 
-        hasAnalysis: !!response?.analysis,
-        error: error?.message 
-      });
-      
-      if (error) {
-        console.error('❌ Edge function error:', error);
-        throw new Error(error.message);
-      }
-      
-      if (response?.success) {
-        console.log('✅ Analysis generation successful, reloading data...');
-        await loadAnalysis(); // Reload fresh data
-        toast.success('Analysis generated successfully!');
-      } else {
-        console.error('❌ Edge function returned unsuccessful response:', response);
-        throw new Error(response?.error || 'Failed to generate analysis');
-      }
-    } catch (error) {
-      console.error('❌ Analysis generation error:', error);
-      setDebugInfo(prev => ({
-        ...prev,
-        lastLoadError: `Analysis generation failed: ${error.message}`
-      }));
-      toast.error(`Failed to generate analysis: ${error.message}`);
-    } finally {
-      setGeneratingAnalysis(false);
-    }
-  }, [analysisId, contextId]);
-
   const loadAnalysis = useCallback(async () => {
     if (!analysisId) {
       console.log('⚠️ No analysisId provided, skipping load');
@@ -126,7 +78,8 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
       return;
     }
     
-    console.log(`📊 Loading holistic analysis for ID (attempt ${debugInfo.loadAttempts + 1}):`, analysisId);
+    setLoading(true);
+    console.log(`📊 Loading holistic analysis for ID:`, analysisId);
     
     setDebugInfo(prev => ({
       ...prev,
@@ -170,7 +123,7 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
           hasVisionInsights: !!data.vision_insights
         });
         
-        // CRITICAL FIX: Only set analysis if we have valid data
+        // Validate analysis has required data
         if (data.solution_approaches && Array.isArray(data.solution_approaches) && data.solution_approaches.length > 0) {
           setAnalysis(data);
           
@@ -186,7 +139,6 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
             analysisExists: false,
             lastLoadError: 'Analysis found but missing solution approaches'
           }));
-          // Don't call setAnalysis(null) here - keep existing state
         }
         
         // Load existing prototypes
@@ -224,16 +176,12 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
         }
       } else {
         console.log('⚠️ No holistic analysis found, will need to generate');
-        // CRITICAL FIX: Don't call setAnalysis(null) if we already have analysis
-        // Only clear if we're sure there's no analysis
-        if (!analysis) {
-          setDebugInfo(prev => ({
-            ...prev,
-            analysisExists: false,
-            prototypeCount: 0,
-            lastLoadError: 'No holistic analysis found in database'
-          }));
-        }
+        setDebugInfo(prev => ({
+          ...prev,
+          analysisExists: false,
+          prototypeCount: 0,
+          lastLoadError: 'No holistic analysis found in database'
+        }));
       }
     } catch (error) {
       console.error('❌ Error loading analysis:', error);
@@ -245,10 +193,59 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
     } finally {
       setLoading(false);
     }
-  }, [analysisId, analysis]); // Add analysis to dependencies to prevent clearing
+  }, [analysisId]); // Remove analysis dependency to prevent infinite loops
+
+  const generateAnalysisFunction = useCallback(async () => {
+    if (!analysisId) {
+      console.error('❌ Cannot generate analysis without analysisId');
+      toast.error('Analysis ID is required to generate holistic analysis');
+      return;
+    }
+
+    console.log('🔍 Starting holistic analysis generation for:', analysisId);
+    setGeneratingAnalysis(true);
+    
+    try {
+      console.log('📡 Calling edge function with params:', { analysisId, contextId });
+      
+      const { data: response, error } = await supabase.functions.invoke('generate-holistic-prototypes', {
+        body: { analysisId, contextId }
+      });
+      
+      console.log('📨 Edge function response:', { 
+        success: response?.success, 
+        hasAnalysis: !!response?.analysis,
+        error: error?.message 
+      });
+      
+      if (error) {
+        console.error('❌ Edge function error:', error);
+        throw new Error(error.message);
+      }
+      
+      if (response?.success) {
+        console.log('✅ Analysis generation successful, reloading data...');
+        // Trigger a fresh reload by calling loadAnalysis directly
+        await loadAnalysis(); 
+        toast.success('Analysis generated successfully!');
+      } else {
+        console.error('❌ Edge function returned unsuccessful response:', response);
+        throw new Error(response?.error || 'Failed to generate analysis');
+      }
+    } catch (error) {
+      console.error('❌ Analysis generation error:', error);
+      setDebugInfo(prev => ({
+        ...prev,
+        lastLoadError: `Analysis generation failed: ${error.message}`
+      }));
+      toast.error(`Failed to generate analysis: ${error.message}`);
+    } finally {
+      setGeneratingAnalysis(false);
+    }
+  }, [analysisId, contextId, loadAnalysis]);
 
   useEffect(() => {
-    console.log('🔄 useEffect triggered - loading analysis');
+    console.log('🔄 useEffect triggered - loading analysis', { analysisId });
     if (analysisId) {
       loadAnalysis();
     } else {
@@ -259,7 +256,7 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
         lastLoadError: 'No analysis ID provided in useEffect'
       }));
     }
-  }, [analysisId, loadAnalysis]);
+  }, [analysisId, loadAnalysis]); // Include loadAnalysis but it's stable now
 
   const generatePrototype = useCallback(async (solutionType: string, retryAttempt = 0) => {
     if (!analysisId) {

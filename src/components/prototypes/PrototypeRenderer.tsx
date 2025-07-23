@@ -17,44 +17,83 @@ export function PrototypeRenderer({ code, title = "Enhanced Design", onError }: 
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
-    if (code) {
+    console.log('🔄 PrototypeRenderer useEffect triggered', { hasCode: !!code, codeLength: code?.length, retryCount });
+    if (code && code.trim()) {
       renderPrototype();
+    } else {
+      console.warn('⚠️ No valid code provided to PrototypeRenderer');
+      setRenderState('error');
+      setError('No component code provided');
     }
   }, [code, retryCount]);
 
   const renderPrototype = async () => {
+    console.log('🎨 Starting prototype render for:', title);
     setRenderState('loading');
     setError(null);
 
     try {
       // Validate and sanitize code
       const sanitizedCode = sanitizeComponentCode(code);
+      console.log('✅ Code sanitized, length:', sanitizedCode.length);
       
       // Create iframe content
       const iframeContent = createIframeContent(sanitizedCode, title);
       
       // Render in iframe
       if (iframeRef.current) {
+        console.log('📱 Setting iframe content...');
         iframeRef.current.srcdoc = iframeContent;
         
-        // Wait for iframe to load
-        await new Promise((resolve, reject) => {
-          const timeout = setTimeout(() => reject(new Error('Render timeout')), 10000);
+        // Use a more reliable loading mechanism
+        const loadPromise = new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            console.error('⏰ Iframe load timeout');
+            reject(new Error('Render timeout - iframe took too long to load'));
+          }, 8000); // Reduced timeout
           
           const handleLoad = () => {
+            console.log('✅ Iframe loaded successfully');
             clearTimeout(timeout);
             iframeRef.current?.removeEventListener('load', handleLoad);
+            iframeRef.current?.removeEventListener('error', handleError);
             resolve(void 0);
           };
           
+          const handleError = (event) => {
+            console.error('❌ Iframe loading error:', event);
+            clearTimeout(timeout);
+            iframeRef.current?.removeEventListener('load', handleLoad);
+            iframeRef.current?.removeEventListener('error', handleError);
+            reject(new Error('Iframe failed to load'));
+          };
+          
           iframeRef.current?.addEventListener('load', handleLoad);
+          iframeRef.current?.addEventListener('error', handleError);
         });
         
-        setRenderState('success');
+        await loadPromise;
+        
+        // Additional check: Wait a bit and verify iframe content loaded
+        setTimeout(() => {
+          try {
+            const iframeDoc = iframeRef.current?.contentDocument;
+            if (iframeDoc && iframeDoc.getElementById('root')) {
+              console.log('✅ Iframe content verified');
+              setRenderState('success');
+            } else {
+              console.warn('⚠️ Iframe loaded but content may not be ready');
+              setRenderState('success'); // Still proceed
+            }
+          } catch (e) {
+            console.warn('⚠️ Could not verify iframe content (cross-origin):', e);
+            setRenderState('success'); // Still proceed
+          }
+        }, 1000);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown rendering error';
-      console.error('Prototype rendering failed:', err);
+      console.error('❌ Prototype rendering failed:', err);
       setError(errorMessage);
       setRenderState('error');
       onError?.(err instanceof Error ? err : new Error(errorMessage));
