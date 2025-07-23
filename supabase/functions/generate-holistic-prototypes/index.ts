@@ -1,11 +1,11 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
-};
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
 interface Request {
   analysisId: string;
@@ -20,33 +20,36 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🎯 Starting holistic prototype generation');
+    
     const { analysisId, contextId, generateAll = false, solutionType } = await req.json();
-    console.log('🎯 Processing request:', { analysisId, contextId, generateAll, solutionType });
+    
+    if (!analysisId) {
+      throw new Error('Analysis ID is required');
+    }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Fetch analysis data first to get session_id
-    const { data: analysisData } = await supabase
-      .from('figmant_analysis_results')
-      .select('*')
-      .eq('id', analysisId)
-      .single();
-
-    if (!analysisData) {
-      throw new Error('Analysis not found');
+    
+    if (!anthropicKey) {
+      throw new Error('Anthropic API key not configured');
     }
 
-    // Fetch additional data including session images
-    const [contextResult, sessionResult] = await Promise.all([
-      contextId ? supabase.from('figmant_user_contexts').select('*').eq('id', contextId).single() : { data: null },
-      supabase.from('figmant_analysis_sessions').select('*, images:figmant_session_images(*)').eq('id', analysisData.session_id).single()
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Fetch analysis data with enhanced error handling
+    const [analysisResult, contextResult] = await Promise.all([
+      supabase.from('figmant_analysis_results').select('*').eq('id', analysisId).single(),
+      contextId ? supabase.from('figmant_user_contexts').select('*').eq('id', contextId).single() : { data: null }
     ]);
 
+    if (analysisResult.error) {
+      throw new Error(`Failed to fetch analysis: ${analysisResult.error.message}`);
+    }
+
+    const analysisData = analysisResult.data;
     const contextData = contextResult.data;
-    const sessionData = sessionResult.data;
 
     // Check if holistic analysis already exists
     const { data: existingAnalysis } = await supabase
@@ -59,32 +62,10 @@ serve(async (req) => {
 
     // Generate holistic analysis if it doesn't exist
     if (!holisticAnalysis) {
-      console.log('🔍 No existing holistic analysis found, generating new one...');
+      console.log('🔍 Generating holistic analysis...');
+      const analysisResponse = await generateHolisticAnalysis(analysisData, contextData, anthropicKey);
       
-      const analysisPrompt = buildHolisticAnalysisPrompt(analysisData, contextData);
-      console.log('📊 Analysis data available:', {
-        hasVisionData: !!analysisData.google_vision_summary,
-        hasClaudeAnalysis: !!analysisData.claude_analysis,
-        hasContext: !!contextData,
-        contextType: contextData?.business_type,
-        visionTextCount: analysisData.google_vision_summary?.vision_results?.text?.length || 0
-      });
-      
-      console.log('📝 Prompt length:', analysisPrompt.length);
-      console.log('📋 Prompt preview:', analysisPrompt.substring(0, 500) + '...');
-      
-      const analysisResponse = await callClaude(analysisPrompt, anthropicKey);
-      console.log('📊 Analysis response structure:', {
-        hasProblems: !!analysisResponse.problems,
-        hasSolutions: !!analysisResponse.solutions,
-        hasVisionInsights: !!analysisResponse.visionInsights,
-        problemsCount: analysisResponse.problems?.length || 0,
-        solutionsCount: analysisResponse.solutions?.length || 0,
-        responseType: typeof analysisResponse,
-        responseKeys: Object.keys(analysisResponse)
-      });
-      
-      const { data: newAnalysis } = await supabase
+      const { data: newAnalysis, error: insertError } = await supabase
         .from('figmant_holistic_analyses')
         .insert({
           analysis_id: analysisId,
@@ -95,15 +76,18 @@ serve(async (req) => {
         .select()
         .single();
         
+      if (insertError) {
+        throw new Error(`Failed to store analysis: ${insertError.message}`);
+      }
+      
       holisticAnalysis = newAnalysis;
-      console.log('✅ Created new holistic analysis:', holisticAnalysis.id);
     }
 
-    // Generate prototypes
+    // Generate prototypes based on request type
     if (generateAll) {
       const results = await Promise.all(
         holisticAnalysis.solution_approaches.map(solution => 
-          generatePrototype(solution, analysisData, contextData, holisticAnalysis, sessionData, supabase, anthropicKey)
+          generatePrototype(solution, analysisData, contextData, holisticAnalysis, supabase, anthropicKey)
         )
       );
       
@@ -113,10 +97,11 @@ serve(async (req) => {
       );
     } else if (solutionType) {
       const solution = holisticAnalysis.solution_approaches.find(s => s.approach === solutionType);
-      console.log('🔥 Starting prototype generation for type:', solutionType);
-      console.log('🎯 Found solution:', solution);
+      if (!solution) {
+        throw new Error(`Solution type ${solutionType} not found`);
+      }
       
-      const prototype = await generatePrototype(solution, analysisData, contextData, holisticAnalysis, sessionData, supabase, anthropicKey);
+      const prototype = await generatePrototype(solution, analysisData, contextData, holisticAnalysis, supabase, anthropicKey);
       
       return new Response(
         JSON.stringify({ success: true, prototype }),
@@ -130,7 +115,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error:', error);
+    console.error('❌ Holistic prototype generation failed:', error);
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -138,162 +123,92 @@ serve(async (req) => {
   }
 });
 
-function buildHolisticAnalysisPrompt(analysisData: any, contextData: any) {
-  const visionData = analysisData.google_vision_summary?.vision_results;
-  const claudeInsights = analysisData.claude_analysis;
+async function generateHolisticAnalysis(analysisData: any, contextData: any, anthropicKey: string) {
+  const prompt = buildHolisticAnalysisPrompt(analysisData, contextData);
   
-  return `You are an expert UX mentor analyzing a design for a ${contextData?.business_type || 'digital'} product.
+  try {
+    const response = await callClaudeAPI(prompt, anthropicKey);
+    return parseAnalysisResponse(response);
+  } catch (error) {
+    console.error('Analysis generation failed:', error);
+    // Return fallback analysis
+    return {
+      problems: [
+        {
+          id: 'fallback-1',
+          description: 'UX analysis could not be completed',
+          severity: 'medium',
+          businessImpact: 'Requires manual review'
+        }
+      ],
+      solutions: [
+        {
+          approach: 'conservative',
+          name: 'Basic UX Improvements',
+          description: 'Apply standard UX patterns',
+          keyChanges: ['Improve visual hierarchy', 'Enhance accessibility'],
+          expectedImpact: [{ metric: 'usability', improvement: '20%' }]
+        }
+      ],
+      visionInsights: {}
+    };
+  }
+}
+
+function buildHolisticAnalysisPrompt(analysisData: any, contextData: any): string {
+  const claudeAnalysis = analysisData.claude_analysis || {};
+  const visionSummary = analysisData.google_vision_summary || {};
+  
+  return `You are an expert UX strategist providing holistic design analysis.
 
 BUSINESS CONTEXT:
 ${contextData ? `
 - Business Type: ${contextData.business_type}
 - Target Audience: ${contextData.target_audience}
 - Primary Goal: ${contextData.primary_goal}
-- Specific Challenges: ${contextData.specific_challenges?.join(', ')}
-- Current Metrics: ${JSON.stringify(contextData.current_metrics)}
-` : 'No specific context provided - analyze based on common UX principles'}
+- Challenges: ${contextData.specific_challenges?.join(', ')}
+` : 'No specific context provided'}
 
-ORIGINAL DESIGN CONTENT ANALYSIS:
-${visionData?.text ? `
-Detected Text Elements: ${JSON.stringify(visionData.text.slice(0, 50))}
-Key Interface Elements: ${identifyInterfaceElements(visionData.text)}
-Brand Elements: ${identifyBrandElements(visionData.text)}
-Navigation: ${identifyNavigation(visionData.text)}
-Product/Content: ${identifyProductContent(visionData.text)}
-Pricing/Metrics: ${identifyPricingMetrics(visionData.text)}
-` : 'No text content detected'}
+DESIGN ANALYSIS:
+- Issues Found: ${JSON.stringify(claudeAnalysis.issues || [])}
+- Vision Data: ${JSON.stringify(visionSummary)}
 
-VISUAL LAYOUT ANALYSIS:
-- Layout Type: ${determineLayoutType(visionData)}
-- Color Palette: ${JSON.stringify(visionData?.imageProperties?.dominantColors || [])}
-- Interface Pattern: ${identifyInterfacePattern(visionData?.text || [])}
+TASK: Analyze this design and provide:
 
-EXISTING UX ANALYSIS:
-${JSON.stringify(claudeInsights)}
+1. IDENTIFIED PROBLEMS (3-5 specific issues):
+   - Each with id, description, severity, businessImpact
 
-TASK:
-Based on the ACTUAL content and layout of the uploaded design, identify:
+2. SOLUTION APPROACHES (exactly 3):
+   - conservative: Quick wins, minimal changes
+   - balanced: Modern UX patterns, balanced effort
+   - innovative: Cutting-edge solutions, high impact
 
-1. 3-5 SPECIFIC UX PROBLEMS that prevent this design from achieving its goals:
-   - Focus on real issues visible in the uploaded design
-   - Consider how the current layout/content affects user experience
-   - Relate problems to the business context and goals
+3. VISION INSIGHTS: Key observations from visual analysis
 
-2. Create 3 DIFFERENT SOLUTION APPROACHES that PRESERVE the original content and branding:
-   
-   CONSERVATIVE (Quick Wins):
-   - Keep the same content and basic layout structure
-   - Fix usability issues without major changes
-   - Improve visual hierarchy and clarity
-   
-   BALANCED (Best Practices):
-   - Modernize the design while keeping core elements
-   - Apply current UX patterns to the existing content
-   - Enhance user flow and interaction design
-   
-   INNOVATIVE (Cutting Edge):
-   - Reimagine the experience with the same content
-   - Apply latest design trends and interaction patterns
-   - Create delightful and engaging user experience
-
-For each approach include:
-- Name and description
-- Key changes to make (while preserving original content)
-- Expected impact on metrics
-- Implementation guidance
-- Which elements from the original to keep vs. enhance
-
-Return as JSON:
+CRITICAL: Return ONLY valid JSON in this exact format:
 {
   "problems": [
     {
       "id": "problem-1",
-      "description": "Specific issue with current design",
+      "description": "Specific UX issue description",
       "severity": "high|medium|low",
-      "businessImpact": "How this affects the business goal",
-      "evidence": "What in the original design shows this problem"
+      "businessImpact": "How this affects business goals"
     }
   ],
   "solutions": [
     {
-      "approach": "conservative|balanced|innovative",
+      "approach": "conservative",
       "name": "Solution Name",
-      "description": "Detailed description",
-      "keyChanges": ["Specific change 1", "Specific change 2"],
-      "expectedImpact": "Measurable impact prediction",
-      "implementationGuidance": "Step-by-step guidance",
-      "preserveElements": ["Original elements to keep"],
-      "enhanceElements": ["Original elements to improve"]
+      "description": "What this approach does",
+      "keyChanges": ["Change 1", "Change 2"],
+      "expectedImpact": [{"metric": "conversion", "improvement": "15%"}],
+      "examples": ["Company 1", "Company 2"]
     }
   ],
   "visionInsights": {
-    "originalDesignType": "Type of interface detected",
-    "keyContentElements": ["Main content elements found"],
-    "brandingElements": ["Brand elements to preserve"]
+    "summary": "Key visual insights"
   }
 }`;
-}
-
-// Helper functions to analyze the vision data
-function determineLayoutType(visionData: any) {
-  const textCount = visionData?.text?.length || 0;
-  if (textCount > 50) return 'complex-interface';
-  if (textCount > 20) return 'standard-page';
-  return 'simple-layout';
-}
-
-function identifyInterfaceElements(texts: string[]) {
-  const interfaceKeywords = ['Cart', 'Checkout', 'Continue', 'Back', 'Menu', 'Search', 'Login', 'Sign up', 'Home'];
-  return texts.filter(text => 
-    interfaceKeywords.some(keyword => text.toLowerCase().includes(keyword.toLowerCase()))
-  ).slice(0, 10);
-}
-
-function identifyBrandElements(texts: string[]) {
-  // Look for brand names, logos, company-specific terms
-  const brandPatterns = /^[A-Z][a-zA-Z0-9\s&.]{2,20}$/;
-  return texts.filter(text => 
-    brandPatterns.test(text) && text.length < 30 && !text.includes('$')
-  ).slice(0, 5);
-}
-
-function identifyNavigation(texts: string[]) {
-  const navPatterns = ['Home', 'About', 'Contact', 'Products', 'Services', 'Shop', 'Account', 'Profile'];
-  return texts.filter(text => 
-    navPatterns.some(pattern => text.toLowerCase().includes(pattern.toLowerCase()))
-  );
-}
-
-function identifyProductContent(texts: string[]) {
-  // Look for product names, descriptions, features
-  return texts.filter(text => 
-    text.length > 10 && text.length < 100 && 
-    !text.includes('$') && 
-    !identifyBrandElements(texts).includes(text)
-  ).slice(0, 10);
-}
-
-function identifyPricingMetrics(texts: string[]) {
-  const pricePattern = /[\$€£¥]\d+\.?\d*/;
-  const percentPattern = /\d+%/;
-  const numberPattern = /\d+[KMB]?/;
-  
-  return texts.filter(text => 
-    pricePattern.test(text) || percentPattern.test(text) || 
-    (numberPattern.test(text) && text.length < 10)
-  );
-}
-
-function identifyInterfacePattern(texts: string[]) {
-  const allText = texts.join(' ').toLowerCase();
-  
-  if (allText.includes('cart') && allText.includes('checkout')) return 'ecommerce-cart';
-  if (allText.includes('dashboard') || allText.includes('analytics')) return 'dashboard';
-  if (allText.includes('login') || allText.includes('sign')) return 'authentication';
-  if (allText.includes('profile') || allText.includes('account')) return 'user-profile';
-  if (allText.includes('pricing') || allText.includes('plan')) return 'pricing-page';
-  
-  return 'general-interface';
 }
 
 async function generatePrototype(
@@ -301,10 +216,11 @@ async function generatePrototype(
   analysisData: any,
   contextData: any,
   holisticAnalysis: any,
-  sessionData: any,
   supabase: any,
   anthropicKey: string
 ) {
+  console.log(`🎨 Generating ${solution.approach} prototype`);
+  
   // Check if prototype already exists
   const { data: existing } = await supabase
     .from('figmant_holistic_prototypes')
@@ -313,115 +229,191 @@ async function generatePrototype(
     .eq('solution_type', solution.approach)
     .single();
 
-  if (existing) return existing;
+  if (existing) {
+    console.log(`✅ Prototype already exists for ${solution.approach}`);
+    return existing;
+  }
 
-  // Generate new prototype
-  const prototypePrompt = buildPrototypePrompt(solution, analysisData, contextData, holisticAnalysis, sessionData);
-  console.log('🔄 Calling Claude for prototype generation...');
-  console.log('🔥 Calling Claude API with prompt length:', prototypePrompt.length);
-  console.log('📊 Session data available:', {
-    hasImages: !!sessionData?.images?.length,
-    imageCount: sessionData?.images?.length || 0,
-    firstImagePath: sessionData?.images?.[0]?.file_path
-  });
-  
-  const code = await callClaude(prototypePrompt, anthropicKey);
+  try {
+    const prototypePrompt = buildEnhancedPrototypePrompt(solution, analysisData, contextData, holisticAnalysis);
+    const code = await callClaudeAPI(prototypePrompt, anthropicKey);
+    const sanitizedCode = sanitizeGeneratedCode(code);
 
-  const { data: prototype } = await supabase
-    .from('figmant_holistic_prototypes')
-    .insert({
-      analysis_id: analysisData.id,
-      solution_type: solution.approach,
-      title: solution.name,
-      description: solution.description,
-      component_code: code,
-      key_changes: solution.keyChanges,
-      expected_impact: solution.expectedImpact,
-      generation_metadata: {
-        contextUsed: !!contextData,
-        problemsSolved: holisticAnalysis.problems?.map(p => p.id) || [],
-        generatedAt: new Date().toISOString()
-      }
-    })
-    .select()
-    .single();
+    const { data: prototype, error } = await supabase
+      .from('figmant_holistic_prototypes')
+      .insert({
+        analysis_id: analysisData.id,
+        solution_type: solution.approach,
+        title: solution.name,
+        description: solution.description,
+        component_code: sanitizedCode,
+        key_changes: solution.keyChanges,
+        expected_impact: solution.expectedImpact,
+        generation_metadata: {
+          contextUsed: !!contextData,
+          problemsSolved: holisticAnalysis.problems?.map(p => p.id) || [],
+          generatedAt: new Date().toISOString()
+        }
+      })
+      .select()
+      .single();
 
-  console.log('✅ Prototype generated successfully:', prototype.id);
-  return prototype;
+    if (error) {
+      throw new Error(`Failed to store prototype: ${error.message}`);
+    }
+
+    console.log(`✅ Prototype generated successfully: ${prototype.id}`);
+    return prototype;
+
+  } catch (error) {
+    console.error(`❌ Failed to generate ${solution.approach} prototype:`, error);
+    
+    // Return fallback prototype with basic structure
+    const fallbackCode = generateFallbackComponent(solution);
+    
+    const { data: prototype } = await supabase
+      .from('figmant_holistic_prototypes')
+      .insert({
+        analysis_id: analysisData.id,
+        solution_type: solution.approach,
+        title: `${solution.name} (Fallback)`,
+        description: solution.description,
+        component_code: fallbackCode,
+        key_changes: solution.keyChanges || [],
+        expected_impact: solution.expectedImpact || {},
+        generation_metadata: {
+          fallback: true,
+          error: error.message,
+          generatedAt: new Date().toISOString()
+        }
+      })
+      .select()
+      .single();
+
+    return prototype;
+  }
 }
 
-function buildPrototypePrompt(solution: any, analysisData: any, contextData: any, holisticAnalysis: any, sessionData: any) {
-  const extractedContent = extractContentFromAnalysis(analysisData);
-  const visionData = analysisData.google_vision_summary?.vision_results;
-  
-  // Get all the actual text from the image
-  const allDetectedText = visionData?.text || [];
-  const brandElements = identifyBrandElements(allDetectedText);
-  const interfaceElements = identifyInterfaceElements(allDetectedText);
-  const pricingElements = identifyPricingMetrics(allDetectedText);
-  const productElements = identifyProductContent(allDetectedText);
-  
-  // Get image information for better context
-  const imageInfo = sessionData?.images?.[0] || {};
-  const hasImageData = !!sessionData?.images?.length;
-  
-  return `Create a complete, working React component that recreates the detected checkout interface with ${solution.approach} improvements.
+function buildEnhancedPrototypePrompt(solution: any, analysisData: any, contextData: any, holisticAnalysis: any): string {
+  return `You are a senior React developer creating a production-ready component.
 
-DETECTED CONTENT TO USE (from uploaded image):
-${JSON.stringify({
-    textElements: allDetectedText.slice(0, 15),
-    brands: brandElements,
-    prices: pricingElements,
-    buttons: interfaceElements,
-    products: productElements
-  }, null, 2)}
+SOLUTION: ${solution.name}
+APPROACH: ${solution.approach}
+DESCRIPTION: ${solution.description}
 
-BUSINESS REQUIREMENTS:
-- Target: ${contextData?.target_audience || 'Users with $150k+ household income'}
-- Goal: ${contextData?.primary_goal || 'Increase checkout conversion rates'}
-- Challenges: ${contextData?.specific_challenges?.join(', ') || 'High bounce rate, poor conversion funnel'}
+PROBLEMS TO SOLVE:
+${holisticAnalysis.problems?.map(p => `- ${p.description}`).join('\n') || 'General UX improvements'}
 
-SOLUTION: ${solution.name} (${solution.approach} approach)
-Key Changes: ${solution.keyChanges?.join(' • ') || 'Enhanced UX and visual hierarchy'}
+KEY CHANGES TO IMPLEMENT:
+${solution.keyChanges?.map(c => `- ${c}`).join('\n') || 'Standard improvements'}
 
 CRITICAL REQUIREMENTS:
-1. Generate ONLY valid React JSX code - no markdown, no explanations
-2. Start with: function EnhancedDesign() {
-3. Use the detected content above to populate ALL text, prices, and interface elements
-4. Create a complete checkout page with header, main content, and footer
-5. Use Tailwind CSS classes for ALL styling
-6. Include React hooks (useState, useEffect) for interactivity
-7. Make it responsive and accessible
-8. NO export statements - just the function
-9. Use proper JSX syntax with double quotes for attributes
+1. Generate ONLY React component code - no explanations
+2. Use function syntax: function EnhancedDesign() { ... }
+3. Use React hooks (useState, useEffect) as needed
+4. Use Tailwind CSS classes for styling
+5. Make it responsive and accessible
+6. Include realistic content and interactions
+7. NO import statements - they're handled by runtime
+8. Must be syntactically correct JSX
 
 EXAMPLE STRUCTURE:
 function EnhancedDesign() {
-  const [cartData, setCartData] = useState({
-    items: [/* use detected product data */],
-    total: /* use detected pricing */
-  });
-
+  const [state, setState] = useState(defaultValue);
+  
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm">
-        {/* Use detected navigation elements */}
-      </header>
-      <main className="max-w-6xl mx-auto py-8 px-4">
-        {/* Checkout content using detected text and pricing */}
-      </main>
-      <footer className="bg-gray-800 text-white">
-        {/* Footer content */}
-      </footer>
+    <div className="p-6 max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Enhanced Design</h1>
+      {/* Your enhanced component here */}
     </div>
   );
 }
 
-Generate the complete React component now with ALL detected content integrated:`;
+Generate the complete component now:`;
 }
 
-async function callClaude(prompt: string, apiKey: string) {
-  console.log('🔥 Calling Claude API with prompt length:', prompt.length);
+function sanitizeGeneratedCode(code: string): string {
+  console.log('🧹 Sanitizing generated code...');
+  
+  try {
+    // Remove markdown code blocks
+    let cleanCode = code.replace(/```(?:jsx?|tsx?)?\n?/g, '').replace(/```\n?$/g, '').trim();
+    
+    // Remove any leading/trailing explanatory text
+    const functionMatch = cleanCode.match(/(function\s+\w+.*?\{[\s\S]*\})\s*$/);
+    if (functionMatch) {
+      cleanCode = functionMatch[1];
+    }
+    
+    // Basic JSX syntax validation
+    if (!cleanCode.includes('function') || !cleanCode.includes('return')) {
+      throw new Error('Invalid component structure');
+    }
+    
+    // Normalize whitespace and line endings
+    cleanCode = cleanCode.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    
+    // Fix common JSX issues
+    cleanCode = cleanCode.replace(/class=/g, 'className=');
+    cleanCode = cleanCode.replace(/for=/g, 'htmlFor=');
+    
+    // Remove potentially problematic Unicode characters
+    cleanCode = cleanCode.replace(/[""'']/g, '"').replace(/[–—]/g, '-');
+    
+    console.log(`✅ Code sanitization complete`);
+    console.log(`🔍 Code starts with: ${cleanCode.substring(0, 100)}`);
+    
+    return cleanCode;
+    
+  } catch (error) {
+    console.error('❌ Code sanitization failed:', error);
+    throw new Error(`Code sanitization failed: ${error.message}`);
+  }
+}
+
+function generateFallbackComponent(solution: any): string {
+  return `function EnhancedDesign() {
+  const [isLoaded, setIsLoaded] = useState(false);
+  
+  useEffect(() => {
+    setIsLoaded(true);
+  }, []);
+  
+  return (
+    <div className="p-8 max-w-4xl mx-auto bg-white rounded-lg shadow-lg">
+      <div className="text-center">
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">
+          ${solution.name}
+        </h1>
+        <p className="text-lg text-gray-600 mb-6">
+          ${solution.description}
+        </p>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <h2 className="text-xl font-semibold text-blue-900 mb-3">
+            Key Improvements
+          </h2>
+          <ul className="text-left text-blue-800 space-y-2">
+            ${solution.keyChanges?.map(change => `<li className="flex items-start gap-2">
+              <span className="text-blue-600">•</span>
+              ${change}
+            </li>`).join('\n            ') || '<li>Standard UX improvements applied</li>'}
+          </ul>
+        </div>
+        {isLoaded && (
+          <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-green-800">
+              Component loaded successfully. This is a fallback implementation.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}`;
+}
+
+async function callClaudeAPI(prompt: string, apiKey: string): Promise<string> {
+  console.log(`🔥 Calling Claude API with prompt length: ${prompt.length}`);
   
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -432,62 +424,41 @@ async function callClaude(prompt: string, apiKey: string) {
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 8000,
+      max_tokens: 4000,
       temperature: 0.3,
-      messages: [{ role: 'user', content: prompt }]
+      messages: [{
+        role: 'user',
+        content: prompt
+      }]
     })
   });
 
+  if (!response.ok) {
+    const errorData = await response.text();
+    throw new Error(`Claude API error: ${response.status} - ${errorData}`);
+  }
+
   const data = await response.json();
-  const content = data.content[0].text;
-  console.log('📝 Raw Claude response received:', typeof content, content.substring(0, 200) + '...');
-  console.log('📝 Claude response received:', { hasContent: !!content, contentLength: content.length });
+  const content = data.content[0]?.text || '';
+  
+  if (!content) {
+    throw new Error('Empty response from Claude API');
+  }
+  
+  console.log(`📝 Claude response received: { hasContent: ${!!content}, contentLength: ${content.length} }`);
+  return content;
+}
 
-    // Check if Claude is apologizing or explaining why it can't help
-    if (content.toLowerCase().includes('apologize') || 
-        content.toLowerCase().includes('cannot') || 
-        content.toLowerCase().includes("don't see") ||
-        content.toLowerCase().includes('unable to')) {
-      console.error('❌ Claude cannot complete the request:', content);
-      // Return a generic fallback component instead of failing
-      return `function EnhancedDesign() {
-  return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="max-w-md mx-auto text-center p-8">
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Prototype Generation Issue
-          </h2>
-          <p className="text-gray-600 mb-4">
-            The AI needs the original image data to generate an accurate prototype. Please try uploading your image again.
-          </p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}`;
-    }
-
-  // Try to parse as JSON for analysis, or return as string for code
+function parseAnalysisResponse(content: string): any {
   try {
+    // Try direct JSON parsing first
     const parsed = JSON.parse(content);
-    console.log('✅ Successfully parsed JSON response');
+    console.log('✅ Direct JSON parse successful');
     return parsed;
   } catch {
     console.log('📄 Not JSON, checking for code blocks...');
     
-    // Look for JSON in code blocks first
+    // Look for JSON in code blocks
     const jsonMatch = content.match(/```json\n?([\s\S]*?)\n?```/);
     if (jsonMatch) {
       try {
@@ -499,387 +470,46 @@ async function callClaude(prompt: string, apiKey: string) {
       }
     }
     
-    // Extract code from markdown if present
-    const codeMatch = content.match(/```(?:jsx?|tsx?)?\n([\s\S]*?)\n```/);
-    if (codeMatch) {
-      console.log('✅ Found code block, extracting...');
-      const code = codeMatch[1];
-      // Validate that the extracted code is actually React code
-      if (!code.includes('function') || !code.includes('return')) {
-        console.error('❌ Extracted code is not valid React component');
-        throw new Error('Generated code is not a valid React component');
-      }
-      return code;
-    }
-    
-    // Basic validation for React component
-    if (content.includes('function EnhancedDesign') && content.includes('return')) {
-      console.log('✅ Basic validation passed - function and JSX detected');
-      
-      // Comprehensive code sanitization
-      console.log('🔧 Sanitizing generated code...');
-      let cleanedCode = content;
-      
-      // Fix Unicode characters that break JSX
-      cleanedCode = cleanedCode.replace(/−/g, '-'); // Em dash to minus
-      cleanedCode = cleanedCode.replace(/–/g, '-'); // En dash to minus
-      cleanedCode = cleanedCode.replace(/—/g, '-'); // Em dash to minus
-      cleanedCode = cleanedCode.replace(/'/g, "'"); // Left single quote
-      cleanedCode = cleanedCode.replace(/'/g, "'"); // Right single quote
-      cleanedCode = cleanedCode.replace(/"/g, '"'); // Left double quote
-      cleanedCode = cleanedCode.replace(/"/g, '"'); // Right double quote
-      cleanedCode = cleanedCode.replace(/…/g, '...'); // Ellipsis to three dots
-      
-      // Fix malformed template literals and JSX expressions
-      // Fix unterminated strings in className attributes
-      cleanedCode = cleanedCode.replace(/className=\{`([^`]*?)'/g, (match, content) => {
-        return `className={\`${content}"}`;
-      });
-      
-      // Fix mixed quotes in template literals
-      cleanedCode = cleanedCode.replace(/className=\{`([^`]*?)"([^`]*?)'/g, (match, start, end) => {
-        return `className={\`${start}"${end}"}`;
-      });
-      
-      // Convert all className single quotes to double quotes for consistency
-      cleanedCode = cleanedCode.replace(/className='([^']*?)'/g, (match, className) => {
-        return `className="${className}"`;
-      });
-      
-      // Fix aria-label and other attributes with problematic quotes
-      cleanedCode = cleanedCode.replace(/aria-label='([^']*?)'/g, (match, label) => {
-        return `aria-label="${label}"`;
-      });
-      
-      // Fix JSX text content with problematic quotes
-      cleanedCode = cleanedCode.replace(/>\s*"([^"]*?)"\s*</g, (match, text) => {
-        return `>"${text}"<`;
-      });
-      
-      // Fix conditional expressions with mixed quotes
-      cleanedCode = cleanedCode.replace(/\?\s*"([^"]*?)"\s*:\s*"([^"]*?)"/g, (match, trueVal, falseVal) => {
-        return `? "${trueVal}" : "${falseVal}"`;
-      });
-      
-      // Remove any remaining problematic characters
-      cleanedCode = cleanedCode.replace(/[\u2000-\u206F\u2E00-\u2E7F\\'!"#$%&\(\)*+,\-.\/:;<=>?@\[\]^_`{|}~]/g, (char) => {
-        const code = char.charCodeAt(0);
-        // Only replace if it's a Unicode character that could cause issues
-        if (code > 127 && code !== 8217 && code !== 8216 && code !== 8220 && code !== 8221) {
-          console.log('🔄 Replacing problematic character:', char, 'with space');
-          return ' ';
+    // Fallback analysis structure
+    console.log('⚠️ Using fallback analysis structure');
+    return {
+      problems: [
+        {
+          id: 'parse-fallback-1',
+          description: 'Analysis parsing failed - manual review needed',
+          severity: 'medium',
+          businessImpact: 'Unable to provide specific recommendations'
         }
-        return char;
-      });
-      
-      // Final validation - ensure no unterminated template literals
-      const templateLiteralMatches = cleanedCode.match(/`[^`]*$/gm);
-      if (templateLiteralMatches) {
-        console.log('⚠️ Found unterminated template literals, fixing...');
-        cleanedCode = cleanedCode.replace(/`([^`]*)$/gm, '`$1`');
+      ],
+      solutions: [
+        {
+          approach: 'conservative',
+          name: 'Standard UX Improvements',
+          description: 'Apply common UX best practices',
+          keyChanges: ['Improve visual hierarchy', 'Enhance readability', 'Add clear navigation'],
+          expectedImpact: [{ metric: 'usability', improvement: '15%' }],
+          examples: ['Modern websites', 'Best practices']
+        },
+        {
+          approach: 'balanced',
+          name: 'Modern UX Redesign',
+          description: 'Comprehensive design system implementation',
+          keyChanges: ['Responsive design', 'Consistent typography', 'Accessible components'],
+          expectedImpact: [{ metric: 'engagement', improvement: '25%' }],
+          examples: ['Design systems', 'UI libraries']
+        },
+        {
+          approach: 'innovative',
+          name: 'Advanced User Experience',
+          description: 'Cutting-edge interaction patterns',
+          keyChanges: ['Interactive elements', 'Micro-animations', 'Progressive enhancement'],
+          expectedImpact: [{ metric: 'satisfaction', improvement: '40%' }],
+          examples: ['Leading apps', 'Award-winning sites']
+        }
+      ],
+      visionInsights: {
+        summary: 'Analysis parsing encountered issues - using standard recommendations'
       }
-      
-      console.log('✅ Code sanitization complete');
-      console.log('🧹 Final cleaned code length:', cleanedCode.length);
-      console.log('🔍 Code starts with:', cleanedCode.substring(0, 100));
-      
-      return cleanedCode;
-    }
-    
-    console.log('⚠️ Returning raw content:', content.substring(0, 200) + '...');
-    return content;
+    };
   }
-}
-
-function extractContentFromAnalysis(analysis: any) {
-  const visionData = analysis.google_vision_summary?.vision_results;
-  const claudeAnalysis = analysis.claude_analysis;
-  
-  // Extract comprehensive visual structure
-  const visualStructure = {
-    pageType: determinePageType(visionData?.text || []),
-    sections: identifyPageSections(visionData?.text || []),
-    navigationElements: extractNavigationElements(visionData?.text || []),
-    forms: extractFormElements(visionData?.text || []),
-    ctaButtons: extractButtons(visionData?.text || []),
-    images: visionData?.objects?.filter(obj => obj.name === 'image' || obj.name === 'picture') || [],
-    interactive: extractInteractiveElements(visionData?.text || [])
-  };
-  
-  // Extract all text content with context
-  const content = {
-    headings: extractHeadings(visionData?.text || []),
-    bodyText: extractBodyText(visionData?.text || []),
-    buttonLabels: extractButtons(visionData?.text || []),
-    formLabels: extractFormLabels(visionData?.text || []),
-    metrics: extractMetrics(visionData?.text || []),
-    links: extractLinks(visionData?.text || []),
-    allText: visionData?.text || []
-  };
-  
-  // Extract visual styling information
-  const visualStyle = {
-    colorPalette: extractColorPalette(visionData?.imageProperties),
-    typography: analyzeTypography(visionData?.text || []),
-    spacing: analyzeSpacing(claudeAnalysis),
-    branding: extractBrandingElements(visionData?.text || []),
-    visualHierarchy: analyzeVisualHierarchy(visionData?.text || [])
-  };
-  
-  // Extract layout structure
-  const layout = {
-    structure: determineLayoutStructure(visionData),
-    gridSystem: analyzeGridSystem(claudeAnalysis),
-    responsiveBreakpoints: determineBreakpoints(claudeAnalysis),
-    contentFlow: analyzeContentFlow(visionData?.text || [])
-  };
-  
-  return {
-    visualStructure,
-    content,
-    visualStyle,
-    layout,
-    // Legacy fields for backward compatibility
-    texts: visionData?.text || [],
-    metrics: extractMetrics(visionData?.text || []),
-    colors: visionData?.imageProperties?.dominantColors?.map(c => c.color) || [],
-    buttons: extractButtons(visionData?.text || []),
-    headings: extractHeadings(visionData?.text || [])
-  };
-}
-
-function extractMetrics(texts: string[]) {
-  return texts
-    .map(text => {
-      const match = text.match(/(\d+(?:\.\d+)?[%$€£¥KMB]?)/);
-      if (match) {
-        return {
-          value: match[1],
-          label: text.replace(match[1], '').trim(),
-          original: text
-        };
-      }
-      return null;
-    })
-    .filter(Boolean);
-}
-
-function extractButtons(texts: string[]) {
-  const buttonPatterns = ['Get Started', 'Sign Up', 'Learn More', 'Try', 'Start', 'Continue', 'Next'];
-  return texts.filter(text => 
-    buttonPatterns.some(pattern => text.toLowerCase().includes(pattern.toLowerCase()))
-  );
-}
-
-function extractHeadings(texts: string[]) {
-  return texts.filter(text => text.length > 5 && text.length < 100 && !text.includes('   '));
-}
-
-// Comprehensive visual analysis functions
-function determinePageType(texts: string[]) {
-  const pageKeywords = {
-    'landing': ['hero', 'features', 'pricing', 'testimonials', 'get started'],
-    'ecommerce': ['cart', 'checkout', 'product', 'price', 'buy now', 'add to cart'],
-    'dashboard': ['dashboard', 'analytics', 'metrics', 'overview', 'reports'],
-    'onboarding': ['welcome', 'setup', 'getting started', 'step', 'progress'],
-    'blog': ['article', 'blog', 'read more', 'published', 'author'],
-    'contact': ['contact', 'message', 'email', 'phone', 'address'],
-    'about': ['about', 'team', 'mission', 'story', 'company']
-  };
-  
-  const allText = texts.join(' ').toLowerCase();
-  let bestMatch = 'generic';
-  let maxMatches = 0;
-  
-  for (const [type, keywords] of Object.entries(pageKeywords)) {
-    const matches = keywords.filter(keyword => allText.includes(keyword)).length;
-    if (matches > maxMatches) {
-      maxMatches = matches;
-      bestMatch = type;
-    }
-  }
-  
-  return bestMatch;
-}
-
-function identifyPageSections(texts: string[]) {
-  const sections = [];
-  const sectionKeywords = {
-    'header': ['navigation', 'nav', 'menu', 'logo', 'home', 'about', 'contact'],
-    'hero': ['hero', 'banner', 'main heading', 'get started', 'sign up'],
-    'features': ['features', 'benefits', 'why choose', 'what we offer'],
-    'testimonials': ['testimonials', 'reviews', 'customers', 'feedback'],
-    'pricing': ['pricing', 'plans', 'packages', 'cost', 'price'],
-    'footer': ['footer', 'copyright', 'privacy', 'terms', 'social media']
-  };
-  
-  const allText = texts.join(' ').toLowerCase();
-  
-  for (const [section, keywords] of Object.entries(sectionKeywords)) {
-    const hasKeywords = keywords.some(keyword => allText.includes(keyword));
-    if (hasKeywords) {
-      sections.push(section);
-    }
-  }
-  
-  return sections;
-}
-
-function extractNavigationElements(texts: string[]) {
-  const navPatterns = ['Home', 'About', 'Services', 'Contact', 'Blog', 'Products', 'Solutions', 'Pricing'];
-  return texts.filter(text => 
-    navPatterns.some(pattern => text.toLowerCase().includes(pattern.toLowerCase()))
-  );
-}
-
-function extractFormElements(texts: string[]) {
-  const formKeywords = ['email', 'password', 'name', 'phone', 'message', 'submit', 'register', 'login'];
-  return texts.filter(text => 
-    formKeywords.some(keyword => text.toLowerCase().includes(keyword))
-  );
-}
-
-function extractInteractiveElements(texts: string[]) {
-  const interactivePatterns = ['click', 'tap', 'select', 'choose', 'view', 'download', 'share'];
-  return texts.filter(text => 
-    interactivePatterns.some(pattern => text.toLowerCase().includes(pattern))
-  );
-}
-
-function extractBodyText(texts: string[]) {
-  return texts.filter(text => 
-    text.length > 20 && 
-    text.length < 500 && 
-    !extractButtons(texts).includes(text) &&
-    !extractHeadings(texts).includes(text)
-  );
-}
-
-function extractFormLabels(texts: string[]) {
-  const labelPatterns = /^(Name|Email|Phone|Message|Password|Username|Address|City|State|Country|Zip|Card Number)[:]*$/i;
-  return texts.filter(text => labelPatterns.test(text.trim()));
-}
-
-function extractLinks(texts: string[]) {
-  const linkPatterns = ['Learn More', 'Read More', 'View Details', 'See More', 'Explore', 'Discover'];
-  return texts.filter(text => 
-    linkPatterns.some(pattern => text.toLowerCase().includes(pattern.toLowerCase()))
-  );
-}
-
-function extractColorPalette(imageProperties: any) {
-  if (!imageProperties?.dominantColors) return [];
-  
-  return imageProperties.dominantColors.map((colorInfo: any) => ({
-    color: colorInfo.color,
-    score: colorInfo.score,
-    pixelFraction: colorInfo.pixelFraction
-  }));
-}
-
-function analyzeTypography(texts: string[]) {
-  const headings = extractHeadings(texts);
-  const bodyText = extractBodyText(texts);
-  
-  return {
-    headingStyles: headings.map(h => ({
-      text: h,
-      estimatedSize: h.length < 30 ? 'large' : h.length < 50 ? 'medium' : 'small',
-      hierarchy: headings.indexOf(h) + 1
-    })),
-    bodyTextStyle: {
-      averageLength: bodyText.reduce((sum, text) => sum + text.length, 0) / bodyText.length || 0,
-      tone: analyzeTextTone(bodyText.join(' '))
-    }
-  };
-}
-
-function analyzeTextTone(text: string) {
-  const professional = ['enterprise', 'solution', 'professional', 'business'];
-  const friendly = ['easy', 'simple', 'friendly', 'welcome', 'help'];
-  const urgent = ['now', 'today', 'limited', 'hurry', 'don\'t miss'];
-  
-  const lowerText = text.toLowerCase();
-  
-  if (professional.some(word => lowerText.includes(word))) return 'professional';
-  if (friendly.some(word => lowerText.includes(word))) return 'friendly';
-  if (urgent.some(word => lowerText.includes(word))) return 'urgent';
-  return 'neutral';
-}
-
-function analyzeSpacing(claudeAnalysis: any) {
-  // Extract spacing insights from Claude's analysis if available
-  const analysis = JSON.stringify(claudeAnalysis || {}).toLowerCase();
-  
-  return {
-    density: analysis.includes('crowded') || analysis.includes('cramped') ? 'tight' : 
-             analysis.includes('spacious') || analysis.includes('open') ? 'loose' : 'balanced',
-    whitespace: analysis.includes('whitespace') || analysis.includes('breathing room') ? 'generous' : 'minimal'
-  };
-}
-
-function extractBrandingElements(texts: string[]) {
-  // Look for company names, taglines, and brand-specific terms
-  const brandingPattern = /^[A-Z][a-zA-Z0-9\s&.,]{2,30}$/;
-  const potentialBrands = texts.filter(text => 
-    brandingPattern.test(text) && 
-    !extractButtons(texts).includes(text) &&
-    text.length < 50
-  );
-  
-  return potentialBrands;
-}
-
-function analyzeVisualHierarchy(texts: string[]) {
-  const headings = extractHeadings(texts);
-  const buttons = extractButtons(texts);
-  const bodyText = extractBodyText(texts);
-  
-  return {
-    primaryElements: headings.slice(0, 2),
-    secondaryElements: buttons,
-    supportingElements: bodyText.slice(0, 3)
-  };
-}
-
-function determineLayoutStructure(visionData: any) {
-  const objects = visionData?.objects || [];
-  const textCount = visionData?.text?.length || 0;
-  
-  return {
-    complexity: textCount > 50 ? 'complex' : textCount > 20 ? 'moderate' : 'simple',
-    objectCount: objects.length,
-    estimatedColumns: textCount > 30 ? 'multi-column' : 'single-column'
-  };
-}
-
-function analyzeGridSystem(claudeAnalysis: any) {
-  const analysis = JSON.stringify(claudeAnalysis || {}).toLowerCase();
-  
-  return {
-    type: analysis.includes('grid') ? 'grid-based' : 
-          analysis.includes('flex') ? 'flexbox' : 'unknown',
-    alignment: analysis.includes('center') ? 'center' : 
-               analysis.includes('left') ? 'left' : 'unknown'
-  };
-}
-
-function determineBreakpoints(claudeAnalysis: any) {
-  return {
-    mobile: '320px',
-    tablet: '768px',
-    desktop: '1024px',
-    wide: '1280px'
-  };
-}
-
-function analyzeContentFlow(texts: string[]) {
-  const headings = extractHeadings(texts);
-  const buttons = extractButtons(texts);
-  
-  return {
-    pattern: headings.length > 3 ? 'hierarchical' : 'linear',
-    ctaPlacement: buttons.length > 0 ? 'present' : 'missing',
-    readingFlow: 'top-to-bottom'
-  };
 }
