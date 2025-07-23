@@ -97,21 +97,6 @@ export const ResultsChat = ({ analysisData, sessionId }: ResultsChatProps) => {
 
   return (
     <div className="h-full flex flex-col bg-white">
-      {/* Chat Header */}
-      <div className="p-4 border-b border-[#E2E2E2] flex items-center gap-3">
-        <Avatar className="w-8 h-8 bg-[#22757C]">
-          <AvatarFallback className="text-white font-medium">
-            AI
-          </AvatarFallback>
-        </Avatar>
-        <div>
-          <h3 className="font-medium text-[#121212]">AI Assistant</h3>
-          <p className="text-xs text-[#7B7B7B]">Analysis</p>
-        </div>
-        <Button variant="ghost" size="sm" className="ml-auto">
-          <X className="w-4 h-4" />
-        </Button>
-      </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
