@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -29,6 +28,8 @@ interface DebugInfo {
   prototypeCount: number;
   lastGenerated?: string;
   currentAnalysisId?: string;
+  loadAttempts: number;
+  lastLoadError?: string;
 }
 
 export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }: HolisticPrototypeViewerProps) {
@@ -42,7 +43,8 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
   const [debugInfo, setDebugInfo] = useState<DebugInfo>({
     analysisExists: false,
     prototypeCount: 0,
-    currentAnalysisId: analysisId
+    currentAnalysisId: analysisId,
+    loadAttempts: 0
   });
   const [showDebugPanel, setShowDebugPanel] = useState(false);
 
@@ -94,7 +96,7 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
       
       if (response?.success) {
         console.log('✅ Analysis generation successful, reloading data...');
-        await loadAnalysis(); // Reload to get fresh data
+        await loadAnalysis(); // Reload fresh data
         toast.success('Analysis generated successfully!');
       } else {
         console.error('❌ Edge function returned unsuccessful response:', response);
@@ -102,6 +104,10 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
       }
     } catch (error) {
       console.error('❌ Analysis generation error:', error);
+      setDebugInfo(prev => ({
+        ...prev,
+        lastLoadError: `Analysis generation failed: ${error.message}`
+      }));
       toast.error(`Failed to generate analysis: ${error.message}`);
     } finally {
       setGeneratingAnalysis(false);
@@ -112,10 +118,21 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
     if (!analysisId) {
       console.log('⚠️ No analysisId provided, skipping load');
       setLoading(false);
+      setDebugInfo(prev => ({
+        ...prev,
+        analysisExists: false,
+        lastLoadError: 'No analysis ID provided'
+      }));
       return;
     }
     
-    console.log('📊 Loading holistic analysis for ID:', analysisId);
+    console.log(`📊 Loading holistic analysis for ID (attempt ${debugInfo.loadAttempts + 1}):`, analysisId);
+    
+    setDebugInfo(prev => ({
+      ...prev,
+      loadAttempts: prev.loadAttempts + 1,
+      lastLoadError: undefined
+    }));
     
     try {
       // Load holistic analysis
@@ -131,11 +148,16 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
       console.log('📊 Holistic analysis query result:', { 
         found: !!data, 
         error: error?.message,
-        dataKeys: data ? Object.keys(data) : null
+        dataKeys: data ? Object.keys(data) : null,
+        analysisId: analysisId
       });
 
       if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
         console.error('❌ Database error loading analysis:', error);
+        setDebugInfo(prev => ({
+          ...prev,
+          lastLoadError: `Database error: ${error.message}`
+        }));
         throw error;
       }
 
@@ -148,7 +170,24 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
           hasVisionInsights: !!data.vision_insights
         });
         
-        setAnalysis(data);
+        // CRITICAL FIX: Only set analysis if we have valid data
+        if (data.solution_approaches && Array.isArray(data.solution_approaches) && data.solution_approaches.length > 0) {
+          setAnalysis(data);
+          
+          setDebugInfo(prev => ({
+            ...prev,
+            analysisExists: true,
+            lastLoadError: undefined
+          }));
+        } else {
+          console.warn('⚠️ Analysis found but missing solution approaches');
+          setDebugInfo(prev => ({
+            ...prev,
+            analysisExists: false,
+            lastLoadError: 'Analysis found but missing solution approaches'
+          }));
+          // Don't call setAnalysis(null) here - keep existing state
+        }
         
         // Load existing prototypes
         console.log('🎨 Loading existing prototypes...');
@@ -165,9 +204,13 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
         
         if (prototypeError) {
           console.warn('⚠️ Failed to load prototypes:', prototypeError);
-        } else {
+          setDebugInfo(prev => ({
+            ...prev,
+            lastLoadError: `Prototype load error: ${prototypeError.message}`
+          }));
+        } else if (existingPrototypes) {
           const prototypeMap = {};
-          existingPrototypes?.forEach(p => {
+          existingPrototypes.forEach(p => {
             prototypeMap[p.solution_type] = p;
             console.log(`📋 Loaded ${p.solution_type} prototype: ${p.title}`);
           });
@@ -175,31 +218,34 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
           
           setDebugInfo(prev => ({
             ...prev,
-            prototypeCount: existingPrototypes?.length || 0,
-            lastGenerated: existingPrototypes?.[0]?.created_at
+            prototypeCount: existingPrototypes.length,
+            lastGenerated: existingPrototypes[0]?.created_at
           }));
         }
-        
-        setDebugInfo(prev => ({
-          ...prev,
-          analysisExists: true
-        }));
       } else {
         console.log('⚠️ No holistic analysis found, will need to generate');
-        setAnalysis(null);
-        setDebugInfo(prev => ({
-          ...prev,
-          analysisExists: false,
-          prototypeCount: 0
-        }));
+        // CRITICAL FIX: Don't call setAnalysis(null) if we already have analysis
+        // Only clear if we're sure there's no analysis
+        if (!analysis) {
+          setDebugInfo(prev => ({
+            ...prev,
+            analysisExists: false,
+            prototypeCount: 0,
+            lastLoadError: 'No holistic analysis found in database'
+          }));
+        }
       }
     } catch (error) {
       console.error('❌ Error loading analysis:', error);
+      setDebugInfo(prev => ({
+        ...prev,
+        lastLoadError: `Load error: ${error.message}`
+      }));
       toast.error('Failed to load analysis data');
     } finally {
       setLoading(false);
     }
-  }, [analysisId]);
+  }, [analysisId, analysis]); // Add analysis to dependencies to prevent clearing
 
   useEffect(() => {
     console.log('🔄 useEffect triggered - loading analysis');
@@ -208,6 +254,10 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
     } else {
       console.log('⚠️ No analysisId in useEffect');
       setLoading(false);
+      setDebugInfo(prev => ({
+        ...prev,
+        lastLoadError: 'No analysis ID provided in useEffect'
+      }));
     }
   }, [analysisId, loadAnalysis]);
 
@@ -333,17 +383,18 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
       console.log(`✅ Cleared ${data || 0} prototypes`);
       
       setPrototypes({});
-      setAnalysis(null);
+      // CRITICAL FIX: Don't clear analysis when clearing prototypes
+      // setAnalysis(null); // REMOVED
       
       setDebugInfo(prev => ({
         ...prev,
-        prototypeCount: 0,
-        analysisExists: false
+        prototypeCount: 0
+        // analysisExists: false // REMOVED - keep analysis state
       }));
       
       toast.success(`Cleared ${data || 0} prototypes. You can now regenerate them.`);
       
-      // Reload analysis
+      // Reload analysis to refresh state
       await loadAnalysis();
     } catch (error) {
       console.error('❌ Error clearing prototypes:', error);
@@ -356,7 +407,7 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
     updateGenerationState(solutionType, { error: error.message });
   }, [updateGenerationState]);
 
-  // Debug Panel Component
+  // Enhanced Debug Panel Component
   const DebugPanel = () => (
     <Card className="mb-6 border-yellow-200 bg-yellow-50">
       <div className="p-4">
@@ -397,19 +448,51 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
               </div>
             </div>
             
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <strong>Load Attempts:</strong> {debugInfo.loadAttempts}
+              </div>
+              <div>
+                <strong>Loading:</strong> {loading ? 'Yes' : 'No'}
+              </div>
+            </div>
+            
             {debugInfo.lastGenerated && (
               <div>
                 <strong>Last Generated:</strong> {new Date(debugInfo.lastGenerated).toLocaleString()}
               </div>
             )}
             
-            <div className="pt-2 border-t border-yellow-200">
+            {debugInfo.lastLoadError && (
+              <div className="bg-red-50 border border-red-200 rounded p-2">
+                <strong>Last Error:</strong> 
+                <p className="text-red-600 text-xs mt-1">{debugInfo.lastLoadError}</p>
+              </div>
+            )}
+            
+            <div className="pt-2 border-t border-yellow-200 flex gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={loadAnalysis}
               >
                 Reload Data
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  console.log('🔍 Current component state:', {
+                    analysis: !!analysis,
+                    analysisKeys: analysis ? Object.keys(analysis) : null,
+                    prototypes: Object.keys(prototypes),
+                    loading,
+                    generatingAnalysis,
+                    debugInfo
+                  });
+                }}
+              >
+                Log State
               </Button>
             </div>
           </div>
@@ -420,37 +503,40 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
 
   if (loading || generatingAnalysis) {
     return (
-      <Card className="p-8">
-        <div className="text-center space-y-4">
-          <motion.div
-            className="w-12 h-12 mx-auto border-4 border-blue-200 border-t-blue-600 rounded-full"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          />
-          
-          <div>
-            <h3 className="font-semibold text-gray-900 mb-2">
-              {loading ? 'Loading Analysis...' : 'Generating Holistic Analysis...'}
-            </h3>
-            {generatingAnalysis && (
-              <div className="space-y-2">
-                <p className="text-sm text-gray-600">
-                  Our AI is analyzing your design and identifying specific UX problems...
-                </p>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-sm font-medium text-blue-900 mb-2">What we're doing:</p>
-                  <ul className="text-xs text-blue-700 space-y-1">
-                    <li>• Analyzing visual hierarchy and layout patterns</li>
-                    <li>• Identifying conversion optimization opportunities</li>
-                    <li>• Comparing against UX best practices</li>
-                    <li>• Generating tailored solution approaches</li>
-                  </ul>
+      <div className="space-y-4">
+        <DebugPanel />
+        <Card className="p-8">
+          <div className="text-center space-y-4">
+            <motion.div
+              className="w-12 h-12 mx-auto border-4 border-blue-200 border-t-blue-600 rounded-full"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            />
+            
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-2">
+                {loading ? 'Loading Analysis...' : 'Generating Holistic Analysis...'}
+              </h3>
+              {generatingAnalysis && (
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600">
+                    Our AI is analyzing your design and identifying specific UX problems...
+                  </p>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm font-medium text-blue-900 mb-2">What we're doing:</p>
+                    <ul className="text-xs text-blue-700 space-y-1">
+                      <li>• Analyzing visual hierarchy and layout patterns</li>
+                      <li>• Identifying conversion optimization opportunities</li>
+                      <li>• Comparing against UX best practices</li>
+                      <li>• Generating tailored solution approaches</li>
+                    </ul>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      </div>
     );
   }
 
