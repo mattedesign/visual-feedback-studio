@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Target, Zap, AlertCircle, CheckCircle, Download, Eye, Code, Columns, RefreshCw } from 'lucide-react';
+import { Shield, Target, Zap, AlertCircle, CheckCircle, Download, Eye, Code, Columns, RefreshCw, Bug } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +24,14 @@ interface GenerationState {
   };
 }
 
+interface DebugInfo {
+  analysisExists: boolean;
+  prototypeCount: number;
+  lastGenerated?: string;
+  apiHealth: 'unknown' | 'healthy' | 'error';
+  databaseHealth: 'unknown' | 'healthy' | 'error';
+}
+
 export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }: HolisticPrototypeViewerProps) {
   const [analysis, setAnalysis] = useState<any>(null);
   const [prototypes, setPrototypes] = useState<any>({});
@@ -32,10 +40,23 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
   const [loading, setLoading] = useState(true);
   const [generatingAnalysis, setGeneratingAnalysis] = useState(false);
   const [generationState, setGenerationState] = useState<GenerationState>({});
+  const [debugInfo, setDebugInfo] = useState<DebugInfo>({
+    analysisExists: false,
+    prototypeCount: 0,
+    apiHealth: 'unknown',
+    databaseHealth: 'unknown'
+  });
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
 
-  console.log('🎯 HolisticPrototypeViewer initialized:', { analysisId, contextId });
+  console.log('🎯 HolisticPrototypeViewer initialized:', { 
+    analysisId, 
+    contextId, 
+    hasOriginalImage: !!originalImage,
+    timestamp: new Date().toISOString()
+  });
 
   const updateGenerationState = useCallback((solutionType: string, updates: Partial<GenerationState[string]>) => {
+    console.log(`🔄 Updating generation state for ${solutionType}:`, updates);
     setGenerationState(prev => ({
       ...prev,
       [solutionType]: {
@@ -45,27 +66,82 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
     }));
   }, []);
 
-  const generateAnalysisFunction = useCallback(async () => {
-    setGeneratingAnalysis(true);
+  const performHealthCheck = useCallback(async () => {
+    console.log('🏥 Performing health check...');
+    
     try {
-      console.log('🔍 Generating holistic analysis...');
+      // Check database connectivity
+      const { data: testQuery, error: dbError } = await supabase
+        .from('figmant_analysis_results')
+        .select('id')
+        .limit(1);
+      
+      const databaseHealth = dbError ? 'error' : 'healthy';
+      console.log(`💾 Database health: ${databaseHealth}`, dbError || 'OK');
+
+      // Check edge function health by making a test call
+      let apiHealth: 'healthy' | 'error' = 'healthy';
+      try {
+        const { error: funcError } = await supabase.functions.invoke('generate-holistic-prototypes', {
+          body: { analysisId: 'health-check' }
+        });
+        // We expect this to fail with "Analysis ID required" but function should respond
+        apiHealth = funcError?.message?.includes('Analysis ID') ? 'healthy' : 'error';
+      } catch (err) {
+        console.warn('⚠️ Edge function health check failed:', err);
+        apiHealth = 'error';
+      }
+
+      console.log(`🔧 API health: ${apiHealth}`);
+
+      setDebugInfo(prev => ({
+        ...prev,
+        databaseHealth,
+        apiHealth
+      }));
+
+    } catch (error) {
+      console.error('❌ Health check failed:', error);
+      setDebugInfo(prev => ({
+        ...prev,
+        databaseHealth: 'error',
+        apiHealth: 'error'
+      }));
+    }
+  }, []);
+
+  const generateAnalysisFunction = useCallback(async () => {
+    console.log('🔍 Starting holistic analysis generation...');
+    setGeneratingAnalysis(true);
+    
+    try {
+      console.log('📡 Calling edge function with params:', { analysisId, contextId });
       
       const { data: response, error } = await supabase.functions.invoke('generate-holistic-prototypes', {
         body: { analysisId, contextId }
       });
       
+      console.log('📨 Edge function response:', { 
+        success: response?.success, 
+        hasAnalysis: !!response?.analysis,
+        error: error?.message 
+      });
+      
       if (error) {
+        console.error('❌ Edge function error:', error);
         throw new Error(error.message);
       }
       
       if (response?.success) {
+        console.log('✅ Analysis generation successful, reloading data...');
         await loadAnalysis(); // Reload to get fresh data
         toast.success('Analysis generated successfully!');
       } else {
+        console.error('❌ Edge function returned unsuccessful response:', response);
         throw new Error(response?.error || 'Failed to generate analysis');
       }
     } catch (error) {
-      console.error('Analysis generation error:', error);
+      console.error('❌ Analysis generation error:', error);
       toast.error(`Failed to generate analysis: ${error.message}`);
     } finally {
       setGeneratingAnalysis(false);
@@ -73,11 +149,16 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
   }, [analysisId, contextId]);
 
   const loadAnalysis = useCallback(async () => {
-    if (!analysisId) return;
+    if (!analysisId) {
+      console.log('⚠️ No analysisId provided, skipping load');
+      return;
+    }
     
-    console.log('📊 Loading holistic analysis...');
+    console.log('📊 Loading holistic analysis for ID:', analysisId);
     
     try {
+      // Load holistic analysis
+      console.log('🔍 Querying figmant_holistic_analyses table...');
       const { data, error } = await supabase
         .from('figmant_holistic_analyses')
         .select('*')
@@ -86,49 +167,98 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
         .limit(1)
         .maybeSingle();
 
+      console.log('📊 Holistic analysis query result:', { 
+        found: !!data, 
+        error: error?.message,
+        dataKeys: data ? Object.keys(data) : null
+      });
+
       if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+        console.error('❌ Database error loading analysis:', error);
         throw error;
       }
 
       if (data) {
         console.log('✅ Found existing holistic analysis');
+        console.log('📊 Analysis details:', {
+          id: data.id,
+          problemCount: data.identified_problems?.length || 0,
+          solutionCount: data.solution_approaches?.length || 0,
+          hasVisionInsights: !!data.vision_insights
+        });
+        
         setAnalysis(data);
         
         // Load existing prototypes
+        console.log('🎨 Loading existing prototypes...');
         const { data: existingPrototypes, error: prototypeError } = await supabase
           .from('figmant_holistic_prototypes')
           .select('*')
           .eq('analysis_id', analysisId);
         
+        console.log('🎨 Prototype query result:', {
+          count: existingPrototypes?.length || 0,
+          error: prototypeError?.message,
+          types: existingPrototypes?.map(p => p.solution_type) || []
+        });
+        
         if (prototypeError) {
-          console.warn('Failed to load prototypes:', prototypeError);
+          console.warn('⚠️ Failed to load prototypes:', prototypeError);
         } else {
           const prototypeMap = {};
           existingPrototypes?.forEach(p => {
             prototypeMap[p.solution_type] = p;
+            console.log(`📋 Loaded ${p.solution_type} prototype: ${p.title}`);
           });
           setPrototypes(prototypeMap);
+          
+          setDebugInfo(prev => ({
+            ...prev,
+            prototypeCount: existingPrototypes?.length || 0,
+            lastGenerated: existingPrototypes?.[0]?.created_at
+          }));
         }
+        
+        setDebugInfo(prev => ({
+          ...prev,
+          analysisExists: true
+        }));
       } else {
         console.log('⚠️ No holistic analysis found, will need to generate');
         setAnalysis(null);
+        setDebugInfo(prev => ({
+          ...prev,
+          analysisExists: false,
+          prototypeCount: 0
+        }));
       }
     } catch (error) {
-      console.error('Error loading analysis:', error);
+      console.error('❌ Error loading analysis:', error);
       toast.error('Failed to load analysis data');
+      setDebugInfo(prev => ({
+        ...prev,
+        databaseHealth: 'error'
+      }));
     } finally {
       setLoading(false);
     }
   }, [analysisId]);
 
   useEffect(() => {
+    console.log('🔄 useEffect triggered - loading analysis and performing health check');
     if (analysisId) {
       loadAnalysis();
+      performHealthCheck();
+    } else {
+      console.log('⚠️ No analysisId in useEffect');
+      setLoading(false);
     }
-  }, [analysisId, loadAnalysis]);
+  }, [analysisId, loadAnalysis, performHealthCheck]);
 
   const generatePrototype = useCallback(async (solutionType: string, retryAttempt = 0) => {
     const maxRetries = 3;
+    
+    console.log(`🎨 Generating ${solutionType} prototype (attempt ${retryAttempt + 1}/${maxRetries})`);
     
     updateGenerationState(solutionType, { 
       isGenerating: true, 
@@ -137,30 +267,52 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
     });
     
     try {
-      console.log(`🎨 Generating ${solutionType} prototype (attempt ${retryAttempt + 1})`);
+      console.log('📡 Calling edge function for prototype generation...');
       
       const { data: response, error } = await supabase.functions.invoke('generate-holistic-prototypes', {
         body: { analysisId, contextId, solutionType }
       });
       
+      console.log('📨 Prototype generation response:', {
+        success: response?.success,
+        hasPrototype: !!response?.prototype,
+        error: error?.message
+      });
+      
       if (error) {
+        console.error('❌ Edge function error:', error);
         throw new Error(error.message);
       }
       
       if (response?.success && response.prototype) {
+        console.log('✅ Prototype generated successfully:', {
+          id: response.prototype.id,
+          title: response.prototype.title,
+          codeLength: response.prototype.component_code?.length || 0
+        });
+        
         setPrototypes(prev => ({ ...prev, [solutionType]: response.prototype }));
         updateGenerationState(solutionType, { isGenerating: false });
+        
+        setDebugInfo(prev => ({
+          ...prev,
+          prototypeCount: Object.keys({ ...prototypes, [solutionType]: response.prototype }).length,
+          lastGenerated: new Date().toISOString()
+        }));
+        
         toast.success(`${solutionType} prototype generated successfully!`);
       } else {
+        console.error('❌ Edge function returned unsuccessful response:', response);
         throw new Error(response?.error || 'Failed to generate prototype');
       }
     } catch (error) {
       console.error(`❌ Error generating ${solutionType} prototype:`, error);
       
       if (retryAttempt < maxRetries - 1) {
-        console.log(`🔄 Retrying ${solutionType} prototype generation...`);
+        console.log(`🔄 Retrying ${solutionType} prototype generation in 2 seconds...`);
         setTimeout(() => generatePrototype(solutionType, retryAttempt + 1), 2000);
       } else {
+        console.error(`❌ All retry attempts exhausted for ${solutionType} prototype`);
         updateGenerationState(solutionType, {
           isGenerating: false,
           error: error.message
@@ -168,9 +320,11 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
         toast.error(`Failed to generate ${solutionType} prototype after ${maxRetries} attempts`);
       }
     }
-  }, [analysisId, contextId, updateGenerationState]);
+  }, [analysisId, contextId, updateGenerationState, prototypes]);
 
   const downloadPrototype = useCallback(async (prototype) => {
+    console.log('💾 Downloading prototype:', prototype.title);
+    
     try {
       const blob = new Blob([prototype.component_code], { type: 'text/javascript' });
       const url = URL.createObjectURL(blob);
@@ -187,14 +341,14 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
         await supabase
           .from('figmant_solution_metrics')
           .insert({ prototype_id: prototype.id, downloaded: true });
-        console.log('Download tracked');
+        console.log('📊 Download tracked successfully');
       } catch (err) {
-        console.warn('Failed to track download:', err);
+        console.warn('⚠️ Failed to track download:', err);
       }
         
       toast.success('Prototype downloaded successfully!');
     } catch (error) {
-      console.error('Download failed:', error);
+      console.error('❌ Download failed:', error);
       toast.error('Failed to download prototype');
     }
   }, []);
@@ -202,30 +356,128 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
   const clearAllPrototypes = useCallback(async () => {
     if (!analysisId) return;
     
+    console.log('🗑️ Clearing all prototypes for analysis:', analysisId);
+    
     try {
       const { data, error } = await supabase.rpc('clear_prototypes_for_analysis', {
         p_analysis_id: analysisId
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Failed to clear prototypes:', error);
+        throw error;
+      }
+      
+      console.log(`✅ Cleared ${data || 0} prototypes`);
       
       setPrototypes({});
       setAnalysis(null);
+      
+      setDebugInfo(prev => ({
+        ...prev,
+        prototypeCount: 0,
+        analysisExists: false
+      }));
       
       toast.success(`Cleared ${data || 0} prototypes. You can now regenerate them.`);
       
       // Reload analysis
       await loadAnalysis();
     } catch (error) {
-      console.error('Error clearing prototypes:', error);
+      console.error('❌ Error clearing prototypes:', error);
       toast.error('Failed to clear prototypes');
     }
   }, [analysisId, loadAnalysis]);
 
   const handlePrototypeError = useCallback((error: Error, solutionType: string) => {
-    console.error(`Prototype rendering error for ${solutionType}:`, error);
+    console.error(`❌ Prototype rendering error for ${solutionType}:`, error);
     updateGenerationState(solutionType, { error: error.message });
   }, [updateGenerationState]);
+
+  // Debug Panel Component
+  const DebugPanel = () => (
+    <Card className="mb-6 border-yellow-200 bg-yellow-50">
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold text-yellow-900 flex items-center gap-2">
+            <Bug className="w-4 h-4" />
+            Debug Information
+          </h3>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowDebugPanel(!showDebugPanel)}
+          >
+            {showDebugPanel ? 'Hide' : 'Show'}
+          </Button>
+        </div>
+        
+        {showDebugPanel && (
+          <div className="space-y-3 text-sm">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <strong>Analysis ID:</strong> {analysisId || 'None'}
+              </div>
+              <div>
+                <strong>Context ID:</strong> {contextId || 'None'}
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <strong>Analysis Exists:</strong>{' '}
+                <Badge variant={debugInfo.analysisExists ? 'default' : 'destructive'}>
+                  {debugInfo.analysisExists ? 'Yes' : 'No'}
+                </Badge>
+              </div>
+              <div>
+                <strong>Prototypes:</strong> {debugInfo.prototypeCount}
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <strong>Database:</strong>{' '}
+                <Badge variant={debugInfo.databaseHealth === 'healthy' ? 'default' : 'destructive'}>
+                  {debugInfo.databaseHealth}
+                </Badge>
+              </div>
+              <div>
+                <strong>API:</strong>{' '}
+                <Badge variant={debugInfo.apiHealth === 'healthy' ? 'default' : 'destructive'}>
+                  {debugInfo.apiHealth}
+                </Badge>
+              </div>
+            </div>
+            
+            {debugInfo.lastGenerated && (
+              <div>
+                <strong>Last Generated:</strong> {new Date(debugInfo.lastGenerated).toLocaleString()}
+              </div>
+            )}
+            
+            <div className="pt-2 border-t border-yellow-200">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={performHealthCheck}
+                className="mr-2"
+              >
+                Refresh Health Check
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={loadAnalysis}
+              >
+                Reload Data
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
 
   if (loading || generatingAnalysis) {
     return (
@@ -265,32 +517,40 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
 
   if (!analysisId) {
     return (
-      <Card className="p-8 text-center bg-yellow-50 border-yellow-200">
-        <AlertCircle className="w-8 h-8 mx-auto mb-4 text-yellow-600" />
-        <h3 className="font-semibold text-yellow-900 mb-2">No Analysis Available</h3>
-        <p className="text-yellow-700">No analysis ID provided for prototype generation.</p>
-      </Card>
+      <div className="space-y-4">
+        <DebugPanel />
+        <Card className="p-8 text-center bg-yellow-50 border-yellow-200">
+          <AlertCircle className="w-8 h-8 mx-auto mb-4 text-yellow-600" />
+          <h3 className="font-semibold text-yellow-900 mb-2">No Analysis Available</h3>
+          <p className="text-yellow-700">No analysis ID provided for prototype generation.</p>
+        </Card>
+      </div>
     );
   }
 
   if (!analysis) {
     return (
-      <Card className="p-8 text-center">
-        <AlertCircle className="w-8 h-8 mx-auto mb-4 text-gray-400" />
-        <h3 className="font-semibold text-gray-900 mb-2">Analysis Required</h3>
-        <p className="text-gray-600 mb-4">
-          No holistic analysis found. Generate one to create AI prototypes.
-        </p>
-        <Button onClick={generateAnalysisFunction} disabled={generatingAnalysis}>
-          <Zap className="w-4 h-4 mr-2" />
-          Generate Analysis
-        </Button>
-      </Card>
+      <div className="space-y-4">
+        <DebugPanel />
+        <Card className="p-8 text-center">
+          <AlertCircle className="w-8 h-8 mx-auto mb-4 text-gray-400" />
+          <h3 className="font-semibold text-gray-900 mb-2">Analysis Required</h3>
+          <p className="text-gray-600 mb-4">
+            No holistic analysis found. Generate one to create AI prototypes.
+          </p>
+          <Button onClick={generateAnalysisFunction} disabled={generatingAnalysis}>
+            <Zap className="w-4 h-4 mr-2" />
+            Generate Analysis
+          </Button>
+        </Card>
+      </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      <DebugPanel />
+      
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
