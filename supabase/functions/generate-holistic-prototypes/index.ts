@@ -142,53 +142,147 @@ ${contextData ? `
 - Current Metrics: ${JSON.stringify(contextData.current_metrics)}
 ` : 'No specific context provided - analyze based on common UX principles'}
 
-VISION ANALYSIS DATA:
-- Detected Text: ${JSON.stringify(visionData?.text || [])}
-- Layout Structure: ${JSON.stringify(visionData?.layout || {})}
-- Colors: ${JSON.stringify(visionData?.imageProperties?.dominantColors || [])}
-- Detected Objects: ${JSON.stringify(visionData?.objects || [])}
-- Safe Search: ${JSON.stringify(visionData?.safeSearch || {})}
+ORIGINAL DESIGN CONTENT ANALYSIS:
+${visionData?.text ? `
+Detected Text Elements: ${JSON.stringify(visionData.text.slice(0, 50))}
+Key Interface Elements: ${identifyInterfaceElements(visionData.text)}
+Brand Elements: ${identifyBrandElements(visionData.text)}
+Navigation: ${identifyNavigation(visionData.text)}
+Product/Content: ${identifyProductContent(visionData.text)}
+Pricing/Metrics: ${identifyPricingMetrics(visionData.text)}
+` : 'No text content detected'}
+
+VISUAL LAYOUT ANALYSIS:
+- Layout Type: ${determineLayoutType(visionData)}
+- Color Palette: ${JSON.stringify(visionData?.imageProperties?.dominantColors || [])}
+- Interface Pattern: ${identifyInterfacePattern(visionData?.text || [])}
 
 EXISTING UX ANALYSIS:
 ${JSON.stringify(claudeInsights)}
 
 TASK:
-1. Identify 3-5 SPECIFIC UX PROBLEMS that prevent this design from achieving its goals
-2. For each problem, explain:
-   - What's wrong and why it matters
-   - How it impacts the primary business goal
-   - Which UX principle or user psychology it violates
+Based on the ACTUAL content and layout of the uploaded design, identify:
 
-3. Create 3 DIFFERENT SOLUTION APPROACHES:
+1. 3-5 SPECIFIC UX PROBLEMS that prevent this design from achieving its goals:
+   - Focus on real issues visible in the uploaded design
+   - Consider how the current layout/content affects user experience
+   - Relate problems to the business context and goals
+
+2. Create 3 DIFFERENT SOLUTION APPROACHES that PRESERVE the original content and branding:
    
    CONSERVATIVE (Quick Wins):
-   - Minimal changes that can be implemented fast
-   - Focus on highest-impact, lowest-effort improvements
-   - Keep existing structure mostly intact
+   - Keep the same content and basic layout structure
+   - Fix usability issues without major changes
+   - Improve visual hierarchy and clarity
    
    BALANCED (Best Practices):
-   - Apply modern UX patterns and principles
-   - Restructure as needed for clarity
-   - Balance user needs with business goals
+   - Modernize the design while keeping core elements
+   - Apply current UX patterns to the existing content
+   - Enhance user flow and interaction design
    
    INNOVATIVE (Cutting Edge):
-   - Bold, creative solutions
-   - Latest design trends and interactions
-   - Maximize engagement and delight
+   - Reimagine the experience with the same content
+   - Apply latest design trends and interaction patterns
+   - Create delightful and engaging user experience
 
 For each approach include:
 - Name and description
-- Key changes to make
+- Key changes to make (while preserving original content)
 - Expected impact on metrics
-- Real companies using similar approaches
 - Implementation guidance
+- Which elements from the original to keep vs. enhance
 
 Return as JSON:
 {
-  "problems": [...],
-  "solutions": [...],
-  "visionInsights": { ... }
+  "problems": [
+    {
+      "id": "problem-1",
+      "description": "Specific issue with current design",
+      "severity": "high|medium|low",
+      "businessImpact": "How this affects the business goal",
+      "evidence": "What in the original design shows this problem"
+    }
+  ],
+  "solutions": [
+    {
+      "approach": "conservative|balanced|innovative",
+      "name": "Solution Name",
+      "description": "Detailed description",
+      "keyChanges": ["Specific change 1", "Specific change 2"],
+      "expectedImpact": "Measurable impact prediction",
+      "implementationGuidance": "Step-by-step guidance",
+      "preserveElements": ["Original elements to keep"],
+      "enhanceElements": ["Original elements to improve"]
+    }
+  ],
+  "visionInsights": {
+    "originalDesignType": "Type of interface detected",
+    "keyContentElements": ["Main content elements found"],
+    "brandingElements": ["Brand elements to preserve"]
+  }
 }`;
+}
+
+// Helper functions to analyze the vision data
+function determineLayoutType(visionData: any) {
+  const textCount = visionData?.text?.length || 0;
+  if (textCount > 50) return 'complex-interface';
+  if (textCount > 20) return 'standard-page';
+  return 'simple-layout';
+}
+
+function identifyInterfaceElements(texts: string[]) {
+  const interfaceKeywords = ['Cart', 'Checkout', 'Continue', 'Back', 'Menu', 'Search', 'Login', 'Sign up', 'Home'];
+  return texts.filter(text => 
+    interfaceKeywords.some(keyword => text.toLowerCase().includes(keyword.toLowerCase()))
+  ).slice(0, 10);
+}
+
+function identifyBrandElements(texts: string[]) {
+  // Look for brand names, logos, company-specific terms
+  const brandPatterns = /^[A-Z][a-zA-Z0-9\s&.]{2,20}$/;
+  return texts.filter(text => 
+    brandPatterns.test(text) && text.length < 30 && !text.includes('$')
+  ).slice(0, 5);
+}
+
+function identifyNavigation(texts: string[]) {
+  const navPatterns = ['Home', 'About', 'Contact', 'Products', 'Services', 'Shop', 'Account', 'Profile'];
+  return texts.filter(text => 
+    navPatterns.some(pattern => text.toLowerCase().includes(pattern.toLowerCase()))
+  );
+}
+
+function identifyProductContent(texts: string[]) {
+  // Look for product names, descriptions, features
+  return texts.filter(text => 
+    text.length > 10 && text.length < 100 && 
+    !text.includes('$') && 
+    !identifyBrandElements(texts).includes(text)
+  ).slice(0, 10);
+}
+
+function identifyPricingMetrics(texts: string[]) {
+  const pricePattern = /[\$€£¥]\d+\.?\d*/;
+  const percentPattern = /\d+%/;
+  const numberPattern = /\d+[KMB]?/;
+  
+  return texts.filter(text => 
+    pricePattern.test(text) || percentPattern.test(text) || 
+    (numberPattern.test(text) && text.length < 10)
+  );
+}
+
+function identifyInterfacePattern(texts: string[]) {
+  const allText = texts.join(' ').toLowerCase();
+  
+  if (allText.includes('cart') && allText.includes('checkout')) return 'ecommerce-cart';
+  if (allText.includes('dashboard') || allText.includes('analytics')) return 'dashboard';
+  if (allText.includes('login') || allText.includes('sign')) return 'authentication';
+  if (allText.includes('profile') || allText.includes('account')) return 'user-profile';
+  if (allText.includes('pricing') || allText.includes('plan')) return 'pricing-page';
+  
+  return 'general-interface';
 }
 
 async function generatePrototype(
@@ -241,64 +335,73 @@ async function generatePrototype(
 
 function buildPrototypePrompt(solution: any, analysisData: any, contextData: any, holisticAnalysis: any) {
   const extractedContent = extractContentFromAnalysis(analysisData);
+  const visionData = analysisData.google_vision_summary?.vision_results;
   
-  return `You are creating a COMPLETE, FULL-PAGE React component that recreates and enhances the uploaded design using the ${solution.approach} approach.
+  // Get all the actual text from the image
+  const allDetectedText = visionData?.text || [];
+  const brandElements = identifyBrandElements(allDetectedText);
+  const interfaceElements = identifyInterfaceElements(allDetectedText);
+  const pricingElements = identifyPricingMetrics(allDetectedText);
+  const productElements = identifyProductContent(allDetectedText);
+  
+  return `You are recreating a ${solution.approach} version of an uploaded design as a complete, functional React component.
 
-VISUAL DESIGN TO RECREATE:
-${JSON.stringify(extractedContent.visualStructure, null, 2)}
+CRITICAL: You must recreate the EXACT visual design from the uploaded image, preserving all content, branding, and layout.
 
-EXACT CONTENT TO PRESERVE:
-${JSON.stringify(extractedContent.content, null, 2)}
+ORIGINAL IMAGE CONTENT TO RECREATE:
+- Detected Brand: ${brandElements.join(', ') || 'Generic brand'}
+- Interface Type: ${identifyInterfacePattern(allDetectedText)}
+- All Text Elements: ${JSON.stringify(allDetectedText)}
+- Pricing/Numbers: ${JSON.stringify(pricingElements)}
+- Interface Elements: ${JSON.stringify(interfaceElements)}
+- Product Content: ${JSON.stringify(productElements)}
 
-VISUAL STYLE TO MATCH:
-${JSON.stringify(extractedContent.visualStyle, null, 2)}
+EXACT VISUAL ELEMENTS TO PRESERVE:
+- All navigation elements and menus
+- All product information and descriptions
+- All pricing and monetary values
+- All button labels and CTAs
+- All form fields and labels
+- All branding and logos
+- Color scheme from image: ${JSON.stringify(visionData?.imageProperties?.dominantColors || [])}
 
-LAYOUT STRUCTURE TO FOLLOW:
-${JSON.stringify(extractedContent.layout, null, 2)}
-
-PROBLEMS TO SOLVE WHILE PRESERVING DESIGN:
-${holisticAnalysis.problems?.map(p => `- ${p.description} (${p.severity})`).join('\n') || 'No specific problems identified'}
-
-SOLUTION: ${solution.name}
+SOLUTION APPROACH: ${solution.name} (${solution.approach})
 ${solution.description}
 
-KEY IMPROVEMENTS TO IMPLEMENT:
-${solution.keyChanges?.map(c => `- ${c}`).join('\n') || 'No specific changes listed'}
+IMPROVEMENTS TO IMPLEMENT (while keeping original design):
+${solution.keyChanges?.map(c => `- ${c}`).join('\n') || 'Focus on usability improvements'}
 
-BUSINESS CONTEXT:
-- Business Type: ${contextData?.business_type || 'Unknown'}
-- Primary Goal: ${contextData?.primary_goal || 'Unknown'}
-- Target Audience: ${contextData?.target_audience || 'Unknown'}
+REQUIREMENTS:
+1. Create a COMPLETE, FULL-PAGE React component (not just a small widget)
+2. Use ALL the detected text content in appropriate places
+3. Recreate the exact layout and visual hierarchy from the uploaded image
+4. Preserve all branding, product names, prices, and content exactly as shown
+5. Implement the solution improvements WITHOUT changing the core visual design
+6. Make it fully interactive with proper React state management
+7. Use only Tailwind CSS classes for styling
+8. Include proper accessibility features
 
-CREATE A COMPLETE PAGE that:
-1. RECREATES the exact visual layout and structure from the uploaded image
-2. PRESERVES all text content, buttons, and visual elements exactly as shown
-3. MATCHES the color scheme, typography, and spacing from the original
-4. IMPLEMENTS the solution improvements without breaking the visual design
-5. Creates a fully functional, interactive page (not just a component)
-6. Includes proper React state management for all interactive elements
-7. Uses responsive design that works on mobile and desktop
-8. Follows accessibility best practices
+COMPONENT STRUCTURE:
+Create a complete page that includes:
+- Header/navigation matching the original
+- Main content area with all detected elements
+- All forms, buttons, and interactive elements
+- Proper spacing and layout matching the uploaded image
+- All pricing, product info, and text content exactly as detected
 
-VISUAL FIDELITY REQUIREMENTS:
-- Match the exact color palette from the uploaded image
-- Recreate the same typography hierarchy and font sizes
-- Preserve the original layout structure and spacing
-- Include all buttons, forms, images, and interactive elements
-- Maintain the same visual style and branding
-
-TECHNICAL REQUIREMENTS:
-- Use ONLY Tailwind CSS classes for styling
-- Include proper React hooks for state management
-- Add smooth animations and micro-interactions
-- Ensure full accessibility (ARIA labels, keyboard navigation)
-- Handle loading states and error scenarios
+CODE REQUIREMENTS:
+- Start with: function EnhancedDesign() {
+- Include a comment block explaining what you're recreating
 - Use semantic HTML elements
+- Include React hooks for state management
+- Handle all interactive elements (forms, buttons, etc.)
+- Use responsive design patterns
+- Include loading states and error handling where appropriate
 
-Start with a detailed comment explaining what page you're recreating and what improvements you're making.
-Generate a COMPLETE, FULL-PAGE React component starting with: function EnhancedDesign() {
+VISUAL FIDELITY:
+Your recreation should look nearly identical to the uploaded image while incorporating the ${solution.approach} improvements for better usability and functionality.
 
-The component should render an entire page/screen, not just a small component.`;
+Generate the complete React component now:`;
 }
 
 async function callClaude(prompt: string, apiKey: string) {
