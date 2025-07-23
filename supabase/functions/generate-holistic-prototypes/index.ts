@@ -268,6 +268,13 @@ Create a production-ready React component that:
 6. Uses only Tailwind CSS classes
 7. Includes helpful comments explaining design decisions
 
+CRITICAL CODE REQUIREMENTS:
+- Use ONLY standard ASCII characters (no Unicode characters like em dashes, fancy quotes)
+- Use regular minus signs (-) not em dashes (−)
+- Use regular quotes (" and ') not curly quotes (" " ' ')
+- Ensure all strings are properly terminated
+- Use consistent quote style throughout (prefer double quotes for JSX attributes)
+
 Start the component with a comment block listing the problems this solves.
 Generate ONLY the React component code starting with: function EnhancedDesign() {
 
@@ -315,23 +322,70 @@ async function callClaude(prompt: string, apiKey: string) {
     if (content.includes('function EnhancedDesign') && content.includes('return')) {
       console.log('✅ Basic validation passed - function and JSX detected');
       
-      // Clean up common issues
-      console.log('🔧 Fixing quote issues in generated code...');
+      // Comprehensive code sanitization
+      console.log('🔧 Sanitizing generated code...');
       let cleanedCode = content;
       
-      // Fix problematic quote patterns
-      cleanedCode = cleanedCode.replace(/'/g, "'");
-      cleanedCode = cleanedCode.replace(/'/g, "'");
-      cleanedCode = cleanedCode.replace(/"/g, '"');
-      cleanedCode = cleanedCode.replace(/"/g, '"');
+      // Fix Unicode characters that break JSX
+      cleanedCode = cleanedCode.replace(/−/g, '-'); // Em dash to minus
+      cleanedCode = cleanedCode.replace(/–/g, '-'); // En dash to minus
+      cleanedCode = cleanedCode.replace(/—/g, '-'); // Em dash to minus
+      cleanedCode = cleanedCode.replace(/'/g, "'"); // Left single quote
+      cleanedCode = cleanedCode.replace(/'/g, "'"); // Right single quote
+      cleanedCode = cleanedCode.replace(/"/g, '"'); // Left double quote
+      cleanedCode = cleanedCode.replace(/"/g, '"'); // Right double quote
+      cleanedCode = cleanedCode.replace(/…/g, '...'); // Ellipsis to three dots
       
-      // Convert problematic quotes in className attributes
+      // Fix malformed template literals and JSX expressions
+      // Fix unterminated strings in className attributes
+      cleanedCode = cleanedCode.replace(/className=\{`([^`]*?)'/g, (match, content) => {
+        return `className={\`${content}"}`;
+      });
+      
+      // Fix mixed quotes in template literals
+      cleanedCode = cleanedCode.replace(/className=\{`([^`]*?)"([^`]*?)'/g, (match, start, end) => {
+        return `className={\`${start}"${end}"}`;
+      });
+      
+      // Convert all className single quotes to double quotes for consistency
       cleanedCode = cleanedCode.replace(/className='([^']*?)'/g, (match, className) => {
-        console.log('🔄 Converting problematic quotes:', `'${className}' → "${className}"`);
         return `className="${className}"`;
       });
       
-      console.log('✅ Quote issues fixed');
+      // Fix aria-label and other attributes with problematic quotes
+      cleanedCode = cleanedCode.replace(/aria-label='([^']*?)'/g, (match, label) => {
+        return `aria-label="${label}"`;
+      });
+      
+      // Fix JSX text content with problematic quotes
+      cleanedCode = cleanedCode.replace(/>\s*"([^"]*?)"\s*</g, (match, text) => {
+        return `>"${text}"<`;
+      });
+      
+      // Fix conditional expressions with mixed quotes
+      cleanedCode = cleanedCode.replace(/\?\s*"([^"]*?)"\s*:\s*"([^"]*?)"/g, (match, trueVal, falseVal) => {
+        return `? "${trueVal}" : "${falseVal}"`;
+      });
+      
+      // Remove any remaining problematic characters
+      cleanedCode = cleanedCode.replace(/[\u2000-\u206F\u2E00-\u2E7F\\'!"#$%&\(\)*+,\-.\/:;<=>?@\[\]^_`{|}~]/g, (char) => {
+        const code = char.charCodeAt(0);
+        // Only replace if it's a Unicode character that could cause issues
+        if (code > 127 && code !== 8217 && code !== 8216 && code !== 8220 && code !== 8221) {
+          console.log('🔄 Replacing problematic character:', char, 'with space');
+          return ' ';
+        }
+        return char;
+      });
+      
+      // Final validation - ensure no unterminated template literals
+      const templateLiteralMatches = cleanedCode.match(/`[^`]*$/gm);
+      if (templateLiteralMatches) {
+        console.log('⚠️ Found unterminated template literals, fixing...');
+        cleanedCode = cleanedCode.replace(/`([^`]*)$/gm, '`$1`');
+      }
+      
+      console.log('✅ Code sanitization complete');
       console.log('🧹 Final cleaned code length:', cleanedCode.length);
       console.log('🔍 Code starts with:', cleanedCode.substring(0, 100));
       
