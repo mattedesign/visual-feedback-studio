@@ -324,6 +324,23 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
   };
 
   const renderJSXInIframe = (code) => {
+    // Clean the code before injecting into iframe
+    let cleanCode = code;
+    
+    // Remove import statements
+    cleanCode = cleanCode.replace(/import\s+.*?from\s+['"][^'"]*['"];?\s*\n?/g, '');
+    cleanCode = cleanCode.replace(/import\s+\{[^}]*\}\s+from\s+['"][^'"]*['"];?\s*\n?/g, '');
+    cleanCode = cleanCode.replace(/import\s+\*\s+as\s+\w+\s+from\s+['"][^'"]*['"];?\s*\n?/g, '');
+    
+    // Remove export statements completely
+    cleanCode = cleanCode.replace(/export\s+default\s+\w+;?\s*\n?/g, '');
+    cleanCode = cleanCode.replace(/export\s+\{[^}]*\};?\s*\n?/g, '');
+    cleanCode = cleanCode.replace(/export\s+\*\s+from\s+['"][^'"]*['"];?\s*\n?/g, '');
+    
+    // Remove any trailing export statements at the end
+    cleanCode = cleanCode.replace(/\n\s*export\s+.*$/g, '');
+    cleanCode = cleanCode.trim();
+    
     const html = `
       <!DOCTYPE html>
       <html>
@@ -333,8 +350,9 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
           <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
           <script src="https://cdn.tailwindcss.com"></script>
           <style>
-            body { margin: 0; padding: 16px; font-family: system-ui, -apple-system, sans-serif; }
+            body { margin: 0; padding: 16px; font-family: system-ui, -apple-system, sans-serif; background: #f9fafb; }
             .error { background: #fee; border: 1px solid #fcc; padding: 12px; border-radius: 6px; color: #900; }
+            .preview-container { background: white; min-height: 100vh; }
           </style>
         </head>
         <body>
@@ -343,11 +361,11 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
             try {
               const { useState, useEffect, useCallback, useMemo } = React;
               
-              ${code}
+              ${cleanCode}
               
               function ComponentToRender() {
                 if (typeof EnhancedDesign !== 'undefined') {
-                  return React.createElement(EnhancedDesign);
+                  return React.createElement('div', { className: 'preview-container' }, React.createElement(EnhancedDesign));
                 }
                 return React.createElement('div', 
                   { className: 'p-8 text-center' },

@@ -365,82 +365,59 @@ function buildPrototypePrompt(solution: any, analysisData: any, contextData: any
   const imageInfo = sessionData?.images?.[0] || {};
   const hasImageData = !!sessionData?.images?.length;
   
-  return `You are recreating a ${solution.approach} version of an uploaded Walmart/Target checkout design as a complete, functional React component.
+  return `Create a complete, working React component that recreates the detected checkout interface with ${solution.approach} improvements.
 
-CONTEXT: This is based on a real screenshot analysis of a ${contextData?.business_type || 'ecommerce'} checkout flow with ${allDetectedText.length} detected text elements. The user needs a working React component that matches the visual design.
+DETECTED CONTENT TO USE (from uploaded image):
+${JSON.stringify({
+    textElements: allDetectedText.slice(0, 15),
+    brands: brandElements,
+    prices: pricingElements,
+    buttons: interfaceElements,
+    products: productElements
+  }, null, 2)}
 
-CRITICAL: You must create a WORKING React component based on the detected content below.
-
-ORIGINAL IMAGE CONTENT TO RECREATE:
-- Interface Type: ${identifyInterfacePattern(allDetectedText)} (confirmed from text analysis)
-- Detected Brand: ${brandElements.join(', ') || 'Walmart/Target checkout interface'}
-- Key Text Elements (first 20): ${JSON.stringify(allDetectedText.slice(0, 20))}
-- Pricing/Numbers Found: ${JSON.stringify(pricingElements)}
-- Interactive Elements: ${JSON.stringify(interfaceElements)}
-- Product/Content: ${JSON.stringify(productElements)}
-
-BUSINESS CONTEXT:
-- Target: ${contextData?.target_audience || 'High-income users ($150k+ household income)'}
+BUSINESS REQUIREMENTS:
+- Target: ${contextData?.target_audience || 'Users with $150k+ household income'}
 - Goal: ${contextData?.primary_goal || 'Increase checkout conversion rates'}
-- Current Challenge: ${contextData?.specific_challenges?.join(', ') || 'Poor conversion funnel, high bounce rate'}
+- Challenges: ${contextData?.specific_challenges?.join(', ') || 'High bounce rate, poor conversion funnel'}
 
-SOLUTION APPROACH: ${solution.name} (${solution.approach})
-${solution.description}
+SOLUTION: ${solution.name} (${solution.approach} approach)
+Key Changes: ${solution.keyChanges?.join(' • ') || 'Enhanced UX and visual hierarchy'}
 
-KEY IMPROVEMENTS TO IMPLEMENT:
-${solution.keyChanges?.map(c => `• ${c}`).join('\n') || '• Focus on usability improvements\n• Enhance visual hierarchy\n• Improve user experience flow'}
+CRITICAL REQUIREMENTS:
+1. Generate ONLY valid React JSX code - no markdown, no explanations
+2. Start with: function EnhancedDesign() {
+3. Use the detected content above to populate ALL text, prices, and interface elements
+4. Create a complete checkout page with header, main content, and footer
+5. Use Tailwind CSS classes for ALL styling
+6. Include React hooks (useState, useEffect) for interactivity
+7. Make it responsive and accessible
+8. NO export statements - just the function
+9. Use proper JSX syntax with double quotes for attributes
 
-REQUIREMENTS FOR SUCCESS:
-1. Create a COMPLETE, FULL-PAGE React checkout component
-2. Use the detected text elements to populate realistic content
-3. Include proper checkout flow elements (cart summary, pricing, buttons)
-4. Make it fully interactive with React state for cart operations
-5. Use Tailwind CSS for all styling (no custom CSS)
-6. Include proper form validation and error states
-7. Add accessibility features (ARIA labels, keyboard navigation)
-8. Include loading states for async operations
-
-COMPONENT STRUCTURE MUST INCLUDE:
-- Header with navigation (use detected nav elements)
-- Main checkout content area with order summary
-- All detected pricing and product information
-- Interactive buttons and form elements
-- Footer/completion area
-- Responsive design that works on all devices
-
-CODE STRUCTURE:
-\`\`\`jsx
+EXAMPLE STRUCTURE:
 function EnhancedDesign() {
-  // Comment: Recreating ${contextData?.business_type || 'ecommerce'} checkout based on ${allDetectedText.length} detected elements
-  // Key improvements: ${solution.keyChanges?.slice(0, 2).join(', ') || 'Enhanced UX'}
-  
-  const [orderData, setOrderData] = useState({
-    // Use actual detected data here
+  const [cartData, setCartData] = useState({
+    items: [/* use detected product data */],
+    total: /* use detected pricing */
   });
-  
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Create full checkout interface here */}
+      <header className="bg-white shadow-sm">
+        {/* Use detected navigation elements */}
+      </header>
+      <main className="max-w-6xl mx-auto py-8 px-4">
+        {/* Checkout content using detected text and pricing */}
+      </main>
+      <footer className="bg-gray-800 text-white">
+        {/* Footer content */}
+      </footer>
     </div>
   );
 }
-\`\`\`
 
-VISUAL STYLE REQUIREMENTS:
-- Color scheme: ${JSON.stringify(visionData?.imageProperties?.dominantColors?.slice(0, 3) || [])}
-- Layout: ${hasImageData ? 'Multi-section checkout layout' : 'Standard checkout flow'}
-- Typography: Clear hierarchy with proper spacing
-- Interactive elements: Hover states, focus indicators, transitions
-
-CRITICAL SUCCESS CRITERIA:
-✅ Must be a complete, working React component
-✅ Must start with "function EnhancedDesign() {"
-✅ Must include all detected content in appropriate places
-✅ Must be visually appealing and professional
-✅ Must implement the specified solution improvements
-✅ Must handle user interactions properly
-
-Generate the complete React component now - focus on creating a professional, working checkout interface:`;
+Generate the complete React component now with ALL detected content integrated:`;
 }
 
 async function callClaude(prompt: string, apiKey: string) {
@@ -454,9 +431,9 @@ async function callClaude(prompt: string, apiKey: string) {
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 4000,
-      temperature: 0.7,
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 8000,
+      temperature: 0.3,
       messages: [{ role: 'user', content: prompt }]
     })
   });
