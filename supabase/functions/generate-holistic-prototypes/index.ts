@@ -242,43 +242,63 @@ async function generatePrototype(
 function buildPrototypePrompt(solution: any, analysisData: any, contextData: any, holisticAnalysis: any) {
   const extractedContent = extractContentFromAnalysis(analysisData);
   
-  return `You are creating a COMPLETE React component that implements the ${solution.approach} solution approach.
+  return `You are creating a COMPLETE, FULL-PAGE React component that recreates and enhances the uploaded design using the ${solution.approach} approach.
 
-PROBLEMS TO SOLVE:
+VISUAL DESIGN TO RECREATE:
+${JSON.stringify(extractedContent.visualStructure, null, 2)}
+
+EXACT CONTENT TO PRESERVE:
+${JSON.stringify(extractedContent.content, null, 2)}
+
+VISUAL STYLE TO MATCH:
+${JSON.stringify(extractedContent.visualStyle, null, 2)}
+
+LAYOUT STRUCTURE TO FOLLOW:
+${JSON.stringify(extractedContent.layout, null, 2)}
+
+PROBLEMS TO SOLVE WHILE PRESERVING DESIGN:
 ${holisticAnalysis.problems?.map(p => `- ${p.description} (${p.severity})`).join('\n') || 'No specific problems identified'}
 
 SOLUTION: ${solution.name}
 ${solution.description}
 
-KEY CHANGES:
+KEY IMPROVEMENTS TO IMPLEMENT:
 ${solution.keyChanges?.map(c => `- ${c}`).join('\n') || 'No specific changes listed'}
 
-EXTRACTED CONTENT TO USE:
-${JSON.stringify(extractedContent, null, 2)}
+BUSINESS CONTEXT:
+- Business Type: ${contextData?.business_type || 'Unknown'}
+- Primary Goal: ${contextData?.primary_goal || 'Unknown'}
+- Target Audience: ${contextData?.target_audience || 'Unknown'}
 
-IMPLEMENTATION GUIDANCE:
-${JSON.stringify(solution.implementationGuidance || {})}
+CREATE A COMPLETE PAGE that:
+1. RECREATES the exact visual layout and structure from the uploaded image
+2. PRESERVES all text content, buttons, and visual elements exactly as shown
+3. MATCHES the color scheme, typography, and spacing from the original
+4. IMPLEMENTS the solution improvements without breaking the visual design
+5. Creates a fully functional, interactive page (not just a component)
+6. Includes proper React state management for all interactive elements
+7. Uses responsive design that works on mobile and desktop
+8. Follows accessibility best practices
 
-Create a production-ready React component that:
-1. Solves all identified problems using this approach
-2. Incorporates all extracted content appropriately  
-3. Includes all necessary states and interactions
-4. Has proper error handling and loading states
-5. Is fully accessible (ARIA labels, keyboard navigation)
-6. Uses only Tailwind CSS classes
-7. Includes helpful comments explaining design decisions
+VISUAL FIDELITY REQUIREMENTS:
+- Match the exact color palette from the uploaded image
+- Recreate the same typography hierarchy and font sizes
+- Preserve the original layout structure and spacing
+- Include all buttons, forms, images, and interactive elements
+- Maintain the same visual style and branding
 
-CRITICAL CODE REQUIREMENTS:
-- Use ONLY standard ASCII characters (no Unicode characters like em dashes, fancy quotes)
-- Use regular minus signs (-) not em dashes (−)
-- Use regular quotes (" and ') not curly quotes (" " ' ')
-- Ensure all strings are properly terminated
-- Use consistent quote style throughout (prefer double quotes for JSX attributes)
+TECHNICAL REQUIREMENTS:
+- Use ONLY Tailwind CSS classes for styling
+- Include proper React hooks for state management
+- Add smooth animations and micro-interactions
+- Ensure full accessibility (ARIA labels, keyboard navigation)
+- Handle loading states and error scenarios
+- Use semantic HTML elements
 
-Start the component with a comment block listing the problems this solves.
-Generate ONLY the React component code starting with: function EnhancedDesign() {
+Start with a detailed comment explaining what page you're recreating and what improvements you're making.
+Generate a COMPLETE, FULL-PAGE React component starting with: function EnhancedDesign() {
 
-DO NOT include any other code outside the function declaration.`;
+The component should render an entire page/screen, not just a small component.`;
 }
 
 async function callClaude(prompt: string, apiKey: string) {
@@ -399,8 +419,53 @@ async function callClaude(prompt: string, apiKey: string) {
 
 function extractContentFromAnalysis(analysis: any) {
   const visionData = analysis.google_vision_summary?.vision_results;
+  const claudeAnalysis = analysis.claude_analysis;
+  
+  // Extract comprehensive visual structure
+  const visualStructure = {
+    pageType: determinePageType(visionData?.text || []),
+    sections: identifyPageSections(visionData?.text || []),
+    navigationElements: extractNavigationElements(visionData?.text || []),
+    forms: extractFormElements(visionData?.text || []),
+    ctaButtons: extractButtons(visionData?.text || []),
+    images: visionData?.objects?.filter(obj => obj.name === 'image' || obj.name === 'picture') || [],
+    interactive: extractInteractiveElements(visionData?.text || [])
+  };
+  
+  // Extract all text content with context
+  const content = {
+    headings: extractHeadings(visionData?.text || []),
+    bodyText: extractBodyText(visionData?.text || []),
+    buttonLabels: extractButtons(visionData?.text || []),
+    formLabels: extractFormLabels(visionData?.text || []),
+    metrics: extractMetrics(visionData?.text || []),
+    links: extractLinks(visionData?.text || []),
+    allText: visionData?.text || []
+  };
+  
+  // Extract visual styling information
+  const visualStyle = {
+    colorPalette: extractColorPalette(visionData?.imageProperties),
+    typography: analyzeTypography(visionData?.text || []),
+    spacing: analyzeSpacing(claudeAnalysis),
+    branding: extractBrandingElements(visionData?.text || []),
+    visualHierarchy: analyzeVisualHierarchy(visionData?.text || [])
+  };
+  
+  // Extract layout structure
+  const layout = {
+    structure: determineLayoutStructure(visionData),
+    gridSystem: analyzeGridSystem(claudeAnalysis),
+    responsiveBreakpoints: determineBreakpoints(claudeAnalysis),
+    contentFlow: analyzeContentFlow(visionData?.text || [])
+  };
   
   return {
+    visualStructure,
+    content,
+    visualStyle,
+    layout,
+    // Legacy fields for backward compatibility
     texts: visionData?.text || [],
     metrics: extractMetrics(visionData?.text || []),
     colors: visionData?.imageProperties?.dominantColors?.map(c => c.color) || [],
@@ -434,4 +499,213 @@ function extractButtons(texts: string[]) {
 
 function extractHeadings(texts: string[]) {
   return texts.filter(text => text.length > 5 && text.length < 100 && !text.includes('   '));
+}
+
+// Comprehensive visual analysis functions
+function determinePageType(texts: string[]) {
+  const pageKeywords = {
+    'landing': ['hero', 'features', 'pricing', 'testimonials', 'get started'],
+    'ecommerce': ['cart', 'checkout', 'product', 'price', 'buy now', 'add to cart'],
+    'dashboard': ['dashboard', 'analytics', 'metrics', 'overview', 'reports'],
+    'onboarding': ['welcome', 'setup', 'getting started', 'step', 'progress'],
+    'blog': ['article', 'blog', 'read more', 'published', 'author'],
+    'contact': ['contact', 'message', 'email', 'phone', 'address'],
+    'about': ['about', 'team', 'mission', 'story', 'company']
+  };
+  
+  const allText = texts.join(' ').toLowerCase();
+  let bestMatch = 'generic';
+  let maxMatches = 0;
+  
+  for (const [type, keywords] of Object.entries(pageKeywords)) {
+    const matches = keywords.filter(keyword => allText.includes(keyword)).length;
+    if (matches > maxMatches) {
+      maxMatches = matches;
+      bestMatch = type;
+    }
+  }
+  
+  return bestMatch;
+}
+
+function identifyPageSections(texts: string[]) {
+  const sections = [];
+  const sectionKeywords = {
+    'header': ['navigation', 'nav', 'menu', 'logo', 'home', 'about', 'contact'],
+    'hero': ['hero', 'banner', 'main heading', 'get started', 'sign up'],
+    'features': ['features', 'benefits', 'why choose', 'what we offer'],
+    'testimonials': ['testimonials', 'reviews', 'customers', 'feedback'],
+    'pricing': ['pricing', 'plans', 'packages', 'cost', 'price'],
+    'footer': ['footer', 'copyright', 'privacy', 'terms', 'social media']
+  };
+  
+  const allText = texts.join(' ').toLowerCase();
+  
+  for (const [section, keywords] of Object.entries(sectionKeywords)) {
+    const hasKeywords = keywords.some(keyword => allText.includes(keyword));
+    if (hasKeywords) {
+      sections.push(section);
+    }
+  }
+  
+  return sections;
+}
+
+function extractNavigationElements(texts: string[]) {
+  const navPatterns = ['Home', 'About', 'Services', 'Contact', 'Blog', 'Products', 'Solutions', 'Pricing'];
+  return texts.filter(text => 
+    navPatterns.some(pattern => text.toLowerCase().includes(pattern.toLowerCase()))
+  );
+}
+
+function extractFormElements(texts: string[]) {
+  const formKeywords = ['email', 'password', 'name', 'phone', 'message', 'submit', 'register', 'login'];
+  return texts.filter(text => 
+    formKeywords.some(keyword => text.toLowerCase().includes(keyword))
+  );
+}
+
+function extractInteractiveElements(texts: string[]) {
+  const interactivePatterns = ['click', 'tap', 'select', 'choose', 'view', 'download', 'share'];
+  return texts.filter(text => 
+    interactivePatterns.some(pattern => text.toLowerCase().includes(pattern))
+  );
+}
+
+function extractBodyText(texts: string[]) {
+  return texts.filter(text => 
+    text.length > 20 && 
+    text.length < 500 && 
+    !extractButtons(texts).includes(text) &&
+    !extractHeadings(texts).includes(text)
+  );
+}
+
+function extractFormLabels(texts: string[]) {
+  const labelPatterns = /^(Name|Email|Phone|Message|Password|Username|Address|City|State|Country|Zip|Card Number)[:]*$/i;
+  return texts.filter(text => labelPatterns.test(text.trim()));
+}
+
+function extractLinks(texts: string[]) {
+  const linkPatterns = ['Learn More', 'Read More', 'View Details', 'See More', 'Explore', 'Discover'];
+  return texts.filter(text => 
+    linkPatterns.some(pattern => text.toLowerCase().includes(pattern.toLowerCase()))
+  );
+}
+
+function extractColorPalette(imageProperties: any) {
+  if (!imageProperties?.dominantColors) return [];
+  
+  return imageProperties.dominantColors.map((colorInfo: any) => ({
+    color: colorInfo.color,
+    score: colorInfo.score,
+    pixelFraction: colorInfo.pixelFraction
+  }));
+}
+
+function analyzeTypography(texts: string[]) {
+  const headings = extractHeadings(texts);
+  const bodyText = extractBodyText(texts);
+  
+  return {
+    headingStyles: headings.map(h => ({
+      text: h,
+      estimatedSize: h.length < 30 ? 'large' : h.length < 50 ? 'medium' : 'small',
+      hierarchy: headings.indexOf(h) + 1
+    })),
+    bodyTextStyle: {
+      averageLength: bodyText.reduce((sum, text) => sum + text.length, 0) / bodyText.length || 0,
+      tone: analyzeTextTone(bodyText.join(' '))
+    }
+  };
+}
+
+function analyzeTextTone(text: string) {
+  const professional = ['enterprise', 'solution', 'professional', 'business'];
+  const friendly = ['easy', 'simple', 'friendly', 'welcome', 'help'];
+  const urgent = ['now', 'today', 'limited', 'hurry', 'don\'t miss'];
+  
+  const lowerText = text.toLowerCase();
+  
+  if (professional.some(word => lowerText.includes(word))) return 'professional';
+  if (friendly.some(word => lowerText.includes(word))) return 'friendly';
+  if (urgent.some(word => lowerText.includes(word))) return 'urgent';
+  return 'neutral';
+}
+
+function analyzeSpacing(claudeAnalysis: any) {
+  // Extract spacing insights from Claude's analysis if available
+  const analysis = JSON.stringify(claudeAnalysis || {}).toLowerCase();
+  
+  return {
+    density: analysis.includes('crowded') || analysis.includes('cramped') ? 'tight' : 
+             analysis.includes('spacious') || analysis.includes('open') ? 'loose' : 'balanced',
+    whitespace: analysis.includes('whitespace') || analysis.includes('breathing room') ? 'generous' : 'minimal'
+  };
+}
+
+function extractBrandingElements(texts: string[]) {
+  // Look for company names, taglines, and brand-specific terms
+  const brandingPattern = /^[A-Z][a-zA-Z0-9\s&.,]{2,30}$/;
+  const potentialBrands = texts.filter(text => 
+    brandingPattern.test(text) && 
+    !extractButtons(texts).includes(text) &&
+    text.length < 50
+  );
+  
+  return potentialBrands;
+}
+
+function analyzeVisualHierarchy(texts: string[]) {
+  const headings = extractHeadings(texts);
+  const buttons = extractButtons(texts);
+  const bodyText = extractBodyText(texts);
+  
+  return {
+    primaryElements: headings.slice(0, 2),
+    secondaryElements: buttons,
+    supportingElements: bodyText.slice(0, 3)
+  };
+}
+
+function determineLayoutStructure(visionData: any) {
+  const objects = visionData?.objects || [];
+  const textCount = visionData?.text?.length || 0;
+  
+  return {
+    complexity: textCount > 50 ? 'complex' : textCount > 20 ? 'moderate' : 'simple',
+    objectCount: objects.length,
+    estimatedColumns: textCount > 30 ? 'multi-column' : 'single-column'
+  };
+}
+
+function analyzeGridSystem(claudeAnalysis: any) {
+  const analysis = JSON.stringify(claudeAnalysis || {}).toLowerCase();
+  
+  return {
+    type: analysis.includes('grid') ? 'grid-based' : 
+          analysis.includes('flex') ? 'flexbox' : 'unknown',
+    alignment: analysis.includes('center') ? 'center' : 
+               analysis.includes('left') ? 'left' : 'unknown'
+  };
+}
+
+function determineBreakpoints(claudeAnalysis: any) {
+  return {
+    mobile: '320px',
+    tablet: '768px',
+    desktop: '1024px',
+    wide: '1280px'
+  };
+}
+
+function analyzeContentFlow(texts: string[]) {
+  const headings = extractHeadings(texts);
+  const buttons = extractButtons(texts);
+  
+  return {
+    pattern: headings.length > 3 ? 'hierarchical' : 'linear',
+    ctaPlacement: buttons.length > 0 ? 'present' : 'missing',
+    readingFlow: 'top-to-bottom'
+  };
 }
