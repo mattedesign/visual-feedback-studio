@@ -105,7 +105,7 @@ export const ResultsChat = ({ analysisData, sessionId }: ResultsChatProps) => {
           </AvatarFallback>
         </Avatar>
         <div>
-          <h3 className="font-medium text-[#121212]">Claude AI</h3>
+          <h3 className="font-medium text-[#121212]">AI Assistant</h3>
           <p className="text-xs text-[#7B7B7B]">Analysis</p>
         </div>
         <Button variant="ghost" size="sm" className="ml-auto">
