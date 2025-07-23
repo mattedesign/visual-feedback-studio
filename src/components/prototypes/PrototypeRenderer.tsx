@@ -11,78 +11,54 @@ interface PrototypeRendererProps {
 }
 
 export function PrototypeRenderer({ code, title = "Enhanced Design", onError }: PrototypeRendererProps) {
-  const [renderState, setRenderState] = useState<'ready' | 'success' | 'error'>('ready');
+  const [renderState, setRenderState] = useState<'loading' | 'success' | 'error'>('loading');
   const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
+  const [hasRendered, setHasRendered] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const timeoutRef = useRef<NodeJS.Timeout>();
-
-  const cleanupIframe = useCallback(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = undefined;
-    }
-  }, []);
 
   const renderPrototype = useCallback(async () => {
-    if (!code?.trim()) {
-      const errorMsg = 'No valid component code provided';
-      console.warn('⚠️', errorMsg);
-      setError(errorMsg);
-      setRenderState('error');
-      return;
-    }
+    if (!code?.trim() || hasRendered) return;
 
     try {
-      setError(null);
-      cleanupIframe();
-
-      console.log('🎨 Rendering prototype:', { 
-        title, 
-        codeLength: code.length,
-        attempt: retryCount + 1 
-      });
-
+      console.log('🎨 Starting prototype render:', { title, codeLength: code.length });
+      
       const iframe = iframeRef.current;
-      if (!iframe) {
-        throw new Error('Iframe not mounted yet');
-      }
+      if (!iframe) return;
 
-      console.log('✅ Iframe reference acquired, proceeding with render');
+      setHasRendered(true);
+      setError(null);
 
       const sanitizedCode = sanitizeComponentCode(code);
       const iframeContent = createIframeContent(sanitizedCode, title);
       
-      // Direct srcdoc assignment
       iframe.srcdoc = iframeContent;
       
-      // Simple timeout-based success detection
-      timeoutRef.current = setTimeout(() => {
-        console.log('✅ Prototype rendering completed');
+      setTimeout(() => {
         setRenderState('success');
-      }, 1500);
+        console.log('✅ Prototype rendered successfully');
+      }, 1000);
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown rendering error';
       console.error('❌ Prototype rendering failed:', error);
       setError(errorMessage);
       setRenderState('error');
+      setHasRendered(false);
       onError?.(error instanceof Error ? error : new Error(errorMessage));
     }
-  }, [code, title, retryCount, onError, cleanupIframe]);
+  }, [code, title, onError, hasRendered]);
 
-  // Effect to render after iframe is mounted
+  // Render once when component mounts
   useEffect(() => {
-    if (renderState === 'ready' && iframeRef.current) {
+    if (!hasRendered) {
       renderPrototype();
     }
-    return cleanupIframe;
-  }, [renderState, renderPrototype, cleanupIframe]);
+  }, [renderPrototype, hasRendered]);
 
   const handleRetry = useCallback(() => {
     console.log('🔄 Retrying prototype render...');
-    setRetryCount(prev => prev + 1);
-    setRenderState('ready'); // Reset to ready state to trigger re-render
+    setHasRendered(false);
+    setRenderState('loading');
   }, []);
 
   const sanitizeComponentCode = (rawCode: string): string => {
@@ -236,7 +212,7 @@ export function PrototypeRenderer({ code, title = "Enhanced Design", onError }: 
                 className="text-red-700 border-red-300 hover:bg-red-100"
               >
                 <RefreshCw className="w-4 h-4 mr-2" />
-                Retry ({retryCount + 1}/3)
+                Retry
               </Button>
             </div>
           </div>
@@ -254,7 +230,7 @@ export function PrototypeRenderer({ code, title = "Enhanced Design", onError }: 
         title={title}
         onLoad={() => {
           // Trigger render once iframe is loaded
-          if (renderState === 'ready') {
+          if (renderState === 'loading' && !hasRendered) {
             renderPrototype();
           }
         }}
