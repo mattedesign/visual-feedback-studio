@@ -170,7 +170,7 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
     }
   }, [analysisId, contextId, updateGenerationState]);
 
-  const downloadPrototype = useCallback((prototype) => {
+  const downloadPrototype = useCallback(async (prototype) => {
     try {
       const blob = new Blob([prototype.component_code], { type: 'text/javascript' });
       const url = URL.createObjectURL(blob);
@@ -183,11 +183,14 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
       URL.revokeObjectURL(url);
       
       // Track download
-      supabase
-        .from('figmant_solution_metrics')
-        .insert({ prototype_id: prototype.id, downloaded: true })
-        .then(() => console.log('Download tracked'))
-        .catch(err => console.warn('Failed to track download:', err));
+      try {
+        await supabase
+          .from('figmant_solution_metrics')
+          .insert({ prototype_id: prototype.id, downloaded: true });
+        console.log('Download tracked');
+      } catch (err) {
+        console.warn('Failed to track download:', err);
+      }
         
       toast.success('Prototype downloaded successfully!');
     } catch (error) {

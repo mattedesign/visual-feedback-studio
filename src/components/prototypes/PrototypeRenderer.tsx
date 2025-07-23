@@ -35,7 +35,7 @@ export function PrototypeRenderer({ code, title = "Enhanced Design", onError }: 
       
       // Render in iframe
       if (iframeRef.current) {
-        iframeRef.current.srcDoc = iframeContent;
+        iframeRef.current.srcdoc = iframeContent;
         
         // Wait for iframe to load
         await new Promise((resolve, reject) => {

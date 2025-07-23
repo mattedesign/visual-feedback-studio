@@ -9,6 +9,7 @@ interface PrototypeMetric {
   duration?: number;
   error?: string;
   metadata?: Record<string, any>;
+  timestamp?: number;
 }
 
 class PrototypeMonitoring {

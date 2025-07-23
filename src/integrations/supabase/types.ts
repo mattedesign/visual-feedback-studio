@@ -891,6 +891,50 @@ export type Database = {
           },
         ]
       }
+      figmant_prototype_metrics: {
+        Row: {
+          analysis_id: string | null
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          prototype_id: string | null
+          solution_type: string | null
+        }
+        Insert: {
+          analysis_id?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          prototype_id?: string | null
+          solution_type?: string | null
+        }
+        Update: {
+          analysis_id?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          prototype_id?: string | null
+          solution_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "figmant_prototype_metrics_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "figmant_analysis_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       figmant_session_images: {
         Row: {
           created_at: string | null
