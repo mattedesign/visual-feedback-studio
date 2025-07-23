@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Target, Zap, AlertCircle, CheckCircle, Download, Eye, Code, Columns, RefreshCw, Bug } from 'lucide-react';
+import { Shield, Target, Zap, AlertCircle, CheckCircle, Download, Eye, Code, Columns, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,14 +23,6 @@ interface GenerationState {
   };
 }
 
-interface DebugInfo {
-  analysisExists: boolean;
-  prototypeCount: number;
-  lastGenerated?: string;
-  currentAnalysisId?: string;
-  loadAttempts: number;
-  lastLoadError?: string;
-}
 
 export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }: HolisticPrototypeViewerProps) {
   const [analysis, setAnalysis] = useState<any>(null);
@@ -40,13 +32,7 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
   const [loading, setLoading] = useState(true);
   const [generatingAnalysis, setGeneratingAnalysis] = useState(false);
   const [generationState, setGenerationState] = useState<GenerationState>({});
-  const [debugInfo, setDebugInfo] = useState<DebugInfo>({
-    analysisExists: false,
-    prototypeCount: 0,
-    currentAnalysisId: analysisId,
-    loadAttempts: 0
-  });
-  const [showDebugPanel, setShowDebugPanel] = useState(false);
+  
 
   console.log('🎯 HolisticPrototypeViewer initialized:', { 
     analysisId, 
@@ -70,22 +56,12 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
     if (!analysisId) {
       console.log('⚠️ No analysisId provided, skipping load');
       setLoading(false);
-      setDebugInfo(prev => ({
-        ...prev,
-        analysisExists: false,
-        lastLoadError: 'No analysis ID provided'
-      }));
       return;
     }
     
     setLoading(true);
     console.log(`📊 Loading holistic analysis for ID:`, analysisId);
     
-    setDebugInfo(prev => ({
-      ...prev,
-      loadAttempts: prev.loadAttempts + 1,
-      lastLoadError: undefined
-    }));
     
     try {
       // Load holistic analysis
@@ -107,10 +83,6 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
 
       if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
         console.error('❌ Database error loading analysis:', error);
-        setDebugInfo(prev => ({
-          ...prev,
-          lastLoadError: `Database error: ${error.message}`
-        }));
         throw error;
       }
 
@@ -132,11 +104,6 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
                             Array.isArray(data.solution_approaches) && 
                             data.solution_approaches.length > 0;
         
-        setDebugInfo(prev => ({
-          ...prev,
-          analysisExists: true, // Always true if data exists
-          lastLoadError: hasSolutions ? undefined : 'Analysis exists but solutions may need regeneration'
-        }));
         
         if (!hasSolutions) {
           console.warn('⚠️ Analysis found but missing/invalid solution approaches, but setting analysis anyway');
@@ -159,10 +126,6 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
         
         if (prototypeError) {
           console.warn('⚠️ Failed to load prototypes:', prototypeError);
-          setDebugInfo(prev => ({
-            ...prev,
-            lastLoadError: `Prototype load error: ${prototypeError.message}`
-          }));
         } else if (existingPrototypes) {
           const prototypeMap = {};
           existingPrototypes.forEach(p => {
@@ -171,27 +134,12 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
           });
           setPrototypes(prototypeMap);
           
-          setDebugInfo(prev => ({
-            ...prev,
-            prototypeCount: existingPrototypes.length,
-            lastGenerated: existingPrototypes[0]?.created_at
-          }));
         }
       } else {
         console.log('⚠️ No holistic analysis found, will need to generate');
-        setDebugInfo(prev => ({
-          ...prev,
-          analysisExists: false,
-          prototypeCount: 0,
-          lastLoadError: 'No holistic analysis found in database'
-        }));
       }
     } catch (error) {
       console.error('❌ Error loading analysis:', error);
-      setDebugInfo(prev => ({
-        ...prev,
-        lastLoadError: `Load error: ${error.message}`
-      }));
       toast.error('Failed to load analysis data');
     } finally {
       setLoading(false);
@@ -237,10 +185,6 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
       }
     } catch (error) {
       console.error('❌ Analysis generation error:', error);
-      setDebugInfo(prev => ({
-        ...prev,
-        lastLoadError: `Analysis generation failed: ${error.message}`
-      }));
       toast.error(`Failed to generate analysis: ${error.message}`);
     } finally {
       setGeneratingAnalysis(false);
@@ -254,10 +198,6 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
     } else {
       console.log('⚠️ No analysisId in useEffect');
       setLoading(false);
-      setDebugInfo(prev => ({
-        ...prev,
-        lastLoadError: 'No analysis ID provided in useEffect'
-      }));
     }
   }, [analysisId, loadAnalysis]); // Include loadAnalysis but it's stable now
 
@@ -306,11 +246,6 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
         setPrototypes(prev => ({ ...prev, [solutionType]: response.prototype }));
         updateGenerationState(solutionType, { isGenerating: false });
         
-        setDebugInfo(prev => ({
-          ...prev,
-          prototypeCount: Object.keys({ ...prototypes, [solutionType]: response.prototype }).length,
-          lastGenerated: new Date().toISOString()
-        }));
         
         toast.success(`${solutionType} prototype generated successfully!`);
       } else {
@@ -386,11 +321,6 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
       // CRITICAL FIX: Don't clear analysis when clearing prototypes
       // setAnalysis(null); // REMOVED
       
-      setDebugInfo(prev => ({
-        ...prev,
-        prototypeCount: 0
-        // analysisExists: false // REMOVED - keep analysis state
-      }));
       
       toast.success(`Cleared ${data || 0} prototypes. You can now regenerate them.`);
       
@@ -407,104 +337,10 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
     updateGenerationState(solutionType, { error: error.message });
   }, [updateGenerationState]);
 
-  // Enhanced Debug Panel Component
-  const DebugPanel = () => (
-    <Card className="mb-6 border-yellow-200 bg-yellow-50">
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-yellow-900 flex items-center gap-2">
-            <Bug className="w-4 h-4" />
-            Debug Information
-          </h3>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowDebugPanel(!showDebugPanel)}
-          >
-            {showDebugPanel ? 'Hide' : 'Show'}
-          </Button>
-        </div>
-        
-        {showDebugPanel && (
-          <div className="space-y-3 text-sm">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <strong>Analysis ID:</strong> {analysisId || 'None'}
-              </div>
-              <div>
-                <strong>Context ID:</strong> {contextId || 'None'}
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <strong>Analysis Exists:</strong>{' '}
-                <Badge variant={debugInfo.analysisExists ? 'default' : 'destructive'}>
-                  {debugInfo.analysisExists ? 'Yes' : 'No'}
-                </Badge>
-              </div>
-              <div>
-                <strong>Prototypes:</strong> {debugInfo.prototypeCount}
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <strong>Load Attempts:</strong> {debugInfo.loadAttempts}
-              </div>
-              <div>
-                <strong>Loading:</strong> {loading ? 'Yes' : 'No'}
-              </div>
-            </div>
-            
-            {debugInfo.lastGenerated && (
-              <div>
-                <strong>Last Generated:</strong> {new Date(debugInfo.lastGenerated).toLocaleString()}
-              </div>
-            )}
-            
-            {debugInfo.lastLoadError && (
-              <div className="bg-red-50 border border-red-200 rounded p-2">
-                <strong>Last Error:</strong> 
-                <p className="text-red-600 text-xs mt-1">{debugInfo.lastLoadError}</p>
-              </div>
-            )}
-            
-            <div className="pt-2 border-t border-yellow-200 flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={loadAnalysis}
-              >
-                Reload Data
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  console.log('🔍 Current component state:', {
-                    analysis: !!analysis,
-                    analysisKeys: analysis ? Object.keys(analysis) : null,
-                    prototypes: Object.keys(prototypes),
-                    loading,
-                    generatingAnalysis,
-                    debugInfo
-                  });
-                }}
-              >
-                Log State
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
-    </Card>
-  );
 
   if (loading || generatingAnalysis) {
     return (
       <div className="space-y-4">
-        <DebugPanel />
         <Card className="p-8">
           <div className="text-center space-y-4">
             <motion.div
@@ -543,7 +379,6 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
   if (!analysisId) {
     return (
       <div className="space-y-4">
-        <DebugPanel />
         <Card className="p-8 text-center bg-yellow-50 border-yellow-200">
           <AlertCircle className="w-8 h-8 mx-auto mb-4 text-yellow-600" />
           <h3 className="font-semibold text-yellow-900 mb-2">No Analysis Available</h3>
@@ -556,7 +391,6 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
   if (!analysis) {
     return (
       <div className="space-y-4">
-        <DebugPanel />
         <Card className="p-8 text-center">
           <AlertCircle className="w-8 h-8 mx-auto mb-4 text-gray-400" />
           <h3 className="font-semibold text-gray-900 mb-2">Analysis Required</h3>
@@ -581,7 +415,6 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
     console.warn('⚠️ Analysis exists but has invalid solution approaches:', analysis);
     return (
       <div className="space-y-4">
-        <DebugPanel />
         <Card className="p-8 text-center bg-amber-50 border-amber-200">
           <AlertCircle className="w-8 h-8 mx-auto mb-4 text-amber-600" />
           <h3 className="font-semibold text-amber-900 mb-2">Solutions Need Generation</h3>
@@ -599,7 +432,6 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
 
   return (
     <div className="space-y-6">
-      <DebugPanel />
       
       {/* Header */}
       <div className="flex items-center justify-between">
