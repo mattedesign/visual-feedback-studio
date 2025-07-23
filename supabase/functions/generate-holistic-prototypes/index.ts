@@ -28,14 +28,25 @@ serve(async (req) => {
     const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch all necessary data
-    const [analysisResult, contextResult] = await Promise.all([
-      supabase.from('figmant_analysis_results').select('*').eq('id', analysisId).single(),
-      contextId ? supabase.from('figmant_user_contexts').select('*').eq('id', contextId).single() : { data: null }
+    // Fetch analysis data first to get session_id
+    const { data: analysisData } = await supabase
+      .from('figmant_analysis_results')
+      .select('*')
+      .eq('id', analysisId)
+      .single();
+
+    if (!analysisData) {
+      throw new Error('Analysis not found');
+    }
+
+    // Fetch additional data including session images
+    const [contextResult, sessionResult] = await Promise.all([
+      contextId ? supabase.from('figmant_user_contexts').select('*').eq('id', contextId).single() : { data: null },
+      supabase.from('figmant_analysis_sessions').select('*, images:figmant_session_images(*)').eq('id', analysisData.session_id).single()
     ]);
 
-    const analysisData = analysisResult.data;
     const contextData = contextResult.data;
+    const sessionData = sessionResult.data;
 
     // Check if holistic analysis already exists
     const { data: existingAnalysis } = await supabase
@@ -92,7 +103,7 @@ serve(async (req) => {
     if (generateAll) {
       const results = await Promise.all(
         holisticAnalysis.solution_approaches.map(solution => 
-          generatePrototype(solution, analysisData, contextData, holisticAnalysis, supabase, anthropicKey)
+          generatePrototype(solution, analysisData, contextData, holisticAnalysis, sessionData, supabase, anthropicKey)
         )
       );
       
@@ -105,7 +116,7 @@ serve(async (req) => {
       console.log('🔥 Starting prototype generation for type:', solutionType);
       console.log('🎯 Found solution:', solution);
       
-      const prototype = await generatePrototype(solution, analysisData, contextData, holisticAnalysis, supabase, anthropicKey);
+      const prototype = await generatePrototype(solution, analysisData, contextData, holisticAnalysis, sessionData, supabase, anthropicKey);
       
       return new Response(
         JSON.stringify({ success: true, prototype }),
@@ -290,6 +301,7 @@ async function generatePrototype(
   analysisData: any,
   contextData: any,
   holisticAnalysis: any,
+  sessionData: any,
   supabase: any,
   anthropicKey: string
 ) {
@@ -304,9 +316,14 @@ async function generatePrototype(
   if (existing) return existing;
 
   // Generate new prototype
-  const prototypePrompt = buildPrototypePrompt(solution, analysisData, contextData, holisticAnalysis);
+  const prototypePrompt = buildPrototypePrompt(solution, analysisData, contextData, holisticAnalysis, sessionData);
   console.log('🔄 Calling Claude for prototype generation...');
   console.log('🔥 Calling Claude API with prompt length:', prototypePrompt.length);
+  console.log('📊 Session data available:', {
+    hasImages: !!sessionData?.images?.length,
+    imageCount: sessionData?.images?.length || 0,
+    firstImagePath: sessionData?.images?.[0]?.file_path
+  });
   
   const code = await callClaude(prototypePrompt, anthropicKey);
 
@@ -333,7 +350,7 @@ async function generatePrototype(
   return prototype;
 }
 
-function buildPrototypePrompt(solution: any, analysisData: any, contextData: any, holisticAnalysis: any) {
+function buildPrototypePrompt(solution: any, analysisData: any, contextData: any, holisticAnalysis: any, sessionData: any) {
   const extractedContent = extractContentFromAnalysis(analysisData);
   const visionData = analysisData.google_vision_summary?.vision_results;
   
@@ -344,64 +361,86 @@ function buildPrototypePrompt(solution: any, analysisData: any, contextData: any
   const pricingElements = identifyPricingMetrics(allDetectedText);
   const productElements = identifyProductContent(allDetectedText);
   
-  return `You are recreating a ${solution.approach} version of an uploaded design as a complete, functional React component.
+  // Get image information for better context
+  const imageInfo = sessionData?.images?.[0] || {};
+  const hasImageData = !!sessionData?.images?.length;
+  
+  return `You are recreating a ${solution.approach} version of an uploaded Walmart/Target checkout design as a complete, functional React component.
 
-CRITICAL: You must recreate the EXACT visual design from the uploaded image, preserving all content, branding, and layout.
+CONTEXT: This is based on a real screenshot analysis of a ${contextData?.business_type || 'ecommerce'} checkout flow with ${allDetectedText.length} detected text elements. The user needs a working React component that matches the visual design.
+
+CRITICAL: You must create a WORKING React component based on the detected content below.
 
 ORIGINAL IMAGE CONTENT TO RECREATE:
-- Detected Brand: ${brandElements.join(', ') || 'Generic brand'}
-- Interface Type: ${identifyInterfacePattern(allDetectedText)}
-- All Text Elements: ${JSON.stringify(allDetectedText)}
-- Pricing/Numbers: ${JSON.stringify(pricingElements)}
-- Interface Elements: ${JSON.stringify(interfaceElements)}
-- Product Content: ${JSON.stringify(productElements)}
+- Interface Type: ${identifyInterfacePattern(allDetectedText)} (confirmed from text analysis)
+- Detected Brand: ${brandElements.join(', ') || 'Walmart/Target checkout interface'}
+- Key Text Elements (first 20): ${JSON.stringify(allDetectedText.slice(0, 20))}
+- Pricing/Numbers Found: ${JSON.stringify(pricingElements)}
+- Interactive Elements: ${JSON.stringify(interfaceElements)}
+- Product/Content: ${JSON.stringify(productElements)}
 
-EXACT VISUAL ELEMENTS TO PRESERVE:
-- All navigation elements and menus
-- All product information and descriptions
-- All pricing and monetary values
-- All button labels and CTAs
-- All form fields and labels
-- All branding and logos
-- Color scheme from image: ${JSON.stringify(visionData?.imageProperties?.dominantColors || [])}
+BUSINESS CONTEXT:
+- Target: ${contextData?.target_audience || 'High-income users ($150k+ household income)'}
+- Goal: ${contextData?.primary_goal || 'Increase checkout conversion rates'}
+- Current Challenge: ${contextData?.specific_challenges?.join(', ') || 'Poor conversion funnel, high bounce rate'}
 
 SOLUTION APPROACH: ${solution.name} (${solution.approach})
 ${solution.description}
 
-IMPROVEMENTS TO IMPLEMENT (while keeping original design):
-${solution.keyChanges?.map(c => `- ${c}`).join('\n') || 'Focus on usability improvements'}
+KEY IMPROVEMENTS TO IMPLEMENT:
+${solution.keyChanges?.map(c => `• ${c}`).join('\n') || '• Focus on usability improvements\n• Enhance visual hierarchy\n• Improve user experience flow'}
 
-REQUIREMENTS:
-1. Create a COMPLETE, FULL-PAGE React component (not just a small widget)
-2. Use ALL the detected text content in appropriate places
-3. Recreate the exact layout and visual hierarchy from the uploaded image
-4. Preserve all branding, product names, prices, and content exactly as shown
-5. Implement the solution improvements WITHOUT changing the core visual design
-6. Make it fully interactive with proper React state management
-7. Use only Tailwind CSS classes for styling
-8. Include proper accessibility features
+REQUIREMENTS FOR SUCCESS:
+1. Create a COMPLETE, FULL-PAGE React checkout component
+2. Use the detected text elements to populate realistic content
+3. Include proper checkout flow elements (cart summary, pricing, buttons)
+4. Make it fully interactive with React state for cart operations
+5. Use Tailwind CSS for all styling (no custom CSS)
+6. Include proper form validation and error states
+7. Add accessibility features (ARIA labels, keyboard navigation)
+8. Include loading states for async operations
 
-COMPONENT STRUCTURE:
-Create a complete page that includes:
-- Header/navigation matching the original
-- Main content area with all detected elements
-- All forms, buttons, and interactive elements
-- Proper spacing and layout matching the uploaded image
-- All pricing, product info, and text content exactly as detected
+COMPONENT STRUCTURE MUST INCLUDE:
+- Header with navigation (use detected nav elements)
+- Main checkout content area with order summary
+- All detected pricing and product information
+- Interactive buttons and form elements
+- Footer/completion area
+- Responsive design that works on all devices
 
-CODE REQUIREMENTS:
-- Start with: function EnhancedDesign() {
-- Include a comment block explaining what you're recreating
-- Use semantic HTML elements
-- Include React hooks for state management
-- Handle all interactive elements (forms, buttons, etc.)
-- Use responsive design patterns
-- Include loading states and error handling where appropriate
+CODE STRUCTURE:
+\`\`\`jsx
+function EnhancedDesign() {
+  // Comment: Recreating ${contextData?.business_type || 'ecommerce'} checkout based on ${allDetectedText.length} detected elements
+  // Key improvements: ${solution.keyChanges?.slice(0, 2).join(', ') || 'Enhanced UX'}
+  
+  const [orderData, setOrderData] = useState({
+    // Use actual detected data here
+  });
+  
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Create full checkout interface here */}
+    </div>
+  );
+}
+\`\`\`
 
-VISUAL FIDELITY:
-Your recreation should look nearly identical to the uploaded image while incorporating the ${solution.approach} improvements for better usability and functionality.
+VISUAL STYLE REQUIREMENTS:
+- Color scheme: ${JSON.stringify(visionData?.imageProperties?.dominantColors?.slice(0, 3) || [])}
+- Layout: ${hasImageData ? 'Multi-section checkout layout' : 'Standard checkout flow'}
+- Typography: Clear hierarchy with proper spacing
+- Interactive elements: Hover states, focus indicators, transitions
 
-Generate the complete React component now:`;
+CRITICAL SUCCESS CRITERIA:
+✅ Must be a complete, working React component
+✅ Must start with "function EnhancedDesign() {"
+✅ Must include all detected content in appropriate places
+✅ Must be visually appealing and professional
+✅ Must implement the specified solution improvements
+✅ Must handle user interactions properly
+
+Generate the complete React component now - focus on creating a professional, working checkout interface:`;
 }
 
 async function callClaude(prompt: string, apiKey: string) {
