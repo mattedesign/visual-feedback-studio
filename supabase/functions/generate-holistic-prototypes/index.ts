@@ -124,13 +124,19 @@ serve(async (req) => {
 });
 
 async function generateHolisticAnalysis(analysisData: any, contextData: any, anthropicKey: string) {
+  console.log('🔍 Building holistic analysis prompt...');
   const prompt = buildHolisticAnalysisPrompt(analysisData, contextData);
+  console.log(`📝 Prompt built: ${prompt.length} characters`);
   
   try {
+    console.log('🔥 Making Claude API call for analysis...');
     const response = await callClaudeAPI(prompt, anthropicKey);
-    return parseAnalysisResponse(response);
+    console.log('📊 Parsing analysis response...');
+    const parsed = parseAnalysisResponse(response);
+    console.log('✅ Analysis generated successfully');
+    return parsed;
   } catch (error) {
-    console.error('Analysis generation failed:', error);
+    console.error('❌ Analysis generation failed:', error);
     // Return fallback analysis
     return {
       problems: [
@@ -415,38 +421,48 @@ function generateFallbackComponent(solution: any): string {
 async function callClaudeAPI(prompt: string, apiKey: string): Promise<string> {
   console.log(`🔥 Calling Claude API with prompt length: ${prompt.length}`);
   
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01'
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4000,
-      temperature: 0.3,
-      messages: [{
-        role: 'user',
-        content: prompt
-      }]
-    })
-  });
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        temperature: 0.3,
+        messages: [{
+          role: 'user',
+          content: prompt
+        }]
+      })
+    });
 
-  if (!response.ok) {
-    const errorData = await response.text();
-    throw new Error(`Claude API error: ${response.status} - ${errorData}`);
-  }
+    console.log(`🌐 Claude API responded with status: ${response.status}`);
 
-  const data = await response.json();
-  const content = data.content[0]?.text || '';
-  
-  if (!content) {
-    throw new Error('Empty response from Claude API');
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error(`❌ Claude API error: ${response.status} - ${errorData}`);
+      throw new Error(`Claude API error: ${response.status} - ${errorData}`);
+    }
+
+    console.log('📦 Parsing Claude API response...');
+    const data = await response.json();
+    const content = data.content[0]?.text || '';
+    
+    if (!content) {
+      console.error('❌ Empty response from Claude API');
+      throw new Error('Empty response from Claude API');
+    }
+    
+    console.log(`📝 Claude response received: { hasContent: ${!!content}, contentLength: ${content.length} }`);
+    return content;
+  } catch (error) {
+    console.error('❌ Claude API call failed:', error);
+    throw error;
   }
-  
-  console.log(`📝 Claude response received: { hasContent: ${!!content}, contentLength: ${content.length} }`);
-  return content;
 }
 
 function parseAnalysisResponse(content: string): any {
