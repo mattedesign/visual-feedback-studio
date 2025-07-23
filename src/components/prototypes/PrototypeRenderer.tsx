@@ -80,11 +80,9 @@ export function PrototypeRenderer({ code, title = "Enhanced Design", onError }: 
       throw new Error('Invalid component structure - missing function or return statement');
     }
     
-    // Check for common syntax issues
-    const openBraces = (cleanCode.match(/\{/g) || []).length;
-    const closeBraces = (cleanCode.match(/\}/g) || []).length;
-    if (openBraces !== closeBraces) {
-      throw new Error('Syntax error - mismatched braces');
+    // Basic validation - just ensure it's not completely malformed
+    if (cleanCode.length < 20) {
+      throw new Error('Component code is too short to be valid');
     }
     
     return cleanCode;
