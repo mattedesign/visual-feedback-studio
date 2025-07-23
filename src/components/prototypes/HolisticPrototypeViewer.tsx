@@ -732,22 +732,49 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
             </div>
           </div>
 
-          <Tabs value={viewMode} onValueChange={setViewMode}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="preview">Preview</TabsTrigger>
-              <TabsTrigger value="compare">Compare</TabsTrigger>
-              <TabsTrigger value="code">Code</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="preview" className="p-0">
+          {/* Main Prototype Display */}
+          {viewMode === 'preview' && (
+            <div className="p-0">
+              <div className="flex justify-end gap-2 p-4 bg-gray-50 border-b">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setViewMode('compare')}
+                  className="text-gray-600"
+                >
+                  <Columns className="w-4 h-4 mr-2" />
+                  Compare with Original
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setViewMode('code')}
+                  className="text-gray-600"
+                >
+                  <Code className="w-4 h-4 mr-2" />
+                  View Code
+                </Button>
+              </div>
               <PrototypeRenderer
                 code={prototypes[selectedSolution].component_code}
                 title={prototypes[selectedSolution].title}
                 onError={(error) => handlePrototypeError(error, selectedSolution)}
               />
-            </TabsContent>
+            </div>
+          )}
 
-            <TabsContent value="compare" className="p-0">
+          {viewMode === 'compare' && (
+            <div className="p-0">
+              <div className="flex items-center justify-between p-4 bg-gray-50 border-b">
+                <h4 className="font-medium">Compare with Original</h4>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setViewMode('preview')}
+                >
+                  ← Back to Preview
+                </Button>
+              </div>
               <div className="grid md:grid-cols-2 gap-0">
                 <div>
                   <div className="p-2 bg-gray-100 text-sm font-medium">Original</div>
@@ -772,16 +799,28 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
                   />
                 </div>
               </div>
-            </TabsContent>
+            </div>
+          )}
 
-            <TabsContent value="code" className="p-0">
+          {viewMode === 'code' && (
+            <div className="p-0">
+              <div className="flex items-center justify-between p-4 bg-gray-50 border-b">
+                <h4 className="font-medium">Component Code</h4>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setViewMode('preview')}
+                >
+                  ← Back to Preview
+                </Button>
+              </div>
               <div className="p-4 bg-gray-900 overflow-auto max-h-[600px]">
                 <pre className="text-sm text-gray-300">
                   <code>{prototypes[selectedSolution].component_code}</code>
                 </pre>
               </div>
-            </TabsContent>
-          </Tabs>
+            </div>
+          )}
 
           {/* Implementation Guide */}
           <div className="p-4 bg-gray-50 border-t">
