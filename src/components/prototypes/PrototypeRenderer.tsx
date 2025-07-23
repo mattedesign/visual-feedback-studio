@@ -116,8 +116,8 @@ export function PrototypeRenderer({ code, title = "Enhanced Design", onError }: 
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>${componentTitle}</title>
-          <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-          <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+          <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+          <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
           <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
           <script src="https://cdn.tailwindcss.com"></script>
           <style>
@@ -151,7 +151,8 @@ export function PrototypeRenderer({ code, title = "Enhanced Design", onError }: 
           </div>
           
           <script type="text/babel">
-            const { useState, useEffect, useCallback, useMemo, useRef } = React;
+            // Extract React hooks from the React global
+            const { useState, useEffect, useCallback, useMemo, useRef, createContext, useContext } = React;
             
             // Error boundary component
             class ErrorBoundary extends React.Component {
@@ -166,48 +167,52 @@ export function PrototypeRenderer({ code, title = "Enhanced Design", onError }: 
               
               componentDidCatch(error, errorInfo) {
                 console.error('Component error:', error, errorInfo);
+                window.parent.postMessage({ type: 'COMPONENT_ERROR', error: error.message }, '*');
               }
               
               render() {
                 if (this.state.hasError) {
-                  return (
-                    <div className="error-boundary">
-                      <h2>Component Error</h2>
-                      <p>There was an error rendering this component:</p>
-                      <code>{this.state.error?.message || 'Unknown error'}</code>
-                    </div>
-                  );
+                  return React.createElement('div', { className: 'error-boundary' }, [
+                    React.createElement('h2', { key: 'title' }, 'Component Error'),
+                    React.createElement('p', { key: 'desc' }, 'There was an error rendering this component:'),
+                    React.createElement('code', { key: 'error' }, this.state.error?.message || 'Unknown error')
+                  ]);
                 }
                 
                 return this.props.children;
               }
             }
             
+            // Component code execution
             try {
-              // Component code
               ${componentCode}
               
-              // Render with error boundary
+              // App wrapper with error boundary
               function App() {
-                return (
-                  <ErrorBoundary>
-                    <EnhancedDesign />
-                  </ErrorBoundary>
-                );
+                return React.createElement(ErrorBoundary, null, React.createElement(EnhancedDesign));
               }
               
-              const root = ReactDOM.createRoot(document.getElementById('root'));
-              root.render(<App />);
+              // Create root and render
+              const container = document.getElementById('root');
+              const root = ReactDOM.createRoot(container);
+              root.render(React.createElement(App));
+              
+              // Notify parent that component loaded successfully
+              setTimeout(() => {
+                window.parent.postMessage({ type: 'COMPONENT_LOADED' }, '*');
+              }, 100);
               
             } catch (error) {
               console.error('Compilation error:', error);
-              document.getElementById('root').innerHTML = \`
+              const root = document.getElementById('root');
+              root.innerHTML = \`
                 <div class="error-boundary">
                   <h2>Compilation Error</h2>
                   <p>Failed to compile component:</p>
                   <code>\${error.message}</code>
                 </div>
               \`;
+              window.parent.postMessage({ type: 'COMPILATION_ERROR', error: error.message }, '*');
             }
           </script>
         </body>
