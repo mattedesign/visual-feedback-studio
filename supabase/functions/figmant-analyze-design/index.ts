@@ -137,6 +137,9 @@ serve(async (req) => {
             .getPublicUrl(image.file_path);
 
           // Enhanced Google Vision API call
+          console.log('🔗 Image URL for Vision API:', urlData.publicUrl);
+          console.log('📷 Processing image:', image.file_name, 'Size:', image.file_size);
+          
           const visionResponse = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${googleVisionApiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -154,8 +157,18 @@ serve(async (req) => {
             })
           });
 
+          console.log('📊 Vision API response status:', visionResponse.status);
+          
           if (!visionResponse.ok) {
-            throw new Error(`Vision API error: ${visionResponse.status}`);
+            const errorText = await visionResponse.text();
+            console.error('❌ Vision API error details:', {
+              status: visionResponse.status,
+              statusText: visionResponse.statusText,
+              error: errorText,
+              imageUrl: urlData.publicUrl,
+              fileName: image.file_name
+            });
+            throw new Error(`Vision API error: ${visionResponse.status} - ${errorText}`);
           }
 
           const visionData = await visionResponse.json();
