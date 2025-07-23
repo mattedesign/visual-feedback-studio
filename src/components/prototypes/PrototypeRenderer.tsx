@@ -11,7 +11,7 @@ interface PrototypeRendererProps {
 }
 
 export function PrototypeRenderer({ code, title = "Enhanced Design", onError }: PrototypeRendererProps) {
-  const [renderState, setRenderState] = useState<'loading' | 'success' | 'error'>('loading');
+  const [renderState, setRenderState] = useState<'ready' | 'success' | 'error'>('ready');
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -34,7 +34,6 @@ export function PrototypeRenderer({ code, title = "Enhanced Design", onError }: 
     }
 
     try {
-      setRenderState('loading');
       setError(null);
       cleanupIframe();
 
@@ -44,18 +43,9 @@ export function PrototypeRenderer({ code, title = "Enhanced Design", onError }: 
         attempt: retryCount + 1 
       });
 
-      // Wait for iframe to be available with retry mechanism
-      let iframe = iframeRef.current;
-      let retries = 0;
-      while (!iframe && retries < 10) {
-        console.log(`⏳ Waiting for iframe ref (attempt ${retries + 1}/10)`);
-        await new Promise(resolve => setTimeout(resolve, 100));
-        iframe = iframeRef.current;
-        retries++;
-      }
-
+      const iframe = iframeRef.current;
       if (!iframe) {
-        throw new Error('Iframe reference not available after retries');
+        throw new Error('Iframe not mounted yet');
       }
 
       console.log('✅ Iframe reference acquired, proceeding with render');
@@ -63,14 +53,14 @@ export function PrototypeRenderer({ code, title = "Enhanced Design", onError }: 
       const sanitizedCode = sanitizeComponentCode(code);
       const iframeContent = createIframeContent(sanitizedCode, title);
       
-      // Direct srcdoc assignment without event listeners to avoid timing issues
+      // Direct srcdoc assignment
       iframe.srcdoc = iframeContent;
       
       // Simple timeout-based success detection
       timeoutRef.current = setTimeout(() => {
-        console.log('✅ Prototype rendering completed (timeout-based)');
+        console.log('✅ Prototype rendering completed');
         setRenderState('success');
-      }, 2000);
+      }, 1500);
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown rendering error';
@@ -81,14 +71,18 @@ export function PrototypeRenderer({ code, title = "Enhanced Design", onError }: 
     }
   }, [code, title, retryCount, onError, cleanupIframe]);
 
+  // Effect to render after iframe is mounted
   useEffect(() => {
-    renderPrototype();
+    if (renderState === 'ready' && iframeRef.current) {
+      renderPrototype();
+    }
     return cleanupIframe;
-  }, [renderPrototype, cleanupIframe]);
+  }, [renderState, renderPrototype, cleanupIframe]);
 
   const handleRetry = useCallback(() => {
     console.log('🔄 Retrying prototype render...');
     setRetryCount(prev => prev + 1);
+    setRenderState('ready'); // Reset to ready state to trigger re-render
   }, []);
 
   const sanitizeComponentCode = (rawCode: string): string => {
@@ -221,17 +215,6 @@ export function PrototypeRenderer({ code, title = "Enhanced Design", onError }: 
     `;
   };
 
-  if (renderState === 'loading') {
-    return (
-      <Card className="p-8">
-        <div className="flex items-center justify-center space-x-3">
-          <RefreshCw className="w-6 h-6 animate-spin text-blue-600" />
-          <span className="text-gray-600">Rendering prototype...</span>
-        </div>
-      </Card>
-    );
-  }
-
   if (renderState === 'error') {
     return (
       <Card className="p-6 border-red-200 bg-red-50">
@@ -264,6 +247,12 @@ export function PrototypeRenderer({ code, title = "Enhanced Design", onError }: 
         className="w-full h-[600px] border border-gray-200 rounded-lg bg-white"
         sandbox="allow-scripts"
         title={title}
+        onLoad={() => {
+          // Trigger render once iframe is loaded
+          if (renderState === 'ready') {
+            renderPrototype();
+          }
+        }}
       />
     </div>
   );
