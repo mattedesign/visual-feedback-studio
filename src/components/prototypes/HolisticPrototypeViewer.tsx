@@ -120,25 +120,28 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
           id: data.id,
           problemCount: data.identified_problems?.length || 0,
           solutionCount: data.solution_approaches?.length || 0,
-          hasVisionInsights: !!data.vision_insights
+          hasVisionInsights: !!data.vision_insights,
+          fullDataStructure: data
         });
         
-        // Validate analysis has required data
-        if (data.solution_approaches && Array.isArray(data.solution_approaches) && data.solution_approaches.length > 0) {
-          setAnalysis(data);
-          
-          setDebugInfo(prev => ({
-            ...prev,
-            analysisExists: true,
-            lastLoadError: undefined
-          }));
+        // CRITICAL FIX: Always set analysis if data exists, regardless of structure
+        setAnalysis(data);
+        
+        // Validate analysis has solution approaches for UI state
+        const hasSolutions = data.solution_approaches && 
+                            Array.isArray(data.solution_approaches) && 
+                            data.solution_approaches.length > 0;
+        
+        setDebugInfo(prev => ({
+          ...prev,
+          analysisExists: true, // Always true if data exists
+          lastLoadError: hasSolutions ? undefined : 'Analysis exists but solutions may need regeneration'
+        }));
+        
+        if (!hasSolutions) {
+          console.warn('⚠️ Analysis found but missing/invalid solution approaches, but setting analysis anyway');
         } else {
-          console.warn('⚠️ Analysis found but missing solution approaches');
-          setDebugInfo(prev => ({
-            ...prev,
-            analysisExists: false,
-            lastLoadError: 'Analysis found but missing solution approaches'
-          }));
+          console.log('✅ Analysis has valid solution approaches');
         }
         
         // Load existing prototypes
@@ -563,6 +566,31 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
           <Button onClick={generateAnalysisFunction} disabled={generatingAnalysis}>
             <Zap className="w-4 h-4 mr-2" />
             Generate Analysis
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  // Handle analysis with missing or malformed solution approaches
+  const hasValidSolutions = analysis?.solution_approaches && 
+                            Array.isArray(analysis.solution_approaches) && 
+                            analysis.solution_approaches.length > 0;
+
+  if (!hasValidSolutions) {
+    console.warn('⚠️ Analysis exists but has invalid solution approaches:', analysis);
+    return (
+      <div className="space-y-4">
+        <DebugPanel />
+        <Card className="p-8 text-center bg-amber-50 border-amber-200">
+          <AlertCircle className="w-8 h-8 mx-auto mb-4 text-amber-600" />
+          <h3 className="font-semibold text-amber-900 mb-2">Solutions Need Generation</h3>
+          <p className="text-amber-700 mb-4">
+            Analysis found but solution approaches are missing. Generate them now.
+          </p>
+          <Button onClick={generateAnalysisFunction} disabled={generatingAnalysis}>
+            <Zap className="w-4 h-4 mr-2" />
+            Generate Solutions
           </Button>
         </Card>
       </div>
