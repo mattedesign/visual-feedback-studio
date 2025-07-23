@@ -28,8 +28,7 @@ interface DebugInfo {
   analysisExists: boolean;
   prototypeCount: number;
   lastGenerated?: string;
-  apiHealth: 'unknown' | 'healthy' | 'error';
-  databaseHealth: 'unknown' | 'healthy' | 'error';
+  currentAnalysisId?: string;
 }
 
 export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }: HolisticPrototypeViewerProps) {
@@ -43,8 +42,7 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
   const [debugInfo, setDebugInfo] = useState<DebugInfo>({
     analysisExists: false,
     prototypeCount: 0,
-    apiHealth: 'unknown',
-    databaseHealth: 'unknown'
+    currentAnalysisId: analysisId
   });
   const [showDebugPanel, setShowDebugPanel] = useState(false);
 
@@ -66,52 +64,14 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
     }));
   }, []);
 
-  const performHealthCheck = useCallback(async () => {
-    console.log('🏥 Performing health check...');
-    
-    try {
-      // Check database connectivity
-      const { data: testQuery, error: dbError } = await supabase
-        .from('figmant_analysis_results')
-        .select('id')
-        .limit(1);
-      
-      const databaseHealth = dbError ? 'error' : 'healthy';
-      console.log(`💾 Database health: ${databaseHealth}`, dbError || 'OK');
-
-      // Check edge function health by making a test call
-      let apiHealth: 'healthy' | 'error' = 'healthy';
-      try {
-        const { error: funcError } = await supabase.functions.invoke('generate-holistic-prototypes', {
-          body: { analysisId: 'health-check' }
-        });
-        // We expect this to fail with "Analysis ID required" but function should respond
-        apiHealth = funcError?.message?.includes('Analysis ID') ? 'healthy' : 'error';
-      } catch (err) {
-        console.warn('⚠️ Edge function health check failed:', err);
-        apiHealth = 'error';
-      }
-
-      console.log(`🔧 API health: ${apiHealth}`);
-
-      setDebugInfo(prev => ({
-        ...prev,
-        databaseHealth,
-        apiHealth
-      }));
-
-    } catch (error) {
-      console.error('❌ Health check failed:', error);
-      setDebugInfo(prev => ({
-        ...prev,
-        databaseHealth: 'error',
-        apiHealth: 'error'
-      }));
-    }
-  }, []);
-
   const generateAnalysisFunction = useCallback(async () => {
-    console.log('🔍 Starting holistic analysis generation...');
+    if (!analysisId) {
+      console.error('❌ Cannot generate analysis without analysisId');
+      toast.error('Analysis ID is required to generate holistic analysis');
+      return;
+    }
+
+    console.log('🔍 Starting holistic analysis generation for:', analysisId);
     setGeneratingAnalysis(true);
     
     try {
@@ -151,6 +111,7 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
   const loadAnalysis = useCallback(async () => {
     if (!analysisId) {
       console.log('⚠️ No analysisId provided, skipping load');
+      setLoading(false);
       return;
     }
     
@@ -235,27 +196,28 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
     } catch (error) {
       console.error('❌ Error loading analysis:', error);
       toast.error('Failed to load analysis data');
-      setDebugInfo(prev => ({
-        ...prev,
-        databaseHealth: 'error'
-      }));
     } finally {
       setLoading(false);
     }
   }, [analysisId]);
 
   useEffect(() => {
-    console.log('🔄 useEffect triggered - loading analysis and performing health check');
+    console.log('🔄 useEffect triggered - loading analysis');
     if (analysisId) {
       loadAnalysis();
-      performHealthCheck();
     } else {
       console.log('⚠️ No analysisId in useEffect');
       setLoading(false);
     }
-  }, [analysisId, loadAnalysis, performHealthCheck]);
+  }, [analysisId, loadAnalysis]);
 
   const generatePrototype = useCallback(async (solutionType: string, retryAttempt = 0) => {
+    if (!analysisId) {
+      console.error('❌ Cannot generate prototype without analysisId');
+      toast.error('Analysis ID is required to generate prototypes');
+      return;
+    }
+
     const maxRetries = 3;
     
     console.log(`🎨 Generating ${solutionType} prototype (attempt ${retryAttempt + 1}/${maxRetries})`);
@@ -435,21 +397,6 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
               </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <strong>Database:</strong>{' '}
-                <Badge variant={debugInfo.databaseHealth === 'healthy' ? 'default' : 'destructive'}>
-                  {debugInfo.databaseHealth}
-                </Badge>
-              </div>
-              <div>
-                <strong>API:</strong>{' '}
-                <Badge variant={debugInfo.apiHealth === 'healthy' ? 'default' : 'destructive'}>
-                  {debugInfo.apiHealth}
-                </Badge>
-              </div>
-            </div>
-            
             {debugInfo.lastGenerated && (
               <div>
                 <strong>Last Generated:</strong> {new Date(debugInfo.lastGenerated).toLocaleString()}
@@ -457,14 +404,6 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
             )}
             
             <div className="pt-2 border-t border-yellow-200">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={performHealthCheck}
-                className="mr-2"
-              >
-                Refresh Health Check
-              </Button>
               <Button
                 variant="outline"
                 size="sm"
