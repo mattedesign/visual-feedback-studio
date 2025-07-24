@@ -762,16 +762,27 @@ const FigmantResultsPage = () => {
         {viewMode === 'visual' ? (
           // Visual Ideas view - always use Holistic approach
           <>
-            {console.log('🚀 Rendering HolisticPrototypeViewer with:', { 
-              analysisId: analysisData?.id, 
-              contextId: userContext?.id, 
-              hasOriginalImage: !!sessionData?.images?.[0]?.file_path 
-            })}
-            <HolisticPrototypeViewer
-              analysisId={analysisData?.id}
-              contextId={userContext?.id}
-              originalImage={sessionData?.images?.[0]?.file_path ? getImageUrl(sessionData.images[0].file_path) : undefined}
-            />
+            {!analysisData?.id ? (
+              <div className="flex items-center justify-center p-8">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading analysis results...</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                {console.log('🚀 Rendering HolisticPrototypeViewer with:', { 
+                  analysisId: analysisData?.id, 
+                  contextId: userContext?.id, 
+                  hasOriginalImage: !!sessionData?.images?.[0]?.file_path 
+                })}
+                <HolisticPrototypeViewer
+                  analysisId={analysisData.id}
+                  contextId={userContext?.id}
+                  originalImage={sessionData?.images?.[0]?.file_path ? getImageUrl(sessionData.images[0].file_path) : undefined}
+                />
+              </>
+            )}
           </>
         ) : (
           // Detailed analysis view with gallery and sidebar layout
