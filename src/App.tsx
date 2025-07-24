@@ -19,6 +19,7 @@ import Subscription from "./pages/Subscription";
 import { PublicAchievement } from "@/pages/public/Achievement";
 import AdminPatternCapture from "@/pages/AdminPatternCapture";
 import HistoryPage from "./pages/History";
+import TrendsPage from "./pages/TrendsPage";
 // Goblin imports removed - archived
 
 const queryClient = new QueryClient();
@@ -65,6 +66,7 @@ const App = () => {
                         {/* Settings & Account */}
                         <Route path="/settings" element={<Settings />} />
                         <Route path="/subscription" element={<Subscription />} />
+                        <Route path="/trends" element={<TrendsPage />} />
                         
                         {/* Redirect old routes to new ones */}
                         <Route path="/create-new" element={<Navigate to="/analyze" replace />} />
