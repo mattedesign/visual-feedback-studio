@@ -27,6 +27,7 @@ import { VisualMentorSummary } from '@/components/analysis/VisualMentorSummary';
 import { UserContextForm } from '@/components/analysis/UserContextForm';
 import { HolisticPrototypeViewer } from '@/components/prototypes/HolisticPrototypeViewer';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
+import { useAnalysisState } from '@/hooks/analysis/useAnalysisState';
 
 interface FigmantImage {
   id: string;
@@ -55,8 +56,9 @@ const FigmantResultsPage = () => {
   const [userContext, setUserContext] = useState<any>(null);
   const [showContextForm, setShowContextForm] = useState(false);
   const [contextLoading, setContextLoading] = useState(false);
-  const [autoStartState, setAutoStartState] = useState<'idle' | 'checking' | 'starting' | 'completed'>('idle');
   
+  // Get auto-start state from analysis state hook
+  const { autoStartState, setAutoStartState } = useAnalysisState();
 
   // Feature flags
   const isHolisticEnabled = useFeatureFlag('holistic-ai-prototypes');

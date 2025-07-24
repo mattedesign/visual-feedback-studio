@@ -15,6 +15,7 @@ export const useAnalysisState = () => {
   const [uploadedAnalysis, setUploadedAnalysis] = useState<AnalysisWithFiles | null>(null);
   const [showUploadConfirmation, setShowUploadConfirmation] = useState(false);
   const [hasPendingConfirmation, setHasPendingConfirmation] = useState(false);
+  const [autoStartState, setAutoStartState] = useState<'idle' | 'checking' | 'starting' | 'completed'>('idle');
 
   return {
     currentAnalysis,
@@ -39,5 +40,7 @@ export const useAnalysisState = () => {
     setShowUploadConfirmation,
     hasPendingConfirmation,
     setHasPendingConfirmation,
+    autoStartState,
+    setAutoStartState,
   };
 };
