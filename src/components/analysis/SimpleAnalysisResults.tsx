@@ -5,15 +5,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, Download, Share2 } from 'lucide-react';
 // Removed useFeatureFlag - simplified flow doesn't use feature flags
 import { PerplexityIndicator } from './workflow/components/PerplexityIndicator';
+import { PrototypeGenerationButton } from '@/components/prototypes/PrototypeGenerationButton';
 
 interface SimpleAnalysisResultsProps {
   annotations?: any[];
   onBack?: () => void;
+  analysisId?: string;
 }
 
 export default function SimpleAnalysisResults({ 
   annotations = [], 
-  onBack 
+  onBack,
+  analysisId
 }: SimpleAnalysisResultsProps) {
   // SIMPLIFIED: Perplexity disabled for streamlined flow
   const isPerplexityEnabled = false;
@@ -70,6 +73,16 @@ export default function SimpleAnalysisResults({
             </div>
           </CardContent>
         </Card>
+
+        {/* Prototype Generation */}
+        {analysisId && (
+          <div className="mb-6">
+            <PrototypeGenerationButton 
+              analysisId={analysisId}
+              variant="card"
+            />
+          </div>
+        )}
 
         {/* Findings List */}
         <Card className="bg-slate-800 border-slate-700">

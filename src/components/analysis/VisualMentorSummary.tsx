@@ -5,6 +5,8 @@ import { VisualPatternPreview } from '@/components/patterns/VisualPatternPreview
 import { PatternComparisonSlider } from '@/components/patterns/PatternComparisonSlider';
 import { QuickImplementation } from '@/components/patterns/QuickImplementation';
 import { SimilarPatterns } from '@/components/patterns/SimilarPatterns';
+import { PrototypeGenerationButton } from '@/components/prototypes/PrototypeGenerationButton';
+import { StrengthsDisplay } from './StrengthsDisplay';
 import { MessageCircle, Lightbulb, ArrowRight } from 'lucide-react';
 
 interface MentorData {
@@ -26,9 +28,10 @@ interface MentorData {
 interface Props {
   mentorData: MentorData | null | undefined;
   userImage: string | undefined;
+  analysisId?: string;
 }
 
-export function VisualMentorSummary({ mentorData, userImage }: Props) {
+export function VisualMentorSummary({ mentorData, userImage, analysisId }: Props) {
   const [selectedAlternative, setSelectedAlternative] = useState(0);
   const [showPatternBrowser, setShowPatternBrowser] = useState(false);
   const [showChatInterface, setShowChatInterface] = useState(false);
@@ -74,19 +77,12 @@ export function VisualMentorSummary({ mentorData, userImage }: Props) {
         <p className="text-lg text-gray-800">{mentorData.greeting}</p>
       </div>
       
-      {/* Strengths - Compact celebration */}
-      <div className="bg-green-50 p-4 rounded-lg">
-        <h3 className="font-semibold text-green-900 mb-2">
-          ✨ What's Working Well
-        </h3>
-        <ul className="space-y-1">
-          {(mentorData.strengths || []).map((strength, i) => (
-            <li key={i} className="text-sm text-green-800 flex items-start gap-2">
-              <span>✓</span> {strength}
-            </li>
-          ))}
-        </ul>
-      </div>
+      {/* Strengths - Enhanced presentation */}
+      <StrengthsDisplay 
+        strengths={mentorData.strengths || []}
+        variant="compact"
+        showCategories={false}
+      />
       
       {/* Visual Alternatives - THE MAIN FOCUS */}
       <div>
@@ -222,6 +218,16 @@ export function VisualMentorSummary({ mentorData, userImage }: Props) {
         </div>
       )}
 
+      {/* Prototype Generation */}
+      {analysisId && (
+        <div className="mt-6">
+          <PrototypeGenerationButton 
+            analysisId={analysisId}
+            variant="card"
+          />
+        </div>
+      )}
+      
       {/* Chat Interface */}
       {showChatInterface && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">

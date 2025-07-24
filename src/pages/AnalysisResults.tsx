@@ -634,7 +634,7 @@ const AnalysisResults = () => {
     return <ModularAnalysisInterface />;
   } catch (error) {
     console.error('Modular interface failed, falling back to simple results:', error);
-    return <SimpleAnalysisResults onBack={navigateToNewAnalysis} />;
+    return <SimpleAnalysisResults onBack={navigateToNewAnalysis} analysisId={id} />;
   }
 };
 

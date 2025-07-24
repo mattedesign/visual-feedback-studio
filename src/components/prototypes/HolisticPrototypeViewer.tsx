@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { StrengthsDisplay } from '@/components/analysis/StrengthsDisplay';
 import { toast } from 'sonner';
 import { PrototypeRenderer } from './PrototypeRenderer';
 import { KeyIssuesCarousel } from '@/components/analysis/KeyIssuesCarousel';
@@ -481,28 +482,19 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
           
           <CollapsibleContent>
             <div className="px-4 pb-4 space-y-4">
-              {/* What's Working Well List */}
-              <div className="bg-white rounded-lg p-4 border border-green-200">
-                <ul className="space-y-2">
-                  <li className="flex items-start gap-2 text-sm text-green-800">
-                    <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span>Clear visual hierarchy with pricing prominently displayed on the right</span>
-                  </li>
-                  <li className="flex items-start gap-2 text-sm text-green-800">
-                    <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span>Progressive disclosure of information keeps users focused on the task</span>
-                  </li>
-                  <li className="flex items-start gap-2 text-sm text-green-800">
-                    <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span>Smart use of color to highlight savings and call-to-action buttons</span>
-                  </li>
-                  {analysis?.vision_insights?.positive_elements?.map((element, idx) => (
-                    <li key={idx} className="flex items-start gap-2 text-sm text-green-800">
-                      <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span>{element}</span>
-                    </li>
-                  ))}
-                </ul>
+              {/* Enhanced Strengths Display */}
+              <div className="bg-white rounded-lg">
+                <StrengthsDisplay 
+                  strengths={[
+                    "Clear visual hierarchy with pricing prominently displayed on the right",
+                    "Progressive disclosure of information keeps users focused on the task",
+                    "Smart use of color to highlight savings and call-to-action buttons",
+                    ...(analysis?.vision_insights?.positive_elements || [])
+                  ]}
+                  title=""
+                  variant="grid"
+                  showCategories={true}
+                />
               </div>
               
               {/* Pattern Reference Modal */}
