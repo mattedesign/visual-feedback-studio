@@ -479,11 +479,50 @@ const FigmantResultsPage = () => {
   }, [sessionId]);
 
   // Handle context form completion
-  const handleContextComplete = (contextId: string) => {
+  const handleContextComplete = async (contextId: string) => {
     setShowContextForm(false);
     setUserContext({ id: contextId }); // Set basic context data
-    toast.success('Context saved! Starting enhanced analysis...');
-    // Optionally trigger a more comprehensive analysis here
+    
+    // Automatically trigger holistic analysis generation
+    try {
+      toast.success('Context saved! Generating holistic analysis...');
+      
+      // Get analysis ID from session or analysis data
+      let currentAnalysisId = analysisData?.id;
+      if (!currentAnalysisId && sessionId) {
+        const { data } = await supabase
+          .from('figmant_analysis_results')
+          .select('id')
+          .eq('session_id', sessionId)
+          .single();
+        currentAnalysisId = data?.id;
+      }
+      
+      if (currentAnalysisId) {
+        // Generate holistic analysis automatically
+        const { data, error } = await supabase.functions.invoke('generate-holistic-prototypes', {
+          body: { 
+            analysisId: currentAnalysisId, 
+            contextId: contextId
+          }
+        });
+        
+        if (error) {
+          console.error('Failed to generate holistic analysis:', error);
+          toast.error('Failed to generate holistic analysis. You can try the Generate Analysis button.');
+        } else {
+          toast.success('Holistic analysis generated successfully!');
+          // Refresh the analysis data to show new holistic results
+          if (sessionId) {
+            const updatedAnalysis = await getFigmantResults(sessionId);
+            setAnalysisData(transformAnalysisData(updatedAnalysis));
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error generating holistic analysis:', error);
+      toast.error('Failed to generate holistic analysis automatically');
+    }
   };
 
   // Handle context form skip
