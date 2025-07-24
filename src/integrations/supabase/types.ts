@@ -759,6 +759,53 @@ export type Database = {
         }
         Relationships: []
       }
+      figmant_applied_solutions: {
+        Row: {
+          analysis_id: string | null
+          applied_at: string
+          category: string
+          complexity_level: string | null
+          created_at: string
+          id: string
+          impact_rating: number | null
+          solution_description: string | null
+          solution_name: string
+          user_id: string
+        }
+        Insert: {
+          analysis_id?: string | null
+          applied_at?: string
+          category: string
+          complexity_level?: string | null
+          created_at?: string
+          id?: string
+          impact_rating?: number | null
+          solution_description?: string | null
+          solution_name: string
+          user_id: string
+        }
+        Update: {
+          analysis_id?: string | null
+          applied_at?: string
+          category?: string
+          complexity_level?: string | null
+          created_at?: string
+          id?: string
+          impact_rating?: number | null
+          solution_description?: string | null
+          solution_name?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "figmant_applied_solutions_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "figmant_analysis_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       figmant_conversation_history: {
         Row: {
           content: string
@@ -805,6 +852,95 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "figmant_analysis_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      figmant_design_patterns: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          frequency_count: number | null
+          id: string
+          last_seen_at: string | null
+          pattern_name: string
+          trend_direction: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          frequency_count?: number | null
+          id?: string
+          last_seen_at?: string | null
+          pattern_name: string
+          trend_direction?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          frequency_count?: number | null
+          id?: string
+          last_seen_at?: string | null
+          pattern_name?: string
+          trend_direction?: string | null
+        }
+        Relationships: []
+      }
+      figmant_detailed_issues: {
+        Row: {
+          analysis_id: string | null
+          category: string
+          coordinates: Json | null
+          created_at: string
+          id: string
+          impact_level: string | null
+          is_resolved: boolean | null
+          issue_description: string | null
+          issue_title: string
+          resolved_at: string | null
+          severity: string | null
+          suggested_solution: string | null
+          user_id: string
+        }
+        Insert: {
+          analysis_id?: string | null
+          category: string
+          coordinates?: Json | null
+          created_at?: string
+          id?: string
+          impact_level?: string | null
+          is_resolved?: boolean | null
+          issue_description?: string | null
+          issue_title: string
+          resolved_at?: string | null
+          severity?: string | null
+          suggested_solution?: string | null
+          user_id: string
+        }
+        Update: {
+          analysis_id?: string | null
+          category?: string
+          coordinates?: Json | null
+          created_at?: string
+          id?: string
+          impact_level?: string | null
+          is_resolved?: boolean | null
+          issue_description?: string | null
+          issue_title?: string
+          resolved_at?: string | null
+          severity?: string | null
+          suggested_solution?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "figmant_detailed_issues_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "figmant_analysis_results"
             referencedColumns: ["id"]
           },
         ]
@@ -890,6 +1026,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      figmant_issue_categories: {
+        Row: {
+          category_name: string
+          created_at: string
+          description: string | null
+          icon_name: string | null
+          id: string
+        }
+        Insert: {
+          category_name: string
+          created_at?: string
+          description?: string | null
+          icon_name?: string | null
+          id?: string
+        }
+        Update: {
+          category_name?: string
+          created_at?: string
+          description?: string | null
+          icon_name?: string | null
+          id?: string
+        }
+        Relationships: []
       }
       figmant_prototype_metrics: {
         Row: {
@@ -1013,6 +1173,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      figmant_trending_improvements: {
+        Row: {
+          category: string
+          created_at: string
+          frequency_count: number | null
+          id: string
+          improvement_type: string
+          last_updated_at: string
+          time_period: string | null
+          trend_direction: string | null
+          trend_percentage: number | null
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          frequency_count?: number | null
+          id?: string
+          improvement_type: string
+          last_updated_at?: string
+          time_period?: string | null
+          trend_direction?: string | null
+          trend_percentage?: number | null
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          frequency_count?: number | null
+          id?: string
+          improvement_type?: string
+          last_updated_at?: string
+          time_period?: string | null
+          trend_direction?: string | null
+          trend_percentage?: number | null
+          user_id?: string
+        }
+        Relationships: []
       }
       figmant_user_contexts: {
         Row: {
@@ -2352,6 +2551,14 @@ export type Database = {
       sparsevec_typmod_in: {
         Args: { "": unknown[] }
         Returns: number
+      }
+      update_trending_improvements: {
+        Args: {
+          p_user_id: string
+          p_category: string
+          p_improvement_type: string
+        }
+        Returns: undefined
       }
       validate_api_key: {
         Args: { p_key_hash: string }
