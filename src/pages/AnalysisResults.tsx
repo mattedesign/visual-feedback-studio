@@ -542,60 +542,75 @@ const AnalysisResults = () => {
     );
   }
 
-  // 🔧 FIX: ENHANCED UI - Rich Analysis Results (PRIMARY PATH) - Handle both transformed and raw figmant data
-  if (shouldUseEnhancedUI) {
-    console.log('✅ UI DECISION (AnalysisResults.tsx): Using Enhanced Analysis Results UI');
+  // 🔧 FIX: FIGMANT DATA - Use Figma layout for figmant analysis results
+  if (id && analysisData && (analysisData.claude_analysis || analysisData.annotations)) {
+    console.log('📊 UI DECISION: Using Figma-inspired layout with visual recommendations');
     
-    // Check if this is raw figmant data that needs transformation
-    if (analysisData.claude_analysis && !analysisData.issues) {
-      console.log('🔄 Transforming raw figmant data for enhanced UI');
-      const transformedData = transformToEnhancedFormat(analysisData);
+    const contextKey = `strategist_context_${id}`;
+    const storedContext = localStorage.getItem(contextKey);
+    
+    // Transform figmant data to expected format for visual recommendations
+    let formattedAnalysisData = analysisData;
+    
+    if (analysisData.claude_analysis && !analysisData.annotations) {
+      console.log('🔄 Transforming figmant data for visual recommendations');
       
-      if (transformedData) {
-        const images = transformedData.images || [{ 
-          id: 'default', 
-          url: transformedData.imageUrl || '/placeholder-design.png',
-          fileName: 'Analysis Image'
-        }];
-        
-        console.log('🎨 PASSING TRANSFORMED FIGMANT DATA TO ENHANCED COMPONENT:', {
-          imageCount: images.length,
-          issueCount: transformedData.issues.length,
-          suggestionCount: transformedData.suggestions?.length || 0
-        });
-        
-        return (
-          <EnhancedAnalysisResults
-            images={images}
-            issues={transformedData.issues}
-            suggestions={transformedData.suggestions || []}
-            analysisMetadata={transformedData.analysisMetadata}
-            onBack={() => window.history.back()}
-          />
-        );
+      const claudeAnalysis = analysisData.claude_analysis;
+      let annotations: any[] = [];
+      
+      // Transform issues to annotations
+      if (claudeAnalysis?.issues && Array.isArray(claudeAnalysis.issues)) {
+        annotations.push(...claudeAnalysis.issues.map((issue: any, index: number) => ({
+          id: issue.id || `issue-${index}`,
+          title: issue.description || 'Analysis Issue',
+          feedback: issue.suggested_fix || issue.impact || 'Improvement opportunity identified',
+          severity: issue.severity || 'improvement',
+          category: issue.category || 'usability'
+        })));
       }
+      
+      // Transform legacy formats
+      if (claudeAnalysis?.criticalIssues) {
+        annotations.push(...claudeAnalysis.criticalIssues.map((issue: any, index: number) => ({
+          id: `critical-${index}`,
+          title: issue.title || issue.issue || 'Critical Issue',
+          feedback: issue.description || issue.impact || 'Critical issue identified',
+          severity: 'critical',
+          category: issue.category || 'Critical'
+        })));
+      }
+      
+      if (claudeAnalysis?.recommendations) {
+        annotations.push(...claudeAnalysis.recommendations.map((rec: any, index: number) => ({
+          id: `recommendation-${index}`,
+          title: rec.title || 'Recommendation',
+          feedback: rec.description || 'Improvement recommendation',
+          severity: rec.effort === 'Low' ? 'low' : rec.effort === 'High' ? 'important' : 'medium',
+          category: rec.category || 'Improvement'
+        })));
+      }
+      
+      formattedAnalysisData = {
+        ...analysisData,
+        id: id,
+        annotations,
+        totalAnnotations: annotations.length,
+        processingTime: analysisData.processing_time_ms,
+        aiModel: analysisData.ai_model_used || 'claude-sonnet-4',
+        createdAt: analysisData.created_at
+      };
+      
+      console.log('✅ Transformed figmant data:', {
+        annotationCount: annotations.length,
+        totalAnnotations: formattedAnalysisData.totalAnnotations
+      });
     }
     
-    // Handle already transformed data
-    const images = analysisData.images || [{ 
-      id: 'default', 
-      url: analysisData.imageUrl || '/placeholder-design.png',
-      fileName: 'Analysis Image'
-    }];
-    
-    console.log('🎨 PASSING PRE-TRANSFORMED DATA TO ENHANCED COMPONENT:', {
-      imageCount: images.length,
-      issueCount: analysisData.issues?.length || 0,
-      suggestionCount: analysisData.suggestions?.length || 0
-    });
-    
     return (
-      <EnhancedAnalysisResults
-        images={images}
-        issues={analysisData.issues || []}
-        suggestions={analysisData.suggestions || []}
-        analysisMetadata={analysisData.analysisMetadata}
-        onBack={() => window.history.back()}
+      <FigmaInspiredAnalysisLayout 
+        analysisData={formattedAnalysisData}
+        strategistAnalysis={strategistAnalysis}
+        userChallenge={id ? (storedContext ? JSON.parse(storedContext).userChallenge : undefined) : undefined}
       />
     );
   }
