@@ -165,9 +165,11 @@ export function FigmantAnalysisStudio() {
                   <p className="text-[#7B7B7B] mb-6">
                     Drag and drop your design files here, or click to browse
                   </p>
-                  <Button className="bg-[#22757C] hover:bg-[#1d6359] text-white">
-                    Choose Files
-                  </Button>
+                  <div className="flex justify-center">
+                    <Button className="bg-[#121212] hover:bg-[#0a0a0a] text-white">
+                      Choose Files
+                    </Button>
+                  </div>
                   <p className="text-xs text-[#7B7B7B] mt-4">
                     Supports PNG, JPG, JPEG, GIF, WebP • Max 10 files
                   </p>
