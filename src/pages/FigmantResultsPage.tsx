@@ -499,8 +499,72 @@ const FigmantResultsPage = () => {
         const analysisResult = await startFigmantAnalysis(sessionId);
         console.log('✅ Auto-analysis started successfully:', analysisResult);
         
-        setAutoStartState('completed');
-        // Data will be loaded automatically by the useEffect
+        // Start polling for analysis completion
+        let attempts = 0;
+        const maxAttempts = 60; // 60 seconds total
+        const pollInterval = 1000; // 1 second intervals
+        
+        const pollForAnalysis = async (): Promise<void> => {
+          attempts++;
+          console.log(`🔍 Auto-start polling attempt ${attempts}/${maxAttempts} for analysis results...`);
+          
+          try {
+            const { data, error } = await supabase
+              .from('figmant_analysis_results')
+              .select('id')
+              .eq('session_id', sessionId)
+              .maybeSingle();
+            
+            if (error) {
+              console.error('❌ Error fetching analysis results:', error);
+              if (attempts < maxAttempts) {
+                setTimeout(pollForAnalysis, pollInterval);
+                return;
+              } else {
+                throw new Error(`Database error: ${error.message}`);
+              }
+            }
+            
+            if (data?.id) {
+              console.log('✅ Auto-start analysis result found with ID:', data.id);
+              
+              // Reload the full analysis data
+              try {
+                const fullAnalysisData = await getFigmantResults(sessionId);
+                if (fullAnalysisData) {
+                  const transformedData = transformAnalysisData(fullAnalysisData);
+                  setAnalysisData(transformedData);
+                  console.log('✅ Auto-start analysis data set:', transformedData);
+                  setAutoStartState('idle'); // Reset state for future runs
+                  toast.success('Analysis completed successfully!');
+                }
+              } catch (fetchError) {
+                console.error('❌ Error fetching full analysis data:', fetchError);
+                toast.error('Failed to load analysis results');
+                setAutoStartState('idle');
+              }
+              
+              return; // Exit polling loop
+            } else if (attempts < maxAttempts) {
+              // Continue polling
+              setTimeout(pollForAnalysis, pollInterval);
+            } else {
+              throw new Error('Analysis timeout: No results found after 60 seconds');
+            }
+          } catch (pollError) {
+            if (attempts < maxAttempts && !pollError.message.includes('timeout')) {
+              // Continue polling for non-timeout errors
+              setTimeout(pollForAnalysis, pollInterval);
+            } else {
+              console.error('❌ Auto-start polling failed:', pollError);
+              toast.error('Analysis timed out or failed');
+              setAutoStartState('idle');
+            }
+          }
+        };
+        
+        // Start polling
+        pollForAnalysis();
         
       } catch (error) {
         console.error('❌ Failed to auto-start analysis:', error);
@@ -786,21 +850,31 @@ const FigmantResultsPage = () => {
           </>
         ) : (
           // Detailed analysis view with gallery and sidebar layout
-          <EnhancedAnalysisResults 
-            images={sessionData?.images?.map(img => ({
-              url: getImageUrl(img.file_path),
-              fileName: img.file_name,
-              id: img.id
-            })) || []}
-            issues={analysisData?.issues || []}
-            suggestions={analysisData?.suggestions || []}
-            analysisMetadata={{
-              ...analysisData?.enhanced_context,
-              analysisId: analysisData?.id
-            }}
-            analysisId={analysisData?.id}
-            onBack={() => window.history.back()}
-          />
+          <>
+            {console.log('📊 Detailed Analysis Debug:', {
+              analysisData: analysisData,
+              hasAnalysisData: !!analysisData,
+              issuesCount: analysisData?.issues?.length || 0,
+              suggestionsCount: analysisData?.suggestions?.length || 0,
+              claudeAnalysis: analysisData?.claude_analysis,
+              rawIssues: analysisData?.claude_analysis?.issues
+            })}
+            <EnhancedAnalysisResults 
+              images={sessionData?.images?.map(img => ({
+                url: getImageUrl(img.file_path),
+                fileName: img.file_name,
+                id: img.id
+              })) || []}
+              issues={analysisData?.issues || []}
+              suggestions={analysisData?.suggestions || []}
+              analysisMetadata={{
+                ...analysisData?.enhanced_context,
+                analysisId: analysisData?.id
+              }}
+              analysisId={analysisData?.id}
+              onBack={() => window.history.back()}
+            />
+          </>
         )}
       </div>
     </div>
