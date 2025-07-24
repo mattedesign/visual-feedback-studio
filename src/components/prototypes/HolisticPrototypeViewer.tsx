@@ -208,6 +208,23 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
   };
 
   const renderPrototypePreview = (code: string) => {
+    // Clean the code to avoid duplicate declarations
+    const cleanedCode = code
+      // Remove React imports and replace with global destructuring
+      .replace(/import\s+{\s*([^}]+)\s*}\s+from\s+['"]react['"];?\s*/g, (match, imports) => {
+        // Extract the imported items and create a destructuring assignment
+        const importList = imports.split(',').map((item: string) => item.trim());
+        return `const { ${importList.join(', ')} } = React;\n`;
+      })
+      // Remove framer-motion imports since we can't easily provide it
+      .replace(/import\s+{\s*([^}]+)\s*}\s+from\s+['"]framer-motion['"];?\s*/g, '')
+      // Replace motion components with regular divs
+      .replace(/motion\./g, '')
+      // Remove motion props that would cause errors
+      .replace(/\s+(initial|animate|transition|whileHover|whileTap|variants|exit)=\{[^}]*\}/g, '')
+      // Remove standalone motion imports
+      .replace(/import\s+{\s*motion\s*}\s+from\s+['"]framer-motion['"];?\s*/g, '');
+
     const html = `
       <!DOCTYPE html>
       <html>
@@ -223,8 +240,7 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
         <body>
           <div id="root"></div>
           <script type="text/babel">
-            const { useState, useEffect } = React;
-            ${code}
+            ${cleanedCode}
             ReactDOM.createRoot(document.getElementById('root')).render(<EnhancedDesign />);
           </script>
         </body>
