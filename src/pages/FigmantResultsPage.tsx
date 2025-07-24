@@ -227,6 +227,7 @@ const FigmantResultsPage = () => {
     }
     
     return {
+      id: analysis.id, // Preserve the analysis ID
       ...analysis,
       issues: enhancedIssues,
       suggestions: enhancedSuggestions,
@@ -480,62 +481,100 @@ const FigmantResultsPage = () => {
 
   // Handle context form completion
   const handleContextComplete = async (contextId: string) => {
+    console.log('📝 Context completed with ID:', contextId);
     setShowContextForm(false);
     setUserContext({ id: contextId }); // Set basic context data
     
-    // Start the analysis process first, then add holistic analysis
+    // Start the analysis process with proper error handling
     try {
       toast.success('Context saved! Starting analysis...');
       
       if (!sessionId) {
-        toast.error('No session ID available');
-        return;
+        throw new Error('No session ID available');
       }
 
-      // First, start the regular analysis
-      await startFigmantAnalysis(sessionId);
+      console.log('🚀 Starting figmant analysis for session:', sessionId);
       
-      // Wait a moment for the analysis to be created, then check for the analysis ID
-      setTimeout(async () => {
+      // Start the regular analysis with better error handling
+      const analysisResult = await startFigmantAnalysis(sessionId);
+      console.log('✅ Analysis started successfully:', analysisResult);
+      
+      // Use proper polling instead of arbitrary timeout
+      let attempts = 0;
+      const maxAttempts = 30; // 30 seconds total
+      const pollInterval = 1000; // 1 second intervals
+      
+      const pollForAnalysis = async (): Promise<void> => {
+        attempts++;
+        console.log(`🔍 Polling attempt ${attempts}/${maxAttempts} for analysis results...`);
+        
         try {
-          const { data } = await supabase
+          const { data, error } = await supabase
             .from('figmant_analysis_results')
             .select('id')
             .eq('session_id', sessionId)
             .single();
           
           if (data?.id) {
-            toast.info('Generating holistic analysis...');
+            console.log('✅ Analysis result found with ID:', data.id);
+            toast.info('Analysis complete! Generating holistic analysis...');
             
             // Generate holistic analysis automatically
-            const { data: holisticData, error } = await supabase.functions.invoke('generate-holistic-prototypes', {
+            const { data: holisticData, error: holisticError } = await supabase.functions.invoke('generate-holistic-prototypes', {
               body: { 
                 analysisId: data.id, 
                 contextId: contextId
               }
             });
             
-            if (error) {
-              console.error('Failed to generate holistic analysis:', error);
-              toast.error('Failed to generate holistic analysis.');
+            if (holisticError) {
+              console.error('Failed to generate holistic analysis:', holisticError);
+              toast.error('Failed to generate holistic analysis: ' + holisticError.message);
             } else {
+              console.log('✅ Holistic analysis generated successfully');
               toast.success('Holistic analysis generated successfully!');
+              
               // Refresh the analysis data to show new holistic results
               const updatedAnalysis = await getFigmantResults(sessionId);
-              setAnalysisData(transformAnalysisData(updatedAnalysis));
+              if (updatedAnalysis) {
+                setAnalysisData(transformAnalysisData(updatedAnalysis));
+              }
             }
+          } else if (attempts < maxAttempts) {
+            // Continue polling
+            setTimeout(pollForAnalysis, pollInterval);
           } else {
-            toast.error('Analysis not found after completion');
+            throw new Error('Analysis timeout: No results found after 30 seconds');
           }
-        } catch (error) {
-          console.error('Error finding analysis after completion:', error);
-          toast.error('Could not find analysis results');
+        } catch (pollError) {
+          if (attempts < maxAttempts && !pollError.message.includes('timeout')) {
+            // Continue polling for non-timeout errors
+            setTimeout(pollForAnalysis, pollInterval);
+          } else {
+            throw pollError;
+          }
         }
-      }, 3000); // Wait 3 seconds for analysis to complete
+      };
+      
+      // Start polling
+      pollForAnalysis();
       
     } catch (error) {
-      console.error('Error starting analysis:', error);
-      toast.error('Failed to start analysis: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      console.error('❌ Error in analysis workflow:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error('Analysis failed: ' + errorMessage);
+      
+      // Update session status to failed
+      if (sessionId) {
+        try {
+          await supabase
+            .from('figmant_analysis_sessions')
+            .update({ status: 'failed' })
+            .eq('id', sessionId);
+        } catch (statusError) {
+          console.error('Failed to update session status:', statusError);
+        }
+      }
     }
   };
 

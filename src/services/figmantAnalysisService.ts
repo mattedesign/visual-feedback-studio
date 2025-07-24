@@ -151,14 +151,27 @@ export async function startFigmantAnalysis(sessionId: string): Promise<any> {
     }
 
     // Call the figmant analysis edge function
+    console.log('📞 Calling figmant-analyze-design edge function...');
     const { data, error } = await supabase.functions.invoke('figmant-analyze-design', {
       body: { sessionId: sessionId }
     });
 
     if (error) {
-      console.error('❌ Figmant analysis failed:', error);
+      console.error('❌ Figmant analysis edge function failed:', {
+        error,
+        errorName: error.name,
+        errorMessage: error.message,
+        errorStack: error.stack,
+        sessionId
+      });
       await updateSessionStatus(sessionId, 'failed');
-      throw error;
+      throw new Error(`Analysis failed: ${error.message || 'Unknown edge function error'}`);
+    }
+
+    if (!data || !data.success) {
+      console.error('❌ Edge function returned unsuccessful response:', data);
+      await updateSessionStatus(sessionId, 'failed');
+      throw new Error(`Analysis failed: ${data?.error || 'Edge function returned unsuccessful response'}`);
     }
 
     console.log('✅ Figmant analysis started successfully:', data);
