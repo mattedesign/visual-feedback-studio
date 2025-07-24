@@ -59,10 +59,10 @@ export function FigmantAnalysisStudio() {
         toast.error('Some images failed to upload');
       });
       
-      // Navigate to context form immediately after starting uploads
+      // Navigate to results page immediately after starting uploads
       if (uploadPromises.length > 0) {
         toast.success(`Uploading ${uploadPromises.length} image${uploadPromises.length !== 1 ? 's' : ''}...`);
-        navigate(`/analysis/${currentSession.id}/context`);
+        navigate(`/analysis/${currentSession.id}`);
       }
     } catch (error) {
       console.error('Upload error:', error);
