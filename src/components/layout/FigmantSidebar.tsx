@@ -14,7 +14,10 @@ export const FigmantSidebar = () => {
   const navigate = useNavigate();
   const { subscription } = useSubscription();
   const { user, signOut } = useAuth();
-  const [isAnalysisExpanded, setIsAnalysisExpanded] = useState(true);
+  const [isAnalysisExpanded, setIsAnalysisExpanded] = useState(() => {
+    // Auto-expand if user is on any Analysis-related page
+    return location.pathname === '/analyze' || location.pathname === '/history';
+  });
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState<'menu' | 'chat'>('chat');
 
