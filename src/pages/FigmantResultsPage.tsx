@@ -637,26 +637,19 @@ const FigmantResultsPage = () => {
     );
   }
 
-  // Auto-start analysis hook - MUST be outside any conditional rendering
-  const [shouldAutoStart, setShouldAutoStart] = useState(false);
-  const [autoStartLoading, setAutoStartLoading] = useState(false);
+  // Auto-start analysis state - always declared unconditionally
+  const [autoStartState, setAutoStartState] = useState<'idle' | 'checking' | 'starting' | 'completed'>('idle');
 
-  // Check if we should auto-start analysis
+  // Auto-start analysis effect - runs unconditionally
   useEffect(() => {
-    if (sessionData && !analysisData && sessionData.status === 'draft' && sessionData?.images?.length) {
-      setShouldAutoStart(true);
-    }
-  }, [sessionData, analysisData]);
-
-  // Auto-start analysis effect
-  useEffect(() => {
-    const autoStartAnalysis = async () => {
-      if (!shouldAutoStart || !sessionId || autoStartLoading) {
-        return;
-      }
+    const handleAutoStart = async () => {
+      // Only proceed if we have session data and the state is idle
+      if (autoStartState !== 'idle') return;
+      if (!sessionData || analysisData || sessionData.status !== 'draft' || !sessionData?.images?.length) return;
+      if (!sessionId) return;
 
       try {
-        setAutoStartLoading(true);
+        setAutoStartState('starting');
         toast.info('Starting analysis automatically...');
         
         console.log('🚀 Auto-starting figmant analysis for session:', sessionId);
@@ -664,24 +657,22 @@ const FigmantResultsPage = () => {
         const analysisResult = await startFigmantAnalysis(sessionId);
         console.log('✅ Auto-analysis started successfully:', analysisResult);
         
+        setAutoStartState('completed');
         // Reload the page data to show results
         window.location.reload();
         
       } catch (error) {
         console.error('❌ Failed to auto-start analysis:', error);
         toast.error('Failed to start analysis: ' + (error instanceof Error ? error.message : 'Unknown error'));
-        setAutoStartLoading(false);
-        setShouldAutoStart(false);
+        setAutoStartState('idle'); // Reset to allow retry
       }
     };
 
-    if (shouldAutoStart) {
-      autoStartAnalysis();
-    }
-  }, [shouldAutoStart, sessionId, autoStartLoading]);
+    handleAutoStart();
+  }, [sessionData, analysisData, autoStartState, sessionId]);
 
-  // Show loading state for auto-start
-  if (shouldAutoStart && autoStartLoading) {
+  // Show auto-start loading state
+  if (autoStartState === 'starting') {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
