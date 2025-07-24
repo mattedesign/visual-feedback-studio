@@ -482,6 +482,36 @@ const FigmantResultsPage = () => {
     loadData();
   }, [sessionId]);
 
+  // Auto-start analysis effect - runs unconditionally
+  useEffect(() => {
+    const handleAutoStart = async () => {
+      // Only proceed if we have session data and the state is idle
+      if (autoStartState !== 'idle') return;
+      if (!sessionData || analysisData || sessionData.status !== 'draft' || !sessionData?.images?.length) return;
+      if (!sessionId) return;
+
+      try {
+        setAutoStartState('starting');
+        toast.info('Starting analysis automatically...');
+        
+        console.log('🚀 Auto-starting figmant analysis for session:', sessionId);
+        
+        const analysisResult = await startFigmantAnalysis(sessionId);
+        console.log('✅ Auto-analysis started successfully:', analysisResult);
+        
+        setAutoStartState('completed');
+        // Data will be loaded automatically by the useEffect
+        
+      } catch (error) {
+        console.error('❌ Failed to auto-start analysis:', error);
+        toast.error('Failed to start analysis: ' + (error instanceof Error ? error.message : 'Unknown error'));
+        setAutoStartState('idle'); // Reset to allow retry
+      }
+    };
+
+    handleAutoStart();
+  }, [sessionData, analysisData, autoStartState, sessionId]);
+
   // Handle context form completion
   const handleContextComplete = async (contextId: string) => {
     console.log('📝 Context completed with ID:', contextId);
@@ -639,36 +669,6 @@ const FigmantResultsPage = () => {
       </div>
     );
   }
-
-  // Auto-start analysis effect - runs unconditionally
-  useEffect(() => {
-    const handleAutoStart = async () => {
-      // Only proceed if we have session data and the state is idle
-      if (autoStartState !== 'idle') return;
-      if (!sessionData || analysisData || sessionData.status !== 'draft' || !sessionData?.images?.length) return;
-      if (!sessionId) return;
-
-      try {
-        setAutoStartState('starting');
-        toast.info('Starting analysis automatically...');
-        
-        console.log('🚀 Auto-starting figmant analysis for session:', sessionId);
-        
-        const analysisResult = await startFigmantAnalysis(sessionId);
-        console.log('✅ Auto-analysis started successfully:', analysisResult);
-        
-        setAutoStartState('completed');
-        // Data will be loaded automatically by the useEffect
-        
-      } catch (error) {
-        console.error('❌ Failed to auto-start analysis:', error);
-        toast.error('Failed to start analysis: ' + (error instanceof Error ? error.message : 'Unknown error'));
-        setAutoStartState('idle'); // Reset to allow retry
-      }
-    };
-
-    handleAutoStart();
-  }, [sessionData, analysisData, autoStartState, sessionId]);
 
   // Show auto-start loading state
   if (autoStartState === 'starting') {
