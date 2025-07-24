@@ -4,23 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { TrendsWidget } from '@/components/dashboard/TrendsWidget';
 
 export const FigmantDashboard = () => {
   return (
     <div className="w-full space-y-6">
       {/* Top Stats Cards */}
       <div className="figmant-grid">
-        <Card className="figmant-card">
-          <CardContent className="p-6">
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-secondary" />
-              </div>
-            </div>
-            <h3 className="font-semibold text-lg mb-1">Trends</h3>
-            <p className="text-sm text-muted-foreground">2 new insights found</p>
-          </CardContent>
-        </Card>
+        <TrendsWidget />
 
         <Card className="figmant-card">
           <CardContent className="p-6">

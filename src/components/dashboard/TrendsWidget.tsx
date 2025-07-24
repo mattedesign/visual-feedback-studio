@@ -135,7 +135,7 @@ export function TrendsWidget() {
           <div>
             <CardTitle className="text-lg">Trends</CardTitle>
             <p className="text-sm text-muted-foreground">
-              {trends?.recentInsights || 0} insights from {trends?.totalAnalyses || 0} analyses
+              {trends?.recentInsights || 0} new insights found
             </p>
           </div>
         </div>
