@@ -78,6 +78,8 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
 
   const loadAnalysis = async () => {
     try {
+      console.log('🔍 Loading holistic analysis for analysisId:', analysisId);
+      
       // Load holistic analysis
       const { data: holisticData, error: holisticError } = await supabase
         .from('figmant_holistic_analyses')
@@ -85,14 +87,19 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
         .eq('analysis_id', analysisId)
         .single();
 
+      console.log('📊 Holistic analysis result:', { holisticData, holisticError });
+
       if (holisticData) {
         setAnalysis(holisticData);
         
         // Load existing prototypes
+        console.log('🔍 Loading existing prototypes...');
         const { data: existingPrototypes, error: prototypeError } = await supabase
           .from('figmant_holistic_prototypes')
           .select('*')
           .eq('analysis_id', analysisId);
+        
+        console.log('📦 Prototypes result:', { existingPrototypes, prototypeError });
         
         if (!prototypeError && existingPrototypes) {
           const prototypeMap: Record<string, Prototype> = {};
@@ -100,15 +107,17 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
             prototypeMap[p.solution_type] = p;
           });
           setPrototypes(prototypeMap);
+          console.log('✅ Prototypes loaded:', Object.keys(prototypeMap));
         }
       } else if (!holisticError || holisticError.code === 'PGRST116') {
         // No analysis exists yet, generate it
+        console.log('🚀 No analysis found, generating new one...');
         await generateAnalysis();
       } else {
         throw holisticError;
       }
     } catch (error) {
-      console.error('Failed to load analysis:', error);
+      console.error('❌ Failed to load analysis:', error);
       toast({
         title: "Error",
         description: "Failed to load analysis data",
