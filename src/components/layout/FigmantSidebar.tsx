@@ -62,7 +62,7 @@ export const FigmantSidebar = () => {
     href: '/settings',
     isActive: isActive('/settings')
   }, {
-    icon: User,
+    icon: Crown,
     label: 'Subscription',
     href: '/subscription',
     isActive: isActive('/subscription')
