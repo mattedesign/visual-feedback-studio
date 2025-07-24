@@ -44,19 +44,29 @@ export function FigmantAnalysisStudio() {
     try {
       const currentSession = await initializeSession();
       
-      for (const file of files) {
-        if (file.type.startsWith('image/')) {
-          const uploadedImage = await uploadFigmantImage(
-            currentSession.id, 
-            file, 
-            uploadedImages.length + 1
-          );
-          setUploadedImages(prev => [...prev, uploadedImage]);
-        }
+      // Upload files and immediately navigate to context form
+      const uploadPromises = files
+        .filter(file => file.type.startsWith('image/'))
+        .map((file, index) => 
+          uploadFigmantImage(currentSession.id, file, uploadedImages.length + index + 1)
+        );
+      
+      // Start uploads in background and navigate immediately
+      Promise.all(uploadPromises).then(newImages => {
+        setUploadedImages(prev => [...prev, ...newImages]);
+      }).catch(error => {
+        console.error('Background upload error:', error);
+        toast.error('Some images failed to upload');
+      });
+      
+      // Navigate to context form immediately after starting uploads
+      if (uploadPromises.length > 0) {
+        toast.success(`Uploading ${uploadPromises.length} image${uploadPromises.length !== 1 ? 's' : ''}...`);
+        navigate(`/analysis/${currentSession.id}/context`);
       }
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('Failed to upload images');
+      toast.error('Failed to start upload');
     }
   };
 
