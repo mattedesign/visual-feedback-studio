@@ -1,744 +1,408 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Target, Zap, AlertCircle, CheckCircle, Download, Eye, Code, Columns, RefreshCw, ChevronDown, ChevronRight, Lightbulb, MessageCircle } from 'lucide-react';
+import { Shield, Target, Zap, AlertCircle, CheckCircle, Download, Eye, Code, Columns } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { StrengthsDisplay } from '@/components/analysis/StrengthsDisplay';
-import { toast } from 'sonner';
-import { PrototypeRenderer } from './PrototypeRenderer';
-import { KeyIssuesCarousel } from '@/components/analysis/KeyIssuesCarousel';
+import { toast } from '@/hooks/use-toast';
 
 interface HolisticPrototypeViewerProps {
-  analysisId?: string;
+  analysisId: string;
   contextId?: string;
   originalImage?: string;
 }
 
-interface GenerationState {
-  [key: string]: {
-    isGenerating: boolean;
-    error?: string;
-    retryCount: number;
+interface Problem {
+  id: string;
+  title: string;
+  description: string;
+  severity: 'high' | 'medium' | 'low';
+  businessImpact: string;
+  uxPrinciple: string;
+}
+
+interface Solution {
+  approach: 'conservative' | 'balanced' | 'innovative';
+  name: string;
+  description: string;
+  keyChanges: string[];
+  expectedImpact: {
+    conversionRate?: string;
+    engagement?: string;
+    satisfaction?: string;
+  };
+  implementationGuidance: {
+    steps: string[];
+    effort: 'low' | 'medium' | 'high';
+    timeline: string;
+  };
+  realExamples: string[];
+}
+
+interface HolisticAnalysis {
+  id: string;
+  identified_problems: Problem[];
+  solution_approaches: Solution[];
+  vision_insights: {
+    layoutAnalysis?: string;
+    colorPsychology?: string;
+    textHierarchy?: string;
   };
 }
 
+interface Prototype {
+  id: string;
+  solution_type: 'conservative' | 'balanced' | 'innovative';
+  title: string;
+  description: string;
+  component_code: string;
+  key_changes: string[];
+  expected_impact: Record<string, any>;
+  generation_metadata: Record<string, any>;
+  created_at: string;
+}
 
 export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }: HolisticPrototypeViewerProps) {
-  const [analysis, setAnalysis] = useState<any>(null);
-  const [prototypes, setPrototypes] = useState<any>({});
-  const [selectedSolution, setSelectedSolution] = useState('balanced');
-  const [viewMode, setViewMode] = useState('preview');
+  const [analysis, setAnalysis] = useState<HolisticAnalysis | null>(null);
+  const [prototypes, setPrototypes] = useState<Record<string, Prototype>>({});
+  const [selectedSolution, setSelectedSolution] = useState<'conservative' | 'balanced' | 'innovative'>('balanced');
+  const [viewMode, setViewMode] = useState<'preview' | 'compare' | 'code'>('preview');
   const [loading, setLoading] = useState(true);
-  const [generatingAnalysis, setGeneratingAnalysis] = useState(false);
-  const [generationState, setGenerationState] = useState<GenerationState>({});
-  const [showClassicInsights, setShowClassicInsights] = useState(false);
-  const [showPatternReference, setShowPatternReference] = useState(false);
-  
+  const [generating, setGenerating] = useState<Record<string, boolean>>({});
 
-  console.log('🎯 HolisticPrototypeViewer initialized:', { 
-    analysisId, 
-    contextId, 
-    hasOriginalImage: !!originalImage,
-    timestamp: new Date().toISOString()
-  });
+  useEffect(() => {
+    loadAnalysis();
+  }, [analysisId]);
 
-  const updateGenerationState = useCallback((solutionType: string, updates: Partial<GenerationState[string]>) => {
-    console.log(`🔄 Updating generation state for ${solutionType}:`, updates);
-    setGenerationState(prev => ({
-      ...prev,
-      [solutionType]: {
-        ...prev[solutionType],
-        ...updates
-      }
-    }));
-  }, []);
-
-  const loadAnalysis = useCallback(async () => {
-    if (!analysisId) {
-      console.log('⚠️ No analysisId provided, skipping load');
-      setLoading(false);
-      return;
-    }
-    
-    setLoading(true);
-    console.log(`📊 Loading holistic analysis for ID:`, analysisId);
-    
-    
+  const loadAnalysis = async () => {
     try {
       // Load holistic analysis
-      console.log('🔍 Querying figmant_holistic_analyses table...');
-      
-      // First check if any records exist
-      const { data: existingRecords, error: countError } = await supabase
+      const { data: holisticData, error: holisticError } = await supabase
         .from('figmant_holistic_analyses')
-        .select('id, created_at')
+        .select('*')
         .eq('analysis_id', analysisId)
-        .order('created_at', { ascending: false });
+        .single();
 
-      console.log('📊 Found existing analyses:', { 
-        count: existingRecords?.length || 0,
-        analysisId: analysisId,
-        error: countError?.message
-      });
-
-      if (countError) {
-        console.error('❌ Database error checking for analyses:', countError);
-        throw countError;
-      }
-
-      let data = null;
-      let error = null;
-
-      if (existingRecords && existingRecords.length > 0) {
-        // Multiple records found - log this for debugging
-        if (existingRecords.length > 1) {
-          console.warn(`⚠️ Found ${existingRecords.length} analyses for analysis_id ${analysisId}. Using most recent.`);
-        }
-
-        // Fetch the most recent complete record
-        const queryResult = await supabase
-          .from('figmant_holistic_analyses')
-          .select('*')
-          .eq('analysis_id', analysisId)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-        
-        data = queryResult.data;
-        error = queryResult.error;
-
-        console.log('📊 Holistic analysis query result:', { 
-          found: !!data, 
-          error: error?.message,
-          dataKeys: data ? Object.keys(data) : null,
-          analysisId: analysisId
-        });
-
-        if (error) {
-          console.error('❌ Database error loading analysis:', error);
-          throw error;
-        }
-      } else {
-        console.log('📊 No existing analyses found for analysis_id:', analysisId);
-      }
-
-      if (data) {
-        console.log('✅ Found existing holistic analysis');
-        console.log('📊 Analysis details:', {
-          id: data.id,
-          problemCount: data.identified_problems?.length || 0,
-          solutionCount: data.solution_approaches?.length || 0,
-          hasVisionInsights: !!data.vision_insights,
-          fullDataStructure: data
-        });
-        
-        // CRITICAL FIX: Always set analysis if data exists, regardless of structure
-        setAnalysis(data);
-        
-        // Validate analysis has solution approaches for UI state
-        const hasSolutions = data.solution_approaches && 
-                            Array.isArray(data.solution_approaches) && 
-                            data.solution_approaches.length > 0;
-        
-        
-        if (!hasSolutions) {
-          console.warn('⚠️ Analysis found but missing/invalid solution approaches, but setting analysis anyway');
-        } else {
-          console.log('✅ Analysis has valid solution approaches');
-        }
+      if (holisticData) {
+        setAnalysis(holisticData);
         
         // Load existing prototypes
-        console.log('🎨 Loading existing prototypes...');
         const { data: existingPrototypes, error: prototypeError } = await supabase
           .from('figmant_holistic_prototypes')
           .select('*')
           .eq('analysis_id', analysisId);
         
-        console.log('🎨 Prototype query result:', {
-          count: existingPrototypes?.length || 0,
-          error: prototypeError?.message,
-          types: existingPrototypes?.map(p => p.solution_type) || []
-        });
-        
-        if (prototypeError) {
-          console.warn('⚠️ Failed to load prototypes:', prototypeError);
-        } else if (existingPrototypes) {
-          const prototypeMap = {};
+        if (!prototypeError && existingPrototypes) {
+          const prototypeMap: Record<string, Prototype> = {};
           existingPrototypes.forEach(p => {
             prototypeMap[p.solution_type] = p;
-            console.log(`📋 Loaded ${p.solution_type} prototype: ${p.title}`);
           });
           setPrototypes(prototypeMap);
-          
         }
+      } else if (!holisticError || holisticError.code === 'PGRST116') {
+        // No analysis exists yet, generate it
+        await generateAnalysis();
       } else {
-        console.log('⚠️ No holistic analysis found, will need to generate');
+        throw holisticError;
       }
     } catch (error) {
-      console.error('❌ Error loading analysis:', error);
-      toast.error('Failed to load analysis data');
+      console.error('Failed to load analysis:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load analysis data",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
-  }, [analysisId]); // Remove analysis dependency to prevent infinite loops
+  };
 
-  const generateAnalysisFunction = useCallback(async () => {
-    if (!analysisId) {
-      console.error('❌ Cannot generate analysis without analysisId');
-      toast.error('Analysis ID is required to generate holistic analysis');
-      return;
-    }
-
-    console.log('🔍 Starting holistic analysis generation for:', analysisId);
-    setGeneratingAnalysis(true);
-    
+  const generateAnalysis = async () => {
     try {
-      console.log('📡 Calling edge function with params:', { analysisId, contextId });
-      
-      const { data: response, error } = await supabase.functions.invoke('generate-holistic-prototypes', {
+      setLoading(true);
+      const { data, error } = await supabase.functions.invoke('generate-holistic-prototypes', {
         body: { analysisId, contextId }
       });
       
-      console.log('📨 Edge function response:', { 
-        success: response?.success, 
-        hasAnalysis: !!response?.analysis,
-        error: error?.message 
-      });
+      if (error) throw error;
       
-      if (error) {
-        console.error('❌ Edge function error:', error);
-        throw new Error(error.message);
-      }
-      
-      if (response?.success) {
-        console.log('✅ Analysis generation successful, reloading data...');
-        // Trigger a fresh reload by calling loadAnalysis directly
-        await loadAnalysis(); 
-        toast.success('Analysis generated successfully!');
-      } else {
-        console.error('❌ Edge function returned unsuccessful response:', response);
-        throw new Error(response?.error || 'Failed to generate analysis');
+      if (data?.success && data.analysis) {
+        setAnalysis(data.analysis);
+        toast({
+          title: "Analysis Generated",
+          description: "Holistic analysis completed successfully"
+        });
       }
     } catch (error) {
-      console.error('❌ Analysis generation error:', error);
-      toast.error(`Failed to generate analysis: ${error.message}`);
+      console.error('Failed to generate analysis:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate analysis",
+        variant: "destructive"
+      });
     } finally {
-      setGeneratingAnalysis(false);
-    }
-  }, [analysisId, contextId, loadAnalysis]);
-
-  useEffect(() => {
-    console.log('🔄 useEffect triggered - loading analysis', { analysisId });
-    if (analysisId) {
-      loadAnalysis();
-    } else {
-      console.log('⚠️ No analysisId in useEffect');
       setLoading(false);
     }
-  }, [analysisId, loadAnalysis]); // Include loadAnalysis but it's stable now
+  };
 
-  const generatePrototype = useCallback(async (solutionType: string, retryAttempt = 0) => {
-    if (!analysisId) {
-      console.error('❌ Cannot generate prototype without analysisId');
-      toast.error('Analysis ID is required to generate prototypes');
-      return;
-    }
-
-    const maxRetries = 3;
-    
-    console.log(`🎨 Generating ${solutionType} prototype (attempt ${retryAttempt + 1}/${maxRetries})`);
-    
-    updateGenerationState(solutionType, { 
-      isGenerating: true, 
-      error: undefined,
-      retryCount: retryAttempt 
-    });
+  const generatePrototype = async (solutionType: 'conservative' | 'balanced' | 'innovative') => {
+    setGenerating({ ...generating, [solutionType]: true });
     
     try {
-      console.log('📡 Calling edge function for prototype generation...');
-      
-      const { data: response, error } = await supabase.functions.invoke('generate-holistic-prototypes', {
+      const { data, error } = await supabase.functions.invoke('generate-holistic-prototypes', {
         body: { analysisId, contextId, solutionType }
       });
       
-      console.log('📨 Prototype generation response:', {
-        success: response?.success,
-        hasPrototype: !!response?.prototype,
-        error: error?.message
-      });
+      if (error) throw error;
       
-      if (error) {
-        console.error('❌ Edge function error:', error);
-        throw new Error(error.message);
-      }
-      
-      if (response?.success && response.prototype) {
-        console.log('✅ Prototype generated successfully:', {
-          id: response.prototype.id,
-          title: response.prototype.title,
-          codeLength: response.prototype.component_code?.length || 0
+      if (data?.success && data.prototype) {
+        setPrototypes({ ...prototypes, [solutionType]: data.prototype });
+        toast({
+          title: "Prototype Generated",
+          description: `${solutionType} prototype created successfully!`
         });
-        
-        setPrototypes(prev => ({ ...prev, [solutionType]: response.prototype }));
-        updateGenerationState(solutionType, { isGenerating: false });
-        
-        
-        toast.success(`${solutionType} prototype generated successfully!`);
-      } else {
-        console.error('❌ Edge function returned unsuccessful response:', response);
-        throw new Error(response?.error || 'Failed to generate prototype');
       }
     } catch (error) {
-      console.error(`❌ Error generating ${solutionType} prototype:`, error);
-      
-      if (retryAttempt < maxRetries - 1) {
-        console.log(`🔄 Retrying ${solutionType} prototype generation in 2 seconds...`);
-        setTimeout(() => generatePrototype(solutionType, retryAttempt + 1), 2000);
-      } else {
-        console.error(`❌ All retry attempts exhausted for ${solutionType} prototype`);
-        updateGenerationState(solutionType, {
-          isGenerating: false,
-          error: error.message
-        });
-        toast.error(`Failed to generate ${solutionType} prototype after ${maxRetries} attempts`);
-      }
-    }
-  }, [analysisId, contextId, updateGenerationState, prototypes]);
-
-  const downloadPrototype = useCallback(async (prototype) => {
-    console.log('💾 Downloading prototype:', prototype.title);
-    
-    try {
-      const blob = new Blob([prototype.component_code], { type: 'text/javascript' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${prototype.title.toLowerCase().replace(/\s+/g, '-')}.tsx`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      // Track download
-      try {
-        await supabase
-          .from('figmant_solution_metrics')
-          .insert({ prototype_id: prototype.id, downloaded: true });
-        console.log('📊 Download tracked successfully');
-      } catch (err) {
-        console.warn('⚠️ Failed to track download:', err);
-      }
-        
-      toast.success('Prototype downloaded successfully!');
-    } catch (error) {
-      console.error('❌ Download failed:', error);
-      toast.error('Failed to download prototype');
-    }
-  }, []);
-
-  const clearAllPrototypes = useCallback(async () => {
-    if (!analysisId) return;
-    
-    console.log('🗑️ Clearing all prototypes for analysis:', analysisId);
-    
-    try {
-      const { data, error } = await supabase.rpc('clear_prototypes_for_analysis', {
-        p_analysis_id: analysisId
+      console.error(`Failed to generate ${solutionType} prototype:`, error);
+      toast({
+        title: "Error",
+        description: `Failed to generate ${solutionType} prototype`,
+        variant: "destructive"
       });
-      
-      if (error) {
-        console.error('❌ Failed to clear prototypes:', error);
-        throw error;
-      }
-      
-      console.log(`✅ Cleared ${data || 0} prototypes`);
-      
-      setPrototypes({});
-      // CRITICAL FIX: Don't clear analysis when clearing prototypes
-      // setAnalysis(null); // REMOVED
-      
-      
-      toast.success(`Cleared ${data || 0} prototypes. You can now regenerate them.`);
-      
-      // Reload analysis to refresh state
-      await loadAnalysis();
-    } catch (error) {
-      console.error('❌ Error clearing prototypes:', error);
-      toast.error('Failed to clear prototypes');
+    } finally {
+      setGenerating({ ...generating, [solutionType]: false });
     }
-  }, [analysisId, loadAnalysis]);
+  };
 
-  const handlePrototypeError = useCallback((error: Error, solutionType: string) => {
-    console.error(`❌ Prototype rendering error for ${solutionType}:`, error);
-    updateGenerationState(solutionType, { error: error.message });
-  }, [updateGenerationState]);
+  const downloadPrototype = (prototype: Prototype) => {
+    const blob = new Blob([prototype.component_code], { type: 'text/javascript' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${prototype.title.toLowerCase().replace(/\s+/g, '-')}.tsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    // Track download
+    supabase
+      .from('figmant_solution_metrics')
+      .insert({ prototype_id: prototype.id, downloaded: true });
+      
+    toast({
+      title: "Downloaded",
+      description: "Prototype component saved to your downloads"
+    });
+  };
 
-
-  if (loading || generatingAnalysis) {
+  const renderPrototypePreview = (code: string) => {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+          <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+          <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+          <script src="https://cdn.tailwindcss.com"></script>
+          <style>
+            body { margin: 0; padding: 20px; font-family: system-ui, sans-serif; }
+          </style>
+        </head>
+        <body>
+          <div id="root"></div>
+          <script type="text/babel">
+            const { useState, useEffect } = React;
+            ${code}
+            ReactDOM.createRoot(document.getElementById('root')).render(<EnhancedDesign />);
+          </script>
+        </body>
+      </html>
+    `;
+    
     return (
-      <div className="space-y-4">
-        <Card className="p-8">
-          <div className="text-center space-y-4">
-            <motion.div
-              className="w-12 h-12 mx-auto border-4 border-blue-200 border-t-blue-600 rounded-full"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            />
-            
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">
-                {loading ? 'Loading Analysis...' : 'Generating Holistic Analysis...'}
-              </h3>
-              {generatingAnalysis && (
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-600">
-                    Our AI is analyzing your design and identifying specific UX problems...
-                  </p>
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <p className="text-sm font-medium text-blue-900 mb-2">What we're doing:</p>
-                    <ul className="text-xs text-blue-700 space-y-1">
-                      <li>• Analyzing visual hierarchy and layout patterns</li>
-                      <li>• Identifying conversion optimization opportunities</li>
-                      <li>• Comparing against UX best practices</li>
-                      <li>• Generating tailored solution approaches</li>
-                    </ul>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </Card>
-      </div>
+      <iframe
+        srcDoc={html}
+        className="w-full h-[600px] border rounded-lg"
+        sandbox="allow-scripts"
+        title="Prototype Preview"
+      />
     );
-  }
+  };
 
-  if (!analysisId) {
+  const getSolutionIcon = (approach: string) => {
+    switch (approach) {
+      case 'conservative': return Shield;
+      case 'balanced': return Target;
+      case 'innovative': return Zap;
+      default: return Target;
+    }
+  };
+
+  const getSolutionColor = (approach: string) => {
+    switch (approach) {
+      case 'conservative': return 'text-green-600 border-green-200 bg-green-50';
+      case 'balanced': return 'text-blue-600 border-blue-200 bg-blue-50';
+      case 'innovative': return 'text-purple-600 border-purple-200 bg-purple-50';
+      default: return 'text-blue-600 border-blue-200 bg-blue-50';
+    }
+  };
+
+  if (loading) {
     return (
-      <div className="space-y-4">
-        <Card className="p-8 text-center bg-yellow-50 border-yellow-200">
-          <AlertCircle className="w-8 h-8 mx-auto mb-4 text-yellow-600" />
-          <h3 className="font-semibold text-yellow-900 mb-2">No Analysis Available</h3>
-          <p className="text-yellow-700">No analysis ID provided for prototype generation.</p>
-        </Card>
-      </div>
+      <Card className="max-w-4xl mx-auto">
+        <CardContent className="p-8 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Generating holistic analysis...</p>
+        </CardContent>
+      </Card>
     );
   }
 
   if (!analysis) {
     return (
-      <div className="space-y-4">
-        <Card className="p-8 text-center">
-          <AlertCircle className="w-8 h-8 mx-auto mb-4 text-gray-400" />
-          <h3 className="font-semibold text-gray-900 mb-2">Analysis Required</h3>
-          <p className="text-gray-600 mb-4">
-            No holistic analysis found. Generate one to create AI prototypes.
-          </p>
-          <Button onClick={generateAnalysisFunction} disabled={generatingAnalysis}>
-            <Zap className="w-4 h-4 mr-2" />
+      <Card className="max-w-4xl mx-auto">
+        <CardContent className="p-8 text-center">
+          <p>No analysis data available.</p>
+          <Button onClick={generateAnalysis} className="mt-4">
             Generate Analysis
           </Button>
-        </Card>
-      </div>
-    );
-  }
-
-  // Handle analysis with missing or malformed solution approaches
-  const hasValidSolutions = analysis?.solution_approaches && 
-                            Array.isArray(analysis.solution_approaches) && 
-                            analysis.solution_approaches.length > 0;
-
-  if (!hasValidSolutions) {
-    console.warn('⚠️ Analysis exists but has invalid solution approaches:', analysis);
-    return (
-      <div className="space-y-4">
-        <Card className="p-8 text-center bg-amber-50 border-amber-200">
-          <AlertCircle className="w-8 h-8 mx-auto mb-4 text-amber-600" />
-          <h3 className="font-semibold text-amber-900 mb-2">Solutions Need Generation</h3>
-          <p className="text-amber-700 mb-4">
-            Analysis found but solution approaches are missing. Generate them now.
-          </p>
-          <Button onClick={generateAnalysisFunction} disabled={generatingAnalysis}>
-            <Zap className="w-4 h-4 mr-2" />
-            Generate Solutions
-          </Button>
-        </Card>
-      </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="space-y-6">
-      
-
-      {/* Key Issues Carousel */}
-      {analysis?.identified_problems?.length > 0 && (
-        <KeyIssuesCarousel problems={analysis.identified_problems} />
+    <div className="max-w-6xl mx-auto space-y-6">
+      {/* Problem Summary */}
+      {analysis.identified_problems && analysis.identified_problems.length > 0 && (
+        <Card className="border-red-200 bg-red-50">
+          <CardHeader>
+            <CardTitle className="text-red-900 flex items-center gap-2">
+              <AlertCircle className="w-5 h-5" />
+              Key Issues Affecting Your Goals
+            </CardTitle>
+            <CardDescription className="text-red-700">
+              Our AI identified these specific problems that prevent your design from achieving its full potential.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {analysis.identified_problems.map((problem, idx) => (
+                <div key={idx} className="flex items-start gap-3 p-4 bg-white rounded-lg border border-red-200">
+                  <Badge 
+                    variant={problem.severity === 'high' ? 'destructive' : problem.severity === 'medium' ? 'default' : 'secondary'}
+                    className="mt-0.5"
+                  >
+                    {problem.severity}
+                  </Badge>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-red-900 mb-1">{problem.title}</h4>
+                    <p className="text-red-800 mb-2">{problem.description}</p>
+                    <p className="text-sm text-red-600">
+                      <strong>Business Impact:</strong> {problem.businessImpact}
+                    </p>
+                    <p className="text-sm text-red-600">
+                      <strong>UX Principle:</strong> {problem.uxPrinciple}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      {/* Classic View Insights - Collapsible */}
-      <Collapsible open={showClassicInsights} onOpenChange={setShowClassicInsights}>
-        <Card className="border-green-200 bg-green-50">
-          <CollapsibleTrigger asChild>
-            <div className="p-4 cursor-pointer hover:bg-green-100 transition-colors">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Lightbulb className="w-5 h-5 text-green-600" />
-                  <h3 className="font-semibold text-green-900">✨ What's Working Well</h3>
-                  <Badge variant="outline" className="text-green-600 border-green-300">
-                    Classic Analysis
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowPatternReference(!showPatternReference);
-                    }}
-                    className="text-green-700 hover:bg-green-200"
+      {/* Solution Approaches */}
+      {analysis.solution_approaches && analysis.solution_approaches.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Solution Approaches</CardTitle>
+            <CardDescription>
+              Choose a strategy that fits your resources and timeline
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-3 gap-4 mb-6">
+              {analysis.solution_approaches.map((solution) => {
+                const Icon = getSolutionIcon(solution.approach);
+                const colorClass = getSolutionColor(solution.approach);
+                const isSelected = selectedSolution === solution.approach;
+                
+                return (
+                  <motion.div
+                    key={solution.approach}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                   >
-                    <Eye className="w-4 h-4 mr-1" />
-                    Pattern Reference
-                  </Button>
-                  {showClassicInsights ? (
-                    <ChevronDown className="w-4 h-4 text-green-600" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4 text-green-600" />
-                  )}
-                </div>
-              </div>
-            </div>
-          </CollapsibleTrigger>
-          
-          <CollapsibleContent>
-            <div className="px-4 pb-4 space-y-4">
-              {/* Enhanced Strengths Display */}
-              <div className="bg-white rounded-lg">
-                <StrengthsDisplay 
-                  strengths={[
-                    "Clear visual hierarchy with pricing prominently displayed on the right",
-                    "Progressive disclosure of information keeps users focused on the task",
-                    "Smart use of color to highlight savings and call-to-action buttons",
-                    ...(analysis?.vision_insights?.positive_elements || [])
-                  ]}
-                  title=""
-                  variant="grid"
-                  showCategories={true}
-                />
-              </div>
-              
-              {/* Pattern Reference Modal */}
-              {showPatternReference && (
-                <div className="bg-white rounded-lg p-4 border border-green-200">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-medium text-green-900">Pattern References</h4>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowPatternReference(false)}
-                      className="text-green-600 hover:bg-green-100"
+                    <Card
+                      className={`cursor-pointer transition-all ${
+                        isSelected ? `ring-2 ring-primary ${colorClass}` : 'hover:shadow-md'
+                      }`}
+                      onClick={() => setSelectedSolution(solution.approach)}
                     >
-                      ×
-                    </Button>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className="p-3 bg-green-50 rounded border border-green-200">
-                        <h5 className="font-medium text-green-900 mb-1">Checkout Flow Pattern</h5>
-                        <p className="text-xs text-green-700 mb-2">
-                          Multi-step checkout with clear progress indication and pricing summary
-                        </p>
-                        <div className="flex gap-2">
-                          <Badge variant="outline" className="text-xs">E-commerce</Badge>
-                          <Badge variant="outline" className="text-xs">Conversion</Badge>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Icon className="w-5 h-5 text-primary" />
+                          <h4 className="font-semibold">{solution.name}</h4>
                         </div>
-                      </div>
-                      <div className="p-3 bg-green-50 rounded border border-green-200">
-                        <h5 className="font-medium text-green-900 mb-1">Progressive Disclosure</h5>
-                        <p className="text-xs text-green-700 mb-2">
-                          Gradual reveal of information to reduce cognitive load
-                        </p>
-                        <div className="flex gap-2">
-                          <Badge variant="outline" className="text-xs">UX Pattern</Badge>
-                          <Badge variant="outline" className="text-xs">Forms</Badge>
+                        <p className="text-sm text-muted-foreground mb-3">{solution.description}</p>
+                        
+                        <div className="space-y-2 text-xs">
+                          <div>
+                            <strong>Effort:</strong> {solution.implementationGuidance?.effort || 'Unknown'}
+                          </div>
+                          <div>
+                            <strong>Timeline:</strong> {solution.implementationGuidance?.timeline || 'Unknown'}
+                          </div>
+                          {solution.expectedImpact && Object.keys(solution.expectedImpact).length > 0 && (
+                            <div className="space-y-1">
+                              <strong>Expected Impact:</strong>
+                              {Object.entries(solution.expectedImpact).map(([metric, improvement]) => (
+                                <div key={metric} className="text-green-600 ml-2">
+                                  {metric}: {improvement}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    </div>
-                    <div className="bg-blue-50 border border-blue-200 rounded p-3">
-                      <div className="flex items-start gap-2">
-                        <MessageCircle className="w-4 h-4 text-blue-600 mt-0.5" />
-                        <div>
-                          <p className="text-xs font-medium text-blue-900 mb-1">
-                            Why these patterns work for checkout flows:
-                          </p>
-                          <p className="text-xs text-blue-700">
-                            Major retailers like Amazon and Shopify use similar approaches because they reduce cart abandonment by maintaining user focus while providing necessary information at the right moment.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+                        
+                        {!prototypes[solution.approach] && (
+                          <Button
+                            size="sm"
+                            className="w-full mt-3"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              generatePrototype(solution.approach);
+                            }}
+                            disabled={generating[solution.approach]}
+                          >
+                            {generating[solution.approach] ? 'Generating...' : 'Generate Prototype'}
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
             </div>
-          </CollapsibleContent>
+          </CardContent>
         </Card>
-      </Collapsible>
-
-      {/* Solution Approach Cards */}
-      <div className="grid md:grid-cols-3 gap-6">
-        {analysis?.solution_approaches?.map((solution) => {
-          const solutionState = generationState[solution?.approach] || { isGenerating: false, retryCount: 0 };
-          const isSelected = selectedSolution === solution?.approach;
-          const hasPrototype = !!prototypes[solution?.approach];
-          
-          // Get approach-specific styling
-          const getApproachStyles = (approach: string) => {
-            switch (approach) {
-              case 'conservative':
-                return {
-                  iconColor: 'text-green-600',
-                  bgColor: isSelected ? 'bg-green-50' : 'bg-white',
-                  borderColor: isSelected ? 'border-green-300 ring-2 ring-green-200' : 'border-gray-200 hover:border-green-200',
-                  titlePrefix: 'Information',
-                  conversionRange: '8-12%'
-                };
-              case 'balanced':
-                return {
-                  iconColor: 'text-blue-600',
-                  bgColor: isSelected ? 'bg-blue-50' : 'bg-white',
-                  borderColor: isSelected ? 'border-blue-300 ring-2 ring-blue-200' : 'border-gray-200 hover:border-blue-200',
-                  titlePrefix: 'Progressive',
-                  conversionRange: '15-20%'
-                };
-              case 'innovative':
-                return {
-                  iconColor: 'text-purple-600',
-                  bgColor: isSelected ? 'bg-purple-50' : 'bg-white',
-                  borderColor: isSelected ? 'border-purple-300 ring-2 ring-purple-200' : 'border-gray-200 hover:border-purple-200',
-                  titlePrefix: 'Smart Contextual',
-                  conversionRange: '25-35%'
-                };
-              default:
-                return {
-                  iconColor: 'text-gray-600',
-                  bgColor: 'bg-white',
-                  borderColor: 'border-gray-200',
-                  titlePrefix: '',
-                  conversionRange: 'TBD'
-                };
-            }
-          };
-          
-          const styles = getApproachStyles(solution?.approach || '');
-          
-          return (
-            <Card
-              key={solution?.approach}
-              className={`p-6 cursor-pointer transition-all duration-200 ${styles.bgColor} border-2 ${styles.borderColor}`}
-              onClick={() => setSelectedSolution(solution?.approach || 'balanced')}
-            >
-              {/* Header with Icon */}
-              <div className="flex items-start gap-3 mb-4">
-                <div className={`p-2 rounded-lg ${styles.bgColor === 'bg-white' ? 'bg-gray-50' : 'bg-white/60'}`}>
-                  {solution?.approach === 'conservative' && <Shield className={`w-6 h-6 ${styles.iconColor}`} />}
-                  {solution?.approach === 'balanced' && <Target className={`w-6 h-6 ${styles.iconColor}`} />}
-                  {solution?.approach === 'innovative' && <Zap className={`w-6 h-6 ${styles.iconColor}`} />}
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                    {solution?.name || `${styles.titlePrefix} Solution`}
-                  </h3>
-                  {solution?.approach === 'balanced' && (
-                    <div className="text-sm text-gray-600 font-medium">
-                      with Trust Signals
-                    </div>
-                  )}
-                  {solution?.approach === 'innovative' && (
-                    <div className="text-sm text-gray-600 font-medium">
-                      Checkout Experience
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              {/* Description */}
-              <p className="text-gray-600 mb-4 leading-relaxed">
-                {solution?.description || 'Description not available'}
-              </p>
-              
-              {/* Conversion Metric */}
-              <div className="mb-4">
-                <div className="text-lg font-semibold text-green-600">
-                  conversion: {styles.conversionRange}
-                </div>
-              </div>
-              
-              {/* Generation Status & Controls */}
-              {!hasPrototype && (
-                <div className="space-y-3">
-                  <Button
-                    size="sm"
-                    className={`w-full ${
-                      solution?.approach === 'conservative' 
-                        ? 'bg-green-600 hover:bg-green-700' 
-                        : solution?.approach === 'balanced'
-                        ? 'bg-blue-600 hover:bg-blue-700'
-                        : 'bg-purple-600 hover:bg-purple-700'
-                    }`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      generatePrototype(solution?.approach || 'balanced');
-                    }}
-                    disabled={solutionState.isGenerating}
-                  >
-                    {solutionState.isGenerating ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                        Generating Prototype...
-                      </>
-                    ) : (
-                      'Generate Prototype'
-                    )}
-                  </Button>
-                  
-                  {solutionState.error && (
-                    <div className="text-xs text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
-                      <div className="font-medium mb-1">Generation Failed</div>
-                      <div>{solutionState.error}</div>
-                      {solutionState.retryCount > 0 && (
-                        <div className="text-red-500 mt-1">Attempt {solutionState.retryCount + 1}/3</div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              {/* Prototype Ready Indicator */}
-              {hasPrototype && (
-                <div className="flex items-center gap-2 text-green-600 font-medium">
-                  <CheckCircle className="w-4 h-4" />
-                  <span>Prototype Ready</span>
-                </div>
-              )}
-            </Card>
-          );
-        })}
-      </div>
+      )}
 
       {/* Prototype Display */}
       {prototypes[selectedSolution] && (
         <Card className="overflow-hidden">
-          <div className="p-4 bg-gray-50 border-b">
+          <CardHeader className="bg-muted/50 border-b">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-semibold">{prototypes[selectedSolution].title}</h3>
-                <p className="text-sm text-gray-600">{prototypes[selectedSolution].description}</p>
+                <CardTitle className="flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  {prototypes[selectedSolution].title}
+                </CardTitle>
+                <CardDescription>{prototypes[selectedSolution].description}</CardDescription>
               </div>
               <div className="flex gap-2">
                 <Button
@@ -751,118 +415,92 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
                 </Button>
               </div>
             </div>
-          </div>
+          </CardHeader>
 
-          {/* Main Prototype Display */}
-          {viewMode === 'preview' && (
-            <div className="p-0">
-              <div className="flex justify-end gap-2 p-4 bg-gray-50 border-b">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setViewMode('compare')}
-                  className="text-gray-600"
-                >
-                  <Columns className="w-4 h-4 mr-2" />
-                  Compare with Original
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setViewMode('code')}
-                  className="text-gray-600"
-                >
-                  <Code className="w-4 h-4 mr-2" />
-                  View Code
-                </Button>
-              </div>
-              <PrototypeRenderer
-                code={prototypes[selectedSolution].component_code}
-                title={prototypes[selectedSolution].title}
-                onError={(error) => handlePrototypeError(error, selectedSolution)}
-              />
-            </div>
-          )}
+          <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as any)}>
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="preview" className="flex items-center gap-2">
+                <Eye className="w-4 h-4" />
+                Preview
+              </TabsTrigger>
+              <TabsTrigger value="compare" className="flex items-center gap-2">
+                <Columns className="w-4 h-4" />
+                Compare
+              </TabsTrigger>
+              <TabsTrigger value="code" className="flex items-center gap-2">
+                <Code className="w-4 h-4" />
+                Code
+              </TabsTrigger>
+            </TabsList>
 
-          {viewMode === 'compare' && (
-            <div className="p-0">
-              <div className="flex items-center justify-between p-4 bg-gray-50 border-b">
-                <h4 className="font-medium">Compare with Original</h4>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setViewMode('preview')}
-                >
-                  ← Back to Preview
-                </Button>
+            <TabsContent value="preview" className="p-0">
+              <div className="p-4">
+                {renderPrototypePreview(prototypes[selectedSolution].component_code)}
               </div>
-              <div className="grid md:grid-cols-2 gap-0">
+            </TabsContent>
+
+            <TabsContent value="compare" className="p-0">
+              <div className="grid md:grid-cols-2 h-[600px]">
+                <div className="border-r">
+                  <div className="p-2 bg-muted text-sm font-medium border-b">Original</div>
+                  {originalImage ? (
+                    <img src={originalImage} className="w-full h-full object-cover" alt="Original design" />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                      Original image not available
+                    </div>
+                  )}
+                </div>
                 <div>
-                  <div className="p-2 bg-gray-100 text-sm font-medium">Original</div>
-                  <div className="h-[600px] flex items-center justify-center bg-gray-50">
-                    {originalImage ? (
-                      <img 
-                        src={originalImage} 
-                        className="max-w-full max-h-full object-contain" 
-                        alt="Original design" 
-                      />
-                    ) : (
-                      <p className="text-gray-500">Original image not available</p>
-                    )}
+                  <div className="p-2 bg-blue-100 text-sm font-medium border-b">AI Enhancement</div>
+                  <div className="h-full overflow-auto">
+                    {renderPrototypePreview(prototypes[selectedSolution].component_code)}
                   </div>
                 </div>
-                <div>
-                  <div className="p-2 bg-blue-100 text-sm font-medium">AI Enhancement</div>
-                  <PrototypeRenderer
-                    code={prototypes[selectedSolution].component_code}
-                    title={`${prototypes[selectedSolution].title} - Enhanced`}
-                    onError={(error) => handlePrototypeError(error, selectedSolution)}
-                  />
-                </div>
               </div>
-            </div>
-          )}
+            </TabsContent>
 
-          {viewMode === 'code' && (
-            <div className="p-0">
-              <div className="flex items-center justify-between p-4 bg-gray-50 border-b">
-                <h4 className="font-medium">Component Code</h4>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setViewMode('preview')}
-                >
-                  ← Back to Preview
-                </Button>
-              </div>
-              <div className="p-4 bg-gray-900 overflow-auto max-h-[600px]">
-                <pre className="text-sm text-gray-300">
+            <TabsContent value="code" className="p-0">
+              <div className="bg-gray-900 text-gray-300 overflow-auto max-h-[600px] p-4">
+                <pre className="text-sm">
                   <code>{prototypes[selectedSolution].component_code}</code>
                 </pre>
               </div>
-            </div>
-          )}
+            </TabsContent>
+          </Tabs>
 
           {/* Implementation Guide */}
-          <div className="p-4 bg-gray-50 border-t">
+          <div className="p-4 bg-muted/30 border-t">
             <details className="cursor-pointer">
-              <summary className="font-medium text-sm">Implementation Guide</summary>
-              <div className="mt-3 space-y-3">
-                <div>
-                  <h5 className="font-medium text-sm mb-1">Key Changes</h5>
-                  <ul className="text-sm text-gray-600 space-y-1">
-                    {prototypes[selectedSolution]?.key_changes?.length > 0 ? (
-                      prototypes[selectedSolution].key_changes.map((change, i) => (
+              <summary className="font-medium text-sm mb-3">Implementation Guide</summary>
+              <div className="space-y-4">
+                {prototypes[selectedSolution].key_changes && prototypes[selectedSolution].key_changes.length > 0 && (
+                  <div>
+                    <h5 className="font-medium text-sm mb-2">Key Changes</h5>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      {prototypes[selectedSolution].key_changes.map((change, i) => (
                         <li key={i} className="flex items-start gap-2">
                           <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                          <span>{change}</span>
+                          {change}
                         </li>
-                      ))
-                    ) : (
-                      <li className="text-gray-500 text-sm">No key changes specified</li>
-                    )}
-                  </ul>
-                </div>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {prototypes[selectedSolution].expected_impact && Object.keys(prototypes[selectedSolution].expected_impact).length > 0 && (
+                  <div>
+                    <h5 className="font-medium text-sm mb-2">Expected Impact</h5>
+                    <div className="grid gap-2">
+                      {Object.entries(prototypes[selectedSolution].expected_impact).map(([metric, impact]) => (
+                        <div key={metric} className="text-sm">
+                          <span className="font-medium">{metric}:</span>{' '}
+                          <span className="text-green-600">{impact}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </details>
           </div>
