@@ -166,7 +166,7 @@ export function FigmantAnalysisStudio() {
                     Drag and drop your design files here, or click to browse
                   </p>
                   <div className="flex justify-center">
-                    <Button className="bg-[#121212] hover:bg-[#0a0a0a] text-white">
+                    <Button className="bg-foreground hover:bg-foreground/90 text-background">
                       Choose Files
                     </Button>
                   </div>
