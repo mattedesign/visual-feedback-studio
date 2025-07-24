@@ -50,13 +50,14 @@ export async function createFigmantSession(data: FigmantSessionData): Promise<Fi
   console.log('🎯 Creating figmant session:', data);
   
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('User not authenticated');
+  // Allow anonymous sessions for analysis
+  const userId = user?.id || 'anonymous';
 
   const { data: session, error } = await supabase
     .from('figmant_analysis_sessions')
     .insert({
       ...data,
-      user_id: user.id,
+      user_id: userId,
       status: 'draft'
     })
     .select()
@@ -82,12 +83,13 @@ export async function uploadFigmantImage(
   console.log(`📸 Uploading image ${order} for session ${sessionId}`);
   
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('User not authenticated');
+  // Allow anonymous image uploads for analysis
+  const userId = user?.id || 'anonymous';
 
   // Create unique file path
   const fileExt = file.name.split('.').pop();
   const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-  const filePath = `${user.id}/${sessionId}/${fileName}`;
+  const filePath = `${userId}/${sessionId}/${fileName}`;
   
   // Upload to storage
   const { data: uploadData, error: uploadError } = await supabase.storage
@@ -133,22 +135,24 @@ export async function startFigmantAnalysis(sessionId: string): Promise<any> {
     // Update session status to pending
     await updateSessionStatus(sessionId, 'pending');
 
-    // Check subscription limit
+    // Check subscription limit for authenticated users only
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('User not authenticated');
+    
+    if (user) {
+      const { data: canAnalyze, error: limitError } = await supabase.rpc('check_analysis_limit', {
+        p_user_id: user.id
+      });
 
-    const { data: canAnalyze, error: limitError } = await supabase.rpc('check_analysis_limit', {
-      p_user_id: user.id
-    });
+      if (limitError) {
+        console.error('❌ Failed to check analysis limit:', limitError);
+        throw new Error('Failed to check analysis limit');
+      }
 
-    if (limitError) {
-      console.error('❌ Failed to check analysis limit:', limitError);
-      throw new Error('Failed to check analysis limit');
+      if (!canAnalyze) {
+        throw new Error('Analysis limit reached. Please upgrade your subscription.');
+      }
     }
-
-    if (!canAnalyze) {
-      throw new Error('Analysis limit reached. Please upgrade your subscription.');
-    }
+    // Allow anonymous users to analyze without limits
 
     // Call the figmant analysis edge function
     console.log('📞 Calling figmant-analyze-design edge function...');
@@ -222,7 +226,7 @@ export async function getFigmantResults(sessionId: string): Promise<FigmantAnaly
  */
 export async function getFigmantHistory(): Promise<FigmantSession[]> {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('User not authenticated');
+  if (!user) return []; // Return empty array for anonymous users
 
   const { data: sessions, error } = await supabase
     .from('figmant_analysis_sessions')
