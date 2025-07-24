@@ -55,6 +55,7 @@ const FigmantResultsPage = () => {
   const [userContext, setUserContext] = useState<any>(null);
   const [showContextForm, setShowContextForm] = useState(false);
   const [contextLoading, setContextLoading] = useState(false);
+  const [autoStartState, setAutoStartState] = useState<'idle' | 'checking' | 'starting' | 'completed'>('idle');
   
 
   // Feature flags
@@ -636,9 +637,6 @@ const FigmantResultsPage = () => {
       </div>
     );
   }
-
-  // Auto-start analysis state - always declared unconditionally
-  const [autoStartState, setAutoStartState] = useState<'idle' | 'checking' | 'starting' | 'completed'>('idle');
 
   // Auto-start analysis effect - runs unconditionally
   useEffect(() => {
