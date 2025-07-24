@@ -658,8 +658,7 @@ const FigmantResultsPage = () => {
         console.log('✅ Auto-analysis started successfully:', analysisResult);
         
         setAutoStartState('completed');
-        // Reload the page data to show results
-        window.location.reload();
+        // Data will be loaded automatically by the useEffect
         
       } catch (error) {
         console.error('❌ Failed to auto-start analysis:', error);
