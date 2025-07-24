@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { StrategistOutput } from '@/services/ai/claudeUXStrategistEngine';
 import { usePrototypeGeneration } from '@/hooks/usePrototypeGeneration';
+import { VisualRecommendationCard } from '@/components/analysis/VisualRecommendationCard';
 
 interface AnalysisData {
   id?: string;
@@ -275,75 +276,54 @@ export const EnhancedFigmaAnalysisLayout: React.FC<EnhancedFigmaAnalysisLayoutPr
               )}
             </div>
 
-            {/* Content Area - Mobile Optimized */}
+            {/* Content Area - Visual Recommendations */}
             <div className="flex-1 overflow-auto p-3 sm:p-4">
               {viewMode === 'grid' ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                   {filteredAnnotations.map((annotation) => (
-                    <Card
+                    <VisualRecommendationCard
                       key={annotation.id}
-                      className={`cursor-pointer transition-all hover:shadow-md ${
-                        selectedAnnotation === annotation.id ? 'ring-2 ring-primary' : ''
-                      }`}
+                      annotation={annotation}
+                      isSelected={selectedAnnotation === annotation.id}
                       onClick={() => setSelectedAnnotation(annotation.id)}
-                    >
-                      <CardHeader className="pb-2 sm:pb-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <CardTitle className="text-xs sm:text-sm font-medium leading-4 sm:leading-5 line-clamp-2">
-                            {annotation.title}
-                          </CardTitle>
-                          <Badge
-                            variant="outline"
-                            className={`text-xs shrink-0 ${getSeverityColor(annotation.severity)}`}
-                          >
-                            {annotation.severity}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="pt-0">
-                        <p className="text-xs text-muted-foreground mb-2 line-clamp-2 sm:line-clamp-3">
-                          {annotation.feedback.substring(0, 80)}...
-                        </p>
-                        <Badge variant="secondary" className="text-xs">
-                          {annotation.category}
-                        </Badge>
-                      </CardContent>
-                    </Card>
+                    />
                   ))}
                 </div>
               ) : (
-                <div className="space-y-2 sm:space-y-3">
+                <div className="space-y-4">
                   {filteredAnnotations.map((annotation) => (
-                    <Card
+                    <VisualRecommendationCard
                       key={annotation.id}
-                      className={`cursor-pointer transition-all hover:shadow-sm ${
-                        selectedAnnotation === annotation.id ? 'ring-2 ring-primary' : ''
-                      }`}
+                      annotation={annotation}
+                      isSelected={selectedAnnotation === annotation.id}
                       onClick={() => setSelectedAnnotation(annotation.id)}
-                    >
-                      <CardContent className="p-3 sm:p-4">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-medium text-xs sm:text-sm mb-1 line-clamp-2">{annotation.title}</h3>
-                            <p className="text-xs text-muted-foreground mb-2 line-clamp-2 sm:line-clamp-3">
-                              {annotation.feedback.substring(0, 120)}...
-                            </p>
-                            <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-                              <Badge variant="secondary" className="text-xs">
-                                {annotation.category}
-                              </Badge>
-                              <Badge
-                                variant="outline"
-                                className={`text-xs ${getSeverityColor(annotation.severity)}`}
-                              >
-                                {annotation.severity}
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                    />
                   ))}
+                </div>
+              )}
+              
+              {/* No Results State */}
+              {filteredAnnotations.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                    <Target className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Analysis Results</h3>
+                  <p className="text-gray-500 max-w-sm mx-auto">
+                    {activeFilter === 'all' 
+                      ? "No analysis data available for this session."
+                      : `No results found for the "${activeFilter}" category.`
+                    }
+                  </p>
+                  {activeFilter !== 'all' && (
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setActiveFilter('all')}
+                      className="mt-4"
+                    >
+                      Show All Results
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
