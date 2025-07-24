@@ -496,8 +496,14 @@ const FigmantResultsPage = () => {
       console.log('🚀 Starting figmant analysis for session:', sessionId);
       
       // Start the regular analysis with better error handling
-      const analysisResult = await startFigmantAnalysis(sessionId);
-      console.log('✅ Analysis started successfully:', analysisResult);
+      console.log('📞 About to call startFigmantAnalysis...');
+      try {
+        const analysisResult = await startFigmantAnalysis(sessionId);
+        console.log('✅ Analysis started successfully:', analysisResult);
+      } catch (analysisError) {
+        console.error('❌ startFigmantAnalysis failed:', analysisError);
+        throw new Error(`Analysis startup failed: ${analysisError.message}`);
+      }
       
       // Use proper polling instead of arbitrary timeout
       let attempts = 0;
