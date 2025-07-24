@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -237,242 +236,236 @@ export default function TrendsPage() {
 
   if (loading) {
     return (
-      <DashboardLayout>
-        <div className="p-6">
-          <div className="animate-pulse space-y-6">
-            <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="h-32 bg-gray-200 rounded"></div>
-              ))}
-            </div>
+      <div className="p-6">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-32 bg-gray-200 rounded"></div>
+            ))}
           </div>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   if (!trendsData) {
     return (
-      <DashboardLayout>
-        <div className="p-6">
-          <div className="text-center py-12">
-            <h2 className="text-xl font-semibold mb-4">Unable to load trends</h2>
-            <Button onClick={() => navigate('/dashboard')}>Return to Dashboard</Button>
-          </div>
+      <div className="p-6">
+        <div className="text-center py-12">
+          <h2 className="text-xl font-semibold mb-4">Unable to load trends</h2>
+          <Button onClick={() => navigate('/dashboard')}>Return to Dashboard</Button>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout>
-      <div className="p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" onClick={() => navigate('/dashboard')}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Dashboard
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Your UX Analysis Trends</h1>
-            <p className="text-muted-foreground">
-              Insights from {trendsData.totalAnalyses} analyses
-            </p>
-          </div>
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-8">
+        <Button variant="ghost" onClick={() => navigate('/dashboard')}>
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Dashboard
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Your UX Analysis Trends</h1>
+          <p className="text-muted-foreground">
+            Insights from {trendsData.totalAnalyses} analyses
+          </p>
         </div>
+      </div>
 
-        {/* Overview Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <BarChart3 className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg">{trendsData.totalAnalyses}</CardTitle>
-                  <p className="text-sm text-muted-foreground">Total Analyses</p>
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                  <Target className="w-5 h-5 text-green-600" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg">{trendsData.avgScore}%</CardTitle>
-                  <p className="text-sm text-muted-foreground">Average Score</p>
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-purple-600" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg">{trendsData.recentActivity.thisWeek}</CardTitle>
-                  <p className="text-sm text-muted-foreground">This Week</p>
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <Users className="w-5 h-5 text-orange-600" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg">{trendsData.topCategories.length}</CardTitle>
-                  <p className="text-sm text-muted-foreground">Focus Areas</p>
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
-        </div>
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* What You're Doing Well */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-                What You're Doing Well
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {trendsData.strengths.map((strength, index) => (
-                <div key={index} className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-                  <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
-                  <span className="text-sm">{strength}</span>
-                </div>
-              ))}
-              {trendsData.strengths.length === 0 && (
-                <p className="text-muted-foreground text-center py-4">
-                  Complete more analyses to identify your strengths
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Areas for Improvement */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-orange-600" />
-                Areas for Improvement
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {trendsData.improvementAreas.map((area, index) => (
-                <div key={index} className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg">
-                  <AlertTriangle className="w-4 h-4 text-orange-600 flex-shrink-0" />
-                  <span className="text-sm">{area}</span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Analysis Categories */}
+      {/* Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="w-5 h-5" />
-              Analysis Focus Areas
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {trendsData.topCategories.map((category, index) => (
-                <div key={index} className="p-4 border rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium">{category.category}</h4>
-                    {getTrendIcon(category.trend)}
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>{category.count} analyses</span>
-                      <span>{category.percentage.toFixed(1)}%</span>
-                    </div>
-                    <Progress value={category.percentage} className="h-2" />
-                  </div>
-                </div>
-              ))}
-            </div>
-            {trendsData.topCategories.length === 0 && (
-              <p className="text-muted-foreground text-center py-8">
-                No analysis categories found. Start analyzing to see your focus areas.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Common Issues */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
-              Most Common Issues Found
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {trendsData.commonIssues.map((issue, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex-1">
-                    <span className="text-sm font-medium">{issue.issue}</span>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge variant={getSeverityColor(issue.severity)} className="text-xs">
-                        {issue.severity}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">{issue.category}</span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-sm font-medium">{issue.frequency}</span>
-                    <p className="text-xs text-muted-foreground">occurrences</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {trendsData.commonIssues.length === 0 && (
-              <p className="text-muted-foreground text-center py-8">
-                No common issues identified yet. Continue analyzing to build your insights.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Call to Action */}
-        <Card className="bg-gradient-to-r from-primary/10 to-accent/10 border-primary/20">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <BarChart3 className="w-5 h-5 text-blue-600" />
+              </div>
               <div>
-                <h3 className="font-semibold mb-2">Ready for your next analysis?</h3>
-                <p className="text-muted-foreground">
-                  Keep building your UX insights with AI-powered analysis
-                </p>
+                <CardTitle className="text-lg">{trendsData.totalAnalyses}</CardTitle>
+                <p className="text-sm text-muted-foreground">Total Analyses</p>
               </div>
-              <Button onClick={() => navigate('/analyze')} className="flex items-center gap-2">
-                <Zap className="w-4 h-4" />
-                Start New Analysis
-              </Button>
             </div>
+          </CardHeader>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                <Target className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">{trendsData.avgScore}%</CardTitle>
+                <p className="text-sm text-muted-foreground">Average Score</p>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">{trendsData.recentActivity.thisWeek}</CardTitle>
+                <p className="text-sm text-muted-foreground">This Week</p>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                <Users className="w-5 h-5 text-orange-600" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">{trendsData.topCategories.length}</CardTitle>
+                <p className="text-sm text-muted-foreground">Focus Areas</p>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* What You're Doing Well */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              What You're Doing Well
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {trendsData.strengths.map((strength, index) => (
+              <div key={index} className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+                <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                <span className="text-sm">{strength}</span>
+              </div>
+            ))}
+            {trendsData.strengths.length === 0 && (
+              <p className="text-muted-foreground text-center py-4">
+                Complete more analyses to identify your strengths
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Areas for Improvement */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-orange-600" />
+              Areas for Improvement
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {trendsData.improvementAreas.map((area, index) => (
+              <div key={index} className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg">
+                <AlertTriangle className="w-4 h-4 text-orange-600 flex-shrink-0" />
+                <span className="text-sm">{area}</span>
+              </div>
+            ))}
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
+
+      {/* Analysis Categories */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="w-5 h-5" />
+            Analysis Focus Areas
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {trendsData.topCategories.map((category, index) => (
+              <div key={index} className="p-4 border rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium">{category.category}</h4>
+                  {getTrendIcon(category.trend)}
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>{category.count} analyses</span>
+                    <span>{category.percentage.toFixed(1)}%</span>
+                  </div>
+                  <Progress value={category.percentage} className="h-2" />
+                </div>
+              </div>
+            ))}
+          </div>
+          {trendsData.topCategories.length === 0 && (
+            <p className="text-muted-foreground text-center py-8">
+              No analysis categories found. Start analyzing to see your focus areas.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Common Issues */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5" />
+            Most Common Issues Found
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {trendsData.commonIssues.map((issue, index) => (
+              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex-1">
+                  <span className="text-sm font-medium">{issue.issue}</span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge variant={getSeverityColor(issue.severity)} className="text-xs">
+                      {issue.severity}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">{issue.category}</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-sm font-medium">{issue.frequency}</span>
+                  <p className="text-xs text-muted-foreground">occurrences</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          {trendsData.commonIssues.length === 0 && (
+            <p className="text-muted-foreground text-center py-8">
+              No common issues identified yet. Continue analyzing to build your insights.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Call to Action */}
+      <Card className="bg-gradient-to-r from-primary/10 to-accent/10 border-primary/20">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold mb-2">Ready for your next analysis?</h3>
+              <p className="text-muted-foreground">
+                Keep building your UX insights with AI-powered analysis
+              </p>
+            </div>
+            <Button onClick={() => navigate('/analyze')} className="flex items-center gap-2">
+              <Zap className="w-4 h-4" />
+              Start New Analysis
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
