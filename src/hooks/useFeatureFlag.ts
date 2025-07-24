@@ -27,7 +27,7 @@ export const useFeatureFlag = (flagName: string): boolean => {
     'enhanced-analysis-layout': true, // ENABLED: Enhanced Figma layout
     
     // Holistic AI Prototypes - Feature Flag for Safe Rollout
-    'holistic-ai-prototypes': true, // ENABLED: New holistic analysis system
+    'holistic-ai-prototypes': false, // CONTROLLED BY SETTINGS: User preference in localStorage
   };
   
   // Check for specific flag activation via URL parameters
@@ -59,10 +59,11 @@ export const useFeatureFlag = (flagName: string): boolean => {
     if (localStorage.getItem('perplexity-enabled') === 'true') return true;
   }
   
-  // Holistic AI Prototypes activation
+  // Holistic AI Prototypes activation - Check localStorage first
   if (flagName === 'holistic-ai-prototypes') {
     if (urlParams.get('holistic') === 'true') return true;
-    if (localStorage.getItem('holistic-ai-prototypes-enabled') === 'true') return true;
+    // Return the actual localStorage value, defaulting to false if not set
+    return localStorage.getItem('holistic-ai-prototypes-enabled') === 'true';
   }
   
   // Individual flag activation (e.g., ?perplexity=true)
