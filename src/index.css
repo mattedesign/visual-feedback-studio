@@ -16,6 +16,7 @@
     /* Text color tokens */
     --Text-Primary: #121212;
     --Stroke-01: #ECECEC;
+    --Stroke-02: #E2E2E2;
     --Surface-03: #F1F1F1;
     --Surface-01: #FCFCFC;
     
@@ -39,8 +40,9 @@
     --accent-foreground: 0 0% 10%;
     
     /* Card and surface colors */
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 10%;
+    --card: 0 0% 99%;
+    --card-foreground: 0 0% 7%;
+    --card-border: 214 11% 89%;
     --muted: 210 40% 98%;
     --muted-foreground: 215 16% 47%;
     
@@ -68,7 +70,7 @@
     --chart-4: 38 92% 50%;
     --chart-5: 283 85% 55%;
     
-    --radius: 8px;
+    --radius: 20px;
   }
 
   .dark {
@@ -172,9 +174,9 @@
   }
   
   .figmant-card {
-    border-radius: 16px !important;
+    border-radius: 20px !important;
     border: 1px solid var(--Stroke-02, #E2E2E2) !important;
-    background: #FCFCFC !important;
+    background: var(--Surface-01, #FCFCFC) !important;
     padding: 12px !important;
   }
   
