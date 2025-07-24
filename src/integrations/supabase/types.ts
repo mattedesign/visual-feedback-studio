@@ -838,7 +838,7 @@ export type Database = {
           {
             foreignKeyName: "figmant_holistic_analyses_analysis_id_fkey"
             columns: ["analysis_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "figmant_analysis_results"
             referencedColumns: ["id"]
           },

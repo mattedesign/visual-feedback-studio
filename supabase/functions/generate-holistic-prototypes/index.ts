@@ -79,28 +79,36 @@ serve(async (req) => {
       .from('figmant_holistic_analyses')
       .select('*')
       .eq('analysis_id', analysisId)
-      .single();
+      .order('created_at', { ascending: false })
+      .limit(1);
 
-    if (analysisError && analysisError.code !== 'PGRST116') {
+    if (analysisError) {
       console.error('❌ Error checking for existing analysis:', analysisError);
       throw new Error(`Database error: ${analysisError.message}`);
     }
 
-    let holisticAnalysis = existingAnalysis;
+    let holisticAnalysis = existingAnalysis && existingAnalysis.length > 0 ? existingAnalysis[0] : null;
+
+    if (existingAnalysis && existingAnalysis.length > 1) {
+      console.warn(`⚠️ Found ${existingAnalysis.length} analyses for analysis_id ${analysisId}. Using most recent.`);
+    }
 
     // Generate holistic analysis if it doesn't exist
     if (!holisticAnalysis) {
       console.log('🔍 No existing analysis found, generating new holistic analysis...');
       const analysisResponse = await generateHolisticAnalysis(analysisData, contextData, anthropicKey);
       
-      console.log('💾 Storing holistic analysis in database...');
+      console.log('💾 Storing holistic analysis in database with conflict handling...');
       const { data: newAnalysis, error: insertError } = await supabase
         .from('figmant_holistic_analyses')
-        .insert({
+        .upsert({
           analysis_id: analysisId,
           identified_problems: analysisResponse.problems,
           solution_approaches: analysisResponse.solutions,
           vision_insights: analysisResponse.visionInsights
+        }, {
+          onConflict: 'analysis_id',
+          ignoreDuplicates: false
         })
         .select()
         .single();

@@ -71,24 +71,59 @@ export function HolisticPrototypeViewer({ analysisId, contextId, originalImage }
     try {
       // Load holistic analysis
       console.log('🔍 Querying figmant_holistic_analyses table...');
-      const { data, error } = await supabase
+      
+      // First check if any records exist
+      const { data: existingRecords, error: countError } = await supabase
         .from('figmant_holistic_analyses')
-        .select('*')
+        .select('id, created_at')
         .eq('analysis_id', analysisId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order('created_at', { ascending: false });
 
-      console.log('📊 Holistic analysis query result:', { 
-        found: !!data, 
-        error: error?.message,
-        dataKeys: data ? Object.keys(data) : null,
-        analysisId: analysisId
+      console.log('📊 Found existing analyses:', { 
+        count: existingRecords?.length || 0,
+        analysisId: analysisId,
+        error: countError?.message
       });
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
-        console.error('❌ Database error loading analysis:', error);
-        throw error;
+      if (countError) {
+        console.error('❌ Database error checking for analyses:', countError);
+        throw countError;
+      }
+
+      let data = null;
+      let error = null;
+
+      if (existingRecords && existingRecords.length > 0) {
+        // Multiple records found - log this for debugging
+        if (existingRecords.length > 1) {
+          console.warn(`⚠️ Found ${existingRecords.length} analyses for analysis_id ${analysisId}. Using most recent.`);
+        }
+
+        // Fetch the most recent complete record
+        const queryResult = await supabase
+          .from('figmant_holistic_analyses')
+          .select('*')
+          .eq('analysis_id', analysisId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        data = queryResult.data;
+        error = queryResult.error;
+
+        console.log('📊 Holistic analysis query result:', { 
+          found: !!data, 
+          error: error?.message,
+          dataKeys: data ? Object.keys(data) : null,
+          analysisId: analysisId
+        });
+
+        if (error) {
+          console.error('❌ Database error loading analysis:', error);
+          throw error;
+        }
+      } else {
+        console.log('📊 No existing analyses found for analysis_id:', analysisId);
       }
 
       if (data) {
