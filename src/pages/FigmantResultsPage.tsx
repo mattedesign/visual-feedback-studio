@@ -637,53 +637,44 @@ const FigmantResultsPage = () => {
     );
   }
 
-  // Show start analysis button if session exists but no analysis results
+  // Auto-start analysis if session exists but no analysis results
   if (sessionData && !analysisData && sessionData.status === 'draft') {
+    // Start analysis automatically if we have images
+    React.useEffect(() => {
+      const autoStartAnalysis = async () => {
+        if (!sessionId || !sessionData?.images?.length) {
+          console.log('⏸️ Not auto-starting: missing sessionId or images');
+          return;
+        }
+
+        try {
+          setLoading(true);
+          toast.info('Starting analysis automatically...');
+          
+          console.log('🚀 Auto-starting figmant analysis for session:', sessionId);
+          
+          const analysisResult = await startFigmantAnalysis(sessionId);
+          console.log('✅ Auto-analysis started successfully:', analysisResult);
+          
+          // Reload the page data to show results
+          window.location.reload();
+          
+        } catch (error) {
+          console.error('❌ Failed to auto-start analysis:', error);
+          toast.error('Failed to start analysis: ' + (error instanceof Error ? error.message : 'Unknown error'));
+          setLoading(false);
+        }
+      };
+
+      autoStartAnalysis();
+    }, [sessionId, sessionData?.images?.length]);
+
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
-          <Sparkles className="w-8 h-8 mx-auto mb-4 text-[#22757C]" />
-          <h2 className="text-lg font-semibold mb-2">Ready to Analyze</h2>
-          <p className="text-muted-foreground mb-4">Your images have been uploaded. Start the analysis to get insights.</p>
-          <Button 
-            onClick={async () => {
-              try {
-                setLoading(true);
-                toast.info('Starting analysis...');
-                
-                if (!sessionId) {
-                  throw new Error('No session ID available');
-                }
-
-                console.log('🚀 Starting figmant analysis for session:', sessionId);
-                
-                const analysisResult = await startFigmantAnalysis(sessionId);
-                console.log('✅ Analysis started successfully:', analysisResult);
-                
-                // Reload the page data to show results
-                window.location.reload();
-                
-              } catch (error) {
-                console.error('❌ Failed to start analysis:', error);
-                toast.error('Failed to start analysis: ' + (error instanceof Error ? error.message : 'Unknown error'));
-                setLoading(false);
-              }
-            }}
-            disabled={loading}
-            className="bg-[#22757C] hover:bg-[#1a5d63]"
-          >
-            {loading ? (
-              <>
-                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                Starting Analysis...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 mr-2" />
-                Start Analysis
-              </>
-            )}
-          </Button>
+          <Sparkles className="w-8 h-8 animate-spin mx-auto mb-4 text-[#22757C]" />
+          <h2 className="text-lg font-semibold mb-2">Starting Analysis</h2>
+          <p className="text-muted-foreground">Your images have been uploaded. Analysis is starting automatically...</p>
         </div>
       </div>
     );
