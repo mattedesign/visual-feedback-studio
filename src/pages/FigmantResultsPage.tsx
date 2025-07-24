@@ -498,8 +498,8 @@ const FigmantResultsPage = () => {
       // Start the regular analysis with better error handling
       console.log('📞 About to call startFigmantAnalysis...');
       try {
-        const analysisResult = await startFigmantAnalysis(sessionId);
-        console.log('✅ Analysis started successfully:', analysisResult);
+      const analysisResult = await startFigmantAnalysis(sessionId, userContext?.id);
+      console.log('✅ Analysis started successfully with context:', analysisResult);
       } catch (analysisError) {
         console.error('❌ startFigmantAnalysis failed:', analysisError);
         throw new Error(`Analysis startup failed: ${analysisError.message}`);
@@ -723,27 +723,37 @@ const FigmantResultsPage = () => {
           </h1>
           
           {/* View Toggle */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setViewMode('visual')}
-              className={`px-4 py-2 rounded-lg ${
-                viewMode === 'visual' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-100'
-              }`}
-            >
-              🎨 Visual Ideas
-            </button>
-            <button
-              onClick={() => setViewMode('detailed')}
-              className={`px-4 py-2 rounded-lg ${
-                viewMode === 'detailed' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-100'
-              }`}
-            >
-              📊 Detailed Analysis
-            </button>
+          <div className="flex gap-4 items-center">
+            {/* Feature Flag Toggle */}
+            {isHolisticEnabled && (
+              <div className="flex items-center gap-2 px-3 py-1 bg-green-50 border border-green-200 rounded-lg">
+                <span className="text-xs font-medium text-green-700">✨ Holistic AI</span>
+                <span className="text-xs text-green-600">Enabled</span>
+              </div>
+            )}
+            
+            <div className="flex gap-2">
+              <button
+                onClick={() => setViewMode('visual')}
+                className={`px-4 py-2 rounded-lg ${
+                  viewMode === 'visual' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-100'
+                }`}
+              >
+                {isHolisticEnabled ? '🧠 AI Prototypes' : '🎨 Visual Ideas'}
+              </button>
+              <button
+                onClick={() => setViewMode('detailed')}
+                className={`px-4 py-2 rounded-lg ${
+                  viewMode === 'detailed' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-100'
+                }`}
+              >
+                📊 Detailed Analysis
+              </button>
+            </div>
           </div>
         </div>
       </div>

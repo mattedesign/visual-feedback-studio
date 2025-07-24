@@ -128,8 +128,8 @@ export async function uploadFigmantImage(
 /**
  * Start figmant analysis for a session
  */
-export async function startFigmantAnalysis(sessionId: string): Promise<any> {
-  console.log('🚀 Starting figmant analysis for session:', sessionId);
+export async function startFigmantAnalysis(sessionId: string, contextId?: string): Promise<any> {
+  console.log('🚀 Starting figmant analysis for session:', sessionId, contextId ? `with context: ${contextId}` : 'without context');
   
   try {
     // Update session status to pending
@@ -157,7 +157,7 @@ export async function startFigmantAnalysis(sessionId: string): Promise<any> {
     // Call the figmant analysis edge function
     console.log('📞 Calling figmant-analyze-design edge function...');
     const { data, error } = await supabase.functions.invoke('figmant-analyze-design', {
-      body: { sessionId: sessionId }
+      body: { sessionId: sessionId, contextId: contextId }
     });
 
     if (error) {
