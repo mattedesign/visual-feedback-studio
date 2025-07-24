@@ -519,10 +519,33 @@ const FigmantResultsPage = () => {
             .from('figmant_analysis_results')
             .select('id')
             .eq('session_id', sessionId)
-            .single();
+            .maybeSingle(); // Use maybeSingle to avoid 406 errors
+          
+          if (error) {
+            console.error('❌ Error fetching analysis results:', error);
+            if (attempts < maxAttempts) {
+              setTimeout(pollForAnalysis, pollInterval);
+              return;
+            } else {
+              throw new Error(`Database error: ${error.message}`);
+            }
+          }
           
           if (data?.id) {
             console.log('✅ Analysis result found with ID:', data.id);
+            
+            // Set the analysis data immediately to show the viewer
+            try {
+              const fullAnalysisData = await getFigmantResults(sessionId);
+              if (fullAnalysisData) {
+                const transformedData = transformAnalysisData(fullAnalysisData);
+                setAnalysisData(transformedData);
+                console.log('✅ Analysis data set with ID:', transformedData.id);
+              }
+            } catch (fetchError) {
+              console.error('❌ Error fetching full analysis data:', fetchError);
+            }
+            
             toast.info('Analysis complete! Generating holistic analysis...');
             
             // Generate holistic analysis automatically
@@ -539,13 +562,9 @@ const FigmantResultsPage = () => {
             } else {
               console.log('✅ Holistic analysis generated successfully');
               toast.success('Holistic analysis generated successfully!');
-              
-              // Refresh the analysis data to show new holistic results
-              const updatedAnalysis = await getFigmantResults(sessionId);
-              if (updatedAnalysis) {
-                setAnalysisData(transformAnalysisData(updatedAnalysis));
-              }
             }
+            
+            return; // Exit polling loop
           } else if (attempts < maxAttempts) {
             // Continue polling
             setTimeout(pollForAnalysis, pollInterval);
