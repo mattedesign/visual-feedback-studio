@@ -1,9 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { analysisErrorHandler } from '@/utils/analysisErrorHandler';
-import { analysisService } from '@/services/analysisService';
-// import { saveAnalysisResults } from '@/services/analysisResultsService'; // No longer needed - edge function handles saving
-import { aiEnhancedSolutionEngine } from '@/services/solutions/aiEnhancedSolutionEngine';
-import { supabase } from '@/integrations/supabase/client';
+import figmantAnalysisService from '@/services/figmantAnalysisService';
 import { toast } from 'sonner';
 
 interface AnalysisInput {
@@ -14,7 +10,7 @@ interface AnalysisInput {
 }
 
 interface AnalysisProgress {
-  phase: 'idle' | 'uploading' | 'processing' | 'research' | 'analysis' | 'validation' | 'recommendations' | 'complete';
+  phase: 'idle' | 'uploading' | 'processing' | 'analysis' | 'complete';
   progress: number;
   message: string;
   researchSourcesFound: number;
@@ -27,6 +23,7 @@ interface AnalysisResult {
   wellDone?: any;
   consultationResults?: any;
   analysisId?: string;
+  sessionId?: string;
   error?: string;
 }
 
@@ -48,7 +45,6 @@ export const useConsolidatedAnalysis = () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
-      analysisErrorHandler.cancelAllOperations();
     };
   }, []);
 
@@ -56,43 +52,13 @@ export const useConsolidatedAnalysis = () => {
     setProgress(prev => ({ ...prev, ...update }));
   }, []);
 
-  const simulatePhaseProgress = useCallback(async (
-    phase: AnalysisProgress['phase'],
-    duration: number,
-    startProgress: number,
-    endProgress: number
-  ) => {
-    updateProgress({ phase, message: getPhaseMessage(phase) });
-    
-    const steps = 20;
-    const stepDuration = duration / steps;
-    const progressIncrement = (endProgress - startProgress) / steps;
-    
-    for (let i = 0; i <= steps; i++) {
-      if (abortControllerRef.current?.signal.aborted) {
-        throw new Error('Analysis cancelled by user');
-      }
-      
-      const currentProgress = startProgress + (progressIncrement * i);
-      updateProgress({ progress: currentProgress });
-      
-      // Special handling for research phase
-      if (phase === 'research' && i > 5) {
-        const sourcesFound = Math.min(12, Math.floor((i / steps) * 12));
-        updateProgress({ researchSourcesFound: sourcesFound });
-      }
-      
-      await new Promise(resolve => setTimeout(resolve, stepDuration));
-    }
-  }, [updateProgress]);
-
   const executeAnalysis = useCallback(async (input: AnalysisInput): Promise<AnalysisResult> => {
     if (isAnalyzing) {
       console.log('⚠️ Analysis already in progress');
       return { success: false, error: 'Analysis already in progress' };
     }
 
-    // ✅ FIXED: Enhanced validation with proper error messages
+    // Enhanced validation with proper error messages
     if (input.imageUrls.length === 0) {
       toast.error('Please select at least one image to analyze');
       throw new Error('Please select at least one image to analyze');
@@ -113,7 +79,7 @@ export const useConsolidatedAnalysis = () => {
       throw new Error('Analysis context must be less than 2000 characters');
     }
 
-    console.log('🚀 Starting consolidated analysis:', {
+    console.log('🚀 Starting unified Figmant analysis:', {
       imageCount: input.imageUrls.length,
       contextLength: input.analysisContext.length
     });
@@ -125,78 +91,93 @@ export const useConsolidatedAnalysis = () => {
     updateProgress({
       phase: 'uploading',
       progress: 0,
-      message: 'Preparing analysis...',
+      message: 'Creating Figmant session...',
       researchSourcesFound: 0
     });
 
     try {
-      return await analysisErrorHandler.withCircuitBreaker(
-        async () => {
-          return await analysisErrorHandler.withTimeout(
-            executeAnalysisSteps(input),
-            120000, // 2 minute timeout
-            'complete-analysis'
-          );
-        },
-        'main-analysis',
-        {
-          component: 'ConsolidatedAnalysis',
-          operation: 'executeAnalysis',
-          metadata: { imageCount: input.imageUrls.length }
-        }
-      );
+      return await executeAnalysisSteps(input);
     } catch (error) {
-      analysisErrorHandler.handleError(error, {
-        component: 'ConsolidatedAnalysis',
-        operation: 'executeAnalysis',
-        metadata: { imageCount: input.imageUrls.length }
-      });
+      console.error('💥 Figmant analysis failed:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     } finally {
       setIsAnalyzing(false);
       abortControllerRef.current = null;
     }
-  }, [isAnalyzing, simulatePhaseProgress, updateProgress]);
+  }, [isAnalyzing, updateProgress]);
 
   const executeAnalysisSteps = async (input: AnalysisInput): Promise<AnalysisResult> => {
-    console.log('🚀 Starting simplified analysis flow');
+    console.log('🚀 Starting unified Figmant analysis flow');
     
-    // Phase 1: Quick prep and create analysis record
-    updateProgress({ phase: 'uploading', progress: 0, message: 'Preparing analysis...' });
+    // Phase 1: Create Figmant session
+    updateProgress({ phase: 'uploading', progress: 10, message: 'Creating Figmant session...' });
     
-    const analysisId = await analysisService.createAnalysis();
-    if (!analysisId) {
-      throw new Error('Failed to create analysis record');
+    const sessionData = {
+      title: `Analysis ${new Date().toISOString().split('T')[0]}`,
+      design_type: input.imageUrls.length > 1 ? 'comparative' : 'single',
+      business_goals: [],
+      industry: 'general'
+    };
+
+    const session = await figmantAnalysisService.createFigmantSession(sessionData);
+    if (!session?.id) {
+      throw new Error('Failed to create Figmant session');
     }
 
-    console.log('✅ Analysis record created:', analysisId);
-    updateProgress({ progress: 20, message: 'Analysis record created' });
+    console.log('✅ Figmant session created:', session.id);
+    updateProgress({ progress: 25, message: 'Session created successfully' });
     
-    // Phase 2: Execute simple Claude analysis
+    // Phase 2: Upload images
+    updateProgress({ 
+      phase: 'uploading', 
+      progress: 30, 
+      message: 'Uploading images...'
+    });
+
+    const uploadPromises = input.imageUrls.map(async (imageUrl, index) => {
+      try {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const file = new File([blob], `analysis-image-${index + 1}.jpg`, { type: 'image/jpeg' });
+        
+        return await figmantAnalysisService.uploadFigmantImage(session.id, file, index + 1);
+      } catch (error) {
+        console.error(`❌ Failed to upload image ${index + 1}:`, error);
+        throw error;
+      }
+    });
+
+    const uploadedImages = await Promise.all(uploadPromises);
+    console.log('✅ All images uploaded:', uploadedImages.length);
+    updateProgress({ progress: 50, message: 'Images uploaded successfully' });
+    
+    // Phase 3: Execute Figmant analysis
     updateProgress({ 
       phase: 'analysis', 
-      progress: 40, 
-      message: 'Running Claude analysis...'
+      progress: 60, 
+      message: 'Running Figmant AI analysis...'
     });
     
-    const analysisResult = await analysisService.analyzeDesign({
-      imageUrls: input.imageUrls,
-      analysisId,
-      analysisPrompt: input.analysisContext,
-      designType: 'web',
-      isComparative: input.imageUrls.length > 1
-    });
-
-    if (!analysisResult.success) {
-      throw new Error(analysisResult.error || 'Analysis failed');
+    const analysisResult = await figmantAnalysisService.startFigmantAnalysis(session.id);
+    if (!analysisResult) {
+      throw new Error('Failed to start Figmant analysis');
     }
 
-    console.log('✅ Simple analysis completed:', {
-      annotationCount: analysisResult.annotations?.length || 0,
-      modelUsed: 'claude-sonnet-4-20250514'
+    console.log('✅ Figmant analysis triggered successfully');
+    updateProgress({ progress: 80, message: 'Retrieving analysis results...' });
+
+    // Phase 4: Get results
+    const results = await figmantAnalysisService.getFigmantResults(session.id);
+    if (!results) {
+      throw new Error('Failed to retrieve analysis results');
+    }
+
+    console.log('✅ Figmant analysis completed:', {
+      annotationCount: results.claude_analysis?.annotations?.length || 0,
+      modelUsed: results.ai_model_used || 'figmant-ai'
     });
 
-    // Phase 3: Complete
+    // Phase 5: Complete
     updateProgress({ 
       phase: 'complete', 
       progress: 100, 
@@ -205,19 +186,20 @@ export const useConsolidatedAnalysis = () => {
     
     const result = {
       success: true,
-      annotations: analysisResult.annotations,
-      enhancedContext: undefined,
+      annotations: results.claude_analysis?.annotations || [],
+      enhancedContext: (results as any).enhanced_context || null,
       wellDone: null,
       consultationResults: null,
-      analysisId
+      analysisId: results.id,
+      sessionId: session.id
     };
 
-    // Navigate to results
-    if (result.success && result.analysisId) {
-      console.log('✅ Analysis complete, redirecting to results');
+    // Navigate to Figmant results
+    if (result.success && result.sessionId) {
+      console.log('✅ Analysis complete, redirecting to Figmant results');
       
       setTimeout(() => {
-        window.location.href = `/analysis/${result.analysisId}?beta=true`;
+        window.location.href = `/figmant/results/${result.sessionId}`;
       }, 1000);
     }
     
@@ -229,7 +211,6 @@ export const useConsolidatedAnalysis = () => {
       abortControllerRef.current.abort();
       console.log('🛑 Analysis cancelled by user');
     }
-    analysisErrorHandler.cancelAllOperations();
     setIsAnalyzing(false);
     updateProgress({ phase: 'idle', progress: 0, message: '', researchSourcesFound: 0 });
   }, [updateProgress]);
@@ -238,7 +219,6 @@ export const useConsolidatedAnalysis = () => {
     setIsAnalyzing(false);
     setAnalysisStartTime(null);
     updateProgress({ phase: 'idle', progress: 0, message: '', researchSourcesFound: 0 });
-    analysisErrorHandler.resetCircuitBreakers();
   }, [updateProgress]);
 
   return {
@@ -260,14 +240,8 @@ function getPhaseMessage(phase: AnalysisProgress['phase']): string {
       return 'Uploading images...';
     case 'processing':
       return 'Processing design elements...';
-    case 'research':
-      return 'Searching UX research database...';
     case 'analysis':
-      return 'Running AI analysis...';
-    case 'validation':
-      return 'Validating insights...';
-    case 'recommendations':
-      return 'Generating recommendations...';
+      return 'Running Figmant AI analysis...';
     case 'complete':
       return 'Analysis complete!';
     default:

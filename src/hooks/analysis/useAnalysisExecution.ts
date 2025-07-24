@@ -1,16 +1,11 @@
-
-
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { toast } from 'sonner';
-import { AnalysisWithFiles, updateAnalysisStatus, updateAnalysisContext } from '@/services/analysisDataService';
-import { getAnnotationsForAnalysis } from '@/services/annotationsService';
-import { supabase } from '@/integrations/supabase/client';
+import figmantAnalysisService from '@/services/figmantAnalysisService';
 import { Annotation } from '@/types/analysis';
 import { AIProvider } from '@/types/aiProvider';
-import { useAnalysisDiagnostics } from './useAnalysisDiagnostics';
 
 interface UseAnalysisExecutionProps {
-  currentAnalysis: AnalysisWithFiles | null;
+  currentAnalysis: any; // Can be either legacy or figmant session
   setIsAnalyzing: (analyzing: boolean) => void;
   setAnnotations: (annotations: Annotation[]) => void;
 }
@@ -20,15 +15,6 @@ export const useAnalysisExecution = ({
   setIsAnalyzing,
   setAnnotations,
 }: UseAnalysisExecutionProps) => {
-  // 🔄 LOOP DETECTION: Track hook renders
-  console.log('🔄 HOOK RENDER:', new Date().toISOString(), {
-    hookName: 'useAnalysisExecution',
-    renderCount: ++((window as any).useAnalysisExecutionRenderCount) || ((window as any).useAnalysisExecutionRenderCount = 1),
-    currentAnalysisId: currentAnalysis?.id
-  });
-  
-  // ✅ NEW: Initialize diagnostics
-  const { runClientDiagnostics } = useAnalysisDiagnostics();
   
   const executeAnalysis = useCallback(async (
     imagesToAnalyze: string[],
@@ -36,113 +22,97 @@ export const useAnalysisExecution = ({
     isComparative: boolean,
     aiProvider?: AIProvider
   ) => {
-    // 🚨 LOOP DETECTION: Track execution calls
-    console.log('🚨 EXECUTE ANALYSIS CALLED:', {
-      timestamp: new Date().toISOString(),
-      executionCount: ++((window as any).executeAnalysisCount) || ((window as any).executeAnalysisCount = 1),
-      stackTrace: new Error().stack,
-      imagesToAnalyze: imagesToAnalyze.length,
-      promptLength: userAnalysisPrompt.length,
+    console.log('🚀 Starting unified Figmant analysis execution');
+    console.log('📊 Analysis parameters:', {
+      imageCount: imagesToAnalyze.length,
+      promptLength: userAnalysisPrompt?.length || 0,
       isComparative,
       aiProvider,
       currentAnalysisId: currentAnalysis?.id
     });
 
-    // ✅ NEW: Run pre-analysis diagnostics
-    console.log('🔍 RUNNING PRE-ANALYSIS DIAGNOSTICS...');
+    setIsAnalyzing(true);
+    
     try {
-      const diagnostics = await runClientDiagnostics(
-        imagesToAnalyze, 
-        userAnalysisPrompt, 
-        currentAnalysis?.id
-      );
+      let sessionId = currentAnalysis?.id;
       
-      if (!diagnostics.canProceed) {
-        const criticalIssues = diagnostics.checks.filter(c => c.status === 'FAIL');
-        console.error('❌ PRE-ANALYSIS DIAGNOSTICS FAILED:', criticalIssues);
-        throw new Error(`Analysis blocked by ${criticalIssues.length} critical issue(s). Please fix and try again.`);
-      }
-      
-      console.log('✅ PRE-ANALYSIS DIAGNOSTICS PASSED');
-    } catch (diagnosticError) {
-      console.error('❌ Diagnostic check failed:', diagnosticError);
-      throw diagnosticError;
-    }
+      // If no current analysis, create a new Figmant session
+      if (!sessionId) {
+        console.log('📝 Creating new Figmant session...');
+        const sessionData = {
+          title: `Analysis ${new Date().toISOString().split('T')[0]}`,
+          design_type: isComparative ? 'comparative' : 'single',
+          business_goals: [],
+          industry: 'general'
+        };
 
-    console.log('=== Analysis Started (RAG DISABLED) ===');
-    console.log('Analysis configuration:', { 
-      imageCount: imagesToAnalyze.length,
-      analysisId: currentAnalysis?.id,
-      isComparative,
-      userPromptLength: userAnalysisPrompt.length,
-      aiProvider: aiProvider || 'auto',
-      ragEnabled: false // PERMANENTLY DISABLED
-    });
-    
-    // Update analysis status
-    if (currentAnalysis) {
-      await updateAnalysisStatus(currentAnalysis.id, 'analyzing');
-      await updateAnalysisContext(currentAnalysis.id, {
-        ai_model_used: aiProvider || 'auto-selected'
+        const session = await figmantAnalysisService.createFigmantSession(sessionData);
+        sessionId = session.id;
+        console.log('✅ Figmant session created:', sessionId);
+      } else {
+        console.log('🔄 Using existing session:', sessionId);
+      }
+
+      // Upload images to the session if they're not already uploaded
+      console.log('📤 Processing images for Figmant session...');
+      const uploadPromises = imagesToAnalyze.map(async (imageUrl, index) => {
+        try {
+          // Convert image URL to File object for upload
+          const response = await fetch(imageUrl);
+          const blob = await response.blob();
+          const file = new File([blob], `analysis-image-${index + 1}.jpg`, { type: 'image/jpeg' });
+          
+          return await figmantAnalysisService.uploadFigmantImage(sessionId, file, index + 1);
+        } catch (error) {
+          console.error(`❌ Failed to upload image ${index + 1}:`, error);
+          throw error;
+        }
       });
-    }
 
-    console.log('⚠️ RAG system permanently disabled to prevent loops');
-    console.log('🚀 Executing standard analysis without RAG...');
-    
-    // Call analyze-design WITHOUT any RAG context
-    const { data, error } = await supabase.functions.invoke('analyze-design', {
-      body: {
-        imageUrls: imagesToAnalyze,
-        imageUrl: imagesToAnalyze[0],
-        analysisId: currentAnalysis?.id,
-        analysisPrompt: userAnalysisPrompt,
-        designType: currentAnalysis?.design_type || 'web',
-        isComparative,
-        aiProvider,
-        // RAG completely disabled
-        ragEnabled: false,
-        ragContext: null,
-        researchCitations: []
-      }
-    });
+      const uploadedImages = await Promise.all(uploadPromises);
+      console.log('✅ All images processed successfully:', uploadedImages.length);
 
-    if (error) {
-      console.error('=== Analysis Error ===');
-      console.error('Error details:', error);
-      throw new Error(error.message || 'Analysis failed');
-    }
+      // Start the Figmant analysis
+      console.log('🔍 Starting Figmant analysis pipeline...');
+      const analysisResult = await figmantAnalysisService.startFigmantAnalysis(sessionId);
+      console.log('✅ Figmant analysis completed:', analysisResult);
 
-    console.log('=== Analysis Response ===');
-    console.log('Response data:', data);
+      // Get the analysis results
+      const results = await figmantAnalysisService.getFigmantResults(sessionId);
+      console.log('📊 Retrieved Figmant results:', results);
 
-    if (data?.success && data?.annotations) {
-      console.log('✅ Analysis successful!');
-      
-      const freshAnnotations = await getAnnotationsForAnalysis(currentAnalysis!.id);
-      console.log('📋 Annotations loaded:', freshAnnotations.length);
-      
-      setAnnotations(freshAnnotations);
-      
+      // Convert Figmant results to expected annotation format
+      const annotations = results.claude_analysis?.annotations || [];
+      setAnnotations(annotations);
+
       const imageText = imagesToAnalyze.length > 1 ? 
         `${imagesToAnalyze.length} images` : 'image';
       const analysisType = isComparative ? 'Comparative analysis' : 'Analysis';
-      const providerText = aiProvider ? ` using ${aiProvider.toUpperCase()}` : ' with smart provider selection';
+      const providerText = aiProvider ? ` using ${aiProvider.toUpperCase()}` : ' with Figmant AI';
       
-      toast.success(`${analysisType} complete${providerText}! Found ${data.totalAnnotations || freshAnnotations.length} insights across ${imageText}.`, {
+      toast.success(`${analysisType} complete${providerText}! Found ${annotations.length} insights across ${imageText}.`, {
         duration: 4000,
       });
-      
-      console.log('=== Analysis Completed Successfully (RAG DISABLED) ===');
-    } else {
-      console.error('Invalid response structure:', data);
-      throw new Error('Invalid response from analysis service');
+
+      console.log('🎉 Unified Figmant analysis execution completed successfully');
+
+      // Navigate to Figmant results page
+      setTimeout(() => {
+        window.location.href = `/figmant/results/${sessionId}`;
+      }, 1000);
+
+    } catch (error) {
+      console.error('💥 Unified Figmant analysis execution failed:', error);
+      toast.error(`Analysis failed: ${error.message}`);
+      setAnnotations([]);
+    } finally {
+      setIsAnalyzing(false);
     }
   }, [currentAnalysis, setAnnotations]);
 
   return {
     executeAnalysis,
-    ragContext: null, // Always null
+    ragContext: null, // Always null - RAG handled internally by Figmant
     isBuilding: false // Always false
   };
 };

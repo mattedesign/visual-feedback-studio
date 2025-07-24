@@ -1,7 +1,7 @@
-// Legacy analysis service - redirects to figmant service
-// This is a compatibility layer for existing hooks that import from analysisService
+// Unified analysis service - uses Figmant pipeline exclusively
+// This service redirects all analysis operations to the Figmant system
 
-import { createFigmantSession } from './figmantAnalysisService';
+import figmantAnalysisService from './figmantAnalysisService';
 import { subscriptionService } from './subscriptionService';
 import { toast } from 'sonner';
 import { Annotation } from '@/types/analysis';
@@ -48,7 +48,7 @@ export const createAnalysis = async () => {
   }
 
   try {
-    const session = await createFigmantSession({
+    const session = await figmantAnalysisService.createFigmantSession({
       title: 'New Design Analysis'
     });
     return session.id;
@@ -59,18 +59,32 @@ export const createAnalysis = async () => {
   }
 };
 
-// Legacy analysis function - returns an error response
+// Redirect to figmant analysis pipeline
 const analyzeDesign = async (request: AnalyzeDesignRequest): Promise<AnalyzeDesignResponse> => {
-  console.warn('analyzeDesign has been replaced with figmant analysis pipeline. Please use the Analysis Dashboard instead.');
+  console.log('🔄 Redirecting to figmant analysis pipeline for:', request.analysisId);
   
-  return {
-    success: false,
-    error: 'This analysis method has been replaced. Please use the Analysis Dashboard for new analyses.',
-    annotations: [],
-    researchEnhanced: false,
-    knowledgeSourcesUsed: 0,
-    researchCitations: []
-  };
+  try {
+    // Use the figmant pipeline instead
+    const result = await figmantAnalysisService.startFigmantAnalysis(request.analysisId);
+    
+    return {
+      success: true,
+      annotations: result?.claude_analysis?.annotations || [],
+      researchEnhanced: true,
+      knowledgeSourcesUsed: 1,
+      researchCitations: []
+    };
+  } catch (error) {
+    console.error('❌ Figmant analysis failed:', error);
+    return {
+      success: false,
+      error: error.message || 'Analysis failed',
+      annotations: [],
+      researchEnhanced: false,
+      knowledgeSourcesUsed: 0,
+      researchCitations: []
+    };
+  }
 };
 
 export const analysisService = {

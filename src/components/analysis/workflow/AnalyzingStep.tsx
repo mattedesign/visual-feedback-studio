@@ -171,10 +171,9 @@ export const AnalyzingStep = ({ workflow }: AnalyzingStepProps) => {
           currentPhase={
             consolidatedAnalysis.progress.phase === 'idle' ? 'uploading' :
             consolidatedAnalysis.progress.phase === 'complete' ? 'complete' :
-            consolidatedAnalysis.progress.phase === 'research' ? 'processing' :
+            consolidatedAnalysis.progress.phase === 'uploading' ? 'uploading' :
+            consolidatedAnalysis.progress.phase === 'processing' ? 'processing' :
             consolidatedAnalysis.progress.phase === 'analysis' ? 'processing' :
-            consolidatedAnalysis.progress.phase === 'validation' ? 'processing' :
-            consolidatedAnalysis.progress.phase === 'recommendations' ? 'processing' :
             'processing'
           }
           progressPercentage={consolidatedAnalysis.progress.progress}
