@@ -1,103 +1,71 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  ChevronRight, 
-  ChevronLeft, 
-  Building2, 
-  Users, 
-  Target, 
-  CheckSquare, 
-  BarChart3, 
-  Palette, 
-  Star, 
-  Lightbulb,
-  X,
-  SkipForward
-} from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { supabase } from '@/integrations/supabase/client';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Cloud, 
+  ShoppingCart, 
+  Users, 
+  FileText, 
+  Briefcase, 
+  Target, 
+  TrendingUp, 
+  UserCheck, 
+  Zap,
+  ChevronRight,
+  ChevronLeft,
+  Sparkles,
+  ArrowRight,
+  SkipForward
+} from 'lucide-react';
 import { toast } from 'sonner';
 
-interface UserContextFormProps {
-  sessionId: string;
-  onComplete: (contextId: string) => void;
-  onSkip: () => void;
-}
-
-interface FormData {
-  businessType: string;
-  targetAudience: string;
-  primaryGoal: string;
-  specificChallenges: string[];
-  designType: string;
-  currentMetrics: {
-    conversionRate?: number;
-    bounceRate?: number;
-    completionRate?: number;
-  };
-  admiredCompanies: string[];
-  designConstraints: string[];
-  brandGuidelines: {
-    colorScheme?: string;
-    designSystem?: string;
-    accessibility?: string;
-  };
-}
-
 const BUSINESS_TYPES = [
-  { value: 'saas', label: 'SaaS Product', icon: Building2, description: 'Software as a Service platform' },
-  { value: 'ecommerce', label: 'E-commerce', icon: BarChart3, description: 'Online retail store' },
-  { value: 'marketplace', label: 'Marketplace', icon: Users, description: 'Multi-sided platform' },
-  { value: 'content', label: 'Content Platform', icon: Palette, description: 'Media or publishing site' },
-  { value: 'other', label: 'Other', icon: Lightbulb, description: 'Something else' }
+  { value: 'saas', label: 'SaaS Product', icon: Cloud, description: 'Software as a Service platform' },
+  { value: 'ecommerce', label: 'E-commerce', icon: ShoppingCart, description: 'Online store or marketplace' },
+  { value: 'marketplace', label: 'Marketplace', icon: Users, description: 'Platform connecting buyers & sellers' },
+  { value: 'content', label: 'Content Platform', icon: FileText, description: 'Blog, media, or publishing site' },
+  { value: 'other', label: 'Other', icon: Briefcase, description: 'Something else entirely' }
 ];
 
 const PRIMARY_GOALS = [
   { 
     value: 'increase-conversions', 
     label: 'Increase Conversions', 
-    description: 'Turn more visitors into customers',
-    icon: Target
+    icon: Target,
+    description: 'Turn more visitors into customers' 
   },
   { 
     value: 'improve-engagement', 
     label: 'Improve Engagement', 
-    description: 'Keep users active and coming back',
-    icon: Users
+    icon: TrendingUp,
+    description: 'Keep users active and coming back' 
   },
   { 
     value: 'reduce-churn', 
     label: 'Reduce Churn', 
-    description: 'Stop users from leaving',
-    icon: ChevronLeft
+    icon: UserCheck,
+    description: 'Stop users from leaving' 
   },
   { 
     value: 'simplify-ux', 
     label: 'Simplify UX', 
-    description: 'Make it easier to use',
-    icon: CheckSquare
+    icon: Zap,
+    description: 'Make it easier to use' 
   },
   { 
     value: 'other', 
     label: 'Other Goal', 
-    description: 'Custom objective',
-    icon: Star
+    icon: Sparkles,
+    description: 'Something specific to your needs' 
   }
-];
-
-const DESIGN_TYPES = [
-  { value: 'landing-page', label: 'Landing Page', description: 'Marketing or promotional page' },
-  { value: 'dashboard', label: 'Dashboard', description: 'Data visualization interface' },
-  { value: 'onboarding', label: 'Onboarding Flow', description: 'User registration/setup' },
-  { value: 'checkout', label: 'Checkout Process', description: 'Payment and order flow' },
-  { value: 'other', label: 'Other Design', description: 'Different type of interface' }
 ];
 
 const COMMON_CHALLENGES = [
@@ -109,25 +77,47 @@ const COMMON_CHALLENGES = [
   'Mobile experience issues',
   'Slow page load times',
   'Confusing pricing structure',
-  'Poor conversion funnel',
-  'Accessibility concerns',
-  'Information overload',
-  'Inconsistent design system'
+  'Poor search functionality',
+  'Lack of social proof',
+  'Overwhelming interface',
+  'Weak call-to-action buttons'
 ];
+
+const DESIGN_TYPES = [
+  { value: 'landing-page', label: 'Landing Page', description: 'Marketing or campaign page' },
+  { value: 'dashboard', label: 'Dashboard', description: 'App interface or admin panel' },
+  { value: 'onboarding', label: 'Onboarding', description: 'User signup or setup flow' },
+  { value: 'checkout', label: 'Checkout', description: 'Purchase or payment flow' },
+  { value: 'other', label: 'Other', description: 'Something else' }
+];
+
+interface UserContextFormProps {
+  sessionId: string;
+  onComplete: (contextId: string) => void;
+  onSkip: () => void;
+}
 
 export function UserContextForm({ sessionId, onComplete, onSkip }: UserContextFormProps) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState({
     businessType: '',
     targetAudience: '',
     primaryGoal: '',
-    specificChallenges: [],
+    specificChallenges: [] as string[],
     designType: '',
-    currentMetrics: {},
-    admiredCompanies: [],
-    designConstraints: [],
-    brandGuidelines: {}
+    currentMetrics: {
+      conversionRate: '',
+      bounceRate: '',
+      completionRate: ''
+    },
+    admiredCompanies: [] as string[],
+    designConstraints: [] as string[],
+    brandGuidelines: {
+      colors: '',
+      fonts: '',
+      tone: ''
+    }
   });
 
   const totalSteps = 4;
@@ -146,44 +136,27 @@ export function UserContextForm({ sessionId, onComplete, onSkip }: UserContextFo
   };
 
   const handleChallengeToggle = (challenge: string) => {
-    setFormData(prev => ({
-      ...prev,
-      specificChallenges: prev.specificChallenges.includes(challenge)
-        ? prev.specificChallenges.filter(c => c !== challenge)
-        : [...prev.specificChallenges, challenge]
-    }));
+    const updated = formData.specificChallenges.includes(challenge)
+      ? formData.specificChallenges.filter(c => c !== challenge)
+      : [...formData.specificChallenges, challenge];
+    
+    setFormData({ ...formData, specificChallenges: updated });
   };
 
   const handleCompanyAdd = (company: string) => {
     if (company.trim() && !formData.admiredCompanies.includes(company.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        admiredCompanies: [...prev.admiredCompanies, company.trim()]
-      }));
+      setFormData({
+        ...formData,
+        admiredCompanies: [...formData.admiredCompanies, company.trim()]
+      });
     }
   };
 
   const handleCompanyRemove = (company: string) => {
-    setFormData(prev => ({
-      ...prev,
-      admiredCompanies: prev.admiredCompanies.filter(c => c !== company)
-    }));
-  };
-
-  const handleConstraintAdd = (constraint: string) => {
-    if (constraint.trim() && !formData.designConstraints.includes(constraint.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        designConstraints: [...prev.designConstraints, constraint.trim()]
-      }));
-    }
-  };
-
-  const handleConstraintRemove = (constraint: string) => {
-    setFormData(prev => ({
-      ...prev,
-      designConstraints: prev.designConstraints.filter(c => c !== constraint)
-    }));
+    setFormData({
+      ...formData,
+      admiredCompanies: formData.admiredCompanies.filter(c => c !== company)
+    });
   };
 
   const handleSubmit = async () => {
@@ -193,11 +166,11 @@ export function UserContextForm({ sessionId, onComplete, onSkip }: UserContextFo
         .from('figmant_user_contexts')
         .insert({
           session_id: sessionId,
-          business_type: formData.businessType as any,
+          business_type: formData.businessType,
           target_audience: formData.targetAudience,
-          primary_goal: formData.primaryGoal as any,
+          primary_goal: formData.primaryGoal,
           specific_challenges: formData.specificChallenges,
-          design_type: formData.designType as any,
+          design_type: formData.designType,
           current_metrics: formData.currentMetrics,
           admired_companies: formData.admiredCompanies,
           design_constraints: formData.designConstraints,
@@ -208,11 +181,12 @@ export function UserContextForm({ sessionId, onComplete, onSkip }: UserContextFo
 
       if (error) throw error;
 
-      toast.success('Context saved successfully!');
+      toast.success('Context saved! This will help generate better insights.');
       onComplete(data.id);
-    } catch (error: any) {
-      console.error('Error saving context:', error);
-      toast.error('Failed to save context: ' + error.message);
+    } catch (error) {
+      console.error('Failed to save context:', error);
+      toast.error('Failed to save context. Proceeding with analysis anyway.');
+      onSkip();
     } finally {
       setLoading(false);
     }
@@ -221,408 +195,331 @@ export function UserContextForm({ sessionId, onComplete, onSkip }: UserContextFo
   const canProceed = () => {
     switch (step) {
       case 1:
-        return formData.businessType && formData.targetAudience && formData.primaryGoal;
+        return formData.businessType && formData.primaryGoal;
       case 2:
         return formData.specificChallenges.length > 0;
       case 3:
         return formData.designType;
       case 4:
-        return true; // Inspiration step is optional
+        return true;
       default:
         return false;
     }
   };
 
-  const stepVariants = {
-    enter: { opacity: 0, x: 50 },
-    center: { opacity: 1, x: 0 },
-    exit: { opacity: 0, x: -50 }
-  };
-
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="max-w-4xl mx-auto p-6"
-    >
-      <Card className="p-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-2xl font-bold text-foreground">
-                Tell us about your project
-              </h2>
-              <p className="text-muted-foreground">
-                Help us provide more targeted and actionable insights
-              </p>
-            </div>
-            <Button variant="ghost" onClick={onSkip} className="flex items-center gap-2">
-              <SkipForward className="w-4 h-4" />
-              Skip for now
-            </Button>
-          </div>
-          
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Step {step} of {totalSteps}</span>
-              <span>{Math.round(progress)}% complete</span>
-            </div>
-            <Progress value={progress} className="h-2" />
-          </div>
+    <Card className="max-w-2xl mx-auto">
+      <CardHeader className="text-center">
+        <div className="flex items-center justify-between mb-4">
+          <Badge variant="outline" className="text-sm">
+            Step {step} of {totalSteps}
+          </Badge>
+          <Button variant="ghost" size="sm" onClick={onSkip} className="text-muted-foreground">
+            <SkipForward className="w-4 h-4 mr-1" />
+            Skip
+          </Button>
         </div>
+        <Progress value={progress} className="mb-4" />
+        <CardTitle className="text-xl flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-primary" />
+          Help us understand your goals
+        </CardTitle>
+        <CardDescription>
+          This information helps our AI generate more targeted insights and solutions for your specific situation.
+        </CardDescription>
+      </CardHeader>
 
-        {/* Form Steps */}
-        <div className="min-h-[500px]">
-          <AnimatePresence mode="wait">
-            {/* Step 1: Business Context */}
-            {step === 1 && (
-              <motion.div
-                key="step1"
-                variants={stepVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ duration: 0.3 }}
-                className="space-y-6"
-              >
-                <div className="text-center mb-8">
-                  <Building2 className="w-12 h-12 mx-auto mb-4 text-primary" />
-                  <h3 className="text-xl font-semibold mb-2">Business Context</h3>
-                  <p className="text-muted-foreground">
-                    Help us understand your business and primary objectives
-                  </p>
-                </div>
-
-                {/* Business Type */}
-                <div className="space-y-3">
-                  <Label className="text-base font-medium">What type of business is this?</Label>
-                  <RadioGroup 
-                    value={formData.businessType} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, businessType: value }))}
-                    className="grid grid-cols-1 md:grid-cols-2 gap-4"
-                  >
-                    {BUSINESS_TYPES.map((type) => (
-                      <div key={type.value} className="flex items-center space-x-3 border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                        <RadioGroupItem value={type.value} id={type.value} />
-                        <div className="flex items-center space-x-3 flex-1">
-                          <type.icon className="w-5 h-5 text-primary" />
+      <CardContent>
+        <AnimatePresence mode="wait">
+          {step === 1 && (
+            <motion.div
+              key="step1"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-6"
+            >
+              <div>
+                <Label className="text-base font-medium mb-4 block">What type of business is this for?</Label>
+                <div className="grid gap-3">
+                  {BUSINESS_TYPES.map((type) => {
+                    const Icon = type.icon;
+                    return (
+                      <button
+                        key={type.value}
+                        onClick={() => setFormData({ ...formData, businessType: type.value })}
+                        className={`p-4 rounded-lg border text-left transition-all hover:shadow-md ${
+                          formData.businessType === type.value
+                            ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <Icon className="w-5 h-5 text-primary mt-0.5" />
                           <div>
-                            <label htmlFor={type.value} className="font-medium cursor-pointer">
-                              {type.label}
-                            </label>
-                            <p className="text-sm text-muted-foreground">{type.description}</p>
+                            <div className="font-medium">{type.label}</div>
+                            <div className="text-sm text-muted-foreground">{type.description}</div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </RadioGroup>
+                      </button>
+                    );
+                  })}
                 </div>
+              </div>
 
-                {/* Target Audience */}
-                <div className="space-y-3">
-                  <Label htmlFor="target-audience" className="text-base font-medium">
-                    Who is your target audience?
-                  </Label>
-                  <Textarea
-                    id="target-audience"
-                    placeholder="e.g., Small business owners, enterprise software teams, online shoppers..."
-                    value={formData.targetAudience}
-                    onChange={(e) => setFormData(prev => ({ ...prev, targetAudience: e.target.value }))}
-                    className="resize-none"
-                    rows={3}
-                  />
-                </div>
+              <div>
+                <Label htmlFor="targetAudience" className="text-base font-medium">
+                  Who is your target audience?
+                </Label>
+                <Textarea
+                  id="targetAudience"
+                  placeholder="e.g., Small business owners, enterprise customers, content creators..."
+                  value={formData.targetAudience}
+                  onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
+                  className="mt-2"
+                />
+              </div>
 
-                {/* Primary Goal */}
-                <div className="space-y-3">
-                  <Label className="text-base font-medium">What's your primary goal?</Label>
-                  <RadioGroup 
-                    value={formData.primaryGoal} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, primaryGoal: value }))}
-                    className="grid grid-cols-1 md:grid-cols-2 gap-4"
-                  >
-                    {PRIMARY_GOALS.map((goal) => (
-                      <div key={goal.value} className="flex items-center space-x-3 border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                        <RadioGroupItem value={goal.value} id={goal.value} />
-                        <div className="flex items-center space-x-3 flex-1">
-                          <goal.icon className="w-5 h-5 text-primary" />
+              <div>
+                <Label className="text-base font-medium mb-4 block">What's your primary goal?</Label>
+                <div className="grid gap-3">
+                  {PRIMARY_GOALS.map((goal) => {
+                    const Icon = goal.icon;
+                    return (
+                      <button
+                        key={goal.value}
+                        onClick={() => setFormData({ ...formData, primaryGoal: goal.value })}
+                        className={`p-4 rounded-lg border text-left transition-all hover:shadow-md ${
+                          formData.primaryGoal === goal.value
+                            ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <Icon className="w-5 h-5 text-primary mt-0.5" />
                           <div>
-                            <label htmlFor={goal.value} className="font-medium cursor-pointer">
-                              {goal.label}
-                            </label>
-                            <p className="text-sm text-muted-foreground">{goal.description}</p>
+                            <div className="font-medium">{goal.label}</div>
+                            <div className="text-sm text-muted-foreground">{goal.description}</div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </RadioGroup>
+                      </button>
+                    );
+                  })}
                 </div>
-              </motion.div>
-            )}
+              </div>
+            </motion.div>
+          )}
 
-            {/* Step 2: Current Challenges */}
-            {step === 2 && (
-              <motion.div
-                key="step2"
-                variants={stepVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ duration: 0.3 }}
-                className="space-y-6"
-              >
-                <div className="text-center mb-8">
-                  <CheckSquare className="w-12 h-12 mx-auto mb-4 text-primary" />
-                  <h3 className="text-xl font-semibold mb-2">Current Challenges</h3>
-                  <p className="text-muted-foreground">
-                    Select the UX issues you're currently facing
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {COMMON_CHALLENGES.map((challenge, index) => (
-                    <div
-                      key={index}
-                      className={`flex items-center space-x-3 border rounded-lg p-4 transition-colors cursor-pointer ${
-                        formData.specificChallenges.includes(challenge)
-                          ? 'border-primary bg-primary/5'
-                          : 'hover:bg-muted/50'
-                      }`}
-                      onClick={() => handleChallengeToggle(challenge)}
+          {step === 2 && (
+            <motion.div
+              key="step2"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-6"
+            >
+              <div>
+                <Label className="text-base font-medium mb-4 block">
+                  What challenges are you facing? (Select all that apply)
+                </Label>
+                <div className="grid gap-2">
+                  {COMMON_CHALLENGES.map((challenge) => (
+                    <label
+                      key={challenge}
+                      className="flex items-start gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors"
                     >
                       <Checkbox
                         checked={formData.specificChallenges.includes(challenge)}
                         onCheckedChange={() => handleChallengeToggle(challenge)}
+                        className="mt-0.5"
                       />
-                      <span className="text-sm font-medium">{challenge}</span>
-                    </div>
+                      <span className="text-sm">{challenge}</span>
+                    </label>
                   ))}
                 </div>
-
-                <div className="text-sm text-muted-foreground text-center">
-                  Select all that apply. You can always add more details later.
-                </div>
-              </motion.div>
-            )}
-
-            {/* Step 3: Design Details */}
-            {step === 3 && (
-              <motion.div
-                key="step3"
-                variants={stepVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ duration: 0.3 }}
-                className="space-y-6"
-              >
-                <div className="text-center mb-8">
-                  <Palette className="w-12 h-12 mx-auto mb-4 text-primary" />
-                  <h3 className="text-xl font-semibold mb-2">Design Details</h3>
-                  <p className="text-muted-foreground">
-                    Tell us about the specific design you're analyzing
-                  </p>
-                </div>
-
-                {/* Design Type */}
-                <div className="space-y-3">
-                  <Label className="text-base font-medium">What type of design is this?</Label>
-                  <RadioGroup 
-                    value={formData.designType} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, designType: value }))}
-                    className="grid grid-cols-1 md:grid-cols-2 gap-4"
-                  >
-                    {DESIGN_TYPES.map((type) => (
-                      <div key={type.value} className="flex items-center space-x-3 border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                        <RadioGroupItem value={type.value} id={type.value} />
-                        <div className="flex-1">
-                          <label htmlFor={type.value} className="font-medium cursor-pointer">
-                            {type.label}
-                          </label>
-                          <p className="text-sm text-muted-foreground">{type.description}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </div>
-
-                {/* Current Metrics */}
-                <div className="space-y-3">
-                  <Label className="text-base font-medium">
-                    Current Performance Metrics (Optional)
-                  </Label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="conversion-rate" className="text-sm">Conversion Rate (%)</Label>
-                      <Input
-                        id="conversion-rate"
-                        type="number"
-                        placeholder="e.g., 2.5"
-                        value={formData.currentMetrics.conversionRate || ''}
-                        onChange={(e) => setFormData(prev => ({
-                          ...prev,
-                          currentMetrics: {
-                            ...prev.currentMetrics,
-                            conversionRate: e.target.value ? parseFloat(e.target.value) : undefined
-                          }
-                        }))}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="bounce-rate" className="text-sm">Bounce Rate (%)</Label>
-                      <Input
-                        id="bounce-rate"
-                        type="number"
-                        placeholder="e.g., 45"
-                        value={formData.currentMetrics.bounceRate || ''}
-                        onChange={(e) => setFormData(prev => ({
-                          ...prev,
-                          currentMetrics: {
-                            ...prev.currentMetrics,
-                            bounceRate: e.target.value ? parseFloat(e.target.value) : undefined
-                          }
-                        }))}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="completion-rate" className="text-sm">Task Completion Rate (%)</Label>
-                      <Input
-                        id="completion-rate"
-                        type="number"
-                        placeholder="e.g., 78"
-                        value={formData.currentMetrics.completionRate || ''}
-                        onChange={(e) => setFormData(prev => ({
-                          ...prev,
-                          currentMetrics: {
-                            ...prev.currentMetrics,
-                            completionRate: e.target.value ? parseFloat(e.target.value) : undefined
-                          }
-                        }))}
-                      />
+                {formData.specificChallenges.length > 0 && (
+                  <div className="mt-4 p-3 bg-primary/5 rounded-lg">
+                    <div className="text-sm font-medium mb-2">Selected challenges:</div>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.specificChallenges.map((challenge) => (
+                        <Badge key={challenge} variant="secondary" className="text-xs">
+                          {challenge}
+                        </Badge>
+                      ))}
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            )}
+                )}
+              </div>
+            </motion.div>
+          )}
 
-            {/* Step 4: Inspiration & Constraints */}
-            {step === 4 && (
-              <motion.div
-                key="step4"
-                variants={stepVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ duration: 0.3 }}
-                className="space-y-6"
-              >
-                <div className="text-center mb-8">
-                  <Star className="w-12 h-12 mx-auto mb-4 text-primary" />
-                  <h3 className="text-xl font-semibold mb-2">Inspiration & Constraints</h3>
-                  <p className="text-muted-foreground">
-                    Share companies you admire and any design constraints
-                  </p>
+          {step === 3 && (
+            <motion.div
+              key="step3"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-6"
+            >
+              <div>
+                <Label className="text-base font-medium mb-4 block">What type of design are you analyzing?</Label>
+                <div className="grid gap-3">
+                  {DESIGN_TYPES.map((type) => (
+                    <button
+                      key={type.value}
+                      onClick={() => setFormData({ ...formData, designType: type.value })}
+                      className={`p-4 rounded-lg border text-left transition-all hover:shadow-md ${
+                        formData.designType === type.value
+                          ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                          : 'border-border hover:border-primary/50'
+                      }`}
+                    >
+                      <div className="font-medium">{type.label}</div>
+                      <div className="text-sm text-muted-foreground">{type.description}</div>
+                    </button>
+                  ))}
                 </div>
+              </div>
 
-                {/* Admired Companies */}
-                <div className="space-y-3">
-                  <Label className="text-base font-medium">
-                    Companies you admire (Optional)
-                  </Label>
-                  <div className="space-y-2">
+              <div>
+                <Label className="text-base font-medium mb-4 block">Current metrics (if known)</Label>
+                <div className="grid gap-4">
+                  <div>
+                    <Label htmlFor="conversionRate" className="text-sm">Conversion Rate (%)</Label>
                     <Input
-                      placeholder="e.g., Apple, Stripe, Airbnb..."
-                      onKeyDown={(e) => {
+                      id="conversionRate"
+                      type="number"
+                      placeholder="e.g., 2.5"
+                      value={formData.currentMetrics.conversionRate}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        currentMetrics: { ...formData.currentMetrics, conversionRate: e.target.value }
+                      })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="bounceRate" className="text-sm">Bounce Rate (%)</Label>
+                    <Input
+                      id="bounceRate"
+                      type="number"
+                      placeholder="e.g., 65"
+                      value={formData.currentMetrics.bounceRate}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        currentMetrics: { ...formData.currentMetrics, bounceRate: e.target.value }
+                      })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="completionRate" className="text-sm">Task Completion Rate (%)</Label>
+                    <Input
+                      id="completionRate"
+                      type="number"
+                      placeholder="e.g., 80"
+                      value={formData.currentMetrics.completionRate}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        currentMetrics: { ...formData.currentMetrics, completionRate: e.target.value }
+                      })}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {step === 4 && (
+            <motion.div
+              key="step4"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-6"
+            >
+              <div>
+                <Label className="text-base font-medium mb-4 block">
+                  Companies you admire (for inspiration)
+                </Label>
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="e.g., Apple, Stripe, Notion..."
+                      onKeyPress={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
-                          handleCompanyAdd(e.currentTarget.value);
-                          e.currentTarget.value = '';
+                          handleCompanyAdd((e.target as HTMLInputElement).value);
+                          (e.target as HTMLInputElement).value = '';
                         }
                       }}
                     />
-                    {formData.admiredCompanies.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {formData.admiredCompanies.map((company, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-3 py-1"
-                          >
-                            <span className="text-sm">{company}</span>
-                            <button
-                              onClick={() => handleCompanyRemove(company)}
-                              className="text-primary hover:text-primary/70"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Design Constraints */}
-                <div className="space-y-3">
-                  <Label className="text-base font-medium">
-                    Design Constraints (Optional)
-                  </Label>
-                  <div className="space-y-2">
-                    <Input
-                      placeholder="e.g., Must be accessible, Brand colors only, Mobile-first..."
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleConstraintAdd(e.currentTarget.value);
-                          e.currentTarget.value = '';
-                        }
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={(e) => {
+                        const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                        handleCompanyAdd(input.value);
+                        input.value = '';
                       }}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                  {formData.admiredCompanies.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {formData.admiredCompanies.map((company) => (
+                        <Badge
+                          key={company}
+                          variant="secondary"
+                          className="cursor-pointer"
+                          onClick={() => handleCompanyRemove(company)}
+                        >
+                          {company} ×
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-base font-medium mb-4 block">Brand guidelines (optional)</Label>
+                <div className="grid gap-4">
+                  <div>
+                    <Label htmlFor="colors" className="text-sm">Brand Colors</Label>
+                    <Input
+                      id="colors"
+                      placeholder="e.g., Blue (#1E40AF), White, Gray"
+                      value={formData.brandGuidelines.colors}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        brandGuidelines: { ...formData.brandGuidelines, colors: e.target.value }
+                      })}
+                      className="mt-1"
                     />
-                    {formData.designConstraints.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {formData.designConstraints.map((constraint, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center gap-2 bg-secondary/50 border rounded-full px-3 py-1"
-                          >
-                            <span className="text-sm">{constraint}</span>
-                            <button
-                              onClick={() => handleConstraintRemove(constraint)}
-                              className="text-muted-foreground hover:text-foreground"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="tone" className="text-sm">Brand Tone</Label>
+                    <Input
+                      id="tone"
+                      placeholder="e.g., Professional, Friendly, Modern"
+                      value={formData.brandGuidelines.tone}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        brandGuidelines: { ...formData.brandGuidelines, tone: e.target.value }
+                      })}
+                      className="mt-1"
+                    />
                   </div>
                 </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-                {/* Brand Guidelines */}
-                <div className="space-y-3">
-                  <Label className="text-base font-medium">Additional Notes (Optional)</Label>
-                  <Textarea
-                    placeholder="Any additional context about your brand, design system, or specific requirements..."
-                    value={formData.brandGuidelines.designSystem || ''}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      brandGuidelines: {
-                        ...prev.brandGuidelines,
-                        designSystem: e.target.value
-                      }
-                    }))}
-                    className="resize-none"
-                    rows={3}
-                  />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Navigation */}
-        <div className="flex justify-between items-center pt-8 border-t">
+        <div className="flex justify-between mt-8">
           <Button
             variant="outline"
             onClick={handlePrevious}
@@ -633,29 +530,27 @@ export function UserContextForm({ sessionId, onComplete, onSkip }: UserContextFo
             Previous
           </Button>
 
-          <div className="flex items-center gap-2">
-            {step < totalSteps ? (
-              <Button
-                onClick={handleNext}
-                disabled={!canProceed()}
-                className="flex items-center gap-2"
-              >
-                Continue
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            ) : (
-              <Button
-                onClick={handleSubmit}
-                disabled={loading}
-                className="flex items-center gap-2"
-              >
-                {loading ? 'Saving...' : 'Complete & Analyze'}
-                <Target className="w-4 h-4" />
-              </Button>
-            )}
-          </div>
+          {step < totalSteps ? (
+            <Button
+              onClick={handleNext}
+              disabled={!canProceed()}
+              className="flex items-center gap-2"
+            >
+              Next
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          ) : (
+            <Button
+              onClick={handleSubmit}
+              disabled={loading}
+              className="flex items-center gap-2"
+            >
+              {loading ? 'Saving...' : 'Start Analysis'}
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          )}
         </div>
-      </Card>
-    </motion.div>
+      </CardContent>
+    </Card>
   );
 }
