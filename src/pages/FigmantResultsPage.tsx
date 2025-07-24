@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
-import { getFigmantResults, getFigmantSession } from '@/services/figmantAnalysisService';
+import { getFigmantResults, getFigmantSession, startFigmantAnalysis } from '@/services/figmantAnalysisService';
 import { FigmantSessionService } from '@/services/figmantSessionService';
 import { FigmantImageGrid } from '@/components/analysis/figmant/FigmantImageGrid';
 import { FigmantImageDetail } from '@/components/analysis/figmant/FigmantImageDetail';
@@ -483,45 +483,59 @@ const FigmantResultsPage = () => {
     setShowContextForm(false);
     setUserContext({ id: contextId }); // Set basic context data
     
-    // Automatically trigger holistic analysis generation
+    // Start the analysis process first, then add holistic analysis
     try {
-      toast.success('Context saved! Generating holistic analysis...');
+      toast.success('Context saved! Starting analysis...');
       
-      // Get analysis ID from session or analysis data
-      let currentAnalysisId = analysisData?.id;
-      if (!currentAnalysisId && sessionId) {
-        const { data } = await supabase
-          .from('figmant_analysis_results')
-          .select('id')
-          .eq('session_id', sessionId)
-          .single();
-        currentAnalysisId = data?.id;
+      if (!sessionId) {
+        toast.error('No session ID available');
+        return;
       }
+
+      // First, start the regular analysis
+      await startFigmantAnalysis(sessionId);
       
-      if (currentAnalysisId) {
-        // Generate holistic analysis automatically
-        const { data, error } = await supabase.functions.invoke('generate-holistic-prototypes', {
-          body: { 
-            analysisId: currentAnalysisId, 
-            contextId: contextId
+      // Wait a moment for the analysis to be created, then check for the analysis ID
+      setTimeout(async () => {
+        try {
+          const { data } = await supabase
+            .from('figmant_analysis_results')
+            .select('id')
+            .eq('session_id', sessionId)
+            .single();
+          
+          if (data?.id) {
+            toast.info('Generating holistic analysis...');
+            
+            // Generate holistic analysis automatically
+            const { data: holisticData, error } = await supabase.functions.invoke('generate-holistic-prototypes', {
+              body: { 
+                analysisId: data.id, 
+                contextId: contextId
+              }
+            });
+            
+            if (error) {
+              console.error('Failed to generate holistic analysis:', error);
+              toast.error('Failed to generate holistic analysis.');
+            } else {
+              toast.success('Holistic analysis generated successfully!');
+              // Refresh the analysis data to show new holistic results
+              const updatedAnalysis = await getFigmantResults(sessionId);
+              setAnalysisData(transformAnalysisData(updatedAnalysis));
+            }
+          } else {
+            toast.error('Analysis not found after completion');
           }
-        });
-        
-        if (error) {
-          console.error('Failed to generate holistic analysis:', error);
-          toast.error('Failed to generate holistic analysis. You can try the Generate Analysis button.');
-        } else {
-          toast.success('Holistic analysis generated successfully!');
-          // Refresh the analysis data to show new holistic results
-          if (sessionId) {
-            const updatedAnalysis = await getFigmantResults(sessionId);
-            setAnalysisData(transformAnalysisData(updatedAnalysis));
-          }
+        } catch (error) {
+          console.error('Error finding analysis after completion:', error);
+          toast.error('Could not find analysis results');
         }
-      }
+      }, 3000); // Wait 3 seconds for analysis to complete
+      
     } catch (error) {
-      console.error('Error generating holistic analysis:', error);
-      toast.error('Failed to generate holistic analysis automatically');
+      console.error('Error starting analysis:', error);
+      toast.error('Failed to start analysis: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
 
