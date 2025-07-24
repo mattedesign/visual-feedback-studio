@@ -1,18 +1,33 @@
 import React, { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Sparkles, Settings, Crown, ChevronDown, ChevronRight, User, BarChart3, History, Box, FileText, Folder, FolderOpen, PanelLeft } from 'lucide-react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Sparkles, Settings, Crown, ChevronDown, ChevronRight, User, BarChart3, History, Box, FileText, Folder, FolderOpen, PanelLeft, LogOut } from 'lucide-react';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import { useAuth } from '@/hooks/useAuth';
 import { FigmantLogo } from '@/components/ui/figmant-logo';
 import { Button } from '@/components/ui/button';
 import { ResultsChat } from '@/components/analysis/results/ResultsChat';
 import { AutomationIndicator } from '@/components/analysis/figma/AutomationIndicator';
+import { toast } from 'sonner';
 
 export const FigmantSidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { subscription } = useSubscription();
+  const { user, signOut } = useAuth();
   const [isAnalysisExpanded, setIsAnalysisExpanded] = useState(true);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState<'menu' | 'chat'>('chat');
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast.success('Logged out successfully');
+      navigate('/auth');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Failed to logout');
+    }
+  };
   
   // Check if we're on an analysis results page
   const isOnAnalysisResults = location.pathname.startsWith('/analysis');
@@ -407,6 +422,33 @@ export const FigmantSidebar = () => {
                 ))}
               </div>
             </div>
+
+            {/* User Profile Section - Fixed at bottom */}
+            {!isCollapsed && user && (
+              <div className="flex-shrink-0 px-3 py-2 border-t border-gray-100 bg-white">
+                <div className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                      <User className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {user.email}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleLogout}
+                    className="p-1 hover:bg-red-50 hover:text-red-600"
+                    title="Sign out"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {/* Upgrade Section - Fixed at bottom with proper constraints */}
             {!isCollapsed && (
