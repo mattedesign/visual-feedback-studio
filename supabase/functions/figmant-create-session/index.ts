@@ -19,11 +19,15 @@ serve(async (req) => {
     );
 
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header");
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError || !userData.user) throw new Error("Authentication failed");
+    let userId = 'anonymous';
+    
+    if (authHeader) {
+      const token = authHeader.replace("Bearer ", "");
+      const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+      if (!userError && userData.user) {
+        userId = userData.user.id;
+      }
+    }
 
     const { sessionId, title, industry, designType, businessGoals } = await req.json();
 
@@ -34,7 +38,7 @@ serve(async (req) => {
       .from("figmant_analysis_sessions")
       .insert({
         id: sessionId,
-        user_id: userData.user.id,
+        user_id: userId,
         title: title || "New UX Analysis",
         industry,
         design_type: designType,
