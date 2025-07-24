@@ -258,7 +258,7 @@ const FigmantResultsPage = () => {
             .from('figmant_analysis_results')
             .select('id')
             .eq('session_id', sessionId)
-            .single();
+            .maybeSingle();
           
           if (data && !error) {
             currentAnalysisId = data.id;
@@ -295,7 +295,7 @@ const FigmantResultsPage = () => {
           .from('figmant_analysis_results')
           .select('id')
           .eq('session_id', sessionId)
-          .single();
+          .maybeSingle();
         
         if (error || !data) {
           toast.error('No analysis found for this session');
@@ -447,11 +447,11 @@ const FigmantResultsPage = () => {
             if (contextData && !contextError) {
               setUserContext(contextData);
               console.log('✅ User context found:', contextData);
-            } else if (isHolisticEnabled && !contextData) {
-              // Show context form if holistic feature is enabled and no context exists
-              // This allows context collection even if analysis already exists
+            } else if (isHolisticEnabled && !contextData && !analysis) {
+              // Only show context form if no analysis exists yet
+              // This prevents showing context form for completed analyses
               setShowContextForm(true);
-              console.log('💡 Holistic feature enabled - showing context form for existing analysis');
+              console.log('💡 Holistic feature enabled - showing context form for new analysis');
             }
           } catch (error) {
             console.warn('Failed to load user context:', error);
@@ -637,38 +637,51 @@ const FigmantResultsPage = () => {
     );
   }
 
-  // Auto-start analysis if session exists but no analysis results
-  if (sessionData && !analysisData && sessionData.status === 'draft') {
-    // Start analysis automatically if we have images
-    React.useEffect(() => {
-      const autoStartAnalysis = async () => {
-        if (!sessionId || !sessionData?.images?.length) {
-          console.log('⏸️ Not auto-starting: missing sessionId or images');
-          return;
-        }
+  // Auto-start analysis hook - MUST be outside any conditional rendering
+  const [shouldAutoStart, setShouldAutoStart] = useState(false);
+  const [autoStartLoading, setAutoStartLoading] = useState(false);
 
-        try {
-          setLoading(true);
-          toast.info('Starting analysis automatically...');
-          
-          console.log('🚀 Auto-starting figmant analysis for session:', sessionId);
-          
-          const analysisResult = await startFigmantAnalysis(sessionId);
-          console.log('✅ Auto-analysis started successfully:', analysisResult);
-          
-          // Reload the page data to show results
-          window.location.reload();
-          
-        } catch (error) {
-          console.error('❌ Failed to auto-start analysis:', error);
-          toast.error('Failed to start analysis: ' + (error instanceof Error ? error.message : 'Unknown error'));
-          setLoading(false);
-        }
-      };
+  // Check if we should auto-start analysis
+  useEffect(() => {
+    if (sessionData && !analysisData && sessionData.status === 'draft' && sessionData?.images?.length) {
+      setShouldAutoStart(true);
+    }
+  }, [sessionData, analysisData]);
 
+  // Auto-start analysis effect
+  useEffect(() => {
+    const autoStartAnalysis = async () => {
+      if (!shouldAutoStart || !sessionId || autoStartLoading) {
+        return;
+      }
+
+      try {
+        setAutoStartLoading(true);
+        toast.info('Starting analysis automatically...');
+        
+        console.log('🚀 Auto-starting figmant analysis for session:', sessionId);
+        
+        const analysisResult = await startFigmantAnalysis(sessionId);
+        console.log('✅ Auto-analysis started successfully:', analysisResult);
+        
+        // Reload the page data to show results
+        window.location.reload();
+        
+      } catch (error) {
+        console.error('❌ Failed to auto-start analysis:', error);
+        toast.error('Failed to start analysis: ' + (error instanceof Error ? error.message : 'Unknown error'));
+        setAutoStartLoading(false);
+        setShouldAutoStart(false);
+      }
+    };
+
+    if (shouldAutoStart) {
       autoStartAnalysis();
-    }, [sessionId, sessionData?.images?.length]);
+    }
+  }, [shouldAutoStart, sessionId, autoStartLoading]);
 
+  // Show loading state for auto-start
+  if (shouldAutoStart && autoStartLoading) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
