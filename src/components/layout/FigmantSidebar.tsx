@@ -18,6 +18,10 @@ export const FigmantSidebar = () => {
     // Auto-expand if user is on any Analysis-related page
     return location.pathname === '/analyze' || location.pathname === '/history';
   });
+  const [isAccountExpanded, setIsAccountExpanded] = useState(() => {
+    // Auto-expand if user is on any Account-related page
+    return location.pathname === '/settings' || location.pathname === '/subscription';
+  });
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState<'menu' | 'chat'>('chat');
 
@@ -60,15 +64,29 @@ export const FigmantSidebar = () => {
       isActive: isActive('/history')
     }]
   }, {
-    icon: Settings,
-    label: 'Settings',
-    href: '/settings',
-    isActive: isActive('/settings')
-  }, {
-    icon: Crown,
-    label: 'Subscription',
-    href: '/subscription',
-    isActive: isActive('/subscription')
+    icon: User,
+    label: 'Account',
+    href: '#',
+    isActive: isActive('/settings') || isActive('/subscription'),
+    isExpandable: true,
+    isExpanded: isAccountExpanded,
+    subItems: [{
+      label: 'Settings',
+      href: '/settings',
+      isActive: isActive('/settings'),
+      icon: Settings
+    }, {
+      label: 'Subscription',
+      href: '/subscription',
+      isActive: isActive('/subscription'),
+      icon: Crown
+    }, {
+      label: 'Logout',
+      href: '#logout',
+      isActive: false,
+      icon: LogOut,
+      onClick: handleLogout
+    }]
   }];
   
   const recentAnalysisItems = [{
@@ -200,7 +218,13 @@ export const FigmantSidebar = () => {
                           backgroundColor: 'transparent',
                           border: 'none'
                         }}
-                        onClick={() => setIsAnalysisExpanded(!isAnalysisExpanded)}
+                        onClick={() => {
+                          if (item.label === 'Analysis') {
+                            setIsAnalysisExpanded(!isAnalysisExpanded);
+                          } else if (item.label === 'Account') {
+                            setIsAccountExpanded(!isAccountExpanded);
+                          }
+                        }}
                         onMouseEnter={(e) => {
                           if (!item.isActive) {
                             e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
@@ -332,62 +356,37 @@ export const FigmantSidebar = () => {
                           width: '1px',
                           background: '#ECECEC'
                         }}></div>
-                        {item.subItems.map((subItem, subIndex) => (
-                          <NavLink 
-                            key={subIndex} 
-                            to={subItem.href} 
-                            style={({ isActive }) => 
-                              isActive 
-                                ? {
-                                    display: 'flex',
-                                    height: '36px',
-                                    padding: '12px',
-                                    alignItems: 'center',
-                                    gap: '12px',
-                                    alignSelf: 'stretch',
-                                    borderRadius: '12px',
-                                    border: '1px solid #ECECEC',
-                                    backgroundColor: '#E7EEEF',
-                                    overflow: 'hidden',
-                                    color: '#151619',
-                                    textOverflow: 'ellipsis',
-                                    fontFamily: 'Inter',
-                                    fontSize: '13px',
-                                    fontStyle: 'normal',
-                                    fontWeight: '500',
-                                    lineHeight: '16px',
-                                    letterSpacing: '-0.12px',
-                                    textDecoration: 'none',
-                                    position: 'relative'
-                                  }
-                                : {
-                                    display: 'flex',
-                                    height: '36px',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    padding: '8px 12px',
-                                    borderRadius: '8px',
-                                    transition: 'background-color 0.2s ease',
-                                    backgroundColor: item.isActive ? '#E7EEEF' : 'transparent',
-                                    color: item.isActive ? '#151619' : '#7B7B7B',
-                                    textDecoration: 'none',
-                                    position: 'relative'
-                                  }
-                            }
-                            onMouseEnter={(e) => {
-                              if (!e.currentTarget.getAttribute('aria-current')) {
-                                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)';
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (!e.currentTarget.getAttribute('aria-current')) {
-                                e.currentTarget.style.background = 'transparent';
-                              }
-                            }}
-                          >
-                            {({ isActive }) => (
-                              <>
-                                {/* Left connecting line for each sub-item */}
+                        {item.subItems.map((subItem, subIndex) => {
+                          // Handle logout differently - use button instead of NavLink
+                          if (subItem.onClick) {
+                            return (
+                              <button
+                                key={subIndex}
+                                onClick={subItem.onClick}
+                                style={{
+                                  display: 'flex',
+                                  height: '36px',
+                                  alignItems: 'center',
+                                  gap: '12px',
+                                  padding: '8px 12px',
+                                  borderRadius: '8px',
+                                  transition: 'background-color 0.2s ease',
+                                  backgroundColor: 'transparent',
+                                  color: '#7B7B7B',
+                                  border: 'none',
+                                  width: '100%',
+                                  textAlign: 'left',
+                                  position: 'relative',
+                                  cursor: 'pointer'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = 'transparent';
+                                }}
+                              >
+                                {/* Left connecting line */}
                                 <div style={{
                                   position: 'absolute',
                                   left: '-16px',
@@ -397,28 +396,120 @@ export const FigmantSidebar = () => {
                                   background: '#ECECEC',
                                   transform: 'translateY(-50%)'
                                 }}></div>
-                                <span style={
-                                  isActive 
-                                    ? {
-                                        fontFamily: 'Inter',
-                                        fontSize: '13px',
-                                        fontWeight: '500',
-                                        lineHeight: '16px',
-                                        letterSpacing: '-0.12px',
-                                        color: '#151619'
-                                      }
-                                    : {
-                                        fontSize: '13px',
-                                        fontWeight: '500',
-                                        color: item.isActive ? '#151619' : '#7B7B7B'
-                                      }
-                                }>
+                                {subItem.icon && (
+                                  <subItem.icon style={{
+                                    width: '16px',
+                                    height: '16px',
+                                    color: '#7B7B7B'
+                                  }} />
+                                )}
+                                <span style={{
+                                  fontSize: '13px',
+                                  fontWeight: '500',
+                                  color: '#7B7B7B'
+                                }}>
                                   {subItem.label}
                                 </span>
-                              </>
-                            )}
-                          </NavLink>
-                        ))}
+                              </button>
+                            );
+                          }
+
+                          // Regular NavLink for other items
+                          return (
+                            <NavLink 
+                              key={subIndex} 
+                              to={subItem.href} 
+                              style={({ isActive }) => 
+                                isActive 
+                                  ? {
+                                      display: 'flex',
+                                      height: '36px',
+                                      padding: '12px',
+                                      alignItems: 'center',
+                                      gap: '12px',
+                                      alignSelf: 'stretch',
+                                      borderRadius: '12px',
+                                      border: '1px solid #ECECEC',
+                                      backgroundColor: '#E7EEEF',
+                                      overflow: 'hidden',
+                                      color: '#151619',
+                                      textOverflow: 'ellipsis',
+                                      fontFamily: 'Inter',
+                                      fontSize: '13px',
+                                      fontStyle: 'normal',
+                                      fontWeight: '500',
+                                      lineHeight: '16px',
+                                      letterSpacing: '-0.12px',
+                                      textDecoration: 'none',
+                                      position: 'relative'
+                                    }
+                                  : {
+                                      display: 'flex',
+                                      height: '36px',
+                                      alignItems: 'center',
+                                      gap: '12px',
+                                      padding: '8px 12px',
+                                      borderRadius: '8px',
+                                      transition: 'background-color 0.2s ease',
+                                      backgroundColor: 'transparent',
+                                      color: '#7B7B7B',
+                                      textDecoration: 'none',
+                                      position: 'relative'
+                                    }
+                              }
+                              onMouseEnter={(e) => {
+                                if (!e.currentTarget.getAttribute('aria-current')) {
+                                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)';
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!e.currentTarget.getAttribute('aria-current')) {
+                                  e.currentTarget.style.background = 'transparent';
+                                }
+                              }}
+                            >
+                              {({ isActive }) => (
+                                <>
+                                  {/* Left connecting line for each sub-item */}
+                                  <div style={{
+                                    position: 'absolute',
+                                    left: '-16px',
+                                    top: '50%',
+                                    width: '12px',
+                                    height: '1px',
+                                    background: '#ECECEC',
+                                    transform: 'translateY(-50%)'
+                                  }}></div>
+                                  {subItem.icon && (
+                                    <subItem.icon style={{
+                                      width: '16px',
+                                      height: '16px',
+                                      color: isActive ? '#151619' : '#7B7B7B'
+                                    }} />
+                                  )}
+                                  <span style={
+                                    isActive 
+                                      ? {
+                                          fontFamily: 'Inter',
+                                          fontSize: '13px',
+                                          fontWeight: '500',
+                                          lineHeight: '16px',
+                                          letterSpacing: '-0.12px',
+                                          color: '#151619'
+                                        }
+                                      : {
+                                          fontSize: '13px',
+                                          fontWeight: '500',
+                                          color: '#7B7B7B'
+                                        }
+                                  }>
+                                    {subItem.label}
+                                  </span>
+                                </>
+                              )}
+                            </NavLink>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -426,32 +517,6 @@ export const FigmantSidebar = () => {
               </div>
             </div>
 
-            {/* User Profile Section - Fixed at bottom */}
-            {!isCollapsed && user && (
-              <div className="flex-shrink-0 px-3 py-2 border-t border-gray-100 bg-white">
-                <div className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50">
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                      <User className="w-4 h-4 text-primary" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-foreground truncate">
-                        {user.email}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleLogout}
-                    className="p-1 hover:bg-red-50 hover:text-red-600"
-                    title="Sign out"
-                  >
-                    <LogOut className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
 
             {/* Upgrade Section - Fixed at bottom with proper constraints */}
             {!isCollapsed && (
