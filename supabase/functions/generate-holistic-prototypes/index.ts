@@ -52,12 +52,16 @@ serve(async (req) => {
 
     console.log('✅ Data fetched successfully');
 
-    // Check if holistic analysis already exists
-    const { data: existingAnalysis } = await supabase
+    // Check if holistic analysis already exists - use maybeSingle to avoid errors
+    const { data: existingAnalysis, error: existingError } = await supabase
       .from('figmant_holistic_analyses')
       .select('*')
       .eq('analysis_id', analysisId)
-      .single();
+      .maybeSingle();
+
+    if (existingError) {
+      console.error('Error checking existing analysis:', existingError);
+    }
 
     let holisticAnalysis = existingAnalysis;
 
@@ -67,23 +71,38 @@ serve(async (req) => {
       const analysisPrompt = buildHolisticAnalysisPrompt(analysisData, contextData);
       const analysisResponse = await callClaude(analysisPrompt, anthropicKey);
       
+      // Use upsert to handle potential race conditions
       const { data: newAnalysis, error: analysisError } = await supabase
         .from('figmant_holistic_analyses')
-        .insert({
+        .upsert({
           analysis_id: analysisId,
           identified_problems: analysisResponse.problems || [],
           solution_approaches: analysisResponse.solutions || [],
           vision_insights: analysisResponse.visionInsights || {}
+        }, {
+          onConflict: 'analysis_id',
+          ignoreDuplicates: false
         })
         .select()
         .single();
         
       if (analysisError) {
-        throw new Error(`Failed to save holistic analysis: ${analysisError.message}`);
+        // Check if it's a duplicate key error, if so try to fetch existing
+        if (analysisError.message.includes('duplicate key') || analysisError.message.includes('unique constraint')) {
+          console.log('🔄 Holistic analysis already exists due to race condition, fetching...');
+          const { data: existing } = await supabase
+            .from('figmant_holistic_analyses')
+            .select('*')
+            .eq('analysis_id', analysisId)
+            .single();
+          holisticAnalysis = existing;
+        } else {
+          throw new Error(`Failed to save holistic analysis: ${analysisError.message}`);
+        }
+      } else {
+        holisticAnalysis = newAnalysis;
+        console.log('✅ Holistic analysis generated and saved');
       }
-      
-      holisticAnalysis = newAnalysis;
-      console.log('✅ Holistic analysis generated and saved');
     }
 
     // Generate prototypes based on request type

@@ -26,6 +26,7 @@ import { useNavigate } from 'react-router-dom';
 import { VisualMentorSummary } from '@/components/analysis/VisualMentorSummary';
 import { UserContextForm } from '@/components/analysis/UserContextForm';
 import { HolisticPrototypeViewer } from '@/components/prototypes/HolisticPrototypeViewer';
+import { PrototypeGenerationStatus } from '@/components/prototypes/PrototypeGenerationStatus';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { useAnalysisState } from '@/hooks/analysis/useAnalysisState';
 
@@ -71,6 +72,17 @@ const FigmantResultsPage = () => {
     generatePrototypes, 
     resetState: resetPrototypeState
   } = usePrototypeGeneration();
+
+  // Add visual prototypes generation trigger
+  const triggerVisualPrototypeGeneration = async (analysisId: string) => {
+    try {
+      console.log('🎨 Triggering visual prototype generation for:', analysisId);
+      await generatePrototypes(analysisId);
+      console.log('✅ Visual prototype generation completed');
+    } catch (error) {
+      console.error('❌ Visual prototype generation failed:', error);
+    }
+  };
 
   // Helper function to get image URL
   const getImageUrl = (filePath: string) => {
@@ -574,6 +586,16 @@ const FigmantResultsPage = () => {
                   console.log('✅ Auto-start analysis data set:', transformedData);
                   setAutoStartState('idle'); // Reset state for future runs
                   toast.success('Analysis completed successfully!');
+                  
+                  // Trigger visual prototype generation for auto-started analyses
+                  try {
+                    console.log('🎨 Auto-starting visual prototype generation...');
+                    await triggerVisualPrototypeGeneration(data.id);
+                    console.log('✅ Visual prototypes generated automatically');
+                  } catch (prototypeError) {
+                    console.error('❌ Auto visual prototype generation failed:', prototypeError);
+                    // Don't fail the analysis flow
+                  }
                 }
               } catch (fetchError) {
                 console.error('❌ Error fetching full analysis data:', fetchError);
@@ -696,6 +718,17 @@ const FigmantResultsPage = () => {
             } else {
               console.log('✅ Holistic analysis generated successfully');
               toast.success('Holistic analysis generated successfully!');
+              
+              // Also trigger visual prototype generation
+              try {
+                console.log('🎨 Triggering visual prototype generation...');
+                await triggerVisualPrototypeGeneration(data.id);
+                toast.success('Visual prototypes generated successfully!');
+              } catch (prototypeError) {
+                console.error('❌ Visual prototype generation failed:', prototypeError);
+                // Don't fail the entire flow if visual prototypes fail
+                toast.warning('Holistic analysis completed, but visual prototypes failed to generate');
+              }
             }
             
             return; // Exit polling loop

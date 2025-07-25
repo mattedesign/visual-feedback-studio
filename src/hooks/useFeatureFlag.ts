@@ -27,7 +27,7 @@ export const useFeatureFlag = (flagName: string): boolean => {
     'enhanced-analysis-layout': true, // ENABLED: Enhanced Figma layout
     
     // Holistic AI Prototypes - Feature Flag for Safe Rollout
-    'holistic-ai-prototypes': false, // CONTROLLED BY SETTINGS: User preference in localStorage
+    'holistic-ai-prototypes': true, // ENABLED: For testing and implementation
   };
   
   // Check for specific flag activation via URL parameters

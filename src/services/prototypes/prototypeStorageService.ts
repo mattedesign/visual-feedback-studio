@@ -154,6 +154,8 @@ export class PrototypeStorageService {
    * Update analysis status when prototype generation starts
    */
   static async markPrototypeGenerationStarted(analysisId: string): Promise<void> {
+    console.log('🎨 Marking prototype generation as started for analysis:', analysisId);
+    
     try {
       const { error } = await supabase
         .from('figmant_analysis_results')
@@ -164,10 +166,14 @@ export class PrototypeStorageService {
         .eq('id', analysisId);
       
       if (error) {
-        console.warn('Failed to update prototype generation start status:', error);
+        console.error('❌ Failed to mark prototype generation as started:', error);
+        throw new Error(`Failed to update prototype generation status: ${error.message}`);
       }
+      
+      console.log('✅ Prototype generation marked as started');
     } catch (error) {
-      console.warn('Failed to mark prototype generation started:', error);
+      console.error('❌ Failed to mark prototype generation started:', error);
+      throw error;
     }
   }
 }
