@@ -90,16 +90,53 @@ const FigmantResultsPage = () => {
     console.log('🔍 Claude Analysis Structure Check:', {
       hasClaudeAnalysis: !!claudeAnalysis,
       claudeAnalysisKeys: claudeAnalysis ? Object.keys(claudeAnalysis) : 'none',
-      hasIssues: !!claudeAnalysis?.issues,
-      issuesIsArray: Array.isArray(claudeAnalysis?.issues),
-      issuesLength: claudeAnalysis?.issues?.length || 0,
-      issuesData: claudeAnalysis?.issues
+      claudeAnalysisType: typeof claudeAnalysis,
+      fullAnalysisKeys: analysis ? Object.keys(analysis) : 'none',
+      claudeAnalysisString: typeof claudeAnalysis === 'string' ? claudeAnalysis.substring(0, 200) : 'not string'
+    });
+
+    // Handle case where claude_analysis might be a JSON string
+    let parsedClaudeAnalysis = claudeAnalysis;
+    if (typeof claudeAnalysis === 'string') {
+      try {
+        parsedClaudeAnalysis = JSON.parse(claudeAnalysis);
+        console.log('✅ Successfully parsed claude_analysis from string');
+      } catch (e) {
+        console.error('❌ Failed to parse claude_analysis string:', e);
+        parsedClaudeAnalysis = null;
+      }
+    }
+
+    console.log('🔍 Final Analysis Structure:', {
+      hasIssues: !!parsedClaudeAnalysis?.issues,
+      issuesIsArray: Array.isArray(parsedClaudeAnalysis?.issues),
+      issuesLength: parsedClaudeAnalysis?.issues?.length || 0,
+      hasAnnotations: !!parsedClaudeAnalysis?.annotations,
+      annotationsLength: parsedClaudeAnalysis?.annotations?.length || 0,
+      hasAnalysisIssues: !!parsedClaudeAnalysis?.analysis_issues,
+      analysisIssuesLength: parsedClaudeAnalysis?.analysis_issues?.length || 0
     });
     
-    // Handle the new mentor analysis format
-    if (claudeAnalysis?.issues && Array.isArray(claudeAnalysis.issues)) {
-      console.log('🔍 Processing new format issues:', claudeAnalysis.issues.length, 'items');
-      claudeAnalysis.issues.forEach((issue: any, index: number) => {
+    // Handle multiple possible formats for issues
+    let issuesToProcess: any[] = [];
+    
+    // Try different possible paths for issues
+    if (parsedClaudeAnalysis?.issues && Array.isArray(parsedClaudeAnalysis.issues)) {
+      issuesToProcess = parsedClaudeAnalysis.issues;
+      console.log('🔍 Using issues array:', issuesToProcess.length, 'items');
+    } else if (parsedClaudeAnalysis?.annotations && Array.isArray(parsedClaudeAnalysis.annotations)) {
+      issuesToProcess = parsedClaudeAnalysis.annotations;
+      console.log('🔍 Using annotations array:', issuesToProcess.length, 'items');
+    } else if (parsedClaudeAnalysis?.analysis_issues && Array.isArray(parsedClaudeAnalysis.analysis_issues)) {
+      issuesToProcess = parsedClaudeAnalysis.analysis_issues;
+      console.log('🔍 Using analysis_issues array:', issuesToProcess.length, 'items');
+    } else {
+      console.warn('❌ No valid issues array found in analysis data');
+    }
+
+    if (issuesToProcess.length > 0) {
+      console.log('🔍 Processing issues:', issuesToProcess.length, 'items');
+      issuesToProcess.forEach((issue: any, index: number) => {
         // Add as issue
         enhancedIssues.push({
           id: issue.id || `issue-${index}`,
@@ -146,9 +183,9 @@ const FigmantResultsPage = () => {
     }
     
     // Handle mentor analysis alternatives as suggestions
-    if (claudeAnalysis?.mentor_analysis?.visual_alternatives && Array.isArray(claudeAnalysis.mentor_analysis.visual_alternatives)) {
-      console.log('🔍 Processing visual alternatives:', claudeAnalysis.mentor_analysis.visual_alternatives.length, 'items');
-      claudeAnalysis.mentor_analysis.visual_alternatives.forEach((alt: any, index: number) => {
+    if (parsedClaudeAnalysis?.mentor_analysis?.visual_alternatives && Array.isArray(parsedClaudeAnalysis.mentor_analysis.visual_alternatives)) {
+      console.log('🔍 Processing visual alternatives:', parsedClaudeAnalysis.mentor_analysis.visual_alternatives.length, 'items');
+      parsedClaudeAnalysis.mentor_analysis.visual_alternatives.forEach((alt: any, index: number) => {
         // Map company names to existing visual reference IDs in the pattern library
         const getVisualReference = (company: string, title: string) => {
           const companyLower = company.toLowerCase();
